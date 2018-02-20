@@ -89,7 +89,9 @@ define(["dojo/parser",
                     var deleteQueueButton = query(".deleteQueueButton", containerNode)[0];
                     registry.byNode(deleteQueueButton).on("click", function (evt)
                     {
-                        that._deleteSelectedItems(that.vhostUpdater.queuesGrid, "queue", "queue");
+                        that._deleteSelectedItems(that.vhostUpdater.queuesGrid,
+                                                  {type: "queue", parent: this.modelObj},
+                                                  "delete", "queue");
                     });
 
                     var addExchangeButton = query(".addExchangeButton", containerNode)[0];
@@ -101,7 +103,17 @@ define(["dojo/parser",
                     var deleteExchangeButton = query(".deleteExchangeButton", containerNode)[0];
                     registry.byNode(deleteExchangeButton).on("click", function (evt)
                     {
-                        that._deleteSelectedItems(that.vhostUpdater.exchangesGrid, "exchange", "exchange");
+                        that._deleteSelectedItems(that.vhostUpdater.exchangesGrid,
+                                                 {type: "exchange", parent: that.modelObj},
+                                                 "delete", "exchange");
+                    });
+
+                    var closeConnectionButton = query(".closeConnectionButton", containerNode)[0];
+                    registry.byNode(closeConnectionButton).on("click", function (evt)
+                    {
+                        that._deleteSelectedItems(that.vhostUpdater.connectionsGrid,
+                                                  {type: "connection"},
+                                                  "close", "connection");
                     });
 
                     var addLoggerButtonNode = query(".addVirtualHostLogger", contentPane.containerNode)[0];
@@ -115,7 +127,9 @@ define(["dojo/parser",
                     var deleteLoggerButton = registry.byNode(deleteLoggerButtonNode);
                     deleteLoggerButton.on("click", function (evt)
                     {
-                        that._deleteSelectedItems(that.vhostUpdater.virtualHostLoggersGrid, "virtualhostlogger", "virtual host logger");
+                        that._deleteSelectedItems(that.vhostUpdater.virtualHostLoggersGrid,
+                                                  {type: "virtualhostlogger", parent: that.modelObj},
+                                                  "delete", "virtual host logger");
                     });
 
                     that.stopButton = registry.byNode(query(".stopButton", containerNode)[0]);
@@ -175,7 +189,7 @@ define(["dojo/parser",
                 });
         };
 
-        VirtualHost.prototype._deleteSelectedItems = function(dgrid, category, friendlyCategoryName)
+        VirtualHost.prototype._deleteSelectedItems = function (dgrid, modelObj, friendlyAction, friendlyCategoryName)
         {
             var selected = [];
             var selection = dgrid.selection;
@@ -188,18 +202,15 @@ define(["dojo/parser",
             }
             if (selected.length > 0)
             {
-                var ending = selected.length > 1 ? "s " : " ";
-                if (confirm(lang.replace("Are you sure you want to delete {0} {1}{2}from virtual host '{3}'?",
-                        [selected.length,
-                         entities.encode(String(friendlyCategoryName || category )),
-                         ending,
-                         entities.encode(String(this.modelObj.name))])))
+                var plural = selected.length === 1 ? "" : "s";
+                if (confirm(lang.replace("Are you sure you want to {0} {1} {2}{3}?",
+                        [friendlyAction,
+                         selected.length,
+                         entities.encode(friendlyCategoryName),
+                         plural])))
                 {
                     this.management
-                        .remove({
-                            type: category,
-                            parent: this.modelObj
-                        }, {"id": selected})
+                        .remove(modelObj, {"id": selected})
                         .then(lang.hitch(this, function (responseData)
                         {
                             dgrid.clearSelection();
@@ -352,17 +363,24 @@ define(["dojo/parser",
             this.exchangesGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
             this.exchangesGrid.startup();
 
-            this.connectionsGrid = new QueryGrid({
+            this.connectionsGrid = new CustomGrid({
                 detectChanges: true,
                 rowsPerPage: 10,
-                selectionMode: 'none',
                 transformer: lang.hitch(this, this._transformConnectionData),
                 management: this.management,
                 parentObject: this.modelObj,
                 category: "Connection",
                 selectClause: "id, name, principal, port.name AS port, transport, sessionCount, messagesIn, bytesIn, messagesOut, bytesOut",
                 orderBy: "name",
-                columns: [{
+                selectionMode: 'none',
+                deselectOnRefresh: false,
+                allowSelectAll: true,
+                columns: [
+                {
+                    field: "selected",
+                    label: 'All',
+                    selector: 'checkbox'
+                }, {
                     label: "Name",
                     field: "name"
                 }, {

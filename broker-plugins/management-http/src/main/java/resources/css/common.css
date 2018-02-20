@@ -522,7 +522,8 @@ td.advancedSearchField, col.autoWidth {
 
 .claro.qpid .dgrid-header .dgrid-cell { font-weight: normal; }
 
-.virtualHostConnections .field-name { width: 20%; }
+.virtualHostConnections .field-selected { width: 2em; }
+.virtualHostConnections .field-name { width: auto; }
 .virtualHostConnections .field-principal { width: 10% }
 .virtualHostConnections .field-port { width: 10% }
 .virtualHostConnections .field-transport { width: 10% }
