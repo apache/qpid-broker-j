@@ -20,12 +20,8 @@
  */
 package org.apache.qpid.server.model.port;
 
-import org.apache.qpid.server.model.Port;
-
 public interface PortManager
 {
-    boolean isActivationAllowed(Port<?> port);
-
     int getBoundPort(HttpPort httpPort);
 
     int getNumberOfAcceptors(HttpPort httpPort);

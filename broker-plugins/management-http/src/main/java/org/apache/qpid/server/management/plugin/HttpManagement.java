@@ -29,14 +29,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -96,6 +97,7 @@ import org.apache.qpid.server.management.plugin.servlet.rest.SaslServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.StructureServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.TimeZoneServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.VirtualHostQueryServlet;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -174,8 +176,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     @ManagedAttributeField
     private boolean _compressResponses;
 
-    private boolean _allowPortActivation;
-    private Map<HttpPort<?>, ServerConnector> _portConnectorMap = new HashMap<>();
+    private final Map<HttpPort<?>, ServerConnector> _portConnectorMap = new ConcurrentHashMap<>();
+    private final BrokerChangeListener _brokerChangeListener = new BrokerChangeListener();
 
     private volatile boolean _serveUncompressedDojo;
     private volatile Long _saslExchangeExpiry;
@@ -193,6 +195,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         super.onOpen();
         _serveUncompressedDojo = Boolean.TRUE.equals(getContextValue(Boolean.class, "qpid.httpManagement.serveUncompressedDojo"));
         _saslExchangeExpiry = getContextValue(Long.class, SASL_EXCHANGE_EXPIRY_CONTEXT_NAME);
+        getBroker().addChangeListener(_brokerChangeListener);
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
@@ -234,6 +237,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     @Override
     protected ListenableFuture<Void> onClose()
     {
+        getBroker().removeChangeListener(_brokerChangeListener);
         if (_server != null)
         {
             try
@@ -288,7 +292,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private Server createServer(Collection<HttpPort<?>> ports)
     {
         LOGGER.debug("Starting up web server on {}", ports);
-        _allowPortActivation = true;
 
         _jettyServerExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("Jetty-Server-Thread"));
         Server server = new Server(new ExecutorThreadPool(_jettyServerExecutor));
@@ -300,8 +303,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             _portConnectorMap.put(port, connector);
             lastPort = port.getPort();
         }
-
-        _allowPortActivation = false;
 
         ServletContextHandler root = new ServletContextHandler(ServletContextHandler.SESSIONS);
         root.setContextPath("/");
@@ -712,13 +713,18 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         {
             HttpPort<?> port = portConnector.getKey();
             NetworkConnector connector = portConnector.getValue();
-            Set<Transport> transports = port.getTransports();
-            for (Transport transport: transports)
-            {
-                getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(),
-                                                                                         transport.name(),
-                                                                                         connector.getLocalPort()));
-            }
+            logOperationalListenMessages(port, connector.getLocalPort());
+        }
+    }
+
+    private void logOperationalListenMessages(final HttpPort<?> port, final int localPort)
+    {
+        Set<Transport> transports = port.getTransports();
+        for (Transport transport: transports)
+        {
+            getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(),
+                                                                                     transport.name(),
+                                                                                     localPort));
         }
     }
 
@@ -726,8 +732,14 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     {
         for (NetworkConnector connector : _portConnectorMap.values())
         {
-            getBroker().getEventLogger().message(ManagementConsoleMessages.SHUTTING_DOWN(Protocol.HTTP.name(), connector.getLocalPort()));
+            logOperationalShutdownMessage(connector.getLocalPort());
         }
+    }
+
+    private void logOperationalShutdownMessage(final int localPort)
+    {
+        getBroker().getEventLogger().message(ManagementConsoleMessages.SHUTTING_DOWN(Protocol.HTTP.name(),
+                                                                                     localPort));
     }
 
     private Collection<HttpPort<?>> getEligibleHttpPorts(Collection<Port<?>> ports)
@@ -743,12 +755,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             }
         }
         return Collections.unmodifiableCollection(httpPorts);
-    }
-
-    @Override
-    public boolean isActivationAllowed(final Port<?> port)
-    {
-        return _allowPortActivation;
     }
 
     @Override
@@ -874,6 +880,81 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         protected Thread newThread(final Runnable runnable)
         {
             return _threadFactory.newThread(runnable);
+        }
+    }
+
+    private class BrokerChangeListener extends AbstractConfigurationChangeListener
+    {
+        @Override
+        public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        {
+            if (child instanceof HttpPort)
+            {
+                final HttpPort<?> port = (HttpPort<?>) child;
+                Server server = _server;
+                if (server != null)
+                {
+                    ServerConnector connector = null;
+                    try
+                    {
+                        connector = createConnector(port, server);
+                        server.addConnector(connector);
+                        connector.start();
+                        _portConnectorMap.put(port, connector);
+                        logOperationalListenMessages(port, connector.getLocalPort());
+                    }
+                    catch (Exception e)
+                    {
+                        if (connector != null)
+                        {
+                            server.removeConnector(connector);
+                        }
+                        LOGGER.warn("HTTP management connector creation failed for http port {}", port, e);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        {
+            if (child instanceof HttpPort)
+            {
+                final HttpPort<?> port = (HttpPort<?>) child;
+                Server server = _server;
+                if (server != null)
+                {
+                    ServerConnector connector = _portConnectorMap.remove(port);
+                    if (connector != null)
+                    {
+                        int localPort = connector.getLocalPort();
+                        try
+                        {
+                            connector.close();
+                        }
+                        catch (Exception e)
+                        {
+                            LOGGER.warn("Failed to close connector for http port {}", port, e);
+                        }
+                        getBroker().scheduleTask(0, TimeUnit.SECONDS, () -> {
+                            LOGGER.debug("Stopping connector for http port {}", localPort);
+                            try
+                            {
+                                connector.stop();
+                            }
+                            catch (Exception e)
+                            {
+                                LOGGER.warn("Failed to stop connector for http port {}", localPort, e);
+                            }
+                            finally
+                            {
+                                logOperationalShutdownMessage(localPort);
+                                _server.removeConnector(connector);
+                            }
+                        });
+                    }
+                }
+            }
         }
     }
 }

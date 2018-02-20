@@ -131,4 +131,9 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
                                                 .replace('.', '_'));
     }
 
+    protected String getTestName()
+    {
+        return _testName.getMethodName();
+    }
+
 }

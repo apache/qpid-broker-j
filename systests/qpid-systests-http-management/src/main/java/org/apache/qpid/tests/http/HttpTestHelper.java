@@ -87,8 +87,13 @@ public class HttpTestHelper
 
     public HttpTestHelper(BrokerAdmin admin, final String requestHostName)
     {
+        this(admin, requestHostName, admin.getBrokerAddress(BrokerAdmin.PortType.HTTP).getPort());
+    }
+
+    public HttpTestHelper(BrokerAdmin admin, final String requestHostName, final int httpPort)
+    {
         _admin = admin;
-        _httpPort = _admin.getBrokerAddress(BrokerAdmin.PortType.HTTP).getPort();
+        _httpPort = httpPort;
         _username = admin.getValidUsername();
         _password = admin.getValidPassword();
         _requestHostName = requestHostName;

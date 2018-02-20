@@ -31,6 +31,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.xml.bind.DatatypeConverter;
 
+import org.apache.qpid.server.management.plugin.HttpManagementUtil;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
@@ -138,6 +140,12 @@ public class ServletConnectionPrincipal implements ManagementConnectionPrincipal
         public ServletRequestMetaData(final HttpServletRequest request)
         {
             _request = request;
+        }
+
+        @Override
+        public Port getPort()
+        {
+            return HttpManagementUtil.getPort(_request);
         }
 
         @Override

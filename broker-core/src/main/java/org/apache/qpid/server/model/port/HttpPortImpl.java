@@ -145,7 +145,7 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
     @Override
     protected State onActivate()
     {
-        if(_portManager != null && _portManager.isActivationAllowed(this))
+        if(_portManager != null)
         {
             return super.onActivate();
         }
