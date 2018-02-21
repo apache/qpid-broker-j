@@ -226,6 +226,11 @@ public class ${type.name}Messages
 
 #end
 
+    static Locale getCurrentLocale()
+    {
+        return _currentLocale;
+    }
+
     private ${type.name}Messages()
     {
     }
