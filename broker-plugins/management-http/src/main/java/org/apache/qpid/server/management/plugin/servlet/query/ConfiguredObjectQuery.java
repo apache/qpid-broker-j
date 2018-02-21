@@ -54,6 +54,8 @@ public final class ConfiguredObjectQuery
     {
         List<String> getHeaders();
         List<Expression> getValueExpressions();
+        boolean hasHeader(String name);
+        Expression getValueExpressionForHeader(String name);
     }
 
     public ConfiguredObjectQuery(List<ConfiguredObject<?>> objects, String selectClause, String whereClause)
@@ -84,7 +86,7 @@ public final class ConfiguredObjectQuery
         List<ConfiguredObject<?>> filteredObjects = whereClause == null ? objects : filterObjects(objects, whereClause);
         List<ConfiguredObject<?>> orderedObjects = orderByClause == null ? filteredObjects : orderObjects(filteredObjects,
                                                                                                           orderByClause,
-                                                                                                          headersAndValueExpressions.getValueExpressions());
+                                                                                                          headersAndValueExpressions);
         List<ConfiguredObject<?>> limitedOrderedObjects = applyLimitAndOffset(orderedObjects, limit, offset);
 
         _headers = headersAndValueExpressions.getHeaders();
@@ -161,13 +163,31 @@ public final class ConfiguredObjectQuery
                     @Override
                     public List<String> getHeaders()
                     {
-                        return headers;
+                        return Collections.unmodifiableList(headers);
                     }
 
                     @Override
                     public List<Expression> getValueExpressions()
                     {
-                        return valueExpressions;
+                        return Collections.unmodifiableList(valueExpressions);
+                    }
+
+                    @Override
+                    public boolean hasHeader(final String headerName)
+                    {
+                        return headers.contains(headerName);
+                    }
+
+                    @Override
+                    public Expression getValueExpressionForHeader(final String headerName)
+                    {
+                        final int i = headers.indexOf(headerName);
+                        if (i  < 0)
+                        {
+                            throw new IllegalStateException(String.format("No expression found for header '%s'", headerName));
+                        }
+
+                        return valueExpressions.get(i);
                     }
                 };
     }
@@ -246,8 +266,9 @@ public final class ConfiguredObjectQuery
         private final List<OrderByExpression> _orderByExpressions;
 
         public OrderByComparator(final List<OrderByExpression> orderByExpressions,
-                                 final List<Expression> valueExpressions)
+                                 final HeadersAndValueExpressions headersAndValue)
         {
+            final List<Expression> valueExpressions = headersAndValue.getValueExpressions();
             _orderByExpressions = new ArrayList<>(orderByExpressions);
             for (ListIterator<OrderByExpression> iterator = _orderByExpressions.listIterator(); iterator.hasNext(); )
             {
@@ -265,6 +286,12 @@ public final class ConfiguredObjectQuery
                         orderByExpression = new OrderByExpression(valueExpressions.get(index - 1), orderByExpression.getOrder());
                         iterator.set(orderByExpression);
                     }
+                }
+                else if (orderByExpression.isNamed() && headersAndValue.hasHeader(orderByExpression.getName()))
+                {
+                    Expression expression = headersAndValue.getValueExpressionForHeader(orderByExpression.getName());
+                    orderByExpression = new OrderByExpression(expression, orderByExpression.getOrder());
+                    iterator.set(orderByExpression);
                 }
             }
         }
@@ -313,13 +340,13 @@ public final class ConfiguredObjectQuery
     }
 
     private List<ConfiguredObject<?>> orderObjects(final List<ConfiguredObject<?>> unorderedResults,
-                                                   String orderByClause,
-                                                   final List<Expression> valueExpressions)
+                                                   final String orderByClause,
+                                                   final HeadersAndValueExpressions headersAndValue)
     {
         List<OrderByExpression> orderByExpressions = parseOrderByClause(orderByClause);
         List<ConfiguredObject<?>> orderedObjects = new ArrayList<>(unorderedResults.size());
         orderedObjects.addAll(unorderedResults);
-        Comparator<Object> comparator = new OrderByComparator(orderByExpressions, valueExpressions);
+        Comparator<Object> comparator = new OrderByComparator(orderByExpressions, headersAndValue);
         Collections.sort(orderedObjects, comparator);
         return orderedObjects;
     }

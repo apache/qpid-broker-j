@@ -61,7 +61,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
     private final List<ConfiguredObject<?>> _objects = new ArrayList<>();
     private ConfiguredObjectQuery _query;
 
-    public void testNoClauses_SingleResult() throws Exception
+    public void testNoClauses_SingleResult()
     {
         final UUID objectUuid = UUID.randomUUID();
         final String objectName = "obj1";
@@ -86,7 +86,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, objectName), row);
     }
 
-    public void testArithmeticStatementInOrderBy() throws Exception
+    public void testArithmeticStatementInOrderBy()
     {
         final List<OrderByExpression> orderByExpressions;
         String orderByClause = "a + b";
@@ -104,15 +104,14 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
     }
 
 
-    public void testInvalidStatementInOrderBy() throws Exception
+    public void testInvalidStatementInOrderBy()
     {
-        final List<OrderByExpression> orderByExpressions;
         String orderByClause = "a + b foo";
         ConfiguredObjectFilterParser parser = new ConfiguredObjectFilterParser();
         parser.setConfiguredObjectExpressionFactory(new ConfiguredObjectExpressionFactory());
         try
         {
-            orderByExpressions = parser.parseOrderBy(orderByClause);
+            parser.parseOrderBy(orderByClause);
             fail("Invalid expression was parsed without exception");
         }
         catch (ParseException | TokenMgrError e)
@@ -121,7 +120,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         }
     }
 
-    public void testNoClauses_TwoResult() throws Exception
+    public void testNoClauses_TwoResult()
     {
         final UUID object1Uuid = UUID.randomUUID();
         final String object1Name = "obj1";
@@ -158,7 +157,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(object2Uuid, object2Name), row2);
     }
 
-    public void testSelectClause() throws Exception
+    public void testSelectClause()
     {
         final UUID objectUuid = UUID.randomUUID();
 
@@ -185,7 +184,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, 1234), row);
     }
 
-    public void testSelectClause_NonExistingColumn() throws Exception
+    public void testSelectClause_NonExistingColumn()
     {
        ConfiguredObject obj = createCO(new HashMap<String, Object>()
         {{
@@ -193,14 +192,14 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         }});
         _objects.add(obj);
 
-        _query = new ConfiguredObjectQuery(_objects, String.format("foo"), null);
+        _query = new ConfiguredObjectQuery(_objects, "foo", null);
         List<List<Object>> results = _query.getResults();
         assertEquals("Unexpected number of results", 1, results.size());
         assertEquals("Unexpected headers", Collections.singletonList("foo"), _query.getHeaders());
         assertEquals("Unexpected row", Collections.singletonList(null), results.get(0));
     }
 
-    public void testSelectClause_ColumnAliases() throws Exception
+    public void testSelectClause_ColumnAliases()
     {
         final UUID objectUuid = UUID.randomUUID();
 
@@ -228,7 +227,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "myObj1234"), row);
     }
 
-    public void testQuery_StringEquality() throws Exception
+    public void testQuery_StringEquality()
     {
         final UUID objectUuid = UUID.randomUUID();
         final String objectName = "obj2";
@@ -261,7 +260,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", objectUuid, row.get(0));
     }
 
-    public void testQuery_DateInequality() throws Exception
+    public void testQuery_DateInequality()
     {
         final long now = System.currentTimeMillis();
         final UUID objectUuid = UUID.randomUUID();
@@ -296,7 +295,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", objectUuid, row.get(0));
     }
 
-    public void testQuery_DateEquality() throws Exception
+    public void testQuery_DateEquality()
     {
         final long now = System.currentTimeMillis();
         final Calendar calendar = Calendar.getInstance();
@@ -333,7 +332,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", objectUuid, row.get(0));
     }
 
-    public void testQuery_DateExpressions() throws Exception
+    public void testQuery_DateExpressions()
     {
         final UUID objectUuid = UUID.randomUUID();
 
@@ -360,7 +359,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", objectUuid, row.get(0));
     }
 
-    public void testDateToString() throws Exception
+    public void testDateToString()
     {
         final UUID objectUuid = UUID.randomUUID();
 
@@ -384,7 +383,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "1970-01-01T00:00:00Z"), row);
     }
 
-    public void testDateToFormattedString() throws Exception
+    public void testDateToFormattedString()
     {
         final UUID objectUuid = UUID.randomUUID();
 
@@ -411,7 +410,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "1970-01-01 UTC"), row);
     }
 
-    public void testQuery_EnumEquality() throws Exception
+    public void testQuery_EnumEquality()
     {
         final UUID objectUuid = UUID.randomUUID();
 
@@ -460,7 +459,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
 
     }
 
-    public void testQuery_EnumEquality_InExpresssions() throws Exception
+    public void testQuery_EnumEquality_InExpresssions()
     {
         final UUID objectUuid = UUID.randomUUID();
 
@@ -497,7 +496,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected number of results - attribute within the set", 1, results.size());
     }
 
-    public void testFunctionActualParameterMismatch() throws Exception
+    public void testFunctionActualParameterMismatch()
     {
         try
         {
@@ -512,7 +511,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         }
     }
 
-    public void testSingleOrderByClause() throws Exception
+    public void testSingleOrderByClause()
     {
         final int NUMBER_OF_OBJECTS = 3;
 
@@ -548,7 +547,49 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertQueryResults(new Object[][]{{null}, {0}, {1}, {2}}, results);
     }
 
-    public void testTwoOrderByClauses() throws Exception
+    public void testAliasInOrderByClause()
+    {
+        _objects.add(createCO(new HashMap<String, Object>()
+        {{
+            put("foo", 2);
+        }}));
+
+        _objects.add(createCO(new HashMap<String, Object>()
+        {{
+            put("foo", 1);
+        }}));
+
+        _objects.add(createCO(new HashMap<String, Object>()
+        {{
+            put("foo", 4);
+        }}));
+
+        _query = new ConfiguredObjectQuery(_objects, "foo AS bar", null, "bar ASC");
+        assertQueryResults(new Object[][]{{1}, {2}, {4}}, _query.getResults());
+    }
+
+    public void testDelimitedAliasInOrderByClause()
+    {
+        _objects.add(createCO(new HashMap<String, Object>()
+        {{
+            put("foo", 2);
+        }}));
+
+        _objects.add(createCO(new HashMap<String, Object>()
+        {{
+            put("foo", 1);
+        }}));
+
+        _objects.add(createCO(new HashMap<String, Object>()
+        {{
+            put("foo", 4);
+        }}));
+
+        _query = new ConfiguredObjectQuery(_objects, "foo AS \"yogi bear\"", null, "\"yogi bear\" DESC");
+        assertQueryResults(new Object[][]{{4}, {2}, {1}}, _query.getResults());
+    }
+
+    public void testTwoOrderByClauses()
     {
         ConfiguredObject object;
 
@@ -634,7 +675,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
     }
 
 
-    public void testLimitWithoutOffset() throws Exception
+    public void testLimitWithoutOffset()
     {
         int numberOfTestObjects = 3;
         for(int i=0;i<numberOfTestObjects;i++)

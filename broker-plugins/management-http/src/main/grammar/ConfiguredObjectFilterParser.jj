@@ -77,6 +77,7 @@ import org.apache.qpid.filter.Expression;
 import org.apache.qpid.filter.OrderByExpression;
 import org.apache.qpid.filter.LogicExpression;
 import org.apache.qpid.filter.UnaryExpression;
+import org.apache.qpid.filter.NamedExpression;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 

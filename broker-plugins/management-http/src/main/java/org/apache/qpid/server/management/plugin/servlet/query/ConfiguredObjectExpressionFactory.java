@@ -37,6 +37,7 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.Duration;
 
 import org.apache.qpid.server.filter.Expression;
+import org.apache.qpid.server.filter.NamedExpression;
 import org.apache.qpid.server.model.ConfiguredObject;
 
 public class ConfiguredObjectExpressionFactory

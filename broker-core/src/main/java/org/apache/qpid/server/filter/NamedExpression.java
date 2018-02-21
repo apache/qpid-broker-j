@@ -18,9 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.management.plugin.servlet.query;
-
-import org.apache.qpid.server.filter.Expression;
+package org.apache.qpid.server.filter;
 
 public interface NamedExpression<E> extends Expression<E>
 {
