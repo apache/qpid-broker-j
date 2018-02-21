@@ -33,6 +33,7 @@ import org.apache.qpid.server.filter.BooleanExpression;
 import org.apache.qpid.server.filter.ComparisonExpression;
 import org.apache.qpid.server.filter.ConstantExpression;
 import org.apache.qpid.server.filter.Expression;
+import org.apache.qpid.server.filter.NamedExpression;
 import org.apache.qpid.server.filter.OrderByExpression;
 import org.apache.qpid.server.filter.LogicExpression;
 import org.apache.qpid.server.filter.UnaryExpression;

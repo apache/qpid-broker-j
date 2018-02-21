@@ -58,4 +58,14 @@ public class OrderByExpression implements Expression
     {
         return ((Number)((ConstantExpression)_expression).getValue()).intValue();
     }
+
+    public boolean isNamed()
+    {
+        return (_expression instanceof NamedExpression);
+    }
+
+    public String getName()
+    {
+        return ((NamedExpression) _expression).getName();
+    }
 }
