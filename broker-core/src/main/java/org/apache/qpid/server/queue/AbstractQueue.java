@@ -683,7 +683,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         if(_alternateBinding != null)
         {
-            _alternateBindingDestination = _virtualHost.getAttainedMessageDestination(_alternateBinding.getDestination(), false);
+            _alternateBindingDestination = getOpenedMessageDestination(_alternateBinding.getDestination());
             if (_alternateBindingDestination != null)
             {
                 _alternateBindingDestination.addReference(this);
