@@ -261,7 +261,6 @@ define(["dojox/html/entities",
                 this._initNodeAutoCreationPolicies(data);
                 this.dialog.startup();
                 this.dialog.show();
-                this.dialog.reset();
                 if (!this.resizeEventRegistered)
                 {
                     this.resizeEventRegistered = true;
