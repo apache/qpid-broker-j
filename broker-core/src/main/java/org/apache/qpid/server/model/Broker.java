@@ -54,6 +54,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT = "channel.flowControlEnforcementTimeout";
     String BROKER_FLOW_TO_DISK_THRESHOLD = "broker.flowToDiskThreshold";
     String BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD = "broker.failStartupWithErroredChild";
+    String BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE = "broker.failStartupWithErroredChildScope";
 
     String BROKER_MSG_AUTH = "qpid.broker_msg_auth";
 
@@ -98,6 +99,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @ManagedContextDefault(name = BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD)
     boolean DEFAULT_BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD = false;
+
+    @ManagedContextDefault(name = BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE)
+    DescendantType DEFAULT_BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE = DescendantType.IMMEDIATE;
 
     @ManagedContextDefault(name = BROKER_MSG_AUTH)
     boolean DEFAULT_BROKER_MSG_AUTH = false;
