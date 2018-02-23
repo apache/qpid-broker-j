@@ -464,7 +464,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         String pattern = policy.getPattern();
         if(pattern == null)
         {
-            throw new IllegalArgumentException("The 'pattern' attribute of a NodeAutoCreationPattern MUST be supplied: " + policy);
+            throw new IllegalArgumentException("The 'pattern' attribute of a NodeAutoCreationPolicy MUST be supplied: " + policy);
         }
 
         try
@@ -473,7 +473,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         catch (PatternSyntaxException e)
         {
-            throw new IllegalArgumentException("The 'pattern' attribute of a NodeAutoCreationPattern MUST be a valid "
+            throw new IllegalArgumentException("The 'pattern' attribute of a NodeAutoCreationPolicy MUST be a valid "
                                                + "Java Regular Expression Pattern, the value '" + pattern + "' is not: " + policy);
 
         }
@@ -490,23 +490,23 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         if(sourceClass == null)
         {
-            throw new IllegalArgumentException("The node type of a NodeAutoCreationPattern must be a valid child type "
+            throw new IllegalArgumentException("The node type of a NodeAutoCreationPolicy must be a valid child type "
                                                + "of a VirtualHost, '" + nodeType + "' is not.");
         }
         if(policy.isCreatedOnConsume() && !MessageSource.class.isAssignableFrom(sourceClass))
         {
-            throw new IllegalArgumentException("A NodeAutoCreationPattern which creates nodes on consume must have a "
+            throw new IllegalArgumentException("A NodeAutoCreationPolicy which creates nodes on consume must have a "
                                                + "nodeType which implements MessageSource, '" + nodeType + "' does not.");
         }
 
         if(policy.isCreatedOnPublish() && !MessageDestination.class.isAssignableFrom(sourceClass))
         {
-            throw new IllegalArgumentException("A NodeAutoCreationPattern which creates nodes on publish must have a "
+            throw new IllegalArgumentException("A NodeAutoCreationPolicy which creates nodes on publish must have a "
                                                + "nodeType which implements MessageDestination, '" + nodeType + "' does not.");
         }
         if(!(policy.isCreatedOnConsume() || policy.isCreatedOnPublish()))
         {
-            throw new IllegalArgumentException("A NodeAutoCreationPattern must create on consume, create on publish or both.");
+            throw new IllegalArgumentException("A NodeAutoCreationPolicy must create on consume, create on publish or both.");
         }
 
     }

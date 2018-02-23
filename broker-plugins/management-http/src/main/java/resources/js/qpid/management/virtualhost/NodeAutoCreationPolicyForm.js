@@ -171,7 +171,7 @@ define(["dojo/_base/declare",
                                         createdOnConsume: this.createdOnConsume.checked,
                                         attributes: this._getObjectAttributes()
                                     };
-                                    this.emit("create", {data: data});
+                                    this.emit("create", {data: data, oldData: this._policy});
                                     this.nodeAutoCreationPolicyDialog.hide();
                                 }
                                 else
@@ -198,8 +198,8 @@ define(["dojo/_base/declare",
                 _addAttribute: function () {
                     var id = (++this._id);
                     var item = {
-                        name: "<new>",
-                        value: "<new>",
+                        name: "",
+                        value: "",
                         id: id
                     };
                     this.addAttributeButton.set("disabled", true);
@@ -212,10 +212,10 @@ define(["dojo/_base/declare",
                     {
                         console.error("failure to add new attribute:" + e);
                     }
+                    this._onChange();
                 },
                 _deleteAttribute: function () {
                     var selected = this._getSelectedAttributes();
-                    var newDeleted = false;
                     if (selected.length > 0)
                     {
                         for (var s in selected)
@@ -226,20 +226,14 @@ define(["dojo/_base/declare",
                                 var item =  this._store.getSync(id);
                                 if (item)
                                 {
-                                    if (item.name === "<new>")
-                                    {
-                                        newDeleted = true;
-                                    }
                                     this._store.removeSync(selected[s]);
                                 }
                             }
                         }
                         this._attributesGrid.clearSelection();
                     }
-                    if (newDeleted)
-                    {
-                        this.addAttributeButton.set("disabled", false);
-                    }
+                    this.addAttributeButton.set("disabled", this._emptyPatternFound());
+                    this._onChange();
                 },
                 _getSelectedAttributes: function () {
                     var selected = [];
@@ -254,13 +248,8 @@ define(["dojo/_base/declare",
                     return selected;
                 },
                 _onGridEdit: function (e) {
-                        if (e.value !== "<new>")
-                        {
-                            if (e.cell.column.field==="name" && e.oldValue === "<new>" && e.value !== "<new>")
-                            {
-                                this.addAttributeButton.set("disabled", false);
-                            }
-                        }
+                    this.addAttributeButton.set("disabled", this._emptyPatternFound());
+                    this._onChange();
                 },
                 _gridSelectionChanged: function () {
                     var selected = this._getSelectedAttributes();
@@ -350,6 +339,17 @@ define(["dojo/_base/declare",
                         }), true);
                         this._attributesGrid.startup();
                     }
+                },
+                _emptyPatternFound: function () {
+                    var emptyPatternDetected = false;
+                    this._store.fetchSync()
+                        .forEach(function (value) {
+                            if (value && value.pattern === "")
+                            {
+                                emptyPatternDetected = true;
+                            }
+                        });
+                    return emptyPatternDetected;
                 }
             });
     });
