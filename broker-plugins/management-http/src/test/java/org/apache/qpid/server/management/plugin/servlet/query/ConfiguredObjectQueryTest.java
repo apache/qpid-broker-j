@@ -568,6 +568,24 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertQueryResults(new Object[][]{{1}, {2}, {4}}, _query.getResults());
     }
 
+    public void testExpressionToTermsOfAliasInOrderByClause()
+    {
+        _objects.add(createCO(new HashMap<String, Object>()
+        {{
+            put("foo1", "A");
+            put("foo2", "B");
+        }}));
+
+        _objects.add(createCO(new HashMap<String, Object>()
+        {{
+            put("foo1", "A");
+            put("foo2", "A");
+        }}));
+
+        _query = new ConfiguredObjectQuery(_objects, "foo1 AS bar1, foo2", null, "CONCAT(bar, foo2) ASC");
+        assertQueryResults(new Object[][]{{"A", "A"}, {"A", "B"}}, _query.getResults());
+    }
+
     public void testDelimitedAliasInOrderByClause()
     {
         _objects.add(createCO(new HashMap<String, Object>()
