@@ -266,9 +266,8 @@ public final class ConfiguredObjectQuery
         private final List<OrderByExpression> _orderByExpressions;
 
         public OrderByComparator(final List<OrderByExpression> orderByExpressions,
-                                 final HeadersAndValueExpressions headersAndValue)
+                                 final List<Expression> valueExpressions)
         {
-            final List<Expression> valueExpressions = headersAndValue.getValueExpressions();
             _orderByExpressions = new ArrayList<>(orderByExpressions);
             for (ListIterator<OrderByExpression> iterator = _orderByExpressions.listIterator(); iterator.hasNext(); )
             {
@@ -286,12 +285,6 @@ public final class ConfiguredObjectQuery
                         orderByExpression = new OrderByExpression(valueExpressions.get(index - 1), orderByExpression.getOrder());
                         iterator.set(orderByExpression);
                     }
-                }
-                else if (orderByExpression.isNamed() && headersAndValue.hasHeader(orderByExpression.getName()))
-                {
-                    Expression expression = headersAndValue.getValueExpressionForHeader(orderByExpression.getName());
-                    orderByExpression = new OrderByExpression(expression, orderByExpression.getOrder());
-                    iterator.set(orderByExpression);
                 }
             }
         }
@@ -343,19 +336,35 @@ public final class ConfiguredObjectQuery
                                                    final String orderByClause,
                                                    final HeadersAndValueExpressions headersAndValue)
     {
-        List<OrderByExpression> orderByExpressions = parseOrderByClause(orderByClause);
+        List<OrderByExpression> orderByExpressions = parseOrderByClause(orderByClause, headersAndValue);
         List<ConfiguredObject<?>> orderedObjects = new ArrayList<>(unorderedResults.size());
         orderedObjects.addAll(unorderedResults);
-        Comparator<Object> comparator = new OrderByComparator(orderByExpressions, headersAndValue);
+        Comparator<Object> comparator = new OrderByComparator(orderByExpressions, headersAndValue.getValueExpressions());
         Collections.sort(orderedObjects, comparator);
         return orderedObjects;
     }
 
-    private List<OrderByExpression> parseOrderByClause(final String orderByClause)
+    private List<OrderByExpression> parseOrderByClause(final String orderByClause,
+                                                       final HeadersAndValueExpressions headersAndValue)
     {
         final List<OrderByExpression> orderByExpressions;
         ConfiguredObjectFilterParser parser = new ConfiguredObjectFilterParser();
-        parser.setConfiguredObjectExpressionFactory(_expressionFactory);
+        parser.setConfiguredObjectExpressionFactory(new ConfiguredObjectExpressionFactory()
+        {
+            @Override
+            public ConfiguredObjectExpression createConfiguredObjectExpression(final String propertyName)
+            {
+                if (headersAndValue.hasHeader(propertyName))
+                {
+                    Expression expression = headersAndValue.getValueExpressionForHeader(propertyName);
+                    return object -> expression.evaluate(object);
+                }
+                else
+                {
+                    return super.createConfiguredObjectExpression(propertyName);
+                }
+            }
+        });
         try
         {
             orderByExpressions = parser.parseOrderBy(orderByClause);
