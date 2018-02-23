@@ -27,6 +27,7 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -270,6 +271,28 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         {
             throw new IllegalConfigurationException("Cannot change the model version");
         }
+
+        if (changedAttributes.contains(CONTEXT))
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, String> context = (Map<String, String>) proxyForValidation.getAttribute(CONTEXT);
+            if (context.containsKey(BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE))
+            {
+                String value = context.get(BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE);
+                try
+                {
+                    DescendantType.valueOf(value);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalConfigurationException(String.format(
+                            "Unsupported value '%s' is specified for context variable '%s'. Please, change it to any of supported : %s",
+                            value,
+                            BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE,
+                            EnumSet.allOf(DescendantType.class)));
+                }
+            }
+        }
     }
 
     @Override
@@ -359,38 +382,32 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private void performActivation()
     {
-        boolean hasBrokerAnyErroredChildren = false;
+        final DescendantType descendantScope = getContextValue(DescendantType.class,
+                                                               BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE);
+        List<ConfiguredObject<?>> failedChildren = getChildrenInState(this, State.ERRORED, descendantScope);
 
-        List<ConfiguredObject<?>> failedChildren = new ArrayList<>();
-        for (final Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
+        if (!failedChildren.isEmpty())
         {
-            final Collection<? extends ConfiguredObject> children = getChildren(childClass);
-            if (children != null) {
-                for (final ConfiguredObject<?> child : children)
-                {
-                    if (child.getState() == State.ERRORED )
-                    {
-                        hasBrokerAnyErroredChildren = true;
-                        LOGGER.warn("Broker child object '{}' of type '{}' is {}",
-                                child.getName(), childClass.getSimpleName(), State.ERRORED);
-                        failedChildren.add(child);
-                    }
-                }
+            for (ConfiguredObject<?> o : failedChildren)
+            {
+                LOGGER.warn("{} child object '{}' of type '{}' is {}",
+                            o.getParent().getCategoryClass().getSimpleName(),
+                            o.getName(),
+                            o.getClass().getSimpleName(),
+                            State.ERRORED);
             }
-        }
-
-        if(!failedChildren.isEmpty())
-        {
             getEventLogger().message(BrokerMessages.FAILED_CHILDREN(failedChildren.toString()));
         }
 
         _documentationUrl = getContextValue(String.class, QPID_DOCUMENTATION_URL);
         final boolean brokerShutdownOnErroredChild = getContextValue(Boolean.class,
                                                                      BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD);
-        if (!_parent.isManagementMode() && brokerShutdownOnErroredChild && hasBrokerAnyErroredChildren)
+        if (!_parent.isManagementMode() && brokerShutdownOnErroredChild && !failedChildren.isEmpty())
         {
-            throw new IllegalStateException(String.format("Broker context variable %s is set and the broker has %s children",
-                    BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD, State.ERRORED));
+            throw new IllegalStateException(String.format(
+                    "Broker context variable %s is set and the broker has %s children",
+                    BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD,
+                    State.ERRORED));
         }
         updateAccessControl();
 
@@ -417,6 +434,30 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                                                                 _parent.getManagementModePassword()));
         }
         setState(State.ACTIVE);
+    }
+
+    private List<ConfiguredObject<?>> getChildrenInState(final ConfiguredObject<?> configuredObject,
+                                                         final State state,
+                                                         final DescendantType descendantScope)
+    {
+        List<ConfiguredObject<?>> foundChildren = new ArrayList<>();
+        Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
+        for (final Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(categoryClass))
+        {
+            final Collection<? extends ConfiguredObject> children = configuredObject.getChildren(childClass);
+            for (final ConfiguredObject<?> child : children)
+            {
+                if (child.getState() == state)
+                {
+                    foundChildren.add(child);
+                }
+                if (descendantScope == DescendantType.ALL)
+                {
+                    foundChildren.addAll(getChildrenInState(child, state, descendantScope));
+                }
+            }
+        }
+        return foundChildren;
     }
 
     private void checkDirectMemoryUsage()
