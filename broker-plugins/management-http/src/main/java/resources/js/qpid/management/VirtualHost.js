@@ -513,7 +513,8 @@ define(["dojo/parser",
                                 markup = "<div class='keyValuePair'>";
                                 for(var key in value)
                                 {
-                                    markup += "<div>" + key + "=" + value[key] + "</div>";
+                                    markup += "<div>" + entities.encode(String(key)) + "="
+                                              + entities.encode(String(value[key])) + "</div>";
                                 }
                                 markup += "</div>"
                             }
@@ -709,23 +710,31 @@ define(["dojo/parser",
             {
                 for (var i = 0; i < data.length; i++)
                 {
-                    dstore.put(data[i]);
+                    dstore.putSync(data[i]);
                 }
             }
-            dstore.fetch()
+            var objectsToRemove = [];
+            dstore.fetchSync()
                 .forEach(function (object) {
-                    if (data)
+                    if (object)
                     {
-                        for (var i = 0; i < data.length; i++)
+                        if (data)
                         {
-                            if (data[i][idProperty] === object[idProperty])
+                            for (var i = 0; i < data.length; i++)
                             {
-                                return;
+                                if (data[i][idProperty] === object[idProperty])
+                                {
+                                    return;
+                                }
                             }
                         }
+                        objectsToRemove.push(object[idProperty]);
                     }
-                    dstore.remove(object[idProperty]);
                 });
+            for (var i = 0 ; i < objectsToRemove.length; i++)
+            {
+                dstore.removeSync(objectsToRemove[i]);
+            }
         };
 
         return VirtualHost;

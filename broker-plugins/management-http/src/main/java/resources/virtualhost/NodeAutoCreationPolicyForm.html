@@ -37,8 +37,9 @@
                                data-dojo-props="name: 'pattern',
                         required: true,
                         intermediateChanges: true,
-                        placeHolder: 'Name matching regular expression',
-                        title: 'Enter name matching regular expression'"/>
+                        placeHolder: 'regular expression',
+                        title: 'Policy will apply to requests for new nodes with names matching this pattern',
+                        promptMessage: 'Policy will apply to requests for new nodes with names matching this pattern'"/>
                     </div>
                     <div class="clear">
                         <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_nodeType"
@@ -50,8 +51,8 @@
                                           placeHolder: 'Type of Node',
                                           required: true,
                                           value: 'Queue',
-                                          title: 'Type of node to create.',
-                                          promptMessage: 'Select type of node to create.',
+                                          title: 'Select type of node created by this policy',
+                                          promptMessage: 'Type of the automatically created node.',
                                           intermediateChanges: true">
                             <option value="Queue" selected="true">Queue</option>
                             <option value="Exchange">Exchange</option>
@@ -95,6 +96,10 @@
                             <legend>Attributes:</legend>
                             <div data-dojo-attach-point="attributes" id="${id}_attributes"
                                  class="nodeAutoCreationPolicyAttributes"></div>
+                            <div data-dojo-type="dijit/Tooltip"
+                                 data-dojo-props="connectId: ['${id}_attributes'],
+                              label: 'Attributes applied to the automatically created node'">
+                            </div>
                             <div>
                                 <button data-dojo-type="dijit/form/Button"
                                         id="${id}_addAttributeButton"

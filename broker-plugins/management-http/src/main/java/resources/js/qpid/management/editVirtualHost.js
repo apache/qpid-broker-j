@@ -258,7 +258,7 @@ define(["dojox/html/entities",
                     }
                 });
 
-                this._initNodeAutoCreationPolicies(data);
+                this._initNodeAutoCreationPolicies(data.actual && data.actual.nodeAutoCreationPolicies ? data.actual.nodeAutoCreationPolicies : []);
                 this.dialog.startup();
                 this.dialog.show();
                 if (!this.resizeEventRegistered)
@@ -302,7 +302,7 @@ define(["dojox/html/entities",
                             label: 'All',
                             selector: 'checkbox'
                         },
-                        nodeType: {
+                        type: {
                             label: "Node Type"
                         },
                         pattern: {
@@ -317,17 +317,17 @@ define(["dojox/html/entities",
                         attributes: {
                             label: "Attributes",
                             sortable: false,
-                            formatter: function(value, object)
-                            {
+                            formatter: function (value, object) {
                                 var markup = "";
                                 if (value)
                                 {
                                     markup = "<div class='keyValuePair'>";
-                                    for(var key in value)
+                                    for (var key in value)
                                     {
-                                        markup += "<div>" + key + "=" + value[key] + "</div>";
+                                        markup += "<div>" + entities.encode(String(key)) + "="
+                                                  + entities.encode(String(value[key])) + "</div>";
                                     }
-                                    markup +="</div>"
+                                    markup += "</div>"
                                 }
                                 return markup;
                             }
@@ -346,9 +346,22 @@ define(["dojox/html/entities",
                 this._policyGrid.on('dgrid-deselect', lang.hitch(this, this._policySelectionChanged));
 
             },
-            _initNodeAutoCreationPolicies: function (data) {
-                this._policies =
-                    data.actual && data.actual.nodeAutoCreationPolicies ? data.actual.nodeAutoCreationPolicies : [];
+            _toDgridFriendlyNodeAutoCreationPolicyObject: function (policy) {
+                return { pattern: policy.pattern,
+                         type: policy.nodeType,
+                         attributes: policy.attributes,
+                         createdOnPublish: policy.createdOnPublish,
+                         createdOnConsume: policy.createdOnConsume};
+            },
+            _initNodeAutoCreationPolicies: function (policies) {
+
+                var dgridFriendlyPolicies = [];
+                for (var i = 0; i < policies.length; i++)
+                {
+                    dgridFriendlyPolicies.push(this._toDgridFriendlyNodeAutoCreationPolicyObject(policies[i]));
+                }
+
+                this._policies = dgridFriendlyPolicies;
                 var Store = MemoryStore.createSubclass(TrackableStore);
                 this._policyStore = new Store({
                     data: this._policies,
@@ -373,7 +386,11 @@ define(["dojox/html/entities",
                             this.nodeAutoCreationPolicyForm.on("create", lang.hitch(this, function (e) {
                                 try
                                 {
-                                    this._policyStore.putSync(e.data);
+                                    this._policyStore.putSync(this._toDgridFriendlyNodeAutoCreationPolicyObject(e.data));
+                                    if (e.oldData && e.oldData.pattern !== e.data.pattern)
+                                    {
+                                        this._policyStore.removeSync(e.oldData.pattern);
+                                    }
                                 }
                                 catch (e)
                                 {
@@ -387,7 +404,7 @@ define(["dojox/html/entities",
             },
             _policySelected: function (event) {
                 var row = this._policyGrid.row(event);
-                this._showNodeAutoCreationPolicyForm(row.data);
+                this._showNodeAutoCreationPolicyForm(this._toNodeAutoCreationPolicyObject(row.data));
             },
             _deleteNodeAutoCreationPolicy: function () {
                 var selected = this._getSelectedPolicies();
@@ -418,11 +435,20 @@ define(["dojox/html/entities",
             },
             _getNodeAutoCreationPolicies: function () {
                 var policies = [];
-                this._policyStore.fetchSync().forEach(function (policy) {
-                    policies.push(policy);
-                });
+                this._policyStore.fetchSync().forEach(lang.hitch(this, function (policy) {
+                    policies.push(this._toNodeAutoCreationPolicyObject(policy));
+                }));
                 return policies;
-            }
+            },
+            _toNodeAutoCreationPolicyObject: function (policy) {
+                return {
+                    pattern: policy.pattern,
+                    nodeType: policy.type,
+                    attributes: policy.attributes,
+                    createdOnPublish: policy.createdOnPublish,
+                    createdOnConsume: policy.createdOnConsume
+                };
+            },
         };
 
         virtualHostEditor.init();
