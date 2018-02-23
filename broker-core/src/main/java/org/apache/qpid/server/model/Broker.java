@@ -101,7 +101,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     boolean DEFAULT_BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD = false;
 
     @ManagedContextDefault(name = BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE)
-    DescendantType DEFAULT_BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE = DescendantType.IMMEDIATE;
+    DescendantScope DEFAULT_BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE = DescendantScope.IMMEDIATE;
 
     @ManagedContextDefault(name = BROKER_MSG_AUTH)
     boolean DEFAULT_BROKER_MSG_AUTH = false;
