@@ -37,6 +37,7 @@ public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertifica
 {
 
     String TYPE_NAME = "ManagedCertificateStore";
+    String STORED_CERTIFICATES = "storedCertificates";
 
 
     @Override

@@ -33,17 +33,20 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.xml.bind.DatatypeConverter;
@@ -54,6 +57,7 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class HttpTestHelper
@@ -74,11 +78,13 @@ public class HttpTestHelper
     private final String _username;
     private final String _password;
     private final String _requestHostName;
-
     private final int _connectTimeout = Integer.getInteger("qpid.resttest_connection_timeout", 30000);
 
     private String _acceptEncoding;
     private boolean _tls = false;
+
+    private KeyStore _keyStore;
+    private String _keyStorePassword;
 
     public HttpTestHelper(final BrokerAdmin admin)
     {
@@ -138,32 +144,21 @@ public class HttpTestHelper
             try
             {
                 SSLContext sslContext = SSLContext.getInstance("TLS");
-                TrustManager[] trustAllCerts = new TrustManager[] {
-                        new X509TrustManager()
-                        {
-                            public X509Certificate[] getAcceptedIssuers()
-                            {
-                                X509Certificate[] issuers = new X509Certificate[0];
-                                return issuers;
-                            }
+                TrustManager[] trustAllCerts = new TrustManager[] {new TrustAllTrustManager()};
 
-                            @Override
-                            public void checkClientTrusted(X509Certificate[] certs, String authType)
-                            {
-                            }
-
-                            @Override
-                            public void checkServerTrusted(X509Certificate[] certs, String authType)
-                            {
-                            }
-                        }
-                };
-
-                sslContext.init(null, trustAllCerts, null);
+                KeyManager[] keyManagers = null;
+                if (_keyStore != null)
+                {
+                    char[] keyStoreCharPassword = _keyStorePassword == null ? null : _keyStorePassword.toCharArray();
+                    KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                    kmf.init(_keyStore, keyStoreCharPassword);
+                    keyManagers = kmf.getKeyManagers();
+                }
+                sslContext.init(keyManagers, trustAllCerts, null);
                 httpsCon.setSSLSocketFactory(sslContext.getSocketFactory());
                 httpsCon.setHostnameVerifier((s, sslSession) -> true);
             }
-            catch (KeyManagementException | NoSuchAlgorithmException e)
+            catch (KeyStoreException | UnrecoverableKeyException | KeyManagementException | NoSuchAlgorithmException e)
             {
                 throw new RuntimeException(e);
             }
@@ -439,4 +434,44 @@ public class HttpTestHelper
         _acceptEncoding = acceptEncoding;
     }
 
+    public void setKeyStore(final String keystore, final String password) throws Exception
+    {
+        _keyStorePassword = password;
+
+        if (keystore != null)
+        {
+            try
+            {
+                URL ks = new URL(keystore);
+                _keyStore = SSLUtil.getInitializedKeyStore(ks, password, KeyStore.getDefaultType());
+            }
+            catch (MalformedURLException e)
+            {
+                _keyStore = SSLUtil.getInitializedKeyStore(keystore, password, KeyStore.getDefaultType());
+            }
+        }
+        else
+        {
+            _keyStore = null;
+        }
+    }
+
+    private static class TrustAllTrustManager implements X509TrustManager
+    {
+        public X509Certificate[] getAcceptedIssuers()
+        {
+            X509Certificate[] issuers = new X509Certificate[0];
+            return issuers;
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] certs, String authType)
+        {
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] certs, String authType)
+        {
+        }
+    }
 }
