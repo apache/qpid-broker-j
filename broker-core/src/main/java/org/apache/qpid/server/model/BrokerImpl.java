@@ -284,7 +284,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 String value = context.get(BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE);
                 try
                 {
-                    DescendantType.valueOf(value);
+                    DescendantScope.valueOf(value);
                 }
                 catch (Exception e)
                 {
@@ -292,7 +292,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                             "Unsupported value '%s' is specified for context variable '%s'. Please, change it to any of supported : %s",
                             value,
                             BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE,
-                            EnumSet.allOf(DescendantType.class)));
+                            EnumSet.allOf(DescendantScope.class)));
                 }
             }
         }
@@ -385,8 +385,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private void performActivation()
     {
-        final DescendantType descendantScope = getContextValue(DescendantType.class,
-                                                               BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE);
+        final DescendantScope descendantScope = getContextValue(DescendantScope.class,
+                                                                BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD_SCOPE);
         List<ConfiguredObject<?>> failedChildren = getChildrenInState(this, State.ERRORED, descendantScope);
 
         if (!failedChildren.isEmpty())
@@ -441,7 +441,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private List<ConfiguredObject<?>> getChildrenInState(final ConfiguredObject<?> configuredObject,
                                                          final State state,
-                                                         final DescendantType descendantScope)
+                                                         final DescendantScope descendantScope)
     {
         List<ConfiguredObject<?>> foundChildren = new ArrayList<>();
         Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
@@ -454,7 +454,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 {
                     foundChildren.add(child);
                 }
-                if (descendantScope == DescendantType.ALL)
+                if (descendantScope == DescendantScope.ALL)
                 {
                     foundChildren.addAll(getChildrenInState(child, state, descendantScope));
                 }
