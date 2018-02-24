@@ -35,6 +35,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/ColumnHider",
         "qpid/management/query/QueryGrid",
         "qpid/common/MessageDialog",
+        "dojox/uuid/generateRandomUuid",
         "qpid/management/query/DropDownSelect",
         "qpid/management/query/WhereExpression",
         "dijit/_WidgetBase",
@@ -61,7 +62,8 @@ define(["dojo/_base/declare",
               ColumnReorder,
               ColumnHider,
               QueryGrid,
-              MessageDialog)
+              MessageDialog,
+              uuid)
     {
 
         var QueryCloneDialogForm = declare("qpid.management.query.QueryCloneDialogForm",
@@ -183,6 +185,8 @@ define(["dojo/_base/declare",
                 cloneButtonTooltip: null,
                 deleteButtonTooltip: null,
                 searchForm: null,
+                exportButton: null,
+                exportButtonTooltip: null,
 
                 /**
                  * constructor parameter
@@ -241,6 +245,7 @@ define(["dojo/_base/declare",
                     this.saveButton.on("click", lang.hitch(this, this._saveQuery));
                     this.cloneButton.on("click", lang.hitch(this, this._cloneQuery));
                     this.deleteButton.on("click", lang.hitch(this, this._deleteQuery));
+                    this.exportButton.on("click", lang.hitch(this, this._exportQueryResults));
 
                     this._ownQuery = !this.preference
                                      || !this.preference.owner
@@ -248,6 +253,7 @@ define(["dojo/_base/declare",
                     var newQuery = !this.preference || !this.preference.createdDate;
                     this.saveButton.set("disabled", !this._ownQuery);
                     this.deleteButton.set("disabled", !this._ownQuery || newQuery);
+                    this.exportButton.set("disabled", true);
 
                     if (!this._ownQuery)
                     {
@@ -537,6 +543,7 @@ define(["dojo/_base/declare",
                         zeroBased: false,
                         rowsPerPage: rowsPerPage,
                         _currentPage: currentPage,
+                        allowTextSelection: true,
                         transformer: function (data)
                         {
                             var dataResults = data.results;
@@ -585,6 +592,7 @@ define(["dojo/_base/declare",
                 _queryCompleted: function (e)
                 {
                     this._buildColumnsIfHeadersChanged(e.data);
+                    this.exportButton.set("disabled", !(e.data.total && e.data.total > 0));
                 },
                 _buildColumnsIfHeadersChanged: function (data)
                 {
@@ -977,6 +985,19 @@ define(["dojo/_base/declare",
                             this.emit("change", {preference: pref});
                         }
                     }
+                },
+                _exportQueryResults: function () {
+                    var query = this._getQuery();
+                    query.format = "csv";
+                    var id = uuid();
+                    query.contentDispositionAttachmentFilename ="query-results-" + id + ".csv";
+                    delete query.category;
+                    var url = this.management.getQueryUrl({category: this.categoryName, parent: this.parentObject}, query);
+                    var iframe = document.createElement('iframe');
+                    iframe.id = "query_downloader_" + id;
+                    iframe.style.display = "none";
+                    document.body.appendChild(iframe);
+                    iframe.src = url;
                 }
             });
 
