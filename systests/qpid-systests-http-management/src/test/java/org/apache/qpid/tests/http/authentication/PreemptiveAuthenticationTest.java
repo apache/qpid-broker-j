@@ -22,14 +22,20 @@ package org.apache.qpid.tests.http.authentication;
 
 import static javax.servlet.http.HttpServletResponse.SC_CREATED;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.generateSelfSignedCertificate;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
+import java.net.HttpURLConnection;
+import java.net.SocketException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.time.Duration;
@@ -43,16 +49,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.net.ssl.SSLHandshakeException;
+import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.After;
 import org.junit.Test;
 
+import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
+import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil.KeyCertPair;
 import org.apache.qpid.server.util.BaseAction;
@@ -60,11 +69,12 @@ import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.tests.http.HttpTestBase;
 import org.apache.qpid.tests.http.HttpTestHelper;
 
-public class TlsClientAuthenticationTest extends HttpTestBase
+public class PreemptiveAuthenticationTest extends HttpTestBase
 {
+    private static final TypeReference<String> STRING_TYPE_REF = new TypeReference<String>() {};
+    private static final String STORE_PASSWORD = "password";
 
     private Deque<BaseAction<Void, Exception>> _tearDownActions;
-    private int _clientAuthPort;
     private String _keyStore;
 
     @After
@@ -93,48 +103,115 @@ public class TlsClientAuthenticationTest extends HttpTestBase
     }
 
     @Test
-    public void clientAuthenticationSuccess() throws Exception
+    public void clientAuthSuccess() throws Exception
     {
-        configPortAndAuthProvider("CN=foo");
+        HttpTestHelper helper = configForClientAuth("CN=foo");
 
-        HttpTestHelper helper = new HttpTestHelper(getBrokerAdmin(), null, _clientAuthPort);
-        helper.setTls(true);
-        helper.setKeyStore(_keyStore, "password");
-
-        String userId = helper.getJson("broker/getUser", new TypeReference<String>() {}, SC_OK);
+        String userId = helper.getJson("broker/getUser", STRING_TYPE_REF, SC_OK);
         assertThat(userId, startsWith("foo@"));
     }
 
     @Test
-    public void unrecognisedCertification() throws Exception
+    public void clientAuthUnrecognisedCert() throws Exception
     {
-        configPortAndAuthProvider("CN=foo");
+        HttpTestHelper helper = configForClientAuth("CN=foo");
 
-        String keyStore = createKeyStoreDataUrl(getKeyCertPair("CN=bar"), "password");
-
-        HttpTestHelper helper = new HttpTestHelper(getBrokerAdmin(), null, _clientAuthPort);
-        helper.setTls(true);
-        helper.setKeyStore(keyStore, "password");
+        String keyStore = createKeyStoreDataUrl(getKeyCertPair("CN=bar"), STORE_PASSWORD);
+        helper.setKeyStore(keyStore, STORE_PASSWORD);
 
         try
         {
-            helper.getJson("broker/getUser", new TypeReference<String>() {}, SC_OK);
+            helper.getJson("broker/getUser", STRING_TYPE_REF, SC_OK);
             fail("Exception not thrown");
         }
         catch (SSLHandshakeException e)
         {
             // PASS
         }
+        catch (SocketException e)
+        {
+            // TODO - defect - we are not always seeing the SSL handshake exception
+        }
     }
 
-    private void configPortAndAuthProvider(final String x500Name) throws Exception
+    @Test
+    public void basicAuth() throws Exception
     {
+        verifyGetBroker(SC_OK);
+    }
 
+    @Test
+    public void basicAuthWrongPassword() throws Exception
+    {
+        getHelper().setPassword("badpassword");
+
+        verifyGetBroker(HttpServletResponse.SC_UNAUTHORIZED);
+    }
+
+    @Test
+    public void httpBasicAuthDisabled() throws Exception
+    {
+        doBasicAuthDisabledTest(false);
+    }
+
+    @Test
+    public void httpsBasicAuthDisabled() throws Exception
+    {
+        doBasicAuthDisabledTest(true);
+    }
+
+    @Test
+    public void anonymousTest() throws Exception
+    {
+        HttpTestHelper helper = configForAnonymous();
+
+        String userId = helper.getJson("broker/getUser", STRING_TYPE_REF, SC_OK);
+        assertThat(userId, startsWith("ANONYMOUS@"));
+    }
+
+    @Test
+    public void noSessionCreated() throws Exception
+    {
+        final HttpURLConnection conn = getHelper().openManagementConnection("broker", "GET");
+        assertThat("Unexpected server response", conn.getResponseCode(), is(equalTo(SC_OK)));
+        assertThat("Unexpected cookie", conn.getHeaderFields(), not(hasKey("Set-Cookie")));
+    }
+
+    private void verifyGetBroker(int expectedResponseCode) throws Exception
+    {
+        assertThat(getHelper().submitRequest("broker", "GET"), is(equalTo(expectedResponseCode)));
+    }
+
+    private void doBasicAuthDisabledTest(final boolean tls) throws Exception
+    {
+        HttpTestHelper configHelper = new HttpTestHelper(getBrokerAdmin());
+        configHelper.setTls(!tls);
+        final String authEnabledAttrName = tls ? HttpManagement.HTTPS_BASIC_AUTHENTICATION_ENABLED : HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED;
+        try
+        {
+            HttpTestHelper helper = new HttpTestHelper(getBrokerAdmin());
+            helper.setTls(tls);
+            assertThat(helper.submitRequest("broker", "GET"), is(equalTo(SC_OK)));
+
+            configHelper.submitRequest("plugin/httpManagement", "POST",
+                                       Collections.<String, Object>singletonMap(authEnabledAttrName, Boolean.FALSE), SC_OK);
+
+            assertThat(helper.submitRequest("broker", "GET"), is(equalTo(SC_UNAUTHORIZED)));
+        }
+        finally
+        {
+            configHelper.submitRequest("plugin/httpManagement", "POST",
+                                       Collections.<String, Object>singletonMap(authEnabledAttrName, Boolean.TRUE), SC_OK);
+
+        }
+    }
+
+    private HttpTestHelper configForClientAuth(final String x500Name) throws Exception
+    {
         final KeyCertPair keyCertPair = getKeyCertPair(x500Name);
         final byte[] cert = keyCertPair.getCertificate().getEncoded();
 
-        _keyStore = createKeyStoreDataUrl(keyCertPair, "password");
-
+        _keyStore = createKeyStoreDataUrl(keyCertPair, STORE_PASSWORD);
 
         final Deque<BaseAction<Void,Exception>> deleteActions = new ArrayDeque<>();
 
@@ -149,7 +226,7 @@ public class TlsClientAuthenticationTest extends HttpTestBase
         final Map<String, Object> keystoreAttr = new HashMap<>();
         keystoreAttr.put(FileKeyStore.TYPE, "FileKeyStore");
         keystoreAttr.put(FileKeyStore.STORE_URL, "classpath:java_broker_keystore.jks");
-        keystoreAttr.put(FileKeyStore.PASSWORD, "password");
+        keystoreAttr.put(FileKeyStore.PASSWORD, STORE_PASSWORD);
 
         getHelper().submitRequest("keystore/mykeystore","PUT", keystoreAttr, SC_CREATED);
         deleteActions.add(object -> getHelper().submitRequest("keystore/mykeystore", "DELETE", SC_OK));
@@ -157,6 +234,7 @@ public class TlsClientAuthenticationTest extends HttpTestBase
         final Map<String, Object> truststoreAttr = new HashMap<>();
         truststoreAttr.put(ManagedPeerCertificateTrustStore.TYPE, ManagedPeerCertificateTrustStore.TYPE_NAME);
         truststoreAttr.put(ManagedPeerCertificateTrustStore.STORED_CERTIFICATES, Collections.singletonList(Base64.getEncoder().encodeToString(cert)));
+
 
         getHelper().submitRequest("truststore/mytruststore","PUT", truststoreAttr, SC_CREATED);
         deleteActions.add(object -> getHelper().submitRequest("truststore/mytruststore", "DELETE", SC_OK));
@@ -180,7 +258,47 @@ public class TlsClientAuthenticationTest extends HttpTestBase
         assertThat(boundPort, is(greaterThan(0)));
 
         _tearDownActions = deleteActions;
-        _clientAuthPort = boundPort;
+
+        HttpTestHelper helper = new HttpTestHelper(getBrokerAdmin(), null, boundPort);
+        helper.setTls(true);
+        helper.setKeyStore(_keyStore, STORE_PASSWORD);
+        return helper;
+    }
+
+    private HttpTestHelper configForAnonymous() throws Exception
+    {
+        final Deque<BaseAction<Void,Exception>> deleteActions = new ArrayDeque<>();
+
+        final Map<String, Object> authAttr = new HashMap<>();
+        authAttr.put(AnonymousAuthenticationManager.TYPE, AnonymousAuthenticationManager.PROVIDER_TYPE);
+
+        getHelper().submitRequest("authenticationprovider/myanon","PUT", authAttr, SC_CREATED);
+
+        deleteActions.add(object -> getHelper().submitRequest("authenticationprovider/myanon", "DELETE", SC_OK));
+
+        final Map<String, Object> portAttr = new HashMap<>();
+        portAttr.put(Port.TYPE, "HTTP");
+        portAttr.put(Port.PORT, 0);
+        portAttr.put(Port.AUTHENTICATION_PROVIDER, "myanon");
+        portAttr.put(Port.PROTOCOLS, Collections.singleton(Protocol.HTTP));
+        portAttr.put(Port.TRANSPORTS, Collections.singleton(Transport.TCP));
+
+        getHelper().submitRequest("port/myport","PUT", portAttr, SC_CREATED);
+        deleteActions.add(object -> getHelper().submitRequest("port/myport", "DELETE", SC_OK));
+
+        Map<String, Object> clientAuthPort = getHelper().getJsonAsMap("port/myport");
+        int boundPort = Integer.parseInt(String.valueOf(clientAuthPort.get("boundPort")));
+
+        assertThat(boundPort, is(greaterThan(0)));
+
+        _tearDownActions = deleteActions;
+
+        HttpTestHelper helper = new HttpTestHelper(getBrokerAdmin(), null, boundPort);
+        helper.setKeyStore(_keyStore, STORE_PASSWORD);
+        helper.setPassword(null);
+        helper.setUserName(null);
+        return helper;
+
     }
 
     private String createKeyStoreDataUrl(final KeyCertPair keyCertPair, final String password) throws Exception

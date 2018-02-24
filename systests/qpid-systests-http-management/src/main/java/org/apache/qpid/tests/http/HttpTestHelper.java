@@ -75,8 +75,8 @@ public class HttpTestHelper
     private static final String API_BASE = "/api/latest/";
     private final BrokerAdmin _admin;
     private final int _httpPort;
-    private final String _username;
-    private final String _password;
+    private String _username;
+    private String _password;
     private final String _requestHostName;
     private final int _connectTimeout = Integer.getInteger("qpid.resttest_connection_timeout", 30000);
 
@@ -454,6 +454,16 @@ public class HttpTestHelper
         {
             _keyStore = null;
         }
+    }
+
+    public void setPassword(final String password)
+    {
+        _password = password;
+    }
+
+    public void setUserName(final String username)
+    {
+        _username = username;
     }
 
     private static class TrustAllTrustManager implements X509TrustManager
