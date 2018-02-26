@@ -21,7 +21,9 @@
 package org.apache.qpid.server.management.plugin.csv;
 
 import java.io.StringWriter;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -69,6 +71,18 @@ public class CSVFormatTest extends QpidTestCase
         csvFormat.print(out, "\"quoted\" test", false);
         assertEquals("Unexpected format ",
                      String.format("%s,%d,%b,%s", "test", 1, true, "\"\"\"quoted\"\" test\""),
+                     out.toString());
+    }
+
+    public void testDate() throws Exception
+    {
+        Date date = new Date();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        CSVFormat csvFormat = new CSVFormat();
+        final StringWriter out = new StringWriter();
+        csvFormat.print(out, date, true);
+        assertEquals("Unexpected format ",
+                     simpleDateFormat.format(date),
                      out.toString());
     }
 

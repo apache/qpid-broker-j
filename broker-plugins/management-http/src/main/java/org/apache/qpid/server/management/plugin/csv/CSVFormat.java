@@ -22,7 +22,11 @@ package org.apache.qpid.server.management.plugin.csv;
 
 
 import java.io.IOException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 
 /**
  * Simplified version of CSVFormat from Apache Commons CSV
@@ -44,6 +48,7 @@ public final class CSVFormat
     private static final char LF = '\n';
 
     private static final char SP = ' ';
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final char _delimiter;
 
@@ -120,9 +125,24 @@ public final class CSVFormat
         {
             charSequence = EMPTY;
         }
+        else if (value instanceof CharSequence)
+        {
+            charSequence = (CharSequence) value;
+        }
+        else if (value instanceof Date || value instanceof Calendar)
+        {
+            final Date time = value instanceof Calendar ? ((Calendar) value).getTime() : (Date) value;
+
+            // CSV standard (rfc4180) does not specify the date time format
+            // Excel CSV format is local specific
+            // Some posts on stackoverflow indicate that Excel should support format "yyyy-MM-dd HH:mm:ss".
+            // for example, https://stackoverflow.com/questions/804118/best-timestamp-format-for-csv-excel
+            // Perhaps, it would be better to convert datetime into long (similar to json datetime representation)
+            charSequence = DATE_TIME_FORMATTER.format(time.toInstant().atZone(ZoneId.systemDefault()));
+        }
         else
         {
-            charSequence = value instanceof CharSequence ? (CharSequence) value : value.toString();
+            charSequence = value.toString();
         }
         this.print(out, value, charSequence, 0, charSequence.length(), newRecord);
     }
