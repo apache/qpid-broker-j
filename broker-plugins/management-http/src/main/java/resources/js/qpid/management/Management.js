@@ -612,24 +612,15 @@ define(["dojo/_base/lang",
         //      Promise returned by dojo.request.xhr with modified then method allowing to use default error handler if none is specified.
         Management.prototype.query = function (query)
         {
+            var url = "api/latest/" + (query.parent && query.parent.type === "virtualhost" ? "queryvhost/"
+                      + this.objectToPath({parent: query.parent}) : "querybroker") + (query.category ? "/"
+                      + query.category : "");
             var request = {
-                url: this.getQueryUrl(query),
+                url: this.getFullUrl(url),
                 query: {}
             };
             shallowCopy(query, request.query, ["parent", "category"]);
             return this.get(request);
-        };
-
-        Management.prototype.getQueryUrl = function (query, parameters)
-        {
-            var url = "api/latest/" + (query.parent && query.parent.type === "virtualhost" ? "queryvhost/"
-                      + this.objectToPath({parent: query.parent}) : "querybroker") + (query.category ? "/"
-                      + query.category : "");
-            if (parameters)
-            {
-                url = url + "?" + ioQuery.objectToQuery(parameters);
-            }
-           return this.getFullUrl(url);
         };
 
         Management.prototype.savePreference = function(parentObject, preference)

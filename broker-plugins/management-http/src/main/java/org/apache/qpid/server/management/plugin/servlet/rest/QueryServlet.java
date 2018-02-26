@@ -21,8 +21,6 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,18 +33,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.filter.SelectorParsingException;
-import org.apache.qpid.server.management.plugin.servlet.csv.CSVFormat;
 import org.apache.qpid.server.management.plugin.servlet.query.ConfiguredObjectQuery;
 import org.apache.qpid.server.management.plugin.servlet.query.EvaluationException;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Model;
 
 public abstract class QueryServlet<X extends ConfiguredObject<?>> extends AbstractServlet
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryServlet.class);
 
-    private static final CSVFormat CSV_FORMAT = new CSVFormat();
 
     @Override
     protected void doGet(HttpServletRequest request,
@@ -83,6 +78,7 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
             if (category != null)
             {
                 List<ConfiguredObject<?>> objects = getAllObjects(parent, category, request);
+                Map<String, Object> resultsObject = new LinkedHashMap<>();
 
                 try
                 {
@@ -93,26 +89,10 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
                                                                             request.getParameter("limit"),
                                                                             request.getParameter("offset"));
 
-
-                    String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
-                    if (attachmentFilename != null)
-                    {
-                        setContentDispositionHeaderIfNecessary(response, attachmentFilename);
-                    }
-
-                    if ("csv".equalsIgnoreCase(request.getParameter("format")))
-                    {
-                        sendCsvResponse(categoryName, parent, query, request, response);
-                    }
-                    else
-                    {
-                        Map<String, Object> resultsObject = new LinkedHashMap<>();
-                        resultsObject.put("headers", query.getHeaders());
-                        resultsObject.put("results", query.getResults());
-                        resultsObject.put("total", query.getTotalNumberOfRows());
-
-                        sendJsonResponse(resultsObject, request, response);
-                    }
+                    resultsObject.put("headers", query.getHeaders());
+                    resultsObject.put("results", query.getResults());
+                    resultsObject.put("total", query.getTotalNumberOfRows());
+                    sendJsonResponse(resultsObject, request, response);
                 }
                 catch (SelectorParsingException e)
                 {
@@ -143,34 +123,6 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
             sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Invalid path");
         }
 
-    }
-
-    private void sendCsvResponse(final String categoryName,
-                                 final X parent,
-                                 final ConfiguredObjectQuery query,
-                                 final HttpServletRequest request,
-                                 final HttpServletResponse response)
-            throws IOException
-    {
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("text/csv;charset=utf-8;");
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        sendCachingHeadersOnResponse(response);
-        try (PrintWriter writer = response.getWriter())
-        {
-            CSV_FORMAT.printComments(writer,
-                                     String.format("parent : %s %s ",
-                                                   parent.getCategoryClass().getSimpleName(),
-                                                   (parent instanceof Container
-                                                           ? ""
-                                                           : parent.getName())),
-                                     String.format("category : %s", categoryName),
-                                     String.format("select : %s", request.getParameter("select")),
-                                     String.format("where : %s", request.getParameter("where")),
-                                     String.format("order by : %s", request.getParameter("orderBy")));
-            CSV_FORMAT.printRecord(writer, query.getHeaders());
-            CSV_FORMAT.printRecords(writer, query.getResults());
-        }
     }
 
     abstract protected X getParent(final HttpServletRequest request, final ConfiguredObject<?> managedObject);

@@ -22,7 +22,6 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import static org.apache.qpid.server.management.plugin.HttpManagementUtil.CONTENT_ENCODING_HEADER;
 import static org.apache.qpid.server.management.plugin.HttpManagementUtil.GZIP_CONTENT_ENCODING;
-import static org.apache.qpid.server.management.plugin.HttpManagementUtil.ensureFilenameIsRfc2183;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -67,11 +66,6 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 public abstract class AbstractServlet extends HttpServlet
 {
     public static final int SC_UNPROCESSABLE_ENTITY = 422;
-    /**
-     * Signifies that the agent wishes the servlet to set the Content-Disposition on the
-     * response with the value attachment.  This filename will be derived from the parameter value.
-     */
-    public static final String CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM = "contentDispositionAttachmentFilename";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
     public static final String CONTENT_DISPOSITION = "Content-Disposition";
 
@@ -161,23 +155,6 @@ public abstract class AbstractServlet extends HttpServlet
         if(managedObject != null)
         {
             doPut(request, resp, managedObject);
-        }
-    }
-
-    protected void setContentDispositionHeaderIfNecessary(final HttpServletResponse response,
-                                                        final String attachmentFilename)
-    {
-        if (attachmentFilename != null)
-        {
-            String filenameRfc2183 = ensureFilenameIsRfc2183(attachmentFilename);
-            if (filenameRfc2183.length() > 0)
-            {
-                response.setHeader(CONTENT_DISPOSITION, String.format("attachment; filename=\"%s\"", filenameRfc2183));
-            }
-            else
-            {
-                response.setHeader(CONTENT_DISPOSITION, "attachment");  // Agent will allow user to choose a name
-            }
         }
     }
 

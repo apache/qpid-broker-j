@@ -81,6 +81,11 @@ public class RestServlet extends AbstractServlet
     public static final String EXTRACT_INITIAL_CONFIG_PARAM = "extractInitialConfig";
     public static final String EXCLUDE_INHERITED_CONTEXT_PARAM = "excludeInheritedContext";
     private static final String SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST = "singletonModelObjectResponseAsList";
+    /**
+     * Signifies that the agent wishes the servlet to set the Content-Disposition on the
+     * response with the value attachment.  This filename will be derived from the parameter value.
+     */
+    public static final String CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM = "contentDispositionAttachmentFilename";
     public static final Set<String> RESERVED_PARAMS =
             new HashSet<>(Arrays.asList(DEPTH_PARAM,
                                         SORT_PARAM,
@@ -306,6 +311,23 @@ public class RestServlet extends AbstractServlet
         }
 
         return false;
+    }
+
+    private void setContentDispositionHeaderIfNecessary(final HttpServletResponse response,
+                                                        final String attachmentFilename)
+    {
+        if (attachmentFilename != null)
+        {
+            String filenameRfc2183 = ensureFilenameIsRfc2183(attachmentFilename);
+            if (filenameRfc2183.length() > 0)
+            {
+                response.setHeader(CONTENT_DISPOSITION, String.format("attachment; filename=\"%s\"", filenameRfc2183));
+            }
+            else
+            {
+                response.setHeader(CONTENT_DISPOSITION, "attachment");  // Agent will allow user to choose a name
+            }
+        }
     }
 
     private Class<? extends ConfiguredObject> getConfiguredClass(HttpServletRequest request, ConfiguredObject<?> managedObject)
