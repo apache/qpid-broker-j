@@ -1001,11 +1001,7 @@ define(["dojo/_base/declare",
                     var id = uuid();
                     params.contentDispositionAttachmentFilename ="query-results-" + id + ".csv";
                     var url = this.management.getQueryUrl({category: this.categoryName, parent: this.parentObject}, params);
-                    var iframe = document.createElement('iframe');
-                    iframe.id = "query_downloader_" + id;
-                    iframe.style.display = "none";
-                    document.body.appendChild(iframe);
-                    iframe.src = url;
+                    this.management.downloadUrlIntoFrame(url, "query_downloader_" + id);
                 }
             });
 
