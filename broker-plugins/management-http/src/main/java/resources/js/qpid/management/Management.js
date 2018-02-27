@@ -365,8 +365,15 @@ define(["dojo/_base/lang",
         Management.prototype.downloadIntoFrame = function (modelObj, parameters, operation)
         {
             var url = this.buildObjectURL(modelObj, parameters, operation);
+            this.downloadUrlIntoFrame(url, "downloader_" + modelObj.name)
+        };
+
+        // summary:
+        //  Downloads given URL into a iframe with given id
+        Management.prototype.downloadUrlIntoFrame = function (url, frameId)
+        {
             var iframe = document.createElement('iframe');
-            iframe.id = "downloader_" + modelObj.name;
+            iframe.id = frameId;
             iframe.style.display = "none";
             document.body.appendChild(iframe);
             iframe.src = url;
