@@ -57,6 +57,7 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
@@ -111,6 +112,7 @@ public class Interaction extends AbstractInteraction<Interaction>
     private List<Transfer> _latestDelivery;
     private Object _decodedLatestDelivery;
     private UnsignedInteger _latestDeliveryId;
+    private Map<String, Object> _latestDeliveryApplicationProperties;
 
     Interaction(final FrameTransport frameTransport)
     {
@@ -486,6 +488,15 @@ public class Interaction extends AbstractInteraction<Interaction>
     {
         Source source = ((Source) _attach.getSource());
         source.setDefaultOutcome(defaultOutcome);
+        _attach.setSource(source);
+        return this;
+    }
+
+
+    public Interaction attachSourceFilter(final Map<Symbol, Filter> filters)
+    {
+        Source source = ((Source) _attach.getSource());
+        source.setFilter(filters);
         _attach.setSource(source);
         return this;
     }
@@ -1071,6 +1082,7 @@ public class Interaction extends AbstractInteraction<Interaction>
                                     transfer.dispose();
                                 });
         _decodedLatestDelivery = messageDecoder.getData();
+        _latestDeliveryApplicationProperties = messageDecoder.getApplicationProperties();
         _latestDelivery = null;
         return this;
     }
@@ -1083,6 +1095,11 @@ public class Interaction extends AbstractInteraction<Interaction>
     public Object getDecodedLatestDelivery()
     {
         return _decodedLatestDelivery;
+    }
+
+    public Map<String, Object> getLatestDeliveryApplicationProperties()
+    {
+        return _latestDeliveryApplicationProperties;
     }
 
     private List<Transfer> receiveAllTransfers(final Class<?>... ignore) throws Exception

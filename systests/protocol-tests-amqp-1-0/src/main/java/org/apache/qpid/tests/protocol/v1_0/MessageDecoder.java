@@ -24,9 +24,11 @@ import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.con
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
@@ -200,5 +202,15 @@ public class MessageDecoder
             bodyObject = convertValue(totalSequence);
         }
         return bodyObject;
+    }
+
+    public Map<String, Object> getApplicationProperties() throws AmqpErrorException
+    {
+        parse();
+        if (_applicationPropertiesSection != null)
+        {
+            return _applicationPropertiesSection.getValue();
+        }
+        return Collections.emptyMap();
     }
 }

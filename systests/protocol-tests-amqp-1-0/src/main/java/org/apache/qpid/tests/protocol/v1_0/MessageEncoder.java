@@ -23,9 +23,11 @@ package org.apache.qpid.tests.protocol.v1_0;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
@@ -35,6 +37,7 @@ public class MessageEncoder
     private Properties _properties;
     private Header _header;
     private List<String> _data = new LinkedList<>();
+    private Map<String, Object> _applicationProperties;
 
     public void addData(final String data)
     {
@@ -51,6 +54,11 @@ public class MessageEncoder
         _properties = properties;
     }
 
+    public void setApplicationProperties(Map<String, Object> applicationProperties)
+    {
+        _applicationProperties = applicationProperties;
+    }
+
     public QpidByteBuffer getPayload()
     {
         List<QpidByteBuffer> payload = new ArrayList<>();
@@ -62,6 +70,11 @@ public class MessageEncoder
         if (_properties != null)
         {
             payload.add(_properties.createEncodingRetainingSection().getEncodedForm());
+        }
+
+        if (_applicationProperties != null)
+        {
+            payload.add(new ApplicationProperties(_applicationProperties).createEncodingRetainingSection().getEncodedForm());
         }
 
         if (_data.isEmpty())
