@@ -35,8 +35,10 @@ public class JMSSelectorFilterConstructor extends AbstractDescribedTypeConstruct
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("apache.org:jms-selector-filter:string"),
-            UnsignedLong.valueOf(0x0000468C00000004L)
+            Symbol.valueOf("apache.org:selector-filter:string"),
+            UnsignedLong.valueOf(0x0000468C00000004L),
+            // This incorrect value was originally specified here - retaining solely for backwards compatibility
+            Symbol.valueOf("apache.org:jms-selector-filter:string")
     };
 
     private static final JMSSelectorFilterConstructor INSTANCE = new JMSSelectorFilterConstructor();
@@ -60,7 +62,7 @@ public class JMSSelectorFilterConstructor extends AbstractDescribedTypeConstruct
         }
         else
         {
-            final String msg = String.format("Cannot decode 'apache.org:jms-selector-filter' from '%s'",
+            final String msg = String.format("Cannot decode 'apache.org:selector-filter' from '%s'",
                                              underlying == null ? null : underlying.getClass().getSimpleName());
             throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
         }
