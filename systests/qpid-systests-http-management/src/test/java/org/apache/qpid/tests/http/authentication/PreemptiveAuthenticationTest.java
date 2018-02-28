@@ -23,6 +23,7 @@ package org.apache.qpid.tests.http.authentication;
 import static javax.servlet.http.HttpServletResponse.SC_CREATED;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.canGenerateCerts;
 import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.generateSelfSignedCertificate;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -32,6 +33,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 
 import java.io.ByteArrayOutputStream;
 import java.net.HttpURLConnection;
@@ -105,6 +107,7 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
     @Test
     public void clientAuthSuccess() throws Exception
     {
+        assumeThat(canGenerateCerts(), is(true));
         HttpTestHelper helper = configForClientAuth("CN=foo");
 
         String userId = helper.getJson("broker/getUser", STRING_TYPE_REF, SC_OK);
@@ -114,6 +117,7 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
     @Test
     public void clientAuthUnrecognisedCert() throws Exception
     {
+        assumeThat(canGenerateCerts(), is(true));
         HttpTestHelper helper = configForClientAuth("CN=foo");
 
         String keyStore = createKeyStoreDataUrl(getKeyCertPair("CN=bar"), STORE_PASSWORD);
