@@ -33,7 +33,10 @@ public class NoLocalFilterConstructor extends AbstractDescribedTypeConstructor<N
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("apache.org:jms-no-local-filter:list"), UnsignedLong.valueOf(0x0000468C00000003L)
+            Symbol.valueOf("apache.org:no-local-filter:list"),
+            UnsignedLong.valueOf(0x0000468C00000003L),
+            // This incorrect value was originally specified here - retaining solely for backwards compatibility
+            Symbol.valueOf("apache.org:jms-no-local-filter:list")
     };
 
     private static final NoLocalFilterConstructor INSTANCE = new NoLocalFilterConstructor();
