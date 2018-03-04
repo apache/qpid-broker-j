@@ -161,7 +161,7 @@ my-queue; {create: always, node: {x-declare: {arguments:{'x-qpid-capacity': 1024
                         <para>Specifies this queue's maximum delivery count.</para>
                     </entry>
                 </row>
-                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-X-Qpid-Maximum-Delivery-Count">
+                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-X-Qpid-DLQ-Enabled">
                     <entry>
                         <para>x-qpid-dlq-enabled</para>
                     </entry>

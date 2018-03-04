@@ -604,7 +604,7 @@
             </para>
           </entry>
         </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1004">
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1005">
           <entry morerows="1">QUE-1005</entry>
           <entry>
             Dropped : <replaceable>number</replaceable> messages, Depth : <replaceable>size</replaceable> bytes,
@@ -820,7 +820,7 @@
             </para>
           </entry>
         </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1010">
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1010">
           <entry morerows="1">CON-1010</entry>
           <entry>Open Transaction : <replaceable>time</replaceable> ms</entry>
         </row>
