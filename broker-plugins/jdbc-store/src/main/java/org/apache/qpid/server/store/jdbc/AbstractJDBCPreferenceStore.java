@@ -56,21 +56,25 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
     private static final String PREFERENCES_VERSION_TABLE_NAME = "PREFERENCES_VERSION";
     private static final String PREFERENCES_TABLE_NAME = "PREFERENCES";
 
-    private static final String CREATE_PREFERENCES_VERSION_TABLE =
-            "CREATE TABLE " + PREFERENCES_VERSION_TABLE_NAME + " ( version VARCHAR(20) NOT NULL )";
-    private static final String INSERT_INTO_PREFERENCES_VERSION =
-            "INSERT INTO " + PREFERENCES_VERSION_TABLE_NAME + " ( version ) VALUES ( ? )";
-    private static final String SELECT_FROM_PREFERENCES_VERSION =
-            "SELECT version FROM " + PREFERENCES_VERSION_TABLE_NAME;
+    private static final String CREATE_PREFERENCES_VERSION_TABLE = "CREATE TABLE %s ( version VARCHAR(20) NOT NULL )";
+    private static final String INSERT_INTO_PREFERENCES_VERSION = "INSERT INTO %s ( version ) VALUES ( ? )";
+    private static final String SELECT_FROM_PREFERENCES_VERSION = "SELECT version FROM %s";
 
-    private static final String INSERT_INTO_PREFERENCES = "INSERT INTO " + PREFERENCES_TABLE_NAME + " ( id, attributes ) VALUES ( ?, ? )";
-    private static final String DELETE_FROM_PREFERENCES = "DELETE FROM " + PREFERENCES_TABLE_NAME + " where id = ?";
-    private static final String SELECT_FROM_PREFERENCES = "SELECT id, attributes FROM " + PREFERENCES_TABLE_NAME;
-    private static final String FIND_PREFERENCE = "SELECT attributes FROM " + PREFERENCES_TABLE_NAME + " WHERE id = ?";
-    private static final String UPDATE_PREFERENCES = "UPDATE " + PREFERENCES_TABLE_NAME + " SET attributes = ? WHERE id = ?";
+    private static final String INSERT_INTO_PREFERENCES = "INSERT INTO %s ( id, attributes ) VALUES ( ?, ? )";
+    private static final String DELETE_FROM_PREFERENCES = "DELETE FROM %s where id = ?";
+    private static final String SELECT_FROM_PREFERENCES = "SELECT id, attributes FROM %s";
+    private static final String FIND_PREFERENCE = "SELECT attributes FROM %s WHERE id = ?";
+    private static final String UPDATE_PREFERENCES = "UPDATE %s SET attributes = ? WHERE id = ?";
 
     private final AtomicReference<StoreState> _storeState = new AtomicReference<>(StoreState.CLOSED);
     private final ReentrantReadWriteLock _useOrCloseRWLock = new ReentrantReadWriteLock(true);
+
+    private String _tableNamePrefix = "";
+
+    protected void setTableNamePrefix(final String tableNamePrefix)
+    {
+        _tableNamePrefix = tableNamePrefix == null ? "" : tableNamePrefix;
+    }
 
     @Override
     public Collection<PreferenceRecord> openAndLoad(final PreferenceStoreUpdater updater) throws StoreException
@@ -179,7 +183,9 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                 {
                     for (UUID id : preferenceRecordsToRemove)
                     {
-                        try (PreparedStatement deleteStatement = connection.prepareStatement(DELETE_FROM_PREFERENCES))
+                        try (PreparedStatement deleteStatement = connection.prepareStatement(String.format(
+                                DELETE_FROM_PREFERENCES,
+                                getPreferencesTableName())))
                         {
                             deleteStatement.setString(1, id.toString());
                             int deletedCount = deleteStatement.executeUpdate();
@@ -256,8 +262,8 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
     {
         try (Statement dropTableStatement = connection.createStatement())
         {
-            dropTableStatement.execute("DROP TABLE " + PREFERENCES_TABLE_NAME);
-            dropTableStatement.execute("DROP TABLE " + PREFERENCES_VERSION_TABLE_NAME);
+            dropTableStatement.execute(String.format("DROP TABLE %s", getPreferencesTableName()));
+            dropTableStatement.execute(String.format("DROP TABLE %s", getPreferencesVersionTableName()));
         }
         catch (SQLException e)
         {
@@ -288,14 +294,16 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
     {
         for (PreferenceRecord record : preferenceRecords)
         {
-            try (PreparedStatement stmt = conn.prepareStatement(FIND_PREFERENCE))
+            try (PreparedStatement stmt = conn.prepareStatement(String.format(FIND_PREFERENCE,
+                                                                              getPreferencesTableName())))
             {
                 stmt.setString(1, record.getId().toString());
                 try (ResultSet rs = stmt.executeQuery())
                 {
                     if (rs.next())
                     {
-                        try (PreparedStatement updateStatement = conn.prepareStatement(UPDATE_PREFERENCES))
+                        try (PreparedStatement updateStatement = conn.prepareStatement(String.format(UPDATE_PREFERENCES,
+                                                                                                     getPreferencesTableName())))
                         {
                             setAttributesAsBlob(updateStatement, 1, record.getAttributes());
                             updateStatement.setString(2, record.getId().toString());
@@ -304,7 +312,9 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                     }
                     else
                     {
-                        try (PreparedStatement insertStatement = conn.prepareStatement(INSERT_INTO_PREFERENCES))
+                        try (PreparedStatement insertStatement = conn.prepareStatement(String.format(
+                                INSERT_INTO_PREFERENCES,
+                                getPreferencesTableName())))
                         {
                             insertStatement.setString(1, record.getId().toString());
                             setAttributesAsBlob(insertStatement, 2, record.getAttributes());
@@ -384,11 +394,11 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
 
     private void createVersionTable(final Connection conn) throws SQLException
     {
-        if (!tableExists(PREFERENCES_VERSION_TABLE_NAME, conn))
+        if (!tableExists(getPreferencesVersionTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
-                stmt.execute(CREATE_PREFERENCES_VERSION_TABLE);
+                stmt.execute(String.format(CREATE_PREFERENCES_VERSION_TABLE, getPreferencesVersionTableName()));
             }
 
             updateVersion(conn, BrokerModel.MODEL_VERSION);
@@ -397,7 +407,8 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
 
     private void updateVersion(final Connection conn, final String currentVersion) throws SQLException
     {
-        try (PreparedStatement pstmt = conn.prepareStatement(INSERT_INTO_PREFERENCES_VERSION))
+        try (PreparedStatement pstmt = conn.prepareStatement(String.format(INSERT_INTO_PREFERENCES_VERSION,
+                                                                           getPreferencesVersionTableName())))
         {
             pstmt.setString(1, currentVersion);
             pstmt.execute();
@@ -406,12 +417,12 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
 
     private void createPreferencesTable(final Connection conn) throws SQLException
     {
-        if (!tableExists(PREFERENCES_TABLE_NAME, conn))
+        if (!tableExists(getPreferencesTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
                 stmt.execute("CREATE TABLE "
-                             + PREFERENCES_TABLE_NAME
+                             + getPreferencesTableName()
                              + " ( id VARCHAR(36) not null, attributes "
                              + getSqlBlobType()
                              + ",  PRIMARY KEY (id))");
@@ -424,7 +435,8 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
         ModelVersion storedVersion = null;
         try (Statement stmt = conn.createStatement())
         {
-            try (ResultSet rs = stmt.executeQuery(SELECT_FROM_PREFERENCES_VERSION))
+            try (ResultSet rs = stmt.executeQuery(String.format(SELECT_FROM_PREFERENCES_VERSION,
+                                                                getPreferencesVersionTableName())))
             {
                 while (rs.next())
                 {
@@ -455,7 +467,8 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
     {
         Collection<PreferenceRecord> records = new LinkedHashSet<>();
         final ObjectMapper objectMapper = new ObjectMapper();
-        try (PreparedStatement stmt = connection.prepareStatement(SELECT_FROM_PREFERENCES))
+        try (PreparedStatement stmt = connection.prepareStatement(String.format(SELECT_FROM_PREFERENCES,
+                                                                                getPreferencesTableName())))
         {
             try (ResultSet rs = stmt.executeQuery())
             {
@@ -473,6 +486,16 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
             }
         }
         return records;
+    }
+
+    private String getPreferencesTableName()
+    {
+        return _tableNamePrefix + PREFERENCES_TABLE_NAME;
+    }
+
+    private String getPreferencesVersionTableName()
+    {
+        return _tableNamePrefix + PREFERENCES_VERSION_TABLE_NAME;
     }
 
     enum StoreState

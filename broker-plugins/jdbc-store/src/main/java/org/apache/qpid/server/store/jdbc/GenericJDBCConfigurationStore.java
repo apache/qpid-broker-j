@@ -51,7 +51,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericJDBCConfigurationStore.class);
 
     private final MessageStore _providedMessageStore = new ProvidedMessageStore();
-    private final PreferenceStore _providedPreferenceStore = new ProvidedPreferenceStore();
+    private final ProvidedPreferenceStore _providedPreferenceStore = new ProvidedPreferenceStore();
     private String _connectionURL;
     private ConnectionProvider _connectionProvider;
 
@@ -77,6 +77,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
 
         JDBCSettings settings = (JDBCSettings) parent;
         super.setTableNamePrefix(settings.getTableNamePrefix());
+        _providedPreferenceStore.setTableNamePrefix(settings.getTableNamePrefix());
         _connectionURL = settings.getConnectionUrl();
 
         JDBCDetails details = JDBCDetails.getDetailsForJdbcUrl(_connectionURL, parent);
