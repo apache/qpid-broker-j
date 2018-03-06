@@ -33,6 +33,7 @@ import org.apache.qpid.server.store.jdbc.AbstractJDBCMessageStore;
 import org.apache.qpid.server.store.jdbc.GenericJDBCMessageStore;
 import org.apache.qpid.server.store.jdbc.JDBCContainer;
 import org.apache.qpid.server.store.jdbc.JDBCDetails;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 
@@ -111,7 +112,7 @@ public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl
     {
         try
         {
-            return ((AbstractJDBCMessageStore) getMessageStore()).getConnection();
+            return getStore().getConnection();
         }
         catch (SQLException e)
         {
@@ -128,5 +129,22 @@ public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl
                                            ", connectionUrl=" + getConnectionUrl() +
                                            ", connectionPoolType=" + getConnectionPoolType() +
                                            ", username=" + getUsername() + "]";
+    }
+
+    @Override
+    public void addDeleteAction(final Action<Connection> action)
+    {
+        getStore().addDeleteAction(action);
+    }
+
+    @Override
+    public void removeDeleteAction(final Action<Connection> action)
+    {
+        getStore().removeDeleteAction(action);
+    }
+
+    private AbstractJDBCMessageStore getStore()
+    {
+        return (AbstractJDBCMessageStore) getMessageStore();
     }
 }

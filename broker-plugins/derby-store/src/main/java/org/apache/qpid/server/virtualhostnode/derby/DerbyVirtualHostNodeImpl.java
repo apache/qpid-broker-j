@@ -40,6 +40,7 @@ import org.apache.qpid.server.store.derby.DerbyUtils;
 import org.apache.qpid.server.store.jdbc.JDBCContainer;
 import org.apache.qpid.server.store.jdbc.JDBCDetails;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
@@ -108,7 +109,7 @@ public class DerbyVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<De
     @Override
     public PreferenceStore getPreferenceStore()
     {
-        return ((DerbyConfigurationStore)getConfigurationStore()).getPreferenceStore();
+        return getStore().getPreferenceStore();
     }
 
     @Override
@@ -122,7 +123,7 @@ public class DerbyVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<De
     {
         try
         {
-            return ((DerbyConfigurationStore) getConfigurationStore()).getConnection();
+            return getStore().getConnection();
         }
         catch (SQLException e)
         {
@@ -136,5 +137,22 @@ public class DerbyVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<De
     public String getTableNamePrefix()
     {
         return "";
+    }
+
+    @Override
+    public void addDeleteAction(final Action<Connection> action)
+    {
+        getStore().addDeleteAction(action);
+    }
+
+    @Override
+    public void removeDeleteAction(final Action<Connection> action)
+    {
+        getStore().removeDeleteAction(action);
+    }
+
+    private DerbyConfigurationStore getStore()
+    {
+        return (DerbyConfigurationStore) getConfigurationStore();
     }
 }

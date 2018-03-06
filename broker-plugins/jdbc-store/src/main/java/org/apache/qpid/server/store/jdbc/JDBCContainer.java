@@ -21,6 +21,8 @@ package org.apache.qpid.server.store.jdbc;
 
 import java.sql.Connection;
 
+import org.apache.qpid.server.util.Action;
+
 public interface JDBCContainer
 {
     JDBCDetails getJDBCDetails();
@@ -28,4 +30,7 @@ public interface JDBCContainer
     Connection getConnection();
 
     String getTableNamePrefix();
+
+    void addDeleteAction(Action<Connection> action);
+    void removeDeleteAction(Action<Connection> action);
 }

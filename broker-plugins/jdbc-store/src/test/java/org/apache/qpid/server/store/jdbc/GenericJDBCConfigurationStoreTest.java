@@ -30,6 +30,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
@@ -72,6 +73,17 @@ public class GenericJDBCConfigurationStoreTest extends AbstractDurableConfigurat
             store.onDelete(getVirtualHostNode());
             assertTablesExistence(expectedTables, getTableNames(connection), false);
         }
+    }
+
+    public void testDeleteAction()
+    {
+        GenericJDBCConfigurationStore store = (GenericJDBCConfigurationStore) getConfigurationStore();
+        AtomicBoolean deleted = new AtomicBoolean();
+        store.addDeleteAction(object -> deleted.set(true));
+
+        store.closeConfigurationStore();
+        store.onDelete(getVirtualHostNode());
+        assertEquals("Delete action was not invoked", true, deleted.get());
     }
 
     @Override

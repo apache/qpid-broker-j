@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -144,6 +145,17 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
 
         final ListenableFuture<Void> future = dequeueTransaction.commitTranAsync(null);
         future.get(1000, TimeUnit.MILLISECONDS);
+    }
+
+    public void testDeleteAction()
+    {
+        GenericJDBCMessageStore store = (GenericJDBCMessageStore) getStore();
+        AtomicBoolean deleted = new AtomicBoolean();
+        store.addDeleteAction(object -> deleted.set(true));
+
+        store.closeMessageStore();
+        store.onDelete(getVirtualHost());
+        assertEquals("Delete action was not invoked", true, deleted.get());
     }
 
     private InternalMessage addTestMessage(final MessageStore store,

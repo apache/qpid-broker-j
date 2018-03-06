@@ -33,6 +33,7 @@ import org.apache.qpid.server.store.derby.DerbyMessageStore;
 import org.apache.qpid.server.store.derby.DerbyUtils;
 import org.apache.qpid.server.store.jdbc.JDBCContainer;
 import org.apache.qpid.server.store.jdbc.JDBCDetails;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
@@ -121,5 +122,17 @@ public class DerbyVirtualHostImpl extends AbstractVirtualHost<DerbyVirtualHostIm
     public String getTableNamePrefix()
     {
         return "";
+    }
+
+    @Override
+    public void addDeleteAction(final Action<Connection> action)
+    {
+        ((DerbyMessageStore) getMessageStore()).addDeleteAction(action);
+    }
+
+    @Override
+    public void removeDeleteAction(final Action<Connection> action)
+    {
+        ((DerbyMessageStore) getMessageStore()).removeDeleteAction(action);
     }
 }

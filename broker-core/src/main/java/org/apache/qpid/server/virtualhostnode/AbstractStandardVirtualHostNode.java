@@ -46,6 +46,8 @@ import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.VirtualHostStoreUpgraderAndRecoverer;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandardVirtualHostNode<X>> extends AbstractVirtualHostNode<X>
@@ -136,6 +138,15 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
                                      messageStore.onDelete(virtualHost);
                                  }
 
+                                 if (AbstractStandardVirtualHostNode.this instanceof PreferenceStoreProvider)
+                                 {
+                                     PreferenceStore preferenceStore =
+                                             ((PreferenceStoreProvider) AbstractStandardVirtualHostNode.this).getPreferenceStore();
+                                     if (preferenceStore != null)
+                                     {
+                                         preferenceStore.onDelete();
+                                     }
+                                 }
                                  DurableConfigurationStore configurationStore = getConfigurationStore();
                                  if (configurationStore != null)
                                  {

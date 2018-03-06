@@ -119,7 +119,7 @@ public class JdbcUtils
         }
     }
 
-    static void dropTables(final Connection connection, final Logger logger, Collection<String> tableNames)
+    public static void dropTables(final Connection connection, final Logger logger, Collection<String> tableNames)
     {
         for (String tableName : tableNames)
         {

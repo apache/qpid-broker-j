@@ -27,21 +27,27 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.store.jdbc.JDBCContainer;
+import org.apache.qpid.server.store.jdbc.TestJdbcUtils;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class JDBCVirtualHostTest extends QpidTestCase
 {
     private CurrentThreadTaskExecutor _taskExecutor;
+    private String _connectionURL;
 
     @Override
     public void setUp() throws Exception
@@ -56,6 +62,10 @@ public class JDBCVirtualHostTest extends QpidTestCase
     {
         super.tearDown();
         _taskExecutor.stopImmediately();
+        if (_connectionURL != null)
+        {
+            TestJdbcUtils.shutdownDerby(_connectionURL);
+        }
     }
 
     public void testInvalidTableNamePrefix() throws Exception
@@ -107,5 +117,22 @@ public class JDBCVirtualHostTest extends QpidTestCase
                 // pass
             }
         }
+    }
+
+    public void testDeleteAction()
+    {
+        _connectionURL = "jdbc:derby:memory:/" + getTestName();
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, getTestName());
+        attributes.put(ConfiguredObject.TYPE, JDBCVirtualHostImpl.VIRTUAL_HOST_TYPE);
+        attributes.put("connectionUrl", _connectionURL + ";create=true");
+
+        final VirtualHost vh = BrokerTestHelper.createVirtualHost(attributes);
+
+        AtomicBoolean deleted = new AtomicBoolean();
+        ((JDBCContainer)vh).addDeleteAction(object -> deleted.set(true));
+
+        vh.delete();
+        assertEquals("Delete action was not invoked", true, deleted.get());
     }
 }

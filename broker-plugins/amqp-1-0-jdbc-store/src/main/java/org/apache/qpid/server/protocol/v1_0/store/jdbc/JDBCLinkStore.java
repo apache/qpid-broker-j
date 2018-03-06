@@ -36,6 +36,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 
@@ -62,6 +63,7 @@ import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.jdbc.JDBCContainer;
 import org.apache.qpid.server.store.jdbc.JDBCDetails;
 import org.apache.qpid.server.store.jdbc.JdbcUtils;
+import org.apache.qpid.server.util.Action;
 
 public class JDBCLinkStore extends AbstractLinkStore
 {
@@ -72,6 +74,7 @@ public class JDBCLinkStore extends AbstractLinkStore
     private final String _tableNamePrefix;
     private final String _sqlBlobType;
     private final boolean _isUseBytesMethodsForBlob;
+    private final Action<Connection> _cleanUpAction;
 
     JDBCLinkStore(final JDBCContainer jdbcContainer)
     {
@@ -80,6 +83,8 @@ public class JDBCLinkStore extends AbstractLinkStore
         JDBCDetails jdbcDetails = jdbcContainer.getJDBCDetails();
         _sqlBlobType = jdbcDetails.getBlobType();
         _isUseBytesMethodsForBlob = jdbcDetails.isUseBytesMethodsForBlob();
+        _cleanUpAction = this::cleanUp;
+        jdbcContainer.addDeleteAction(_cleanUpAction);
     }
 
     @Override
@@ -186,12 +191,10 @@ public class JDBCLinkStore extends AbstractLinkStore
     @Override
     protected void doDelete()
     {
-        try (Connection connection = getConnection();
-             Statement dropLinksStatement = connection.createStatement();
-             Statement dropVersionsStatement = connection.createStatement())
+        _jdbcContainer.removeDeleteAction(_cleanUpAction);
+        try (Connection connection = getConnection())
         {
-            dropLinksStatement.execute(String.format("DROP TABLE %s", getLinksTableName()));
-            dropVersionsStatement.execute(String.format("DROP TABLE %s", getVersionTableName()));
+            cleanUp(connection);
         }
         catch (IllegalStateException e)
         {
@@ -201,6 +204,11 @@ public class JDBCLinkStore extends AbstractLinkStore
         {
             throw new StoreException("Error deleting Link store", e);
         }
+    }
+
+    private void cleanUp(final Connection connection)
+    {
+        JdbcUtils.dropTables(connection, LOGGER, Arrays.asList(getLinksTableName(), getVersionTableName()));
     }
 
     @Override

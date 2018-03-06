@@ -38,7 +38,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -51,6 +53,7 @@ import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.util.Action;
 
 public abstract class AbstractJDBCConfigurationStore implements MessageStoreProvider, DurableConfigurationStore
 {
@@ -59,7 +62,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     private final static String CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX = "QPID_CONFIGURED_OBJECT_HIERARCHY";
 
     private static final int DEFAULT_CONFIG_VERSION = 0;
-
+    private final Set<Action<Connection>> _deleteActions = Collections.newSetFromMap(new ConcurrentHashMap<>());;
 
     public enum State { CLOSED, CONFIGURED, OPEN };
     private State _state = State.CLOSED;
@@ -78,6 +81,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                                           final ConfiguredObjectRecord... initialRecords)
     {
         changeState(CONFIGURED, OPEN);
+        _deleteActions.clear();
         try
         {
             Collection<? extends ConfiguredObjectRecord> records = doVisitAllConfiguredObjectRecords(handler);
@@ -734,6 +738,16 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         }
     }
 
+    public void addDeleteAction(final Action<Connection> action)
+    {
+        _deleteActions.add(action);
+    }
+
+    public void removeDeleteAction(final Action<Connection> action)
+    {
+        _deleteActions.remove(action);
+    }
+
     private void updateConfiguredObject(ConfiguredObjectRecord configuredObject,
                                         boolean createIfNecessary,
                                         Connection conn)
@@ -819,11 +833,23 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     protected abstract String getBlobAsString(ResultSet rs, int col) throws SQLException;
 
-    void onDelete(final Connection conn) throws SQLException
+    void onDelete(final Connection conn)
     {
-        JdbcUtils.dropTables(conn,
-                             getLogger(),
-                             Arrays.asList(getConfiguredObjectsTableName(), getConfiguredObjectHierarchyTableName()));
+        try
+        {
+            for (Action<Connection> deleteAction : _deleteActions)
+            {
+                deleteAction.performAction(conn);
+            }
+            _deleteActions.clear();
+        }
+        finally
+        {
+            JdbcUtils.dropTables(conn,
+                                 getLogger(),
+                                 Arrays.asList(getConfiguredObjectsTableName(),
+                                               getConfiguredObjectHierarchyTableName()));
+        }
     }
 
     private static final class ConfiguredObjectRecordImpl implements ConfiguredObjectRecord

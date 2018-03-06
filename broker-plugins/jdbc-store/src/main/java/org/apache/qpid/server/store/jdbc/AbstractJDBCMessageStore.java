@@ -67,6 +67,7 @@ import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.txn.Xid;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.CachingUUIDFactory;
 
 public abstract class AbstractJDBCMessageStore implements MessageStore
@@ -90,6 +91,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private final AtomicLong _bytesEvacuatedFromMemory = new AtomicLong();
     private final Set<StoredJDBCMessage<?>> _messages = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<MessageDeleteListener> _messageDeleteListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<Action<Connection>> _deleteActions = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     protected abstract boolean isMessageStoreOpen();
 
@@ -247,6 +249,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     protected void createOrOpenMessageStoreDatabase() throws StoreException
     {
+        _deleteActions.clear();
         try(Connection conn =  newAutoCommitConnection())
         {
             createVersionTable(conn);
@@ -733,6 +736,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private String getXidActionsTableName()
     {
         return _tablePrefix + XID_ACTIONS_TABLE_NAME_SUFFIX;
+    }
+
+    public void addDeleteAction(final Action<Connection> action)
+    {
+        _deleteActions.add(action);
+    }
+
+    public void removeDeleteAction(final Action<Connection> action)
+    {
+        _deleteActions.remove(action);
     }
 
     private static final class ConnectionWrapper
@@ -1816,7 +1829,18 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     protected void onDelete(final Connection conn)
     {
-        JdbcUtils.dropTables(conn, getLogger(), getTableNames());
+        try
+        {
+            for (Action<Connection> deleteAction: _deleteActions)
+            {
+                deleteAction.performAction(conn);
+            }
+            _deleteActions.clear();
+        }
+        finally
+        {
+            JdbcUtils.dropTables(conn, getLogger(), getTableNames());
+        }
     }
 
     public List<String> getTableNames()

@@ -36,6 +36,7 @@ import org.apache.qpid.server.store.jdbc.GenericJDBCConfigurationStore;
 import org.apache.qpid.server.store.jdbc.JDBCContainer;
 import org.apache.qpid.server.store.jdbc.JDBCDetails;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
 
@@ -119,7 +120,7 @@ public class JDBCVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<JDB
     {
         try
         {
-            return ((GenericJDBCConfigurationStore) getConfigurationStore()).getConnection();
+            return getStore().getConnection();
         }
         catch (SQLException e)
         {
@@ -147,6 +148,23 @@ public class JDBCVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<JDB
     @Override
     public PreferenceStore getPreferenceStore()
     {
-        return ((GenericJDBCConfigurationStore) getConfigurationStore()).getPreferenceStore();
+        return getStore().getPreferenceStore();
+    }
+
+    @Override
+    public void addDeleteAction(final Action<Connection> action)
+    {
+        getStore().addDeleteAction(action);
+    }
+
+    @Override
+    public void removeDeleteAction(final Action<Connection> action)
+    {
+        getStore().removeDeleteAction(action);
+    }
+
+    private GenericJDBCConfigurationStore getStore()
+    {
+        return (GenericJDBCConfigurationStore) getConfigurationStore();
     }
 }

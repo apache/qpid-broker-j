@@ -27,19 +27,25 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.store.jdbc.JDBCContainer;
+import org.apache.qpid.server.store.jdbc.TestJdbcUtils;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class JDBCVirtualHostNodeTest extends QpidTestCase
 {
     private CurrentThreadTaskExecutor _taskExecutor;
+    private String _connectionURL;
 
     @Override
     public void setUp() throws Exception
@@ -47,6 +53,10 @@ public class JDBCVirtualHostNodeTest extends QpidTestCase
         super.setUp();
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
+        if (_connectionURL != null)
+        {
+            TestJdbcUtils.shutdownDerby(_connectionURL);
+        }
     }
 
     @Override
@@ -99,5 +109,25 @@ public class JDBCVirtualHostNodeTest extends QpidTestCase
                 // pass
             }
         }
+    }
+
+    public void testDeleteAction()
+    {
+        _connectionURL = "jdbc:derby:memory:/" + getTestName();
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, getTestName());
+        attributes.put(ConfiguredObject.TYPE, JDBCVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE);
+        attributes.put("connectionUrl", _connectionURL + ";create=true");
+
+        Broker<?> broker = BrokerTestHelper.createBrokerMock();
+        final VirtualHostNode virtualHostNode =
+                broker.getObjectFactory().create(VirtualHostNode.class, attributes, broker);
+        virtualHostNode.start();
+
+        AtomicBoolean deleted = new AtomicBoolean();
+        ((JDBCContainer) virtualHostNode).addDeleteAction(object -> deleted.set(true));
+
+        virtualHostNode.delete();
+        assertEquals("Delete action was not invoked", true, deleted.get());
     }
 }

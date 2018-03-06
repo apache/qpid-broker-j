@@ -31,7 +31,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-class TestJdbcUtils
+public class TestJdbcUtils
 {
 
     static void assertTablesExistence(Collection<String> expectedTables,
@@ -60,7 +60,7 @@ class TestJdbcUtils
         return tableNames;
     }
 
-    static void shutdownDerby(String connectionURL) throws SQLException
+    public static void shutdownDerby(String connectionURL) throws SQLException
     {
         Connection connection = null;
         try
