@@ -300,9 +300,6 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
         Collection<Transport> transports = updated.getTransports();
 
-        Collection<Protocol> protocols = updated.getProtocols();
-
-
         boolean usesSsl = isUsingTLSTransport(transports);
         if (usesSsl)
         {

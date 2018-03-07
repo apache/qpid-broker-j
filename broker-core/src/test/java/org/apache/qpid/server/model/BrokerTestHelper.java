@@ -149,6 +149,8 @@ public class BrokerTestHelper
         when(broker.getChildExecutor()).thenReturn(TASK_EXECUTOR);
         when(systemConfig.getChildExecutor()).thenReturn(TASK_EXECUTOR);
         when(systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
+        when(systemConfig.getChildren(Broker.class)).thenReturn(Collections.singleton(broker));
+        when(broker.getTypeClass()).thenReturn(Broker.class);
 
         return broker;
     }

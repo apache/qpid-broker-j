@@ -24,6 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -71,6 +72,7 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
         attributesMap.put(AuthenticationProvider.ID, UUID.randomUUID());
         _authManager = createAuthManager(attributesMap);
         _authManager.open();
+        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.singleton(_authManager));
     }
 
 
@@ -274,6 +276,8 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
         AmqpPort port = mock(AmqpPort.class);
         when(port.getAuthenticationProvider()).thenReturn(_authManager);
         when(port.getName()).thenReturn("mockPort");
+        when(port.getAttributeNames()).thenReturn(Arrays.asList("authenticationProvider"));
+        when(port.getAttribute("authenticationProvider")).thenReturn(_authManager);
 
         final List<AmqpPort> portList = Collections.singletonList(port);
         when(_broker.getChildren(eq(Port.class))).thenReturn(portList);

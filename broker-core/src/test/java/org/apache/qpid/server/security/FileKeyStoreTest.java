@@ -23,6 +23,7 @@ package org.apache.qpid.server.security;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,27 +31,21 @@ import java.util.Map;
 import javax.net.ssl.KeyManager;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.KeyStore;
-import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Port;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestSSLConstants;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class FileKeyStoreTest extends QpidTestCase
 {
-    private final Broker _broker = mock(Broker.class);
-    private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-    private final Model _model = BrokerModel.getInstance();
-    private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
+    private Broker _broker;
+    private ConfiguredObjectFactory _factory;
 
 
     @Override
@@ -58,12 +53,8 @@ public class FileKeyStoreTest extends QpidTestCase
     {
         super.setUp();
 
-        when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getModel()).thenReturn(_model);
-        when(_broker.getCategoryClass()).thenReturn(Broker.class);
-        when(_broker.getEventLogger()).thenReturn(new EventLogger());
-        when(_broker.getTypeClass()).thenReturn(Broker.class);
+        _broker = BrokerTestHelper.createBrokerMock();
+        _factory = _broker.getObjectFactory();
     }
 
     public void testCreateKeyStoreFromFile_Success() throws Exception
@@ -297,8 +288,11 @@ public class FileKeyStoreTest extends QpidTestCase
 
         Port<?> port = mock(Port.class);
         when(port.getKeyStore()).thenReturn(fileKeyStore);
+        when(port.getAttributeNames()).thenReturn(Arrays.asList("keyStore"));
+        when(port.getAttribute("keyStore")).thenReturn(fileKeyStore);
 
-        when(_broker.getPorts()).thenReturn(Collections.<Port<?>>singletonList(port));
+        when(_broker.getPorts()).thenReturn(Collections.singleton(port));
+        when(_broker.getChildren(Port.class)).thenReturn(Collections.singleton(port));
 
         try
         {
