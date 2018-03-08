@@ -1165,7 +1165,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             _statisticsReportingFuture = _houseKeepingTaskExecutor.scheduleAtFixedRate(new StatisticsReportingTask(this,
                                                                                                                    getSystemTaskSubject(
-                                                                                                                           "Statistics")),
+                                                                                                                           "Statistics", _principal)),
                                                                                        report,
                                                                                        report,
                                                                                        TimeUnit.MILLISECONDS);
