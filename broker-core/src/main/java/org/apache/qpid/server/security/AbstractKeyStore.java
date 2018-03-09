@@ -80,6 +80,31 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     }
 
     @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+
+        if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
+        {
+            // verify that it is not in use
+            String storeName = getName();
+
+            Collection<Port> ports = new ArrayList<>(getBroker().getPorts());
+            for (Port port : ports)
+            {
+                if (port.getKeyStore() == this)
+                {
+                    throw new IntegrityViolationException(String.format(
+                            "Key store '%s' can't be deleted as it is in use by a port: %s",
+                            storeName,
+                            port.getName()));
+                }
+            }
+        }
+
+    }
+
+    @Override
     protected ListenableFuture<Void> onClose()
     {
         if(_checkExpiryTaskFuture != null)

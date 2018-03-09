@@ -29,7 +29,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -58,7 +57,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
@@ -2227,7 +2225,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         ConfiguredObject<?> proxyForValidation = createProxyForValidation(attributes);
         authoriseSetAttributes(proxyForValidation, attributes);
         validateChange(proxyForValidation, attributes.keySet());
-        validateReferredBy(getModel().getAncestor(getModel().getRootCategory(), this), this);
 
         // for DELETED state we should invoke transition method first to make sure that object can be deleted.
         // If method results in exception being thrown due to various integrity violations
@@ -2244,113 +2241,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
 
         return deleteNoChecks();
-    }
-
-    private void validateReferredBy(final ConfiguredObject<?> object,
-                                    final ConfiguredObject<?> lookupReference)
-    {
-        if (isReferredBy(object, lookupReference))
-        {
-            throw new IntegrityViolationException(String.format("Configured object %s is referred by %s",
-                                                                lookupReference,
-                                                                object));
-        }
-
-        getModel().getChildTypes(object.getCategoryClass())
-                  .forEach(childClass -> object.getChildren(childClass)
-                                               .forEach(child -> validateReferredBy(child, lookupReference)));
-
-
-    }
-
-    private boolean isReferredBy(final ConfiguredObject<?> object,
-                                 final ConfiguredObject<?> lookupReference)
-    {
-        if (object instanceof AbstractConfiguredObject)
-        {
-            return getModel().getTypeRegistry()
-                             .getAttributes(object.getClass())
-                             .stream()
-                             .anyMatch(attribute -> {
-
-                                 Object value = object.getAttribute(attribute.getName());
-                                 Class<?> type = attribute.getType();
-                                 Type genericType = attribute.getGenericType();
-
-                                 return isReferred(value, type, genericType, lookupReference);
-                             });
-        }
-        else
-        {
-            return object.getAttributeNames().stream().anyMatch(name -> {
-                Object value = object.getAttribute(name);
-                if (value != null)
-                {
-                   Class<?> type = value.getClass();
-                   return isReferred(value, type, type, lookupReference);
-                }
-                return false;
-            });
-        }
-
-    }
-
-    private boolean isReferred(final Object value,
-                               final Class<?> type,
-                               final Type genericType,
-                               final ConfiguredObject<?> lookupReference)
-    {
-        final Class<? extends ConfiguredObject> lookupCategory = lookupReference.getCategoryClass();
-        if (lookupCategory.isAssignableFrom(type) && value == lookupReference)
-        {
-            return true;
-        }
-        else if (hasMemberOfType(genericType, lookupCategory))
-        {
-            if (value instanceof Collection)
-            {
-                return ((Collection<?>) value).stream().anyMatch(m -> m == lookupReference);
-            }
-            else if (value instanceof Object[])
-            {
-                return Arrays.stream((Object[]) value).anyMatch(m -> m == lookupReference);
-            }
-            else if (value instanceof Map)
-            {
-                return ((Map<?, ?>) value).entrySet()
-                                          .stream()
-                                          .anyMatch(e -> e.getKey() == lookupReference
-                                                         || e.getValue() == lookupReference);
-            }
-        }
-        return false;
-    }
-
-    private boolean hasMemberOfType(Type returnType, Class<?> classType)
-    {
-        if (returnType instanceof ParameterizedType)
-        {
-            Type[] types = ((ParameterizedType) returnType).getActualTypeArguments();
-            return Arrays.stream(types).anyMatch((Predicate<? super Type>) type -> {
-                if (type instanceof Class && classType.isAssignableFrom((Class) type))
-                {
-                    return true;
-                }
-                else if (type instanceof ParameterizedType)
-                {
-                    Type rawType = ((ParameterizedType) type).getRawType();
-                    return rawType instanceof Class && classType.isAssignableFrom((Class) rawType);
-                }
-                else if (type instanceof TypeVariable)
-                {
-                    Type[] bounds = ((TypeVariable) type).getBounds();
-                    return Arrays.stream(bounds).anyMatch(boundType -> hasMemberOfType(boundType, classType));
-
-                }
-                return false;
-            });
-        }
-        return false;
     }
 
     protected ListenableFuture<Void> deleteNoChecks()

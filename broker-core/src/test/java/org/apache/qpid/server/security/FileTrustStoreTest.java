@@ -27,7 +27,6 @@ import java.security.KeyStore;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,7 +42,6 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.Model;
@@ -59,16 +57,23 @@ import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class FileTrustStoreTest extends QpidTestCase
 {
-    private Broker _broker;
-    private ConfiguredObjectFactory _factory;
+    private final Broker _broker = mock(Broker.class);
+    private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
+    private final Model _model = BrokerModel.getInstance();
+    private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
 
-        _broker = BrokerTestHelper.createBrokerMock();
-        _factory = _broker.getObjectFactory();
+        when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
+        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
+
+        when(_broker.getModel()).thenReturn(_model);
+        when(_broker.getCategoryClass()).thenReturn(Broker.class);
+        when(_broker.getEventLogger()).thenReturn(new EventLogger());
+        when(_broker.getTypeClass()).thenReturn(Broker.class);
     }
 
     public void testCreateTrustStoreFromFile_Success() throws Exception
@@ -309,10 +314,9 @@ public class FileTrustStoreTest extends QpidTestCase
 
         SimpleLDAPAuthenticationManager ldap = mock(SimpleLDAPAuthenticationManager.class);
         when(ldap.getTrustStore()).thenReturn(fileTrustStore);
-        when(ldap.getAttributeNames()).thenReturn(Arrays.asList("trustStore"));
-        when(ldap.getAttribute("trustStore")).thenReturn(fileTrustStore);
-        when(_broker.getAuthenticationProviders()).thenReturn(Collections.<AuthenticationProvider<?>>singleton(ldap));
-        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.singleton(ldap));
+
+        Collection<AuthenticationProvider<?>> authenticationProviders = Collections.<AuthenticationProvider<?>>singletonList(ldap);
+        when(_broker.getAuthenticationProviders()).thenReturn(authenticationProviders);
 
         try
         {
@@ -335,12 +339,9 @@ public class FileTrustStoreTest extends QpidTestCase
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
         Port<?> port = mock(Port.class);
-        when(port.getTrustStores()).thenReturn(Collections.singleton(fileTrustStore));
-        when(port.getAttribute("trustStore")).thenReturn(fileTrustStore);
-        when(port.getAttributeNames()).thenReturn(Collections.singleton("trustStore"));
+        when(port.getTrustStores()).thenReturn(Collections.<TrustStore>singletonList(fileTrustStore));
 
-        when(_broker.getPorts()).thenReturn(Collections.singleton(port));
-        when(_broker.getChildren(Port.class)).thenReturn(Collections.singletonList(port));
+        when(_broker.getPorts()).thenReturn(Collections.<Port<?>>singletonList(port));
 
         try
         {

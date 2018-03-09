@@ -81,6 +81,28 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     }
 
     @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+
+        if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
+        {
+            String providerName = getName();
+            // verify that provider is not in use
+            Collection<Port> ports = new ArrayList<>(_container.getChildren(Port.class));
+            for (Port<?> port : ports)
+            {
+                if (port.getAuthenticationProvider() == this)
+                {
+                    throw new IntegrityViolationException(String.format("Authentication provider '%s' is set on port %s",
+                                                                        providerName,
+                                                                        port.getName()));
+                }
+            }
+        }
+    }
+
+    @Override
     public List<String> getAvailableMechanisms(boolean secure)
     {
         List<String> mechanisms = getMechanisms();
