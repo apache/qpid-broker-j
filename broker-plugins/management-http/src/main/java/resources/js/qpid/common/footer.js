@@ -25,7 +25,6 @@ define(["dojo/_base/xhr", "dojo/query", "dojo/domReady!"], function (xhr, query)
         {
             xhr.get({
                 url: "footer.html",
-                sync: true,
                 load: function (data)
                 {
                     node.innerHTML = data;

@@ -30,7 +30,6 @@ define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "d
             var that = this;
             xhr.get({
                 url: "store/pool/bonecp/show.html",
-                sync: true,
                 load: function (template)
                 {
                     containerNode.innerHTML = template;

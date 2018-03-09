@@ -170,7 +170,6 @@ define(["dojo/_base/xhr",
                 var requestUrl = lang.isFunction(this.serviceUrl) ? this.serviceUrl() : this.serviceUrl;
                 xhr.get({
                         url: requestUrl,
-                        sync: true,
                         handleAs: "json"
                     })
                     .then(processData, util.xhrErrorHandler);

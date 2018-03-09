@@ -529,7 +529,6 @@ define(["dojo/_base/xhr",
         {
             xhr.get({
                 url: htmlTemplateLocation,
-                sync: true,
                 load: function (template)
                 {
                     util.parse(containerNode, template, postParseCallback);

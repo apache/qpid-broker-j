@@ -75,7 +75,6 @@ define(["dojo/_base/xhr",
             this.name = aclProviderObj.name;
             xhr.get({
                 url: "accesscontrolprovider/showAclFile.html",
-                sync: true,
                 load: function (data)
                 {
                     node.innerHTML = data;
