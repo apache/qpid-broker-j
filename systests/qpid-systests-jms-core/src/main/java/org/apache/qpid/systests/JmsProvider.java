@@ -20,6 +20,7 @@
 
 package org.apache.qpid.systests;
 
+import java.net.URI;
 import java.net.URISyntaxException;
 
 import javax.jms.Connection;
@@ -49,4 +50,8 @@ public interface JmsProvider
     Topic createTopicOnFanout(Connection con, String topicName) throws JMSException, URISyntaxException;
 
     ConnectionBuilder getConnectionBuilder();
+
+    void addGenericConnectionListener(Connection connection, GenericConnectionListener genericConnectionListener);
+
+    URI getConnectedURI(Connection connection);
 }

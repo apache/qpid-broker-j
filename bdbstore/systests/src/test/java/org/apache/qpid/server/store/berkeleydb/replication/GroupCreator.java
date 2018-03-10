@@ -50,8 +50,8 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHostImpl;
@@ -60,20 +60,18 @@ import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHARemoteReplicationN
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNodeImpl;
 import org.apache.qpid.systest.rest.RestTestHelper;
+import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class GroupCreator
 {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(GroupCreator.class);
-
-    private static final String MANY_BROKER_URL_FORMAT = "amqp://guest:guest@/%s?brokerlist='%s'&failover='roundrobin?cyclecount='%d''";
-    private static final String BROKER_PORTION_FORMAT = "tcp://localhost:%d?connectdelay='%d',retries='%d'";
+    private static final Logger LOGGER = LoggerFactory.getLogger(GroupCreator.class);
 
     private static final int FAILOVER_CYCLECOUNT = 40;
     private static final int FAILOVER_RETRIES = 0;
-    private static final int FAILOVER_CONNECTDELAY = 250;
+    private static final int FAILOVER_CONNECTDELAY = 1000;
 
     private final QpidBrokerTestCase _testcase;
     private final String _virtualHostName;
@@ -258,8 +256,7 @@ public class GroupCreator
 
     public int getBrokerPortNumberFromConnection(Connection connection)
     {
-        final AMQConnection amqConnection = (AMQConnection)connection;
-        return amqConnection.getActiveBrokerDetails().getPort();
+        return _testcase.getJmsProvider().getConnectedURI(connection).getPort();
     }
 
     public int getPortNumberOfAnInactiveBroker(final Connection activeConnection)
@@ -282,27 +279,43 @@ public class GroupCreator
         return ports;
     }
 
-    public String getConnectionUrlForAllClusterNodes() throws Exception
+    public ConnectionBuilder getConnectionBuilderForAllClusterNodes() throws Exception
     {
-        return  getConnectionUrlForAllClusterNodes(FAILOVER_CONNECTDELAY, FAILOVER_RETRIES, FAILOVER_CYCLECOUNT);
+        return getConnectionBuilderForAllClusterNodes(FAILOVER_CONNECTDELAY, FAILOVER_RETRIES, FAILOVER_CYCLECOUNT);
     }
 
-    public String getConnectionUrlForAllClusterNodes(int connectDelay, int retries, final int cyclecount) throws Exception
+    public ConnectionBuilder getConnectionBuilderForAllClusterNodes(int connectDelay, int retries, final int cyclecount) throws Exception
     {
-        final StringBuilder brokerList = new StringBuilder();
+        final ConnectionBuilder connectionBuilder = _testcase.getConnectionBuilder();
+        connectionBuilder.setFailoverReconnectDelay(connectDelay);
+        connectionBuilder.setVirtualHost(_virtualHostName);
+        connectionBuilder.setFailover(true);
 
-        for(Iterator<Integer> itr = _members.keySet().iterator(); itr.hasNext(); )
+        final int reconnectAttempts = (retries == 0 ? 1 : retries) * (cyclecount == 0 ? 1 : cyclecount);
+        connectionBuilder.setFailoverReconnectAttempts(reconnectAttempts);
+
+        final Iterator<Integer> iterator = _members.keySet().iterator();
+        if (iterator.hasNext())
         {
-            int brokerPortNumber = itr.next();
-
-            brokerList.append(String.format(BROKER_PORTION_FORMAT, brokerPortNumber, connectDelay, retries));
-            if (itr.hasNext())
-            {
-                brokerList.append(";");
-            }
+            final int firstBroker = iterator.next();
+            connectionBuilder.setPort(firstBroker);
         }
 
-        return String.format(MANY_BROKER_URL_FORMAT, _virtualHostName, brokerList, cyclecount);
+        while (iterator.hasNext())
+        {
+            int brokerPortNumber = iterator.next();
+            connectionBuilder.addFailoverPort(brokerPortNumber);
+        }
+
+        if (_testcase.getBrokerProtocol().equals(Protocol.AMQP_1_0))
+        {
+            connectionBuilder.setOptions(Collections.singletonMap("failover.warnAfterReconnectAttempts", "1"));
+            // TODO - workaround for the fact that the client does not respect reconnectDelay if the
+            // server closes the connection gracefully.
+            connectionBuilder.setOptions(Collections.singletonMap("failover.initialReconnectDelay", "15000"));
+        }
+
+        return connectionBuilder;
     }
 
     public String getGroupName()
@@ -453,8 +466,13 @@ public class GroupCreator
                 Thread.sleep(1000);
             }
         }
-        LOGGER.debug("Node '" + getNodeNameForBrokerPort(remoteNodePort) + "' attribute  '" + attributeName + "' is " + attributeValue);
-        Assert.assertTrue("Unexpected " + attributeName + " at " + localNodePort, desiredValues.contains(attributeValue));
+        LOGGER.debug("Node '{}' attribute  '{}' value '{}'", getNodeNameForBrokerPort(remoteNodePort), attributeName, attributeValue);
+        Assert.assertTrue(String.format("Node port %d:  Attribute '%s' has unexpected value '%s', desired values [%s]",
+                                        localNodePort,
+                                        attributeName,
+                                        attributeValue,
+                                        desiredValues),
+                          desiredValues.contains(attributeValue));
     }
 
     public RestTestHelper createRestTestHelper(int brokerPort)

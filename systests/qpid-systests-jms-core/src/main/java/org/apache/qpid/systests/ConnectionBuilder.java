@@ -34,14 +34,19 @@ public interface ConnectionBuilder
 
     ConnectionBuilder setHost(String host);
     ConnectionBuilder setPort(int port);
+
+    @Deprecated
     ConnectionBuilder setSslPort(int port);
+
     ConnectionBuilder setPrefetch(int prefetch);
     ConnectionBuilder setClientId(String clientId);
     ConnectionBuilder setUsername(String username);
     ConnectionBuilder setPassword(String password);
     ConnectionBuilder setVirtualHost(String virtualHostName);
     ConnectionBuilder setFailover(boolean enableFailover);
+    ConnectionBuilder addFailoverPort(int port);
     ConnectionBuilder setFailoverReconnectAttempts(int reconnectAttempts);
+    ConnectionBuilder setFailoverReconnectDelay(int connectDelay);
     ConnectionBuilder setTls(boolean enableTls);
     ConnectionBuilder setSyncPublish(boolean syncPublish);
     ConnectionBuilder setOptions(Map<String, String> options);
@@ -56,8 +61,9 @@ public interface ConnectionBuilder
     ConnectionBuilder setVerifyHostName(boolean verifyHostName);
     ConnectionBuilder setKeyAlias(String alias);
     ConnectionBuilder setSaslMechanisms(String... mechanism);
-    ConnectionBuilder setCompress(boolean compress);
 
+    ConnectionBuilder setCompress(boolean compress);
     Connection build() throws NamingException, JMSException;
+
     ConnectionFactory buildConnectionFactory() throws NamingException;
 }

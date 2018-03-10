@@ -17,9 +17,6 @@
 // under the License.
 //
 
-// Exclude client test of initial context factory, as the 1.0 profile uses the 1.0 context factory
-org.apache.qpid.jndi.PropertiesFileInitialContextFactoryTest#*
-
 // The binding logging tests focus on the behaviour of the old client with regard to creating (and binding) queues on
 // the creation of consumers.
 org.apache.qpid.server.logging.BindingLoggingTest#*
@@ -30,19 +27,12 @@ org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartConsumerFlowSt
 // This test is testing AMQP 0-x specific behaviour
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
 
-// This test is checking features of the 0-x client specific implementation of Session
-org.apache.qpid.test.unit.client.AMQSessionTest#*
-
 // Tests the interaction between the Broker's supported protocols and what the 0-x client agrees to
 org.apache.qpid.server.SupportedProtocolVersionsTest#*
 
 // Durable topic subscriptions will be reimplemented with the shared topic subscriptions (QPID-7569)
 org.apache.qpid.server.logging.ConsumerLoggingTest#testSubscriptionCreateDurable
 org.apache.qpid.server.logging.ConsumerLoggingTest#testSubscriptionCreateDurableWithArguments
-
-// Tests assume BURL and/or Connection URL formats
-org.apache.qpid.server.store.berkeleydb.replication.MultiNodeTest#*
-org.apache.qpid.server.store.berkeleydb.replication.TwoNodeTest#*
 
 // These tests assume names of queues backing durable subscriptions
 org.apache.qpid.server.store.berkeleydb.BDBUpgradeTest#testConsumptionOfUpgradedMessages

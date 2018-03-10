@@ -99,6 +99,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     private AmqpManagementFacade _managementFacade;
     private BrokerHolder _defaultBroker;
     private MessageType _messageType = MessageType.TEXT;
+
     private JmsProvider _jmsProvider;
 
     @Override
@@ -215,6 +216,11 @@ public class QpidBrokerTestCase extends QpidTestCase
     public void restartDefaultBroker() throws Exception
     {
         getDefaultBroker().restart();
+    }
+
+    public JmsProvider getJmsProvider()
+    {
+        return _jmsProvider;
     }
 
     public ConnectionBuilder getConnectionBuilder()
@@ -571,7 +577,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         sendMessage(session, destination, 1);
         session.commit();
         connection.start();
-        Message m1 = consumer.receive(RECEIVE_TIMEOUT);
+        Message m1 = consumer.receive(getReceiveTimeout());
         assertNotNull("Message 1 is not received", m1);
         assertEquals("Unexpected first message received", 0, m1.getIntProperty(INDEX));
         session.commit();

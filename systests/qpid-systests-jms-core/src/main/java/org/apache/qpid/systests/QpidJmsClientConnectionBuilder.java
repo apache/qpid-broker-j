@@ -22,10 +22,15 @@ package org.apache.qpid.systests;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -43,6 +48,7 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     private Map<String, Object> _options;
     private boolean _enableTls;
     private boolean _enableFailover;
+    private final List<Integer> _failoverPorts = new ArrayList<>();
 
     QpidJmsClientConnectionBuilder()
     {
@@ -64,6 +70,13 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setPort(final int port)
     {
         _port = port;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder addFailoverPort(final int port)
+    {
+        _failoverPorts.add(port);
         return this;
     }
 
@@ -141,6 +154,13 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setFailoverReconnectAttempts(final int reconnectAttempts)
     {
         _options.put("failover.maxReconnectAttempts", reconnectAttempts);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setFailoverReconnectDelay(final int connectDelay)
+    {
+        _options.put("failover.reconnectDelay", connectDelay);
         return this;
     }
 
@@ -270,13 +290,43 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
             {
                 options.put("failover.maxReconnectAttempts", "2");
             }
-            connectionUrlBuilder.append("failover:(amqp://")
-                    .append(_host)
-                    .append(":")
-                    .append(_port)
-                    .append(",amqp://localhost:")
-                    .append(System.getProperty("test.port.alt"))
-                    .append(")");
+
+            final Set<String> transportKeys = options.keySet()
+                                                     .stream()
+                                                     .filter(key -> key.startsWith("amqp.") || key.startsWith(
+                                                             "transport."))
+                                                     .collect(Collectors.toSet());
+
+
+            final Map<String, Object> transportOptions = new HashMap<>(options);
+            transportOptions.keySet().retainAll(transportKeys);
+            options.keySet().removeAll(transportKeys);
+
+            final StringBuilder transportQueryBuilder = new StringBuilder();
+            appendOptions(transportOptions, transportQueryBuilder);
+            final String transportQuery = transportQueryBuilder.toString();
+
+            final List<Integer> copy = new ArrayList<>(_failoverPorts.size() + 1);
+            copy.add(_enableTls ? _sslPort : _port);
+
+            if (_failoverPorts.isEmpty())
+            {
+                Integer testPortAlt;
+                if ((testPortAlt = Integer.getInteger("test.port.alt")) != null)
+                {
+                    copy.add(testPortAlt);
+                }
+                else if (_enableTls && (testPortAlt = Integer.getInteger("test.port.alt.ssl")) != null)
+                {
+                    copy.add(testPortAlt);
+                }
+            }
+            copy.addAll(_failoverPorts);
+
+            final String failover = copy.stream()
+                                        .map(port -> String.format("amqp://%s:%d%s", _host, port, transportQuery))
+                                        .collect(Collectors.joining(",", "failover:(", ")"));
+            connectionUrlBuilder.append(failover);
             appendOptions(options, connectionUrlBuilder);
         }
         else if (!_enableTls)

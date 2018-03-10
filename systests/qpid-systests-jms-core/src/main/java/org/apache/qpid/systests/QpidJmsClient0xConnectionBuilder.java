@@ -23,9 +23,12 @@ package org.apache.qpid.systests;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -36,6 +39,8 @@ import javax.naming.NamingException;
 
 public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
 {
+    private final List<Integer> _failoverPorts = new ArrayList<>();
+
     private String _clientId = "clientid";
     private String _username = USERNAME;
     private String _password = PASSWORD;
@@ -44,6 +49,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     private boolean _enableFailover;
     private final Map<String, Object> _options = new TreeMap<>();
     private int _reconnectAttempts = 20;
+    private int _connectdelay;
     private String _host = "localhost";
     private int _port;
     private int _sslPort;
@@ -66,6 +72,13 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setPort(final int port)
     {
         _port = port;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder addFailoverPort(final int port)
+    {
+        _failoverPorts.add(port);
         return this;
     }
 
@@ -122,6 +135,13 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setFailoverReconnectAttempts(final int reconnectAttempts)
     {
         _reconnectAttempts = reconnectAttempts;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setFailoverReconnectDelay(final int connectDelay)
+    {
+        _connectdelay = connectDelay;
         return this;
     }
 
@@ -285,73 +305,47 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
         {
             cUrlBuilder.append(_virtualHost);
         }
+        cUrlBuilder.append("?");
 
-        cUrlBuilder.append("?brokerlist='tcp://").append(_host).append(":");
-        if (_enableTls)
+        final List<Integer> copy = new ArrayList<>(_failoverPorts.size() + 1);
+        copy.add(_enableTls ? _sslPort : _port);
+
+        if (_enableFailover)
         {
-            cUrlBuilder.append(_sslPort).append("?ssl='true'");
-            if (_keyStoreLocation != null)
+            if (_failoverPorts.isEmpty())
             {
-                cUrlBuilder.append("&key_store='").append(encodeBrokerOption(_keyStoreLocation)).append('\'');
+                Integer testPortAlt;
+                if ((testPortAlt = Integer.getInteger("test.port.alt")) != null)
+                {
+                    copy.add(testPortAlt);
+                }
+                else if (_enableTls && (testPortAlt = Integer.getInteger("test.port.alt.ssl")) != null)
+                {
+                    copy.add(testPortAlt);
+                }
             }
-            if (_keyStorePassword != null)
+            else
             {
-                cUrlBuilder.append("&key_store_password='").append(_keyStorePassword).append('\'');
-            }
-            if (_trustStoreLocation != null)
-            {
-                cUrlBuilder.append("&trust_store='").append(encodeBrokerOption(_trustStoreLocation)).append('\'');
-            }
-            if (_trustStorePassword != null)
-            {
-                cUrlBuilder.append("&trust_store_password='").append(_trustStorePassword).append('\'');
-            }
-            if (_verifyHostName != null)
-            {
-                cUrlBuilder.append("&ssl_verify_hostname='").append(_verifyHostName).append('\'');
-            }
-            if (_keyAlias != null)
-            {
-                cUrlBuilder.append("&ssl_cert_alias='").append(_keyAlias).append('\'');
+                copy.addAll(_failoverPorts);
             }
         }
-        else
+
+        final String transportQuery = buildTransportQuery();
+        final String brokerlist = copy.stream()
+                                    .map(port -> String.format("tcp://%s:%d%s", _host, port, transportQuery))
+                                    .collect(Collectors.joining(";", "brokerlist='", "'"));
+        cUrlBuilder.append(brokerlist);
+
+        if (_enableFailover)
         {
-            cUrlBuilder.append(_port);
+            cUrlBuilder.append("&sync_ack='true'&sync_publish='all'");
+            cUrlBuilder.append(String.format("&failover='roundrobin?cyclecount='%d''", _reconnectAttempts));
         }
 
         if (_saslMechanisms != null)
         {
-            if (_enableTls)
-            {
-                cUrlBuilder.append("&");
-            }
-            else
-            {
-                cUrlBuilder.append("?");
-            }
+            cUrlBuilder.append("&");
             cUrlBuilder.append("sasl_mechs='").append(_saslMechanisms).append('\'');
-        }
-
-        if (_enableFailover)
-        {
-            cUrlBuilder.append(";tcp://").append(_host).append(":");
-            if (_enableTls)
-            {
-                cUrlBuilder.append(System.getProperty("test.port.alt.ssl")).append("?ssl='true'");
-            }
-            else
-            {
-                cUrlBuilder.append(System.getProperty("test.port.alt"));
-            }
-            cUrlBuilder.append("'")
-                       .append("&sync_ack='true'&sync_publish='all'&failover='roundrobin?cyclecount='")
-                       .append(_reconnectAttempts)
-                       .append("''");
-        }
-        else
-        {
-            cUrlBuilder.append("'");
         }
 
         for (Map.Entry<String, Object> entry : _options.entrySet())
@@ -373,6 +367,47 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
         {
             initialContext.close();
         }
+    }
+
+    private String buildTransportQuery()
+    {
+        final StringBuilder builder = new StringBuilder();
+
+        if (_enableTls)
+        {
+            builder.append("?ssl='true'");
+            if (_keyStoreLocation != null)
+            {
+                builder.append("&key_store='").append(encodeBrokerOption(_keyStoreLocation)).append('\'');
+            }
+            if (_keyStorePassword != null)
+            {
+                builder.append("&key_store_password='").append(_keyStorePassword).append('\'');
+            }
+            if (_trustStoreLocation != null)
+            {
+                builder.append("&trust_store='").append(encodeBrokerOption(_trustStoreLocation)).append('\'');
+            }
+            if (_trustStorePassword != null)
+            {
+                builder.append("&trust_store_password='").append(_trustStorePassword).append('\'');
+            }
+            if (_verifyHostName != null)
+            {
+                builder.append("&ssl_verify_hostname='").append(_verifyHostName).append('\'');
+            }
+            if (_keyAlias != null)
+            {
+                builder.append("&ssl_cert_alias='").append(_keyAlias).append('\'');
+            }
+        }
+        if (_connectdelay > 0)
+        {
+            final char initial = builder.length() == 0 ? '?' : '&';
+            builder.append(String.format("%cconnectdelay='%d'", initial, _connectdelay));
+        }
+
+        return builder.toString();
     }
 
     private String encodeBrokerOption(final String canonicalPath)

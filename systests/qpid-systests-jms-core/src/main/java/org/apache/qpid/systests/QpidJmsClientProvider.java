@@ -20,7 +20,12 @@
 
 package org.apache.qpid.systests;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Objects;
 import java.util.Properties;
 
 import javax.jms.Connection;
@@ -120,4 +125,63 @@ public class QpidJmsClientProvider implements JmsProvider
             initialContext.close();
         }
     }
+
+    @Override
+    public void addGenericConnectionListener(final Connection connection, final GenericConnectionListener listener)
+    {
+        try
+        {
+            final Class<?> iface = Class.forName("org.apache.qpid.jms.JmsConnectionListener");
+            final Object listenerProxy = Proxy.newProxyInstance(iface.getClassLoader(),
+                                                                       new Class[]{iface},
+                                                                       (proxy, method, args) -> {
+                                                                           final String methodName = method.getName();
+                                                                           switch (methodName)
+                                                                           {
+                                                                               case "onConnectionRestored":
+                                                                                   listener.onConnectionRestored(
+
+                                                                                           ((URI) args[0]));
+                                                                                   break;
+                                                                               case "onConnectionInterrupted":
+                                                                                   listener.onConnectionInterrupted(
+
+                                                                                           ((URI) args[0]));
+                                                                                   break;
+                                                                               case "toString":
+                                                                                   return String.format("[Proxy %s]",
+                                                                                                        listener.toString());
+                                                                               case "equals":
+                                                                                   Object other = args[0];
+                                                                                   return Objects.equals(this, other);
+                                                                               case "hashCode":
+                                                                                   return Objects.hashCode(this);
+                                                                           }
+                                                                           return null;
+                                                                       });
+
+            final Method addConnectionListener = connection.getClass().getMethod("addConnectionListener", iface);
+            addConnectionListener.invoke(connection, listenerProxy);
+        }
+        catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e)
+        {
+            throw new RuntimeException("Unable to reflectively add listener", e);
+        }
+    }
+
+    @Override
+    public URI getConnectedURI(final Connection connection)
+    {
+        final Method connectedURI;
+        try
+        {
+            connectedURI = connection.getClass().getMethod("getConnectedURI", new Class[] {});
+            return (URI) connectedURI.invoke(connection, null);
+        }
+        catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e)
+        {
+            throw new RuntimeException("Unable to reflectively get connected URI", e);
+        }
+    }
+
 }

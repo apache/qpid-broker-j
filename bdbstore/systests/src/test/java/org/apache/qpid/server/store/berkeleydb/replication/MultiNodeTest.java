@@ -20,6 +20,7 @@
 package org.apache.qpid.server.store.berkeleydb.replication;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,7 +39,6 @@ import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
@@ -51,33 +51,35 @@ import com.sleepycat.je.rep.ReplicationConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHARemoteReplicationNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.NodeRole;
+import org.apache.qpid.systests.ConnectionBuilder;
+import org.apache.qpid.systests.GenericConnectionListener;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestUtils;
-import org.apache.qpid.util.FileUtils;
 
 public class MultiNodeTest extends QpidBrokerTestCase
 {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeTest.class);
 
     private static final String VIRTUAL_HOST = "test";
     private static final int NUMBER_OF_NODES = 3;
+    private static final int FAILOVER_COMPLETION_TIMEOUT = 60000;
 
     private GroupCreator _groupCreator;
 
     private FailoverAwaitingListener _failoverListener;
 
     /** Used when expectation is client will (re)-connect */
-    private String _positiveFailoverUrl;
+    private ConnectionBuilder _positiveFailoverBuilder;
 
     /** Used when expectation is client will not (re)-connect */
-    private String _negativeFailoverUrl;
+    private ConnectionBuilder _negativeFailoverBuilder;
 
     @Override
     protected void setUp() throws Exception
@@ -88,8 +90,8 @@ public class MultiNodeTest extends QpidBrokerTestCase
         _groupCreator = new GroupCreator(this, VIRTUAL_HOST, NUMBER_OF_NODES);
         _groupCreator.configureClusterNodes();
 
-        _positiveFailoverUrl = _groupCreator.getConnectionUrlForAllClusterNodes();
-        _negativeFailoverUrl = _groupCreator.getConnectionUrlForAllClusterNodes(200, 0, 2);
+        _positiveFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes();
+        _negativeFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes(200, 0, 2);
 
         _groupCreator.startCluster();
         _failoverListener = new FailoverAwaitingListener();
@@ -105,16 +107,15 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
     public void testLossOfMasterNodeCausesClientToFailover() throws Exception
     {
-        final Connection connection = getConnection(_positiveFailoverUrl);
-
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
+        final Connection connection = _positiveFailoverBuilder.build();
+        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
         final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port " + activeBrokerPort);
+        LOGGER.info("Active connection port {}", activeBrokerPort);
 
         _groupCreator.stopNode(activeBrokerPort);
         LOGGER.info("Node is stopped");
-        _failoverListener.awaitFailoverCompletion(20000);
+        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Listener has finished");
         // any op to ensure connection remains
         connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -122,25 +123,36 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
     public void testLossOfReplicaNodeDoesNotCauseClientToFailover() throws Exception
     {
-        final Connection connection = getConnection(_positiveFailoverUrl);
+        final Connection connection = _positiveFailoverBuilder.build();
+        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
         final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port " + activeBrokerPort);
-        final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
+        LOGGER.info("Active connection port {}", activeBrokerPort);
 
-        LOGGER.info("Stopping inactive broker on port " + inactiveBrokerPort);
+        final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
+        LOGGER.info("Stopping inactive broker on port {} ", inactiveBrokerPort);
 
         _groupCreator.stopNode(inactiveBrokerPort);
 
         _failoverListener.assertNoFailoverCompletionWithin(2000);
 
-        assertProducingConsuming(connection);
+        // any op to ensure connection remains
+        connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
     }
 
     public void testLossOfQuorumCausesClientDisconnection() throws Exception
     {
-        final Connection connection = getConnection(_negativeFailoverUrl);
+        if (getBrokerProtocol().equals(Protocol.AMQP_1_0))
+        {
+            // TODO - there seems to be a client defect when a JMS operation is interrupted
+            // by a graceful connection close from the client side.
+            return;
+        }
+
+        final Connection connection = _negativeFailoverBuilder.build();
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        Destination destination = session.createQueue(getTestQueueName());
+        getJmsProvider().createQueue(session, getTestQueueName());
 
         Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
 
@@ -155,10 +167,9 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
         try
         {
-            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-            Destination destination = session.createQueue(getTestQueueName());
-            session.createConsumer(destination).close();
-            fail("Exception not thrown - creating durable queue should fail without quorum");
+
+            sendMessage(session, destination, 1);
+            fail("Exception not thrown - sending message within a transaction should fail without quorum");
         }
         catch(JMSException jms)
         {
@@ -168,7 +179,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         // New connections should now fail as vhost will be unavailable
         try
         {
-            Connection unexpectedConnection = getConnection(_negativeFailoverUrl);
+            Connection unexpectedConnection = _negativeFailoverBuilder.build();
             fail("Got unexpected connection to node in group without quorum " + unexpectedConnection);
         }
         catch (JMSException je)
@@ -184,9 +195,13 @@ public class MultiNodeTest extends QpidBrokerTestCase
      */
     public void testQuorumLostAndRestored_OriginalMasterRejoinsTheGroup() throws Exception
     {
-        final Connection connection = getConnection(_positiveFailoverUrl);
+        final Connection connection = _positiveFailoverBuilder.build();
+        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        getJmsProvider().createQueue(session, getTestQueueName());
+        Destination dest = session.createQueue(getTestQueueName());
+        session.close();
 
         Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
 
@@ -196,7 +211,6 @@ public class MultiNodeTest extends QpidBrokerTestCase
         Session session1 = connection.createSession(true, Session.SESSION_TRANSACTED);
         Session session2 = connection.createSession(true, Session.SESSION_TRANSACTED);
 
-        Destination dest = session1.createQueue(getTestQueueName());
         session1.createConsumer(dest).close();
 
         MessageProducer producer1 = session1.createProducer(dest);
@@ -221,32 +235,34 @@ public class MultiNodeTest extends QpidBrokerTestCase
             _groupCreator.startNode(p);
         }
 
-        _failoverListener.awaitFailoverCompletion(20000);
+        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
 
         _groupCreator.awaitNodeToAttainRole(activeBrokerPort, "MASTER", "REPLICA");
     }
 
     public void testPersistentMessagesAvailableAfterFailover() throws Exception
     {
-        final Connection connection = getConnection(_positiveFailoverUrl);
+        final Connection connection = _positiveFailoverBuilder.build();
+        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        getJmsProvider().createQueue(session, getTestQueueName());
+        Destination queue = session.createQueue(getTestQueueName());
+        session.close();
 
         final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
 
         Session producingSession = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Destination queue = producingSession.createQueue(getTestQueueName());
-        producingSession.createConsumer(queue).close();
         sendMessage(producingSession, queue, 10);
 
         _groupCreator.stopNode(activeBrokerPort);
-        LOGGER.info("Old master (broker port " + activeBrokerPort + ") is stopped");
+        LOGGER.info("Old master (broker port {}) is stopped", activeBrokerPort);
 
-        _failoverListener.awaitFailoverCompletion(20000);
+        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Failover has finished");
 
         final int activeBrokerPortAfterFailover = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("New master (broker port " + activeBrokerPort + ") after failover");
+        LOGGER.info("New master (broker port {}) after failover", activeBrokerPortAfterFailover);
 
         Session consumingSession = connection.createSession(true, Session.SESSION_TRANSACTED);
         MessageConsumer consumer = consumingSession.createConsumer(queue);
@@ -254,7 +270,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         connection.start();
         for(int i = 0; i < 10; i++)
         {
-            Message m = consumer.receive(RECEIVE_TIMEOUT);
+            Message m = consumer.receive(getReceiveTimeout());
             assertNotNull("Message " + i + "  is not received", m);
             assertEquals("Unexpected message received", i, m.getIntProperty(INDEX));
         }
@@ -263,13 +279,17 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
     public void testTransferMasterFromLocalNode() throws Exception
     {
-        final Connection connection = getConnection(_positiveFailoverUrl);
+        final Connection connection = _positiveFailoverBuilder.build();
+
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        getJmsProvider().createQueue(session, getTestQueueName());
+        session.close();
 
         final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port " + activeBrokerPort);
+        LOGGER.info("Active connection port {}", activeBrokerPort);
 
         final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
-        LOGGER.info("Update role attribute on inactive broker on port " + inactiveBrokerPort);
+        LOGGER.info("Update role attribute on inactive broker on port {}", inactiveBrokerPort);
 
         // transfer mastership 3 times in order to verify
         // that repeated mastership transfer to the same node works, See QPID-6996
@@ -283,14 +303,13 @@ public class MultiNodeTest extends QpidBrokerTestCase
                                              final int activeBrokerPort) throws Exception
     {
         _failoverListener = new FailoverAwaitingListener();
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
+        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
         Map<String, Object> attributes = _groupCreator.getNodeAttributes(inactiveBrokerPort);
         assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
-        _groupCreator.setNodeAttributes(inactiveBrokerPort,
-                                          Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
+        _groupCreator.setNodeAttributes(inactiveBrokerPort, Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
 
-        _failoverListener.awaitFailoverCompletion(20000);
+        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Listener has finished");
 
         attributes = _groupCreator.getNodeAttributes(inactiveBrokerPort);
@@ -303,15 +322,17 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
     public void testTransferMasterFromRemoteNode() throws Exception
     {
-        final Connection connection = getConnection(_positiveFailoverUrl);
+        final Connection connection = _positiveFailoverBuilder.build();
 
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        getJmsProvider().createQueue(session, getTestQueueName());
+        session.close();
 
         final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port " + activeBrokerPort);
+        LOGGER.info("Active connection port {}", activeBrokerPort);
 
         final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
-        LOGGER.info("Update role attribute on inactive broker on port " + inactiveBrokerPort);
+        LOGGER.info("Update role attribute on inactive broker on port {}", inactiveBrokerPort);
 
         // transfer mastership 3 times in order to verify
         // that repeated mastership transfer to the same node works, See QPID-6996
@@ -325,15 +346,15 @@ public class MultiNodeTest extends QpidBrokerTestCase
                                               final int inactiveBrokerPort) throws Exception
     {
         _failoverListener = new FailoverAwaitingListener();
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
+        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
         _groupCreator.awaitNodeToAttainRole(activeBrokerPort, inactiveBrokerPort, "REPLICA");
         Map<String, Object> attributes = _groupCreator.getNodeAttributes(activeBrokerPort, inactiveBrokerPort);
         assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
 
-        _groupCreator.setNodeAttributes(activeBrokerPort, inactiveBrokerPort, Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
+        _groupCreator.setNodeAttributes(activeBrokerPort, inactiveBrokerPort, Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
 
-        _failoverListener.awaitFailoverCompletion(20000);
+        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Listener has finished");
 
         attributes = _groupCreator.getNodeAttributes(inactiveBrokerPort);
@@ -346,12 +367,11 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
     public void testTransferMasterWhilstMessagesInFlight() throws Exception
     {
-        final Connection connection = getConnection(_positiveFailoverUrl);
-        ((AMQConnection) connection).setConnectionListener(_failoverListener);
-
-        final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        final Connection connection = _positiveFailoverBuilder.build();
+        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        getJmsProvider().createQueue(session, getTestQueueName());
         final Destination destination = session.createQueue(getTestQueueName());
-        session.createConsumer(destination).close();
 
         final AtomicBoolean masterTransferred = new AtomicBoolean(false);
         final AtomicBoolean keepRunning = new AtomicBoolean(true);
@@ -360,58 +380,52 @@ public class MultiNodeTest extends QpidBrokerTestCase
         final CountDownLatch producedOneAfter = new CountDownLatch(1);
         final CountDownLatch workerShutdown = new CountDownLatch(1);
 
-        Runnable producer = new Runnable()
-        {
-            @Override
-            public void run()
+        Runnable producer = () -> {
+            try
             {
-                try
+                int count = 0;
+                MessageProducer producer1 = session.createProducer(destination);
+
+                while (keepRunning.get())
                 {
-                    int count = 0;
-                    MessageProducer producer = session.createProducer(destination);
-
-                    while (keepRunning.get())
+                    String messageText = "message" + count;
+                    try
                     {
-                        String messageText = "message" + count;
-                        try
-                        {
-                            Message message = session.createTextMessage(messageText);
-                            producer.send(message);
-                            session.commit();
-                            LOGGER.debug("Sent message " + count);
+                        Message message = session.createTextMessage(messageText);
+                        producer1.send(message);
+                        session.commit();
+                        LOGGER.debug("Sent message " + count);
 
-                            producedOneBefore.countDown();
+                        producedOneBefore.countDown();
 
-                            if (masterTransferred.get())
-                            {
-                                producedOneAfter.countDown();
-                            }
-                            count++;
-                        }
-                        catch (javax.jms.IllegalStateException ise)
+                        if (masterTransferred.get())
                         {
-                            throw ise;
+                            producedOneAfter.countDown();
                         }
-                        catch (TransactionRolledBackException trbe)
-                        {
-                            // Pass - failover in prgoress
-                        }
-                        catch(JMSException je)
-                        {
-                            // Pass - failover in progress
-                        }
+                        count++;
+                    }
+                    catch (javax.jms.IllegalStateException ise)
+                    {
+                        throw ise;
+                    }
+                    catch (TransactionRolledBackException trbe)
+                    {
+                        // Pass - failover in prgoress
+                    }
+                    catch(JMSException je)
+                    {
+                        // Pass - failover in progress
                     }
                 }
-                catch (Exception e)
-                {
-                    workerException.set(e);
-                }
-                finally
-                {
-                    workerShutdown.countDown();
-                }
             }
-
+            catch (Exception e)
+            {
+                workerException.set(e);
+            }
+            finally
+            {
+                workerShutdown.countDown();
+            }
         };
 
         Thread backgroundWorker = new Thread(producer);
@@ -421,18 +435,18 @@ public class MultiNodeTest extends QpidBrokerTestCase
         assertTrue(workerRunning);
 
         final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port " + activeBrokerPort);
+        LOGGER.info("Active connection port {}", activeBrokerPort);
 
         final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
-        LOGGER.info("Update role attribute on inactive broker on port " + inactiveBrokerPort);
+        LOGGER.info("Update role attribute on inactive broker on port {}", inactiveBrokerPort);
 
         _groupCreator.awaitNodeToAttainRole(activeBrokerPort, inactiveBrokerPort, "REPLICA");
         Map<String, Object> attributes = _groupCreator.getNodeAttributes(activeBrokerPort, inactiveBrokerPort);
         assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
 
-        _groupCreator.setNodeAttributes(activeBrokerPort, inactiveBrokerPort, Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
+        _groupCreator.setNodeAttributes(activeBrokerPort, inactiveBrokerPort, Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
 
-        _failoverListener.awaitFailoverCompletion(20000);
+        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Failover has finished");
 
         attributes = _groupCreator.getNodeAttributes(inactiveBrokerPort);
@@ -454,35 +468,39 @@ public class MultiNodeTest extends QpidBrokerTestCase
         assertNull(workerException.get());
 
         assertNotNull(session.createTemporaryQueue());
-
     }
 
     public void testInFlightTransactionsWhilstMajorityIsLost() throws Exception
     {
+        if (getBrokerProtocol().equals(Protocol.AMQP_1_0))
+        {
+            // TODO - there seems to be a client defect when a JMS operation is interrupted
+            // by a graceful connection close from the client side.
+            return;
+        }
+
         int connectionNumber = Integer.getInteger("MultiNodeTest.testInFlightTransactionsWhilstMajorityIsLost.numberOfConnections", 20);
-        ExecutorService executorService = Executors.newFixedThreadPool(connectionNumber + NUMBER_OF_NODES -1);
+        ExecutorService executorService = Executors.newFixedThreadPool(connectionNumber + NUMBER_OF_NODES - 1);
         try
         {
-            String connectionUrl = _groupCreator.getConnectionUrlForAllClusterNodes(100, 0, 100);
+            final ConnectionBuilder builder = _groupCreator.getConnectionBuilderForAllClusterNodes(100, 0, 100);
+            final Connection consumerConnection = builder.build();
+            Session s = consumerConnection.createSession(true, Session.SESSION_TRANSACTED);
+            getJmsProvider().createQueue(s, getTestQueueName());
+            s.close();
 
-            final Connection consumerConnection = getConnection(connectionUrl);
             consumerConnection.start();
 
             final Session consumerSession = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final Destination destination = consumerSession.createQueue(getTestQueueName());
-            consumerSession.createConsumer(destination).setMessageListener(new MessageListener()
-            {
-                @Override
-                public void onMessage(final Message message)
+            consumerSession.createConsumer(destination).setMessageListener(message -> {
+                try
                 {
-                    try
-                    {
-                        LOGGER.info("Message received: " + ((TextMessage) message).getText());
-                    }
-                    catch (JMSException e)
-                    {
-                        LOGGER.error("Failure to get message text", e);
-                    }
+                    LOGGER.info("Message received: " + ((TextMessage) message).getText());
+                }
+                catch (JMSException e)
+                {
+                    LOGGER.error("Failure to get message text", e);
                 }
             });
 
@@ -490,7 +508,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
             final Session[] sessions = new Session[connectionNumber];
             for (int i = 0; i < sessions.length; i++)
             {
-                connections[i] = getConnection(connectionUrl);
+                connections[i] = builder.build();
                 sessions[i] = connections[i].createSession(true, Session.SESSION_TRANSACTED);
                 LOGGER.info("Session {} is created", i);
             }
@@ -512,8 +530,8 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
                 for (int i = 0; i < sessions.length; i++)
                 {
-                    AMQConnection connection = (AMQConnection)connections[i];
-                    connection.setConnectionListener(failoverListener);
+                    Connection connection = connections[i];
+                    getJmsProvider().addGenericConnectionListener(connection, failoverListener);
 
                     MessageProducer producer = sessions[i].createProducer(destination);
                     Message message = sessions[i].createTextMessage(messageText + "-" + i);
@@ -523,7 +541,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
                 LOGGER.info("All publishing sessions have uncommitted transactions");
 
                 final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connections[0]);
-                LOGGER.info("Active connection port " + activeBrokerPort);
+                LOGGER.info("Active connection port {}", activeBrokerPort);
 
                 List<Integer> inactivePorts = new ArrayList<>(ports);
                 inactivePorts.remove(new Integer(activeBrokerPort));
@@ -534,27 +552,22 @@ public class MultiNodeTest extends QpidBrokerTestCase
                     final int inactiveBrokerPort = port;
                     LOGGER.info("Stop node for inactive broker on port " + inactiveBrokerPort);
 
-                    executorService.submit(new Runnable()
-                    {
-                        @Override
-                        public void run()
+                    executorService.submit(() -> {
+                        try
                         {
-                            try
-                            {
-                                _groupCreator.setNodeAttributes(inactiveBrokerPort,
-                                                                inactiveBrokerPort,
-                                                                Collections.<String, Object>singletonMap(
-                                                                        BDBHAVirtualHostNode.DESIRED_STATE,
-                                                                        State.STOPPED.name()));
-                            }
-                            catch (Exception e)
-                            {
-                                LOGGER.error("Failed to stop node on broker with port " + inactiveBrokerPort, e);
-                            }
-                            finally
-                            {
-                                latch.countDown();
-                            }
+                            _groupCreator.setNodeAttributes(inactiveBrokerPort,
+                                                            inactiveBrokerPort,
+                                                            Collections.singletonMap(
+                                                                    BDBHAVirtualHostNode.DESIRED_STATE,
+                                                                    State.STOPPED.name()));
+                        }
+                        catch (Exception e)
+                        {
+                            LOGGER.error("Failed to stop node on broker with port {}", inactiveBrokerPort, e);
+                        }
+                        finally
+                        {
+                            latch.countDown();
                         }
                     });
                 }
@@ -562,22 +575,16 @@ public class MultiNodeTest extends QpidBrokerTestCase
                 latch.await(500, TimeUnit.MILLISECONDS);
 
                 LOGGER.info("Committing transactions in parallel to provoke a lot of syncing to disk");
-                for (int i = 0; i < sessions.length; i++)
+                for (final Session session : sessions)
                 {
-                    final Session session = sessions[i];
-                    executorService.submit(new Runnable()
-                    {
-                        @Override
-                        public void run()
+                    executorService.submit(() -> {
+                        try
                         {
-                            try
-                            {
-                                session.commit();
-                            }
-                            catch (JMSException e)
-                            {
-                                // majority of commits might fail due to insufficient replicas
-                            }
+                            session.commit();
+                        }
+                        catch (JMSException e)
+                        {
+                            // majority of commits might fail due to insufficient replicas
                         }
                     });
                 }
@@ -596,7 +603,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
                     {
                         _groupCreator.setNodeAttributes(port,
                                                         port,
-                                                        Collections.<String, Object>singletonMap(
+                                                        Collections.singletonMap(
                                                                 BDBHAVirtualHostNode.DESIRED_STATE,
                                                                 State.ACTIVE.name()));
                     }
@@ -635,8 +642,11 @@ public class MultiNodeTest extends QpidBrokerTestCase
      */
     public void testQuorumOverride() throws Exception
     {
-        final Connection connection = getConnection(_positiveFailoverUrl);
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
+        final Connection connection = _positiveFailoverBuilder.build();
+        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        getJmsProvider().createQueue(session, getTestQueueName());
+        session.close();
 
         Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
 
@@ -650,17 +660,17 @@ public class MultiNodeTest extends QpidBrokerTestCase
         }
 
         LOGGER.info("Awaiting failover to start");
-        _failoverListener.awaitPreFailover(20000);
+        _failoverListener.awaitPreFailover(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Failover has begun");
 
         Map<String, Object> attributes = _groupCreator.getNodeAttributes(activeBrokerPort);
         assertEquals("Broker has unexpected quorum override", new Integer(0), attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
-        _groupCreator.setNodeAttributes(activeBrokerPort, Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1));
+        _groupCreator.setNodeAttributes(activeBrokerPort, Collections.singletonMap(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1));
 
         attributes = _groupCreator.getNodeAttributes(activeBrokerPort);
         assertEquals("Broker has unexpected quorum override", new Integer(1), attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
 
-        _failoverListener.awaitFailoverCompletion(20000);
+        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Failover has finished");
 
         assertProducingConsuming(connection);
@@ -668,12 +678,14 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
     public void testPriority() throws Exception
     {
-        final Connection connection = getConnection(_positiveFailoverUrl);
-
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
+        final Connection connection = _positiveFailoverBuilder.build();
+        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        getJmsProvider().createQueue(session, getTestQueueName());
+        session.close();
 
         final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port " + activeBrokerPort);
+        LOGGER.info("Active connection port {}", activeBrokerPort);
 
         int priority = 1;
         Integer highestPriorityBrokerPort = null;
@@ -690,7 +702,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
             }
         }
 
-        LOGGER.info("Broker on port " + highestPriorityBrokerPort + " has the highest priority of " + priority);
+        LOGGER.info("Broker on port {} has the highest priority of {}", highestPriorityBrokerPort, priority);
 
         // make sure all remote nodes are materialized on the master
         // in order to make sure that DBPing is not invoked
@@ -725,7 +737,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         LOGGER.info("Shutting down the MASTER");
         _groupCreator.stopNode(activeBrokerPort);
 
-        _failoverListener.awaitFailoverCompletion(20000);
+        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Listener has finished");
 
         Map<String, Object> attributes = _groupCreator.getNodeAttributes(highestPriorityBrokerPort, highestPriorityBrokerPort);
@@ -756,25 +768,14 @@ public class MultiNodeTest extends QpidBrokerTestCase
                                                    Durability.SyncPolicy.WRITE_NO_SYNC,
                                                    Durability.ReplicaAckPolicy.SIMPLE_MAJORITY));
 
-            ReplicatedEnvironment intruder = null;
             final String currentThreadName = Thread.currentThread().getName();
-            try
+            try(ReplicatedEnvironment intruder = new ReplicatedEnvironment(environmentPathFile, replicationConfig, envConfig))
             {
-                intruder = new ReplicatedEnvironment(environmentPathFile, replicationConfig, envConfig);
+                LOGGER.debug("Intruder started");
             }
             finally
             {
-                try
-                {
-                    if (intruder != null)
-                    {
-                        intruder.close();
-                    }
-                }
-                finally
-                {
-                    Thread.currentThread().setName(currentThreadName);
-                }
+                Thread.currentThread().setName(currentThreadName);
             }
 
             for (int port : _groupCreator.getBrokerPortNumbersForNodes())
@@ -802,29 +803,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         }
     }
 
-    private void awaitNextTransaction(final int brokerPort) throws Exception
-    {
-        Map<String, Object> attributes = _groupCreator.getNodeAttributes(brokerPort);
-        final int originalTransactionId = (int) attributes.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID);
-        int currentTransactionId = 0;
-        long timeout = System.currentTimeMillis() + 60000;
-        LOGGER.debug("Awaiting next transaction. Original transaction id {}", originalTransactionId);
-        do
-        {
-            Thread.sleep(250);
-            attributes = _groupCreator.getNodeAttributes(brokerPort);
-            currentTransactionId = (int) attributes.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID);
-            LOGGER.debug("Current transaction id {}", currentTransactionId);
-        }
-        while (originalTransactionId >= currentTransactionId && timeout > System.currentTimeMillis());
-
-        assertTrue("Group transaction has not occurred within timeout."
-                   + "Current transaction id " + currentTransactionId
-                   + "Original transaction id " + originalTransactionId,
-                   currentTransactionId > originalTransactionId);
-    }
-
-    private final class FailoverAwaitingListener implements ConnectionListener
+    private final class FailoverAwaitingListener implements GenericConnectionListener
     {
         private final CountDownLatch _failoverCompletionLatch;
         private final CountDownLatch _preFailoverLatch;
@@ -842,20 +821,19 @@ public class MultiNodeTest extends QpidBrokerTestCase
         }
 
         @Override
-        public boolean preResubscribe()
-        {
-            return true;
-        }
-
-        @Override
-        public synchronized boolean preFailover(boolean redirect)
+        public void onConnectionInterrupted(URI uri)
         {
             _failoverStarted = true;
             _preFailoverLatch.countDown();
-            return true;
         }
 
-        public void awaitFailoverCompletion(long delay) throws InterruptedException
+        @Override
+        public void onConnectionRestored(URI uri)
+        {
+            _failoverCompletionLatch.countDown();
+        }
+
+        void awaitFailoverCompletion(long delay) throws InterruptedException
         {
             if (!_failoverCompletionLatch.await(delay, TimeUnit.MILLISECONDS))
             {
@@ -869,35 +847,19 @@ public class MultiNodeTest extends QpidBrokerTestCase
             assertEquals("Failover did not occur", 0, _failoverCompletionLatch.getCount());
         }
 
-        public void assertNoFailoverCompletionWithin(long delay) throws InterruptedException
+        void assertNoFailoverCompletionWithin(long delay) throws InterruptedException
         {
             _failoverCompletionLatch.await(delay, TimeUnit.MILLISECONDS);
             assertEquals("Failover occurred unexpectedly", 1L, _failoverCompletionLatch.getCount());
         }
 
-        public void awaitPreFailover(long delay) throws InterruptedException
+        void awaitPreFailover(long delay) throws InterruptedException
         {
             boolean complete = _preFailoverLatch.await(delay, TimeUnit.MILLISECONDS);
             assertTrue("Failover was expected to begin within " + delay + " ms.", complete);
         }
 
-        @Override
-        public void failoverComplete()
-        {
-            _failoverCompletionLatch.countDown();
-        }
-
-        @Override
-        public void bytesSent(long count)
-        {
-        }
-
-        @Override
-        public void bytesReceived(long count)
-        {
-        }
-
-        public synchronized boolean isFailoverStarted()
+        synchronized boolean isFailoverStarted()
         {
             return _failoverStarted;
         }
