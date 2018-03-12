@@ -21,10 +21,6 @@
 package org.apache.qpid.test.utils;
 
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -55,23 +51,5 @@ public class TestUtils
             }
         }
         return dump.toString();
-    }
-
-    public static String writeACLFileUtil(QpidBrokerTestCase testcase, String...rules) throws IOException
-    {
-        File aclFile = File.createTempFile(testcase.getClass().getSimpleName(), testcase.getName());
-        aclFile.deleteOnExit();
-
-        testcase.getDefaultBrokerConfiguration().addAclFileConfiguration(aclFile.getAbsolutePath());
-
-        try (PrintWriter out = new PrintWriter(new FileWriter(aclFile)))
-        {
-            out.println(String.format("# %s", testcase.getName()));
-            for (String line : rules)
-            {
-                out.println(line);
-            }
-        }
-        return aclFile.getCanonicalPath();
     }
 }
