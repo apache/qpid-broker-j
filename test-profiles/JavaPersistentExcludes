@@ -17,5 +17,3 @@
 // under the License.
 //
 
-//These tests require the MemoryMessageStore
-org.apache.qpid.server.logging.MemoryMessageStoreLoggingTest#*

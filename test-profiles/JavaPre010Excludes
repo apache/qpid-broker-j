@@ -23,7 +23,6 @@
 
 // Those tests are written against the 0.10 path
 org.apache.qpid.client.SynchReceiveTest#testReceiveNoWait
-org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
 
 # Exclude the JMS 2.0 test suite
 org.apache.qpid.systests.jms_2_0.*

@@ -17,22 +17,8 @@
 // under the License.
 //
 
-// The binding logging tests focus on the behaviour of the old client with regard to creating (and binding) queues on
-// the creation of consumers.
-org.apache.qpid.server.logging.BindingLoggingTest#*
-
-// These tests are 0-8/9/9-1 specific and are also excluded in the 0-10 profile
-org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartsFlowStopped
-org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartConsumerFlowStarted
-// This test is testing AMQP 0-x specific behaviour
-org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
-
 // Tests the interaction between the Broker's supported protocols and what the 0-x client agrees to
 org.apache.qpid.server.SupportedProtocolVersionsTest#*
-
-// Durable topic subscriptions will be reimplemented with the shared topic subscriptions (QPID-7569)
-org.apache.qpid.server.logging.ConsumerLoggingTest#testSubscriptionCreateDurable
-org.apache.qpid.server.logging.ConsumerLoggingTest#testSubscriptionCreateDurableWithArguments
 
 // These tests assume names of queues backing durable subscriptions
 org.apache.qpid.server.store.berkeleydb.BDBUpgradeTest#testConsumptionOfUpgradedMessages
@@ -41,10 +27,5 @@ org.apache.qpid.server.store.berkeleydb.BDBUpgradeTest#testSelectorDurability
 
 // this test makes assumptions about the way the client uses sessions.
 org.apache.qpid.systest.rest.SessionRestTest#*
-
-// Tests verify the 0-x client's ability to create queues and that the server logs creation/deletion faithfully
-org.apache.qpid.server.logging.DurableQueueLoggingTest#*
-org.apache.qpid.server.logging.QueueLoggingTest#*
-org.apache.qpid.server.logging.TransientQueueLoggingTest#*
 
 
