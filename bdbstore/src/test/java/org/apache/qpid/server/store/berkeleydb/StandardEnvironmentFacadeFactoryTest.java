@@ -29,13 +29,14 @@ import java.io.File;
 import java.util.Collections;
 
 import com.sleepycat.je.EnvironmentConfig;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.store.FileBasedSettings;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.util.FileUtils;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.store.FileBasedSettings;
+import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.TestFileUtils;
 
 public class StandardEnvironmentFacadeFactoryTest extends QpidTestCase
 {

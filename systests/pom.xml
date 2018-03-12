@@ -41,12 +41,6 @@
       <artifactId>qpid-systests-jms-core</artifactId>
     </dependency>
 
-    <!-- Many systests have a compile/runtime dependency on qpid-client -->
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-client</artifactId>
-    </dependency>
-
     <!-- broker deps -->
     <dependency>
       <groupId>org.apache.qpid</groupId>
@@ -198,6 +192,10 @@
         </property>
       </activation>
       <dependencies>
+        <dependency>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-client</artifactId>
+        </dependency>
         <dependency>
           <groupId>org.apache.geronimo.specs</groupId>
           <artifactId>geronimo-jms_1.1_spec</artifactId>

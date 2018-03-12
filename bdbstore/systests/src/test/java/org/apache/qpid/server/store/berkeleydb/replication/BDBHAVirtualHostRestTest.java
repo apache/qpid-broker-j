@@ -41,7 +41,7 @@ import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.systest.rest.Asserts;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public class BDBHAVirtualHostRestTest extends QpidRestTestCase
 {

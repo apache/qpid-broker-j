@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public abstract class AbstractBrokerHolder implements BrokerHolder
 {

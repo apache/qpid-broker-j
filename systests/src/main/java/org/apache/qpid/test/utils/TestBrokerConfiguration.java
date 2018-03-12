@@ -76,7 +76,7 @@ import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 public class TestBrokerConfiguration
 {

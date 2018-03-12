@@ -36,7 +36,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 /**
  *

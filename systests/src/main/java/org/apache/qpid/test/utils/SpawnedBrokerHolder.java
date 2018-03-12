@@ -42,7 +42,7 @@ import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRule
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.apache.qpid.server.model.BrokerLogger;
-import org.apache.qpid.util.SystemUtils;
+import org.apache.qpid.server.util.SystemUtils;
 
 public class SpawnedBrokerHolder extends AbstractBrokerHolder
 {

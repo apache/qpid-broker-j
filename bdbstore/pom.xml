@@ -76,12 +76,6 @@
       <artifactId>geronimo-jms_1.1_spec</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-client</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

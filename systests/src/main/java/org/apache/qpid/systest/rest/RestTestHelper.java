@@ -31,8 +31,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -40,13 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
@@ -58,10 +49,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class RestTestHelper
 {
@@ -157,80 +146,6 @@ public class RestTestHelper
         URL url = getManagementURL(path);
         HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
         httpCon.setConnectTimeout(_connectTimeout);
-
-        if(_useSslAuth)
-        {
-            try
-            {
-                // We have to use a SSLSocketFactory from a new SSLContext so that we don't re-use
-                // the JVM's defaults that may have been initialised in previous tests.
-
-                final TrustManager[] trustManagers;
-                final KeyManager[] keyManagers;
-
-                trustManagers =
-                        SSLContextFactory.getTrustManagers(_truststore,
-                                                           _truststorePassword,
-                                                           KeyStore.getDefaultType(),
-                                                           TrustManagerFactory.getDefaultAlgorithm());
-
-                if (_keystore == null)
-                {
-                    throw new IllegalStateException("Cannot use SSL client auth without providing a keystore");
-                }
-
-                keyManagers =
-                        SSLContextFactory.getKeyManagers(_keystore,
-                                                         _keystorePassword,
-                                                         KeyStore.getDefaultType(),
-                                                         KeyManagerFactory.getDefaultAlgorithm(),
-                                                         _clientAuthAlias);
-
-                final SSLContext sslContext = SSLUtil.tryGetSSLContext();
-
-                sslContext.init(keyManagers, trustManagers, null);
-
-                SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-
-                ((HttpsURLConnection) httpCon).setSSLSocketFactory(sslSocketFactory);
-            }
-            catch (GeneralSecurityException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-        else if (_useSsl)
-        {
-            try
-            {
-                // We have to use a SSLSocketFactory from a new SSLContext so that we don't re-use
-                // the JVM's defaults that may have been initialised in previous tests.
-
-                final TrustManager[] trustManagers;
-                final KeyManager[] keyManagers;
-
-                trustManagers =
-                        SSLContextFactory.getTrustManagers(_truststore,
-                                                           _truststorePassword,
-                                                           KeyStore.getDefaultType(),
-                                                           TrustManagerFactory.getDefaultAlgorithm());
-
-                keyManagers =
-                        SSLContextFactory.getKeyManagers(null, null, null, null, null);
-
-                final SSLContext sslContext = SSLUtil.tryGetSSLContext();
-
-                sslContext.init(keyManagers, trustManagers, null);
-
-                SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-
-                ((HttpsURLConnection) httpCon).setSSLSocketFactory(sslSocketFactory);
-            }
-            catch (GeneralSecurityException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
 
         if(_username != null)
         {
@@ -529,11 +444,6 @@ public class RestTestHelper
             groups = Collections.emptyList();
         }
         Assert.assertEquals("Unexpected number of groups", expectedNumberOfGroups, groups.size());
-    }
-
-    public void setUseSsl(boolean useSsl)
-    {
-        _useSsl = useSsl;
     }
 
     public void setUsernameAndPassword(String username, String password)

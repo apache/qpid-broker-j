@@ -50,11 +50,11 @@ import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.util.FileUtils;
 
 /**
  * Tests upgrading a BDB store on broker startup.
@@ -419,7 +419,7 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         return _restTestHelper.getJsonAsMap(queueUrl);
     }
 
-    private long getQueueDepth(final String queueName) throws org.apache.qpid.QpidException, IOException
+    private long getQueueDepth(final String queueName) throws IOException
     {
         Map<String, Object> queueAttributes = getQueueAttributes(queueName);
         Map<String, Object> statistics = (Map<String, Object>) queueAttributes.get("statistics");

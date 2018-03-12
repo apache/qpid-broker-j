@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.util.FileUtils;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.server.util.Strings;
 
 /**
  * Tests the BDB backup can successfully perform a backup and that
