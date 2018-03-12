@@ -22,31 +22,16 @@ package org.apache.qpid.server.store.berkeleydb;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import javax.jms.Connection;
-import javax.jms.DeliveryMode;
-import javax.jms.Destination;
-import javax.jms.ExceptionListener;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.jms.Queue;
-import javax.jms.Session;
-import javax.jms.Topic;
-import javax.jms.TopicConnection;
-import javax.jms.TopicPublisher;
-import javax.jms.TopicSession;
-import javax.jms.TopicSubscriber;
+import javax.jms.*;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
-import org.apache.qpid.url.URLSyntaxException;
 
 /**
  * Prepares an older version brokers BDB store with the required
@@ -73,22 +58,26 @@ public class BDBStoreUpgradeTestPreparer
     public static final String PRIORITY_QUEUE_NAME="myPriorityQueue";
     public static final String QUEUE_WITH_DLQ_NAME="myQueueWithDLQ";
     public static final String NONEXCLUSIVE_WITH_ERRONEOUS_OWNER = "nonexclusive-with-erroneous-owner";
-    public static final String MISUSED_OWNER = "misused-owner-as-description";
-    private static final String VIRTUAL_HOST_NAME = "test";
     private static final String SORTED_QUEUE_NAME = "mySortedQueue";
     private static final String SORT_KEY = "mySortKey";
     private static final String TEST_EXCHANGE_NAME = "myCustomExchange";
     private static final String TEST_QUEUE_NAME = "myCustomQueue";
 
-    private static AMQConnectionFactory _connFac;
-    private static final String CONN_URL = "amqp://guest:guest@clientid/" + VIRTUAL_HOST_NAME + "?brokerlist='tcp://localhost:5672'";
+    private static ConnectionFactory _connFac;
+    private static TopicConnectionFactory _topciConnFac;
 
     /**
      * Create a BDBStoreUpgradeTestPreparer instance
      */
-    public BDBStoreUpgradeTestPreparer () throws URLSyntaxException
+    public BDBStoreUpgradeTestPreparer () throws Exception
     {
-        _connFac = new AMQConnectionFactory(CONN_URL);
+        // The configuration for the Qpid InitialContextFactory has been supplied in
+        // a jndi.properties file in the classpath, which results in it being picked
+        // up automatically by the InitialContext constructor.
+        Context context = new InitialContext();
+
+        _connFac = (ConnectionFactory) context.lookup("myConnFactory");
+        _topciConnFac = (TopicConnectionFactory) context.lookup("myTopicConnFactory");
     }
 
     private void prepareBroker() throws Exception
@@ -102,10 +91,9 @@ public class BDBStoreUpgradeTestPreparer
     private void prepareNonDurableQueue() throws Exception
     {
         Connection connection = _connFac.createConnection();
-        AMQSession<?, ?> session = (AMQSession<?,?>)connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        AMQDestination destination = (AMQDestination) session.createQueue(NON_DURABLE_QUEUE_NAME);
-        session.sendCreateQueue(NON_DURABLE_QUEUE_NAME, false, false, false, null);
-        session.bindQueue(NON_DURABLE_QUEUE_NAME, NON_DURABLE_QUEUE_NAME, null, "amq.direct", destination);
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Destination destination = session.createQueue(NON_DURABLE_QUEUE_NAME);
+        session.createConsumer(destination).close();
         MessageProducer messageProducer = session.createProducer(destination);
         sendMessages(session, messageProducer, destination, DeliveryMode.PERSISTENT, 1024, 3);
         connection.close();
@@ -129,14 +117,7 @@ public class BDBStoreUpgradeTestPreparer
         // Create a connection
         Connection connection = _connFac.createConnection();
         connection.start();
-        connection.setExceptionListener(new ExceptionListener()
-        {
-            @Override
-            public void onException(JMSException e)
-            {
-                LOGGER.error("Error setting exception listener for connection", e);
-            }
-        });
+        connection.setExceptionListener(e -> LOGGER.error("Error setting exception listener for connection", e));
         // Create a session on the connection, transacted to confirm delivery
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
         Queue queue = session.createQueue(QUEUE_NAME);
@@ -188,8 +169,6 @@ public class BDBStoreUpgradeTestPreparer
         MessageProducer dlqMessageProducer = session.createProducer(dlq);
         sendMessages(session, dlqMessageProducer, dlq, DeliveryMode.PERSISTENT, 1*1024, 1);
         session.commit();
-
-        ((AMQSession<?,?>) session).declareExchange(TEST_EXCHANGE_NAME, "direct", false);
         Queue customQueue = createAndBindQueueOnBroker(session, TEST_QUEUE_NAME, null, TEST_EXCHANGE_NAME, "direct");
         MessageProducer customQueueMessageProducer = session.createProducer(customQueue);
         sendMessages(session, customQueueMessageProducer, customQueue, DeliveryMode.PERSISTENT, 1*1024, 1);
@@ -209,15 +188,19 @@ public class BDBStoreUpgradeTestPreparer
 
     private Queue createAndBindQueueOnBroker(Session session, String queueName, final Map<String, Object> arguments, String exchangeName, String exchangeType) throws Exception
     {
-        ((AMQSession<?,?>) session).createQueue(queueName, false, true, false, arguments);
-        Queue queue = session.createQueue("BURL:" + exchangeType + "://" + exchangeName + "/" + queueName + "/" + queueName + "?durable='true'");
-        ((AMQSession<?,?>) session).declareAndBind((AMQDestination)queue);
+        final String declareArgs = arguments.entrySet()
+                                            .stream()
+                                            .map(entry -> String.format("'%s' : %s", entry.getKey(), entry.getValue()))
+                                            .collect(Collectors.joining("{", "}", ","));
+
+        Queue queue = session.createQueue(String.format(
+                "ADDR: %s; {create:always, node: {type: queue, x-bindings:[{exchange: '%s', key: %s}], x-declare: {arguments:%s}}", queueName, exchangeName, queueName, declareArgs));
         return queue;
     }
 
     private void prepareSortedQueue(Session session, String queueName, String sortKey) throws Exception
     {
-        final Map<String, Object> arguments = new HashMap<String, Object>();
+        final Map<String, Object> arguments = new HashMap<>();
         arguments.put("qpid.queue_sort_key", sortKey);
         Queue sortedQueue = createAndBindQueueOnBroker(session, queueName, arguments);
 
@@ -249,7 +232,7 @@ public class BDBStoreUpgradeTestPreparer
     {
 
         // Create a connection
-        TopicConnection connection = _connFac.createTopicConnection();
+        TopicConnection connection = _topciConnFac.createTopicConnection();
         connection.start();
         connection.setExceptionListener(new ExceptionListener()
         {
@@ -295,16 +278,9 @@ public class BDBStoreUpgradeTestPreparer
     private void prepareDurableSubscriptionWithoutSelector() throws Exception
     {
         // Create a connection
-        TopicConnection connection = _connFac.createTopicConnection();
+        TopicConnection connection = _topciConnFac.createTopicConnection();
         connection.start();
-        connection.setExceptionListener(new ExceptionListener()
-        {
-            @Override
-            public void onException(JMSException e)
-            {
-                LOGGER.error("Error setting exception listener for connection", e);
-            }
-        });
+        connection.setExceptionListener(e -> LOGGER.error("Error setting exception listener for connection", e));
         // Create a session on the connection, transacted to confirm delivery
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
         Topic topic = session.createTopic(TOPIC_NAME);
@@ -371,7 +347,6 @@ public class BDBStoreUpgradeTestPreparer
      */
     public static void main(String[] args) throws Exception
     {
-        System.setProperty("qpid.dest_syntax", "BURL");
         BDBStoreUpgradeTestPreparer producer = new BDBStoreUpgradeTestPreparer();
         producer.prepareBroker();
     }

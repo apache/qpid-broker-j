@@ -46,12 +46,6 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
@@ -71,7 +65,6 @@ import org.apache.qpid.util.FileUtils;
  */
 public class BDBUpgradeTest extends QpidBrokerTestCase
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BDBUpgradeTest.class);
 
     private static final String STRING_1024 = generateString(1024);
     private static final String STRING_1024_256 = generateString(1024*256);
@@ -140,7 +133,18 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
      */
     public void testSelectorDurability() throws Exception
     {
-        AMQDestination queue = new AMQQueue(ExchangeDefaults.DEFAULT_EXCHANGE_NAME, "clientid" + ":" + SELECTOR_SUB_NAME);
+        Connection con = getConnection();
+        Queue queue;
+        try
+        {
+            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            queue = session.createQueue("BURL:direct:////clientid" + ":" + SELECTOR_SUB_NAME);
+        }
+        finally
+        {
+            con.close();
+        }
+
         // Create a connection and start it
         TopicConnection connection = (TopicConnection) getConnection();
         connection.start();
@@ -179,8 +183,17 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
      */
     public void testDurableSubscriptionWithoutSelector() throws Exception
     {
-        AMQDestination queue = new AMQQueue(ExchangeDefaults.DEFAULT_EXCHANGE_NAME, "clientid" + ":" + SUB_NAME);
-
+        Connection con = getConnection();
+        Queue queue;
+        try
+        {
+            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            queue = session.createQueue("BURL:direct:////clientid" + ":" + SELECTOR_SUB_NAME);
+        }
+        finally
+        {
+            con.close();
+        }
         // Create a connection and start it
         TopicConnection connection = (TopicConnection) getConnection();
         connection.start();
