@@ -249,7 +249,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     protected void createOrOpenMessageStoreDatabase() throws StoreException
     {
-        _deleteActions.clear();
         try(Connection conn =  newAutoCommitConnection())
         {
             createVersionTable(conn);
