@@ -37,6 +37,7 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
@@ -493,6 +494,88 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected child state after failed parent deletion", State.ACTIVE, engine.getState());
         final List<State> newStates = listener.getNewStates();
         assertEquals("Child heard an unexpected number of state changes", 0, newStates.size());
+    }
+
+    public void testDeleteConfiguredObjectReferredFromAttribute()
+    {
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, "car");
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+
+        Map<String, Object> sensorAttributes = new HashMap<>();
+        sensorAttributes.put(ConfiguredObject.NAME, "sensor");
+        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        TestSensor sensor = (TestSensor) car1.createChild(TestSensor.class, sensorAttributes);
+
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, "engine");
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        engineAttributes.put("temperatureSensor", sensor.getName());
+        car1.createChild(TestEngine.class, engineAttributes);
+
+        try
+        {
+            sensor.delete();
+            fail("Referred engine cannot be deleted");
+        }
+        catch (IntegrityViolationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testDeleteConfiguredObjectReferredFromCollection()
+    {
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, "car");
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+
+        Map<String, Object> sensorAttributes = new HashMap<>();
+        sensorAttributes.put(ConfiguredObject.NAME, "sensor1");
+        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        TestSensor sensor1 = (TestSensor) car1.createChild(TestSensor.class, sensorAttributes);
+
+        sensorAttributes = new HashMap<>();
+        sensorAttributes.put(ConfiguredObject.NAME, "sensor2");
+        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        TestSensor sensor2 = (TestSensor) car1.createChild(TestSensor.class, sensorAttributes);
+
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, "engine");
+        engineAttributes.put(ConfiguredObject.TYPE, TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE);
+        engineAttributes.put("temperatureSensors", new String[]{sensor1.getName(), sensor2.getName()});
+        car1.createChild(TestEngine.class, engineAttributes);
+
+        try
+        {
+            sensor1.delete();
+            fail("Referred engine cannot be deleted");
+        }
+        catch (IntegrityViolationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testDeleteConfiguredObject()
+    {
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, "car");
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+
+        Map<String, Object> sensorAttributes = new HashMap<>();
+        sensorAttributes.put(ConfiguredObject.NAME, "sensor1");
+        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        TestSensor sensor1 = (TestSensor) car1.createChild(TestSensor.class, sensorAttributes);
+
+        assertEquals("Unexpected number of sensors after creation", 1, car1.getChildren(TestSensor.class).size());
+
+        sensor1.delete();
+
+        assertEquals("Unexpected number of sensors after deletion", 0, car1.getChildren(TestSensor.class).size());
     }
 
     private void doDuplicateChildCheck(final String attrToDuplicate)

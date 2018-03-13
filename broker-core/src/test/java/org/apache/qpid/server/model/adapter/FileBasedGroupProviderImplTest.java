@@ -25,7 +25,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
@@ -42,23 +41,17 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.GroupProvider;
-import org.apache.qpid.server.model.Model;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 
 public class FileBasedGroupProviderImplTest extends QpidTestCase
 {
-    private TaskExecutor _taskExecutor;
     private Broker<?> _broker;
     private File _groupFile;
     private ConfiguredObjectFactory _objectFactory;
@@ -67,15 +60,9 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
     public void setUp() throws Exception
     {
         super.setUp();
-        _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
 
-        final Model model = BrokerModel.getInstance();
-        _objectFactory = new ConfiguredObjectFactoryImpl(model);
-
-        _broker = mock(Broker.class);
-        when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getModel()).thenReturn(model);
+        _broker = BrokerTestHelper.createBrokerMock();
+        _objectFactory = _broker.getObjectFactory();
     }
 
     @Override
@@ -87,7 +74,6 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
             {
                 _groupFile.delete();
             }
-           _taskExecutor.stop();
         }
         finally
         {

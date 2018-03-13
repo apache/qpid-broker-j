@@ -132,6 +132,7 @@ public class BrokerTestHelper
         when(systemConfig.getObjectFactory()).thenReturn(objectFactory);
         when(systemConfig.getModel()).thenReturn(objectFactory.getModel());
         when(systemConfig.getCategoryClass()).thenReturn(SystemConfig.class);
+        when(systemConfig.getTypeClass()).thenReturn(SystemConfig.class);
 
         Broker broker = mockWithSystemPrincipalAndAccessControl(Broker.class, SYSTEM_PRINCIPAL, accessControl);
         when(broker.getId()).thenReturn(UUID.randomUUID());
@@ -140,6 +141,7 @@ public class BrokerTestHelper
         when(broker.getModelVersion()).thenReturn(BrokerModel.MODEL_VERSION);
         when(broker.getEventLogger()).thenReturn(eventLogger);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
+        when(broker.getTypeClass()).thenReturn(Broker.class);
         when(broker.getParent()).thenReturn(systemConfig);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
         when(broker.getFlowToDiskThreshold()).thenReturn(Long.MAX_VALUE);
@@ -149,6 +151,7 @@ public class BrokerTestHelper
         when(broker.getChildExecutor()).thenReturn(TASK_EXECUTOR);
         when(systemConfig.getChildExecutor()).thenReturn(TASK_EXECUTOR);
         when(systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
+        when(systemConfig.getChildren(Broker.class)).thenReturn(Collections.singleton(broker));
 
         return broker;
     }

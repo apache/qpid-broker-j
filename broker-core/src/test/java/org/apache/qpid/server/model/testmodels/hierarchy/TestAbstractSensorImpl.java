@@ -20,31 +20,35 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import java.util.Collection;
 import java.util.Map;
 
-import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
-@ManagedObject( category = false, type = TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE)
-public class TestPetrolEngineImpl
-        extends TestAbstractEngineImpl<TestPetrolEngineImpl> implements TestPetrolEngine<TestPetrolEngineImpl>
+import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
+
+public class TestAbstractSensorImpl<X extends TestAbstractSensorImpl<X>> extends AbstractConfiguredObject<X>
+        implements TestSensor<X>
 {
-    public static final String TEST_PETROL_ENGINE_TYPE = "PETROL";
 
-    @ManagedAttributeField
-    private Collection<TestSensor<?>> _temperatureSensors;
-
-    @ManagedObjectFactoryConstructor
-    public TestPetrolEngineImpl(final Map<String, Object> attributes, TestCar<?> parent)
+    protected TestAbstractSensorImpl(final TestCar<?> parent,
+                                     final Map<String, Object> attributes)
     {
         super(parent, attributes);
     }
 
     @Override
-    public Collection<TestSensor<?>> getTemperatureSensors()
+    protected void logOperation(final String operation)
     {
-        return _temperatureSensors;
+
+    }
+
+    @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
+    private ListenableFuture<Void> onActivate()
+    {
+        setState(State.ACTIVE);
+        return Futures.immediateFuture(null);
     }
 }

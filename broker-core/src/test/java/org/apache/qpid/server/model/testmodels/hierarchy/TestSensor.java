@@ -1,4 +1,5 @@
-/*
+package org.apache.qpid.server.model.testmodels.hierarchy;/*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,18 +16,14 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
 
-package org.apache.qpid.server.model.testmodels.hierarchy;
-
-import java.util.Collection;
-
-import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
 
-@ManagedObject (category = false)
-public interface TestPetrolEngine<X extends TestPetrolEngine<X>> extends TestEngine<X>
+@ManagedObject( defaultType = TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE)
+public interface TestSensor<X extends TestSensor<X>> extends ConfiguredObject<X>
 {
-    @ManagedAttribute
-    Collection<TestSensor<?>> getTemperatureSensors();
+
 }

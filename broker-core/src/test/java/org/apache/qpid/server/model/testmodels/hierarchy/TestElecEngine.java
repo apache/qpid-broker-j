@@ -19,9 +19,12 @@
 
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
+import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 
 @ManagedObject (category = false)
 public interface TestElecEngine<X extends TestElecEngine<X>> extends TestEngine<X>, TestRechargeable
 {
+    @ManagedAttribute
+    TestSensor<?> getTemperatureSensor();
 }

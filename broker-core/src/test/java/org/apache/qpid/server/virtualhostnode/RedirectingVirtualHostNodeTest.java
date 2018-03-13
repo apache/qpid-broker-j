@@ -127,21 +127,6 @@ public class RedirectingVirtualHostNodeTest extends QpidTestCase
                      1, node.getChildren(VirtualHost.class).size());
     }
 
-    public void testDeleteVHN() throws Exception
-    {
-        final Map<String, Object> attributes = createVirtualHostNodeAttributes();
-
-        RedirectingVirtualHostNode node =
-                (RedirectingVirtualHostNode) _broker.getObjectFactory().create(VirtualHostNode.class,
-                                                                               attributes,
-                                                                               _broker);
-        assertEquals("Unexpected number of virtualhost children before delete",
-                     1, node.getChildren(VirtualHost.class).size());
-        node.delete();
-        assertEquals("Unexpected number of virtualhost children after delete",
-                     0, node.getChildren(VirtualHost.class).size());
-    }
-
     private Map<String, Object> createVirtualHostNodeAttributes()
     {
         final Map<String, Object> attributes = new HashMap<>();

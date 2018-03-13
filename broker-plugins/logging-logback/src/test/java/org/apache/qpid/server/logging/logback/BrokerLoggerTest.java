@@ -59,7 +59,7 @@ public class BrokerLoggerTest extends QpidTestCase
     private AbstractBrokerLogger<?> _brokerLogger;
     private ListAppender _loggerAppender;
     private TaskExecutor _taskExecutor;
-    private Broker<?> _broker;
+    private Broker _broker;
 
     @Override
     public void setUp() throws Exception
@@ -76,6 +76,8 @@ public class BrokerLoggerTest extends QpidTestCase
         Model model = BrokerModel.getInstance();
 
         _broker = mock(Broker.class);
+        when(_broker.getCategoryClass()).thenReturn(Broker.class);
+        when(_broker.getTypeClass()).thenReturn(Broker.class);
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         doReturn(Broker.class).when(_broker).getCategoryClass();

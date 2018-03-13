@@ -23,7 +23,6 @@ package org.apache.qpid.server.security;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,14 +35,12 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.Port;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestSSLConstants;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class FileKeyStoreTest extends QpidTestCase
 {
@@ -272,43 +269,6 @@ public class FileKeyStoreTest extends QpidTestCase
                      TestSSLConstants.BROKER_KEYSTORE_ALIAS,
                      fileKeyStore.getCertificateAlias());
 
-    }
-
-    public void testDeleteKeyStore_Success() throws Exception
-    {
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
-
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
-
-        fileKeyStore.delete();
-    }
-
-    public void testDeleteKeyStore_KeyManagerInUseByPort() throws Exception
-    {
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
-
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
-
-        Port<?> port = mock(Port.class);
-        when(port.getKeyStore()).thenReturn(fileKeyStore);
-
-        when(_broker.getPorts()).thenReturn(Collections.<Port<?>>singletonList(port));
-
-        try
-        {
-            fileKeyStore.delete();
-            fail("Exception not thrown");
-        }
-        catch (IntegrityViolationException ive)
-        {
-            // PASS
-        }
     }
 
     private static String createDataUrlForFile(String filename)

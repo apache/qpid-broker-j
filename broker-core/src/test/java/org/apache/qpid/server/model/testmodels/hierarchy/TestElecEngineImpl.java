@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
@@ -33,6 +34,9 @@ public class TestElecEngineImpl
         extends TestAbstractEngineImpl<TestElecEngineImpl> implements TestElecEngine<TestElecEngineImpl>
 {
     public static final String TEST_ELEC_ENGINE_TYPE = "ELEC";
+
+    @ManagedAttributeField
+    private TestSensor<?> _temperatureSensor;
 
     @ManagedObjectFactoryConstructor
     public TestElecEngineImpl(final Map<String, Object> attributes, TestCar<?> parent)
@@ -47,4 +51,9 @@ public class TestElecEngineImpl
         return Collections.singletonMap(TestEngine.class.getSimpleName(), types);
     }
 
+    @Override
+    public TestSensor<?> getTemperatureSensor()
+    {
+        return _temperatureSensor;
+    }
 }

@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.security.auth.Subject;
@@ -101,6 +102,8 @@ public class ServerSessionTest extends QpidTestCase
         AmqpPort port = createMockPort();
 
         final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class);
+        when(modelConnection.getCategoryClass()).thenReturn(Connection.class);
+        when(modelConnection.getTypeClass()).thenReturn(AMQPConnection_0_10.class);
         when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         when(modelConnection.getAddressSpace()).thenReturn(_virtualHost);
         when(modelConnection.getContextProvider()).thenReturn(_virtualHost);

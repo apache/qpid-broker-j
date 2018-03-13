@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,18 +16,25 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
-
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import java.util.Collection;
+import java.util.Map;
 
-import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-@ManagedObject (category = false)
-public interface TestPetrolEngine<X extends TestPetrolEngine<X>> extends TestEngine<X>
+@ManagedObject( category = false,
+        type = TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE)
+public class TestTemperatureSensorImpl extends TestAbstractSensorImpl<TestTemperatureSensorImpl> implements TestSensor<TestTemperatureSensorImpl>
 {
-    @ManagedAttribute
-    Collection<TestSensor<?>> getTemperatureSensors();
+
+    public static final String TEST_TEMPERATURE_SENSOR_TYPE = "temperature";
+
+    @ManagedObjectFactoryConstructor
+    protected TestTemperatureSensorImpl(final Map<String, Object> attributes,final TestCar<?> parent)
+    {
+        super(parent, attributes);
+    }
 }

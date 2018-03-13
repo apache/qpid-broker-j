@@ -39,7 +39,8 @@ public class TestModel extends Model
     private Class<? extends ConfiguredObject>[] _supportedCategories =
             new Class[] {
                     TestCar.class,
-                    TestEngine.class
+                    TestEngine.class,
+                    TestSensor.class
             };
 
     private final ConfiguredObjectFactory _objectFactory;
@@ -82,8 +83,8 @@ public class TestModel extends Model
     public Collection<Class<? extends ConfiguredObject>> getChildTypes(final Class<? extends ConfiguredObject> parent)
     {
         return TestCar.class.isAssignableFrom(parent)
-                ? Collections.<Class<? extends ConfiguredObject>>singleton(TestEngine.class)
-                : Collections.<Class<? extends ConfiguredObject>>emptySet();
+                ? Arrays.asList(TestEngine.class, TestSensor.class)
+                : Collections.emptySet();
     }
 
     @Override

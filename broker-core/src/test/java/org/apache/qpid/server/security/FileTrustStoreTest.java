@@ -27,8 +27,6 @@ import java.security.KeyStore;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.X509Certificate;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,15 +37,11 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.DataUrlUtils;
@@ -289,69 +283,6 @@ public class FileTrustStoreTest extends QpidTestCase
         assertEquals("Unexpected path value after change that is expected to be successful",
                      TestSSLConstants.BROKER_TRUSTSTORE,
                      fileTrustStore.getStoreUrl());
-    }
-
-    public void testDeleteTrustStore_Success() throws Exception
-    {
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
-
-        TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
-
-        fileTrustStore.delete();
-    }
-
-    public void testDeleteTrustStore_TrustManagerInUseByAuthProvider() throws Exception
-    {
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
-
-        TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
-
-        SimpleLDAPAuthenticationManager ldap = mock(SimpleLDAPAuthenticationManager.class);
-        when(ldap.getTrustStore()).thenReturn(fileTrustStore);
-
-        Collection<AuthenticationProvider<?>> authenticationProviders = Collections.<AuthenticationProvider<?>>singletonList(ldap);
-        when(_broker.getAuthenticationProviders()).thenReturn(authenticationProviders);
-
-        try
-        {
-            fileTrustStore.delete();
-            fail("Exception not thrown");
-        }
-        catch (IntegrityViolationException ive)
-        {
-            // PASS
-        }
-    }
-
-    public void testDeleteTrustStore_TrustManagerInUseByPort() throws Exception
-    {
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
-
-        TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
-
-        Port<?> port = mock(Port.class);
-        when(port.getTrustStores()).thenReturn(Collections.<TrustStore>singletonList(fileTrustStore));
-
-        when(_broker.getPorts()).thenReturn(Collections.<Port<?>>singletonList(port));
-
-        try
-        {
-            fileTrustStore.delete();
-            fail("Exception not thrown");
-        }
-        catch (IntegrityViolationException ive)
-        {
-            // PASS
-        }
     }
 
     private static String createDataUrlForFile(String filename)

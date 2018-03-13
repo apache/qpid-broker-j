@@ -29,6 +29,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -57,6 +58,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
@@ -2225,6 +2227,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         ConfiguredObject<?> proxyForValidation = createProxyForValidation(attributes);
         authoriseSetAttributes(proxyForValidation, attributes);
         validateChange(proxyForValidation, attributes.keySet());
+        validateReferences(getHierarchyRoot(this), this);
 
         // for DELETED state we should invoke transition method first to make sure that object can be deleted.
         // If method results in exception being thrown due to various integrity violations
@@ -2241,6 +2244,139 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
 
         return deleteNoChecks();
+    }
+
+    private ConfiguredObject<?> getHierarchyRoot(final AbstractConfiguredObject<X> o)
+    {
+        ConfiguredObject<?> object = o;
+        do
+        {
+            ConfiguredObject<?> parent = object.getParent();
+            if (parent == null || managesChildren(parent))
+            {
+                break;
+            }
+            object = parent;
+        }
+        while (true);
+        return object;
+    }
+
+    private boolean managesChildren(final ConfiguredObject<?> object)
+    {
+        return managesChildren(object.getCategoryClass()) || managesChildren(object.getTypeClass());
+    }
+
+    private void validateReferences(final ConfiguredObject<?> object,
+                                    final ConfiguredObject<?> lookupReference)
+    {
+        if (hasReference(object, lookupReference))
+        {
+            throw new IntegrityViolationException(String.format("Configured object %s is referred by %s",
+                                                                lookupReference,
+                                                                object));
+        }
+
+        if (!managesChildren(object))
+        {
+            getModel().getChildTypes(object.getCategoryClass())
+                      .forEach(childClass -> object.getChildren(childClass)
+                                                   .forEach(child -> validateReferences(child, lookupReference)));
+        }
+    }
+
+    private boolean hasReference(final ConfiguredObject<?> object,
+                                 final ConfiguredObject<?> lookupReference)
+    {
+        if (object instanceof AbstractConfiguredObject)
+        {
+            return getModel().getTypeRegistry()
+                             .getAttributes(object.getClass())
+                             .stream()
+                             .anyMatch(attribute -> {
+                                 Class<?> type = attribute.getType();
+                                 Type genericType = attribute.getGenericType();
+                                 return isReferred(lookupReference, type,
+                                                   genericType,
+                                                   () -> {
+                                                       @SuppressWarnings("unchecked")
+                                                       Object value =
+                                                               ((ConfiguredObjectAttribute) attribute).getValue(object);
+                                                       return value;
+                                                   });
+                             });
+        }
+        else
+        {
+            return object.getAttributeNames().stream().anyMatch(name -> {
+                Object value = object.getAttribute(name);
+                if (value != null)
+                {
+                   Class<?> type = value.getClass();
+                   return isReferred(lookupReference, type, type, () -> value);
+                }
+                return false;
+            });
+        }
+
+    }
+
+    private boolean isReferred(final ConfiguredObject<?> lookupReference,
+                               final Class<?> attributeValueType,
+                               final Type attributeGenericType,
+                               final Supplier<?> attributeValue)
+    {
+        final Class<? extends ConfiguredObject> lookupCategory = lookupReference.getCategoryClass();
+        if (lookupCategory.isAssignableFrom(attributeValueType))
+        {
+            return attributeValue.get() == lookupReference;
+        }
+        else if (hasParameterOfType(attributeGenericType, lookupCategory))
+        {
+            Object value = attributeValue.get();
+            if (value instanceof Collection)
+            {
+                return ((Collection<?>) value).stream().anyMatch(m -> m == lookupReference);
+            }
+            else if (value instanceof Object[])
+            {
+                return Arrays.stream((Object[]) value).anyMatch(m -> m == lookupReference);
+            }
+            else if (value instanceof Map)
+            {
+                return ((Map<?, ?>) value).entrySet()
+                                          .stream()
+                                          .anyMatch(e -> e.getKey() == lookupReference
+                                                         || e.getValue() == lookupReference);
+            }
+        }
+        return false;
+    }
+
+    private boolean hasParameterOfType(Type genericType, Class<?> parameterType)
+    {
+        if (genericType instanceof ParameterizedType)
+        {
+            Type[] types = ((ParameterizedType) genericType).getActualTypeArguments();
+            return Arrays.stream(types).anyMatch(type -> {
+                if (type instanceof Class && parameterType.isAssignableFrom((Class) type))
+                {
+                    return true;
+                }
+                else if (type instanceof ParameterizedType)
+                {
+                    Type rawType = ((ParameterizedType) type).getRawType();
+                    return rawType instanceof Class && parameterType.isAssignableFrom((Class) rawType);
+                }
+                else if (type instanceof TypeVariable)
+                {
+                    Type[] bounds = ((TypeVariable) type).getBounds();
+                    return Arrays.stream(bounds).anyMatch(boundType -> hasParameterOfType(boundType, parameterType));
+                }
+                return false;
+            });
+        }
+        return false;
     }
 
     protected ListenableFuture<Void> deleteNoChecks()
