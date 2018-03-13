@@ -5,4 +5,4 @@ jdk:
 env:
   - phase="test" pl=""
   - phase="verify" pl="-pl systests/protocol-tests-amqp-1-0,systests/protocol-tests-amqp-0-8,systests/protocol-tests-amqp-0-10"
-script: "mvn ${phase} ${pl} -Dtest.overridden.properties=${TRAVIS_BUILD_DIR}/test-profiles/apache-ci.test.overridden.properties"
+script: "mvn --fail-at-end --threads 2.0C ${phase} ${pl} -Dtest.overridden.properties=${TRAVIS_BUILD_DIR}/test-profiles/apache-ci.test.overridden.properties"
