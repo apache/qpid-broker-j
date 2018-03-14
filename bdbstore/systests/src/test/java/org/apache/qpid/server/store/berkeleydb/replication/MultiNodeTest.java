@@ -144,7 +144,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
     {
         if (getBrokerProtocol().equals(Protocol.AMQP_1_0))
         {
-            // TODO - there seems to be a client defect when a JMS operation is interrupted
+            // TODO - QPIDJMS-366 - there seems to be a client defect when a JMS operation is interrupted
             // by a graceful connection close from the client side.
             return;
         }
@@ -479,7 +479,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
     {
         if (getBrokerProtocol().equals(Protocol.AMQP_1_0))
         {
-            // TODO - there seems to be a client defect when a JMS operation is interrupted
+            // TODO - QPIDJMS-366 - there seems to be a client defect when a JMS operation is interrupted
             // by a graceful connection close from the client side.
             return;
         }

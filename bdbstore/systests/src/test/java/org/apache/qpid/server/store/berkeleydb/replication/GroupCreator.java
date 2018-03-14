@@ -310,7 +310,7 @@ public class GroupCreator
         if (_testcase.getBrokerProtocol().equals(Protocol.AMQP_1_0))
         {
             connectionBuilder.setOptions(Collections.singletonMap("failover.warnAfterReconnectAttempts", "1"));
-            // TODO - workaround for the fact that the client does not respect reconnectDelay if the
+            // TODO - QPIDJMS-365 - workaround for the fact that the client does not respect reconnectDelay if the
             // server closes the connection gracefully.
             connectionBuilder.setOptions(Collections.singletonMap("failover.initialReconnectDelay", "15000"));
         }
