@@ -168,9 +168,9 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
                      2, getQueueDepth(queue.getQueueName()));
 
         TopicSubscriber durSub = pubSession.createDurableSubscriber(topic, SELECTOR_SUB_NAME,"testprop='true'", false);
-        Message m = durSub.receive(2000);
+        Message m = durSub.receive(getReceiveTimeout());
         assertNotNull("Failed to receive an expected message", m);
-        m = durSub.receive(2000);
+        m = durSub.receive(getReceiveTimeout());
         assertNotNull("Failed to receive an expected message", m);
         pubSession.commit();
 
@@ -188,7 +188,7 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         try
         {
             Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            queue = session.createQueue("BURL:direct:////clientid" + ":" + SELECTOR_SUB_NAME);
+            queue = session.createQueue("BURL:direct:////clientid" + ":" + SUB_NAME);
         }
         finally
         {
@@ -211,9 +211,9 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
                      2, getQueueDepth(queue.getQueueName()));
 
         TopicSubscriber durSub = session.createDurableSubscriber(topic, SUB_NAME);
-        Message m = durSub.receive(2000);
+        Message m = durSub.receive(getReceiveTimeout());
         assertNotNull("Failed to receive an expected message", m);
-        m = durSub.receive(2000);
+        m = durSub.receive(getReceiveTimeout());
         assertNotNull("Failed to receive an expected message", m);
 
         session.commit();
@@ -306,7 +306,7 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
 
         for (int i = 1; i <= 3; i++)
         {
-            Message message = messageConsumer.receive(1000);
+            Message message = messageConsumer.receive(getReceiveTimeout());
             assertNotNull("Message was not migrated!", message);
             assertTrue("Unexpected message received!", message instanceof TextMessage);
             assertEquals("ID property did not match", i, message.getIntProperty("ID"));
@@ -341,13 +341,13 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageConsumer consumer = session.createConsumer(queue);
 
-        Message msg = consumer.receive(1500);
+        Message msg = consumer.receive(getReceiveTimeout());
         assertNotNull("expected message was not received", msg);
         assertEquals(3, msg.getIntProperty("msg"));
-        msg = consumer.receive(1500);
+        msg = consumer.receive(getReceiveTimeout());
         assertNotNull("expected message was not received", msg);
         assertEquals(1, msg.getIntProperty("msg"));
-        msg = consumer.receive(1500);
+        msg = consumer.receive(getReceiveTimeout());
         assertNotNull("expected message was not received", msg);
         assertEquals(2, msg.getIntProperty("msg"));
     }
@@ -445,7 +445,7 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
 
 
         // Retrieve the matching message
-        Message m = durSub.receive(2000);
+        Message m = durSub.receive(getReceiveTimeout());
         assertNotNull("Failed to receive an expected message", m);
         if(selector)
         {
@@ -473,14 +473,14 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         // Retrieve the initial pre-upgrade messages
         for (int i=1; i <= 5 ; i++)
         {
-            m = consumer.receive(2000);
+            m = consumer.receive(getReceiveTimeout());
             assertNotNull("Failed to receive an expected message", m);
             assertEquals("ID property did not match", i, m.getIntProperty("ID"));
             assertEquals("Message content was not as expected", STRING_1024_256, ((TextMessage)m).getText());
         }
         for (int i=1; i <= 5 ; i++)
         {
-            m = consumer.receive(2000);
+            m = consumer.receive(getReceiveTimeout());
             assertNotNull("Failed to receive an expected message", m);
             assertEquals("ID property did not match", i, m.getIntProperty("ID"));
             assertEquals("Message content was not as expected", STRING_1024, ((TextMessage)m).getText());
@@ -489,14 +489,14 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         if(extraMessage)
         {
             //verify that the extra message is received
-            m = consumer.receive(2000);
+            m = consumer.receive(getReceiveTimeout());
             assertNotNull("Failed to receive an expected message", m);
             assertEquals("ID property did not match", 1, m.getIntProperty("ID"));
             assertEquals("Message content was not as expected", STRING_1024_256, ((TextMessage)m).getText());
         }
 
         // Verify that no more messages are received
-        m = consumer.receive(1000);
+        m = consumer.receive(getReceiveTimeout());
         assertNull("No more messages should have been recieved", m);
 
         consumer.close();
