@@ -597,24 +597,6 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         }
 
         @Override
-        protected long getPersistentSizeLowThreshold()
-        {
-            return _persistentSizeLowThreshold;
-        }
-
-        @Override
-        protected long getPersistentSizeHighThreshold()
-        {
-            return _persistentSizeHighThreshold;
-        }
-
-        @Override
-        protected ConfiguredObject<?> getParent()
-        {
-            return _parent;
-        }
-
-        @Override
         protected Logger getLogger()
         {
             return LOGGER;

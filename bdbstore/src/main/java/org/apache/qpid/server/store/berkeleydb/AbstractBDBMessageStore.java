@@ -100,9 +100,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             setInitialValue(1).
             setWrap(true).
             setCacheSize(100000);
-    protected ConfiguredObject<?> _parent;
-    protected long _persistentSizeLowThreshold;
-    protected long _persistentSizeHighThreshold;
+    private ConfiguredObject<?> _parent;
+    private long _persistentSizeLowThreshold;
+    private long _persistentSizeHighThreshold;
 
     private boolean _limitBusted;
     private long _totalStoreSize;
@@ -168,7 +168,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
     }
 
-    protected void deleteMessageStoreDatabases()
+    void deleteMessageStoreDatabases()
     {
         try
         {
@@ -208,9 +208,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         return createStoredBDBMessage(newMessageId, metaData, false);
     }
 
-    public <T extends StorableMessageMetaData> StoredBDBMessage<T> createStoredBDBMessage(final long newMessageId,
-                                                                                          final T metaData,
-                                                                                          final boolean recovered)
+    private <T extends StorableMessageMetaData> StoredBDBMessage<T> createStoredBDBMessage(final long newMessageId,
+                                                                                           final T metaData,
+                                                                                           final boolean recovered)
     {
         final StoredBDBMessage<T> message = new StoredBDBMessage<>(newMessageId, metaData, recovered);
         _messages.add(message);
@@ -909,7 +909,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         return getEnvironmentFacade().openDatabase(XID_DB_NAME, DEFAULT_DATABASE_CONFIG);
     }
 
-    protected void checkMessageStoreOpen()
+    private void checkMessageStoreOpen()
     {
         if (!_messageStoreOpen.get())
         {
@@ -922,16 +922,19 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         return _messageStoreOpen.get();
     }
 
-    protected abstract ConfiguredObject<?> getParent();
+    protected final ConfiguredObject<?> getParent()
+    {
+        return _parent;
+    }
 
     protected abstract EnvironmentFacade getEnvironmentFacade();
 
-    protected long getPersistentSizeLowThreshold()
+    private long getPersistentSizeLowThreshold()
     {
         return _persistentSizeLowThreshold;
     }
 
-    protected long getPersistentSizeHighThreshold()
+    private long getPersistentSizeHighThreshold()
     {
         return _persistentSizeHighThreshold;
     }

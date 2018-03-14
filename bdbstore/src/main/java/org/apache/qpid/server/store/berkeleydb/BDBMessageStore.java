@@ -21,14 +21,12 @@ package org.apache.qpid.server.store.berkeleydb;
 
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.FileBasedSettings;
-import org.apache.qpid.server.store.SizeMonitoringSettings;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.util.FileUtils;
 
@@ -114,17 +112,10 @@ public class BDBMessageStore extends AbstractBDBMessageStore
         return LOGGER;
     }
 
-
-    @Override
-    protected ConfiguredObject<?> getParent()
-    {
-        return _parent;
-    }
-
     @Override
     public String getStoreLocation()
     {
-        return ((FileBasedSettings)_parent).getStorePath();
+        return ((FileBasedSettings)getParent()).getStorePath();
     }
 
     @Override
