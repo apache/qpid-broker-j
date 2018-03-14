@@ -48,7 +48,7 @@ public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
         @Override
         public int compare(final LogFileDetails o1, final LogFileDetails o2)
         {
-            return (int) (o2.getLastModified() - o1.getLastModified());
+            return Long.compare(o2.getLastModified(), o1.getLastModified());
         }
     };
     private final Path _activeFilePath;
