@@ -76,7 +76,7 @@ public class DerbyMessageStore extends AbstractDerbyMessageStore
     {
         if (isMessageStoreOpen())
         {
-            throw new IllegalStateException("Cannot delete the store as the provided message store is still open");
+            throw new IllegalStateException("Cannot delete the store as store is still open");
         }
 
         FileBasedSettings fileBasedSettings = (FileBasedSettings)parent;
@@ -84,12 +84,12 @@ public class DerbyMessageStore extends AbstractDerbyMessageStore
 
         if (storePath != null)
         {
-            LOGGER.debug("Deleting store {}", storePath);
+            LOGGER.debug("Deleting store : {}", storePath);
 
             File configFile = new File(storePath);
             if (!FileUtils.delete(configFile, true))
             {
-                LOGGER.info("Failed to delete the store at location " + storePath);
+                LOGGER.info("Failed to delete the store at location : {}", storePath);
             }
         }
     }

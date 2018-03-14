@@ -54,7 +54,7 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
     private static final Logger LOGGER = LoggerFactory.getLogger(DerbyConfigurationStore.class);
 
 
-    private final ProvidedMessageStore _providedMessageStore = new ProvidedMessageStore();
+    private final ProvidedDerbyMessageStore _providedMessageStore = new ProvidedDerbyMessageStore();
     private final ProvidedPreferenceStore _providedPreferenceStore = new ProvidedPreferenceStore();
 
     private String _connectionURL;
@@ -197,7 +197,7 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
         return LOGGER;
     }
 
-    private class ProvidedMessageStore extends AbstractDerbyMessageStore
+    private class ProvidedDerbyMessageStore extends AbstractDerbyMessageStore
     {
         @Override
         protected void doOpen(final ConfiguredObject<?> parent)
@@ -233,6 +233,11 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
         @Override
         public void onDelete(final ConfiguredObject<?> parent)
         {
+            if (isMessageStoreOpen())
+            {
+                throw new IllegalStateException("Cannot delete the store as store is still open");
+            }
+
             try(Connection connection = DerbyConfigurationStore.this.getConnection())
             {
                 onDelete(connection);

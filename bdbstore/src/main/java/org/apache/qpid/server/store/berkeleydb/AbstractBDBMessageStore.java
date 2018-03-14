@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -37,6 +38,7 @@ import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.LockConflictException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
@@ -54,6 +56,7 @@ import org.apache.qpid.server.store.EventManager;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.store.SizeMonitoringSettings;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
@@ -85,6 +88,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private static final String BRIDGEDB_NAME = "BRIDGES";
     private static final String LINKDB_NAME = "LINKS";
     private static final String XID_DB_NAME = "XIDS";
+    private final AtomicBoolean _messageStoreOpen = new AtomicBoolean();
 
     private final EventManager _eventManager = new EventManager();
 
@@ -96,6 +100,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             setInitialValue(1).
             setWrap(true).
             setCacheSize(100000);
+    protected ConfiguredObject<?> _parent;
+    protected long _persistentSizeLowThreshold;
+    protected long _persistentSizeHighThreshold;
 
     private boolean _limitBusted;
     private long _totalStoreSize;
@@ -104,6 +111,46 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private final AtomicLong _bytesEvacuatedFromMemory = new AtomicLong();
     private final Set<StoredBDBMessage<?>> _messages = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<MessageDeleteListener> _messageDeleteListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    @Override
+    public void openMessageStore(final ConfiguredObject<?> parent)
+    {
+        if (_messageStoreOpen.compareAndSet(false, true))
+        {
+            _parent = parent;
+
+            final SizeMonitoringSettings sizeMonitorSettings = (SizeMonitoringSettings) parent;
+            _persistentSizeHighThreshold = sizeMonitorSettings.getStoreOverfullSize();
+            _persistentSizeLowThreshold = sizeMonitorSettings.getStoreUnderfullSize();
+
+            if (_persistentSizeLowThreshold > _persistentSizeHighThreshold || _persistentSizeLowThreshold < 0L)
+            {
+                _persistentSizeLowThreshold = _persistentSizeHighThreshold;
+            }
+
+            doOpen(parent);
+        }
+    }
+
+    protected abstract void doOpen(final ConfiguredObject<?> parent);
+
+    @Override
+    public void closeMessageStore()
+    {
+        if (_messageStoreOpen.compareAndSet(true, false))
+        {
+            for (StoredBDBMessage<?> message : _messages)
+            {
+                message.clear();
+            }
+            _messages.clear();
+            _inMemorySize.set(0);
+            _bytesEvacuatedFromMemory.set(0);
+            doClose();
+        }
+    }
+
+    protected abstract void doClose();
 
     @Override
     public void upgradeStoreStructure() throws StoreException
@@ -118,6 +165,37 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         catch(RuntimeException e)
         {
             throw getEnvironmentFacade().handleDatabaseException("Cannot upgrade store", e);
+        }
+    }
+
+    protected void deleteMessageStoreDatabases()
+    {
+        try
+        {
+            for (String db : Arrays.asList(MESSAGE_META_DATA_DB_NAME,
+                                          MESSAGE_META_DATA_SEQ_DB_NAME,
+                                          MESSAGE_CONTENT_DB_NAME,
+                                          DELIVERY_DB_NAME,
+                                          XID_DB_NAME))
+            {
+                try
+                {
+
+                    getEnvironmentFacade().deleteDatabase(db);
+                }
+                catch (DatabaseNotFoundException ignore)
+                {
+                }
+
+            }
+        }
+        catch (IllegalStateException e)
+        {
+            getLogger().warn("Could not delete message store databases: {}", e.getMessage());
+        }
+        catch (RuntimeException e)
+        {
+            getEnvironmentFacade().handleDatabaseException("Deletion of message store databases failed", e);
         }
     }
 
@@ -190,18 +268,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     public void addEventListener(final EventListener eventListener, final Event... events)
     {
         _eventManager.addEventListener(eventListener, events);
-    }
-
-    @Override
-    public void closeMessageStore()
-    {
-        for (StoredBDBMessage<?> message : _messages)
-        {
-            message.clear();
-        }
-        _messages.clear();
-        _inMemorySize.set(0);
-        _bytesEvacuatedFromMemory.set(0);
     }
 
     @Override
@@ -843,15 +909,32 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         return getEnvironmentFacade().openDatabase(XID_DB_NAME, DEFAULT_DATABASE_CONFIG);
     }
 
-    protected abstract void checkMessageStoreOpen();
+    protected void checkMessageStoreOpen()
+    {
+        if (!_messageStoreOpen.get())
+        {
+            throw new IllegalStateException("Message store is not open");
+        }
+    }
+
+    protected boolean isMessageStoreOpen()
+    {
+        return _messageStoreOpen.get();
+    }
 
     protected abstract ConfiguredObject<?> getParent();
 
     protected abstract EnvironmentFacade getEnvironmentFacade();
 
-    protected abstract long getPersistentSizeLowThreshold();
+    protected long getPersistentSizeLowThreshold()
+    {
+        return _persistentSizeLowThreshold;
+    }
 
-    protected abstract long getPersistentSizeHighThreshold();
+    protected long getPersistentSizeHighThreshold()
+    {
+        return _persistentSizeHighThreshold;
+    }
 
     protected abstract Logger getLogger();
 

@@ -161,7 +161,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
     {
         if (isMessageStoreOpen())
         {
-            throw new IllegalStateException("Cannot delete the store as the provided message store is still open");
+            throw new IllegalStateException("Cannot delete the store as the store is still open");
         }
 
         ConnectionProvider connectionProvider = JdbcUtils.createConnectionProvider(parent, LOGGER);

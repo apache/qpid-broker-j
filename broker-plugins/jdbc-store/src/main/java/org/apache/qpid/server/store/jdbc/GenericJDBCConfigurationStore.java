@@ -50,7 +50,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericJDBCConfigurationStore.class);
 
-    private final MessageStore _providedMessageStore = new ProvidedMessageStore();
+    private final MessageStore _providedMessageStore = new ProvidedJDBCMessageStore();
     private final ProvidedPreferenceStore _providedPreferenceStore = new ProvidedPreferenceStore();
     private String _connectionURL;
     private ConnectionProvider _connectionProvider;
@@ -229,7 +229,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         return _providedPreferenceStore;
     }
 
-    private class ProvidedMessageStore extends GenericAbstractJDBCMessageStore
+    private class ProvidedJDBCMessageStore extends GenericAbstractJDBCMessageStore
     {
         @Override
         protected String getTablePrefix(final ConfiguredObject<?> parent)
@@ -270,6 +270,11 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         @Override
         public void onDelete(final ConfiguredObject<?> parent)
         {
+            if (isMessageStoreOpen())
+            {
+                throw new IllegalStateException("Cannot delete the store as the provided store is still open");
+            }
+
             try(Connection connection = GenericJDBCConfigurationStore.this.getConnection())
             {
                 onDelete(connection);

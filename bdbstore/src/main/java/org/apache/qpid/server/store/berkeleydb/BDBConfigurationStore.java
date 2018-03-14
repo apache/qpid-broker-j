@@ -33,7 +33,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -50,7 +49,6 @@ import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
-import org.apache.qpid.server.store.SizeMonitoringSettings;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.entry.HierarchyKey;
 import org.apache.qpid.server.store.berkeleydb.tuple.ConfiguredObjectBinding;
@@ -74,7 +72,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     private static final String CONFIGURED_OBJECTS_DB_NAME = "CONFIGURED_OBJECTS";
     private static final String CONFIGURED_OBJECT_HIERARCHY_DB_NAME = "CONFIGURED_OBJECT_HIERARCHY";
 
-    enum State { CLOSED, CONFIGURED, OPEN };
+    enum State { CLOSED, CONFIGURED, OPEN }
     private State _state = State.CLOSED;
     private final Object _lock = new Object();
 
@@ -344,7 +342,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         {
             txn = _environmentFacade.beginTransaction(null);
 
-            Collection<UUID> removed = new ArrayList<UUID>(objects.length);
+            Collection<UUID> removed = new ArrayList<>(objects.length);
             for(ConfiguredObjectRecord record : objects)
             {
                 if(removeConfiguredObject(txn, record) == OperationStatus.SUCCESS)
@@ -559,41 +557,14 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
 
     class ProvidedBDBMessageStore extends AbstractBDBMessageStore
     {
-        private final AtomicBoolean _messageStoreOpen = new AtomicBoolean();
-
-        private long _persistentSizeLowThreshold;
-        private long _persistentSizeHighThreshold;
-
-        private ConfiguredObject<?> _parent;
-
         @Override
-        public void openMessageStore(final ConfiguredObject<?> parent)
+        protected void doOpen(final ConfiguredObject<?> parent)
         {
-            if (_messageStoreOpen.compareAndSet(false, true))
-            {
-                _parent = parent;
-
-                final SizeMonitoringSettings sizeMonitorSettings = (SizeMonitoringSettings) parent;
-                _persistentSizeHighThreshold = sizeMonitorSettings.getStoreOverfullSize();
-                _persistentSizeLowThreshold = sizeMonitorSettings.getStoreUnderfullSize();
-
-                if (_persistentSizeLowThreshold > _persistentSizeHighThreshold || _persistentSizeLowThreshold < 0l)
-                {
-                    _persistentSizeLowThreshold = _persistentSizeHighThreshold;
-                }
-            }
-        }
-
-        public boolean isMessageStoreOpen()
-        {
-            return _messageStoreOpen.get();
         }
 
         @Override
-        public void closeMessageStore()
+        protected void doClose()
         {
-            super.closeMessageStore();
-            _messageStoreOpen.set(false);
         }
 
         @Override
@@ -605,7 +576,12 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         @Override
         public void onDelete(ConfiguredObject<?> parent)
         {
-            // Nothing to do, message store will be deleted when configuration store is deleted
+            if (isMessageStoreOpen())
+            {
+                throw new IllegalStateException("Cannot delete the store as store is still open");
+            }
+
+            deleteMessageStoreDatabases();
         }
 
         @Override
@@ -636,15 +612,6 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         protected ConfiguredObject<?> getParent()
         {
             return _parent;
-        }
-
-        @Override
-        protected void checkMessageStoreOpen()
-        {
-            if (!_messageStoreOpen.get())
-            {
-                throw new IllegalStateException("Message store is not open");
-            }
         }
 
         @Override

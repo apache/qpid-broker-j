@@ -41,14 +41,7 @@ public class BDBMessageStore extends AbstractBDBMessageStore
 
     private final EnvironmentFacadeFactory _environmentFacadeFactory;
 
-    private final AtomicBoolean _messageStoreOpen = new AtomicBoolean();
-
     private EnvironmentFacade _environmentFacade;
-
-    private ConfiguredObject<?> _parent;
-
-    private long _persistentSizeLowThreshold;
-    private long _persistentSizeHighThreshold;
 
     public BDBMessageStore()
     {
@@ -61,42 +54,24 @@ public class BDBMessageStore extends AbstractBDBMessageStore
     }
 
     @Override
-    public void openMessageStore(final ConfiguredObject<?> parent)
+    protected void doOpen(final ConfiguredObject<?> parent)
     {
-        if (_messageStoreOpen.compareAndSet(false, true))
-        {
-            _parent = parent;
-
-            final SizeMonitoringSettings sizeMonitorSettings = (SizeMonitoringSettings) parent;
-            _persistentSizeHighThreshold = sizeMonitorSettings.getStoreOverfullSize();
-            _persistentSizeLowThreshold = sizeMonitorSettings.getStoreUnderfullSize();
-
-            if (_persistentSizeLowThreshold > _persistentSizeHighThreshold || _persistentSizeLowThreshold < 0l)
-            {
-                _persistentSizeLowThreshold = _persistentSizeHighThreshold;
-            }
-
-            _environmentFacade = _environmentFacadeFactory.createEnvironmentFacade(parent);
-        }
+        _environmentFacade = _environmentFacadeFactory.createEnvironmentFacade(parent);
     }
 
     @Override
-    public void closeMessageStore()
+    protected void doClose()
     {
-        super.closeMessageStore();
-        if (_messageStoreOpen.compareAndSet(true, false))
+        if (_environmentFacade != null)
         {
-            if (_environmentFacade != null)
+            try
             {
-                try
-                {
-                    _environmentFacade.close();
-                    _environmentFacade = null;
-                }
-                catch (RuntimeException e)
-                {
-                    throw new StoreException("Exception occurred on message store close", e);
-                }
+                _environmentFacade.close();
+                _environmentFacade = null;
+            }
+            catch (RuntimeException e)
+            {
+                throw new StoreException("Exception occurred on message store close", e);
             }
         }
     }
@@ -104,6 +79,11 @@ public class BDBMessageStore extends AbstractBDBMessageStore
     @Override
     public void onDelete(ConfiguredObject<?> parent)
     {
+        if (isMessageStoreOpen())
+        {
+            throw new IllegalStateException("Cannot delete the store as store is still open");
+        }
+
         FileBasedSettings fileBasedSettings = (FileBasedSettings)parent;
         String storePath = fileBasedSettings.getStorePath();
 
@@ -111,13 +91,13 @@ public class BDBMessageStore extends AbstractBDBMessageStore
         {
             if (LOGGER.isDebugEnabled())
             {
-                LOGGER.debug("Deleting store " + storePath);
+                LOGGER.debug("Deleting store : {}", storePath);
             }
 
             File configFile = new File(storePath);
             if (!FileUtils.delete(configFile, true))
             {
-                LOGGER.info("Failed to delete the store at location " + storePath);
+                LOGGER.info("Failed to delete the store at location : {} ", storePath);
             }
         }
     }
@@ -129,31 +109,11 @@ public class BDBMessageStore extends AbstractBDBMessageStore
     }
 
     @Override
-    protected long getPersistentSizeLowThreshold()
-    {
-        return _persistentSizeLowThreshold;
-    }
-
-    @Override
-    protected long getPersistentSizeHighThreshold()
-    {
-        return _persistentSizeHighThreshold;
-    }
-
-    @Override
     protected Logger getLogger()
     {
         return LOGGER;
     }
 
-    @Override
-    protected void checkMessageStoreOpen()
-    {
-        if (!_messageStoreOpen.get())
-        {
-            throw new IllegalStateException("Message store is not open");
-        }
-    }
 
     @Override
     protected ConfiguredObject<?> getParent()
