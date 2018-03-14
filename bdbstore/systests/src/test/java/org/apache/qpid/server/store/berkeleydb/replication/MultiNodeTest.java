@@ -175,6 +175,11 @@ public class MultiNodeTest extends QpidBrokerTestCase
         {
             // PASS
         }
+        finally
+        {
+            LOGGER.debug("Closing original connection");
+            connection.close();
+        }
 
         // New connections should now fail as vhost will be unavailable
         try
