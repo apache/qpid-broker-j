@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -92,7 +93,12 @@ public class BDBStoreUpgradeTestPreparer
     {
         Connection connection = _connFac.createConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Destination destination = session.createQueue(NON_DURABLE_QUEUE_NAME);
+        Destination destination = session.createQueue(String.format(
+                "ADDR: %s; {create:always, node: {type: queue, durable: false, x-bindings:[{exchange: '%s', key: %s}]}}",
+                NON_DURABLE_QUEUE_NAME,
+                "amq.direct",
+                NON_DURABLE_QUEUE_NAME));
+
         session.createConsumer(destination).close();
         MessageProducer messageProducer = session.createProducer(destination);
         sendMessages(session, messageProducer, destination, DeliveryMode.PERSISTENT, 1024, 3);
@@ -120,7 +126,11 @@ public class BDBStoreUpgradeTestPreparer
         connection.setExceptionListener(e -> LOGGER.error("Error setting exception listener for connection", e));
         // Create a session on the connection, transacted to confirm delivery
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Queue queue = session.createQueue(QUEUE_NAME);
+        Queue queue = session.createQueue(String.format(
+                "ADDR: %s; {create:always, node: {type: queue, durable: true, x-bindings:[{exchange: '%s', key: %s}]}}",
+                QUEUE_NAME,
+                "amq.direct",
+                QUEUE_NAME));
         // Create a consumer to ensure the queue gets created
         // (and enter it into the store, as queues are made durable by default)
         MessageConsumer messageConsumer = session.createConsumer(queue);
@@ -165,11 +175,19 @@ public class BDBStoreUpgradeTestPreparer
         createAndBindQueueOnBroker(session, QUEUE_WITH_DLQ_NAME, queueWithDLQArguments);
 
         // Send message to the DLQ
-        Queue dlq = session.createQueue("fanout://" + QUEUE_WITH_DLQ_NAME + "_DLE//does-not-matter");
+        Queue dlq = session.createQueue("BURL:fanout://" + QUEUE_WITH_DLQ_NAME + "_DLE//does-not-matter");
         MessageProducer dlqMessageProducer = session.createProducer(dlq);
         sendMessages(session, dlqMessageProducer, dlq, DeliveryMode.PERSISTENT, 1*1024, 1);
         session.commit();
-        Queue customQueue = createAndBindQueueOnBroker(session, TEST_QUEUE_NAME, null, TEST_EXCHANGE_NAME, "direct");
+
+        session.createProducer(session.createTopic(
+                String.format("BURL:direct://%s//?durable='true'", TEST_EXCHANGE_NAME))).close();
+
+        Queue customQueue = createAndBindQueueOnBroker(session,
+                                                       TEST_QUEUE_NAME,
+                                                       Collections.emptyMap(),
+                                                       TEST_EXCHANGE_NAME
+                                                      );
         MessageProducer customQueueMessageProducer = session.createProducer(customQueue);
         sendMessages(session, customQueueMessageProducer, customQueue, DeliveryMode.PERSISTENT, 1*1024, 1);
         session.commit();
@@ -183,18 +201,25 @@ public class BDBStoreUpgradeTestPreparer
 
     private Queue createAndBindQueueOnBroker(Session session, String queueName, final Map<String, Object> arguments) throws Exception
     {
-        return createAndBindQueueOnBroker(session, queueName, arguments, "amq.direct", "direct");
+        return createAndBindQueueOnBroker(session, queueName, arguments, "amq.direct");
     }
 
-    private Queue createAndBindQueueOnBroker(Session session, String queueName, final Map<String, Object> arguments, String exchangeName, String exchangeType) throws Exception
+    private Queue createAndBindQueueOnBroker(Session session,
+                                             String queueName,
+                                             final Map<String, Object> arguments,
+                                             String exchangeName) throws Exception
     {
         final String declareArgs = arguments.entrySet()
                                             .stream()
                                             .map(entry -> String.format("'%s' : %s", entry.getKey(), entry.getValue()))
-                                            .collect(Collectors.joining("{", "}", ","));
+                                            .collect(Collectors.joining(",", "{", "}"));
 
         Queue queue = session.createQueue(String.format(
-                "ADDR: %s; {create:always, node: {type: queue, x-bindings:[{exchange: '%s', key: %s}], x-declare: {arguments:%s}}", queueName, exchangeName, queueName, declareArgs));
+                "ADDR: %s; {create:always, node: {type: queue, x-bindings:[{exchange: '%s', key: %s}], x-declare: {arguments:%s}}}",
+                queueName,
+                exchangeName,
+                queueName,
+                declareArgs));
         return queue;
     }
 
@@ -234,14 +259,7 @@ public class BDBStoreUpgradeTestPreparer
         // Create a connection
         TopicConnection connection = _topciConnFac.createTopicConnection();
         connection.start();
-        connection.setExceptionListener(new ExceptionListener()
-        {
-            @Override
-            public void onException(JMSException e)
-            {
-                LOGGER.error("Error setting exception listener for connection", e);
-            }
-        });
+        connection.setExceptionListener(e -> LOGGER.error("Error setting exception listener for connection", e));
         // Create a session on the connection, transacted to confirm delivery
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
         Topic topic = session.createTopic(SELECTOR_TOPIC_NAME);
