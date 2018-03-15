@@ -1,5 +1,23 @@
 # Apache Qpid Broker-J
 
+---
+
+|CI Process|Status|
+|---|---|
+|Travis CI Build|[![https://travis-ci.org/apache/qpid-broker-j.svg?branch=master](https://travis-ci.org/apache/qpid-broker-j.png?branch=master)](https://travis-ci.org/apache/qpid-broker-j?branch=master)|
+|Apache Jenkins CI Build|[![Status](https://builds.apache.org/buildStatus/icon?job=Qpid-Broker-J-TestMatrix)](https://builds.apache.org/view/M-R/view/Qpid/job/Qpid-Broker-J-TestMatrix/)|
+
+---
+
+[Website](http://qpid.apache.org/) |
+[Wiki](https://cwiki.apache.org/confluence/display/qpid) |
+[Documentation](http://qpid.apache.org/documentation.html) |
+[Developer Mailing List](mailto:dev@qpid.apache.org) |
+[User Mailing List](mailto:users@qpid.apache.org) |
+[Open Issues](https://issues.apache.org/jira/issues/?jql=project%20%3D%20QPID%20AND%20resolution%20%3D%20Unresolved%20AND%20component%20%3D%20Broker-J%20ORDER%20BY%20key%20DESC)
+
+# Qpid Broker-J
+
 The Apache Qpid Broker-J is a powerful open-source message broker.
 
 * Supports Advanced Message Queuing Protocol (AMQP) versions 0-8, 0-9, 0-91, 0-10 and 1.0
@@ -63,11 +81,7 @@ Execute the tests and produce code coverage report:
 
 ## Documentation
 
-Documentation (in docbook format) is found beneath the *doc* module. The documentation is available in a published
-form at:
-
-http://qpid.apache.org/documentation.html
-
+Documentation (in docbook format) is found beneath the *doc* module.
 
 ## Distribution assemblies
 
