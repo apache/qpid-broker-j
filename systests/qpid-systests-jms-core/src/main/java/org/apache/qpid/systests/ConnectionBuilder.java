@@ -49,6 +49,8 @@ public interface ConnectionBuilder
     ConnectionBuilder setFailoverReconnectDelay(int connectDelay);
     ConnectionBuilder setTls(boolean enableTls);
     ConnectionBuilder setSyncPublish(boolean syncPublish);
+
+    @Deprecated
     ConnectionBuilder setOptions(Map<String, String> options);
     ConnectionBuilder setPopulateJMSXUserID(boolean populateJMSXUserID);
     ConnectionBuilder setMessageRedelivery(final boolean redelivery);
@@ -61,9 +63,8 @@ public interface ConnectionBuilder
     ConnectionBuilder setVerifyHostName(boolean verifyHostName);
     ConnectionBuilder setKeyAlias(String alias);
     ConnectionBuilder setSaslMechanisms(String... mechanism);
-
     ConnectionBuilder setCompress(boolean compress);
-    Connection build() throws NamingException, JMSException;
 
+    Connection build() throws NamingException, JMSException;
     ConnectionFactory buildConnectionFactory() throws NamingException;
 }

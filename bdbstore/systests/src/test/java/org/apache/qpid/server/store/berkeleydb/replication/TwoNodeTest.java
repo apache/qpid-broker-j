@@ -67,7 +67,7 @@ public class TwoNodeTest extends QpidBrokerTestCase
         _groupCreator.configureClusterNodes();
         _groupCreator.setDesignatedPrimaryOnFirstBroker(designedPrimary);
         _positiveFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes();
-        _negativeFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes(200, 0, 2);
+        _negativeFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes(200, 2);
         _groupCreator.startCluster();
     }
 

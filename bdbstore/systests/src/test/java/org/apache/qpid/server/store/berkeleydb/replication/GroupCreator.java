@@ -70,7 +70,6 @@ public class GroupCreator
     private static final Logger LOGGER = LoggerFactory.getLogger(GroupCreator.class);
 
     private static final int FAILOVER_CYCLECOUNT = 40;
-    private static final int FAILOVER_RETRIES = 0;
     private static final int FAILOVER_CONNECTDELAY = 1000;
 
     private final QpidBrokerTestCase _testcase;
@@ -281,17 +280,17 @@ public class GroupCreator
 
     public ConnectionBuilder getConnectionBuilderForAllClusterNodes() throws Exception
     {
-        return getConnectionBuilderForAllClusterNodes(FAILOVER_CONNECTDELAY, FAILOVER_RETRIES, FAILOVER_CYCLECOUNT);
+        return getConnectionBuilderForAllClusterNodes(FAILOVER_CONNECTDELAY, FAILOVER_CYCLECOUNT);
     }
 
-    public ConnectionBuilder getConnectionBuilderForAllClusterNodes(int connectDelay, int retries, final int cyclecount) throws Exception
+    public ConnectionBuilder getConnectionBuilderForAllClusterNodes(int connectDelay, final int cyclecount) throws Exception
     {
         final ConnectionBuilder connectionBuilder = _testcase.getConnectionBuilder();
         connectionBuilder.setFailoverReconnectDelay(connectDelay);
         connectionBuilder.setVirtualHost(_virtualHostName);
         connectionBuilder.setFailover(true);
 
-        final int reconnectAttempts = (retries == 0 ? 1 : retries) * (cyclecount == 0 ? 1 : cyclecount);
+        final int reconnectAttempts = cyclecount == 0 ? 1 : cyclecount;
         connectionBuilder.setFailoverReconnectAttempts(reconnectAttempts);
 
         final Iterator<Integer> iterator = _members.keySet().iterator();

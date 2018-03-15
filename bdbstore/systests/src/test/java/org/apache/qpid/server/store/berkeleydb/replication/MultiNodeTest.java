@@ -91,7 +91,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         _groupCreator.configureClusterNodes();
 
         _positiveFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes();
-        _negativeFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes(200, 0, 2);
+        _negativeFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes(200, 2);
 
         _groupCreator.startCluster();
         _failoverListener = new FailoverAwaitingListener();
@@ -488,7 +488,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         ExecutorService executorService = Executors.newFixedThreadPool(connectionNumber + NUMBER_OF_NODES - 1);
         try
         {
-            final ConnectionBuilder builder = _groupCreator.getConnectionBuilderForAllClusterNodes(100, 0, 100);
+            final ConnectionBuilder builder = _groupCreator.getConnectionBuilderForAllClusterNodes(100, 100);
             final Connection consumerConnection = builder.build();
             Session s = consumerConnection.createSession(true, Session.SESSION_TRANSACTED);
             getJmsProvider().createQueue(s, getTestQueueName());
