@@ -53,7 +53,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
-import org.apache.qpid.server.transport.network.security.ssl.QpidClientX509KeyManager;
+import org.apache.qpid.server.transport.network.security.ssl.QpidServerX509KeyManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 @ManagedObject( category = false )
@@ -236,8 +236,8 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
             if (_certificateAlias != null)
             {
                 return new KeyManager[] {
-                        new QpidClientX509KeyManager( _certificateAlias, url, _keyStoreType, getPassword(),
-                                                      _keyManagerFactoryAlgorithm)
+                        new QpidServerX509KeyManager(_certificateAlias, url, _keyStoreType, getPassword(),
+                                                     _keyManagerFactoryAlgorithm)
                                         };
 
             }

@@ -32,94 +32,67 @@ import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class QpidClientX509KeyManager extends X509ExtendedKeyManager
+public class QpidServerX509KeyManager extends X509ExtendedKeyManager
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(QpidClientX509KeyManager.class);
+    private final X509ExtendedKeyManager _delegate;
+    private final String _alias;
 
-    private X509ExtendedKeyManager delegate;
-    private String alias;
-    
-    public QpidClientX509KeyManager(String alias, String keyStorePath, String keyStoreType,
-                           String keyStorePassword, String keyManagerFactoryAlgorithmName) throws GeneralSecurityException, IOException
+    public QpidServerX509KeyManager(String alias, URL keyStoreUrl, String keyStoreType,
+                                    String keyStorePassword, String keyManagerFactoryAlgorithmName) throws GeneralSecurityException, IOException
     {
-        this.alias = alias;
-        KeyStore ks = SSLUtil.getInitializedKeyStore(keyStorePath,keyStorePassword,keyStoreType);
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerFactoryAlgorithmName);
-        kmf.init(ks, keyStorePassword.toCharArray());
-        this.delegate = (X509ExtendedKeyManager)kmf.getKeyManagers()[0];
-    }
-
-    public QpidClientX509KeyManager(String alias, URL keyStoreUrl, String keyStoreType,
-                           String keyStorePassword, String keyManagerFactoryAlgorithmName) throws GeneralSecurityException, IOException
-    {
-        this.alias = alias;
+        _alias = alias;
         KeyStore ks = SSLUtil.getInitializedKeyStore(keyStoreUrl,keyStorePassword,keyStoreType);
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerFactoryAlgorithmName);
         kmf.init(ks, keyStorePassword.toCharArray());
-        this.delegate = (X509ExtendedKeyManager)kmf.getKeyManagers()[0];
+        _delegate = (X509ExtendedKeyManager)kmf.getKeyManagers()[0];
     }
-
-    public QpidClientX509KeyManager(String alias, KeyStore ks,
-                                    String keyStorePassword, String keyManagerFactoryAlgorithmName) throws GeneralSecurityException, IOException
-    {
-        this.alias = alias;
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerFactoryAlgorithmName);
-        kmf.init(ks, keyStorePassword.toCharArray());
-        this.delegate = (X509ExtendedKeyManager)kmf.getKeyManagers()[0];
-    }
-
 
     @Override
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
     {
-        LOGGER.debug("chooseClientAlias:Returning alias {}", alias);
-        return alias;
+        return _delegate.chooseClientAlias(keyType, issuers, socket);
     }
 
     @Override
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {
-        return delegate.chooseServerAlias(keyType, issuers, socket);
+        return _alias != null ? _alias : _delegate.chooseServerAlias(keyType, issuers, socket);
     }
 
     @Override
     public X509Certificate[] getCertificateChain(String alias)
     {
-        return delegate.getCertificateChain(alias);
+        return _delegate.getCertificateChain(alias);
     }
 
     @Override
     public String[] getClientAliases(String keyType, Principal[] issuers)
     {
-        LOGGER.debug("getClientAliases:Returning alias {}", alias);
-        return new String[]{alias};
+        return _delegate.getClientAliases(keyType, issuers);
     }
 
     @Override
     public PrivateKey getPrivateKey(String alias)
     {
-        return delegate.getPrivateKey(alias);
+        return _delegate.getPrivateKey(alias);
     }
 
     @Override
     public String[] getServerAliases(String keyType, Principal[] issuers)
     {
-        return delegate.getServerAliases(keyType, issuers);
+        return _alias != null ? new String[] {_alias } : _delegate.getServerAliases(keyType, issuers);
     }
 
     @Override
     public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
     {
-        LOGGER.debug("chooseEngineClientAlias:Returning alias {}", alias);
-        return alias;
+        return _delegate.chooseEngineClientAlias(keyType, issuers, engine);
     }
 
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
-        return delegate.chooseEngineServerAlias(keyType, issuers, engine);
+        return _alias != null ? _alias : _delegate.chooseEngineServerAlias(keyType, issuers, engine);
     }
 }
