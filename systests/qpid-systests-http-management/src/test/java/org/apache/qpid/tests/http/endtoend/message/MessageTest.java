@@ -228,15 +228,8 @@ public class MessageTest extends HttpTestBase
         Map<String, Object> message = messages.get(0);
         int messageId = (int) message.get("id");
 
-        HttpURLConnection httpCon = getHelper().openManagementConnection(String.format(
-                "queue/myqueue/getMessageContent?messageId=%d", messageId), "GET");
-        httpCon.connect();
-
-        byte[] receivedContent;
-        try (InputStream is = httpCon.getInputStream())
-        {
-            receivedContent = ByteStreams.toByteArray(is);
-        }
+        byte[] receivedContent = getHelper().getBytes(String.format(
+                "queue/myqueue/getMessageContent?messageId=%d", messageId));
 
         assumeThat("AMQP1.0 messages return the AMQP type",
                    getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));

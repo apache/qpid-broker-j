@@ -26,11 +26,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Port;
@@ -40,6 +44,8 @@ import org.apache.qpid.tests.http.HttpTestHelper;
 
 public class HttpPortTest extends HttpTestBase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpPortTest.class);
+
     @Test
     public void createdPortAcceptsConnections() throws Exception
     {
@@ -76,7 +82,16 @@ public class HttpPortTest extends HttpTestBase
         HttpTestHelper helper =
                 new HttpTestHelper(getBrokerAdmin(), null, ((Number) attributes.get("boundPort")).intValue());
 
-        helper.submitRequest("port/" + portName, "DELETE", SC_OK);
+        try
+        {
+            helper.submitRequest("port/" + portName, "DELETE", SC_OK);
+        }
+        catch (ConnectException e)
+        {
+            // Extra logging to investigate unexpected exception
+            LOGGER.debug("Unexpected connection exception", e);
+            Assert.fail("Unexpected exception " + e.getMessage());
+        }
     }
 
     private void createPort(final String portName, final String authenticationProvider) throws IOException

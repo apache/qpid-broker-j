@@ -37,6 +37,7 @@
             </appender>
         </sift>
     </appender>
+    <logger name="org.eclipse.jetty" level="warn" />
     <root level="debug">
         <appender-ref ref="RootSiftAppender"/>
     </root>

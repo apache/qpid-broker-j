@@ -21,10 +21,10 @@
 
 package org.apache.qpid.tests.http.userprefs;
 
+import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -413,16 +413,7 @@ public class UserPreferencesRestTest extends HttpTestBase
         getHelper().getJsonAsMap(fullUrl);
 
         getHelper().submitRequest(fullUrl, "DELETE", SC_OK);
-
-        try
-        {
-            getHelper().getJsonAsMap(fullUrl);
-            fail();
-        }
-        catch (Exception e)
-        {
-            // pass
-        }
+        getHelper().submitRequest(fullUrl, "GET", SC_NOT_FOUND);
     }
 
 }

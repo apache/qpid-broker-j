@@ -23,15 +23,11 @@ package org.apache.qpid.tests.http;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -49,10 +45,12 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.ByteStreams;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +134,8 @@ public class HttpTestHelper
         {
             path = API_BASE + path;
         }
-        URL url = getManagementURL(path);
+        final URL url = getManagementURL(path);
+        LOGGER.debug("Opening connection : {} {}", method, url);
         HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
         if (httpCon instanceof HttpsURLConnection)
         {
@@ -185,14 +184,6 @@ public class HttpTestHelper
         return httpCon;
     }
 
-    public List<Map<String, Object>> readJsonResponseAsList(HttpURLConnection connection) throws IOException
-    {
-        byte[] data = readConnectionInputStream(connection);
-        ObjectMapper mapper = new ObjectMapper();
-        List<Map<String, Object>> providedObject = mapper.readValue(new ByteArrayInputStream(data), TYPE_LIST_OF_LINKED_HASH_MAPS);
-        return providedObject;
-    }
-
     public Map<String, Object> readJsonResponseAsMap(HttpURLConnection connection) throws IOException
     {
         byte[] data = readConnectionInputStream(connection);
@@ -202,76 +193,23 @@ public class HttpTestHelper
         return providedObject;
     }
 
-    public <T> T readJsonResponse(HttpURLConnection connection, Class<T> valueType) throws IOException
-    {
-        byte[] data = readConnectionInputStream(connection);
-
-        ObjectMapper mapper = new ObjectMapper();
-
-        return mapper.readValue(new ByteArrayInputStream(data), valueType);
-    }
-
     private byte[] readConnectionInputStream(HttpURLConnection connection) throws IOException
     {
-        InputStream is = connection.getInputStream();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int len = -1;
-        while ((len = is.read(buffer)) != -1)
+        try (InputStream is = connection.getInputStream())
         {
-            baos.write(buffer, 0, len);
+            final byte[] bytes = ByteStreams.toByteArray(is);
+            if (LOGGER.isTraceEnabled())
+            {
+                LOGGER.trace("RESPONSE:" + new String(bytes, UTF_8));
+            }
+            return bytes;
         }
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace("RESPONSE:" + new String(baos.toByteArray(), UTF_8));
-        }
-        return baos.toByteArray();
     }
 
     private void writeJsonRequest(HttpURLConnection connection, Object data) throws IOException
     {
         ObjectMapper mapper = new ObjectMapper();
         mapper.writeValue(connection.getOutputStream(), data);
-    }
-
-    public Map<String, Object> find(String name, Object value, List<Map<String, Object>> data)
-    {
-        if (data == null)
-        {
-            return null;
-        }
-
-        for (Map<String, Object> map : data)
-        {
-            Object mapValue = map.get(name);
-            if (value.equals(mapValue))
-            {
-                return map;
-            }
-        }
-        return null;
-    }
-
-    public Map<String, Object> find(Map<String, Object> searchAttributes, List<Map<String, Object>> data)
-    {
-        for (Map<String, Object> map : data)
-        {
-            boolean equals = true;
-            for (Map.Entry<String, Object> entry : searchAttributes.entrySet())
-            {
-                Object mapValue = map.get(entry.getKey());
-                if (!entry.getValue().equals(mapValue))
-                {
-                    equals = false;
-                    break;
-                }
-            }
-            if (equals)
-            {
-                return map;
-            }
-        }
-        return null;
     }
 
     public Map<String, Object> getJsonAsSingletonList(String path) throws IOException
@@ -283,117 +221,65 @@ public class HttpTestHelper
         return response.get(0);
     }
 
-    public Map<String, Object> postDataToPathAndGetObject(String path, Map<String, Object> data) throws IOException
-    {
-        HttpURLConnection connection = openManagementConnection(path, "POST");
-        connection.connect();
-        writeJsonRequest(connection, data);
-        Map<String, Object> response = readJsonResponseAsMap(connection);
-        return response;
-    }
-
     public List<Map<String, Object>> getJsonAsList(String path) throws IOException
     {
-        HttpURLConnection connection = openManagementConnection(path, "GET");
-        connection.connect();
-        List<Map<String, Object>> response = readJsonResponseAsList(connection);
-        return response;
-    }
-
-    public List<Object> getJsonAsSimpleList(String path) throws IOException
-    {
-        HttpURLConnection connection = openManagementConnection(path, "GET");
-        connection.connect();
-        byte[] data = readConnectionInputStream(connection);
-        ObjectMapper mapper = new ObjectMapper();
-        List<Object> providedObject = mapper.readValue(new ByteArrayInputStream(data), new TypeReference<List<Object>>()
-        {
-        });
-        return providedObject;
+        return getJson(path, TYPE_LIST_OF_LINKED_HASH_MAPS, HttpServletResponse.SC_OK);
     }
 
     public Map<String, Object> getJsonAsMap(String path) throws IOException
     {
-        HttpURLConnection connection = openManagementConnection(path, "GET");
-        try
-        {
-            connection.connect();
-            Map<String, Object> response = readJsonResponseAsMap(connection);
-            return response;
-        }
-        finally
-        {
-            connection.disconnect();
-        }
+        return getJson(path, TYPE_LINKED_HASH_MAPS, HttpServletResponse.SC_OK);
     }
 
     public <T> T getJson(String path, final TypeReference valueTypeRef, int expectedResponseCode) throws IOException
     {
+        int responseCode = -1;
         HttpURLConnection connection = openManagementConnection(path, "GET");
-        connection.connect();
-        int responseCode = connection.getResponseCode();
-        Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
+        try
+        {
+            connection.connect();
+            responseCode = connection.getResponseCode();
+            Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
 
-        return new ObjectMapper().readValue(new ByteArrayInputStream(readConnectionInputStream(connection)), valueTypeRef);
+            return new ObjectMapper().readValue(new ByteArrayInputStream(readConnectionInputStream(connection)), valueTypeRef);
+        }
+        finally
+        {
+
+            LOGGER.debug("URL request completed : {}", responseCode);
+            connection.disconnect();
+        }
     }
 
     public <T> T postJson(String path, final Object data, final TypeReference valueTypeRef, int expectedResponseCode) throws IOException
     {
+        int responseCode = -1;
         HttpURLConnection connection = openManagementConnection(path, "POST");
-        connection.connect();
-        writeJsonRequest(connection, data);
-        int responseCode = connection.getResponseCode();
-        Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
 
-        return new ObjectMapper().readValue(new ByteArrayInputStream(readConnectionInputStream(connection)), valueTypeRef);
+        try
+        {
+            connection.connect();
+            writeJsonRequest(connection, data);
+            responseCode = connection.getResponseCode();
+            Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
+
+            return new ObjectMapper().readValue(new ByteArrayInputStream(readConnectionInputStream(connection)), valueTypeRef);
+        }
+        finally
+        {
+            LOGGER.debug("URL request completed : {}", responseCode);
+            connection.disconnect();
+        }
     }
-
 
     public int submitRequest(String url, String method, Object data) throws IOException
     {
         return submitRequest(url, method, data, null);
     }
 
-    public int submitRequest(String url, String method, Object data, Map<String, List<String>> responseHeadersToCapture) throws IOException
-    {
-        LOGGER.debug("HttpURLConnection : open  : {} : {}", method, url);
-        RuntimeException ex = null;
-        int responseCode = -1;
-        try
-        {
-            HttpURLConnection connection = openManagementConnection(url, method);
-            try
-            {
-                if (data != null)
-                {
-                    writeJsonRequest(connection, data);
-                }
-                responseCode = connection.getResponseCode();
-                if (responseHeadersToCapture != null)
-                {
-                    responseHeadersToCapture.putAll(connection.getHeaderFields());
-                }
-                return responseCode;
-            }
-            catch (RuntimeException e)
-            {
-                ex = e;
-                throw e;
-            }
-            finally
-            {
-                connection.disconnect();
-            }
-        }
-        finally
-        {
-            LOGGER.debug("HttpURLConnection : close : {} : {} : {}", method, responseCode, url, ex);
-        }
-    }
-
     public int submitRequest(String url, String method) throws IOException
     {
-        return submitRequest(url, method, (byte[])null);
+        return submitRequest(url, method, null, null);
     }
 
     public void submitRequest(String url, String method, Object data, int expectedResponseCode) throws IOException
@@ -401,11 +287,6 @@ public class HttpTestHelper
         Map<String, List<String>> headers = new HashMap<>();
         int responseCode = submitRequest(url, method, data, headers);
         Assert.assertEquals("Unexpected response code from " + method + " " + url , expectedResponseCode, responseCode);
-        if (expectedResponseCode == 201)
-        {
-            List<String> location = headers.get("Location");
-            Assert.assertTrue("Location is not returned by REST create request", location != null && location.size() == 1);
-        }
     }
 
     public void submitRequest(String url, String method, int expectedResponseCode) throws IOException
@@ -413,18 +294,28 @@ public class HttpTestHelper
         submitRequest(url, method, null, expectedResponseCode);
     }
 
-    public int submitRequest(String url, String method, byte[] parameters) throws IOException
+    public int submitRequest(String url, String method, Object data, Map<String, List<String>> responseHeadersToCapture) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(url, method);
-        if (parameters != null)
+        int responseCode = -1;
+        try
         {
-            OutputStream os = connection.getOutputStream();
-            os.write(parameters);
-            os.flush();
+            if (data != null)
+            {
+                writeJsonRequest(connection, data);
+            }
+            responseCode = connection.getResponseCode();
+            if (responseHeadersToCapture != null)
+            {
+                responseHeadersToCapture.putAll(connection.getHeaderFields());
+            }
+            return responseCode;
         }
-        int responseCode = connection.getResponseCode();
-        connection.disconnect();
-        return responseCode;
+        finally
+        {
+            LOGGER.debug("URL request completed : {}", responseCode);
+            connection.disconnect();
+        }
     }
 
     public byte[] getBytes(String path) throws IOException
@@ -432,11 +323,6 @@ public class HttpTestHelper
         HttpURLConnection connection = openManagementConnection(path, "GET");
         connection.connect();
         return readConnectionInputStream(connection);
-    }
-
-    public String encode(String value, String encoding) throws UnsupportedEncodingException
-    {
-        return URLEncoder.encode(value, encoding).replace("+", "%20");
     }
 
     public String getAcceptEncoding()
