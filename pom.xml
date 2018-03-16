@@ -126,7 +126,7 @@
 
     <!-- dependency version numbers -->
     <bonecp-version>0.7.1.RELEASE</bonecp-version>
-    <commons-cli-version>1.2</commons-cli-version>
+    <commons-cli-version>1.4</commons-cli-version>
 
     <geronimo-jms-1-1-version>1.1.1</geronimo-jms-1-1-version>
     <geronimo-jms-2-0-version>1.0-alpha-2</geronimo-jms-2-0-version>

@@ -34,7 +34,6 @@ import java.util.TreeSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
@@ -50,8 +49,8 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.server.util.StringUtil;
 
 /**
  * Main entry point for Apache Qpid Broker-J.
@@ -70,38 +69,94 @@ public class Main
 
     private static final int MANAGEMENT_MODE_PASSWORD_LENGTH = 10;
 
-    private static final Option OPTION_HELP = new Option("h", "help", false, "print this message");
+    private static final Option OPTION_HELP = Option.builder("h")
+                                                    .desc("print this message")
+                                                    .longOpt("help")
+                                                    .build();
 
-    private static final Option OPTION_VERSION = new Option("v", "version", false, "print the version information and exit");
+    private static final Option OPTION_VERSION = Option.builder("v")
+                                                       .desc("print the version information and exit")
+                                                       .longOpt("version")
+                                                       .build();
 
-    private static final Option OPTION_CONFIGURATION_STORE_PATH = OptionBuilder.withArgName("path").hasArg()
-            .withDescription("use given configuration store location").withLongOpt("store-path").create("sp");
+    private static final Option OPTION_CONFIGURATION_STORE_PATH = Option.builder("sp")
+                                                                        .argName("path")
+                                                                        .hasArg()
+                                                                        .desc("use given configuration store location")
+                                                                        .longOpt("store-path")
+                                                                        .build();
 
-    private static final Option OPTION_CONFIGURATION_STORE_TYPE = OptionBuilder.withArgName("type").hasArg()
-            .withDescription("use given broker configuration store type").withLongOpt("store-type").create("st");
+    private static final Option OPTION_CONFIGURATION_STORE_TYPE = Option.builder("st")
+                                                                        .argName("type")
+                                                                        .hasArg()
+                                                                        .desc("use given broker configuration store "
+                                                                              + "type")
+                                                                        .longOpt("store-type")
+                                                                        .build();
 
-    private static final Option OPTION_INITIAL_CONFIGURATION_PATH = OptionBuilder.withArgName("path").hasArg()
-            .withDescription("set the location of initial JSON config to use when creating/overwriting a broker configuration store").withLongOpt("initial-config-path").create("icp");
+    private static final Option OPTION_INITIAL_CONFIGURATION_PATH = Option.builder("icp")
+                                                                          .argName("path")
+                                                                          .hasArg()
+                                                                          .desc("set the location of initial JSON "
+                                                                                + "config to use when "
+                                                                                + "creating/overwriting a broker "
+                                                                                + "configuration store")
+                                                                          .longOpt("initial-config-path")
+                                                                          .build();
 
-    private static final Option OPTION_CREATE_INITIAL_CONFIG = OptionBuilder.withArgName("path").hasOptionalArg().withDescription("create a copy of the initial config file, either to an" +
-            " optionally specified file path, or as " + SystemConfig.DEFAULT_INITIAL_CONFIG_NAME + " in the current directory")
-            .withLongOpt("create-initial-config").create("cic");
+    private static final Option OPTION_CREATE_INITIAL_CONFIG = Option.builder("cic")
+                                                                     .argName("path")
+                                                                     .optionalArg(true)
+                                                                     .desc("create a copy of the initial config file,"
+                                                                           + " either to an"
+                                                                           +
+                                                                           " optionally specified file path, or as "
+                                                                           + SystemConfig.DEFAULT_INITIAL_CONFIG_NAME
+                                                                           + " in the current directory")
+                                                                     .longOpt("create-initial-config")
+                                                                     .build();
 
-    private static final Option OPTION_CONFIGURATION_PROPERTY = OptionBuilder.withArgName("name=value").hasArg()
-            .withDescription("set a configuration property to use when resolving variables in the broker configuration store, with format \"name=value\"")
-            .withLongOpt("config-property").create("prop");
+    private static final Option OPTION_CONFIGURATION_PROPERTY = Option.builder("prop")
+                                                                      .argName("name=value").hasArg()
+                                                                      .desc("set a configuration property to use when"
+                                                                            + " resolving variables in the broker "
+                                                                            + "configuration store, with format "
+                                                                            + "\"name=value\"")
+                                                                      .longOpt("config-property")
+                                                                      .build();
 
-    private static final Option OPTION_MANAGEMENT_MODE = OptionBuilder.withDescription("start broker in management mode, disabling the AMQP ports")
-            .withLongOpt("management-mode").create("mm");
-    private static final Option OPTION_MM_QUIESCE_VHOST = OptionBuilder.withDescription("make virtualhosts stay in the quiesced state during management mode.")
-            .withLongOpt("management-mode-quiesce-virtualhosts").create("mmqv");
-    private static final Option OPTION_MM_HTTP_PORT = OptionBuilder.withArgName("port").hasArg()
-            .withDescription("override http management port in management mode").withLongOpt("management-mode-http-port").create("mmhttp");
-    private static final Option OPTION_MM_PASSWORD = OptionBuilder.withArgName("password").hasArg()
-                                                                  .withDescription("Set the password for the management mode user " + SystemConfig.MANAGEMENT_MODE_USER_NAME).withLongOpt("management-mode-password").create("mmpass");
+    private static final Option OPTION_MANAGEMENT_MODE = Option.builder("mm")
+                                                               .desc("start broker in management mode, disabling the "
+                                                                     + "AMQP ports")
+                                                               .longOpt("management-mode")
+                                                               .build();
 
-    private static final Option OPTION_INITIAL_SYSTEM_PROPERTIES = OptionBuilder.withArgName("path").hasArg()
-            .withDescription("set the location of initial properties file to set otherwise unset system properties").withLongOpt("system-properties-file").create("props");
+    private static final Option OPTION_MM_QUIESCE_VHOST = Option.builder("mmqv")
+                                                                .desc("make virtualhosts stay in the quiesced state during management mode.")
+                                                                .longOpt("management-mode-quiesce-virtualhosts")
+                                                                .build();
+
+    private static final Option OPTION_MM_HTTP_PORT = Option.builder("mmhttp")
+                                                            .argName("port")
+                                                            .hasArg()
+                                                            .desc("override http management port in management mode")
+                                                            .longOpt("management-mode-http-port")
+                                                            .build();
+
+    private static final Option OPTION_MM_PASSWORD = Option.builder("mmpass")
+                                                           .argName("password")
+                                                           .hasArg()
+                                                           .desc("Set the password for the management mode user "
+                                                                 + SystemConfig.MANAGEMENT_MODE_USER_NAME)
+                                                           .longOpt("management-mode-password")
+                                                           .build();
+
+    private static final Option OPTION_INITIAL_SYSTEM_PROPERTIES = Option.builder("props")
+                                                                         .argName("path")
+                                                                         .hasArg()
+                                                                         .desc("set the location of initial properties file to set otherwise unset system properties")
+                                                                         .longOpt("system-properties-file")
+                                                                         .build();
 
     private static final Options OPTIONS = new Options();
 
