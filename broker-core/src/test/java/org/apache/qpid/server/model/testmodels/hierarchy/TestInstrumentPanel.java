@@ -1,4 +1,4 @@
-/*
+package org.apache.qpid.server.model.testmodels.hierarchy;/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,23 +18,11 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import java.util.Map;
-
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-@ManagedObject( category = false,
-        type = TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE)
-public class TestTemperatureSensorImpl extends TestAbstractSensorImpl<TestTemperatureSensorImpl> implements TestSensor<TestTemperatureSensorImpl>
+@ManagedObject(category = true, defaultType = TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE)
+public interface TestInstrumentPanel<X extends TestInstrumentPanel<X>> extends ConfiguredObject<X>
 {
-
-    public static final String TEST_TEMPERATURE_SENSOR_TYPE = "temperature";
-
-    @ManagedObjectFactoryConstructor
-    protected TestTemperatureSensorImpl(final Map<String, Object> attributes,final TestInstrumentPanel<?> parent)
-    {
-        super(parent, attributes);
-    }
 }

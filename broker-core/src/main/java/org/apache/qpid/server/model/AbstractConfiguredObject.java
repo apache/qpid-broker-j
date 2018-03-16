@@ -2227,7 +2227,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         ConfiguredObject<?> proxyForValidation = createProxyForValidation(attributes);
         authoriseSetAttributes(proxyForValidation, attributes);
         validateChange(proxyForValidation, attributes.keySet());
-        validateReferences(getHierarchyRoot(this), this);
+        checkReferencesToObjectAndItsChildren(getHierarchyRoot(this), this);
 
         // for DELETED state we should invoke transition method first to make sure that object can be deleted.
         // If method results in exception being thrown due to various integrity violations
@@ -2244,6 +2244,16 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
 
         return deleteNoChecks();
+    }
+
+    private void checkReferencesToObjectAndItsChildren(final ConfiguredObject<?> root,
+                                                       final ConfiguredObject<?> lookupReference)
+    {
+        getModel().getChildTypes(lookupReference.getCategoryClass())
+                  .forEach(childClass -> lookupReference.getChildren(childClass)
+                                                        .forEach(child -> checkReferencesToObjectAndItsChildren(root,
+                                                                                                                child)));
+        checkReferences(root, lookupReference);
     }
 
     private ConfiguredObject<?> getHierarchyRoot(final AbstractConfiguredObject<X> o)
@@ -2267,21 +2277,23 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return managesChildren(object.getCategoryClass()) || managesChildren(object.getTypeClass());
     }
 
-    private void validateReferences(final ConfiguredObject<?> object,
-                                    final ConfiguredObject<?> lookupReference)
+    private void checkReferences(final ConfiguredObject<?> object,
+                                 final ConfiguredObject<?> lookupReference)
     {
         if (hasReference(object, lookupReference))
         {
-            throw new IntegrityViolationException(String.format("Configured object %s is referred by %s",
-                                                                lookupReference,
-                                                                object));
+            throw new IntegrityViolationException(String.format("%s '%s' is in use by %s '%s'",
+                                                                lookupReference.getCategoryClass().getSimpleName(),
+                                                                lookupReference.getName(),
+                                                                object.getCategoryClass().getSimpleName(),
+                                                                object.getName()));
         }
 
         if (!managesChildren(object))
         {
             getModel().getChildTypes(object.getCategoryClass())
                       .forEach(childClass -> object.getChildren(childClass)
-                                                   .forEach(child -> validateReferences(child, lookupReference)));
+                                                   .forEach(child -> checkReferences(child, lookupReference)));
         }
     }
 

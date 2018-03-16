@@ -25,15 +25,16 @@ import java.util.Map;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-@ManagedObject( category = false,
-        type = TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE)
-public class TestTemperatureSensorImpl extends TestAbstractSensorImpl<TestTemperatureSensorImpl> implements TestSensor<TestTemperatureSensorImpl>
+@ManagedObject(category = false,
+        type = TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE)
+public class TestDigitalInstrumentPanelImpl extends TestAbstractInstrumentPanelImpl<TestDigitalInstrumentPanelImpl>
+        implements TestInstrumentPanel<TestDigitalInstrumentPanelImpl>
 {
 
-    public static final String TEST_TEMPERATURE_SENSOR_TYPE = "temperature";
+    public static final String TEST_DIGITAL_INSTRUMENT_PANEL_TYPE = "digital";
 
     @ManagedObjectFactoryConstructor
-    protected TestTemperatureSensorImpl(final Map<String, Object> attributes,final TestInstrumentPanel<?> parent)
+    protected TestDigitalInstrumentPanelImpl(final Map<String, Object> attributes, final TestCar<?> parent)
     {
         super(parent, attributes);
     }

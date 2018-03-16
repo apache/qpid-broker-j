@@ -83,8 +83,8 @@ public class TestModel extends Model
     public Collection<Class<? extends ConfiguredObject>> getChildTypes(final Class<? extends ConfiguredObject> parent)
     {
         return TestCar.class.isAssignableFrom(parent)
-                ? Arrays.asList(TestEngine.class, TestSensor.class)
-                : Collections.emptySet();
+                ? Arrays.asList(TestEngine.class, TestInstrumentPanel.class)
+                : TestInstrumentPanel.class.isAssignableFrom(parent) ? Collections.singleton(TestSensor.class) : Collections.emptySet();
     }
 
     @Override

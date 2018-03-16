@@ -29,12 +29,12 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 
-public class TestAbstractSensorImpl<X extends TestAbstractSensorImpl<X>> extends AbstractConfiguredObject<X>
-        implements TestSensor<X>
+public class TestAbstractInstrumentPanelImpl<X extends TestAbstractInstrumentPanelImpl<X>> extends AbstractConfiguredObject<X>
+        implements TestInstrumentPanel<X>
 {
 
-    protected TestAbstractSensorImpl(final TestInstrumentPanel<?> parent,
-                                     final Map<String, Object> attributes)
+    protected TestAbstractInstrumentPanelImpl(final TestCar<?> parent,
+                                              final Map<String, Object> attributes)
     {
         super(parent, attributes);
     }

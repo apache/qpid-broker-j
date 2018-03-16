@@ -503,10 +503,15 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
         TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
+        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
+        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
+        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+
         Map<String, Object> sensorAttributes = new HashMap<>();
         sensorAttributes.put(ConfiguredObject.NAME, "sensor");
         sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor = (TestSensor) car1.createChild(TestSensor.class, sensorAttributes);
+        TestSensor sensor = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, "engine");
@@ -517,7 +522,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         try
         {
             sensor.delete();
-            fail("Referred engine cannot be deleted");
+            fail("Referred sensor cannot be deleted");
         }
         catch (IntegrityViolationException e)
         {
@@ -532,15 +537,20 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
         TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
+        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
+        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
+        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+
         Map<String, Object> sensorAttributes = new HashMap<>();
         sensorAttributes.put(ConfiguredObject.NAME, "sensor1");
         sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor1 = (TestSensor) car1.createChild(TestSensor.class, sensorAttributes);
+        TestSensor sensor1 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
         sensorAttributes = new HashMap<>();
         sensorAttributes.put(ConfiguredObject.NAME, "sensor2");
         sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor2 = (TestSensor) car1.createChild(TestSensor.class, sensorAttributes);
+        TestSensor sensor2 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, "engine");
@@ -551,7 +561,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         try
         {
             sensor1.delete();
-            fail("Referred engine cannot be deleted");
+            fail("Referred sensor cannot be deleted");
         }
         catch (IntegrityViolationException e)
         {
@@ -566,16 +576,55 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
         TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
+        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
+        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
+        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+
         Map<String, Object> sensorAttributes = new HashMap<>();
         sensorAttributes.put(ConfiguredObject.NAME, "sensor1");
         sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor1 = (TestSensor) car1.createChild(TestSensor.class, sensorAttributes);
+        TestSensor sensor1 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
-        assertEquals("Unexpected number of sensors after creation", 1, car1.getChildren(TestSensor.class).size());
+        assertEquals("Unexpected number of sensors after creation", 1, instrumentPanel.getChildren(TestSensor.class).size());
 
         sensor1.delete();
 
-        assertEquals("Unexpected number of sensors after deletion", 0, car1.getChildren(TestSensor.class).size());
+        assertEquals("Unexpected number of sensors after deletion", 0, instrumentPanel.getChildren(TestSensor.class).size());
+    }
+
+    public void testDeleteConfiguredObjectWithReferredChildren()
+    {
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, "car");
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+
+        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
+        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
+        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+
+        Map<String, Object> sensorAttributes = new HashMap<>();
+        sensorAttributes.put(ConfiguredObject.NAME, "sensor");
+        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        TestSensor sensor = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
+
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, "engine");
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        engineAttributes.put("temperatureSensor", sensor.getName());
+        car1.createChild(TestEngine.class, engineAttributes);
+
+        try
+        {
+            instrumentPanel.delete();
+            fail("Instrument panel cannot be deleted as it has referenced children");
+        }
+        catch (IntegrityViolationException e)
+        {
+            // pass
+        }
     }
 
     private void doDuplicateChildCheck(final String attrToDuplicate)
