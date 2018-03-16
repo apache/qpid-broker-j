@@ -356,23 +356,38 @@ public class HttpTestHelper
 
     public int submitRequest(String url, String method, Object data, Map<String, List<String>> responseHeadersToCapture) throws IOException
     {
-        HttpURLConnection connection = openManagementConnection(url, method);
+        LOGGER.debug("HttpURLConnection : open  : {} : {}", method, url);
+        RuntimeException ex = null;
+        int responseCode = -1;
         try
         {
-            if (data != null)
+            HttpURLConnection connection = openManagementConnection(url, method);
+            try
             {
-                writeJsonRequest(connection, data);
+                if (data != null)
+                {
+                    writeJsonRequest(connection, data);
+                }
+                responseCode = connection.getResponseCode();
+                if (responseHeadersToCapture != null)
+                {
+                    responseHeadersToCapture.putAll(connection.getHeaderFields());
+                }
+                return responseCode;
             }
-            int responseCode = connection.getResponseCode();
-            if (responseHeadersToCapture != null)
+            catch (RuntimeException e)
             {
-                responseHeadersToCapture.putAll(connection.getHeaderFields());
+                ex = e;
+                throw e;
             }
-            return responseCode;
+            finally
+            {
+                connection.disconnect();
+            }
         }
         finally
         {
-            connection.disconnect();
+            LOGGER.debug("HttpURLConnection : close : {} : {} : {}", method, responseCode, url, ex);
         }
     }
 
