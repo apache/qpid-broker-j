@@ -33,38 +33,31 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class QpidServerX509KeyManager extends X509ExtendedKeyManager
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(QpidServerX509KeyManager.class);
-
-    private X509ExtendedKeyManager _delegate;
-    private String _alias;
+    private final X509ExtendedKeyManager _delegate;
+    private final String _alias;
 
     public QpidServerX509KeyManager(String alias, URL keyStoreUrl, String keyStoreType,
                                     String keyStorePassword, String keyManagerFactoryAlgorithmName) throws GeneralSecurityException, IOException
     {
-        this._alias = alias;
-        KeyStore ks = SSLUtil.getInitializedKeyStore(keyStoreUrl,keyStorePassword,keyStoreType);
+        _alias = alias;
+        KeyStore ks = SSLUtil.getInitializedKeyStore(keyStoreUrl, keyStorePassword, keyStoreType);
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerFactoryAlgorithmName);
         kmf.init(ks, keyStorePassword.toCharArray());
-        this._delegate = (X509ExtendedKeyManager)kmf.getKeyManagers()[0];
+        _delegate = (X509ExtendedKeyManager) kmf.getKeyManagers()[0];
     }
-
 
     @Override
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
     {
-        return _alias == null ? _delegate.chooseClientAlias(keyType, issuers, socket) : _alias;
+        return _alias != null ? _alias : _delegate.chooseClientAlias(keyType, issuers, socket);
     }
 
     @Override
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {
-        LOGGER.debug("chooseServerAlias:Returning alias {}", _alias);
-        return _alias;
+        return _alias != null ? _alias : _delegate.chooseServerAlias(keyType, issuers, socket);
     }
 
     @Override
@@ -76,7 +69,13 @@ public class QpidServerX509KeyManager extends X509ExtendedKeyManager
     @Override
     public String[] getClientAliases(String keyType, Principal[] issuers)
     {
-        return _delegate.getClientAliases(keyType, issuers);
+        return _alias != null ? new String[] {_alias} : _delegate.getClientAliases(keyType, issuers);
+    }
+
+    @Override
+    public String[] getServerAliases(String keyType, Principal[] issuers)
+    {
+        return _alias != null ? new String[] {_alias} : _delegate.getServerAliases(keyType, issuers);
     }
 
     @Override
@@ -86,22 +85,14 @@ public class QpidServerX509KeyManager extends X509ExtendedKeyManager
     }
 
     @Override
-    public String[] getServerAliases(String keyType, Principal[] issuers)
-    {
-        LOGGER.debug("getServerAliases:Returning alias {}", _alias);
-        return new String[]{_alias};
-    }
-
-    @Override
     public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
     {
-        return _alias == null ? _delegate.chooseEngineClientAlias(keyType, issuers, engine) : _alias;
+        return _alias != null ? _alias : _delegate.chooseEngineClientAlias(keyType, issuers, engine);
     }
 
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
-        LOGGER.debug("chooseEngineServerAlias:Returning alias {}", _alias);
-        return _alias;
+        return _alias != null ? _alias : _delegate.chooseEngineServerAlias(keyType, issuers, engine);
     }
 }
