@@ -161,66 +161,6 @@ public class ProducerFlowControlTest extends JmsTestBase
     }
 
     @Test
-    public void testFlowControlSoak() throws Exception
-    {
-        final String queueName = getTestName();
-        int messageSize = evaluateMessageSize();
-        int capacity = messageSize * 20;
-        final Queue queue = createAndBindQueueWithFlowControlEnabled(queueName, capacity, capacity / 2);
-
-        final int numProducers = 10;
-        final int numMessages = 100;
-
-        Connection consumerConnection = getConnection();
-        try
-        {
-            Connection[] producerConnections = new Connection[numProducers];
-            for (int i = 0; i < numProducers; i++)
-            {
-                producerConnections[i] = getConnection();
-            }
-            try
-            {
-                AtomicInteger messageCounter = new AtomicInteger();
-                for (int i = 0; i < numProducers; i++)
-                {
-                    producerConnections[i].start();
-                    Session session = producerConnections[i].createSession(false, Session.AUTO_ACKNOWLEDGE);
-                    sendMessagesAsync(session.createProducer(queue), session, numMessages, messageCounter);
-                }
-
-                Session consumerSession = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                MessageConsumer consumer = consumerSession.createConsumer(queue);
-                consumerConnection.start();
-
-                for (int j = 0; j < numProducers * numMessages; j++)
-                {
-
-                    Message msg = consumer.receive(getReceiveTimeout());
-                    assertNotNull("Message not received(" + j + "), sent: " + messageCounter.get(), msg);
-                }
-
-                Message msg = consumer.receive(getReceiveTimeout() / 4);
-                assertNull("extra message received", msg);
-            }
-            finally
-            {
-                for (int i = 0; i < numProducers; i++)
-                {
-                    if (producerConnections[i] != null)
-                    {
-                        producerConnections[i].close();
-                    }
-                }
-            }
-        }
-        finally
-        {
-            consumerConnection.close();
-        }
-    }
-
-    @Test
     public void testFlowControlAttributeModificationViaManagement() throws Exception
     {
         final String queueName = getTestName();
@@ -243,18 +183,14 @@ public class ProducerFlowControlTest extends JmsTestBase
             assertTrue("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", true, 2000));
 
             assertEquals("Incorrect number of message sent before blocking", 1, sender.getNumberOfSentMessages());
-            assertTrue("Queue should be overfull", isFlowStopped(queueName));
 
             int queueDepthBytes = getQueueDepthBytes(queueName);
             //raise the attribute values, causing the queue to become underfull and allow the second message to be sent.
             setFlowLimits(queueName, queueDepthBytes * 2 + queueDepthBytes / 2, queueDepthBytes + queueDepthBytes / 2);
 
             assertTrue("Flow is stopped", awaitAttributeValue(queueName, "queueFlowStopped", false, 2000));
-
-            //check second message was sent
-            assertEquals("Second message was not sent after lifting FlowResumeCapacity",
-                         2,
-                         sender.getNumberOfSentMessages());
+            assertTrue("Second message was not sent after changing limits",
+                       awaitAttributeValue(queueName, "queueDepthMessages", 2, 2000));
             assertFalse("Queue should not be overfull", isFlowStopped(queueName));
 
             // try to send another message to block flow
