@@ -1,7 +1,7 @@
 language: java
 sudo: false
 jdk:
-  - oraclejdk7
+  - openjdk7
 env:
   - phase="test" pl="" additionalprops="-Dskip.systests=true"
 script: "mvn --fail-at-end ${phase} ${pl} ${additionalprops} -Dtest.overridden.properties=${TRAVIS_BUILD_DIR}/test-profiles/apache-ci.test.overridden.properties"
