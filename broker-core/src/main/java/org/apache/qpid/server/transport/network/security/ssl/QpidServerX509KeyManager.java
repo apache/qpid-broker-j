@@ -51,7 +51,7 @@ public class QpidServerX509KeyManager extends X509ExtendedKeyManager
     @Override
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
     {
-        return _delegate.chooseClientAlias(keyType, issuers, socket);
+        return _alias != null ? _alias : _delegate.chooseClientAlias(keyType, issuers, socket);
     }
 
     @Override
@@ -87,7 +87,7 @@ public class QpidServerX509KeyManager extends X509ExtendedKeyManager
     @Override
     public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
     {
-        return _delegate.chooseEngineClientAlias(keyType, issuers, engine);
+        return _alias != null ? _alias : _delegate.chooseEngineClientAlias(keyType, issuers, engine);
     }
 
     @Override
