@@ -83,7 +83,8 @@ class TCPandSSLTransport implements AcceptingTransport
     @Override
     public int getAcceptingPort()
     {
-        return _networkTransport.getAcceptingPort();
+        NonBlockingNetworkTransport networkTransport = _networkTransport;
+        return networkTransport == null ? _port.getPort() : networkTransport.getAcceptingPort();
     }
 
     @Override
