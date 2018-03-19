@@ -33,9 +33,11 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assume.assumeThat;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -346,13 +348,29 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                        .consumeResponse(ChannelOpenOkBody.class)
                        .basic().publish()
                        .basic().contentHeader(bodyBytes.length)
-                       .basic().contentBody(bodyBytes)
-                       .sync();
+                       .basic().contentBody(bodyBytes);
 
-            final ChannelClosedResponse closeResponse = interaction.consumeResponse()
-                                                                   .getLatestResponse(ChannelClosedResponse.class);
-            //TODO: The ChannelClosedResponse is wrong.
+            // Spec requires:
             //assertThat(res.getReplyCode(), CoreMatchers.is(CoreMatchers.equalTo(ErrorCodes.COMMAND_INVALID)));
+
+            // Server actually abruptly closes the connection.  We might see a graceful TCP/IP close or a broken pipe.
+            try
+            {
+                final ChannelClosedResponse closeResponse = interaction.consumeResponse()
+                                                                       .getLatestResponse(ChannelClosedResponse.class);
+            }
+            catch (ExecutionException e)
+            {
+                Throwable original = ((ExecutionException) e).getCause();
+                if (original instanceof IOException)
+                {
+                    // PASS
+                }
+                else
+                {
+                    throw new RuntimeException(original);
+                }
+            }
         }
     }
 
