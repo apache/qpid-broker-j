@@ -20,6 +20,7 @@
  */
 define(["dojo/dom",
         "dojo/dom-construct",
+        "dojo/parser",
         "dojo/_base/window",
         "dijit/registry",
         "dojo/_base/array",
@@ -57,6 +58,7 @@ define(["dojo/dom",
         "dojo/domReady!"],
     function (dom,
               construct,
+              parser,
               win,
               registry,
               array,
@@ -73,10 +75,22 @@ define(["dojo/dom",
 
         var addPort = {};
 
-        var node = construct.create("div", null, win.body(), "last");
+        addPort.init = function ()
+        {
+            var node = construct.create("div", null, win.body(), "last");
+            node.innerHTML = template;
 
-        node.innerHTML = template;
-        addPort.dialogNode = dom.byId("addPort")
+            parser.parse(node)
+                .then(lang.hitch(this, function (instances)
+                {
+                    this._postParse();
+                }));
+        };
+
+        addPort._postParse = function()
+        {
+            this.dialogNode = dom.byId("addPort");
+        };
 
         addPort._typeChanged = function (newValue)
         {
@@ -139,7 +153,7 @@ define(["dojo/dom",
                     "SSL") >= 0) || currentTransport == "WSS" || (lang.isArray(currentTransport) && array.indexOf(
                     currentTransport,
                     "WSS") >= 0);
-        }
+        };
 
         addPort._convertToPort = function (formValues)
         {
@@ -359,7 +373,7 @@ define(["dojo/dom",
                 }
 
             });
-        }
+        };
 
         addPort.show = function (management, modelObj, portType, providers, keystores, truststores)
         {
@@ -652,6 +666,8 @@ define(["dojo/dom",
             managedCertificateStoresWidget.set("store", store);
             managedCertificateStoresWidget.startup();
         };
+
+        addPort.init();
 
         return addPort;
     });
