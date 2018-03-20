@@ -23,7 +23,6 @@ package org.apache.qpid.systests.jms_1_1.extensions.queue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -190,7 +190,7 @@ public class ProducerFlowControlTest extends JmsTestBase
 
             assertTrue("Flow is stopped", awaitAttributeValue(queueName, "queueFlowStopped", false, 2000));
             assertTrue("Second message was not sent after changing limits",
-                       awaitAttributeValue(queueName, "queueDepthMessages", 2, 2000));
+                       awaitStatisticsValue(queueName, "queueDepthMessages", 2, 2000));
             assertFalse("Queue should not be overfull", isFlowStopped(queueName));
 
             // try to send another message to block flow
@@ -308,8 +308,13 @@ public class ProducerFlowControlTest extends JmsTestBase
 
     private int getQueueDepthBytes(final String queueName) throws Exception
     {
+        return getStatistics(queueName, "queueDepthBytes").intValue();
+    }
+
+    private Number getStatistics(final String queueName, final String statisticsName) throws Exception
+    {
         Map<String, Object> arguments =
-                Collections.singletonMap("statistics", Collections.singletonList("queueDepthBytes"));
+                Collections.singletonMap("statistics", Collections.singletonList(statisticsName));
         Object statistics = performOperationUsingAmqpManagement(queueName,
                                                                 "getStatistics",
                                                                 "org.apache.qpid.Queue",
@@ -318,8 +323,8 @@ public class ProducerFlowControlTest extends JmsTestBase
         assertTrue("Statistics is not map", statistics instanceof Map);
         @SuppressWarnings("unchecked")
         Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
-        assertTrue("queueDepthBytes is not present", statisticsMap.get("queueDepthBytes") instanceof Number);
-        return ((Number) statisticsMap.get("queueDepthBytes")).intValue();
+        assertTrue(String.format("%s is not present", statisticsName), statisticsMap.get(statisticsName) instanceof Number);
+        return ((Number) statisticsMap.get(statisticsName));
     }
 
     private void setFlowLimits(final String queueName, final int blockValue, final int resumeValue) throws Exception
@@ -395,7 +400,40 @@ public class ProducerFlowControlTest extends JmsTestBase
         return send;
     }
 
+    private boolean awaitStatisticsValue(String queueName, String statisticsName, Number expectedValue, long timeout)
+            throws Exception
+    {
+        return await(timeout, expectedValue, () -> {
+            try
+            {
+                return getStatistics(queueName, statisticsName);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+
     private boolean awaitAttributeValue(String queueName, String attributeName, Object expectedValue, long timeout)
+            throws Exception
+    {
+        return await(timeout, expectedValue, () -> {
+            try
+            {
+                Map<String, Object> attributes =
+                        readEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", false);
+                return attributes.get(attributeName);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private boolean await(long timeout, Object expectedValue, final Supplier<Object> supplier)
             throws Exception
     {
         long startTime = System.currentTimeMillis();
@@ -403,8 +441,8 @@ public class ProducerFlowControlTest extends JmsTestBase
         boolean found = false;
         do
         {
-            Map<String, Object> attributes = readEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", false);
-            Object actualValue = attributes.get(attributeName);
+
+            Object actualValue = supplier.get();
             if (expectedValue == null)
             {
                 found = actualValue == null;
