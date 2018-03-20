@@ -52,6 +52,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
 import org.apache.qpid.server.protocol.v0_8.transport.HeartbeatBody;
 import org.apache.qpid.tests.protocol.ChannelClosedResponse;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -361,7 +362,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             }
             catch (ExecutionException e)
             {
-                Throwable original = ((ExecutionException) e).getCause();
+                Throwable original = e.getCause();
                 if (original instanceof IOException)
                 {
                     // PASS
@@ -528,7 +529,19 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
 
             // Do not reflect a heartbeat so incoming line will be silent thus
             // requiring the broker to close the connection.
-            transport.assertNoMoreResponsesAndChannelClosed();
+
+            Class[] classes = new Class[] {ChannelClosedResponse.class, HeartbeatBody.class};
+            do
+            {
+                Response<?> latestResponse = interaction.consumeResponse(classes)
+                                                        .getLatestResponse();
+                if (latestResponse instanceof ChannelClosedResponse)
+                {
+                    break;
+                }
+                classes = new Class[] {ChannelClosedResponse.class};
+            }
+            while (true);
         }
     }
 
