@@ -32,11 +32,11 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,6 +106,7 @@ public class Main
 
     private static final Option OPTION_CREATE_INITIAL_CONFIG = Option.builder("cic")
                                                                      .argName("path")
+                                                                     .numberOfArgs(1)
                                                                      .optionalArg(true)
                                                                      .desc("create a copy of the initial config file,"
                                                                            + " either to an"
@@ -206,7 +207,7 @@ public class Main
     {
         try
         {
-            _commandLine = new PosixParser().parse(OPTIONS, args);
+            _commandLine = new DefaultParser().parse(OPTIONS, args);
 
             return true;
         }
