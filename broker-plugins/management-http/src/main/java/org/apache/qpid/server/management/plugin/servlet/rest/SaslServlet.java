@@ -249,9 +249,8 @@ public class SaslServlet extends AbstractServlet
             Broker broker = getBroker();
             try
             {
-                HttpManagementUtil.assertManagementAccess(broker, original);
                 Subject subject = HttpManagementUtil.createServletConnectionSubject(request, original);
-
+                HttpManagementUtil.assertManagementAccess(broker, subject);
                 HttpManagementUtil.saveAuthorisedSubject(request, subject);
                 if(challenge != null && challenge.length != 0)
                 {
