@@ -18,129 +18,46 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/_base/lang",
+define(["dojo/_base/lang",
         "dojo/dom",
         "dojo/parser",
         "dojo/query",
         "dojo/dom-construct",
-        "dojo/_base/connect",
-        "dojo/_base/window",
-        "dojo/_base/event",
-        "dojo/_base/json",
-        "dojo/_base/lang",
         "dijit/registry",
         "dojox/html/entities",
-        "qpid/common/util",
-        "qpid/common/properties",
-        "qpid/common/updater",
-        "qpid/common/UpdatableStore",
-        "dojox/grid/EnhancedGrid",
-        "dojox/grid/enhanced/plugins/Pagination",
-        "dojox/grid/enhanced/plugins/IndirectSelection",
-        "dojox/validate/us",
-        "dojox/validate/web",
-        "dijit/Dialog",
-        "dijit/form/TextBox",
-        "dijit/form/ValidationTextBox",
-        "dijit/form/TimeTextBox",
+        "dojo/text!accesscontrolprovider/showAclFile.html",
         "dijit/form/Button",
-        "dijit/form/Form",
-        "dijit/form/DateTextBox",
         "dojo/domReady!"],
-    function (xhr,
-              lang,
+    function (lang,
               dom,
               parser,
               query,
               construct,
-              connect,
-              win,
-              event,
-              json,
-              lang,
               registry,
               entities,
-              util,
-              properties,
-              updater,
-              UpdatableStore,
-              EnhancedGrid)
+              template)
     {
-        function AclFile(containerNode, aclProviderObj, controller, tabObject)
+        function AclFile(containerNode, aclProviderObj, controller)
         {
-            var node = construct.create("div", null, containerNode, "last");
-            this.modelObj = aclProviderObj;
-            var that = this;
-            this.name = aclProviderObj.name;
-            xhr.get({
-                url: "accesscontrolprovider/showAclFile.html",
-                sync: true,
-                load: function (data)
-                {
-                    node.innerHTML = data;
-                    parser.parse(node)
-                        .then(function (instances)
-                        {
-                            that.groupDatabaseUpdater = new AclFileUpdater(node, tabObject);
-
-                            updater.add(that.groupDatabaseUpdater);
-
-                            that.groupDatabaseUpdater.update();
-                        });
-
-                }
-            });
-        }
-
-        AclFile.prototype.close = function ()
-        {
-            updater.remove(this.groupDatabaseUpdater);
-        };
-
-        function AclFileUpdater(node, tabObject)
-        {
-            this.tabObject = tabObject;
-            this.contentPane = tabObject.contentPane;
-            var aclProviderObj = tabObject.modelObj;
-            var controller = tabObject.controller;
-            this.controller = controller;
             this.modelObj = aclProviderObj;
             this.management = controller.management;
-            this.name = aclProviderObj.name;
-            this.path = query(".path", node)[0];
-            this.reloadButton = registry.byNode(query(".reload", node)[0]);
-            this.reloadButton.on("click", lang.hitch(this, this.reload));
+            var node = construct.create("div", null, containerNode, "last");
+            node.innerHTML = template;
+            parser.parse(containerNode)
+                .then(lang.hitch(this, lang.hitch(this, function (instances)
+                {
+                    this.path = query(".path", node)[0];
+                    this.reloadButton = registry.byNode(query(".reload", node)[0]);
+                    this.reloadButton.on("click", lang.hitch(this, this.reload));
+                })));
         }
 
-        AclFileUpdater.prototype.update = function ()
+        AclFile.prototype.update = function (data)
         {
-            if (!this.contentPane.selected)
-            {
-                return;
-            }
-
-            var that = this;
-
-            this.management.load(this.modelObj, {excludeInheritedContext: true})
-                .then(function (data)
-                {
-                    that.aclProviderData = data;
-                    that.path.innerHTML = entities.encode(String(that.aclProviderData.path));
-                }, function (error)
-                {
-                    util.tabErrorHandler(error, {
-                        updater: that,
-                        contentPane: that.tabObject.contentPane,
-                        tabContainer: that.tabObject.controller.tabContainer,
-                        name: that.modelObj.name,
-                        category: "Access Control Provider"
-                    });
-                });
-
+            this.path.innerHTML = entities.encode(String(data.path));
         };
 
-        AclFileUpdater.prototype.reload = function ()
+        AclFile.prototype.reload = function ()
         {
             this.reloadButton.set("disabled", true);
             var parentModelObj = this.modelObj;

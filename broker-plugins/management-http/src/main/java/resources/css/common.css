@@ -814,3 +814,15 @@ td.advancedSearchField, col.autoWidth {
 {
     margin-bottom: 0.2em !important;
 }
+
+.accessControlProviders .field-selected { width: 2em; }
+.accessControlProviders .field-name { width: 20%; }
+.accessControlProviders .field-state { width: 20%; }
+.accessControlProviders .field-type { width: auto; }
+.accessControlProviders .field-priority { width: 20% }
+
+.accessControlRules .field-identity { width: 20%; }
+.accessControlRules .field-objectType { width: 20%; }
+.accessControlRules .field-operation { width: 10%; }
+.accessControlRules .field-outcome { width: 10%; }
+.accessControlRules .field-attributes { width: auto; }

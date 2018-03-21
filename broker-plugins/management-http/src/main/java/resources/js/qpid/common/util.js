@@ -1021,5 +1021,38 @@ define(["dojo/_base/xhr",
                 }
             });
         };
+
+        util.updateSyncDStore = function (dstore, data, idProperty) {
+            if (data)
+            {
+                for (var i = 0; i < data.length; i++)
+                {
+                    dstore.putSync(data[i]);
+                }
+            }
+            var objectsToRemove = [];
+            dstore.fetchSync()
+                .forEach(function (object) {
+                    if (object)
+                    {
+                        if (data)
+                        {
+                            for (var i = 0; i < data.length; i++)
+                            {
+                                if (data[i][idProperty] === object[idProperty])
+                                {
+                                    return;
+                                }
+                            }
+                        }
+                        objectsToRemove.push(object[idProperty]);
+                    }
+                });
+            for (var i = 0 ; i < objectsToRemove.length; i++)
+            {
+                dstore.removeSync(objectsToRemove[i]);
+            }
+        };
+
         return util;
     });

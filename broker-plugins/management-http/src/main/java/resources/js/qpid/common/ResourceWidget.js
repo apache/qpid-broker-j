@@ -136,6 +136,10 @@ define(["dojo/_base/declare",
                     }
                     this.inherited(arguments);
                 },
+                reset: function () {
+                    this.inherited(arguments);
+                    this.uploader.reset();
+                },
                 _fileChanged: function (evt)
                 {
                     var file = this.uploader.domNode.children[0].files[0];

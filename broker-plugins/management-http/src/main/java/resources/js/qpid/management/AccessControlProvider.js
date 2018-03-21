@@ -20,6 +20,7 @@
  */
 define(["dojo/parser",
         "dojo/query",
+        "dojo/_base/lang",
         "dojo/_base/connect",
         "qpid/common/properties",
         "qpid/common/updater",
@@ -35,6 +36,7 @@ define(["dojo/parser",
         "dojo/domReady!"],
     function (parser,
               query,
+              lang,
               connect,
               properties,
               updater,
@@ -77,15 +79,17 @@ define(["dojo/parser",
                         event.stop(evt);
                         that.deleteAccessControlProvider();
                     });
+
+                    that.accessControlProviderUpdater.update(function ()
+                    {
+                        updater.add(that.accessControlProviderUpdater);
+                    });
                 });
         };
 
         AccessControlProvider.prototype.close = function ()
         {
-            if (this.accessControlProviderUpdater.details)
-            {
-                this.accessControlProviderUpdater.details.close();
-            }
+           updater.remove(this.accessControlProviderUpdater);
         };
 
         AccessControlProvider.prototype.deleteAccessControlProvider = function ()
@@ -115,34 +119,7 @@ define(["dojo/parser",
             this.type = query(".type", node)[0];
             this.state = query(".state", node)[0];
             this.priority = query(".priority", node)[0];
-
-            var that = this;
-
-            this.management.load(this.modelObj, {excludeInheritedContext: true})
-                .then(function (data)
-                {
-                    that.accessControlProviderData = data;
-
-                    util.flattenStatistics(that.accessControlProviderData);
-
-                    that.updateHeader();
-
-                    var ui = that.accessControlProviderData.type;
-                    require(["qpid/management/accesscontrolprovider/" + ui], function (SpecificProvider)
-                    {
-                        that.details = new SpecificProvider(query(".providerDetails",
-                            node)[0], that.modelObj, that.controller, aclTab);
-                    });
-                }, function (error)
-                {
-                    util.tabErrorHandler(error, {
-                        updater: that,
-                        contentPane: that.contentPane,
-                        tabContainer: that.controller.tabContainer,
-                        name: that.modelObj.name,
-                        category: "Access Control Provider"
-                    });
-                });
+            this.providerDetailsDiv = query(".providerDetails", node)[0];
         }
 
         AccessControlProviderUpdater.prototype.updateHeader = function ()
@@ -152,6 +129,53 @@ define(["dojo/parser",
             this.state.innerHTML = entities.encode(String(this.accessControlProviderData["state"]));
             this.priority.innerHTML = entities.encode(String(this.accessControlProviderData["priority"]));
 
+        };
+
+        AccessControlProviderUpdater.prototype.update = function (callback) {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
+
+            this.management.load(this.modelObj)
+                .then(lang.hitch(this, function (data) {
+                        this._update(data, callback);
+                    }),
+                    lang.hitch(this, function (error) {
+                        util.tabErrorHandler(error, {
+                            updater: this,
+                            contentPane: this.contentPane,
+                            tabContainer: this.controller.tabContainer,
+                            name: this.modelObj.name,
+                            category: "Access Control Provider"
+                        });
+                    }));
+
+        };
+
+        AccessControlProviderUpdater.prototype._update = function (data, callback) {
+            this.accessControlProviderData = data;
+            this.updateHeader();
+            if (this.details)
+            {
+                this.details.update(data);
+            }
+            else
+            {
+                require(["qpid/management/accesscontrolprovider/" + data.type],
+                    lang.hitch(this, function (SpecificProvider) {
+                        this.details = new SpecificProvider(this.providerDetailsDiv,
+                            this.modelObj,
+                            this.controller);
+
+                        this.details.update(data);
+
+                        if (callback)
+                        {
+                            callback();
+                        }
+                    }));
+            }
         };
 
         return AccessControlProvider;
