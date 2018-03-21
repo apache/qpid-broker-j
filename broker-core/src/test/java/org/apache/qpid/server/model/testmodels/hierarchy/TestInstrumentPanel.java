@@ -1,4 +1,4 @@
-package org.apache.qpid.server.model.testmodels.hierarchy;/*
+/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,6 +18,7 @@ package org.apache.qpid.server.model.testmodels.hierarchy;/*
  * under the License.
  *
  */
+package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;

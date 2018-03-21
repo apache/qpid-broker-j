@@ -82,9 +82,18 @@ public class TestModel extends Model
     @Override
     public Collection<Class<? extends ConfiguredObject>> getChildTypes(final Class<? extends ConfiguredObject> parent)
     {
-        return TestCar.class.isAssignableFrom(parent)
-                ? Arrays.asList(TestEngine.class, TestInstrumentPanel.class)
-                : TestInstrumentPanel.class.isAssignableFrom(parent) ? Collections.singleton(TestSensor.class) : Collections.emptySet();
+        if (TestCar.class.isAssignableFrom(parent))
+        {
+            return  Arrays.asList(TestEngine.class, TestInstrumentPanel.class);
+        }
+        else if (TestInstrumentPanel.class.isAssignableFrom(parent))
+        {
+            return Arrays.asList(TestGauge.class, TestSensor.class);
+        }
+        else
+        {
+            return Collections.emptySet();
+        }
     }
 
     @Override
@@ -96,7 +105,18 @@ public class TestModel extends Model
     @Override
     public Class<? extends ConfiguredObject> getParentType(final Class<? extends ConfiguredObject> child)
     {
-        return TestEngine.class.isAssignableFrom(child) ? TestCar.class : null;
+        if (TestEngine.class.isAssignableFrom(child) || TestInstrumentPanel.class.isAssignableFrom(child))
+        {
+            return TestCar.class;
+        }
+        else if (TestGauge.class.isAssignableFrom(child) || TestSensor.class.isAssignableFrom(child))
+        {
+            return TestInstrumentPanel.class;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override

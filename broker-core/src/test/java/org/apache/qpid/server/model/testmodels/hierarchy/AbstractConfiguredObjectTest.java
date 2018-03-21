@@ -627,6 +627,35 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         }
     }
 
+    public void testDeleteConfiguredObjectWithChildrenReferringEachOther()
+    {
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, "car");
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+
+        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
+        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
+        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+
+        Map<String, Object> sensorAttributes = new HashMap<>();
+        sensorAttributes.put(ConfiguredObject.NAME, "sensor");
+        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        TestSensor sensor = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
+
+        Map<String, Object> gaugeAttributes = new HashMap<>();
+        gaugeAttributes.put(ConfiguredObject.NAME, "gauge");
+        gaugeAttributes.put(ConfiguredObject.TYPE, TestTemperatureGaugeImpl.TEST_TEMPERATURE_GAUGE_TYPE);
+        gaugeAttributes.put("sensor", "sensor");
+        TestGauge gauge = (TestGauge) instrumentPanel.createChild(TestGauge.class, gaugeAttributes);
+
+        instrumentPanel.delete();
+
+        assertEquals("Unexpected sensor state", State.DELETED, sensor.getState());
+        assertEquals("Unexpected gauge state", State.DELETED, gauge.getState());
+    }
+
     private void doDuplicateChildCheck(final String attrToDuplicate)
     {
         final String carName = "myCar";

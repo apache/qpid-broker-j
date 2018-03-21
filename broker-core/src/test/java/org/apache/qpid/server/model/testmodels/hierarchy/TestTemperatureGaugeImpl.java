@@ -20,11 +20,32 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.ManagedObject;
+import java.util.Map;
 
-@ManagedObject( defaultType = TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE)
-public interface TestSensor<X extends TestSensor<X>> extends ConfiguredObject<X>
+import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+
+@ManagedObject( category = false,
+        type = TestTemperatureGaugeImpl.TEST_TEMPERATURE_GAUGE_TYPE)
+public class TestTemperatureGaugeImpl extends TestAbstractGaugeImpl<TestTemperatureGaugeImpl> implements TestGauge<TestTemperatureGaugeImpl>
 {
 
+    public static final String TEST_TEMPERATURE_GAUGE_TYPE = "temperature";
+
+    @ManagedAttributeField
+    private TestSensor<?> _sensor;
+
+    @ManagedObjectFactoryConstructor
+    protected TestTemperatureGaugeImpl(final Map<String, Object> attributes, final TestInstrumentPanel<?> parent)
+    {
+        super(parent, attributes);
+    }
+
+
+    @Override
+    public TestSensor<?> getSensor()
+    {
+        return _sensor;
+    }
 }

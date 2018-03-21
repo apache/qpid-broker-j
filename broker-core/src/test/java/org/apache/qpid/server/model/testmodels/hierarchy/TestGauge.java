@@ -21,10 +21,12 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 
-@ManagedObject( defaultType = TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE)
-public interface TestSensor<X extends TestSensor<X>> extends ConfiguredObject<X>
+@ManagedObject( defaultType = TestTemperatureGaugeImpl.TEST_TEMPERATURE_GAUGE_TYPE)
+public interface TestGauge<X extends TestGauge<X>> extends ConfiguredObject<X>
 {
-
+    @ManagedAttribute
+    TestSensor<?> getSensor();
 }
