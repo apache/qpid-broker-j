@@ -110,7 +110,7 @@ define(["dojo/parser",
                     registry.byNode(deleteQueueButton).on("click", function (evt)
                     {
                         that._deleteSelectedItems(that.vhostUpdater.queuesGrid,
-                                                  {type: "queue", parent: this.modelObj},
+                                                  {type: "queue", parent: that.modelObj},
                                                   "delete", "queue");
                     });
 
@@ -200,6 +200,28 @@ define(["dojo/parser",
                     that.editButton.on("click", function (event)
                     {
                         editVirtualHost.show(that.management, that.modelObj);
+                    });
+
+                    var addVirtualHostAccessControlProviderButton = registry.byNode(query(
+                        ".addVirtualHostAccessControlProvider",
+                        contentPane.containerNode)[0]);
+                    addVirtualHostAccessControlProviderButton.on("click", function () {
+                        require(["qpid/management/addAccessControlProvider"],
+                            function (addAccessControlProvider) {
+                                addAccessControlProvider.show(that.management, that.modelObj);
+                            });
+                    });
+
+                    var deleteVirtualHostAccessControlProviderButton = registry.byNode(query(
+                        ".deleteVirtualHostAccessControlProvider",
+                        contentPane.containerNode)[0]);
+                    deleteVirtualHostAccessControlProviderButton.on("click", function () {
+                        that._deleteSelectedItems(that.vhostUpdater.virtualHostAccessControlProviderGrid,
+                            {
+                                type: "virtualhostaccesscontrolprovider",
+                                parent: that.modelObj
+                            },
+                            "delete", "virtual host access control provider");
                     });
 
                     that.vhostUpdater.update(function ()
@@ -534,6 +556,41 @@ define(["dojo/parser",
                 }
             }));
 
+            this.virtualHostAccessControlProviderGrid = new CustomGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
+                transformer: util.queryResultToObjects,
+                management: this.management,
+                parentObject: this.modelObj,
+                category: "VirtualHostAccessControlProvider",
+                selectClause: "id, name, state, type, priority",
+                orderBy: "name",
+                selectionMode: 'none',
+                deselectOnRefresh: false,
+                allowSelectAll: true,
+                columns: [
+                    {
+                        field: "selected",
+                        label: 'All',
+                        selector: 'checkbox'
+                    },  {
+                        label: "Name",
+                        field: "name"
+                    }, {
+                        label: "State",
+                        field: "state"
+                    }, {
+                        label: "Type",
+                        field: "type"
+                    }, {
+                        label: "Priority",
+                        field: "priority"
+                    }
+                ]
+            }, findNode("virtualHostAccessControlProviders"));
+            this.virtualHostAccessControlProviderGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
+            this.virtualHostAccessControlProviderGrid.startup();
+
         }
 
         Updater.prototype.update = function (callback)
@@ -617,6 +674,7 @@ define(["dojo/parser",
                 this.queuesGrid.updateData();
                 this.exchangesGrid.updateData();
                 this.virtualHostLoggersGrid.updateData();
+                this.virtualHostAccessControlProviderGrid.updateData();
             }
 
             if (this.details)
@@ -636,7 +694,7 @@ define(["dojo/parser",
                         thisObj.details.update(thisObj.vhostData);
                     });
             }
-            this._updateDStore(this._policyStore, this.vhostData.nodeAutoCreationPolicies || [], "pattern");
+            util.updateSyncDStore(this._policyStore, this.vhostData.nodeAutoCreationPolicies || [], "pattern");
         };
 
         Updater.prototype._updateHeader = function ()
@@ -703,38 +761,6 @@ define(["dojo/parser",
             this._previousConnectionSampleTime = sampleTime;
             this._previousConsumers = connections;
             return connections;
-        };
-
-        Updater.prototype._updateDStore = function (dstore, data, idProperty) {
-            if (data)
-            {
-                for (var i = 0; i < data.length; i++)
-                {
-                    dstore.putSync(data[i]);
-                }
-            }
-            var objectsToRemove = [];
-            dstore.fetchSync()
-                .forEach(function (object) {
-                    if (object)
-                    {
-                        if (data)
-                        {
-                            for (var i = 0; i < data.length; i++)
-                            {
-                                if (data[i][idProperty] === object[idProperty])
-                                {
-                                    return;
-                                }
-                            }
-                        }
-                        objectsToRemove.push(object[idProperty]);
-                    }
-                });
-            for (var i = 0 ; i < objectsToRemove.length; i++)
-            {
-                dstore.removeSync(objectsToRemove[i]);
-            }
         };
 
         return VirtualHost;

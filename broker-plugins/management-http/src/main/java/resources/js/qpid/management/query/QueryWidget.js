@@ -185,7 +185,7 @@ define(["dojo/_base/declare",
                 cloneButtonTooltip: null,
                 deleteButtonTooltip: null,
                 searchForm: null,
-                exportButton: null,
+                extractButton: null,
                 exportButtonTooltip: null,
 
                 /**
@@ -245,7 +245,7 @@ define(["dojo/_base/declare",
                     this.saveButton.on("click", lang.hitch(this, this._saveQuery));
                     this.cloneButton.on("click", lang.hitch(this, this._cloneQuery));
                     this.deleteButton.on("click", lang.hitch(this, this._deleteQuery));
-                    this.exportButton.on("click", lang.hitch(this, this._exportQueryResults));
+                    this.extractButton.on("click", lang.hitch(this, this._exportQueryResults));
 
                     this._ownQuery = !this.preference
                                      || !this.preference.owner
@@ -253,7 +253,7 @@ define(["dojo/_base/declare",
                     var newQuery = !this.preference || !this.preference.createdDate;
                     this.saveButton.set("disabled", !this._ownQuery);
                     this.deleteButton.set("disabled", !this._ownQuery || newQuery);
-                    this.exportButton.set("disabled", true);
+                    this.extractButton.set("disabled", true);
 
                     if (!this._ownQuery)
                     {
@@ -592,7 +592,7 @@ define(["dojo/_base/declare",
                 _queryCompleted: function (e)
                 {
                     this._buildColumnsIfHeadersChanged(e.data);
-                    this.exportButton.set("disabled", !(e.data.total && e.data.total > 0));
+                    this.extractButton.set("disabled", !(e.data.total && e.data.total > 0));
                 },
                 _buildColumnsIfHeadersChanged: function (data)
                 {

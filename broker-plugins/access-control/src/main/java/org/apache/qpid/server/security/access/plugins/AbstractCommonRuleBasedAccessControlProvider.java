@@ -26,6 +26,8 @@ import static org.apache.qpid.server.security.access.plugins.RuleBasedAccessCont
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -190,17 +192,19 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
             }
             sb.append('\n');
         }
-        return new StringContent(sb.toString());
+        return new StringContent(getName(), sb.toString());
     }
 
     private static class StringContent implements Content, CustomRestHeaders
     {
-
+        private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss");
         private final String _content;
+        private final String _name;
 
-        public StringContent(final String content)
+        public StringContent(final String name, final String content)
         {
             _content = content;
+            _name = name;
         }
 
         @Override
@@ -213,6 +217,12 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
         public String getContentType()
         {
             return "text/plain";
+        }
+
+        @RestContentHeader("Content-Disposition")
+        public String getContentDisposition()
+        {
+            return String.format("attachment; filename=\"%s-%s.acl\"", _name, FORMATTER.format(LocalDateTime.now()));
         }
 
         @Override

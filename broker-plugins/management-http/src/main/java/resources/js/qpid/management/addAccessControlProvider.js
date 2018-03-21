@@ -86,11 +86,21 @@ define(["dojo/_base/lang",
             this.management = management;
             this.modelObj = modelObj;
             this.accessControlProviderForm.reset();
-            this.supportedAccessControlProviderTypes = management.metadata.getTypesForCategory("AccessControlProvider");
+            this.category =
+                modelObj && (modelObj.type === "virtualhost" || modelObj.type === "virtualhostaccesscontrolprovider")
+                    ? "VirtualHostAccessControlProvider"
+                    : "AccessControlProvider";
+            this.supportedAccessControlProviderTypes = management.metadata.getTypesForCategory(this.category);
             this.supportedAccessControlProviderTypes.sort();
             var accessControlProviderTypeStore = util.makeTypeStore(this.supportedAccessControlProviderTypes);
             this.accessControlProviderType.set("store", accessControlProviderTypeStore);
-            util.applyMetadataToWidgets(dom.byId("addAccessControlProvider.contentPane"), "AccessControlProvider", "AllowAll", management.metadata);
+            if (this.supportedAccessControlProviderTypes.length > 0)
+            {
+                util.applyMetadataToWidgets(dom.byId("addAccessControlProvider.contentPane"),
+                    this.category,
+                    this.supportedAccessControlProviderTypes[0],
+                    management.metadata);
+            }
 
             this.dialog.show();
         },
@@ -112,7 +122,7 @@ define(["dojo/_base/lang",
                 var accessControlProviderData = util.getFormWidgetValues(this.accessControlProviderForm,
                     this.initialData);
                 var that = this;
-                this.management.create("accesscontrolprovider", this.modelObj, accessControlProviderData)
+                this.management.create(this.category, this.modelObj, accessControlProviderData)
                     .then(function (x)
                     {
                         that.dialog.hide();
@@ -128,7 +138,7 @@ define(["dojo/_base/lang",
             this._typeChanged(type,
                 this.accessControlProviderTypeFieldsContainer,
                 "qpid/management/accesscontrolprovider/",
-                "AccessControlProvider");
+                this.category);
         },
         _destroyTypeFields: function (typeFieldsContainer)
         {
@@ -155,7 +165,9 @@ define(["dojo/_base/lang",
                             parent: that,
                             data: that.initialData,
                             effectiveData: that.effectiveData,
-                            metadata: that.management.metadata
+                            metadata: that.management.metadata,
+                            category: category,
+                            type: type
                         });
                         util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
                     }
