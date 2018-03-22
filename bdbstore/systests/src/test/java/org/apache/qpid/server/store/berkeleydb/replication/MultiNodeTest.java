@@ -488,8 +488,8 @@ public class MultiNodeTest extends QpidBrokerTestCase
         ExecutorService executorService = Executors.newFixedThreadPool(connectionNumber + NUMBER_OF_NODES - 1);
         try
         {
-            final ConnectionBuilder builder = _groupCreator.getConnectionBuilderForAllClusterNodes(100, 100);
-            final Connection consumerConnection = builder.build();
+            final ConnectionBuilder consumerBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes(100, 100);
+            final Connection consumerConnection = consumerBuilder.build();
             Session s = consumerConnection.createSession(true, Session.SESSION_TRANSACTED);
             getJmsProvider().createQueue(s, getTestQueueName());
             s.close();
@@ -513,6 +513,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
             final Session[] sessions = new Session[connectionNumber];
             for (int i = 0; i < sessions.length; i++)
             {
+                final ConnectionBuilder builder = _groupCreator.getConnectionBuilderForAllClusterNodes(100, 100);
                 connections[i] = builder.build();
                 sessions[i] = connections[i].createSession(true, Session.SESSION_TRANSACTED);
                 LOGGER.info("Session {} is created", i);
