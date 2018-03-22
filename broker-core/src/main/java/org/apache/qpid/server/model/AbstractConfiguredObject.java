@@ -2246,15 +2246,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return deleteNoChecks();
     }
 
-    private void checkReferencesOnDelete(final ConfiguredObject<?> referee, final ConfiguredObject<?> referrer)
+    private void checkReferencesOnDelete(final ConfiguredObject<?> referrer, final ConfiguredObject<?> referee)
     {
-        if (!managesChildren(referrer))
+        if (!managesChildren(referee))
         {
-            getModel().getChildTypes(referrer.getCategoryClass())
-                      .forEach(childClass -> referrer.getChildren(childClass)
-                                                     .forEach(child -> checkReferencesOnDelete(referee, child)));
+            getModel().getChildTypes(referee.getCategoryClass())
+                      .forEach(childClass -> referee.getChildren(childClass)
+                                                    .forEach(child -> checkReferencesOnDelete(referrer, child)));
         }
-        checkReferences(referee, referrer);
+        checkReferences(referrer, referee);
     }
 
     private ConfiguredObject<?> getHierarchyRoot(final AbstractConfiguredObject<X> o)
@@ -2278,89 +2278,102 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return managesChildren(object.getCategoryClass()) || managesChildren(object.getTypeClass());
     }
 
-    private void checkReferences(final ConfiguredObject<?> referee, final ConfiguredObject<?> referrer)
+    private void checkReferences(final ConfiguredObject<?> referrer, final ConfiguredObject<?> referee)
     {
-        if (hasReference(referee, referrer))
+        if (hasReference(referrer, referee))
         {
-            throw new IntegrityViolationException(String.format("%s '%s' is in use by %s '%s'",
-                                                                referrer.getCategoryClass().getSimpleName(),
-                                                                referrer.getName(),
-                                                                referee.getCategoryClass().getSimpleName(),
-                                                                referee.getName()));
+            if (referee == this)
+            {
+                throw new IntegrityViolationException(String.format("%s '%s' is in use by %s '%s'.",
+                                                                    referee.getCategoryClass().getSimpleName(),
+                                                                    referee.getName(),
+                                                                    referrer.getCategoryClass().getSimpleName(),
+                                                                    referrer.getName()));
+            }
+            else
+            {
+                throw new IntegrityViolationException(String.format("Cannot delete %s '%s' as descendant %s '%s' is in use by %s '%s'.",
+                                                                    this.getCategoryClass().getSimpleName(),
+                                                                    this.getName(),
+                                                                    referee.getCategoryClass().getSimpleName(),
+                                                                    referee.getName(),
+                                                                    referrer.getCategoryClass().getSimpleName(),
+                                                                    referrer.getName()));
+            }
         }
 
-        if (!managesChildren(referee))
+        if (!managesChildren(referrer))
         {
-            getModel().getChildTypes(referee.getCategoryClass())
-                      .forEach(childClass -> referee.getChildren(childClass)
-                                                    .stream()
-                                                    .filter(child -> child != this)
-                                                    .forEach(child -> checkReferences(child, referrer)));
+            getModel().getChildTypes(referrer.getCategoryClass())
+                      .forEach(childClass -> referrer.getChildren(childClass)
+                                                     .stream()
+                                                     .filter(child -> child != this)
+                                                     .forEach(child -> checkReferences(child, referee)));
         }
     }
 
-    private boolean hasReference(final ConfiguredObject<?> referee,
-                                 final ConfiguredObject<?> referrer)
+    private boolean hasReference(final ConfiguredObject<?> referrer,
+                                 final ConfiguredObject<?> referee)
     {
-        if (referee instanceof AbstractConfiguredObject)
+        if (referrer instanceof AbstractConfiguredObject)
         {
             return getModel().getTypeRegistry()
-                             .getAttributes(referee.getClass())
+                             .getAttributes(referrer.getClass())
                              .stream()
                              .anyMatch(attribute -> {
                                  Class<?> type = attribute.getType();
                                  Type genericType = attribute.getGenericType();
-                                 return isReferred(referrer, type,
+                                 return isReferred(referee, type,
                                                    genericType,
                                                    () -> {
                                                        @SuppressWarnings("unchecked")
                                                        Object value =
-                                                               ((ConfiguredObjectAttribute) attribute).getValue(referee);
+                                                               ((ConfiguredObjectAttribute) attribute).getValue(referrer);
                                                        return value;
                                                    });
                              });
         }
         else
         {
-            return referee.getAttributeNames().stream().anyMatch(name -> {
-                Object value = referee.getAttribute(name);
+            return referrer.getAttributeNames().stream().anyMatch(name -> {
+                Object value = referrer.getAttribute(name);
                 if (value != null)
                 {
                     Class<?> type = value.getClass();
-                    return isReferred(referrer, type, type, () -> value);
+                    return isReferred(referee, type, type, () -> value);
                 }
                 return false;
             });
         }
     }
 
-    private boolean isReferred(final ConfiguredObject<?> referrer,
+    private boolean isReferred(final ConfiguredObject<?> referee,
                                final Class<?> attributeValueType,
                                final Type attributeGenericType,
                                final Supplier<?> attributeValue)
     {
-        final Class<? extends ConfiguredObject> referrerCategory = referrer.getCategoryClass();
+        final Class<? extends ConfiguredObject> referrerCategory = referee.getCategoryClass();
         if (referrerCategory.isAssignableFrom(attributeValueType))
         {
-            return attributeValue.get() == referrer;
+            return attributeValue.get() == referee;
         }
         else if (hasParameterOfType(attributeGenericType, referrerCategory))
         {
             Object value = attributeValue.get();
             if (value instanceof Collection)
             {
-                return ((Collection<?>) value).stream().anyMatch(m -> m == referrer);
+                return ((Collection<?>) value).stream().anyMatch(m -> m == referee);
             }
             else if (value instanceof Object[])
             {
-                return Arrays.stream((Object[]) value).anyMatch(m -> m == referrer);
+                return Arrays.stream((Object[]) value).anyMatch(m -> m == referee);
             }
             else if (value instanceof Map)
             {
                 return ((Map<?, ?>) value).entrySet()
                                           .stream()
-                                          .anyMatch(e -> e.getKey() == referrer
-                                                         || e.getValue() == referrer);
+                                          .anyMatch(e -> e.getKey() == referee
+                                                         || e.getValue() == referee);
             }
         }
         return false;
