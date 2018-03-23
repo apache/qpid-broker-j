@@ -25,6 +25,9 @@ define(["dojo/dom",
         "qpid/common/util",
         "dojo/parser",
         "dojo/text!store/filekeystore/add.html",
+        "dijit/form/CheckBox",
+        "dijit/form/ValidationTextBox",
+        "qpid/common/ResourceWidget",
         "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
 {
     var addKeyStore = {

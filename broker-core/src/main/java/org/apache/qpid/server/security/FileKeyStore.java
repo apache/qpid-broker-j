@@ -68,6 +68,6 @@ public interface FileKeyStore<X extends FileKeyStore<X>> extends KeyStore<X>
     @ManagedAttribute( secure = true, mandatory = true )
     String getPassword();
 
-    @ManagedAttribute( defaultValue = "true")
+    @ManagedAttribute( defaultValue = "true", description = "Use SNI server name from the SSL handshake to select the most appropriate certificate for the indicated hostname")
     boolean isUseHostNameMatching();
 }

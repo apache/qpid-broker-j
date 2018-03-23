@@ -81,6 +81,18 @@
                               title: 'Enter the store type known to Java'" />
             </div>
         </div>
-
+        <div class="clear">
+            <div class="formLabel-labelCell tableContainer-labelCell">Use SNI host name matching:</div>
+            <div class="formLabel-controlCell tableContainer-valueCell">
+                <input type="text" id="addStore.useHostNameMatching"
+                       data-dojo-type="dijit/form/CheckBox"
+                       data-dojo-props="
+                              name: 'useHostNameMatching'" />
+                <div data-dojo-type="dijit/Tooltip"
+                     data-dojo-props="connectId: ['addStore.useHostNameMatching'],
+                                      label: 'If true, SNI server name from the SSL handshake will be used to select the most appropriate certificate for the indicated hostname'">
+                </div>
+            </div>
+        </div>
     </div>
 </div>
