@@ -82,6 +82,10 @@ define(["dojo/_base/declare",
                 {
                     this.loadDialog.hide();
                 },
+                reset: function()
+                {
+                    this.path.reset();
+                },
                 _onCancel: function () {
                     this.emit("cancel");
                     this.hide();
