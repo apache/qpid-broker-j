@@ -32,6 +32,7 @@ import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
 
@@ -147,24 +148,42 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
             throw new IllegalConfigurationException(message, e);
         }
 
-        if (fileKeyStore.getCertificateAlias() != null)
+        try
         {
-            Certificate cert;
-            try
+            final String certAlias = fileKeyStore.getCertificateAlias();
+            if (certAlias != null)
             {
-                cert = keyStore.getCertificate(fileKeyStore.getCertificateAlias());
+                Certificate cert = keyStore.getCertificate(certAlias);
+
+                if (cert == null)
+                {
+                    throw new IllegalConfigurationException(String.format(
+                            "Cannot find a certificate with alias '%s' in key store : %s",
+                            certAlias,
+                            fileKeyStore.getStoreUrl()));
+                }
+
+                if (keyStore.isCertificateEntry(certAlias))
+                {
+                    throw new IllegalConfigurationException(String.format(
+                            "Alias '%s' in key store : %s does not identify a key.",
+                            certAlias,
+                            fileKeyStore.getStoreUrl()));
+
+                }
             }
-            catch (KeyStoreException e)
+
+            if (!containsPrivateKey(keyStore))
             {
-                // key store should be initialized above
-                throw new ServerScopedRuntimeException("Key store has not been initialized", e);
-            }
-            if (cert == null)
-            {
-                throw new IllegalConfigurationException("Cannot find a certificate with alias '" + fileKeyStore.getCertificateAlias()
-                        + "' in key store : " + fileKeyStore.getStoreUrl());
+                throw new IllegalConfigurationException("Keystore must contain at least one private key.");
             }
         }
+        catch (KeyStoreException e)
+        {
+            // key store should be initialized above
+            throw new ServerScopedRuntimeException("Key store has not been initialized", e);
+        }
+
 
         try
         {
@@ -180,6 +199,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         {
             throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
         }
+
         checkCertificateExpiry();
     }
 
@@ -343,6 +363,22 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
             }
         }
 
+    }
+
+    private boolean containsPrivateKey(final java.security.KeyStore keyStore) throws KeyStoreException
+    {
+        final Enumeration<String> aliasesEnum = keyStore.aliases();
+        boolean foundPrivateKey = false;
+        while (aliasesEnum.hasMoreElements())
+        {
+            String alias = aliasesEnum.nextElement();
+            if (keyStore.entryInstanceOf(alias, java.security.KeyStore.PrivateKeyEntry.class))
+            {
+                foundPrivateKey = true;
+                break;
+            }
+        }
+        return foundPrivateKey;
     }
 
 }

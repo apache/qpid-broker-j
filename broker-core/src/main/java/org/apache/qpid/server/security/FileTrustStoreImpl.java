@@ -55,6 +55,7 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> implements FileTrustStore<FileTrustStoreImpl>
@@ -148,16 +149,19 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
 
     private static void validateTrustStore(FileTrustStore trustStore)
     {
+        KeyStore keyStore;
         try
         {
-            initializeKeyStore(trustStore);
+            keyStore = initializeKeyStore(trustStore);
         }
         catch (Exception e)
         {
             final String message;
             if (e instanceof IOException && e.getCause() != null && e.getCause() instanceof UnrecoverableKeyException)
             {
-                message = "Check trust store password. Cannot instantiate trust store from '" + trustStore.getStoreUrl() + "'.";
+                message = "Check trust store password. Cannot instantiate trust store from '"
+                          + trustStore.getStoreUrl()
+                          + "'.";
             }
             else
             {
@@ -165,6 +169,29 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
             }
 
             throw new IllegalConfigurationException(message, e);
+        }
+
+        try
+        {
+            final Enumeration<String> aliasesEnum = keyStore.aliases();
+            boolean certificateFound = false;
+            while (aliasesEnum.hasMoreElements())
+            {
+                String alias = aliasesEnum.nextElement();
+                if (keyStore.isCertificateEntry(alias))
+                {
+                    certificateFound = true;
+                    break;
+                }
+            }
+            if (!certificateFound)
+            {
+                throw new IllegalConfigurationException("Trust store must contain at least one certificate.");
+            }
+        }
+        catch (KeyStoreException e)
+        {
+            throw new ServerScopedRuntimeException("Trust store has not been initialized", e);
         }
 
         try
@@ -338,7 +365,11 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
         Enumeration<String> aliases = ts.aliases();
         while (aliases.hasMoreElements())
         {
-            certificates.add(ts.getCertificate(aliases.nextElement()));
+            String alias = aliases.nextElement();
+            if (ts.isCertificateEntry(alias))
+            {
+                certificates.add(ts.getCertificate(alias));
+            }
         }
 
         return certificates.toArray(new Certificate[certificates.size()]);

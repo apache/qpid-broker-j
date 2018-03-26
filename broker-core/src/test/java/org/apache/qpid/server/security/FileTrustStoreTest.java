@@ -20,16 +20,32 @@
 package org.apache.qpid.server.security;
 
 
+import static org.apache.qpid.server.security.FileKeyStoreTest.EMPTY_KEYSTORE_RESOURCE;
+import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.KeyCertPair;
+import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.generateSelfSignedCertificate;
+import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.getInitializedKeyStore;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.URL;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import javax.crypto.KeyGenerator;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -43,7 +59,6 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
-import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -51,6 +66,9 @@ import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class FileTrustStoreTest extends QpidTestCase
 {
+    static final String SYMMETRIC_KEY_KEYSTORE_RESOURCE = "/ssl/test_symmetric_key_keystore.pkcs12";
+    static final String KEYSTORE_RESOURCE = "/ssl/test_keystore.jks";
+
     private final Broker _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
     private final Model _model = BrokerModel.getInstance();
@@ -136,7 +154,7 @@ public class FileTrustStoreTest extends QpidTestCase
         assertTrue("Unexpected trust manager type",trustManagers[0] instanceof X509TrustManager);
         X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
-        KeyStore clientStore = SSLUtil.getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
+        KeyStore clientStore = getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
                                                               TestSSLConstants.KEYSTORE_PASSWORD,
                                                               KeyStore.getDefaultType());
         String alias = clientStore.aliases().nextElement();
@@ -161,7 +179,7 @@ public class FileTrustStoreTest extends QpidTestCase
         assertTrue("Unexpected trust manager type",trustManagers[0] instanceof X509TrustManager);
         X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
-        KeyStore clientStore = SSLUtil.getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
+        KeyStore clientStore = getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
                                                              TestSSLConstants.KEYSTORE_PASSWORD,
                                                              KeyStore.getDefaultType());
         String alias = clientStore.aliases().nextElement();
@@ -283,6 +301,86 @@ public class FileTrustStoreTest extends QpidTestCase
         assertEquals("Unexpected path value after change that is expected to be successful",
                      TestSSLConstants.BROKER_TRUSTSTORE,
                      fileTrustStore.getStoreUrl());
+    }
+
+    public void testEmptyTrustStoreRejected()
+    {
+        final URL emptyKeystore = getClass().getResource(EMPTY_KEYSTORE_RESOURCE);
+        assertNotNull("Empty keystore not found", emptyKeystore);
+
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(FileKeyStore.NAME, "myFileTrustStore");
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, emptyKeystore);
+
+        try
+        {
+            _factory.create(TrustStore.class, attributes, _broker);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException ice)
+        {
+            String message = ice.getMessage();
+            assertTrue("Exception text not as unexpected:" + message, message.contains("Trust store must contain at least one certificate."));
+        }
+    }
+
+    public void testSymmetricKeyEntryIgnored() throws Exception
+    {
+        final URL keystoreUrl = getClass().getResource(SYMMETRIC_KEY_KEYSTORE_RESOURCE);
+        assertNotNull("Symmetric key keystore not found", keystoreUrl);
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(FileTrustStore.NAME, getTestName());
+        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, keystoreUrl);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, "PKCS12");
+
+        TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
+
+        Certificate[] certificates = trustStore.getCertificates();
+        assertEquals("Unexpected number of certificates",
+                     getNumberOfCertificates(keystoreUrl, "PKCS12"),
+                     certificates.length);
+    }
+
+    public void testPrivateKeyEntryIgnored() throws Exception
+    {
+        final URL keystoreUrl = getClass().getResource(KEYSTORE_RESOURCE);
+        assertNotNull("Keystore not found", keystoreUrl);
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(FileTrustStore.NAME, getTestName());
+        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, keystoreUrl);
+
+        TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
+
+        Certificate[] certificates = trustStore.getCertificates();
+        assertEquals("Unexpected number of certificates",
+                     getNumberOfCertificates(keystoreUrl, "jks"),
+                     certificates.length);
+    }
+
+    private int getNumberOfCertificates(URL url, String type) throws Exception
+    {
+        KeyStore ks = KeyStore.getInstance(type);
+        try(InputStream is = url.openStream())
+        {
+            ks.load(is, TestSSLConstants.BROKER_KEYSTORE_PASSWORD.toCharArray());
+        }
+
+        int result = 0;
+        Enumeration<String> aliases = ks.aliases();
+        while (aliases.hasMoreElements())
+        {
+            String alias = aliases.nextElement();
+            if (ks.isCertificateEntry(alias))
+            {
+                result++;
+            }
+        }
+        return result;
     }
 
     private static String createDataUrlForFile(String filename)

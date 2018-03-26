@@ -20,9 +20,11 @@
 package org.apache.qpid.server.security;
 
 
+import static org.apache.qpid.server.security.FileTrustStoreTest.SYMMETRIC_KEY_KEYSTORE_RESOURCE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,6 +46,8 @@ import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class FileKeyStoreTest extends QpidTestCase
 {
+    static final String EMPTY_KEYSTORE_RESOURCE = "/ssl/test_empty_keystore.jks";
+
     private final Broker _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
     private final Model _model = BrokerModel.getInstance();
@@ -130,6 +134,26 @@ public class FileKeyStoreTest extends QpidTestCase
         {
             String message = ice.getMessage();
             assertTrue("Exception text not as unexpected:" + message, message.contains("Cannot find a certificate with alias 'notknown' in key store"));
+        }
+    }
+
+    public void testCreateKeyStoreFromFile_NonKeyAlias() throws Exception
+    {
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(FileKeyStore.NAME, "myFileKeyStore");
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.KEYSTORE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "rootca");
+
+        try
+        {
+            _factory.create(KeyStore.class, attributes,  _broker);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException ice)
+        {
+            String message = ice.getMessage();
+            assertTrue("Exception text not as unexpected:" + message, message.contains("does not identify a key"));
         }
     }
 
@@ -231,6 +255,43 @@ public class FileKeyStoreTest extends QpidTestCase
             String message = ice.getMessage();
             assertTrue("Exception text not as unexpected:" + message, message.contains("Cannot find a certificate with alias 'notknown' in key store"));
         }
+    }
+
+    public void testEmptyKeystoreRejected() throws Exception
+    {
+        final URL emptyKeystore = getClass().getResource(EMPTY_KEYSTORE_RESOURCE);
+        assertNotNull("Empty keystore not found", emptyKeystore);
+
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(FileKeyStore.NAME, "myFileKeyStore");
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, emptyKeystore);
+
+        try
+        {
+            _factory.create(KeyStore.class, attributes,  _broker);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException ice)
+        {
+            String message = ice.getMessage();
+            assertTrue("Exception text not as unexpected:" + message, message.contains("Keystore must contain at least one private key."));
+        }
+    }
+
+    public void testSymmetricKeysIgnored()
+    {
+        final URL keystoreUrl = getClass().getResource(SYMMETRIC_KEY_KEYSTORE_RESOURCE);
+        assertNotNull("Keystore not found", keystoreUrl);
+
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(FileKeyStore.NAME, "myFileKeyStore");
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, keystoreUrl);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, "PKCS12");
+
+        KeyStore keyStore = _factory.create(KeyStore.class, attributes,  _broker);
+        assertNotNull(keyStore);
     }
 
     public void testUpdateKeyStore_Success() throws Exception

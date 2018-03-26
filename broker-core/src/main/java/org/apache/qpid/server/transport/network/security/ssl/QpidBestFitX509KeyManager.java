@@ -61,7 +61,7 @@ public class QpidBestFitX509KeyManager extends X509ExtendedKeyManager
         List<String> aliases = new ArrayList<>();
         for(String alias : Collections.list(ks.aliases()))
         {
-            if(ks.isKeyEntry(alias))
+            if(ks.entryInstanceOf(alias, KeyStore.PrivateKeyEntry.class))
             {
                 aliases.add(alias);
             }

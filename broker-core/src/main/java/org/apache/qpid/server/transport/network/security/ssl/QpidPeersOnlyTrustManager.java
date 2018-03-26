@@ -48,7 +48,11 @@ public class QpidPeersOnlyTrustManager implements X509TrustManager
         Enumeration<String> aliases = ts.aliases();
         while (aliases.hasMoreElements())
         {
-            _trustedCerts.add(ts.getCertificate(aliases.nextElement()));
+            String alias = aliases.nextElement();
+            if (ts.isCertificateEntry(alias))
+            {
+                _trustedCerts.add(ts.getCertificate(alias));
+            }
         }
     }
 
