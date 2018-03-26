@@ -183,7 +183,10 @@ define(["dojo/_base/declare",
                 .then(lang.hitch(this, function(){
                     this.loadForm.hide();
                     }),
-                      this.management.xhrErrorHandler)
+                    lang.hitch(this, function(error){
+                        util.xhrErrorHandler(error);
+                        this.loadForm.reset();
+                    }))
                 .always(lang.hitch(this, function () {
                     this.loadButton.set("disabled", false);
                 }));
