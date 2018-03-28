@@ -169,6 +169,9 @@ define(["dojo/_base/declare",
                     lang.hitch(this, function (LoadForm) {
                         this.loadForm = new LoadForm();
                         this.loadForm.on("load", lang.hitch(this, this.loadFromFile));
+                        this.loadForm.on("hide", lang.hitch(this, function () {
+                            this.loadButton.set("disabled", false);
+                        }));
                         this.loadForm.show();
                     }));
             }
@@ -186,10 +189,7 @@ define(["dojo/_base/declare",
                     lang.hitch(this, function(error){
                         util.xhrErrorHandler(error);
                         this.loadForm.reset();
-                    }))
-                .always(lang.hitch(this, function () {
-                    this.loadButton.set("disabled", false);
-                }));
+                    }));
         };
 
         RuleBased.prototype.extractRules = function () {

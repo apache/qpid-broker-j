@@ -72,6 +72,9 @@ define(["dojo/_base/declare",
                         this.warning.innerHTML = "File upload requires a more recent browser with HTML5 support";
                         this.warning.className = this.warning.className.replace("hidden", "");
                     }
+                    this.loadDialog.onHide = lang.hitch(this, function () {
+                        this.emit("hide");
+                    });
                 },
                 show: function()
                 {
