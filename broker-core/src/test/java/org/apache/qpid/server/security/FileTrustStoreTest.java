@@ -21,31 +21,21 @@ package org.apache.qpid.server.security;
 
 
 import static org.apache.qpid.server.security.FileKeyStoreTest.EMPTY_KEYSTORE_RESOURCE;
-import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.KeyCertPair;
-import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.generateSelfSignedCertificate;
 import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.getInitializedKeyStore;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.net.URL;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import javax.crypto.KeyGenerator;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -66,6 +56,7 @@ import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class FileTrustStoreTest extends QpidTestCase
 {
+    static final String KEYSTORE_PK_ONLY_RESOURCE = "/ssl/test_pk_only_keystore.pkcs12";
     static final String SYMMETRIC_KEY_KEYSTORE_RESOURCE = "/ssl/test_symmetric_key_keystore.pkcs12";
     static final String KEYSTORE_RESOURCE = "/ssl/test_keystore.jks";
 
@@ -320,6 +311,28 @@ public class FileTrustStoreTest extends QpidTestCase
         }
         catch (IllegalConfigurationException ice)
         {
+            // pass
+        }
+    }
+
+    public void testTrustStoreWithNoCertificateRejected()
+    {
+        final URL keystoreUrl = getClass().getResource(KEYSTORE_PK_ONLY_RESOURCE);
+        assertNotNull("Keystore not found", keystoreUrl);
+
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(FileTrustStore.NAME, getTestName());
+        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, keystoreUrl);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, "PKCS12");
+
+        try
+        {
+            _factory.create(TrustStore.class, attributes, _broker);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException ice)
+        {
             String message = ice.getMessage();
             assertTrue("Exception text not as unexpected:" + message, message.contains("Trust store must contain at least one certificate."));
         }
@@ -332,7 +345,7 @@ public class FileTrustStoreTest extends QpidTestCase
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, getTestName());
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
         attributes.put(FileTrustStore.STORE_URL, keystoreUrl);
         attributes.put(FileTrustStore.TRUST_STORE_TYPE, "PKCS12");
 

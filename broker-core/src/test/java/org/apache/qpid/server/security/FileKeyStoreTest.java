@@ -47,6 +47,7 @@ import org.apache.qpid.test.utils.TestSSLConstants;
 public class FileKeyStoreTest extends QpidTestCase
 {
     static final String EMPTY_KEYSTORE_RESOURCE = "/ssl/test_empty_keystore.jks";
+    static final String KEYSTORE_CERTIFICATE_ONLY_RESOURCE = "/ssl/test_cert_only_keystore.pkcs12";
 
     private final Broker _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
@@ -266,6 +267,28 @@ public class FileKeyStoreTest extends QpidTestCase
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, emptyKeystore);
+
+        try
+        {
+            _factory.create(KeyStore.class, attributes,  _broker);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException ice)
+        {
+            // pass
+        }
+    }
+
+    public void testKeystoreWithNoPrivateKeyRejected()
+    {
+        final URL keystoreUrl = getClass().getResource(KEYSTORE_CERTIFICATE_ONLY_RESOURCE);
+        assertNotNull("Keystore not found", keystoreUrl);
+
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(FileKeyStore.NAME, getTestName());
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, keystoreUrl);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, "PKCS12");
 
         try
         {
