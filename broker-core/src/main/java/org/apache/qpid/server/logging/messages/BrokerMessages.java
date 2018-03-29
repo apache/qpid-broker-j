@@ -991,6 +991,10 @@ public class BrokerMessages
         };
     }
 
+    static Locale getCurrentLocale()
+    {
+        return _currentLocale;
+    }
 
     private BrokerMessages()
     {
