@@ -146,7 +146,6 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
         String remoteReplicationName = getName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
 
-        when(_facade.removeNodeFromGroup(remoteReplicationName)).thenReturn(true);
         remoteReplicationNode.delete();
 
         verify(_facade).removeNodeFromGroup(remoteReplicationName);

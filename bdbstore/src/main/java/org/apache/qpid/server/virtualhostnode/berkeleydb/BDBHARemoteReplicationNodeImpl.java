@@ -131,35 +131,16 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
             SettableFuture<Void> future = SettableFuture.create();
 
             String nodeName = getName();
-
-            boolean deletionAllowed;
             try
             {
+                _replicatedEnvironmentFacade.removeNodeFromGroup(nodeName);
                 getEventLogger().message(_virtualHostNodeLogSubject, HighAvailabilityMessages.DELETED());
-                deletionAllowed = _replicatedEnvironmentFacade.removeNodeFromGroup(nodeName);
-                if (deletionAllowed)
-                {
-                    future.set(null);
-                }
-                else
-                {
-                    future.setException(new IllegalStateTransitionException(String.format(
-                            "Node '%s' cannot be deleted when role is a master",
-                            nodeName)));
-                }
-            }
-            catch (ServerScopedRuntimeException e)
-            {
-                future.setException(e);
-                throw e;
+                future.set(null);
             }
             catch (RuntimeException e)
             {
-                future.setException(new IllegalStateTransitionException(String.format(
-                        "Unexpected exception on node '%s' deletion",
-                        nodeName), e));
+                future.setException(e);
             }
-
             return future;
         }
         else

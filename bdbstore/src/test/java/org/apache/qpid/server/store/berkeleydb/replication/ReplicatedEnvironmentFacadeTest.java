@@ -499,6 +499,34 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         assertEquals("Unexpected group members count", 1, environmentFacade.getNumberOfElectableGroupMembers());
     }
 
+    public void testRemoveNodeFromGroupTwice() throws Exception
+    {
+        TestStateChangeListener stateChangeListener = new TestStateChangeListener();
+        ReplicatedEnvironmentFacade environmentFacade = addNode(TEST_NODE_NAME,
+                                                                TEST_NODE_HOST_PORT,
+                                                                true,
+                                                                stateChangeListener,
+                                                                new NoopReplicationGroupListener());
+        assertTrue("Environment was not created", stateChangeListener.awaitForStateChange(State.MASTER,
+                                                                                          _timeout, TimeUnit.SECONDS));
+
+        String node2Name = TEST_NODE_NAME + "_2";
+        String node2NodeHostPort = "localhost:" + _portHelper.getNextAvailable();
+        ReplicatedEnvironmentFacade ref2 =
+                createReplica(node2Name, node2NodeHostPort, new NoopReplicationGroupListener());
+        ref2.close();
+
+        environmentFacade.removeNodeFromGroup(node2Name);
+        try
+        {
+            environmentFacade.removeNodeFromGroup(node2Name);
+            fail("Exception is expected");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+    }
 
     public void testEnvironmentFacadeDetectsRemovalOfRemoteNode() throws Exception
     {

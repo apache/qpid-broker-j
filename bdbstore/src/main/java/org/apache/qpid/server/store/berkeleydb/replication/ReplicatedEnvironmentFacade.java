@@ -69,6 +69,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.BDBUtils;
 import org.apache.qpid.server.store.berkeleydb.CoalescingCommiter;
@@ -1203,18 +1204,22 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         });
     }
 
-    public boolean removeNodeFromGroup(final String nodeName)
+    public void removeNodeFromGroup(final String nodeName)
     {
         try
         {
             createReplicationGroupAdmin().removeMember(nodeName);
-            return true;
         }
-        catch(MasterStateException e)
+        catch (MasterStateException e)
         {
-            return false;
+            throw new IllegalStateTransitionException(String.format("Node '%s' cannot be deleted when role is a master",
+                                                                    nodeName));
         }
-        catch(RuntimeException e)
+        catch (MemberNotFoundException e)
+        {
+            throw new IllegalArgumentException(String.format("Node '%s' is not a member of the group", nodeName), e);
+        }
+        catch (RuntimeException e)
         {
             throw handleDatabaseException("Exception on node removal from group", e);
         }
