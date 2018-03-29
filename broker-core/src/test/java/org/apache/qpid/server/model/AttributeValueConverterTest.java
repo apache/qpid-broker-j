@@ -352,4 +352,51 @@ public class AttributeValueConverterTest extends QpidTestCase
         String getString();
     }
 
+    public void testMapToManagedAttributeValueWithFactory()
+    {
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
+
+        final AttributeValueConverter<SimpleTestManagedAttributeValueWithFactory> converter =
+                getConverter(SimpleTestManagedAttributeValueWithFactory.class, SimpleTestManagedAttributeValueWithFactory.class);
+
+        Object elephant = new Object();
+
+        final Map<String, String> map = Collections.singletonMap("string", "mystring");
+
+        final SimpleTestManagedAttributeValueWithFactory value = converter.convert(map, object);
+
+        assertTrue(value.getClass().equals(SimpleTestManagedAttributeValueWithFactoryImpl.class));
+        assertTrue(value.getString().equals("mystring"));
+    }
+
+
+    @ManagedAttributeValueType
+    public interface SimpleTestManagedAttributeValueWithFactory extends ManagedAttributeValue
+    {
+        String getString();
+
+        @ManagedAttributeValueTypeFactoryMethod
+        static SimpleTestManagedAttributeValueWithFactory newInstance(SimpleTestManagedAttributeValueWithFactory instance)
+        {
+            return new SimpleTestManagedAttributeValueWithFactoryImpl(instance.getString());
+        }
+
+    }
+
+    static class SimpleTestManagedAttributeValueWithFactoryImpl implements SimpleTestManagedAttributeValueWithFactory
+    {
+        private final String _string;
+
+        public SimpleTestManagedAttributeValueWithFactoryImpl(
+                final String string)
+        {
+            _string = string;
+        }
+
+        @Override
+        public String getString()
+        {
+            return _string;
+        }
+    }
 }

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
@@ -1205,6 +1206,7 @@ abstract class AttributeValueConverter<T>
         private final Class<X> _klazz;
         private final Map<Method, AttributeValueConverter<?>> _propertyConverters = new HashMap<>();
         private final Map<Method, ValueMethod<X>> _derivedValueMethod = new HashMap<>();
+        private Method _factoryMethod;
 
         private ManageableAttributeTypeConverter(final Class<X> klazz)
         {
@@ -1258,6 +1260,16 @@ abstract class AttributeValueConverter<T>
                         _derivedValueMethod.put(method, new ConstantValueMethod<X>(derivedMethodValue));
                     }
                 }
+
+                if(method.getName().equals("newInstance")
+                   && Modifier.isStatic(method.getModifiers())
+                   && Modifier.isPublic(method.getModifiers())
+                   && method.getReturnType().equals(klazz)
+                   && method.getParameterCount()==1
+                   && method.getParameterTypes()[0].equals(klazz))
+                {
+                    _factoryMethod = method;
+                }
             }
 
         }
@@ -1276,7 +1288,7 @@ abstract class AttributeValueConverter<T>
             else if(value instanceof Map)
             {
                 @SuppressWarnings("unchecked")
-                final X proxyObject =
+                X proxyObject =
                         (X) Proxy.newProxyInstance(_klazz.getClassLoader(), new Class[]{_klazz}, new InvocationHandler()
                         {
                             @Override
@@ -1347,7 +1359,24 @@ abstract class AttributeValueConverter<T>
                                 }
                             }
                         });
-                return proxyObject;
+                if(_factoryMethod != null)
+                {
+                    try
+                    {
+                        @SuppressWarnings("unchecked")
+                        X createdObject = (X) _factoryMethod.invoke(null, proxyObject);
+                        return createdObject;
+                    }
+                    catch (IllegalAccessException | InvocationTargetException e)
+                    {
+                        throw new IllegalArgumentException("Cannot convert to " + _klazz.getName() + " due to error invoking factory method", e);
+                    }
+                }
+                else
+                {
+                    return proxyObject;
+                }
+
             }
             else if(value instanceof String)
             {

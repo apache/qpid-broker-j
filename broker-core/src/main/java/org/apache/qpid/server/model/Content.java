@@ -23,7 +23,7 @@ package org.apache.qpid.server.model;
 import java.io.IOException;
 import java.io.OutputStream;
 
-@ManagedAttributeValueType
+@ManagedAttributeValueType(isAbstract = true)
 public interface Content
 {
     void write(OutputStream outputStream) throws IOException;

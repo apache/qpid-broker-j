@@ -23,15 +23,19 @@ package org.apache.qpid.server.model.validation;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
@@ -62,18 +66,30 @@ public class ManagedAttributeValueTypeValidator extends AbstractProcessor
 
         for (Element e : roundEnv.getElementsAnnotatedWith(annotationElement))
         {
-            checkAnnotationIsOnInterface(annotationElement, e);
-            checkAllMethodsAreAccessors(e);
+            boolean isAbstract = isAbstract(annotationElement, e);
+            if(!isAbstract)
+            {
+                checkAnnotationIsOnInterface(annotationElement, e);
+            }
+            if(!isContent(e))
+            {
+                checkAllMethodsAreAccessors(e, isAbstract);
+            }
         }
         return false;
     }
 
-    private void checkAllMethodsAreAccessors(final Element e)
+    private boolean isContent(final Element e)
     {
-        checkAllMethodsAreAccessors(e, new HashSet<Element>());
+        return e.equals(processingEnv.getElementUtils().getTypeElement("org.apache.qpid.server.model.Content"));
     }
 
-    private void checkAllMethodsAreAccessors(final Element e, Set<Element> checked)
+    private void checkAllMethodsAreAccessors(final Element e, final boolean isAbstract)
+    {
+        checkAllMethodsAreAccessors(e, new HashSet<Element>(), isAbstract);
+    }
+
+    private void checkAllMethodsAreAccessors(final Element e, Set<Element> checked, final boolean isAbstract)
     {
 
         if(!checked.add(e))
@@ -91,12 +107,9 @@ public class ManagedAttributeValueTypeValidator extends AbstractProcessor
             {
                 final ExecutableElement methodElement = (ExecutableElement) memberElement;
                 AttributeAnnotationValidator.isValidType(processingEnv, methodElement.getReturnType(), false);
-                String methodName = methodElement.getSimpleName().toString();
-
-                if (methodName.length() < 3
-                    || (methodName.length() < 4 && !methodName.startsWith("is"))
-                    || !(methodName.startsWith("is") || methodName.startsWith("get") || methodName.startsWith("has"))
-                    || !methodElement.getTypeParameters().isEmpty() )
+                if(isNotAccessorMethod(methodElement)
+                   && !isValidFactoryMethod(methodElement, e, isAbstract)
+                   && methodElement.getKind() != ElementKind.CONSTRUCTOR)
                 {
                     processingEnv.getMessager()
                             .printMessage(Diagnostic.Kind.ERROR,
@@ -110,32 +123,93 @@ public class ManagedAttributeValueTypeValidator extends AbstractProcessor
         final List<? extends TypeMirror> interfaces = ((TypeElement) e).getInterfaces();
         for(TypeMirror mirror : interfaces)
         {
-            checkAllMethodsAreAccessors(processingEnv.getTypeUtils().asElement(mirror), checked);
+            checkAllMethodsAreAccessors(processingEnv.getTypeUtils().asElement(mirror), checked, isAbstract);
         }
     }
 
-    public void checkAnnotationIsOnInterface(final TypeElement annotationElement, final Element e)
+    private boolean isNotAccessorMethod(final ExecutableElement methodElement)
+    {
+        String methodName = methodElement.getSimpleName().toString();
+        return methodName.length() < 3
+                || (methodName.length() < 4 && !methodName.startsWith("is"))
+                || !(methodName.startsWith("is") || methodName.startsWith("get") || methodName.startsWith("has"))
+                || !methodElement.getTypeParameters().isEmpty();
+    }
+
+    private boolean isValidFactoryMethod(final ExecutableElement methodElement,
+                                         final Element typeElement,
+                                         final boolean isAbstract)
+    {
+
+        if (!isAbstract
+            && methodElement.getSimpleName().toString().equals("newInstance")
+            && methodElement.getModifiers().contains(Modifier.STATIC)
+            && processingEnv.getTypeUtils().asElement(methodElement.getReturnType()) != null
+            && processingEnv.getTypeUtils().asElement(methodElement.getReturnType()).equals(typeElement)
+            && methodElement.getParameters().size() == 1
+            && processingEnv.getTypeUtils()
+                            .asElement(methodElement.getParameters().iterator().next().asType())
+                            .equals(typeElement))
+        {
+            TypeElement annotationElement = processingEnv.getElementUtils()
+                                                         .getTypeElement("org.apache.qpid.server.model.ManagedAttributeValueTypeFactoryMethod");
+
+            return methodElement.getAnnotationMirrors()
+                                .stream()
+                                .anyMatch(a -> processingEnv.getTypeUtils().isSameType(a.getAnnotationType(),
+                                                                                       annotationElement.asType()));
+        }
+        return false;
+    }
+
+    private void checkAnnotationIsOnInterface(final TypeElement annotationElement, final Element e)
     {
         if (e.getKind() != ElementKind.INTERFACE)
         {
             processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
-                                  "@"
-                                  + annotationElement.getSimpleName()
-                                  + " can only be applied to an interface",
-                                  e
-                                 );
+                         .printMessage(Diagnostic.Kind.ERROR,
+                                       "@"
+                                       + annotationElement.getSimpleName()
+                                       + " can only be applied to an interface",
+                                       e
+                                      );
         }
-        if(!processingEnv.getTypeUtils().isAssignable(e.asType(), processingEnv.getElementUtils().getTypeElement(MANAGED_ATTRIBUTE_VALUE_CLASS_NAME).asType()))
+        if (!processingEnv.getTypeUtils()
+                          .isAssignable(e.asType(),
+                                        processingEnv.getElementUtils()
+                                                     .getTypeElement(MANAGED_ATTRIBUTE_VALUE_CLASS_NAME)
+                                                     .asType()))
         {
             processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
-                                  "@"
-                                  + annotationElement.getSimpleName()
-                                  + " can only be applied to an interface",
-                                  e
-                                 );
+                         .printMessage(Diagnostic.Kind.ERROR,
+                                       "@"
+                                       + annotationElement.getSimpleName()
+                                       + " can only be applied to an interface which extends " + MANAGED_ATTRIBUTE_VALUE_CLASS_NAME,
+                                       e
+                                      );
         }
+
     }
 
+    private boolean isAbstract(final TypeElement annotationElement, final Element typeElement)
+    {
+        for (AnnotationMirror annotation : typeElement.getAnnotationMirrors())
+        {
+            if (annotation.getAnnotationType().asElement().equals(annotationElement))
+            {
+
+                Map<? extends ExecutableElement, ? extends AnnotationValue> annotationValues =
+                        processingEnv.getElementUtils().getElementValuesWithDefaults(annotation);
+                for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> element : annotationValues.entrySet())
+                {
+                    if ("isAbstract".contentEquals(element.getKey().getSimpleName()))
+                    {
+                        return element.getValue().getValue().equals(Boolean.TRUE);
+                    }
+                }
+                break;
+            }
+        }
+        return false;
+    }
 }

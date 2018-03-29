@@ -75,7 +75,7 @@ public class ConfiguredObjectJacksonModuleTest extends QpidTestCase
 
     }
 
-    @ManagedAttributeValueType
+    @ManagedAttributeValueType(isAbstract = true)
     private static class TestManagedAttributeValue implements ManagedAttributeValue
     {
         public String getName()
@@ -96,7 +96,7 @@ public class ConfiguredObjectJacksonModuleTest extends QpidTestCase
 
     }
 
-    @ManagedAttributeValueType
+    @ManagedAttributeValueType(isAbstract = true)
     private static class NestedManagedAttributeValue implements ManagedAttributeValue
     {
         public boolean isNested()

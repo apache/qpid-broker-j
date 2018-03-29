@@ -25,7 +25,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import org.apache.qpid.server.model.ManagedAttributeValue;
 import org.apache.qpid.server.model.ManagedAttributeValueType;
 
-@ManagedAttributeValueType
+@ManagedAttributeValueType(isAbstract = true)
 public class LogRecord implements ManagedAttributeValue
 {
     private final ILoggingEvent _event;

@@ -18,37 +18,15 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging;
+package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.model.ManagedAttributeValue;
-import org.apache.qpid.server.model.ManagedAttributeValueType;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@ManagedAttributeValueType(isAbstract = true)
-public class LogFileDetails implements ManagedAttributeValue
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface ManagedAttributeValueTypeFactoryMethod
 {
-    private final String _name;
-    private final long _lastModified;
-    private final long _size;
-
-    public LogFileDetails(String name, long lastModified, long size)
-    {
-        _name = name;
-        _lastModified = lastModified;
-        _size = size;
-    }
-
-    public String getName()
-    {
-        return _name;
-    }
-
-    public long getLastModified()
-    {
-        return _lastModified;
-    }
-
-    public long getSize()
-    {
-        return _size;
-    }
 }
