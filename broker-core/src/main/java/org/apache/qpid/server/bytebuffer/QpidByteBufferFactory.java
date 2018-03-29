@@ -366,7 +366,7 @@ final class QpidByteBufferFactory
 
     static long getAllocatedDirectMemorySize()
     {
-        return _pooledBufferSize * getNumberOfBuffersInUse();
+        return (long)_pooledBufferSize * getNumberOfBuffersInUse();
     }
 
     static int getNumberOfBuffersInUse()
