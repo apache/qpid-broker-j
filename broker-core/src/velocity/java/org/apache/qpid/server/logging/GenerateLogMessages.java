@@ -468,12 +468,12 @@ public class GenerateLogMessages
                 */
 
                 int typeIndex = parametersString[index].indexOf(",");
-
+                int typeIndexEnd = parametersString[index].indexOf("}", typeIndex);
                 // The parameter type
                 String type;
 
                 //Be default all types are Strings
-                if (typeIndex == -1)
+                if (typeIndex == -1 || typeIndexEnd == -1)
                 {
                     type = "String";
                 }
@@ -483,7 +483,6 @@ public class GenerateLogMessages
                     // to identify this parameter as an integer
                     // This allows for a style value to be present
                     // Only check the text inside the braces '{}'
-                    int typeIndexEnd = parametersString[index].indexOf("}", typeIndex);
                     String typeString = parametersString[index].substring(typeIndex, typeIndexEnd);
                     if (typeString.contains("number") || typeString.contains("choice"))
                     {
