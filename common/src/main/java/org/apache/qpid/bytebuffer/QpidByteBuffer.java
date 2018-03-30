@@ -835,7 +835,7 @@ public class QpidByteBuffer
 
     public static long getAllocatedDirectMemorySize()
     {
-        return _pooledBufferSize * getNumberOfActivePooledBuffers();
+        return (long) _pooledBufferSize * getNumberOfActivePooledBuffers();
     }
 
     public static int getNumberOfActivePooledBuffers()
