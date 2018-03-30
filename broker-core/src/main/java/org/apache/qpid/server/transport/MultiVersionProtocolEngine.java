@@ -46,6 +46,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.transport.util.Functions;
 import org.apache.qpid.server.util.Action;
 
 public class MultiVersionProtocolEngine implements ProtocolEngine
@@ -462,7 +463,8 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                     }
 
                     _broker.getEventLogger().message(new PortLogSubject(_port),
-                                                     PortMessages.UNSUPPORTED_PROTOCOL_HEADER(supportedReplyVersion.toString()));
+                                                     PortMessages.UNSUPPORTED_PROTOCOL_HEADER(Functions.str(headerBytes),
+                                                                                              supportedReplyVersion.toString()));
 
                     try (QpidByteBuffer supportedReplyBuf = QpidByteBuffer.allocateDirect(supportedReplyBytes.length))
                     {

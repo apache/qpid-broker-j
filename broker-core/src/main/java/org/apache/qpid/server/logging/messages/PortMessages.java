@@ -623,16 +623,16 @@ public class PortMessages
 
     /**
      * Log a Port message of the Format:
-     * <pre>PRT-1007 : Unsupported protocol header received, replying with {0}</pre>
+     * <pre>PRT-1007 : Unsupported protocol header received {0}, replying with {1}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage UNSUPPORTED_PROTOCOL_HEADER(String param1)
+    public static LogMessage UNSUPPORTED_PROTOCOL_HEADER(String param1, String param2)
     {
         String rawMessage = _messages.getString("UNSUPPORTED_PROTOCOL_HEADER");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
