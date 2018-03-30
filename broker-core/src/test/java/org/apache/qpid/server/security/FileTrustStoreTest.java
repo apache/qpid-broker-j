@@ -334,7 +334,7 @@ public class FileTrustStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Trust store must contain at least one certificate."));
+            assertTrue("Exception text not as unexpected:" + message, message.contains("must contain at least one certificate"));
         }
     }
 

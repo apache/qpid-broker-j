@@ -37,6 +37,11 @@ public class StringUtil
 
     private Random _random = new Random();
 
+    public static String elideDataUrl(final String path)
+    {
+        return String.valueOf(path).toLowerCase().startsWith("data:") ? "data:..." : path;
+    }
+
     public String randomAlphaNumericString(int maxLength)
     {
         char[] result = new char[maxLength];

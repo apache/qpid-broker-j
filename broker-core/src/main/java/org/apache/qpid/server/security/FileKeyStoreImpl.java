@@ -55,7 +55,7 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.transport.network.security.ssl.QpidBestFitX509KeyManager;
 import org.apache.qpid.server.transport.network.security.ssl.QpidServerX509KeyManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 @ManagedObject( category = false )
@@ -125,31 +125,14 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
 
     private void validateKeyStoreAttributes(FileKeyStore<?> fileKeyStore)
     {
-        java.security.KeyStore keyStore;
+        final String loggableStoreUrl = StringUtil.elideDataUrl(fileKeyStore.getStoreUrl());
         try
         {
             URL url = getUrlFromString(fileKeyStore.getStoreUrl());
             String password = fileKeyStore.getPassword();
             String keyStoreType = fileKeyStore.getKeyStoreType();
-            keyStore = SSLUtil.getInitializedKeyStore(url, password, keyStoreType);
-        }
-        catch (Exception e)
-        {
-            final String message;
-            if (e instanceof IOException && e.getCause() != null && e.getCause() instanceof UnrecoverableKeyException)
-            {
-                message = "Check key store password. Cannot instantiate key store from '" + fileKeyStore.getStoreUrl() + "'.";
-            }
-            else
-            {
-                message = "Cannot instantiate key store from '" + fileKeyStore.getStoreUrl() + "'.";
-            }
+            java.security.KeyStore keyStore = SSLUtil.getInitializedKeyStore(url, password, keyStoreType);
 
-            throw new IllegalConfigurationException(message, e);
-        }
-
-        try
-        {
             final String certAlias = fileKeyStore.getCertificateAlias();
             if (certAlias != null)
             {
@@ -158,32 +141,36 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
                 if (cert == null)
                 {
                     throw new IllegalConfigurationException(String.format(
-                            "Cannot find a certificate with alias '%s' in key store : %s",
+                            "Cannot find a certificate with alias '%s' in key store '%s'.",
                             certAlias,
-                            fileKeyStore.getStoreUrl()));
+                            loggableStoreUrl));
                 }
 
-                if (keyStore.isCertificateEntry(certAlias))
+                if (!keyStore.entryInstanceOf(certAlias, java.security.KeyStore.PrivateKeyEntry.class))
                 {
                     throw new IllegalConfigurationException(String.format(
-                            "Alias '%s' in key store : %s does not identify a key.",
+                            "Alias '%s' in key store '%s' does not identify a private key.",
                             certAlias,
-                            fileKeyStore.getStoreUrl()));
+                            loggableStoreUrl));
 
                 }
             }
-
-            if (!containsPrivateKey(keyStore))
+            else if (!containsPrivateKey(keyStore))
             {
-                throw new IllegalConfigurationException("Keystore must contain at least one private key.");
+                throw new IllegalConfigurationException(String.format(
+                        "Keystore '%s' must contain at least one private key.", loggableStoreUrl));
             }
         }
-        catch (KeyStoreException e)
+        catch (UnrecoverableKeyException e)
         {
-            // key store should be initialized above
-            throw new ServerScopedRuntimeException("Key store has not been initialized", e);
+            String message = String.format("Check key store password. Cannot instantiate key store from '%s'.", loggableStoreUrl);
+            throw new IllegalConfigurationException(message, e);
         }
-
+        catch (IOException | GeneralSecurityException e)
+        {
+            final String message = String.format("Cannot instantiate key store from '%s'.", loggableStoreUrl);
+            throw new IllegalConfigurationException(message, e);
+        }
 
         try
         {
@@ -191,8 +178,8 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         }
         catch (NoSuchAlgorithmException e)
         {
-            throw new IllegalConfigurationException("Unknown keyManagerFactoryAlgorithm: "
-                    + fileKeyStore.getKeyManagerFactoryAlgorithm());
+            throw new IllegalConfigurationException(String.format("Unknown keyManagerFactoryAlgorithm: '%s'",
+                                                                  fileKeyStore.getKeyManagerFactoryAlgorithm()));
         }
 
         if(!fileKeyStore.isDurable())

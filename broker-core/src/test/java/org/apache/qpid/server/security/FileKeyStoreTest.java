@@ -154,7 +154,7 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("does not identify a key"));
+            assertTrue("Exception text not as unexpected:" + message, message.contains("does not identify a private key"));
         }
     }
 
@@ -298,7 +298,7 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Keystore must contain at least one private key."));
+            assertTrue("Exception text not as unexpected:" + message, message.contains("must contain at least one private key"));
         }
     }
 

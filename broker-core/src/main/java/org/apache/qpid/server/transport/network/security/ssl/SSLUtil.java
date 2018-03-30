@@ -427,6 +427,17 @@ public class SSLUtil
 
             ks.load(in, storeCharPassword);
         }
+        catch (IOException ioe)
+        {
+            if (ioe.getCause() instanceof GeneralSecurityException)
+            {
+                throw ((GeneralSecurityException) ioe.getCause());
+            }
+            else
+            {
+                throw ioe;
+            }
+        }
         return ks;
     }
 

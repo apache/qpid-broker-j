@@ -55,7 +55,7 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> implements FileTrustStore<FileTrustStoreImpl>
@@ -149,30 +149,11 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
 
     private static void validateTrustStore(FileTrustStore trustStore)
     {
-        KeyStore keyStore;
+        final String loggableStoreUrl = StringUtil.elideDataUrl(trustStore.getStoreUrl());
         try
         {
-            keyStore = initializeKeyStore(trustStore);
-        }
-        catch (Exception e)
-        {
-            final String message;
-            if (e instanceof IOException && e.getCause() != null && e.getCause() instanceof UnrecoverableKeyException)
-            {
-                message = "Check trust store password. Cannot instantiate trust store from '"
-                          + trustStore.getStoreUrl()
-                          + "'.";
-            }
-            else
-            {
-                message = "Cannot instantiate trust store from '" + trustStore.getStoreUrl() + "'.";
-            }
+            KeyStore keyStore = initializeKeyStore(trustStore);
 
-            throw new IllegalConfigurationException(message, e);
-        }
-
-        try
-        {
             final Enumeration<String> aliasesEnum = keyStore.aliases();
             boolean certificateFound = false;
             while (aliasesEnum.hasMoreElements())
@@ -186,12 +167,19 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
             }
             if (!certificateFound)
             {
-                throw new IllegalConfigurationException("Trust store must contain at least one certificate.");
+                throw new IllegalConfigurationException(String.format(
+                        "Trust store '%s' must contain at least one certificate.", loggableStoreUrl));
             }
         }
-        catch (KeyStoreException e)
+        catch (UnrecoverableKeyException e)
         {
-            throw new ServerScopedRuntimeException("Trust store has not been initialized", e);
+            String message = String.format("Check trust store password. Cannot instantiate trust store from '%s'.", loggableStoreUrl);
+            throw new IllegalConfigurationException(message, e);
+        }
+        catch (IOException | GeneralSecurityException e)
+        {
+            final String message = String.format("Cannot instantiate trust store from '%s'.", loggableStoreUrl);
+            throw new IllegalConfigurationException(message, e);
         }
 
         try
@@ -200,7 +188,8 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
         }
         catch (NoSuchAlgorithmException e)
         {
-            throw new IllegalConfigurationException("Unknown trustManagerFactoryAlgorithm: " + trustStore.getTrustManagerFactoryAlgorithm());
+            throw new IllegalConfigurationException(String.format("Unknown trustManagerFactoryAlgorithm '%s'",
+                                                                  trustStore.getTrustManagerFactoryAlgorithm()));
         }
     }
 
@@ -247,7 +236,7 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     }
 
     @Override
-    protected TrustManager[] getTrustManagersInternal() throws GeneralSecurityException
+    protected TrustManager[] getTrustManagersInternal()
     {
         TrustManager[] trustManagers = _trustManagers;
         if (trustManagers == null || trustManagers.length == 0)
@@ -258,7 +247,7 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     }
 
     @Override
-    public Certificate[] getCertificates() throws GeneralSecurityException
+    public Certificate[] getCertificates()
     {
         Certificate[] certificates = _certificates;
         return certificates == null ? new Certificate[0] : Arrays.copyOf(certificates, certificates.length);

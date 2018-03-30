@@ -40,6 +40,7 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.config.AclFileParser;
 import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
+import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public class AclFileAccessControlProviderImpl
@@ -86,7 +87,7 @@ public class AclFileAccessControlProviderImpl
             LOGGER.debug("Calling changeAttributes to try to force update");
             // force the change listener to fire, causing the parent broker to update its cache
             changeAttributes(Collections.<String,Object>emptyMap());
-            getEventLogger().message(AccessControlMessages.LOADED(String.valueOf(getPath()).startsWith("data:") ? "data:..." : getPath()));
+            getEventLogger().message(AccessControlMessages.LOADED(StringUtil.elideDataUrl(getPath())));
 
         }
         catch(RuntimeException e)
