@@ -163,7 +163,7 @@ define(["dojo/_base/lang",
                         typeUI.show({
                             containerNode: typeFieldsContainer,
                             parent: that,
-                            data: that.initialData,
+                            initialData: that.initialData || {},
                             effectiveData: that.effectiveData,
                             metadata: that.management.metadata,
                             category: category,
