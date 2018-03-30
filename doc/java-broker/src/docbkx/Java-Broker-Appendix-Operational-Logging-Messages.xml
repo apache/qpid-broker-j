@@ -1496,7 +1496,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1007">
           <entry morerows="1">PRT-1007</entry>
-          <entry>Unsupported protocol header received, replying with <replaceable>AMQP version</replaceable></entry>
+          <entry>Unsupported protocol header received <replaceable>header bytes</replaceable>, replying with <replaceable>AMQP version</replaceable></entry>
         </row>
         <row>
           <entry>
