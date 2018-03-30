@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.virtualhostalias;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
@@ -27,9 +28,11 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -79,6 +82,10 @@ public class HostNameAliasImpl
     @Override
     protected boolean matches(final String host)
     {
+        if(_localAddressNames.contains(host))
+        {
+            return true;
+        }
         while(!_addressesComputed.get())
         {
             Lock lock = _addressLock;
@@ -166,7 +173,7 @@ public class HostNameAliasImpl
 
         private Collection<InetAddress> getAllInetAddresses() throws SocketException
         {
-            Set<InetAddress> addresses = new HashSet<>();
+            Set<InetAddress> addresses = new TreeSet<>(HostNameAliasImpl::compareAddresses);
             for (NetworkInterface networkInterface : Collections.list(NetworkInterface.getNetworkInterfaces()))
             {
                 for (InterfaceAddress inetAddress : networkInterface.getInterfaceAddresses())
@@ -181,5 +188,51 @@ public class HostNameAliasImpl
     private boolean useAllAddresses(final String bindingAddress)
     {
         return bindingAddress == null || bindingAddress.trim().equals("") || bindingAddress.trim().equals("*");
+    }
+
+    private static int compareAddresses(final InetAddress left, final InetAddress right)
+    {
+        byte[] leftBytes;
+        byte[] rightBytes;
+        if(left.isLoopbackAddress() != right.isLoopbackAddress())
+        {
+            return left.isLoopbackAddress() ? -1 : 1;
+        }
+        else if(left.isSiteLocalAddress() != right.isSiteLocalAddress())
+        {
+            return left.isSiteLocalAddress() ? -1 : 1;
+        }
+        else if(left.isLinkLocalAddress() != right.isLinkLocalAddress())
+        {
+            return left.isLinkLocalAddress() ? 1 : -1;
+        }
+        else if(left.isMulticastAddress() != right.isMulticastAddress())
+        {
+            return left.isMulticastAddress() ? 1 : -1;
+        }
+        else if(left instanceof Inet4Address && !(right instanceof Inet4Address))
+        {
+            return -1;
+        }
+        else if(right instanceof Inet4Address && !(left instanceof Inet4Address))
+        {
+            return 1;
+        }
+        else if((leftBytes = left.getAddress()).length == (rightBytes = right.getAddress()).length)
+        {
+            for(int i = 0; i < left.getAddress().length; i++)
+            {
+                int compare = Byte.compare(leftBytes[i], rightBytes[i]);
+                if(compare != 0)
+                {
+                    return compare;
+                }
+            }
+            return 0;
+        }
+        else
+        {
+            return Integer.compare(left.getAddress().length, right.getAddress().length);
+        }
     }
 }

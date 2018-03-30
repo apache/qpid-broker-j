@@ -43,13 +43,11 @@
     "type" : "AMQP",
     "authenticationProvider" : "plain",
     "port" : "0",
+    "bindingAddresss" : "127.0.0.1",
     "protocols" : [ "AMQP_0_8", "AMQP_0_9", "AMQP_0_9_1" ],
     "virtualhostaliases" : [ {
       "name" : "defaultAlias",
       "type" : "defaultAlias"
-    }, {
-      "name" : "hostnameAlias",
-      "type" : "hostnameAlias"
     }, {
       "name" : "nameAlias",
       "type" : "nameAlias"
@@ -63,10 +61,6 @@
     "virtualhostaliases" : [ {
       "name" : "defaultAlias",
       "type" : "defaultAlias",
-      "durable" : true
-    }, {
-      "name" : "hostnameAlias",
-      "type" : "hostnameAlias",
       "durable" : true
     }, {
       "name" : "nameAlias",
