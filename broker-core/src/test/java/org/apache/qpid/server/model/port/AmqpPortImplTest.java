@@ -19,6 +19,10 @@
 
 package org.apache.qpid.server.model.port;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -36,6 +40,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -52,9 +60,9 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AmqpPortImplTest extends QpidTestCase
+public class AmqpPortImplTest extends UnitTestBase
 {
     private static final String AUTHENTICATION_PROVIDER_NAME = "test";
     private static final String KEYSTORE_NAME = "keystore";
@@ -63,10 +71,9 @@ public class AmqpPortImplTest extends QpidTestCase
     private Broker _broker;
     private AmqpPortImpl _port;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         Model model = BrokerModel.getInstance();
         SystemConfig systemConfig = mock(SystemConfig.class);
@@ -98,7 +105,7 @@ public class AmqpPortImplTest extends QpidTestCase
         when(_broker.getChildByName(AuthenticationProvider.class, AUTHENTICATION_PROVIDER_NAME)).thenReturn(authProvider);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -115,10 +122,10 @@ public class AmqpPortImplTest extends QpidTestCase
                 }
                 _port.close();
             }
-            super.tearDown();
         }
     }
 
+    @Test
     public void testPortAlreadyBound() throws Exception
     {
         try (ServerSocket socket = openSocket())
@@ -132,12 +139,14 @@ public class AmqpPortImplTest extends QpidTestCase
             catch (IllegalConfigurationException e)
             {
                 assertEquals("Unexpected exception message",
-                             String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
-                                           socket.getLocalPort(), "*"), e.getMessage());
+                                    String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
+                                                  socket.getLocalPort(), "*"),
+                                    e.getMessage());
             }
         }
     }
 
+    @Test
     public void testCreateTls()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -146,6 +155,7 @@ public class AmqpPortImplTest extends QpidTestCase
         _port = createPort(getTestName(), attributes);
     }
 
+    @Test
     public void testCreateTlsClientAuth()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -155,11 +165,13 @@ public class AmqpPortImplTest extends QpidTestCase
         _port = createPort(getTestName(), attributes);
     }
 
+    @Test
     public void testTlsWithoutKeyStore()
     {
         try
         {
-            createPort(getTestName(), Collections.singletonMap(Port.TRANSPORTS, Collections.singletonList(Transport.SSL)));
+            createPort(getTestName(), Collections.singletonMap(Port.TRANSPORTS, Collections.singletonList(Transport
+                                                                                                                  .SSL)));
             fail("Exception not thrown");
         }
         catch (IllegalConfigurationException e)
@@ -178,6 +190,7 @@ public class AmqpPortImplTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testTlsWantNeedWithoutTrustStores()
     {
         Map<String, Object> base = new HashMap<>();
@@ -210,6 +223,7 @@ public class AmqpPortImplTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testOnCreateValidation()
     {
         try
@@ -243,6 +257,7 @@ public class AmqpPortImplTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testOnChangeThreadPoolValidation()
     {
         _port = createPort(getTestName());
@@ -276,6 +291,7 @@ public class AmqpPortImplTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testConnectionCounting()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -294,18 +310,18 @@ public class AmqpPortImplTest extends QpidTestCase
         {
             assertTrue(_port.canAcceptNewConnection(new InetSocketAddress("example.org", 0)));
             _port.incrementConnectionCount();
-            assertEquals(i + 1, _port.getConnectionCount());
+            assertEquals((long) (i + 1), (long) _port.getConnectionCount());
             verify(mockLogger, never()).message(any(LogSubject.class), any(LogMessage.class));
         }
 
         assertTrue(_port.canAcceptNewConnection(new InetSocketAddress("example.org", 0)));
         _port.incrementConnectionCount();
-        assertEquals(9, _port.getConnectionCount());
+        assertEquals((long) 9, (long) _port.getConnectionCount());
         verify(mockLogger, times(1)).message(any(LogSubject.class), any(LogMessage.class));
 
         assertTrue(_port.canAcceptNewConnection(new InetSocketAddress("example.org", 0)));
         _port.incrementConnectionCount();
-        assertEquals(10, _port.getConnectionCount());
+        assertEquals((long) 10, (long) _port.getConnectionCount());
         verify(mockLogger, times(1)).message(any(LogSubject.class), any(LogMessage.class));
 
         assertFalse(_port.canAcceptNewConnection(new InetSocketAddress("example.org", 0)));

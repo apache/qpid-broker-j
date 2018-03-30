@@ -32,11 +32,29 @@ import java.io.FileWriter;
 import java.util.List;
 import java.util.Properties;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.charting.ChartType;
 import org.apache.qpid.disttest.charting.ChartingException;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ChartingDefinitionCreatorTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ChartingDefinitionCreatorTest extends UnitTestBase
 {
     private static final String TEST_CHART_TITLE = "CHART_TITLE ${ChartingDefinitionSysProp}";
     private static final String TEST_CHART_SUBTITLE = "CHART_SUBTITLE";
@@ -52,40 +70,43 @@ public class ChartingDefinitionCreatorTest extends QpidTestCase
     private ChartingDefinitionCreator _chartingDefinitionLoader = new ChartingDefinitionCreator();
     private File _testTempDir;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _testTempDir = createTestTemporaryDirectory();
     }
 
+    @Test
     public void testLoadTwoDefinitionsFromDirectory() throws Exception
     {
         createTestDefinitionWithin(_testTempDir);
         createTestDefinitionWithin(_testTempDir);
 
         List<ChartingDefinition> definitions = _chartingDefinitionLoader.createFromFileOrDirectory(_testTempDir.getAbsolutePath());
-        assertEquals(2, definitions.size());
+
+        assertEquals((long) 2, (long) definitions.size());
     }
 
+    @Test
     public void testLoadOneDefinitionFromFile() throws Exception
     {
         File testDefFile = createTestDefinitionWithin(_testTempDir);
 
         List<ChartingDefinition> definitions = _chartingDefinitionLoader.createFromFileOrDirectory(testDefFile.getAbsolutePath());
-        assertEquals(1, definitions.size());
+        assertEquals((long) 1, (long) definitions.size());
 
         ChartingDefinition definition1 = definitions.get(0);
         assertEquals(TEST_CHART_TITLE, definition1.getChartTitle());
     }
 
+    @Test
     public void testDefinitionsProperties() throws Exception
     {
         setTestSystemProperty(SYSTEM_PROPERTY_NAME, "propValue");
         File testDefFile = createTestDefinitionWithin(_testTempDir);
 
         List<ChartingDefinition> definitions = _chartingDefinitionLoader.createFromFileOrDirectory(testDefFile.getAbsolutePath());
-        assertEquals(1, definitions.size());
+        assertEquals((long) 1, (long) definitions.size());
 
         ChartingDefinition definition1 = definitions.get(0);
         assertEquals("CHART_TITLE propValue", definition1.getChartTitle());
@@ -99,11 +120,12 @@ public class ChartingDefinitionCreatorTest extends QpidTestCase
         assertEquals(stemOnly, definition1.getChartStemName());
 
         final List<SeriesDefinition> seriesDefinitions = definition1.getSeriesDefinitions();
-        assertEquals(1, seriesDefinitions.size());
+        assertEquals((long) 1, (long) seriesDefinitions.size());
         SeriesDefinition seriesDefinition = seriesDefinitions.get(0);
         assertEquals(TEST_SERIES_SELECT_STATEMENT, seriesDefinition.getSeriesStatement());
     }
 
+    @Test
     public void testDefinitionFileNotFound() throws Exception
     {
         File notFound = new File(_testTempDir,"notfound.chartdef");

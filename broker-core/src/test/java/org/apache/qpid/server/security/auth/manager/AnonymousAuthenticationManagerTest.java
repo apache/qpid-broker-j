@@ -21,27 +21,32 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class AnonymousAuthenticationManagerTest extends QpidTestCase
+import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class AnonymousAuthenticationManagerTest extends UnitTestBase
 {
     private AnonymousAuthenticationManager _manager;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         Map<String,Object> attrs = new HashMap<String, Object>();
         attrs.put(AuthenticationProvider.ID, UUID.randomUUID());
         attrs.put(AuthenticationProvider.NAME, getTestName());
@@ -49,21 +54,22 @@ public class AnonymousAuthenticationManagerTest extends QpidTestCase
 
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         if(_manager != null)
         {
             _manager = null;
         }
-        super.tearDown();
     }
 
+    @Test
     public void testGetMechanisms() throws Exception
     {
         assertEquals(Collections.singletonList("ANONYMOUS"), _manager.getMechanisms());
     }
 
+    @Test
     public void testCreateSaslNegotiator() throws Exception
     {
         SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null, null);
@@ -73,14 +79,16 @@ public class AnonymousAuthenticationManagerTest extends QpidTestCase
         assertNull("Should not be able to create SASL negotiator for mechanism 'PLAIN'", negotiator);
     }
 
+    @Test
     public void testAuthenticate() throws Exception
     {
         SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null, null);
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
         assertNotNull(result);
         assertEquals("Expected authentication to be successful",
-                     AuthenticationResult.AuthenticationStatus.SUCCESS,
-                     result.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            result.getStatus());
+
 
         assertOnlyContainsWrapped(_manager.getAnonymousPrincipal(), result.getPrincipals());
     }

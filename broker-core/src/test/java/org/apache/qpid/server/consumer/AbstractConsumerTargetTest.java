@@ -20,6 +20,9 @@
 
 package org.apache.qpid.server.consumer;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -30,6 +33,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.InOrder;
 
 import org.apache.qpid.server.message.MessageContainer;
@@ -46,9 +51,9 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AbstractConsumerTargetTest extends QpidTestCase
+public class AbstractConsumerTargetTest extends UnitTestBase
 {
 
     private TestAbstractConsumerTarget _consumerTarget;
@@ -58,10 +63,9 @@ public class AbstractConsumerTargetTest extends QpidTestCase
     private AMQPSession<?,TestAbstractConsumerTarget> _session = mock(AMQPSession.class);
     private MessageInstance _messageInstance;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         when(_connection.getContextValue(eq(Long.class),
                                          eq(Consumer.SUSPEND_NOTIFICATION_PERIOD))).thenReturn(1000000L);
 
@@ -77,26 +81,33 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         _consumerTarget.consumerAdded(_consumer);
     }
 
+    @Test
     public void testClose() throws Exception
     {
         _consumerTarget = new TestAbstractConsumerTarget();
-        assertEquals("Unexpected number of consumers", 0, _consumerTarget.getConsumers().size());
+        assertEquals("Unexpected number of consumers", (long) 0, (long) _consumerTarget.getConsumers().size());
 
         _consumerTarget.consumerAdded(_consumer);
-        assertEquals("Unexpected number of consumers after add", 1, _consumerTarget.getConsumers().size());
+        assertEquals("Unexpected number of consumers after add",
+                            (long) 1,
+                            (long) _consumerTarget.getConsumers().size());
+
 
         _consumerTarget.close();
-        assertEquals("Unexpected number of consumers after close", 0, _consumerTarget.getConsumers().size());
+        assertEquals("Unexpected number of consumers after close",
+                            (long) 0,
+                            (long) _consumerTarget.getConsumers().size());
 
         verify(_consumer, times(1)).close();
     }
 
+    @Test
     public void testNotifyWork() throws Exception
     {
         InOrder order = inOrder(_consumer);
 
         _consumerTarget = new TestAbstractConsumerTarget();
-        assertEquals("Unexpected number of consumers", 0, _consumerTarget.getConsumers().size());
+        assertEquals("Unexpected number of consumers", (long) 0, (long) _consumerTarget.getConsumers().size());
 
         _consumerTarget.consumerAdded(_consumer);
 
@@ -119,6 +130,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         verifyNoMoreInteractions(_consumer);
     }
 
+    @Test
     public void testConversionExceptionPolicyClose() throws Exception
     {
         configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
@@ -130,14 +142,15 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         }
         catch (ConnectionScopedRuntimeException e)
         {
+            final boolean condition = e.getCause() instanceof MessageConversionException;
             assertTrue(String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
-                                     e.getCause().getClass().getSimpleName()),
-                       e.getCause() instanceof MessageConversionException);
+                                            e.getCause().getClass().getSimpleName()), condition);
         }
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));
     }
 
+    @Test
     public void testConversionExceptionPolicyCloseForNonAcquiringConsumer() throws Exception
     {
         configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
@@ -149,14 +162,15 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         }
         catch (ConnectionScopedRuntimeException e)
         {
+            final boolean condition = e.getCause() instanceof MessageConversionException;
             assertTrue(String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
-                                     e.getCause().getClass().getSimpleName()),
-                       e.getCause() instanceof MessageConversionException);
+                                            e.getCause().getClass().getSimpleName()), condition);
         }
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));
     }
 
+    @Test
     public void testConversionExceptionPolicyReroute() throws Exception
     {
         configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
@@ -166,6 +180,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         verify(_messageInstance).routeToAlternate(any(Action.class), any(ServerTransaction.class));
     }
 
+    @Test
     public void testConversionExceptionPolicyRerouteForNonAcquiringConsumer() throws Exception
     {
         configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
@@ -175,6 +190,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));
     }
 
+    @Test
     public void testConversionExceptionPolicyReject() throws Exception
     {
         configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT);
@@ -186,6 +202,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         verify(_messageInstance).release(_consumer);
     }
 
+    @Test
     public void testConversionExceptionPolicyRejectForNonAcquiringConsumer() throws Exception
     {
         configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT);
@@ -196,6 +213,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         verify(_messageInstance).release(_consumer);
     }
 
+    @Test
     public void testConversionExceptionPolicyWhenOwningResourceIsNotMessageSource() throws Exception
     {
         final TransactionLogResource owningResource = mock(TransactionLogResource.class);
@@ -208,9 +226,9 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         }
         catch (ConnectionScopedRuntimeException e)
         {
+            final boolean condition = e.getCause() instanceof MessageConversionException;
             assertTrue(String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
-                                     e.getCause().getClass().getSimpleName()),
-                       e.getCause() instanceof MessageConversionException);
+                                            e.getCause().getClass().getSimpleName()), condition);
         }
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));

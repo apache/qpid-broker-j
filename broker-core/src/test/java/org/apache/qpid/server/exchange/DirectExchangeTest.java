@@ -20,6 +20,12 @@
 package org.apache.qpid.server.exchange;
 
 import static org.apache.qpid.server.filter.AMQPFilterTypes.JMS_SELECTOR;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,6 +33,10 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -44,21 +54,20 @@ import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.server.virtualhost.UnknownAlternateBindingException;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class DirectExchangeTest extends QpidTestCase
+public class DirectExchangeTest extends UnitTestBase
 {
     private DirectExchange<?> _exchange;
     private VirtualHost<?> _vhost;
     private InstanceProperties _instanceProperties;
     private ServerMessage<?> _messageWithNoHeaders;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         BrokerTestHelper.setUp();
-        _vhost = BrokerTestHelper.createVirtualHost(getName());
+        _vhost = BrokerTestHelper.createVirtualHost(getTestName(), this);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Exchange.NAME, "test");
@@ -71,7 +80,7 @@ public class DirectExchangeTest extends QpidTestCase
         _messageWithNoHeaders = createTestMessage(Collections.emptyMap());
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -84,10 +93,10 @@ public class DirectExchangeTest extends QpidTestCase
         finally
         {
             BrokerTestHelper.tearDown();
-            super.tearDown();
         }
     }
 
+    @Test
     public void testCreationOfExchangeWithReservedExchangePrefixRejected() throws Exception
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -107,9 +116,11 @@ public class DirectExchangeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testAmqpDirectRecreationRejected() throws Exception
     {
         DirectExchangeImpl amqpDirect = (DirectExchangeImpl) _vhost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
+
         assertNotNull(amqpDirect);
 
         assertSame(amqpDirect, _vhost.getChildById(Exchange.class, amqpDirect.getId()));
@@ -134,9 +145,9 @@ public class DirectExchangeTest extends QpidTestCase
         // QPID-6599, defect would mean that the existing exchange was removed from the in memory model.
         assertSame(amqpDirect, _vhost.getChildById(Exchange.class, amqpDirect.getId()));
         assertSame(amqpDirect, _vhost.getChildByName(Exchange.class, amqpDirect.getName()));
-
     }
 
+    @Test
     public void testDeleteOfExchangeSetAsAlternate() throws Exception
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -148,6 +159,7 @@ public class DirectExchangeTest extends QpidTestCase
         queue.open();
 
         assertEquals("Unexpected alternate exchange on queue", _exchange, queue.getAlternateBindingDestination());
+
 
         try
         {
@@ -163,6 +175,7 @@ public class DirectExchangeTest extends QpidTestCase
         assertEquals("Unexpected desired exchange state", State.ACTIVE, _exchange.getDesiredState());
     }
 
+    @Test
     public void testAlternateBindingValidationRejectsNonExistingDestination()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -183,6 +196,7 @@ public class DirectExchangeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testAlternateBindingValidationRejectsSelf()
     {
         Map<String, String> alternateBinding = Collections.singletonMap(AlternateBinding.DESTINATION, _exchange.getName());
@@ -198,6 +212,7 @@ public class DirectExchangeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDurableExchangeRejectsNonDurableAlternateBinding()
     {
         Map<String, Object> dlqAttributes = new HashMap<>();
@@ -223,6 +238,7 @@ public class DirectExchangeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testAlternateBinding()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -235,10 +251,11 @@ public class DirectExchangeTest extends QpidTestCase
         Exchange newExchange = _vhost.createChild(Exchange.class, attributes);
 
         assertEquals("Unexpected alternate binding",
-                     _exchange.getName(),
-                     newExchange.getAlternateBinding().getDestination());
+                            _exchange.getName(),
+                            newExchange.getAlternateBinding().getDestination());
     }
 
+    @Test
     public void testRouteToQueue()
     {
         String boundKey = "key";
@@ -261,6 +278,7 @@ public class DirectExchangeTest extends QpidTestCase
         assertFalse("Message unexpectedly routed to queue after unbind", result.hasRoutes());
     }
 
+    @Test
     public void testRouteToQueueWithSelector()
     {
         String boundKey = "key";
@@ -285,9 +303,12 @@ public class DirectExchangeTest extends QpidTestCase
         assertTrue("Unbind operation should be successful", unbind);
 
         result = _exchange.route(matchingMessage, boundKey, instanceProperties);
-        assertFalse("Message with matching selector unexpectedly routed to queue after unbind", result.hasRoutes());
+        assertFalse("Message with matching selector unexpectedly routed to queue after unbind",
+                           result.hasRoutes());
+
     }
 
+    @Test
     public void testRouteToQueueViaTwoExchanges()
     {
         String boundKey = "key";
@@ -312,10 +333,12 @@ public class DirectExchangeTest extends QpidTestCase
     }
 
 
+    @Test
     public void testDestinationDeleted()
     {
         String boundKey = "key";
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+
 
         assertFalse(_exchange.isBound(boundKey));
         assertFalse(_exchange.isBound(boundKey, queue));
@@ -346,6 +369,7 @@ public class DirectExchangeTest extends QpidTestCase
         return message;
     }
 
+    @Test
     public void testRouteToMultipleQueues()
     {
         String boundKey = "key";
@@ -356,23 +380,32 @@ public class DirectExchangeTest extends QpidTestCase
         assertTrue("Bind operation to queue1 should be successful", bind1);
 
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders, boundKey, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues", 1, result.getNumberOfRoutes());
+        assertEquals("Message routed to unexpected number of queues",
+                            (long) 1,
+                            (long) result.getNumberOfRoutes());
 
         _exchange.bind(queue2.getName(), boundKey, Collections.singletonMap(JMS_SELECTOR.toString(), "prop is null"), false);
 
         result = _exchange.route(_messageWithNoHeaders, boundKey, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues", 2, result.getNumberOfRoutes());
+        assertEquals("Message routed to unexpected number of queues",
+                            (long) 2,
+                            (long) result.getNumberOfRoutes());
 
         _exchange.unbind(queue1.getName(), boundKey);
 
         result = _exchange.route(_messageWithNoHeaders, boundKey, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues", 1, result.getNumberOfRoutes());
+        assertEquals("Message routed to unexpected number of queues",
+                            (long) 1,
+                            (long) result.getNumberOfRoutes());
 
         _exchange.unbind(queue2.getName(), boundKey);
         result = _exchange.route(_messageWithNoHeaders, boundKey, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues", 0, result.getNumberOfRoutes());
+        assertEquals("Message routed to unexpected number of queues",
+                            (long) 0,
+                            (long) result.getNumberOfRoutes());
     }
 
+    @Test
     public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKey()
     {
         Map<String, Object> viaExchangeArguments = new HashMap<>();
@@ -397,6 +430,7 @@ public class DirectExchangeTest extends QpidTestCase
         assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
     }
 
+    @Test
     public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKeyAndFiltering()
     {
         Map<String, Object> viaExchangeArguments = new HashMap<>();
@@ -423,6 +457,7 @@ public class DirectExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(createTestMessage(Collections.singletonMap("prop", true)),
                                                                                                             "key1",
                                                                                                             _instanceProperties);
+
         assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
 
         result = _exchange.route(createTestMessage(Collections.singletonMap("prop", false)),

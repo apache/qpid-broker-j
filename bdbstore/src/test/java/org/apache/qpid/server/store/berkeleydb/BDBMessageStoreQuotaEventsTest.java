@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,10 +30,13 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.Map;
 
+import org.junit.Before;
+
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreQuotaEventsTestBase;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
 public class BDBMessageStoreQuotaEventsTest extends MessageStoreQuotaEventsTestBase
 {
@@ -56,6 +62,14 @@ public class BDBMessageStoreQuotaEventsTest extends MessageStoreQuotaEventsTestB
     protected int getNumberOfMessagesToFillStore()
     {
         return NUMBER_OF_MESSAGES_TO_OVERFILL_STORE;
+    }
+
+    @Before
+    @Override
+    public void setUp() throws Exception
+    {
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        super.setUp();
     }
 
     @Override

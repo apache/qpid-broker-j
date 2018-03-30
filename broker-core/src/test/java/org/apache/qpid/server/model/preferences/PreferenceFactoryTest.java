@@ -20,32 +20,35 @@
 package org.apache.qpid.server.model.preferences;
 
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.createPreferenceAttributes;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.security.auth.Subject;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PreferenceFactoryTest extends QpidTestCase
+public class PreferenceFactoryTest extends UnitTestBase
 {
     private static final String TEST_USERNAME = "testUser";
     private static final String TEST_PRINCIPAL_SERIALIZATION =
             TestPrincipalUtils.getTestPrincipalSerialization(TEST_USERNAME);
     private ConfiguredObject<?> _testObject;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _testObject = mock(ConfiguredObject.class);
     }
 
+    @Test
     public void testCreatePreferenceFromAttributes()
     {
         final Map<String, Object> prefValueMap = Collections.<String, Object>singletonMap("myprefkey", "myprefvalue");

@@ -20,49 +20,52 @@
  */
 package org.apache.qpid.server.logging;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
+
 /**
  * Test: UnitTestMessageLoggerTest
- *
+ * <p>
  * This test verifies that UnitTestMessageLogger adheres to its interface.
- *
+ * <p>
  * Messages are logged, and Throwables recorded in an array that can be
  * retrieved and cleared.
- *
  */
-public class UnitTestMessageLoggerTest extends QpidTestCase
+public class UnitTestMessageLoggerTest extends UnitTestBase
 {
     private static final String TEST_MESSAGE = "Test";
     private static final String TEST_THROWABLE = "Test Throwable";
     private static final String TEST_HIERARCHY = "test.hierarchy";
 
+    @Test
     public void testRawMessage()
     {
         UnitTestMessageLogger logger = new UnitTestMessageLogger();
 
-        assertEquals("Messages logged before test start", 0,
-                     logger.getLogMessages().size());
+        assertEquals("Messages logged before test start", (long) 0, (long) logger.getLogMessages().size());
 
         // Log a message
         logger.rawMessage(TEST_MESSAGE, TEST_HIERARCHY);
 
         List<Object> messages = logger.getLogMessages();
 
-        assertEquals("Expected to have 1 messages logged", 1, messages.size());
+        assertEquals("Expected to have 1 messages logged", (long) 1, (long) messages.size());
 
-        assertEquals("First message not what was logged",
-                     TEST_MESSAGE, messages.get(0));
+        assertEquals("First message not what was logged", TEST_MESSAGE, messages.get(0));
     }
 
+    @Test
     public void testRawMessageWithThrowable()
     {
         UnitTestMessageLogger logger = new UnitTestMessageLogger();
 
-        assertEquals("Messages logged before test start", 0,
-                     logger.getLogMessages().size());
+        assertEquals("Messages logged before test start", (long) 0, (long) logger.getLogMessages().size());
 
         // Log a message
         Throwable throwable = new Throwable(TEST_THROWABLE);
@@ -71,33 +74,32 @@ public class UnitTestMessageLoggerTest extends QpidTestCase
 
         List<Object> messages = logger.getLogMessages();
 
-        assertEquals("Expected to have 2 entries", 2, messages.size());
+        assertEquals("Expected to have 2 entries", (long) 2, (long) messages.size());
 
-        assertEquals("Message text not what was logged",
-                     TEST_MESSAGE, messages.get(0));
+        assertEquals("Message text not what was logged", TEST_MESSAGE, messages.get(0));
 
         assertEquals("Message throwable not what was logged",
-                     TEST_THROWABLE, ((Throwable) messages.get(1)).getMessage());
+                            TEST_THROWABLE,
+                            ((Throwable) messages.get(1)).getMessage());
 
     }
 
+    @Test
     public void testClear()
     {
         UnitTestMessageLogger logger = new UnitTestMessageLogger();
 
-        assertEquals("Messages logged before test start", 0,
-                     logger.getLogMessages().size());
+        assertEquals("Messages logged before test start", (long) 0, (long) logger.getLogMessages().size());
 
         // Log a message
         logger.rawMessage(TEST_MESSAGE, null, TEST_HIERARCHY);
 
-        assertEquals("Expected to have 1 messages logged",
-                     1, logger.getLogMessages().size());
+        assertEquals("Expected to have 1 messages logged", (long) 1, (long) logger.getLogMessages().size());
 
         logger.clearLogMessages();
 
         assertEquals("Expected to have no messages after a clear",
-                     0, logger.getLogMessages().size());
-
+                            (long) 0,
+                            (long) logger.getLogMessages().size());
     }
 }

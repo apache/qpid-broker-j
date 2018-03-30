@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,13 +29,14 @@ import java.util.Collection;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+import org.junit.Test;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class UnacknowledgedMessageMapTest extends QpidTestCase
+public class UnacknowledgedMessageMapTest extends UnitTestBase
 {
     public static final Function<MessageConsumerAssociation, MessageInstance>
             MESSAGE_INSTANCE_FUNCTION = new Function<MessageConsumerAssociation, MessageInstance>()
@@ -47,16 +50,17 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
     };
     private final MessageInstanceConsumer _consumer = mock(MessageInstanceConsumer.class);
 
+    @Test
     public void testDeletedMessagesCantBeAcknowledged()
     {
         UnacknowledgedMessageMap map = new UnacknowledgedMessageMapImpl(100, mock(CreditRestorer.class));
         final int expectedSize = 5;
         MessageInstance[] msgs = populateMap(map,expectedSize);
-        assertEquals(expectedSize,map.size());
+        assertEquals((long) expectedSize, (long) map.size());
         Collection<MessageConsumerAssociation> acknowledged = map.acknowledge(100, true);
         Collection<MessageInstance> acknowledgedMessages = Collections2.transform(acknowledged, MESSAGE_INSTANCE_FUNCTION);
-        assertEquals(expectedSize, acknowledged.size());
-        assertEquals(0,map.size());
+        assertEquals((long) expectedSize, (long) acknowledged.size());
+        assertEquals((long) 0, (long) map.size());
         for(int i = 0; i < expectedSize; i++)
         {
             assertTrue("Message " + i + " is missing", acknowledgedMessages.contains(msgs[i]));
@@ -68,13 +72,12 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
         when(msgs[2].makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.FALSE);
         when(msgs[4].makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.FALSE);
 
-        assertEquals(expectedSize,map.size());
-
+        assertEquals((long) expectedSize, (long) map.size());
 
         acknowledged = map.acknowledge(100, true);
         acknowledgedMessages = Collections2.transform(acknowledged, MESSAGE_INSTANCE_FUNCTION);
-        assertEquals(expectedSize-2, acknowledged.size());
-        assertEquals(0,map.size());
+        assertEquals((long) (expectedSize - 2), (long) acknowledged.size());
+        assertEquals((long) 0, (long) map.size());
         for(int i = 0; i < expectedSize; i++)
         {
             assertEquals(i != 2 && i != 4, acknowledgedMessages.contains(msgs[i]));

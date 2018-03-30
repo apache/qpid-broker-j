@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +34,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,19 +51,18 @@ import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.GenericRecoverer;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class BrokerMemoryLoggerTest extends QpidTestCase
+public class BrokerMemoryLoggerTest extends UnitTestBase
 {
     private TaskExecutor _taskExecutor;
     private SystemConfig<JsonSystemConfigImpl> _systemConfig;
     private ConfiguredObjectRecord _brokerEntry = mock(ConfiguredObjectRecord.class);
     private UUID _brokerId = UUID.randomUUID();
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
@@ -73,7 +79,7 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());
         Map<String, Object> attributesMap = new HashMap<>();
         attributesMap.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-        attributesMap.put(Broker.NAME, getName());
+        attributesMap.put(Broker.NAME, getTestName());
 
         when(_brokerEntry.getAttributes()).thenReturn(attributesMap);
         when(_brokerEntry.getParents()).thenReturn(Collections.singletonMap(SystemConfig.class.getSimpleName(), _systemConfig.getId()));
@@ -81,6 +87,7 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
         recoverer.recover(Arrays.asList(_brokerEntry), false);
     }
 
+    @Test
     public void testCreateDeleteBrokerMemoryLogger()
     {
         final String brokerLoggerName = "TestBrokerLogger";
@@ -93,17 +100,21 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
 
         BrokerLogger brokerLogger = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
         assertEquals("Created BrokerLogger has unexpected name", brokerLoggerName, brokerLogger.getName());
-        assertTrue("BrokerLogger has unexpected type", brokerLogger instanceof BrokerMemoryLogger);
+        final boolean condition = brokerLogger instanceof BrokerMemoryLogger;
+        assertTrue("BrokerLogger has unexpected type", condition);
 
         assertNotNull("Appender not attached to root logger after BrokerLogger creation",
-                      rootLogger.getAppender(brokerLoggerName));
+                             rootLogger.getAppender(brokerLoggerName));
+
 
         brokerLogger.delete();
 
         assertNull("Appender should be no longer attached to root logger after BrokerLogger deletion",
-                   rootLogger.getAppender(brokerLoggerName));
+                          rootLogger.getAppender(brokerLoggerName));
+
     }
 
+    @Test
     public void testBrokerMemoryLoggerRestrictsBufferSize()
     {
         doMemoryLoggerLimitsTest(BrokerMemoryLogger.MAX_RECORD_LIMIT + 1, BrokerMemoryLogger.MAX_RECORD_LIMIT);

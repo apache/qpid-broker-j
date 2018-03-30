@@ -22,11 +22,14 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
+import org.junit.Test;
+
 /**
  * Test CHN Log Messges 
  */
 public class ChannelMessagesTest extends AbstractTestMessages
 {
+    @Test
     public void testChannelCreate()
     {
         _logMessage = ChannelMessages.CREATE();
@@ -39,6 +42,7 @@ public class ChannelMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "CHN-1001", expected);
     }
 
+    @Test
     public void testChannelFlow()
     {
         String flow = "ON";
@@ -51,6 +55,7 @@ public class ChannelMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "CHN-1002", expected);
     }
 
+    @Test
     public void testChannelClose()
     {
         _logMessage = ChannelMessages.CLOSE();
@@ -61,6 +66,7 @@ public class ChannelMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "CHN-1003", expected);
     }
 
+    @Test
     public void testChannelCloseForced()
     {
         _logMessage = ChannelMessages.CLOSE_FORCED(1, "Test");

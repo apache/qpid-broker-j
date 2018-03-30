@@ -20,13 +20,13 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
-import org.apache.qpid.server.store.berkeleydb.tuple.ByteBufferBinding;
 
 import com.sleepycat.bind.tuple.IntegerBinding;
 import com.sleepycat.bind.tuple.LongBinding;
@@ -37,6 +37,12 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
+import org.junit.Before;
+import org.junit.Test;
+
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
+import org.apache.qpid.server.store.berkeleydb.tuple.ByteBufferBinding;
 
 public class UpgraderTest extends AbstractUpgradeTestCase
 {
@@ -48,7 +54,7 @@ public class UpgraderTest extends AbstractUpgradeTestCase
         return "bdbstore-v4";
     }
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         super.setUp();
@@ -61,12 +67,9 @@ public class UpgraderTest extends AbstractUpgradeTestCase
         dbConfig.setTransactional(true);
         dbConfig.setAllowCreate(true);
         int storeVersion = -1;
-        Database versionDb = null;
-        Cursor cursor = null;
-        try
+        try(Database versionDb = environment.openDatabase(null, Upgrader.VERSION_DB_NAME, dbConfig);
+            Cursor cursor = versionDb.openCursor(null, null))
         {
-            versionDb = environment.openDatabase(null, Upgrader.VERSION_DB_NAME, dbConfig);
-            cursor = versionDb.openCursor(null, null);
             DatabaseEntry key = new DatabaseEntry();
             DatabaseEntry value = new DatabaseEntry();
             while (cursor.getNext(key, value, null) == OperationStatus.SUCCESS)
@@ -78,20 +81,10 @@ public class UpgraderTest extends AbstractUpgradeTestCase
                 }
             }
         }
-        finally
-        {
-            if (cursor != null)
-            {
-                cursor.close();
-            }
-            if (versionDb != null)
-            {
-                versionDb.close();
-            }
-        }
         return storeVersion;
     }
 
+    @Test
     public void testUpgrade() throws Exception
     {
         assertEquals("Unexpected store version", -1, getStoreVersion(_environment));
@@ -100,9 +93,10 @@ public class UpgraderTest extends AbstractUpgradeTestCase
         assertContent();
     }
 
+    @Test
     public void testEmptyDatabaseUpgradeDoesNothing() throws Exception
     {
-        File nonExistentStoreLocation = new File(TMP_FOLDER, getName());
+        File nonExistentStoreLocation = new File(TMP_FOLDER, getTestName());
         deleteDirectoryIfExists(nonExistentStoreLocation);
 
         nonExistentStoreLocation.mkdir();

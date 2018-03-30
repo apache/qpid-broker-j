@@ -25,12 +25,6 @@ import java.util.Map;
 public class PlainAuthenticationManagerTest extends ManagedAuthenticationManagerTestBase
 {
     @Override
-    public void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
-    @Override
     protected ConfigModelPasswordManagingAuthenticationProvider<?> createAuthManager(final Map<String, Object> attributesMap)
     {
         return new PlainAuthenticationProvider(attributesMap, getBroker());
@@ -41,11 +35,4 @@ public class PlainAuthenticationManagerTest extends ManagedAuthenticationManager
     {
         return true;
     }
-
-    @Override
-    public void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
 }

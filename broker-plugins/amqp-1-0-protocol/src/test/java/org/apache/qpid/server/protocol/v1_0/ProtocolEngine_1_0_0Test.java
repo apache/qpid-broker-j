@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -30,17 +32,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -76,9 +77,9 @@ import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.ConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ProtocolEngine_1_0_0Test extends QpidTestCase
+public class ProtocolEngine_1_0_0Test extends UnitTestBase
 {
     private AMQPConnection_1_0Impl _protocolEngine_1_0_0;
     private ServerNetworkConnection _networkConnection;
@@ -89,10 +90,9 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     private AMQPConnection _connection;
     private VirtualHost<?> _virtualHost;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _networkConnection = mock(ServerNetworkConnection.class);
         when(_networkConnection.getLocalAddress()).thenReturn(new InetSocketAddress(0));
         _broker = mock(Broker.class);
@@ -183,6 +183,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
                                                 });
     }
 
+    @Test
     public void testProtocolEngineWithNoSaslNonTLSandAnon() throws Exception
     {
         final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.NAME, getTestName());
@@ -203,10 +204,13 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
-        assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
+        assertEquals(principal,
+                            new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
+
     }
 
 
+    @Test
     public void testProtocolEngineWithNoSaslNonTLSandNoAnon() throws Exception
     {
         allowMechanisms("foo");
@@ -224,6 +228,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     }
 
 
+    @Test
     public void testProtocolEngineWithNoSaslTLSandExternal() throws Exception
     {
         final Principal principal = () -> "test";
@@ -244,6 +249,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         assertEquals(authPrincipal, new AuthenticatedPrincipal(principal));
     }
 
+    @Test
     public void testProtocolEngineWithSaslNonTLSandAnon() throws Exception
     {
         final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.NAME, getTestName());
@@ -273,7 +279,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
-        assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
+        assertEquals(principal,
+                            new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
     }
 
 

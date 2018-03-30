@@ -20,9 +20,10 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
 import static org.apache.qpid.server.security.access.config.ObjectType.BROKER;
 import static org.apache.qpid.server.security.access.config.ObjectType.VIRTUALHOST;
-import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
@@ -36,13 +37,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class LegacyAccessControlAdapterTest extends QpidTestCase
+public class LegacyAccessControlAdapterTest extends UnitTestBase
 {
     private static final String TEST_EXCHANGE_TYPE = "testExchangeType";
     private static final String TEST_VIRTUAL_HOST = "testVirtualHost";
@@ -56,10 +60,9 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     private LegacyAccessControlAdapter _adapter;
     private Model _model;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _accessControl = mock(LegacyAccessControl.class);
         _model = BrokerModel.getInstance();
         _broker = mock(Broker.class);
@@ -105,6 +108,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     }
 
 
+    @Test
     public void testAuthoriseCreateAccessControlProvider()
     {
         AccessControlProvider accessControlProvider = mock(AccessControlProvider.class);
@@ -115,6 +119,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildCreateAuthorization(accessControlProvider);
     }
 
+    @Test
     public void testAuthoriseCreateConsumer()
     {
         Queue queue = mock(Queue.class);
@@ -147,6 +152,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     }
 
 
+    @Test
     public void testAuthoriseUpdatePort()
     {
         Port mock = mock(Port.class);
@@ -156,6 +162,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildUpdateAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseUpdateUser()
     {
         AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
@@ -175,6 +182,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     }
 
 
+    @Test
     public void testAuthoriseDeleteVirtualHost()
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
@@ -189,6 +197,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertDeleteAuthorization(virtualHost, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties);
     }
 
+    @Test
     public void testAuthoriseDeleteKeyStore()
     {
         KeyStore mock = mock(KeyStore.class);
@@ -198,6 +207,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildDeleteAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseDeleteTrustStore()
     {
         TrustStore mock = mock(TrustStore.class);
@@ -207,6 +217,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildDeleteAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseDeleteGroup()
     {
         GroupProvider groupProvider = mock(GroupProvider.class);
@@ -220,6 +231,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.GROUP, properties);
     }
 
+    @Test
     public void testAuthoriseDeleteGroupMember()
     {
         Group group = mock(Group.class);
@@ -233,6 +245,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertDeleteAuthorization(mock, LegacyOperation.UPDATE, ObjectType.GROUP, properties);
     }
 
+    @Test
     public void testAuthoriseDeleteUser()
     {
         AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
@@ -246,6 +259,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.USER, properties);
     }
 
+    @Test
     public void testAuthoriseCreateExchange()
     {
         VirtualHost vh = getMockVirtualHost();
@@ -262,6 +276,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertCreateAuthorization(exchange, LegacyOperation.CREATE, ObjectType.EXCHANGE, expectedProperties);
     }
 
+    @Test
     public void testAuthoriseCreateQueue()
     {
         VirtualHost vh = getMockVirtualHost();
@@ -281,6 +296,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertCreateAuthorization(queue, LegacyOperation.CREATE, ObjectType.QUEUE, expectedProperties);
     }
 
+    @Test
     public void testAuthoriseDeleteQueue()
     {
         VirtualHost vh = getMockVirtualHost();
@@ -298,6 +314,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertDeleteAuthorization(queueObject, LegacyOperation.DELETE, ObjectType.QUEUE, expectedProperties);
     }
 
+    @Test
     public void testAuthoriseUpdateQueue()
     {
         VirtualHost vh = getMockVirtualHost();
@@ -317,6 +334,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
                                   Collections.singletonMap(ConfiguredObject.DESCRIPTION, "Test"));
     }
 
+    @Test
     public void testAuthoriseUpdateExchange()
     {
         VirtualHost vh = getMockVirtualHost();
@@ -335,6 +353,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
                                   Collections.singletonMap(ConfiguredObject.DESCRIPTION, "Test"));
     }
 
+    @Test
     public void testAuthoriseDeleteExchange()
     {
         VirtualHost vh = getMockVirtualHost();
@@ -352,12 +371,14 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertDeleteAuthorization(exchange, LegacyOperation.DELETE, ObjectType.EXCHANGE, expectedProperties);
     }
 
+    @Test
     public void testAuthoriseCreateVirtualHostNode()
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
         assertCreateAuthorization(vhn, LegacyOperation.CREATE, ObjectType.VIRTUALHOSTNODE, new ObjectProperties("testVHN"));
     }
 
+    @Test
     public void testAuthoriseCreatePort()
     {
         Port port = mock(Port.class);
@@ -368,6 +389,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildCreateAuthorization(port);
     }
 
+    @Test
     public void testAuthoriseCreateAuthenticationProvider()
     {
         AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
@@ -378,6 +400,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildCreateAuthorization(authenticationProvider);
     }
 
+    @Test
     public void testAuthoriseCreateGroupProvider()
     {
         GroupProvider groupProvider = mock(GroupProvider.class);
@@ -389,6 +412,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     }
 
 
+    @Test
     public void testAuthoriseCreateKeyStore()
     {
         KeyStore keyStore = mock(KeyStore.class);
@@ -399,6 +423,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildCreateAuthorization(keyStore);
     }
 
+    @Test
     public void testAuthoriseCreateTrustStore()
     {
         TrustStore trustStore = mock(TrustStore.class);
@@ -409,6 +434,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildCreateAuthorization(trustStore);
     }
 
+    @Test
     public void testAuthoriseCreateGroup()
     {
         GroupProvider groupProvider = mock(GroupProvider.class);
@@ -426,6 +452,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertCreateAuthorization(group, LegacyOperation.CREATE, ObjectType.GROUP, new ObjectProperties("test"));
     }
 
+    @Test
     public void testAuthoriseCreateGroupMember()
     {
         Group group = mock(Group.class);
@@ -443,6 +470,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertCreateAuthorization(groupMember, LegacyOperation.UPDATE, ObjectType.GROUP, new ObjectProperties("test"));
     }
 
+    @Test
     public void testAuthoriseCreateUser()
     {
         AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
@@ -460,6 +488,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertCreateAuthorization(user, LegacyOperation.CREATE, ObjectType.USER, new ObjectProperties("test"));
     }
 
+    @Test
     public void testAuthoriseCreateVirtualHost()
     {
         VirtualHost vh = getMockVirtualHost();
@@ -469,6 +498,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
                                   expectedProperties);
     }
 
+    @Test
     public void testAuthoriseUpdateVirtualHostNode()
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
@@ -482,6 +512,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     }
 
 
+    @Test
     public void testAuthoriseUpdateAuthenticationProvider()
     {
         AuthenticationProvider mock = mock(AuthenticationProvider.class);
@@ -491,6 +522,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildUpdateAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseUpdateGroupProvider()
     {
         GroupProvider mock = mock(GroupProvider.class);
@@ -500,6 +532,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildUpdateAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseUpdateAccessControlProvider()
     {
         AccessControlProvider mock = mock(AccessControlProvider.class);
@@ -509,6 +542,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildUpdateAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseUpdateKeyStore()
     {
         KeyStore mock = mock(KeyStore.class);
@@ -518,6 +552,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildUpdateAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseUpdateTrustStore()
     {
         TrustStore mock = mock(TrustStore.class);
@@ -527,6 +562,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildUpdateAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseUpdateGroup()
     {
         GroupProvider groupProvider = mock(GroupProvider.class);
@@ -541,6 +577,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.GROUP, properties, Collections.singletonMap(ConfiguredObject.DESCRIPTION, "Test"));
     }
 
+    @Test
     public void testAuthoriseUpdateGroupMember()
     {
         Group group = mock(Group.class);
@@ -559,6 +596,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
                                   Collections.singletonMap(ConfiguredObject.DESCRIPTION, "Test"));
     }
 
+    @Test
     public void testAuthoriseUpdateVirtualHost()
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
@@ -575,12 +613,14 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
                                   Collections.singletonMap(ConfiguredObject.DESCRIPTION, "Test"));
     }
 
+    @Test
     public void testAuthoriseDeleteVirtualHostNode()
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
         assertDeleteAuthorization(vhn, LegacyOperation.DELETE, ObjectType.VIRTUALHOSTNODE, new ObjectProperties(vhn.getName()));
     }
 
+    @Test
     public void testAuthoriseDeletePort()
     {
         Port mock = mock(Port.class);
@@ -590,6 +630,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildDeleteAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseDeleteAuthenticationProvider()
     {
         AuthenticationProvider mock = mock(AuthenticationProvider.class);
@@ -599,6 +640,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildDeleteAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseDeleteGroupProvider()
     {
         GroupProvider mock = mock(GroupProvider.class);
@@ -608,6 +650,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildDeleteAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseDeleteAccessControlProvider()
     {
         AccessControlProvider mock = mock(AccessControlProvider.class);
@@ -617,6 +660,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildDeleteAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseBrokerLoggerOperations()
     {
         BrokerLogger mock = mock(BrokerLogger.class);
@@ -630,6 +674,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildDeleteAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseBrokerLogInclusionRuleOperations()
     {
         BrokerLogger bl = mock(BrokerLogger.class);
@@ -649,6 +694,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildDeleteAuthorization(mock);
     }
 
+    @Test
     public void testAuthoriseInvokeVirtualHostDescendantMethod()
     {
         String methodName = "clearQueue";
@@ -678,6 +724,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         verify(_accessControl).authorise(eq(LegacyOperation.INVOKE), eq(ObjectType.QUEUE), eq(properties));
         verify(_accessControl, never()).authorise(eq(LegacyOperation.PURGE), eq(ObjectType.QUEUE), any(ObjectProperties.class));
     }
+    @Test
     public void testAuthoriseInvokeBrokerDescendantMethod()
     {
         String methodName = "getStatistics";
@@ -698,6 +745,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         verify(_accessControl).authorise(eq(LegacyOperation.INVOKE), eq(ObjectType.VIRTUALHOSTNODE), eq(properties));
     }
 
+    @Test
     public void testAuthorisePurge()
     {
         Queue queue = mock(Queue.class);
@@ -726,6 +774,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
     }
 
+    @Test
     public void testAuthoriseLogsAccessOnBroker()
     {
         when(_accessControl.authorise(same(LegacyOperation.INVOKE),
@@ -743,10 +792,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         Result result = _adapter.authoriseMethod(logger, "getFile", Collections.singletonMap("fileName", "qpid.log"));
         assertEquals("Unexpected authorise result", Result.ALLOWED, result);
 
-
         verify(_accessControl).authorise(ACCESS_LOGS, BROKER, ObjectProperties.EMPTY);
     }
 
+    @Test
     public void testAuthoriseLogsAccessOnVirtualHost()
     {
         when(_accessControl.authorise(same(LegacyOperation.INVOKE),
@@ -768,6 +817,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         verify(_accessControl).authorise(ACCESS_LOGS, VIRTUALHOST, expectedObjectProperties);
     }
 
+    @Test
     public void testAuthoriseMethod()
     {
         when(_accessControl.authorise(same(LegacyOperation.INVOKE),
@@ -797,12 +847,14 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         verify(_accessControl).authorise(eq(LegacyOperation.UPDATE), eq(ObjectType.METHOD), eq(properties));
     }
 
+    @Test
     public void testAccessManagement()
     {
         _adapter.authoriseAction(_broker, "manage", Collections.emptyMap());
         verify(_accessControl).authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
     }
 
+    @Test
     public void testAuthorisePublish()
     {
         String routingKey = "routingKey";
@@ -825,6 +877,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         verify(_accessControl).authorise(eq(LegacyOperation.PUBLISH), eq(ObjectType.EXCHANGE), eq(properties));
     }
 
+    @Test
     public void testAuthoriseCreateConnection()
     {
         ObjectProperties properties = new ObjectProperties();

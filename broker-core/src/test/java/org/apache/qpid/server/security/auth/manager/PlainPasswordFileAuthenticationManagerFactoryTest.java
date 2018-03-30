@@ -19,38 +19,45 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.security.auth.database.PlainPasswordFilePrincipalDatabase;
-import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PlainPasswordFileAuthenticationManagerFactoryTest extends  TestCase
+public class PlainPasswordFileAuthenticationManagerFactoryTest extends UnitTestBase
 {
 
-    ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
+    private ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
     private Map<String, Object> _configuration = new HashMap<String, Object>();
     private File _emptyPasswordFile;
     private Broker _broker = BrokerTestHelper.createBrokerMock();
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
-        _emptyPasswordFile = File.createTempFile(getName(), "passwd");
+        _emptyPasswordFile = File.createTempFile(getTestName(), "passwd");
         _emptyPasswordFile.deleteOnExit();
         _configuration.put(AuthenticationProvider.ID, UUID.randomUUID());
-        _configuration.put(AuthenticationProvider.NAME, getName());
+        _configuration.put(AuthenticationProvider.NAME, getTestName());
     }
 
+    @Test
     public void testPlainInstanceCreated() throws Exception
     {
         _configuration.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
@@ -62,6 +69,7 @@ public class PlainPasswordFileAuthenticationManagerFactoryTest extends  TestCase
         assertTrue(((PrincipalDatabaseAuthenticationManager)manager).getPrincipalDatabase() instanceof PlainPasswordFilePrincipalDatabase);
     }
 
+    @Test
     public void testPasswordFileNotFound() throws Exception
     {
         //delete the file
@@ -78,6 +86,7 @@ public class PlainPasswordFileAuthenticationManagerFactoryTest extends  TestCase
         assertTrue(((PrincipalDatabaseAuthenticationManager)manager).getPrincipalDatabase() instanceof PlainPasswordFilePrincipalDatabase);
     }
 
+    @Test
     public void testThrowsExceptionWhenConfigForPlainPDImplementationNoPasswordFileValueSpecified() throws Exception
     {
         _configuration.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
@@ -93,19 +102,12 @@ public class PlainPasswordFileAuthenticationManagerFactoryTest extends  TestCase
         }
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
-        try
+        if (_emptyPasswordFile == null && _emptyPasswordFile.exists())
         {
-            if (_emptyPasswordFile == null && _emptyPasswordFile.exists())
-            {
-                _emptyPasswordFile.delete();
-            }
-        }
-        finally
-        {
-            super.tearDown();
+            _emptyPasswordFile.delete();
         }
     }
 }

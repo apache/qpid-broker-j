@@ -24,22 +24,40 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class ConfigTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ConfigTest extends UnitTestBase
 {
+    @Test
     public void testGetTestsForTestWithIteratingMessageSizes()
     {
         Config config = createConfigWithIteratingMessageSizes();
         List<TestInstance> testConfigs = config.getTests();
 
-        assertEquals("should have a test config for each message size", 2, testConfigs.size());
+        assertEquals("should have a test config for each message size", (long) 2, (long) testConfigs.size());
 
         TestInstance instance0 = testConfigs.get(0);
-        assertEquals(0, instance0.getIterationNumber());
+        assertEquals((long) 0, (long) instance0.getIterationNumber());
 
         TestInstance instance1 = testConfigs.get(1);
-        assertEquals(1, instance1.getIterationNumber());
+        assertEquals((long) 1, (long) instance1.getIterationNumber());
     }
 
     private Config createConfigWithIteratingMessageSizes()

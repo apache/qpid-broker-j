@@ -20,13 +20,19 @@
 
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.Assert.assertEquals;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageMetaDataFactoryTest extends QpidTestCase
+public class MessageMetaDataFactoryTest extends UnitTestBase
 {
     private static final String CONTENT_TYPE = "content/type";
     private final long _arrivalTime = System.currentTimeMillis();
@@ -34,23 +40,22 @@ public class MessageMetaDataFactoryTest extends QpidTestCase
     private final AMQShortString _exchange = AMQShortString.valueOf("exch");
     private MessageMetaData _mmd;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _mmd = createTestMessageMetaData();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
-        super.tearDown();
         if (_mmd != null)
         {
             _mmd.dispose();
         }
     }
 
+    @Test
     public void testUnmarshalFromSingleBuffer() throws Exception
     {
         try(QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocateDirect(_mmd.getStorableSize()))
@@ -61,9 +66,14 @@ public class MessageMetaDataFactoryTest extends QpidTestCase
             MessageMetaData recreated = MessageMetaData.FACTORY.createMetaData(qpidByteBuffer);
 
             assertEquals("Unexpected arrival time", _arrivalTime, recreated.getArrivalTime());
-            assertEquals("Unexpected routing key", _routingKey, recreated.getMessagePublishInfo().getRoutingKey());
-            assertEquals("Unexpected content type", CONTENT_TYPE, recreated.getContentHeaderBody().getProperties()
-                                                                               .getContentTypeAsString());
+            assertEquals("Unexpected routing key",
+                                _routingKey,
+                                recreated.getMessagePublishInfo().getRoutingKey());
+
+            assertEquals("Unexpected content type",
+                                CONTENT_TYPE,
+                                recreated.getContentHeaderBody().getProperties()
+                                         .getContentTypeAsString());
             recreated.dispose();
         }
     }

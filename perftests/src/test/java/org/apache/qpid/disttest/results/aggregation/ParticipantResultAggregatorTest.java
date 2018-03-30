@@ -23,10 +23,28 @@ import java.util.Date;
 
 import javax.jms.Session;
 
-import org.apache.qpid.disttest.message.ParticipantResult;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class ParticipantResultAggregatorTest extends QpidTestCase
+import org.apache.qpid.disttest.message.ParticipantResult;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ParticipantResultAggregatorTest extends UnitTestBase
 {
     private ParticipantResultAggregator _aggregator = new ParticipantResultAggregator(ParticipantResult.class, AGGREGATED_RESULT_NAME);
 
@@ -52,6 +70,7 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
     private static final double EXPECTED_AGGREGATED_ALL_THROUGHPUT = ((OVERALL_PROCESSED)/1024)/((OVERALL_TIMETAKEN)/1000);
     private static final int EXPECTED_AGGREGATED_MESSAGE_THROUGHPUT = (int)(OVERALL_NUMBER_OF_MESSAGES_PROCESSED * 1000.0d/OVERALL_TIMETAKEN);
 
+    @Test
     public void testStartAndEndDateForOneParticipantResult()
     {
         ParticipantResult result = new ParticipantResult();
@@ -64,6 +83,7 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         assertEquals(PARTICIPANT1_ENDDATE, aggregatedResult.getEndInMillis());
     }
 
+    @Test
     public void testStartAndEndDateForTwoParticipantResults()
     {
         ParticipantResult result1 = new ParticipantResult();
@@ -82,6 +102,7 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         assertEquals(PARTICIPANT2_ENDDATE, aggregatedResult.getEndInMillis());
     }
 
+    @Test
     public void testComputeNumberOfMessagesProcessed()
     {
         ParticipantResult result1 = new ParticipantResult();
@@ -94,9 +115,10 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(25, aggregatedResult.getNumberOfMessagesProcessed());
+        assertEquals((long) 25, aggregatedResult.getNumberOfMessagesProcessed());
     }
 
+    @Test
     public void testComputeTotalPayloadProcessed()
     {
         ParticipantResult result1 = new ParticipantResult();
@@ -112,6 +134,7 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         assertEquals(OVERALL_PROCESSED, aggregatedResult.getTotalPayloadProcessed());
     }
 
+    @Test
     public void testComputeThroughput()
     {
         ParticipantResult result1 = new ParticipantResult();
@@ -131,6 +154,7 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         assertEquals(EXPECTED_AGGREGATED_ALL_THROUGHPUT, aggregatedResult.getThroughput(), 0.1);
     }
 
+    @Test
     public void testComputeMessageThroughput()
     {
         ParticipantResult result1 = new ParticipantResult();
@@ -147,10 +171,11 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(EXPECTED_AGGREGATED_MESSAGE_THROUGHPUT, aggregatedResult.getMessageThroughput());
-
+        assertEquals((long) EXPECTED_AGGREGATED_MESSAGE_THROUGHPUT,
+                            (long) aggregatedResult.getMessageThroughput());
     }
 
+    @Test
     public void testConstantTestNameAndIterationNumberRolledUp() throws Exception
     {
         ParticipantResult result1 = new ParticipantResult();
@@ -165,10 +190,11 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(TEST_ITERATION_NUMBER, aggregatedResult.getIterationNumber());
+        assertEquals((long) TEST_ITERATION_NUMBER, (long) aggregatedResult.getIterationNumber());
         assertEquals(TEST_NAME, aggregatedResult.getTestName());
     }
 
+    @Test
     public void testConstantPayloadSizesRolledUp() throws Exception
     {
         final int payloadSize = 1024;
@@ -183,9 +209,10 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(payloadSize, aggregatedResult.getPayloadSize());
+        assertEquals((long) payloadSize, (long) aggregatedResult.getPayloadSize());
     }
 
+    @Test
     public void testDifferingPayloadSizesNotRolledUp() throws Exception
     {
         final int payload1Size = 1024;
@@ -201,9 +228,10 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(0, aggregatedResult.getPayloadSize());
+        assertEquals((long) 0, (long) aggregatedResult.getPayloadSize());
     }
 
+    @Test
     public void testConstantBatchSizesRolledUp() throws Exception
     {
         final int batchSize = 10;
@@ -218,9 +246,10 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(batchSize, aggregatedResult.getBatchSize());
+        assertEquals((long) batchSize, (long) aggregatedResult.getBatchSize());
     }
 
+    @Test
     public void testDifferingBatchSizesNotRolledUp() throws Exception
     {
         final int batch1Size = 10;
@@ -236,9 +265,10 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(0, aggregatedResult.getBatchSize());
+        assertEquals((long) 0, (long) aggregatedResult.getBatchSize());
     }
 
+    @Test
     public void testConstantAcknowledgeModesRolledUp() throws Exception
     {
         ParticipantResult result1 = new ParticipantResult();
@@ -251,9 +281,10 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(Session.DUPS_OK_ACKNOWLEDGE, aggregatedResult.getAcknowledgeMode());
+        assertEquals((long) Session.DUPS_OK_ACKNOWLEDGE, (long) aggregatedResult.getAcknowledgeMode());
     }
 
+    @Test
     public void testDifferingAcknowledgeModesNotRolledUp() throws Exception
     {
         ParticipantResult result1 = new ParticipantResult();
@@ -266,9 +297,10 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(-1, aggregatedResult.getAcknowledgeMode());
+        assertEquals((long) -1, (long) aggregatedResult.getAcknowledgeMode());
     }
 
+    @Test
     public void testSumNumberOfConsumerAndProducers() throws Exception
     {
         final int expectedNumberOfProducers = 1;
@@ -288,10 +320,11 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         _aggregator.aggregate(result3);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals(expectedNumberOfConsumers, aggregatedResult.getTotalNumberOfConsumers());
-        assertEquals(expectedNumberOfProducers, aggregatedResult.getTotalNumberOfProducers());
+        assertEquals((long) expectedNumberOfConsumers, (long) aggregatedResult.getTotalNumberOfConsumers());
+        assertEquals((long) expectedNumberOfProducers, (long) aggregatedResult.getTotalNumberOfProducers());
     }
 
+    @Test
     public void testConstantProtocolRolledUp() throws Exception
     {
         String protocolVersion = "PROTOCOL_VERSION";
@@ -309,6 +342,7 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         assertEquals(protocolVersion, aggregatedResult.getProtocolVersion());
     }
 
+    @Test
     public void testDifferingProtocolNotRolledUp() throws Exception
     {
         ParticipantResult result1 = new ParticipantResult();
@@ -324,6 +358,7 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         assertNull(aggregatedResult.getProtocolVersion());
     }
 
+    @Test
     public void testConstantProviderVersionRolledUp() throws Exception
     {
         String providerVersion = "PROVIDER_VERSION";
@@ -341,6 +376,7 @@ public class ParticipantResultAggregatorTest extends QpidTestCase
         assertEquals(providerVersion, aggregatedResult.getProtocolVersion());
     }
 
+    @Test
     public void testDifferingProviderVersionNotRolledUp() throws Exception
     {
         ParticipantResult result1 = new ParticipantResult();

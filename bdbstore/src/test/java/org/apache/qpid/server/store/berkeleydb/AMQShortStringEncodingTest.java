@@ -18,19 +18,25 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
+import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Tests for {@code AMQShortStringEncoding} including corner cases when string
  * is null or over 127 characters in length
  */
-public class AMQShortStringEncodingTest extends QpidTestCase
+public class AMQShortStringEncodingTest extends UnitTestBase
 {
 
+    @Test
     public void testWriteReadNullValues()
     {
         // write into tuple output
@@ -44,6 +50,7 @@ public class AMQShortStringEncodingTest extends QpidTestCase
         assertNull("Expected null but got " + result, result);
     }
 
+    @Test
     public void testWriteReadShortStringWithLengthOver127()
     {
         AMQShortString value = createString('a', 128);
@@ -59,6 +66,7 @@ public class AMQShortStringEncodingTest extends QpidTestCase
         assertEquals("Expected " + value + " but got " + result, value, result);
     }
 
+    @Test
     public void testWriteReadShortStringWithLengthLess127()
     {
         AMQShortString value = new AMQShortString("test");

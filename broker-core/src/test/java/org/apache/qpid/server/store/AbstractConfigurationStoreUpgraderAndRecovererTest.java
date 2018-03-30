@@ -19,20 +19,25 @@
 
 package org.apache.qpid.server.store;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.fail;
 
-public class AbstractConfigurationStoreUpgraderAndRecovererTest extends QpidTestCase
+import org.junit.Before;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class AbstractConfigurationStoreUpgraderAndRecovererTest extends UnitTestBase
 {
 
     private TestConfigurationStoreUpgraderAndRecoverer _recoverer;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _recoverer = new TestConfigurationStoreUpgraderAndRecoverer();
     }
 
+    @Test
     public void testRegister()
     {
         _recoverer.register(new TestStoreUpgraderPhase("0.0", "1.0"));
@@ -40,6 +45,7 @@ public class AbstractConfigurationStoreUpgraderAndRecovererTest extends QpidTest
         _recoverer.register(new TestStoreUpgraderPhase("1.1", "2.0"));
     }
 
+    @Test
     public void testRegisterFailsOnUnknownFromVersion()
     {
         _recoverer.register(new TestStoreUpgraderPhase("0.0", "1.0"));
@@ -54,6 +60,7 @@ public class AbstractConfigurationStoreUpgraderAndRecovererTest extends QpidTest
         }
     }
 
+    @Test
     public void testRegisterFailsOnNoVersionNumberChange()
     {
         _recoverer.register(new TestStoreUpgraderPhase("0.0", "1.0"));
@@ -68,6 +75,7 @@ public class AbstractConfigurationStoreUpgraderAndRecovererTest extends QpidTest
         }
     }
 
+    @Test
     public void testRegisterFailsOnDuplicateFromVersion()
     {
         _recoverer.register(new TestStoreUpgraderPhase("0.0", "1.0"));
@@ -82,6 +90,7 @@ public class AbstractConfigurationStoreUpgraderAndRecovererTest extends QpidTest
         }
     }
 
+    @Test
     public void testRegisterFailsOnUnexpectedFromVersionInFirstUpgrader()
     {
         try

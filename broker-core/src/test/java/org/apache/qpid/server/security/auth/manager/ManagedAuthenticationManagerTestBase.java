@@ -20,6 +20,12 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +37,10 @@ import java.util.concurrent.ExecutionException;
 
 import javax.security.auth.login.AccountNotFoundException;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -40,9 +50,9 @@ import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
+abstract class ManagedAuthenticationManagerTestBase extends UnitTestBase
 {
     private static final String TEST_USER_NAME = "admin";
     private static final String TEST_USER_PASSWORD = "admin";
@@ -52,10 +62,9 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
     private Broker _broker;
     private TaskExecutor _executor;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _executor = new CurrentThreadTaskExecutor();
         _executor.start();
         _broker = BrokerTestHelper.createBrokerMock();
@@ -69,11 +78,10 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
     }
 
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         _executor.stop();
-        super.tearDown();
     }
 
     protected abstract ConfigModelPasswordManagingAuthenticationProvider createAuthManager(final Map<String, Object> attributesMap);
@@ -89,12 +97,14 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
     }
 
 
+    @Test
     public void testMechanisms()
     {
         assertFalse("PLAIN authentication should not be available on an insecure connection", _authManager.getAvailableMechanisms(false).contains("PLAIN"));
         assertTrue("PLAIN authentication should be available on a secure connection", _authManager.getAvailableMechanisms(true).contains("PLAIN"));
     }
 
+    @Test
     public void testAddChildAndThenDelete() throws ExecutionException, InterruptedException
     {
         // No children should be present before the test starts
@@ -134,6 +144,7 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
 
     }
 
+    @Test
     public void testCreateUser() throws ExecutionException, InterruptedException
     {
         assertEquals("No users should be present before the test starts", 0, _authManager.getChildren(User.class).size());
@@ -181,6 +192,7 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
 
     protected abstract boolean isPlain();
 
+    @Test
     public void testUpdateUser()
     {
         assertTrue(_authManager.createUser(getTestName(), "password", Collections.<String, String>emptyMap()));
@@ -219,16 +231,15 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
 
         authResult = _authManager.authenticate(getTestName(), "newerpassword");
         assertEquals("User should authenticate with updated password", AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus());
-
-
-
     }
 
+    @Test
     public void testGetMechanisms() throws Exception
     {
         assertFalse("Should support at least one mechanism", _authManager.getMechanisms().isEmpty());
     }
 
+    @Test
     public void testAuthenticateValidCredentials() throws Exception
     {
         _authManager.createUser(TEST_USER_NAME, TEST_USER_PASSWORD, Collections.<String, String>emptyMap());
@@ -237,6 +248,7 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
         assertEquals("Unexpected result principal", TEST_USER_NAME, result.getMainPrincipal().getName());
     }
 
+    @Test
     public void testAuthenticateInvalidCredentials() throws Exception
     {
         _authManager.createUser(TEST_USER_NAME, TEST_USER_PASSWORD, Collections.<String, String>emptyMap());
@@ -245,6 +257,7 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
         assertNull("Unexpected result principal", result.getMainPrincipal());
     }
 
+    @Test
     public void testAllSaslMechanisms() throws Exception
     {
         final SaslSettings saslSettings = mock(SaslSettings.class);
@@ -256,6 +269,7 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
         }
     }
 
+    @Test
     public void testUnsupportedSaslMechanisms() throws Exception
     {
         final SaslSettings saslSettings = mock(SaslSettings.class);

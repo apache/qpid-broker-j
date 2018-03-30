@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.apache.qpid.server.queue.NotificationCheck.MESSAGE_AGE_ALERT;
+import static org.apache.qpid.server.queue.NotificationCheck.MESSAGE_COUNT_ALERT;
+import static org.apache.qpid.server.queue.NotificationCheck.MESSAGE_SIZE_ALERT;
+import static org.apache.qpid.server.queue.NotificationCheck.QUEUE_DEPTH_ALERT;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -27,24 +31,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-import static org.apache.qpid.server.queue.NotificationCheck.MESSAGE_AGE_ALERT;
-import static org.apache.qpid.server.queue.NotificationCheck.MESSAGE_COUNT_ALERT;
-import static org.apache.qpid.server.queue.NotificationCheck.MESSAGE_SIZE_ALERT;
-import static org.apache.qpid.server.queue.NotificationCheck.QUEUE_DEPTH_ALERT;
-
+import org.junit.Test;
 
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class NotificationCheckTest extends QpidTestCase
+public class NotificationCheckTest extends UnitTestBase
 {
 
     private ServerMessage<?> _message = mock(ServerMessage.class);
     private Queue<?> _queue = mock(Queue.class);
     private QueueNotificationListener _listener = mock(QueueNotificationListener .class);
 
+    @Test
     public void testMessageCountAlertFires() throws Exception
     {
         when(_queue.getAlertThresholdQueueDepthMessages()).thenReturn(1000l);
@@ -60,6 +61,7 @@ public class NotificationCheckTest extends QpidTestCase
         verify(_listener).notifyClients(eq(MESSAGE_COUNT_ALERT), eq(_queue), eq("1001: Maximum count on queue threshold (1000) breached."));
     }
 
+    @Test
     public void testMessageSizeAlertFires() throws Exception
     {
         when(_queue.getAlertThresholdMessageSize()).thenReturn(1024l);
@@ -75,6 +77,7 @@ public class NotificationCheckTest extends QpidTestCase
         verify(_listener).notifyClients(eq(MESSAGE_SIZE_ALERT), eq(_queue), contains("1025b : Maximum message size threshold (1024) breached."));
     }
 
+    @Test
     public void testMessageAgeAlertFires() throws Exception
     {
         long now = System.currentTimeMillis();
@@ -89,6 +92,7 @@ public class NotificationCheckTest extends QpidTestCase
         verify(_listener).notifyClients(eq(MESSAGE_AGE_ALERT), eq(_queue), contains("s : Maximum age on queue threshold (1s) breached."));
     }
 
+    @Test
     public void testQueueDepthAlertFires() throws Exception
     {
         when(_queue.getAlertThresholdQueueDepthBytes()).thenReturn(1024l);

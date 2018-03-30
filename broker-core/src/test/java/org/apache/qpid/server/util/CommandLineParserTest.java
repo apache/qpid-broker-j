@@ -21,17 +21,21 @@
 
 package org.apache.qpid.server.util;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Properties;
 
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
+
 /**
  * Unit tests the {@link CommandLineParser} class.
- *
+ * <p>
  * <p><table id="crc"><caption>CRC Card</caption>
  * <tr><th> Responsibilities <th> Collaborations
  * <tr><td> Check that parsing a single flag works ok.
@@ -58,25 +62,12 @@ import java.util.Properties;
  * <tr><td> Check that get options in force return a non-empty string after parsing.
  * </table>
  */
-public class CommandLineParserTest extends QpidTestCase
+public class CommandLineParserTest extends UnitTestBase
 {
     private static final Logger log = LoggerFactory.getLogger(CommandLineParserTest.class);
 
-    /**
-     * Compile all the tests for the default test implementation of a traversable state into a test suite.
-     */
-    public static Test suite()
-    {
-        // Build a new test suite
-        TestSuite suite = new TestSuite("CommandLineParser Tests");
-
-        // Add all the tests defined in this class (using the default constructor)
-        suite.addTestSuite(CommandLineParserTest.class);
-
-        return suite;
-    }
-
     /** Check that get errors returns an empty string on no errors. */
+    @Test
     public void testGetErrorsReturnsEmptyStringOnNoErrors() throws Exception
     {
         // Create a command line parser for some flags and options.
@@ -98,6 +89,7 @@ public class CommandLineParserTest extends QpidTestCase
     }
 
     /** Check that get errors returns a string on errors. */
+    @Test
     public void testGetErrorsReturnsStringOnErrors() throws Exception
     {
         // Create a command line parser for some flags and options.
@@ -120,12 +112,12 @@ public class CommandLineParserTest extends QpidTestCase
         { }
 
         // Check that the get errors message returns a string.
-        assertTrue("The errors method returned an empty string.",
-            !((parser.getErrors() == null) || "".equals(parser.getErrors())));
-
+        final boolean condition = !((parser.getErrors() == null) || "".equals(parser.getErrors()));
+        assertTrue("The errors method returned an empty string.", condition);
     }
 
     /** Check that get options in force returns an empty string before parsing. */
+    @Test
     public void testGetOptionsInForceReturnsEmptyStringBeforeParsing() throws Exception
     {
         // Create a command line parser for some flags and options.
@@ -140,10 +132,12 @@ public class CommandLineParserTest extends QpidTestCase
                 });
 
         // Check that the options in force method returns an empty string.
-        assertTrue("The options in force method did not return an empty string.", "".equals(parser.getOptionsInForce()));
+        assertTrue("The options in force method did not return an empty string.",
+                          "".equals(parser.getOptionsInForce()));
     }
 
     /** Check that get options in force return a non-empty string after parsing. */
+    @Test
     public void testGetOptionsInForceReturnsNonEmptyStringAfterParsing() throws Exception
     {
         // Create a command line parser for some flags and options.
@@ -161,11 +155,12 @@ public class CommandLineParserTest extends QpidTestCase
         parser.parseCommandLine(new String[] { "-t1", "-t2test", "-t3test", "-t4test" });
 
         // Check that the options in force method returns a string.
-        assertTrue("The options in force method did not return a non empty string.",
-            !((parser.getOptionsInForce() == null) || "".equals(parser.getOptionsInForce())));
+        final boolean condition = !((parser.getOptionsInForce() == null) || "".equals(parser.getOptionsInForce()));
+        assertTrue("The options in force method did not return a non empty string.", condition);
     }
 
     /** Check that get usage returns a string. */
+    @Test
     public void testGetUsageReturnsString() throws Exception
     {
         // Create a command line parser for some flags and options.
@@ -180,11 +175,12 @@ public class CommandLineParserTest extends QpidTestCase
                 });
 
         // Check that the usage method returns a string.
-        assertTrue("The usage method did not return a non empty string.",
-            !((parser.getUsage() == null) || "".equals(parser.getUsage())));
+        final boolean condition = !((parser.getUsage() == null) || "".equals(parser.getUsage()));
+        assertTrue("The usage method did not return a non empty string.", condition);
     }
 
     /** Check that parsing multiple flags condensed together works ok. */
+    @Test
     public void testParseCondensedFlagsOk() throws Exception
     {
         // Create a command line parser for multiple flags.
@@ -201,12 +197,16 @@ public class CommandLineParserTest extends QpidTestCase
         Properties testProps = parser.parseCommandLine(new String[] { "-t1t2t3" });
 
         // Check that the flags were set in the parsed properties.
-        assertTrue("The t1 flag was not \"true\", it was: " + testProps.get("t1"), "true".equals(testProps.get("t1")));
-        assertTrue("The t2 flag was not \"true\", it was: " + testProps.get("t2"), "true".equals(testProps.get("t2")));
-        assertTrue("The t3 flag was not \"true\", it was: " + testProps.get("t3"), "true".equals(testProps.get("t3")));
+        assertTrue("The t1 flag was not \"true\", it was: " + testProps.get("t1"),
+                          "true".equals(testProps.get("t1")));
+        assertTrue("The t2 flag was not \"true\", it was: " + testProps.get("t2"),
+                          "true".equals(testProps.get("t2")));
+        assertTrue("The t3 flag was not \"true\", it was: " + testProps.get("t3"),
+                          "true".equals(testProps.get("t3")));
     }
 
     /** Check that parsing a flag condensed together with an option fails. */
+    @Test
     public void testParseFlagCondensedWithOptionFails() throws Exception
     {
         // Create a command line parser for a flag and an option.
@@ -230,10 +230,12 @@ public class CommandLineParserTest extends QpidTestCase
             testPassed = true;
         }
 
-        assertTrue("IllegalArgumentException not thrown when a flag and option are condensed together.", testPassed);
+        assertTrue("IllegalArgumentException not thrown when a flag and option are condensed together.",
+                          testPassed);
     }
 
     /** Check that parsing a free argument with specific format fails on bad argument. */
+    @Test
     public void testParseFormattedFreeArgumentFailsBadArgument() throws Exception
     {
         // Create a command line parser for a formatted free argument.
@@ -260,6 +262,7 @@ public class CommandLineParserTest extends QpidTestCase
     }
 
     /** Check that parsing a free argument with specific format works ok. */
+    @Test
     public void testParseFormattedFreeArgumentOk() throws Exception
     {
         // Create a command line parser for a formatted free argument.
@@ -274,10 +277,11 @@ public class CommandLineParserTest extends QpidTestCase
 
         // Check that the resultant properties contains the correctly parsed option.
         assertTrue("The first free argument was not equal to \"test\" but was: " + testProps.get("1"),
-            "test".equals(testProps.get("1")));
+                          "test".equals(testProps.get("1")));
     }
 
     /** Check that parsing an option with specific argument format fails on bad argument. */
+    @Test
     public void testParseFormattedOptionArgumentFailsBadArgument() throws Exception
     {
         // Create a command line parser for a formatted option.
@@ -303,6 +307,7 @@ public class CommandLineParserTest extends QpidTestCase
     }
 
     /** Check that parsing an option with specific argument format works ok. */
+    @Test
     public void testParseFormattedOptionArgumentOk() throws Exception
     {
         // Create a command line parser for a formatted option.
@@ -316,10 +321,11 @@ public class CommandLineParserTest extends QpidTestCase
 
         // Check that the resultant properties contains the correctly parsed option.
         assertTrue("The test option was not equal to \"test\" but was: " + testProps.get("t"),
-            "test".equals(testProps.get("t")));
+                          "test".equals(testProps.get("t")));
     }
 
     /** Check that parsing a free argument works ok. */
+    @Test
     public void testParseFreeArgumentOk() throws Exception
     {
         // Create a command line parser for a free argument.
@@ -333,10 +339,11 @@ public class CommandLineParserTest extends QpidTestCase
 
         // Check that the resultant properties contains the correctly parsed option.
         assertTrue("The first free argument was not equal to \"test\" but was: " + testProps.get("1"),
-            "test".equals(testProps.get("1")));
+                          "test".equals(testProps.get("1")));
     }
 
     /** Check that parsing a mandatory option works ok. */
+    @Test
     public void testParseMandatoryOptionOk() throws Exception
     {
         // Create a command line parser for a mandatory option.
@@ -350,10 +357,11 @@ public class CommandLineParserTest extends QpidTestCase
 
         // Check that the resultant properties contains the correctly parsed option.
         assertTrue("The test option was not equal to \"test\" but was: " + testProps.get("t"),
-            "test".equals(testProps.get("t")));
+                          "test".equals(testProps.get("t")));
     }
 
     /** Check that parsing a mandatory free argument works ok. */
+    @Test
     public void testParseMandatoryFreeArgumentOk() throws Exception
     {
         // Create a command line parser for a mandatory free argument.
@@ -367,10 +375,11 @@ public class CommandLineParserTest extends QpidTestCase
 
         // Check that the resultant properties contains the correctly parsed option.
         assertTrue("The first free argument was not equal to \"test\" but was: " + testProps.get("1"),
-            "test".equals(testProps.get("1")));
+                          "test".equals(testProps.get("1")));
     }
 
     /** Check that parsing a mandatory free argument fails when no argument is specified. */
+    @Test
     public void testParseManadatoryFreeArgumentFailsNoArgument() throws Exception
     {
         // Create a command line parser for a mandatory free argument.
@@ -397,6 +406,7 @@ public class CommandLineParserTest extends QpidTestCase
     }
 
     /** Check that parsing a mandatory option fails when no option is set. */
+    @Test
     public void testParseMandatoryFailsNoOption() throws Exception
     {
         // Create a command line parser for a mandatory option.
@@ -423,6 +433,7 @@ public class CommandLineParserTest extends QpidTestCase
     }
 
     /** Check that parsing an option with no space between it and its argument works ok. */
+    @Test
     public void testParseOptionWithNoSpaceOk() throws Exception
     {
         // Create a command line parser for an option.
@@ -436,10 +447,11 @@ public class CommandLineParserTest extends QpidTestCase
 
         // Check that the resultant properties contains the correctly parsed option.
         assertTrue("The test option was not equal to \"test\" but was: " + testProps.get("t"),
-            "test".equals(testProps.get("t")));
+                          "test".equals(testProps.get("t")));
     }
 
     /** Check that parsing an option with a space between it and its argument works ok. */
+    @Test
     public void testParseOptionWithSpaceOk() throws Exception
     {
         // Create a command line parser for an option.
@@ -453,10 +465,11 @@ public class CommandLineParserTest extends QpidTestCase
 
         // Check that the resultant properties contains the correctly parsed option.
         assertTrue("The test option was not equal to \"test\" but was: " + testProps.get("t"),
-            "test".equals(testProps.get("t")));
+                          "test".equals(testProps.get("t")));
     }
 
     /** Check that parsing a single flag works ok. */
+    @Test
     public void testParseSingleFlagOk() throws Exception
     {
         // Create a command line parser for a single flag.
@@ -469,7 +482,8 @@ public class CommandLineParserTest extends QpidTestCase
         Properties testProps = parser.parseCommandLine(new String[] { "-t" });
 
         // Check that the flag is set in the parsed properties.
-        assertTrue("The t flag was not \"true\", it was: " + testProps.get("t"), "true".equals(testProps.get("t")));
+        assertTrue("The t flag was not \"true\", it was: " + testProps.get("t"),
+                          "true".equals(testProps.get("t")));
 
         // Reset the parser.
         parser.reset();
@@ -478,10 +492,12 @@ public class CommandLineParserTest extends QpidTestCase
         testProps = parser.parseCommandLine(new String[] {});
 
         // Check that the flag is cleared in the parsed properties.
-        assertTrue("The t flag was not \"false\", it was: " + testProps.get("t"), "false".equals(testProps.get("t")));
+        assertTrue("The t flag was not \"false\", it was: " + testProps.get("t"),
+                          "false".equals(testProps.get("t")));
     }
 
     /** Check that parsing an unknown option works when unknowns not errors. */
+    @Test
     public void testParseUnknownOptionOk() throws Exception
     {
         // Create a command line parser for no flags or options
@@ -499,6 +515,7 @@ public class CommandLineParserTest extends QpidTestCase
     }
 
     /** Check that parsing an unknown flag fails when unknowns are to be reported as errors. */
+    @Test
     public void testParseUnknownFlagFailsWhenUnknownsAreErrors() throws Exception
     {
         // Create a command line parser for no flags or options
@@ -520,10 +537,11 @@ public class CommandLineParserTest extends QpidTestCase
         }
 
         assertTrue("IllegalArgumentException not thrown for an unknown flag when errors on unknowns mode is on.",
-            testPassed);
+                          testPassed);
     }
 
     /** Check that parsing an unknown option fails when unknowns are to be reported as errors. */
+    @Test
     public void testParseUnknownOptionFailsWhenUnknownsAreErrors() throws Exception
     {
         // Create a command line parser for no flags or options
@@ -544,7 +562,8 @@ public class CommandLineParserTest extends QpidTestCase
             testPassed = true;
         }
 
-        assertTrue("IllegalArgumentException not thrown for an unknown option when errors on unknowns mode is on.",
-            testPassed);
+        assertTrue(
+                "IllegalArgumentException not thrown for an unknown option when errors on unknowns mode is on.",
+                testPassed);
     }
 }

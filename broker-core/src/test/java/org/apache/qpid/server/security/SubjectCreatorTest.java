@@ -18,6 +18,10 @@
  */
 package org.apache.qpid.server.security;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +34,8 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -42,9 +48,9 @@ import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationS
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SubjectCreatorTest extends QpidTestCase
+public class SubjectCreatorTest extends UnitTestBase
 {
     private static final UsernamePrincipal USERNAME_PRINCIPAL = new UsernamePrincipal("username", null);
     private static final String PASSWORD = "password";
@@ -63,7 +69,7 @@ public class SubjectCreatorTest extends QpidTestCase
     private byte[] _saslResponseBytes = PASSWORD.getBytes();
     private EventLogger _eventLogger;
 
-    @Override
+    @Before
     public void setUp()
     {
         when(_groupManager1.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(Collections.singleton(_group1));
@@ -77,6 +83,7 @@ public class SubjectCreatorTest extends QpidTestCase
         _authenticationResult = new AuthenticationResult(USERNAME_PRINCIPAL);
     }
 
+    @Test
     public void testSaslAuthenticationSuccessReturnsSubjectWithUserAndGroupPrincipals() throws Exception
     {
         when(_testSaslNegotiator.handleResponse(_saslResponseBytes)).thenReturn(_authenticationResult);
@@ -84,7 +91,10 @@ public class SubjectCreatorTest extends QpidTestCase
         SubjectAuthenticationResult result = _subjectCreator.authenticate(_testSaslNegotiator, _saslResponseBytes);
 
         final Subject actualSubject = result.getSubject();
-        assertEquals("Should contain one user principal and two groups ", 3, actualSubject.getPrincipals().size());
+        assertEquals("Should contain one user principal and two groups ",
+                            (long) 3,
+                            (long) actualSubject.getPrincipals().size());
+
 
         assertTrue(actualSubject.getPrincipals().contains(new AuthenticatedPrincipal(USERNAME_PRINCIPAL)));
         assertTrue(actualSubject.getPrincipals().contains(_group1));
@@ -93,6 +103,7 @@ public class SubjectCreatorTest extends QpidTestCase
         assertTrue(actualSubject.isReadOnly());
     }
 
+    @Test
     public void testAuthenticateUnsuccessfulReturnsNullSubjectAndCorrectStatus()
     {
         testUnsuccessfulAuthentication(AuthenticationResult.AuthenticationStatus.CONTINUE);
@@ -115,15 +126,19 @@ public class SubjectCreatorTest extends QpidTestCase
         {
             ArgumentCaptor<LogMessage> argument = ArgumentCaptor.forClass(LogMessage.class);
             verify(_eventLogger).message(argument.capture());
-            assertTrue("Unexpected operational log message", argument.getValue().toString().startsWith("ATH-1010"));
+            assertTrue("Unexpected operational log message",
+                              argument.getValue().toString().startsWith("ATH-1010"));
+
         }
     }
 
+    @Test
     public void testGetGroupPrincipals()
     {
         getAndAssertGroupPrincipals(_group1, _group2);
     }
 
+    @Test
     public void testGetGroupPrincipalsWhenAGroupManagerReturnsNull()
     {
         when(_groupManager1.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(null);
@@ -131,6 +146,7 @@ public class SubjectCreatorTest extends QpidTestCase
         getAndAssertGroupPrincipals(_group2);
     }
 
+    @Test
     public void testGetGroupPrincipalsWhenAGroupManagerReturnsEmptySet()
     {
         when(_groupManager2.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(new HashSet<Principal>());

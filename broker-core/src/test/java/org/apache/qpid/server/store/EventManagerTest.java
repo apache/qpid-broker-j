@@ -19,19 +19,22 @@
  */
 package org.apache.qpid.server.store;
 
+import static org.apache.qpid.server.store.Event.PERSISTENT_MESSAGE_SIZE_OVERFULL;
+import static org.apache.qpid.server.store.Event.PERSISTENT_MESSAGE_SIZE_UNDERFULL;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.apache.qpid.server.store.Event.PERSISTENT_MESSAGE_SIZE_UNDERFULL;
-import static org.apache.qpid.server.store.Event.PERSISTENT_MESSAGE_SIZE_OVERFULL;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class EventManagerTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class EventManagerTest extends UnitTestBase
 {
     private EventManager _eventManager = new EventManager();
     private EventListener _mockListener = mock(EventListener.class);
 
+    @Test
     public void testEventListenerFires()
     {
         _eventManager.addEventListener(_mockListener, PERSISTENT_MESSAGE_SIZE_OVERFULL);
@@ -39,6 +42,7 @@ public class EventManagerTest extends QpidTestCase
         verify(_mockListener).event(PERSISTENT_MESSAGE_SIZE_OVERFULL);
     }
 
+    @Test
     public void testEventListenerDoesntFire()
     {
         _eventManager.addEventListener(_mockListener, PERSISTENT_MESSAGE_SIZE_OVERFULL);
@@ -46,6 +50,7 @@ public class EventManagerTest extends QpidTestCase
         verifyZeroInteractions(_mockListener);
     }
 
+    @Test
     public void testEventListenerFiresMultipleTimes()
     {
         _eventManager.addEventListener(_mockListener, PERSISTENT_MESSAGE_SIZE_OVERFULL);
@@ -58,6 +63,7 @@ public class EventManagerTest extends QpidTestCase
         verify(_mockListener).event(PERSISTENT_MESSAGE_SIZE_UNDERFULL);
     }
 
+    @Test
     public void testMultipleListenersFireForSameEvent()
     {
         final EventListener mockListener1 = mock(EventListener.class);

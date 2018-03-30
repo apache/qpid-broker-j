@@ -22,17 +22,22 @@ package org.apache.qpid.server.security.auth.sasl.oauth2;
 
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class OAuth2NegotiatorTest extends QpidTestCase
+public class OAuth2NegotiatorTest extends UnitTestBase
 {
     private static final String VALID_TOKEN = "token";
     private static final byte[] VALID_RESPONSE = ("auth=Bearer " + VALID_TOKEN + "\1\1").getBytes();
@@ -43,39 +48,43 @@ public class OAuth2NegotiatorTest extends QpidTestCase
     private OAuth2Negotiator _negotiator;
     private OAuth2AuthenticationProvider<?> _authenticationProvider;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _authenticationProvider = mock(OAuth2AuthenticationProvider.class);
         _negotiator = new OAuth2Negotiator(_authenticationProvider, null);
     }
 
+    @Test
     public void testHandleResponse_ResponseHasAuthOnly() throws Exception
     {
         doHandleResponseWithValidResponse(VALID_RESPONSE);
     }
 
+    @Test
     public void testHandleResponse_ResponseAuthAndOthers() throws Exception
     {
         doHandleResponseWithValidResponse(VALID_TOKEN_WITH_CRUD);
     }
 
+    @Test
     public void testHandleResponse_ResponseAuthAbsent() throws Exception
     {
         AuthenticationResult actualResult = _negotiator.handleResponse(RESPONSE_WITH_NO_TOKEN);
         assertEquals("Unexpected result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     actualResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            actualResult.getStatus());
+
         assertNull("Unexpected result principal", actualResult.getMainPrincipal());
     }
 
+    @Test
     public void testHandleResponse_ResponseAuthMalformed() throws Exception
     {
         AuthenticationResult actualResult = _negotiator.handleResponse(RESPONSE_WITH_MALFORMED_AUTH);
         assertEquals("Unexpected result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     actualResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            actualResult.getStatus());
         assertNull("Unexpected result principal", actualResult.getMainPrincipal());
     }
 
@@ -90,21 +99,27 @@ public class OAuth2NegotiatorTest extends QpidTestCase
 
         AuthenticationResult secondResult = _negotiator.handleResponse(validResponse);
         assertEquals("Unexpected second result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     secondResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
     }
 
+    @Test
     public void testHandleNoInitialResponse() throws Exception
     {
         final AuthenticationResult result = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected authentication status", AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus());
+        assertEquals("Unexpected authentication status",
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            result.getStatus());
         assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
     }
 
+    @Test
     public void testHandleNoInitialResponseNull() throws Exception
     {
         final AuthenticationResult result = _negotiator.handleResponse(null);
-        assertEquals("Unexpected authentication status", AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus());
+        assertEquals("Unexpected authentication status",
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            result.getStatus());
         assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
     }
 }

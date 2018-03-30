@@ -21,6 +21,8 @@
 package org.apache.qpid.server.exchange;
 
 import static org.apache.qpid.server.filter.AMQPFilterTypes.JMS_SELECTOR;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,6 +37,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -47,21 +53,20 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class HeadersExchangeTest extends QpidTestCase
+public class HeadersExchangeTest extends UnitTestBase
 {
     private HeadersExchange<?> _exchange;
     private QueueManagingVirtualHost<?> _virtualHost;
     private InstanceProperties _instanceProperties;
     private ServerMessage<?> _messageWithNoHeaders;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
-        _virtualHost = BrokerTestHelper.createVirtualHost("test");
+        _virtualHost = BrokerTestHelper.createVirtualHost("test", this);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Exchange.NAME, "test");
@@ -76,15 +81,13 @@ public class HeadersExchangeTest extends QpidTestCase
 
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         if (_virtualHost  != null)
         {
             _virtualHost.close();
         }
-        super.tearDown();
-
     }
 
     private void routeAndTest(ServerMessage msg, Queue<?>... expected) throws Exception
@@ -97,7 +100,7 @@ public class HeadersExchangeTest extends QpidTestCase
         List<BaseQueue> missing = new ArrayList<>(Arrays.asList(expected));
         missing.removeAll(results);
         assertTrue("Message not delivered to expected queues: " + missing, missing.isEmpty());
-        assertTrue("Duplicates " + results, results.size()==(new HashSet<>(results)).size());
+        assertTrue("Duplicates " + results, results.size() == (new HashSet<>(results)).size());
     }
 
 
@@ -135,6 +138,7 @@ public class HeadersExchangeTest extends QpidTestCase
     }
 
 
+    @Test
     public void testSimple() throws Exception
     {
         Queue<?> q1 = createAndBind("Q1", "F0000");
@@ -156,6 +160,7 @@ public class HeadersExchangeTest extends QpidTestCase
 
     }
 
+    @Test
     public void testAny() throws Exception
     {
         Queue<?> q1 = createAndBind("Q1", "F0000", "F0001", "X-match=any");
@@ -172,6 +177,7 @@ public class HeadersExchangeTest extends QpidTestCase
         routeAndTest(createTestMessage(getArgsMapFromStrings("F0002")));
     }
 
+    @Test
     public void testOnUnbind() throws Exception
     {
         Queue<?> q1 = createAndBind("Q1", "F0000");
@@ -189,6 +195,7 @@ public class HeadersExchangeTest extends QpidTestCase
     }
 
 
+    @Test
     public void testWithSelectors() throws Exception
     {
         Queue<?> q1 = _virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, "Q1"));
@@ -217,6 +224,7 @@ public class HeadersExchangeTest extends QpidTestCase
 
     }
 
+    @Test
     public void testRouteToQueueViaTwoExchanges()
     {
         String bindingKey = "key";
@@ -240,6 +248,7 @@ public class HeadersExchangeTest extends QpidTestCase
         assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
     }
 
+    @Test
     public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKey()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -269,6 +278,7 @@ public class HeadersExchangeTest extends QpidTestCase
         assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
     }
 
+    @Test
     public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKeyAndFiltering()
     {
         String bindingKey = "key1";

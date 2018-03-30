@@ -27,9 +27,25 @@ import java.util.Map;
 
 import org.apache.qpid.disttest.message.CreateConnectionCommand;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class IterationValueTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class IterationValueTest extends UnitTestBase
 {
     private static final int MAXIMUM_DURATION = 10;
 
@@ -38,10 +54,9 @@ public class IterationValueTest extends QpidTestCase
     private CreateConsumerCommand _createConsumerCommand;
     private Map<String, String> _iterationValueMap;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _createConsumerCommand = mock(CreateConsumerCommand.class);
 
         _iterationValueMap = new HashMap<String, String>();
@@ -49,6 +64,7 @@ public class IterationValueTest extends QpidTestCase
         _iterationValueMap.put("_durableSubscription", String.valueOf(IS_DURABLE_SUBSCRIPTION));
     }
 
+    @Test
     public void testApplyPopulatedIterationValueToCommandWithMatchingProperties() throws Exception
     {
         IterationValue iterationValue = new IterationValue(_iterationValueMap);
@@ -59,6 +75,7 @@ public class IterationValueTest extends QpidTestCase
         verify(_createConsumerCommand).setDurableSubscription(IS_DURABLE_SUBSCRIPTION);
     }
 
+    @Test
     public void testApplyPopulatedIterationValueToCommandWithoutMatchingProperties() throws Exception
     {
         IterationValue iterationValue = new IterationValue(_iterationValueMap);
@@ -69,6 +86,7 @@ public class IterationValueTest extends QpidTestCase
         verifyZeroInteractions(createConnectionCommand);
     }
 
+    @Test
     public void testApplyUnpopulatedIterationValueToCommand() throws Exception
     {
         IterationValue iterationValue = new IterationValue();

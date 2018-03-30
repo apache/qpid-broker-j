@@ -21,25 +21,32 @@
 package org.apache.qpid.server.security.auth.manager.ldap;
 
 import static org.apache.qpid.server.security.auth.manager.ldap.LDAPSSLSocketFactoryGenerator.TARGET_PACKAGE_NAME;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class LDAPSSLSocketFactoryGeneratorTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class LDAPSSLSocketFactoryGeneratorTest extends UnitTestBase
 {
     private SSLSocketFactory _sslSocketFactory = mock(SSLSocketFactory.class);
 
+    @Test
     public void testPackageAndClassName() throws Exception
     {
         Class<? extends SocketFactory> socketFactoryClass = LDAPSSLSocketFactoryGenerator.createSubClass("MyNewClass", _sslSocketFactory);
+
         assertEquals("MyNewClass", socketFactoryClass.getSimpleName());
         assertEquals(TARGET_PACKAGE_NAME, socketFactoryClass.getPackage().getName());
     }
 
+    @Test
     public void testLoadingWithClassForName() throws Exception
     {
         Class<? extends AbstractLDAPSSLSocketFactory> socketFactoryClass = LDAPSSLSocketFactoryGenerator.createSubClass("MyNewClass", _sslSocketFactory);
@@ -61,6 +68,7 @@ public class LDAPSSLSocketFactoryGeneratorTest extends QpidTestCase
         assertEquals(socketFactoryClass, loaded);
     }
 
+    @Test
     public void testClassloaderDelegatesToParent() throws Exception
     {
         ClassLoader classLoader = LDAPSSLSocketFactoryGenerator.createSubClass("MyNewClass", _sslSocketFactory).getClassLoader();
@@ -68,12 +76,14 @@ public class LDAPSSLSocketFactoryGeneratorTest extends QpidTestCase
         assertEquals(TestClassForLoading.class, classLoader.loadClass(TestClassForLoading.class.getName()));
     }
 
+    @Test
     public void testGetDefaultCreatesInstance() throws Exception
     {
         Class<? extends AbstractLDAPSSLSocketFactory> socketFactoryClass = LDAPSSLSocketFactoryGenerator.createSubClass("MyNewClass", _sslSocketFactory);
 
         AbstractLDAPSSLSocketFactory socketFactory = invokeGetDefaultMethod(socketFactoryClass);
-        assertTrue(socketFactory instanceof AbstractLDAPSSLSocketFactory);
+        final boolean condition = socketFactory instanceof AbstractLDAPSSLSocketFactory;
+        assertTrue(condition);
         assertEquals("MyNewClass", socketFactory.getClass().getSimpleName());
     }
 

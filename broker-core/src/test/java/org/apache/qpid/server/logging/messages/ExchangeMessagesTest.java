@@ -22,6 +22,8 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
+import org.junit.Test;
+
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.BrokerTestHelper;
 
@@ -30,6 +32,7 @@ import org.apache.qpid.server.model.BrokerTestHelper;
  */
 public class ExchangeMessagesTest extends AbstractTestMessages
 {
+    @Test
     public void testExchangeCreated_Transient() throws Exception
     {
         Exchange<?> exchange = BrokerTestHelper.createExchange("test", false, getEventLogger());
@@ -45,6 +48,7 @@ public class ExchangeMessagesTest extends AbstractTestMessages
         validateLogMessageNoSubject(log, "EXH-1001", expected);
     }
 
+    @Test
     public void testExchangeCreated_Persistent() throws Exception
     {
         Exchange<?> exchange = BrokerTestHelper.createExchange("test", true, getEventLogger());
@@ -60,6 +64,7 @@ public class ExchangeMessagesTest extends AbstractTestMessages
         validateLogMessageNoSubject(log, "EXH-1001", expected);
     }
 
+    @Test
     public void testExchangeDeleted()
     {
         _logMessage = ExchangeMessages.DELETED();
@@ -70,6 +75,7 @@ public class ExchangeMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "EXH-1002", expected);
     }
 
+    @Test
     public void testExchangeDiscardedMessage() throws Exception
     {
         Exchange<?> exchange = BrokerTestHelper.createExchange("test", false, getEventLogger());

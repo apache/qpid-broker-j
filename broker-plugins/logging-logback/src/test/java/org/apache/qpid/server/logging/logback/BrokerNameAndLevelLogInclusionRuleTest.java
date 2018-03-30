@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,29 +34,29 @@ import java.util.Map;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.LogLevel;
-import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRule;
-import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRuleImpl;
-import org.apache.qpid.server.logging.logback.LoggerNameAndLevelFilter;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class BrokerNameAndLevelLogInclusionRuleTest extends QpidTestCase
+public class BrokerNameAndLevelLogInclusionRuleTest extends UnitTestBase
 {
     private BrokerLogger<?> _brokerLogger;
     private TaskExecutor _taskExecutor;
     private final Broker<?> _broker = mock(Broker.class);
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _taskExecutor =  new TaskExecutorImpl();
         _taskExecutor.start();
@@ -70,7 +73,7 @@ public class BrokerNameAndLevelLogInclusionRuleTest extends QpidTestCase
         doReturn(BrokerLogger.class).when(_brokerLogger).getCategoryClass();
    }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -79,24 +82,26 @@ public class BrokerNameAndLevelLogInclusionRuleTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
 
+    @Test
     public void testAsFilter()
     {
         BrokerNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
 
         Filter<ILoggingEvent> filter = rule.asFilter();
 
-        assertTrue("Unexpected filter instance", filter instanceof LoggerNameAndLevelFilter);
+        final boolean condition = filter instanceof LoggerNameAndLevelFilter;
+        assertTrue("Unexpected filter instance", condition);
 
         LoggerNameAndLevelFilter f = (LoggerNameAndLevelFilter)filter;
         assertEquals("Unexpected log level", Level.INFO, f.getLevel());
         assertEquals("Unexpected logger name", "org.apache.qpid", f.getLoggerName());
     }
 
+    @Test
     public void testLevelChangeAffectsFilter()
     {
         BrokerNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
@@ -109,6 +114,7 @@ public class BrokerNameAndLevelLogInclusionRuleTest extends QpidTestCase
         assertEquals("Unexpected log level attribute", Level.DEBUG, filter.getLevel());
     }
 
+    @Test
     public void testLoggerNameChangeNotAllowed()
     {
         BrokerNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);

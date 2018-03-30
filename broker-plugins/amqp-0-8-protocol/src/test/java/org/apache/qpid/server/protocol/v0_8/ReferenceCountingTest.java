@@ -20,40 +20,46 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.UUID;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.QpidException;
+import org.apache.qpid.server.message.EnqueueableMessage;
+import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
-import org.apache.qpid.server.message.EnqueueableMessage;
-import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.store.MessageCounter;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Tests that reference counting works correctly with AMQMessage and the message store
  */
-public class ReferenceCountingTest extends QpidTestCase
+public class ReferenceCountingTest extends UnitTestBase
 {
     private TestMemoryMessageStore _store;
 
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _store = new TestMemoryMessageStore();
     }
 
     /**
      * Check that when the reference count is decremented the message removes itself from the store
      */
+    @Test
     public void testMessageGetsRemoved() throws QpidException
     {
         ContentHeaderBody chb = createPersistentContentHeader();
@@ -70,11 +76,11 @@ public class ReferenceCountingTest extends QpidTestCase
 
         MessageReference ref = message.newReference();
 
-        assertEquals(1, getStoreMessageCount());
+        assertEquals((long) 1, (long) getStoreMessageCount());
 
         ref.release();
 
-        assertEquals(0, getStoreMessageCount());
+        assertEquals((long) 0, (long) getStoreMessageCount());
     }
 
     private int getStoreMessageCount()
@@ -92,6 +98,7 @@ public class ReferenceCountingTest extends QpidTestCase
         return chb;
     }
 
+    @Test
     public void testMessageRemains() throws QpidException
     {
 
@@ -110,10 +117,10 @@ public class ReferenceCountingTest extends QpidTestCase
 
         MessageReference ref = message.newReference();
 
-        assertEquals(1, getStoreMessageCount());
+        assertEquals((long) 1, (long) getStoreMessageCount());
         MessageReference ref2 = message.newReference();
         ref.release();
-        assertEquals(1, getStoreMessageCount());
+        assertEquals((long) 1, (long) getStoreMessageCount());
     }
 
     private TransactionLogResource createTransactionLogResource(final String queueName)

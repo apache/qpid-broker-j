@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.virtualhostnode.jdbc;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -40,17 +46,16 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.jdbc.JDBCContainer;
 import org.apache.qpid.server.store.jdbc.TestJdbcUtils;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class JDBCVirtualHostNodeTest extends QpidTestCase
+public class JDBCVirtualHostNodeTest extends UnitTestBase
 {
     private CurrentThreadTaskExecutor _taskExecutor;
     private String _connectionURL;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         if (_connectionURL != null)
@@ -59,13 +64,13 @@ public class JDBCVirtualHostNodeTest extends QpidTestCase
         }
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
-        super.tearDown();
         _taskExecutor.stopImmediately();
     }
 
+    @Test
     public void testInvalidTableNamePrefix() throws Exception
     {
         SystemConfig systemConfig = mock(SystemConfig.class);
@@ -111,6 +116,7 @@ public class JDBCVirtualHostNodeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDeleteAction()
     {
         _connectionURL = "jdbc:derby:memory:/" + getTestName();

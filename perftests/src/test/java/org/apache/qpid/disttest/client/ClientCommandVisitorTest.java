@@ -31,24 +31,40 @@ import org.apache.qpid.disttest.message.CreateSessionCommand;
 import org.apache.qpid.disttest.message.StartTestCommand;
 import org.apache.qpid.disttest.message.StopClientCommand;
 import org.apache.qpid.disttest.message.TearDownTestCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ClientCommandVisitorTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ClientCommandVisitorTest extends UnitTestBase
 {
     private Client _client;
     private ClientCommandVisitor _visitor;
     private ClientJmsDelegate _delegate;
 
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _client = mock(Client.class);
         _delegate = mock(ClientJmsDelegate.class);
         _visitor = new ClientCommandVisitor(_client, _delegate);
     }
 
+    @Test
     public void testStopClient()
     {
         StopClientCommand command = new StopClientCommand();
@@ -56,6 +72,7 @@ public class ClientCommandVisitorTest extends QpidTestCase
         verify(_client).stop();
     }
 
+    @Test
     public void testCreateConnection() throws Exception
     {
         final CreateConnectionCommand command = new CreateConnectionCommand();
@@ -63,6 +80,7 @@ public class ClientCommandVisitorTest extends QpidTestCase
         verify(_delegate).createConnection(command);
     }
 
+    @Test
     public void testCreateSession() throws Exception
     {
         final CreateSessionCommand command = new CreateSessionCommand();
@@ -70,6 +88,7 @@ public class ClientCommandVisitorTest extends QpidTestCase
         verify(_delegate).createSession(command);
     }
 
+    @Test
     public void testCreateProducer() throws Exception
     {
         final CreateProducerCommand command = new CreateProducerCommand();
@@ -77,6 +96,7 @@ public class ClientCommandVisitorTest extends QpidTestCase
         verify(_delegate).createProducer(command);
     }
 
+    @Test
     public void testCreateConsumer() throws Exception
     {
         final CreateConsumerCommand command = new CreateConsumerCommand();
@@ -84,6 +104,7 @@ public class ClientCommandVisitorTest extends QpidTestCase
         verify(_delegate).createConsumer(command);
     }
 
+    @Test
     public void testStartTest() throws Exception
     {
         final StartTestCommand command = new StartTestCommand();
@@ -91,6 +112,7 @@ public class ClientCommandVisitorTest extends QpidTestCase
         verify(_client).startTest();
     }
 
+    @Test
     public void testStopTest() throws Exception
     {
         final TearDownTestCommand stopCommand = new TearDownTestCommand();
@@ -98,6 +120,7 @@ public class ClientCommandVisitorTest extends QpidTestCase
         verify(_client).tearDownTest();
     }
 
+    @Test
     public void testCreateMessageProvider() throws Exception
     {
         final CreateMessageProviderCommand command = new CreateMessageProviderCommand();

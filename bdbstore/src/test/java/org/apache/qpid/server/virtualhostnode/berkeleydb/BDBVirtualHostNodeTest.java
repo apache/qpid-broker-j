@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
@@ -27,24 +32,30 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class BDBVirtualHostNodeTest extends QpidTestCase
+public class BDBVirtualHostNodeTest extends UnitTestBase
 {
     private Broker<?> _broker;
     private File _storePath;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+
         _broker = BrokerTestHelper.createBrokerMock();
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
@@ -53,22 +64,16 @@ public class BDBVirtualHostNodeTest extends QpidTestCase
         _storePath = TestFileUtils.createTestDirectory();
     }
 
-    @Override
-    public void  tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
-        try
+        if (_storePath != null)
         {
-            if (_storePath != null)
-            {
-                FileUtils.delete(_storePath, true);
-            }
-        }
-        finally
-        {
-            super.tearDown();
+            FileUtils.delete(_storePath, true);
         }
     }
 
+    @Test
     public void testValidateOnCreateForInvalidStorePath() throws Exception
     {
         String nodeName = getTestName();
@@ -88,7 +93,8 @@ public class BDBVirtualHostNodeTest extends QpidTestCase
         }
         catch (IllegalConfigurationException e)
         {
-            assertTrue("Unexpected exception " + e.getMessage(), e.getMessage().startsWith("Cannot open node configuration store"));
+            assertTrue("Unexpected exception " + e.getMessage(),
+                              e.getMessage().startsWith("Cannot open node configuration store"));
         }
     }
 

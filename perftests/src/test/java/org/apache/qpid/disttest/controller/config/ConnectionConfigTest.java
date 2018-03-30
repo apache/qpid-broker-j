@@ -27,28 +27,48 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.message.Command;
 import org.apache.qpid.disttest.message.CreateConnectionCommand;
 import org.apache.qpid.disttest.message.NoOpCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ConnectionConfigTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ConnectionConfigTest extends UnitTestBase
 {
     private static final String CONNECTION_FACTORY_NAME = "ConnectionFactoryName";
     private static final String CONNECTION_NAME = "ConnectionName";
 
+    @Test
     public void testConnectionConfigHasZeroArgConstructorForGson()
     {
         ConnectionConfig c = new ConnectionConfig();
         assertNotNull(c);
     }
 
+    @Test
     public void testCreateCommandsForConnectionAndChildren()
     {
         ConnectionConfig connectionConfig = createConnectionConfigWithChildCommands();
 
         List<Command> commands = connectionConfig.createCommands();
-        assertEquals(3, commands.size());
+        assertEquals((long) 3, (long) commands.size());
 
         assertCommandEquals(commands, 0, CreateConnectionCommand.class);
         assertCommandEquals(commands, 1, NoOpCommand.class);
@@ -59,10 +79,11 @@ public class ConnectionConfigTest extends QpidTestCase
         assertEquals(CONNECTION_FACTORY_NAME, createConnectionCommand.getConnectionFactoryName());
     }
 
+    @Test
     public void testGetTotalNumberOfParticipants()
     {
         ConnectionConfig connectionConfig = createConnectionConfigWithTwoParticipants();
-        assertEquals(2, connectionConfig.getTotalNumberOfParticipants());
+        assertEquals((long) 2, (long) connectionConfig.getTotalNumberOfParticipants());
     }
 
     private ConnectionConfig createConnectionConfigWithTwoParticipants()

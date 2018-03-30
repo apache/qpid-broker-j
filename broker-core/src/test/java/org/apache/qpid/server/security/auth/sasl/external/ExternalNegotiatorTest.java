@@ -21,24 +21,29 @@
 package org.apache.qpid.server.security.auth.sasl.external;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 
 import java.security.Principal;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.junit.Test;
+
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManager;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ExternalNegotiatorTest extends QpidTestCase
+public class ExternalNegotiatorTest extends UnitTestBase
 {
     private static final String VALID_USER_DN = "cn=test,dc=example,dc=com";
     private static final String VALID_USER_NAME = "test@example.com";
     private static final String USERNAME_NO_CN_DC = "ou=test,o=example,o=com";
 
+    @Test
     public void testHandleResponseUseFullDNValidExternalPrincipal() throws Exception
     {
         ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
@@ -48,18 +53,21 @@ public class ExternalNegotiatorTest extends QpidTestCase
 
         AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected first result status",
-                     AuthenticationResult.AuthenticationStatus.SUCCESS,
-                     firstResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            firstResult.getStatus());
+
         String principalName = firstResult.getMainPrincipal().getName();
         assertTrue(String.format("Unexpected first result principal '%s'", principalName),
-                   VALID_USER_DN.equalsIgnoreCase(principalName));
+                          VALID_USER_DN.equalsIgnoreCase(principalName));
+
 
         AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected second result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     secondResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
     }
 
+    @Test
     public void testHandleResponseNotUseFullDNValidExternalPrincipal() throws Exception
     {
         ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
@@ -69,17 +77,18 @@ public class ExternalNegotiatorTest extends QpidTestCase
 
         AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected first result status",
-                     AuthenticationResult.AuthenticationStatus.SUCCESS,
-                     firstResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            firstResult.getStatus());
         String principalName = firstResult.getMainPrincipal().getName();
         assertEquals("Unexpected first result principal", VALID_USER_NAME, principalName);
 
         AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected second result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     secondResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
     }
 
+    @Test
     public void testHandleResponseNotUseFullDN_No_CN_DC_In_ExternalPrincipal() throws Exception
     {
         ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
@@ -89,11 +98,12 @@ public class ExternalNegotiatorTest extends QpidTestCase
 
         AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected first result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     firstResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            firstResult.getStatus());
         assertNull("Unexpected first result principal", firstResult.getMainPrincipal());
     }
 
+    @Test
     public void testHandleResponseUseFullDN_No_CN_DC_In_ExternalPrincipal() throws Exception
     {
         ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
@@ -103,18 +113,19 @@ public class ExternalNegotiatorTest extends QpidTestCase
 
         AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected first result status",
-                     AuthenticationResult.AuthenticationStatus.SUCCESS,
-                     firstResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            firstResult.getStatus());
         String principalName = firstResult.getMainPrincipal().getName();
         assertTrue(String.format("Unexpected first result principal '%s'", principalName),
-                   USERNAME_NO_CN_DC.equalsIgnoreCase(principalName));
+                          USERNAME_NO_CN_DC.equalsIgnoreCase(principalName));
 
         AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected second result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     secondResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
     }
 
+    @Test
     public void testHandleResponseFailsWithoutExternalPrincipal() throws Exception
     {
         ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
@@ -123,12 +134,13 @@ public class ExternalNegotiatorTest extends QpidTestCase
 
         AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected first result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     firstResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            firstResult.getStatus());
         assertNull("Unexpected first result principal", firstResult.getMainPrincipal());
     }
 
 
+    @Test
     public void testHandleResponseSucceedsForNonX500Principal() throws Exception
     {
         ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
@@ -138,13 +150,13 @@ public class ExternalNegotiatorTest extends QpidTestCase
 
         AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected first result status",
-                     AuthenticationResult.AuthenticationStatus.SUCCESS,
-                     firstResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            firstResult.getStatus());
         assertEquals("Unexpected first result principal", principal, firstResult.getMainPrincipal());
 
         AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected second result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     secondResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
     }
 }

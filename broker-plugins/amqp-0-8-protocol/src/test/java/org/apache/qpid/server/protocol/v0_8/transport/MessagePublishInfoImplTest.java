@@ -20,23 +20,30 @@
  */
 package org.apache.qpid.server.protocol.v0_8.transport;
 
-import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-public class MessagePublishInfoImplTest extends QpidTestCase
+import org.junit.Before;
+import org.junit.Test;
+
+import org.apache.qpid.server.protocol.v0_8.AMQShortString;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class MessagePublishInfoImplTest extends UnitTestBase
 {
     private MessagePublishInfo _mpi;
     private final AMQShortString _exchange = new AMQShortString("exchange");
     private final AMQShortString _routingKey = new AMQShortString("routingKey");
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _mpi = new MessagePublishInfo(_exchange, true, true, _routingKey);
     }
 
     /** Test that we can update the exchange value. */
+    @Test
     public void testExchange()
     {
         assertEquals(_exchange, _mpi.getExchange());
@@ -51,6 +58,7 @@ public class MessagePublishInfoImplTest extends QpidTestCase
     /**
      * Check that the immedate value is set correctly and defaulted correctly
      */
+    @Test
     public void testIsImmediate()
     {
         //Check that the set value is correct
@@ -61,14 +69,14 @@ public class MessagePublishInfoImplTest extends QpidTestCase
         assertFalse("Default value for immediate should be false", mpi.isImmediate());
 
         mpi.setImmediate(true);
-        
-        assertTrue("Updated value for immediate not as expected", mpi.isImmediate());
 
+        assertTrue("Updated value for immediate not as expected", mpi.isImmediate());
     }
 
     /**
      * Check that the mandatory value is set correctly and defaulted correctly
      */
+    @Test
     public void testIsMandatory()
     {
         assertTrue("Set value for mandatory not as expected", _mpi.isMandatory());
@@ -85,6 +93,7 @@ public class MessagePublishInfoImplTest extends QpidTestCase
     /**
      * Check that the routingKey value is perserved
      */
+    @Test
     public void testRoutingKey()
     {
         assertEquals(_routingKey, _mpi.getRoutingKey());
@@ -95,6 +104,5 @@ public class MessagePublishInfoImplTest extends QpidTestCase
         assertEquals(newRoutingKey, _mpi.getRoutingKey());
         //Ensure that the new routingKey doesn't equal the old one
         assertFalse(_routingKey.equals(_mpi.getRoutingKey()));
-
     }
 }

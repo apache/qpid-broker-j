@@ -19,27 +19,33 @@
 
 package org.apache.qpid.server.model.preferences;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class GenericPrincipalTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class GenericPrincipalTest extends UnitTestBase
 {
     private static final String UTF8 = StandardCharsets.UTF_8.name();
     private String _username;
     private String _originType;
     private String _originName;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _username = "testuser";
         _originType = "authType";
         _originName = "authName";
     }
 
+    @Test
     public void testParseSimple() throws Exception
     {
         GenericPrincipal p = new GenericPrincipal(String.format("%s@%s('%s')", _username, _originType, _originName));
@@ -48,6 +54,7 @@ public class GenericPrincipalTest extends QpidTestCase
         assertEquals("unexpected origin name", _originName, p.getOriginName());
     }
 
+    @Test
     public void testNoOriginInfo() throws Exception
     {
         try
@@ -61,6 +68,7 @@ public class GenericPrincipalTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testParseWithDash() throws Exception
     {
         String username = "user-name";
@@ -72,6 +80,7 @@ public class GenericPrincipalTest extends QpidTestCase
         assertEquals("unexpected origin name", originName, p.getOriginName());
     }
 
+    @Test
     public void testRejectQuotes() throws Exception
     {
         final String usernameWithQuote = "_username'withQuote";
@@ -107,6 +116,7 @@ public class GenericPrincipalTest extends QpidTestCase
 
     }
 
+    @Test
     public void testRejectParenthesis() throws Exception
     {
         final String usernameWithParenthesis = "username(withParenthesis";
@@ -142,6 +152,7 @@ public class GenericPrincipalTest extends QpidTestCase
 
     }
 
+    @Test
     public void testRejectAtSign() throws Exception
     {
         final String _usernameWithAtSign = "_username@withAtSign";
@@ -176,6 +187,7 @@ public class GenericPrincipalTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testUrlEncoded() throws Exception
     {
         final String username = "testuser@withFunky%";

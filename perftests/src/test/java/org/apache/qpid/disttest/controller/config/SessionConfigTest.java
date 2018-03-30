@@ -29,44 +29,65 @@ import java.util.List;
 
 import javax.jms.Session;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.message.Command;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.CreateSessionCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class SessionConfigTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class SessionConfigTest extends UnitTestBase
 {
     private static final String CONNECTION_NAME = "conn1";
     private static final String SESSION = "session1";
 
+    @Test
     public void testSessionHasZeroArgConstructorForGson()
     {
         SessionConfig s = new SessionConfig();
         assertNotNull(s);
     }
 
+    @Test
     public void testCreateCommandsForSessionAndChildren()
     {
         SessionConfig sessionConfig = createSessionConfigWithChildCommands();
 
         List<Command> commands = sessionConfig.createCommands(CONNECTION_NAME);
-        assertEquals(3, commands.size());
+        assertEquals((long) 3, (long) commands.size());
 
         assertCommandEquals(commands, 0, CreateSessionCommand.class);
         assertCommandEquals(commands, 1, CreateProducerCommand.class);
         assertCommandEquals(commands, 2, CreateConsumerCommand.class);
 
         CreateSessionCommand createSessionCommand = getCommand(commands, 0);
-        assertEquals(Session.AUTO_ACKNOWLEDGE, createSessionCommand.getAcknowledgeMode());
+        assertEquals((long) Session.AUTO_ACKNOWLEDGE, (long) createSessionCommand.getAcknowledgeMode());
         assertEquals(SESSION, createSessionCommand.getSessionName());
         assertEquals(CONNECTION_NAME, createSessionCommand.getConnectionName());
     }
 
+    @Test
     public void testGetTotalNumberOfParticipants()
     {
         SessionConfig sessionConfig = createSessionConfigWithOneConsumerAndOneProducer();
-        assertEquals(2, sessionConfig.getTotalNumberOfParticipants());
+        assertEquals((long) 2, (long) sessionConfig.getTotalNumberOfParticipants());
     }
 
     private SessionConfig createSessionConfigWithOneConsumerAndOneProducer()

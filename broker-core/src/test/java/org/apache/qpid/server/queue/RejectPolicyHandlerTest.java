@@ -19,8 +19,12 @@
 
 package org.apache.qpid.server.queue;
 
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageInstance;
@@ -29,17 +33,16 @@ import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class RejectPolicyHandlerTest extends QpidTestCase
+public class RejectPolicyHandlerTest extends UnitTestBase
 {
     private RejectPolicyHandler _rejectOverflowPolicyHandler;
     private Queue<?> _queue;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _queue = mock(Queue.class);
         when(_queue.getName()).thenReturn("testQueue");
@@ -52,6 +55,7 @@ public class RejectPolicyHandlerTest extends QpidTestCase
         _rejectOverflowPolicyHandler = new RejectPolicyHandler(_queue);
     }
 
+    @Test
     public void testOverfullBytes() throws Exception
     {
         ServerMessage incomingMessage = createIncomingMessage(6);
@@ -70,6 +74,7 @@ public class RejectPolicyHandlerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testOverfullMessages() throws Exception
     {
         ServerMessage incomingMessage = createIncomingMessage(5);
@@ -88,6 +93,7 @@ public class RejectPolicyHandlerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testNotOverfullMessages() throws Exception
     {
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(1L);
@@ -103,6 +109,7 @@ public class RejectPolicyHandlerTest extends QpidTestCase
 
         _rejectOverflowPolicyHandler.checkReject(incomingMessage2);
    }
+    @Test
     public void testNotOverfullBytes() throws Exception
     {
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(9L);
@@ -118,6 +125,7 @@ public class RejectPolicyHandlerTest extends QpidTestCase
         _rejectOverflowPolicyHandler.checkReject(incomingMessage2);
     }
 
+    @Test
     public void testIncomingMessageDeleted() throws Exception
     {
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(1L);

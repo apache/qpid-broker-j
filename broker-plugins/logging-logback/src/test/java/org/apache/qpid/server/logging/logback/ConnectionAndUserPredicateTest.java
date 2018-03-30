@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,24 +32,25 @@ import java.util.HashSet;
 import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ConnectionAndUserPredicateTest extends QpidTestCase
+public class ConnectionAndUserPredicateTest extends UnitTestBase
 {
     private static final String TEST_USER = "testUser@foo('bar')";
     private ConnectionAndUserPredicate _predicate;
     private Subject _subject;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _predicate = new ConnectionAndUserPredicate();
         _subject = new Subject(false,
                                new HashSet<>(Collections.singleton(new AuthenticatedPrincipal(new GenericPrincipal(
@@ -57,6 +60,7 @@ public class ConnectionAndUserPredicateTest extends QpidTestCase
     }
 
 
+    @Test
     public void testEvaluateUsername()
     {
         _predicate.setUsernamePattern("testUser.*");
@@ -65,7 +69,8 @@ public class ConnectionAndUserPredicateTest extends QpidTestCase
             @Override
             public Void run()
             {
-                assertTrue("predicate unexpectedly did not match", _predicate.evaluate(mock(ILoggingEvent.class)));
+                assertTrue("predicate unexpectedly did not match",
+                                  _predicate.evaluate(mock(ILoggingEvent.class)));
                 return null;
             }
         });
@@ -81,6 +86,7 @@ public class ConnectionAndUserPredicateTest extends QpidTestCase
         });
     }
 
+    @Test
     public void testEvaluateRemoteContainerIdAndUsername()
     {
         AMQPConnection connection = mock(AMQPConnection.class);
@@ -94,7 +100,8 @@ public class ConnectionAndUserPredicateTest extends QpidTestCase
             @Override
             public Void run()
             {
-                assertTrue("predicate unexpectedly did not match", _predicate.evaluate(mock(ILoggingEvent.class)));
+                assertTrue("predicate unexpectedly did not match",
+                                  _predicate.evaluate(mock(ILoggingEvent.class)));
                 return null;
             }
         });
@@ -122,6 +129,7 @@ public class ConnectionAndUserPredicateTest extends QpidTestCase
     }
 
 
+    @Test
     public void testEvaluateConnectionNameForAmqp()
     {
         AMQPConnection connection = mock(AMQPConnection.class);
@@ -134,7 +142,8 @@ public class ConnectionAndUserPredicateTest extends QpidTestCase
             @Override
             public Void run()
             {
-                assertTrue("predicate unexpectedly did not match", _predicate.evaluate(mock(ILoggingEvent.class)));
+                assertTrue("predicate unexpectedly did not match",
+                                  _predicate.evaluate(mock(ILoggingEvent.class)));
                 return null;
             }
         });
@@ -150,6 +159,7 @@ public class ConnectionAndUserPredicateTest extends QpidTestCase
         });
     }
 
+    @Test
     public void testEvaluateConnectionNameForHttp()
     {
         ManagementConnectionPrincipal principal = mock(ManagementConnectionPrincipal.class);
@@ -161,7 +171,8 @@ public class ConnectionAndUserPredicateTest extends QpidTestCase
             @Override
             public Void run()
             {
-                assertTrue("predicate unexpectedly did not match", _predicate.evaluate(mock(ILoggingEvent.class)));
+                assertTrue("predicate unexpectedly did not match",
+                                  _predicate.evaluate(mock(ILoggingEvent.class)));
                 return null;
             }
         });

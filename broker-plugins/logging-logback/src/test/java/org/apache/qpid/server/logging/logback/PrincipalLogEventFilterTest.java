@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import java.security.Principal;
@@ -29,11 +30,12 @@ import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.spi.FilterReply;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.apache.qpid.server.logging.logback.PrincipalLogEventFilter;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PrincipalLogEventFilterTest extends QpidTestCase
+public class PrincipalLogEventFilterTest extends UnitTestBase
 {
 
     private PrincipalLogEventFilter _principalLogEventFilter;
@@ -41,15 +43,15 @@ public class PrincipalLogEventFilterTest extends QpidTestCase
     private Subject _subject;
     private Principal _principal;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _subject = new Subject();
         _principal = mock(Principal.class);
         _principalLogEventFilter = new PrincipalLogEventFilter(_principal);
     }
 
+    @Test
     public void testPrincipalMatches()
     {
         _subject.getPrincipals().add(_principal);
@@ -59,6 +61,7 @@ public class PrincipalLogEventFilterTest extends QpidTestCase
         assertEquals(FilterReply.NEUTRAL, reply);
     }
 
+    @Test
     public void testNoPrincipal()
     {
         FilterReply reply = doFilter();
@@ -66,6 +69,7 @@ public class PrincipalLogEventFilterTest extends QpidTestCase
         assertEquals(FilterReply.DENY, reply);
     }
 
+    @Test
     public void testWrongPrincipal()
     {
         _subject.getPrincipals().add(mock(Principal.class));
@@ -75,6 +79,7 @@ public class PrincipalLogEventFilterTest extends QpidTestCase
         assertEquals(FilterReply.DENY, reply);
     }
 
+    @Test
     public void testNoSubject()
     {
         _subject.getPrincipals().add(mock(Principal.class));

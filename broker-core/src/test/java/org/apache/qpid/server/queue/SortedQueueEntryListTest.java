@@ -19,33 +19,30 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-
 public class SortedQueueEntryListTest extends QueueEntryListTestBase
 {
     private static SelfValidatingSortedQueueEntryList _sqel;
@@ -80,18 +77,18 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
 
     private SortedQueueImpl _testQueue;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
         Map<String,Object> attributes = new HashMap<String,Object>();
         attributes.put(Queue.ID,UUID.randomUUID());
-        attributes.put(Queue.NAME, getName());
+        attributes.put(Queue.NAME, getTestName());
         attributes.put(Queue.DURABLE, false);
         attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);
         attributes.put(SortedQueue.SORT_KEY, "KEY");
 
         // Create test list
-        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH");
+        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
         _testQueue = new SortedQueueImpl(attributes, virtualHost)
         {
             SelfValidatingSortedQueueEntryList _entries;
@@ -110,8 +107,6 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         };
         _testQueue.open();
         _sqel = (SelfValidatingSortedQueueEntryList) _testQueue.getEntries();
-
-        super.setUp();
 
         // Create result array
         Arrays.sort(keysSorted);
@@ -188,6 +183,7 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
     }
 
     @Override
+    @Test
     public void testIterator() throws Exception
     {
         super.testIterator();
@@ -197,8 +193,9 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         int count = 0;
         while(iter.advance())
         {
-            assertEquals("Sorted queue entry value does not match sorted key array",
-                            keysSorted[count++], getSortedKeyValue(iter));
+            final Object expected = keysSorted[count++];
+            assertEquals("Sorted queue entry value does not match sorted key array", expected,
+                                getSortedKeyValue(iter));
         }
     }
 
@@ -212,6 +209,7 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         return (iter.getNode()).getMessage().getMessageNumber();
     }
 
+    @Test
     public void testNonUniqueSortKeys() throws Exception
     {
         _sqel = new SelfValidatingSortedQueueEntryList(_testQueue);
@@ -229,10 +227,12 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         while(iter.advance())
         {
             assertEquals("Sorted queue entry value is not as expected", "samekey", getSortedKeyValue(iter));
-            assertEquals("Message id not as expected", Long.valueOf(count++), getMessageId(iter));
+            final Object expected = Long.valueOf(count++);
+            assertEquals("Message id not as expected", expected, getMessageId(iter));
         }
     }
 
+    @Test
     public void testNullSortKeys() throws Exception
     {
         _sqel = new SelfValidatingSortedQueueEntryList(_testQueue);
@@ -250,10 +250,12 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         while(iter.advance())
         {
             assertNull("Sorted queue entry value is not as expected", getSortedKeyValue(iter));
-            assertEquals("Message id not as expected", Long.valueOf(count++), getMessageId(iter));
+            final Object expected = Long.valueOf(count++);
+            assertEquals("Message id not as expected", expected, getMessageId(iter));
         }
     }
 
+    @Test
     public void testAscendingSortKeys() throws Exception
     {
         _sqel = new SelfValidatingSortedQueueEntryList(_testQueue);
@@ -277,6 +279,7 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         }
     }
 
+    @Test
     public void testDescendingSortKeys() throws Exception
     {
         _sqel = new SelfValidatingSortedQueueEntryList(_testQueue);
@@ -295,11 +298,14 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         while(iter.advance())
         {
             assertEquals("Sorted queue entry value is not as expected", textkeys[count], getSortedKeyValue(iter));
-            assertEquals("Message id not as expected", Long.valueOf(textkeys.length-count-1), getMessageId(iter));
+            assertEquals("Message id not as expected",
+                                Long.valueOf(textkeys.length - count - 1),
+                                getMessageId(iter));
             count++;
         }
     }
 
+    @Test
     public void testInsertAfter() throws Exception
     {
         _sqel = new SelfValidatingSortedQueueEntryList(_testQueue);
@@ -320,6 +326,7 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         validateEntry(entry, "B", 2);
     }
 
+    @Test
     public void testInsertBefore() throws Exception
     {
         _sqel = new SelfValidatingSortedQueueEntryList(_testQueue);
@@ -340,6 +347,7 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         validateEntry(entry, "B", 1);
     }
 
+    @Test
     public void testInsertInbetween() throws Exception
     {
         _sqel = new SelfValidatingSortedQueueEntryList(_testQueue);
@@ -371,6 +379,7 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         validateEntry(entry, "C", 2);
     }
 
+    @Test
     public void testInsertAtHead() throws Exception
     {
         _sqel = new SelfValidatingSortedQueueEntryList(_testQueue);
@@ -418,6 +427,7 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         validateEntry(entry, "D", 2);
     }
 
+    @Test
     public void testGetLeastSignificantOldestEntry()
     {
         SortedQueueEntryList list = new SortedQueueEntryList(_testQueue, _testQueue.getQueueStatistics());
@@ -438,9 +448,12 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
     private void validateEntry(final SortedQueueEntry entry, final String expectedSortKey, final long expectedMessageId)
     {
         assertEquals("Sorted queue entry value is not as expected",
-                        expectedSortKey, entry.getMessage().getMessageHeader().getHeader("KEY"));
+                            expectedSortKey,
+                            entry.getMessage().getMessageHeader().getHeader("KEY"));
         assertEquals("Sorted queue entry id is not as expected",
-                        expectedMessageId, entry.getMessage().getMessageNumber());
+                            expectedMessageId,
+                            entry.getMessage().getMessageNumber());
+
     }
 
 }

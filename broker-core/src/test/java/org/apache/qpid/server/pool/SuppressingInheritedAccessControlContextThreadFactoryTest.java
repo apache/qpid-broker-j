@@ -21,7 +21,9 @@
 package org.apache.qpid.server.pool;
 
 
-import javax.security.auth.Subject;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
@@ -32,13 +34,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import javax.security.auth.Subject;
 
-public class SuppressingInheritedAccessControlContextThreadFactoryTest extends QpidTestCase
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class SuppressingInheritedAccessControlContextThreadFactoryTest extends UnitTestBase
 {
+    @Test
     public void testAccessControlContextIsNotInheritedByThread() throws Exception
     {
-        final String principalName = getName();
+        final String principalName = getTestName();
         final CountDownLatch latch = new CountDownLatch(1);
 
         final AtomicReference<AccessControlContext> threadAccessControlContextCapturer = new AtomicReference<>();
@@ -91,7 +98,6 @@ public class SuppressingInheritedAccessControlContextThreadFactoryTest extends Q
 
         assertEquals("Unexpected subject in main thread", callerSubject, subject);
         assertNull("Unexpected subject in executor thread", threadSubject);
-
     }
 
 }

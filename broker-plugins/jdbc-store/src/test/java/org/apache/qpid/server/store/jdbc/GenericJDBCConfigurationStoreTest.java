@@ -23,6 +23,7 @@ package org.apache.qpid.server.store.jdbc;
 
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.assertTablesExistence;
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.getTableNames;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +32,8 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.Test;
 
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
@@ -60,6 +63,7 @@ public class GenericJDBCConfigurationStoreTest extends AbstractDurableConfigurat
         }
     }
 
+    @Test
     public void testOnDelete() throws Exception
     {
         try(Connection connection = openConnection())
@@ -75,6 +79,7 @@ public class GenericJDBCConfigurationStoreTest extends AbstractDurableConfigurat
         }
     }
 
+    @Test
     public void testDeleteAction()
     {
         GenericJDBCConfigurationStore store = (GenericJDBCConfigurationStore) getConfigurationStore();

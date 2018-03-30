@@ -21,16 +21,22 @@
 
 package org.apache.qpid.server.protocol.v0_10.transport;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * GenTest
- *
  */
-
-public class GenTest extends QpidTestCase
+public class GenTest extends UnitTestBase
 {
 
+    @Test
     public void testBooleans()
     {
         QueueDeclare qd = new QueueDeclare().queue("test-queue").durable(false);

@@ -41,11 +41,29 @@ import org.apache.qpid.disttest.message.Command;
 import org.apache.qpid.disttest.message.RegisterClientCommand;
 import org.apache.qpid.disttest.message.Response;
 import org.apache.qpid.disttest.message.StopClientCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
+
+import org.junit.Assert;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-public class ControllerTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ControllerTest extends UnitTestBase
 {
     private static final String CLIENT1_REGISTERED_NAME = "client-uid1";
 
@@ -53,10 +71,9 @@ public class ControllerTest extends QpidTestCase
     private ControllerJmsDelegate _respondingJmsDelegate;
     private ClientRegistry _clientRegistry;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _respondingJmsDelegate = mock(ControllerJmsDelegate.class);
         final Map<String, String> controllerOptions = new HashMap<>();
         controllerOptions.put(ControllerRunner.REGISTRATION_TIMEOUT, String.valueOf(REGISTRATION_TIMEOUT));
@@ -83,6 +100,7 @@ public class ControllerTest extends QpidTestCase
     }
 
 
+    @Test
     public void testControllerRejectsEmptyConfiguration()
     {
         Config configWithZeroClients = createMockConfig(0);
@@ -98,6 +116,7 @@ public class ControllerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testControllerReceivesTwoExpectedClientRegistrations()
     {
         Config configWithTwoClients = createMockConfig(2);
@@ -107,6 +126,7 @@ public class ControllerTest extends QpidTestCase
         _controller.awaitClientRegistrations();
     }
 
+    @Test
     public void testControllerDoesntReceiveAnyRegistrations()
     {
         when(_clientRegistry.awaitClients(1, REGISTRATION_TIMEOUT)).thenReturn(1);
@@ -122,6 +142,7 @@ public class ControllerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testRegisterClient()
     {
         RegisterClientCommand command = new RegisterClientCommand(CLIENT1_REGISTERED_NAME, "dummy");
@@ -132,6 +153,7 @@ public class ControllerTest extends QpidTestCase
 
     }
 
+    @Test
     public void testControllerSendsClientStopCommandToClient()
     {
         when(_clientRegistry.getClients()).thenReturn(Collections.singleton(CLIENT1_REGISTERED_NAME));

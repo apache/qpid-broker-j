@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +30,10 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -47,19 +54,18 @@ import org.apache.qpid.server.queue.StandardQueueImpl;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class VirtualHostQueueCreationTest extends QpidTestCase
+public class VirtualHostQueueCreationTest extends UnitTestBase
 {
     private VirtualHost<?> _virtualHost;
     private VirtualHostNode _virtualHostNode;
     private TaskExecutor _taskExecutor;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         EventLogger eventLogger = mock(EventLogger.class);
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
@@ -95,7 +101,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         _virtualHost = createHost();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -105,14 +111,13 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
     private VirtualHost<?> createHost()
     {
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHost.NAME, getName());
+        attributes.put(VirtualHost.NAME, getTestName());
         attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
 
         attributes = new HashMap<>(attributes);
@@ -123,6 +128,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         return host;
     }
 
+    @Test
     public void testPriorityQueueRegistration() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -134,15 +140,21 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
         Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
-        assertTrue("Queue not a priority queue", queue instanceof PriorityQueueImpl);
+        final boolean condition = queue instanceof PriorityQueueImpl;
+        assertTrue("Queue not a priority queue", condition);
         assertNotNull("Queue " + "testPriorityQueue" + " was not created", _virtualHost.getChildByName(Queue.class,
-                                                                                                       "testPriorityQueue"));
-        assertEquals("Queue was not registered in virtualhost", 1, _virtualHost.getChildren(Queue.class).size());
+                                                                                                              "testPriorityQueue"));
+
+
+        assertEquals("Queue was not registered in virtualhost",
+                            (long) 1,
+                            (long) _virtualHost.getChildren(Queue.class).size());
     }
 
+    @Test
     public void testSimpleQueueCreation() throws Exception
     {
-        String queueName = getName();
+        String queueName = getTestName();
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Queue.ID, UUID.randomUUID());
@@ -150,12 +162,17 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
 
         Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
-        assertTrue("Queue not a simple queue", queue instanceof StandardQueueImpl);
-        assertNotNull("Queue " + queueName + " was not created", _virtualHost.getChildByName(Queue.class, queueName));
+        final boolean condition = queue instanceof StandardQueueImpl;
+        assertTrue("Queue not a simple queue", condition);
+        assertNotNull("Queue " + queueName + " was not created",
+                             _virtualHost.getChildByName(Queue.class, queueName));
 
-        assertEquals("Queue was not registered in virtualhost", 1, _virtualHost.getChildren(Queue.class).size());
+        assertEquals("Queue was not registered in virtualhost",
+                            (long) 1,
+                            (long) _virtualHost.getChildren(Queue.class).size());
     }
 
+    @Test
     public void testMaximumDeliveryCount() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -167,11 +184,15 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         final Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
         assertNotNull("The queue was not registered as expected ", queue);
-        assertEquals("Maximum delivery count not as expected", 5, queue.getMaximumDeliveryAttempts());
+        assertEquals("Maximum delivery count not as expected", (long) 5, (long) queue.getMaximumDeliveryAttempts
+                ());
 
-        assertEquals("Queue was not registered in virtualhost", 1, _virtualHost.getChildren(Queue.class).size());
+        assertEquals("Queue was not registered in virtualhost",
+                            (long) 1,
+                            (long) _virtualHost.getChildren(Queue.class).size());
     }
 
+    @Test
     public void testMessageGroupQueue() throws Exception
     {
 

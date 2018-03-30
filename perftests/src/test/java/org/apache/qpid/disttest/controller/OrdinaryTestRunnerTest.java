@@ -42,11 +42,29 @@ import org.apache.qpid.disttest.message.Response;
 import org.apache.qpid.disttest.message.StartDataCollectionCommand;
 import org.apache.qpid.disttest.message.StartTestCommand;
 import org.apache.qpid.disttest.message.TearDownTestCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
+
+import org.junit.Assert;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-public class OrdinaryTestRunnerTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class OrdinaryTestRunnerTest extends UnitTestBase
 {
     private static final String PARTICIPANT_NAME = "TEST_PARTICIPANT_NAME";
 
@@ -62,10 +80,9 @@ public class OrdinaryTestRunnerTest extends QpidTestCase
     private ParticipatingClients _participatingClients;
     private Set<CommandListener> _spiedCommandListeners = new HashSet<>();
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _respondingJmsDelegate = mock(ControllerJmsDelegate.class);
 
         // Spy on the command listeners, so we can pass responses back to the test runner
@@ -99,6 +116,7 @@ public class OrdinaryTestRunnerTest extends QpidTestCase
         when(_participatingClients.getRegisteredNames()).thenReturn(Collections.singleton(CLIENT1_REGISTERED_NAME));
     }
 
+    @Test
     public void testSuccessfulTestRunReturnsTestResult()
     {
         ParticipantResult participantResult = new ParticipantResult(PARTICIPANT_NAME);
@@ -118,9 +136,13 @@ public class OrdinaryTestRunnerTest extends QpidTestCase
                                              TEST_RESULT_TIMEOUT);
         TestResult testResult = _testRunner.run();
         assertNotNull(testResult);
-        assertEquals("Unexpected number of participant results", 1, testResult.getParticipantResults().size());
+        assertEquals("Unexpected number of participant results",
+                            (long) 1,
+                            (long) testResult.getParticipantResults().size());
+
     }
 
+    @Test
     public void testClientRespondingWithErrorResponseStopsTest()
     {
         Response errorResponse = new Response(CLIENT1_REGISTERED_NAME, CommandType.CREATE_CONNECTION, "error occurred");
@@ -143,11 +165,11 @@ public class OrdinaryTestRunnerTest extends QpidTestCase
         catch (DistributedTestException e)
         {
             assertEquals("One or more clients were unable to successfully process commands. "
-                         + "1 command(s) generated an error response.",
-                         e.getMessage());
+                                + "1 command(s) generated an error response.", e.getMessage());
         }
     }
 
+    @Test
     public void testClientFailsToSendCommandResponseWithinTimeout()
     {
         configureMockToReturnResponseTo(CreateConnectionCommand.class,
@@ -167,8 +189,9 @@ public class OrdinaryTestRunnerTest extends QpidTestCase
         }
         catch (DistributedTestException e)
         {
-            assertEquals("After 1000ms ... Timed out waiting for command responses ... Expecting 1 more response(s).",
-                         e.getMessage());
+            assertEquals(
+                    "After 1000ms ... Timed out waiting for command responses ... Expecting 1 more response(s).",
+                    e.getMessage());
         }
     }
 

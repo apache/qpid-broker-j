@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.store.jdbc;
 
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import java.security.Principal;
@@ -26,14 +27,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class JDBCSystemConfigTest extends QpidTestCase
+public class JDBCSystemConfigTest extends UnitTestBase
 {
+    @Test
     public void testInvalidTableNamePrefix() throws Exception
     {
         final TaskExecutor taskExecutor = new CurrentThreadTaskExecutor();

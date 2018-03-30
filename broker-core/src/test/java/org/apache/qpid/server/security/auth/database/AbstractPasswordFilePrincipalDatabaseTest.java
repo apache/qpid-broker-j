@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.security.auth.database;
 
+import static org.junit.Assert.fail;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -27,10 +29,14 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.After;
+import org.junit.Test;
 
-public abstract class AbstractPasswordFilePrincipalDatabaseTest extends QpidTestCase
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+
+public abstract class AbstractPasswordFilePrincipalDatabaseTest extends UnitTestBase
 {
     protected static final String TEST_COMMENT = "# Test Comment";
     protected static final String TEST_USERNAME = "testUser";
@@ -42,7 +48,7 @@ public abstract class AbstractPasswordFilePrincipalDatabaseTest extends QpidTest
 
     protected abstract AbstractPasswordFilePrincipalDatabase getDatabase();
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -61,7 +67,6 @@ public abstract class AbstractPasswordFilePrincipalDatabaseTest extends QpidTest
         }
         finally
         {
-            super.tearDown();
         }
     }
 
@@ -116,6 +121,7 @@ public abstract class AbstractPasswordFilePrincipalDatabaseTest extends QpidTest
     }
 
 
+    @Test
     public void testRejectUsernameWithColon() throws Exception
     {
         String usernameWithColon = "user:name";
@@ -135,6 +141,7 @@ public abstract class AbstractPasswordFilePrincipalDatabaseTest extends QpidTest
         }
     }
 
+    @Test
     public void testRejectPasswordWithColon() throws Exception
     {
         String username = "username";

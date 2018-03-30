@@ -20,23 +20,28 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class MapJsonSerializerTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class MapJsonSerializerTest extends UnitTestBase
 {
     private MapJsonSerializer _serializer;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _serializer = new MapJsonSerializer();
 
     }
 
+    @Test
     public void testSerializeDeserialize() throws Exception
     {
         Map<String, Object> testMap = new HashMap<>();

@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -27,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
 
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.TestConsumerTarget;
@@ -38,10 +44,10 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-
 public class StandardQueueTest extends AbstractQueueTestBase
 {
 
+    @Test
     public void testAutoDeleteQueue() throws Exception
     {
         getQueue().close();
@@ -61,8 +67,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
 
         getQueue().enqueue(message, null, null);
         consumer.close();
-        assertTrue("Queue was not deleted when consumer was removed",
-                   getQueue().isDeleted());
+        assertTrue("Queue was not deleted when consumer was removed", getQueue().isDeleted());
     }
 
 
@@ -91,11 +96,9 @@ public class StandardQueueTest extends AbstractQueueTestBase
 
         // assert received messages
         List<MessageInstance> messages = consumer.getMessages();
-        assertEquals("Only 2 messages should be returned", 2, messages.size());
-        assertEquals("ID of first message should be 1", 1l,
-                     (messages.get(0).getMessage()).getMessageNumber());
-        assertEquals("ID of second message should be 3", 3l,
-                     (messages.get(1).getMessage()).getMessageNumber());
+        assertEquals("Only 2 messages should be returned", (long) 2, (long) messages.size());
+        assertEquals("ID of first message should be 1", 1l, (messages.get(0).getMessage()).getMessageNumber());
+        assertEquals("ID of second message should be 3", 3l, (messages.get(1).getMessage()).getMessageNumber());
     }
 
     /**
@@ -169,6 +172,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         verifyReceivedMessages(expected, consumer.getMessages());
     }
 
+    @Test
     public void testNonDurableImpliesMessageDurabilityNever() throws Exception
     {
         getQueue().close();

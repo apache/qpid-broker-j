@@ -20,6 +20,8 @@
 package org.apache.qpid.server.store.preferences;
 
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 
 import java.security.PrivilegedAction;
@@ -31,6 +33,10 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -41,9 +47,9 @@ import org.apache.qpid.server.model.testmodels.hierarchy.TestCar;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestEngine;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestModel;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PreferencesRecovererTest extends QpidTestCase
+public class PreferencesRecovererTest extends UnitTestBase
 {
     public static final String TEST_USERNAME = "testUser";
     private final Model _model = TestModel.getInstance();
@@ -54,10 +60,9 @@ public class PreferencesRecovererTest extends QpidTestCase
     private TaskExecutor _preferenceTaskExecutor;
     private PreferencesRecoverer _recoverer;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _store = mock(PreferenceStore.class);
         _testObject = _model.getObjectFactory()
                             .create(TestCar.class,
@@ -70,13 +75,13 @@ public class PreferencesRecovererTest extends QpidTestCase
         _recoverer = new PreferencesRecoverer(_preferenceTaskExecutor);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         _preferenceTaskExecutor.stop();
-        super.tearDown();
     }
 
+    @Test
     public void testRecoverEmptyPreferences() throws Exception
     {
         _recoverer.recoverPreferences(_testObject, Collections.<PreferenceRecord>emptyList(), _store);
@@ -84,6 +89,7 @@ public class PreferencesRecovererTest extends QpidTestCase
         assertNotNull("Child object should have UserPreferences", _testChildObject.getUserPreferences());
     }
 
+    @Test
     public void testRecoverPreferences() throws Exception
     {
         final UUID p1Id = UUID.randomUUID();
@@ -116,10 +122,11 @@ public class PreferencesRecovererTest extends QpidTestCase
             public Void run()
             {
                 Set<Preference> preferences = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
-                assertEquals("Unexpected number of preferences", 1, preferences.size());
+                assertEquals("Unexpected number of preferences", (long) 1, (long) preferences.size());
 
                 Set<Preference> childPreferences = awaitPreferenceFuture(_testChildObject.getUserPreferences().getPreferences());
-                assertEquals("Unexpected number of preferences", 1, childPreferences.size());
+
+                assertEquals("Unexpected number of preferences", (long) 1, (long) childPreferences.size());
                 return null;
             }
         });

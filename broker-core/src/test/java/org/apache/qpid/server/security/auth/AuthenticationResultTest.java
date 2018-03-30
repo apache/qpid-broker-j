@@ -19,7 +19,11 @@
 package org.apache.qpid.server.security.auth;
 
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
-import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrappedAndSecondaryPrincipals;
+import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper
+        .assertOnlyContainsWrappedAndSecondaryPrincipals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import java.security.Principal;
@@ -28,17 +32,22 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class AuthenticationResultTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class AuthenticationResultTest extends UnitTestBase
 {
+    @Test
     public void testConstructWithAuthenticationStatusContinue()
     {
         AuthenticationResult authenticationResult = new AuthenticationResult(AuthenticationResult.AuthenticationStatus.CONTINUE);
+
         assertSame(AuthenticationResult.AuthenticationStatus.CONTINUE, authenticationResult.getStatus());
         assertTrue(authenticationResult.getPrincipals().isEmpty());
     }
 
+    @Test
     public void testConstructWithAuthenticationStatusError()
     {
         AuthenticationResult authenticationResult = new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
@@ -46,6 +55,7 @@ public class AuthenticationResultTest extends QpidTestCase
         assertTrue(authenticationResult.getPrincipals().isEmpty());
     }
 
+    @Test
     public void testConstructWithAuthenticationStatusSuccessThrowsException()
     {
         try
@@ -59,6 +69,7 @@ public class AuthenticationResultTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testConstructWithPrincipal()
     {
         Principal mainPrincipal = mock(Principal.class);
@@ -68,6 +79,7 @@ public class AuthenticationResultTest extends QpidTestCase
         assertSame(AuthenticationResult.AuthenticationStatus.SUCCESS, authenticationResult.getStatus());
     }
 
+    @Test
     public void testConstructWithNullPrincipalThrowsException()
     {
         try
@@ -81,6 +93,7 @@ public class AuthenticationResultTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testConstructWithSetOfPrincipals()
     {
         Principal mainPrincipal = mock(Principal.class);
@@ -93,6 +106,7 @@ public class AuthenticationResultTest extends QpidTestCase
         assertSame(AuthenticationResult.AuthenticationStatus.SUCCESS, authenticationResult.getStatus());
     }
 
+    @Test
     public void testConstructWithSetOfPrincipalsDeDuplicatesMainPrincipal()
     {
         Principal mainPrincipal = mock(Principal.class);

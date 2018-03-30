@@ -29,6 +29,9 @@ import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.NE
 import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.NEW_XID_DB_NAME;
 import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.OLD_CONTENT_DB_NAME;
 import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.OLD_XID_DB_NAME;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -47,6 +50,7 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +60,6 @@ import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
-import org.apache.qpid.server.txn.Xid;
 import org.apache.qpid.server.store.berkeleydb.tuple.XidBinding;
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.CompoundKey;
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.CompoundKeyBinding;
@@ -72,6 +75,7 @@ import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.OldPrepar
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.OldRecordImpl;
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.UpgradeConfiguredObjectRecord;
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.UpgradeUUIDBinding;
+import org.apache.qpid.server.txn.Xid;
 
 public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
 {
@@ -84,6 +88,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
         return "bdbstore-v5";
     }
 
+    @Test
     public void testPerformUpgrade() throws Exception
     {
         UpgradeFrom5To6 upgrade = new UpgradeFrom5To6();
@@ -96,6 +101,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
         assertQueueEntries();
     }
 
+    @Test
     public void testPerformUpgradeWithMissingMessageChunkKeepsIncompleteMessage() throws Exception
     {
         corruptDatabase();
@@ -109,6 +115,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
         assertQueueEntries();
     }
 
+    @Test
     public void testPerformUpgradeWithMissingMessageChunkDiscardsIncompleteMessage() throws Exception
     {
         corruptDatabase();
@@ -126,9 +133,10 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
         assertQueueEntries();
     }
 
+    @Test
     public void testPerformXidUpgrade() throws Exception
     {
-        File storeLocation = new File(TMP_FOLDER, getName());
+        File storeLocation = new File(TMP_FOLDER, getTestName());
         storeLocation.mkdirs();
         Environment environment = createEnvironment(storeLocation);
         try

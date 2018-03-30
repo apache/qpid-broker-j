@@ -29,15 +29,33 @@ import org.apache.qpid.disttest.charting.definition.ChartingDefinition;
 import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
 import org.apache.qpid.disttest.charting.seriesbuilder.DatasetHolder;
 import org.apache.qpid.disttest.charting.seriesbuilder.SeriesBuilder;
-import org.apache.qpid.test.utils.QpidTestCase;
+
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.general.Dataset;
+import org.junit.Assert;
 
-public class BaseChartBuilderTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class BaseChartBuilderTest extends UnitTestBase
 {
     private static final String CHART_TITLE = "CHART_TITLE";
     private static final String CHART_SUB_TITLE = "CHART_SUB_TITLE";
@@ -56,10 +74,9 @@ public class BaseChartBuilderTest extends QpidTestCase
 
     private JFreeChart _jFreeChart;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         Plot plot = new CategoryPlot();
         _jFreeChart = new JFreeChart(plot);
@@ -71,6 +88,7 @@ public class BaseChartBuilderTest extends QpidTestCase
         when(_chartingDefinition.getSeriesDefinitions()).thenReturn(_seriesDefinitions );
     }
 
+    @Test
     public void testBuildChart()
     {
         BaseChartBuilder chartBuilder = new ChartBuilder(_seriesBuilder, _strokeAndPaintApplier, _datasetHolder)
@@ -89,8 +107,11 @@ public class BaseChartBuilderTest extends QpidTestCase
         JFreeChart chart = chartBuilder.buildChart(_chartingDefinition);
 
         assertEquals(BaseChartBuilder.BLUE_GRADIENT, chart.getBackgroundPaint());
-        assertEquals("The *second* subtitle of the generated chart should have the text from the chart definition",
-                CHART_SUB_TITLE, ((TextTitle)chart.getSubtitle(1)).getText());
+        assertEquals(
+                "The *second* subtitle of the generated chart should have the text from the chart definition",
+                CHART_SUB_TITLE,
+                ((TextTitle)chart.getSubtitle(1)).getText());
+
         verify(_seriesPainter).applySeriesAppearance(_jFreeChart, _seriesDefinitions, _strokeAndPaintApplier);
     }
 

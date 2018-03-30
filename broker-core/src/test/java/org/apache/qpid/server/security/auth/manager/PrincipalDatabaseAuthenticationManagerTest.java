@@ -21,6 +21,11 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -36,7 +41,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -44,16 +54,15 @@ import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationS
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.database.PlainPasswordFilePrincipalDatabase;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
-import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Tests the public methods of PrincipalDatabaseAuthenticationManager.
- *
  */
-public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
+public class PrincipalDatabaseAuthenticationManagerTest extends UnitTestBase
 {
     private static final String MOCK_MECH_NAME = "MOCK-MECH-NAME";
 
@@ -62,15 +71,14 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
     private String _passwordFileLocation;
     private SaslNegotiator _saslNegotiator = mock(SaslNegotiator.class);
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
-        _passwordFileLocation = TMP_FOLDER + File.separator + PrincipalDatabaseAuthenticationManagerTest.class.getSimpleName() + "-" + getName();
+        _passwordFileLocation = TMP_FOLDER + File.separator + PrincipalDatabaseAuthenticationManagerTest.class.getSimpleName() + "-" + getTestName();
         deletePasswordFileIfExists();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -84,7 +92,6 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         {
             deletePasswordFileIfExists();
         }
-        super.tearDown();
     }
 
     private void setupMocks() throws Exception
@@ -122,6 +129,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testInitialiseWhenPasswordFileNotFound() throws Exception
     {
         PasswordCredentialManagingAuthenticationProvider mockAuthProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
@@ -136,10 +144,12 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         }
         catch (IllegalConfigurationException e)
         {
-            assertTrue(e.getCause() instanceof FileNotFoundException);
+            final boolean condition = e.getCause() instanceof FileNotFoundException;
+            assertTrue(condition);
         }
     }
 
+    @Test
     public void testInitialiseWhenPasswordFileExists() throws Exception
     {
         PasswordCredentialManagingAuthenticationProvider mockAuthProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
@@ -164,11 +174,12 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         }
         _manager.initialise();
         List<Principal> users = _principalDatabase.getUsers();
-        assertEquals("Unexpected uses size", 1, users.size());
+        assertEquals("Unexpected uses size", (long) 1, (long) users.size());
         Principal p = _principalDatabase.getUser("admin");
         assertEquals("Unexpected principal name", "admin", p.getName());
     }
 
+    @Test
     public void testSaslMechanismCreation() throws Exception
     {
         setupMocks();
@@ -183,6 +194,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
      * authentication success.
      *
      */
+    @Test
     public void testSaslAuthenticationSuccess() throws Exception
     {
         setupMocks();
@@ -202,6 +214,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
      * authentication not complete.
      *
      */
+    @Test
     public void testSaslAuthenticationNotCompleted() throws Exception
     {
         setupMocks();
@@ -209,7 +222,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         when(_saslNegotiator.handleResponse(any(byte[].class))).thenReturn(new AuthenticationResult(AuthenticationStatus.CONTINUE));
 
         AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
-        assertEquals("Principals was not expected size", 0, result.getPrincipals().size());
+        assertEquals("Principals was not expected size", (long) 0, (long) result.getPrincipals().size());
 
         assertEquals(AuthenticationStatus.CONTINUE, result.getStatus());
     }
@@ -220,6 +233,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
      * authentication error.
      *
      */
+    @Test
     public void testSaslAuthenticationError() throws Exception
     {
         setupMocks();
@@ -227,10 +241,11 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         when(_saslNegotiator.handleResponse(any(byte[].class))).thenReturn(new AuthenticationResult(AuthenticationStatus.ERROR));
 
         AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
-        assertEquals("Principals was not expected size", 0, result.getPrincipals().size());
+        assertEquals("Principals was not expected size", (long) 0, (long) result.getPrincipals().size());
         assertEquals(AuthenticationStatus.ERROR, result.getStatus());
     }
 
+    @Test
     public void testNonSaslAuthenticationSuccess() throws Exception
     {
         setupMocks();
@@ -244,6 +259,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         assertEquals(AuthenticationStatus.SUCCESS, result.getStatus());
     }
 
+    @Test
     public void testNonSaslAuthenticationErrored() throws Exception
     {
         setupMocks();
@@ -251,10 +267,11 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         when(_principalDatabase.verifyPassword("guest", "wrongpassword".toCharArray())).thenReturn(false);
 
         AuthenticationResult result = _manager.authenticate("guest", "wrongpassword");
-        assertEquals("Principals was not expected size", 0, result.getPrincipals().size());
+        assertEquals("Principals was not expected size", (long) 0, (long) result.getPrincipals().size());
         assertEquals(AuthenticationStatus.ERROR, result.getStatus());
     }
 
+    @Test
     public void testOnCreate() throws Exception
     {
         setupMocks();
@@ -262,6 +279,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         assertTrue("Password file was not created", new File(_passwordFileLocation).exists());
     }
 
+    @Test
     public void testOnDelete() throws Exception
     {
         setupMocks();
@@ -272,6 +290,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         assertFalse("Password file was not deleted", new File(_passwordFileLocation).exists());
     }
 
+    @Test
     public void testCreateForInvalidPath() throws Exception
     {
         setUpPrincipalDatabase();
@@ -290,7 +309,10 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         }
         catch(IllegalConfigurationException e)
         {
-            assertEquals("Unexpected exception message:" + e.getMessage(), String.format("Cannot create password file at '%s'", path), e.getMessage());
+            assertEquals("Unexpected exception message:" + e.getMessage(),
+                                String.format("Cannot create password file at '%s'", path),
+                                e.getMessage());
+
         }
     }
 

@@ -29,49 +29,71 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.client.property.SimplePropertyValue;
 import org.apache.qpid.disttest.controller.CommandForClient;
 import org.apache.qpid.disttest.message.Command;
 import org.apache.qpid.disttest.message.CreateMessageProviderCommand;
 import org.apache.qpid.disttest.message.NoOpCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ClientConfigTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ClientConfigTest extends UnitTestBase
 {
     private static final String CLIENT1 = "client1";
 
+    @Test
     public void testClientConfigHasZeroArgConstructorForGson()
     {
         ClientConfig c = new ClientConfig();
         assertNotNull(c);
     }
 
+    @Test
     public void testCreateCommands()
     {
         ClientConfig clientConfig = createClientConfigWithConnectionConfigReturningChildCommands();
 
         List<CommandForClient> commands = clientConfig.createCommands();
-        assertEquals(2, commands.size());
+        assertEquals((long) 2, (long) commands.size());
 
         assertCommandForClient(commands, 0, CLIENT1, NoOpCommand.class);
         assertCommandForClient(commands, 1, CLIENT1, NoOpCommand.class);
     }
 
+    @Test
     public void testCreateCommandsForMessageProvider()
     {
         ClientConfig clientConfig = createClientConfigWithMessageProviderConfigReturningCommands();
 
         List<CommandForClient> commands = clientConfig.createCommands();
-        assertEquals(1, commands.size());
+        assertEquals((long) 1, (long) commands.size());
 
         assertCommandForClient(commands, 0, CLIENT1, CreateMessageProviderCommand.class);
     }
 
+    @Test
     public void testGetTotalNumberOfParticipants()
     {
         ClientConfig clientConfig = createClientConfigWithTwoParticipants();
-        assertEquals(2, clientConfig.getTotalNumberOfParticipants());
+        assertEquals((long) 2, (long) clientConfig.getTotalNumberOfParticipants());
     }
 
     private ClientConfig createClientConfigWithConnectionConfigReturningChildCommands()

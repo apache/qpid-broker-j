@@ -22,9 +22,26 @@ package org.apache.qpid.disttest;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class ArgumentParserTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ArgumentParserTest extends UnitTestBase
 {
     private static final String TEST_CONFIG_FILENAME = "ControllerRunnerTest-test-config-filename.json";
     private static final String JNDI_CONFIG_FILENAME = "ControllerRunnerTest-jndi-config-filename.properties";
@@ -42,10 +59,9 @@ public class ArgumentParserTest extends QpidTestCase
 
     private ArgumentParser _parser;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _parser = new ArgumentParser();
 
         _options.clear();
@@ -54,6 +70,7 @@ public class ArgumentParserTest extends QpidTestCase
         _options.put(DISTRIBUTED_PROP, DISTRIBUTED_DEFAULT);
     }
 
+    @Test
     public void testInvalidArguments()
     {
         String[] args = new String[]{"nonExistentConfigProperty" + "=" + TEST_CONFIG_FILENAME};
@@ -69,6 +86,7 @@ public class ArgumentParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDefaultConfigValues()
     {
         String[] args = new String[0];
@@ -80,6 +98,7 @@ public class ArgumentParserTest extends QpidTestCase
         assertEquals("unexpected config value", DISTRIBUTED_DEFAULT, _options.get(DISTRIBUTED_PROP));
     }
 
+    @Test
     public void testConfigurationParsingOverridesDefault() throws Exception
     {
         String[] args = new String[]{TEST_CONFIG_PROP + "=" + TEST_CONFIG_FILENAME,
@@ -91,6 +110,8 @@ public class ArgumentParserTest extends QpidTestCase
         assertEquals("unexpected config value", TEST_CONFIG_FILENAME, _options.get(TEST_CONFIG_PROP));
         assertEquals("unexpected config value", JNDI_CONFIG_FILENAME, _options.get(JNDI_CONFIG_PROP));
         assertEquals("unexpected config value", DISTRIBUTED_MODE, _options.get(DISTRIBUTED_PROP));
-        assertFalse("override value was the same as the default", DISTRIBUTED_MODE.equalsIgnoreCase(_options.get(DISTRIBUTED_DEFAULT)));
+        assertFalse("override value was the same as the default",
+                           DISTRIBUTED_MODE.equalsIgnoreCase(_options.get(DISTRIBUTED_DEFAULT)));
+
     }
 }

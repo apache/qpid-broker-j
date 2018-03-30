@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.management.plugin.auth;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -51,6 +54,8 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -67,9 +72,9 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
+public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 {
     private static final String TEST_AUTHORIZATION_ENDPOINT = "testAuthEndpoint";
     private static final int TEST_PORT = 64756;
@@ -94,10 +99,9 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
     private OAuth2AuthenticationProvider<?> _mockAuthProvider;
     private HttpPort _mockPort;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _mockPort = mock(HttpPort.class);
         _mockAuthProvider = createMockOAuth2AuthenticationProvider(_mockPort);
@@ -108,6 +112,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         _authenticator = new OAuth2InteractiveAuthenticator();
     }
 
+    @Test
     public void testInitialRedirect() throws Exception
     {
         Map<String, Object> sessionAttributes = new HashMap<>();
@@ -115,8 +120,11 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
                                                            Collections.singletonMap("baz", "fnord"), sessionAttributes);
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
+
         assertNotNull("Authenticator does not feel responsible", authenticationHandler);
-        assertTrue("Authenticator has failed unexpectedly", !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler));
+        final boolean condition =
+                !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
+        assertTrue("Authenticator has failed unexpectedly", condition);
 
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
         authenticationHandler.handleAuthentication(mockResponse);
@@ -131,13 +139,11 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         assertEquals("Wrong redirect_uri", TEST_REQUEST_HOST, params.get("redirect_uri"));
         assertEquals("Wrong scope", TEST_OAUTH2_SCOPE, params.get("scope"));
         String stateAttrName = HttpManagementUtil.getRequestSpecificAttributeName(OAuth2InteractiveAuthenticator.STATE_NAME, mockRequest);
-        assertNotNull("State was not set on the session",
-                      sessionAttributes.get(stateAttrName));
-        assertEquals("Wrong state",
-                     (String) sessionAttributes.get(stateAttrName),
-                     params.get("state"));
+        assertNotNull("State was not set on the session", sessionAttributes.get(stateAttrName));
+        assertEquals("Wrong state", (String) sessionAttributes.get(stateAttrName), params.get("state"));
     }
 
+    @Test
     public void testValidLogin() throws Exception
     {
         Map<String, Object> sessionAttributes = new HashMap<>();
@@ -152,7 +158,9 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
         assertNotNull("Authenticator does not feel responsible", authenticationHandler);
-        assertTrue("Authenticator has failed unexpectedly", !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler));
+        final boolean condition1 =
+                !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
+        assertTrue("Authenticator has failed unexpectedly", condition1);
 
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
         authenticationHandler.handleAuthentication(mockResponse);
@@ -163,11 +171,15 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         assertEquals("Wrong redirect", TEST_REQUEST, argument.getValue());
         String attrSubject = HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SUBJECT, mockRequest);
         assertNotNull("No subject on session", sessionAttributes.get(attrSubject));
-        assertTrue("Subject on session is no a Subject", sessionAttributes.get(attrSubject) instanceof Subject);
+        final boolean condition = sessionAttributes.get(attrSubject) instanceof Subject;
+        assertTrue("Subject on session is no a Subject", condition);
         final Set<Principal> principals = ((Subject) sessionAttributes.get(attrSubject)).getPrincipals();
-        assertEquals("Subject created with unexpected principal", TEST_AUTHORIZED_USER, principals.iterator().next().getName());
+        assertEquals("Subject created with unexpected principal",
+                            TEST_AUTHORIZED_USER,
+                            principals.iterator().next().getName());
     }
 
+    @Test
     public void testNoStateOnSession() throws Exception
     {
         Map<String, Object> sessionAttributes = new HashMap<>();
@@ -181,9 +193,12 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
         assertNotNull("Authenticator does not feel responsible", authenticationHandler);
-        assertTrue("Authenticator did not fail with no state on session", authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
+        final boolean condition =
+                authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler;
+        assertTrue("Authenticator did not fail with no state on session", condition);
     }
 
+    @Test
     public void testNoStateOnRequest() throws Exception
     {
         Map<String, Object> sessionAttributes = new HashMap<>();
@@ -197,9 +212,12 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
         assertNotNull("Authenticator does not feel responsible", authenticationHandler);
-        assertTrue("Authenticator did not fail with no state on request", authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
+        final boolean condition =
+                authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler;
+        assertTrue("Authenticator did not fail with no state on request", condition);
     }
 
+    @Test
     public void testWrongStateOnRequest() throws Exception
     {
         Map<String, Object> sessionAttributes = new HashMap<>();
@@ -214,9 +232,12 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
         assertNotNull("Authenticator does not feel responsible", authenticationHandler);
-        assertTrue("Authenticator did not fail with wrong state on request", authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
+        final boolean condition =
+                authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler;
+        assertTrue("Authenticator did not fail with wrong state on request", condition);
     }
 
+    @Test
     public void testInvalidAuthorizationCode() throws Exception
     {
         Map<String, Object> sessionAttributes = new HashMap<>();
@@ -230,8 +251,11 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
 
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
+
         assertNotNull("Authenticator does not feel responsible", authenticationHandler);
-        assertTrue("Authenticator has failed unexpectedly", !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler));
+        final boolean condition =
+                !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
+        assertTrue("Authenticator has failed unexpectedly", condition);
 
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
         authenticationHandler.handleAuthentication(mockResponse);
@@ -239,6 +263,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
 
     }
 
+    @Test
     public void testUnauthorizedAuthorizationCode() throws Exception
     {
         Map<String, Object> sessionAttributes = new HashMap<>();
@@ -253,7 +278,9 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
         assertNotNull("Authenticator does not feel responsible", authenticationHandler);
-        assertTrue("Authenticator has failed unexpectedly", !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler));
+        final boolean condition =
+                !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
+        assertTrue("Authenticator has failed unexpectedly", condition);
 
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
         authenticationHandler.handleAuthentication(mockResponse);
@@ -269,7 +296,10 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         Map<String,String> parameters = new HashMap<>(parameterMap.size());
         for (Map.Entry<String, List<String>> paramEntry : parameterMap.entrySet())
         {
-            assertEquals(String.format("param '%s' specified more than once", paramEntry.getKey()), 1, paramEntry.getValue().size());
+            assertEquals(String.format("param '%s' specified more than once", paramEntry.getKey()),
+                                (long) 1,
+                                (long) paramEntry.getValue().size());
+
             parameters.put(paramEntry.getKey(), paramEntry.getValue().get(0));
         }
         return parameters;
@@ -349,7 +379,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
             public Object answer(final InvocationOnMock invocationOnMock) throws Throwable
             {
                 final Object[] arguments = invocationOnMock.getArguments();
-                assertEquals("Unexpected number of arguments", 1, arguments.length);
+                assertEquals("Unexpected number of arguments", (long) 1, (long) arguments.length);
                 final String paramName = (String) arguments[0];
                 return new String[]{query.get(paramName)};
             }
@@ -383,7 +413,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
             public Object answer(final InvocationOnMock invocation) throws Throwable
             {
                 final Object[] arguments = invocation.getArguments();
-                assertEquals(2, arguments.length);
+                assertEquals((long) 2, (long) arguments.length);
                 sessionAttributes.put((String) arguments[0], arguments[1]);
                 return null;
             }
@@ -394,7 +424,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
             public Object answer(final InvocationOnMock invocation) throws Throwable
             {
                 final Object[] arguments = invocation.getArguments();
-                assertEquals(1, arguments.length);
+                assertEquals((long) 1, (long) arguments.length);
                 return sessionAttributes.get((String) arguments[0]);
             }
         }).when(httpSession).getAttribute(any(String.class));

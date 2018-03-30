@@ -21,29 +21,31 @@
 package org.apache.qpid.server.queue;
 
 import static org.apache.qpid.server.model.Queue.QUEUE_SCAVANGE_COUNT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-
 public class StandardQueueEntryListTest extends QueueEntryListTestBase
 {
 
@@ -52,14 +54,13 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
 
     private ConfiguredObjectFactoryImpl _factory;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
-        queueAttributes.put(Queue.NAME, getName());
-        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH");
+        queueAttributes.put(Queue.NAME, getTestName());
+        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
         _testQueue = new StandardQueueImpl(queueAttributes, virtualHost);
         _testQueue.open();
         _sqel = _testQueue.getEntries();
@@ -84,8 +85,8 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         {
             Map<String,Object> queueAttributes = new HashMap<String, Object>();
             queueAttributes.put(Queue.ID, UUID.randomUUID());
-            queueAttributes.put(Queue.NAME, getName());
-            final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH");
+            queueAttributes.put(Queue.NAME, getTestName());
+            final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
             StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, virtualHost);
             queue.open();
             return queue.getEntries();
@@ -120,6 +121,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         return _testQueue;
     }
 
+    @Test
     public void testScavenge() throws Exception
     {
         StandardQueueImpl mockQueue = mock(StandardQueueImpl.class);
@@ -142,34 +144,34 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         //requiring a scavenge once the requested threshold of 9 deletes is passed
 
         //Delete the 2nd message only
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,2));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 2));
         verifyDeletedButPresentBeforeScavenge(head, 2);
 
         //Delete messages 12 to 14
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,12));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 12));
         verifyDeletedButPresentBeforeScavenge(head, 12);
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,13));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 13));
         verifyDeletedButPresentBeforeScavenge(head, 13);
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,14));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 14));
         verifyDeletedButPresentBeforeScavenge(head, 14);
 
         //Delete message 20 only
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,20));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 20));
         verifyDeletedButPresentBeforeScavenge(head, 20);
 
         //Delete messages 81 to 84
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,81));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 81));
         verifyDeletedButPresentBeforeScavenge(head, 81);
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,82));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 82));
         verifyDeletedButPresentBeforeScavenge(head, 82);
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,83));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 83));
         verifyDeletedButPresentBeforeScavenge(head, 83);
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,84));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 84));
         verifyDeletedButPresentBeforeScavenge(head, 84);
 
         //Delete message 99 - this is the 10th message deleted that is after the queue head
         //and so will invoke the scavenge() which is set to go after 9 previous deletions
-        assertTrue("Failed to delete QueueEntry", remove(entriesMap,99));
+        assertTrue("Failed to delete QueueEntry", remove(entriesMap, 99));
 
         verifyAllDeletedMessagedNotPresent(head, entriesMap);
     }
@@ -190,7 +192,10 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
 
         for(long i = 1; i < messageId ; i++)
         {
-            assertEquals("Expected QueueEntry was not found in the list", i, (long) entry.getMessage().getMessageNumber());
+            assertEquals("Expected QueueEntry was not found in the list",
+                                i,
+                                (long) entry.getMessage().getMessageNumber());
+
             entry = entry.getNextNode();
         }
 
@@ -208,17 +213,20 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
 
         while (entry != null)
         {
-            assertFalse("Entry " + entry.getMessage().getMessageNumber() + " should not have been deleted", entry.isDeleted());
-            assertNotNull("QueueEntry "+entry.getMessage().getMessageNumber()+" was not found in the list of remaining entries " + remainingMessages,
-                    remainingMessages.get((int)(entry.getMessage().getMessageNumber())));
+            assertFalse("Entry " + entry.getMessage().getMessageNumber() + " should not have been deleted",
+                               entry.isDeleted());
+
+            assertNotNull("QueueEntry " + entry.getMessage().getMessageNumber() + " was not found in the list of remaining entries " + remainingMessages,
+                                 remainingMessages.get((int)(entry.getMessage().getMessageNumber())));
 
             count++;
             entry = entry.getNextNode();
         }
 
-        assertEquals("Count should have been equal",count,remainingMessages.size());
+        assertEquals("Count should have been equal", (long) count, (long) remainingMessages.size());
     }
 
+    @Test
     public void testGettingNextElement() throws Exception
     {
         final int numberOfEntries = 5;
@@ -262,6 +270,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         assertNull("The next entry after the last should be null", next);
     }
 
+    @Test
     public void testGetLesserOldestEntry()
     {
         StandardQueueEntryList queueEntryList = new StandardQueueEntryList(_testQueue, _testQueue.getQueueStatistics());
@@ -270,10 +279,10 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         assertEquals("Unexpected last message", entry1, queueEntryList.getLeastSignificantOldestEntry());
 
         queueEntryList.add(createServerMessage(2), null);
-        assertEquals("Unexpected last message", entry1,  queueEntryList.getLeastSignificantOldestEntry());
+        assertEquals("Unexpected last message", entry1, queueEntryList.getLeastSignificantOldestEntry());
 
         queueEntryList.add(createServerMessage(3), null);
-        assertEquals("Unexpected last message", entry1,  queueEntryList.getLeastSignificantOldestEntry());
+        assertEquals("Unexpected last message", entry1, queueEntryList.getLeastSignificantOldestEntry());
     }
 
     private ServerMessage createServerMessage(final long id)

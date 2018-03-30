@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +37,10 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
@@ -47,9 +53,9 @@ import org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvide
 import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFoundryOAuth2IdentityResolverService;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.oauth2.OAuth2Negotiator;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
+public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
 {
     static final String UTF8 = StandardCharsets.UTF_8.name();
 
@@ -81,10 +87,9 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
     private OAuth2AuthenticationProvider<?> _authProvider;
     private OAuth2MockEndpointHolder _server;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _server = new OAuth2MockEndpointHolder();
         _server.start();
 
@@ -134,7 +139,7 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         HttpsURLConnection.setDefaultHostnameVerifier(new BlindHostnameVerifier());
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -146,16 +151,19 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testGetSecureOnlyMechanisms() throws Exception
     {
         assertEquals("OAuth2 should be a secure only mechanism",
-                     Collections.singletonList(OAuth2Negotiator.MECHANISM), _authProvider.getSecureOnlyMechanisms());
+                            Collections.singletonList(OAuth2Negotiator.MECHANISM),
+                            _authProvider.getSecureOnlyMechanisms());
+
     }
 
+    @Test
     public void testAuthenticateViaSasl() throws Exception
     {
         _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
@@ -166,6 +174,7 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         assertSuccess(authenticationResult);
     }
 
+    @Test
     public void testFailAuthenticateViaSasl() throws Exception
     {
         OAuth2MockEndpoint mockIdentityResolverEndpoint = createMockIdentityResolverEndpoint();
@@ -179,6 +188,7 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         assertFailure(authenticationResult, "invalid_token");
     }
 
+    @Test
     public void testAuthenticateViaAuthorizationCode() throws Exception
     {
         Map<String, OAuth2MockEndpoint> mockEndpoints = new HashMap<>();
@@ -195,6 +205,7 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         assertSuccess(authenticationResult);
     }
 
+    @Test
     public void testFailAuthenticateViaInvalidAuthorizationCode() throws Exception
     {
         Map<String, OAuth2MockEndpoint> mockEndpoints = new HashMap<>();
@@ -214,6 +225,7 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         assertFailure(authenticationResult, "invalid_grant");
     }
 
+    @Test
     public void testAuthenticateViaAccessToken() throws Exception
     {
         _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
@@ -224,6 +236,7 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         assertSuccess(authenticationResult);
     }
 
+    @Test
     public void testFailAuthenticateViaInvalidAccessToken() throws Exception
     {
         OAuth2MockEndpoint mockIdentityResolverEndpoint = createMockIdentityResolverEndpoint();
@@ -240,18 +253,23 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
     private void assertSuccess(final AuthenticationResult authenticationResult)
     {
         assertEquals("Authentication was not successful: " + authenticationResult.getCause(),
-                     AuthenticationResult.AuthenticationStatus.SUCCESS, authenticationResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            authenticationResult.getStatus());
         assertEquals("AuthenticationResult has the wrong Principal",
-                     TEST_USER_NAME, authenticationResult.getMainPrincipal().getName());
+                            TEST_USER_NAME,
+                            authenticationResult.getMainPrincipal().getName());
     }
 
     private void assertFailure(final AuthenticationResult authenticationResult, final String failureCauseString)
     {
         assertEquals("Authentication should not succeed",
-                     AuthenticationResult.AuthenticationStatus.ERROR, authenticationResult.getStatus());
-        assertTrue(authenticationResult.getCause().toString(), authenticationResult.getCause().toString().contains(failureCauseString));
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            authenticationResult.getStatus());
+        assertTrue(authenticationResult.getCause().toString(),
+                          authenticationResult.getCause().toString().contains(failureCauseString));
         assertEquals("AuthenticationResult has the wrong Principal",
-                     null, authenticationResult.getMainPrincipal());
+                            null,
+                            authenticationResult.getMainPrincipal());
     }
 
     private OAuth2MockEndpoint createMockTokenEndpoint()

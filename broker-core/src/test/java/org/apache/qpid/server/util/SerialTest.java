@@ -21,24 +21,31 @@
 package org.apache.qpid.server.util;
 
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
- *Junit tests for the Serial class 
+ * Junit tests for the Serial class
  */
-public class SerialTest extends QpidTestCase
+public class SerialTest extends UnitTestBase
 {
 
     /**
      * Test the key boundaries where wraparound occurs.
      */
+    @Test
     public void testBoundaries()
     {
         assertTrue(Serial.gt(1, 0));
         assertTrue(Serial.lt(0, 1));
 
-        assertTrue(Serial.gt(Integer.MAX_VALUE+1, Integer.MAX_VALUE));
-        assertTrue(Serial.lt(Integer.MAX_VALUE, Integer.MAX_VALUE+1));
+        assertTrue(Serial.gt(Integer.MAX_VALUE + 1, Integer.MAX_VALUE));
+        assertTrue(Serial.lt(Integer.MAX_VALUE, Integer.MAX_VALUE + 1));
 
         assertTrue(Serial.gt(0xFFFFFFFF + 1, 0xFFFFFFFF));
         assertTrue(Serial.lt(0xFFFFFFFF, 0xFFFFFFFF + 1));
@@ -50,6 +57,8 @@ public class SerialTest extends QpidTestCase
      * to s is well defined, (s + n) >= s.  Further (s + n) == s only when
      * n == 0, in all other defined cases, (s + n) > s.
      */
+    @Test
+    @Ignore("Test runs for 2 minutes testing that subtraction works")
     public void testCorollary1()
     {
         int wrapcount = 0;
@@ -60,8 +69,11 @@ public class SerialTest extends QpidTestCase
         {
             for (int n = 1; n < 4096; n += 512)
             {
-                assertTrue("Serial.gt returned false for: (" + (s + n) + " > " + s + "), n=" + n, Serial.gt(s + n, s));
-                assertTrue("Serial.lt returned false for: (" + s + " < " + (s + n) + "), n=" + n, Serial.lt(s, s + n));
+                assertTrue("Serial.gt returned false for: (" + (s + n) + " > " + s + "), n=" + n,
+                                  Serial.gt(s + n, s));
+
+                assertTrue("Serial.lt returned false for: (" + s + " < " + (s + n) + "), n=" + n,
+                                  Serial.lt(s, s + n));
             }
 
             s += 1024;

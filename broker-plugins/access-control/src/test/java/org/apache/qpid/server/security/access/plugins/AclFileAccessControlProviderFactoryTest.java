@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.security.access.plugins;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +33,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -37,18 +44,17 @@ import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AclFileAccessControlProviderFactoryTest extends QpidTestCase
+public class AclFileAccessControlProviderFactoryTest extends UnitTestBase
 {
     private Broker _broker;
     private ConfiguredObjectFactoryImpl _objectFactory;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _broker = mock(Broker.class);
         _objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
 
@@ -63,6 +69,7 @@ public class AclFileAccessControlProviderFactoryTest extends QpidTestCase
 
     }
 
+    @Test
     public void testCreateInstanceWhenAclFileIsNotPresent()
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
@@ -82,6 +89,7 @@ public class AclFileAccessControlProviderFactoryTest extends QpidTestCase
     }
 
 
+    @Test
     public void testCreateInstanceWhenAclFileIsSpecified()
     {
         File aclFile = TestFileUtils.createTempFile(this, ".acl", "ACL ALLOW all all");
@@ -95,10 +103,13 @@ public class AclFileAccessControlProviderFactoryTest extends QpidTestCase
         assertNotNull("ACL was not created from acl file: " + aclFile.getAbsolutePath(), acl);
     }
 
+    @Test
     public void testCreateInstanceWhenAclFileIsSpecifiedButDoesNotExist()
     {
         File aclFile = new File(TMP_FOLDER, "my-non-existing-acl-" + System.currentTimeMillis());
-        assertFalse("ACL file " + aclFile.getAbsolutePath() + " actually exists but should not", aclFile.exists());
+        assertFalse("ACL file " + aclFile.getAbsolutePath() + " actually exists but should not",
+                           aclFile.exists());
+
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(AccessControlProvider.ID, UUID.randomUUID());
         attributes.put(AccessControlProvider.NAME, "acl");
@@ -111,7 +122,9 @@ public class AclFileAccessControlProviderFactoryTest extends QpidTestCase
         }
         catch (IllegalConfigurationException e)
         {
-            assertTrue("Unexpected exception message: " + e.getMessage(), Pattern.matches("Cannot convert .* to a readable resource", e.getMessage()));
+            assertTrue("Unexpected exception message: " + e.getMessage(),
+                              Pattern.matches("Cannot convert .* to a readable resource", e.getMessage()));
+
         }
     }
 }

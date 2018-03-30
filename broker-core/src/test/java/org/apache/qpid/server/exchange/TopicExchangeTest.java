@@ -21,6 +21,9 @@
 package org.apache.qpid.server.exchange;
 
 import static org.apache.qpid.server.filter.AMQPFilterTypes.JMS_SELECTOR;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,7 +32,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Assert;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -41,9 +46,9 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class TopicExchangeTest extends QpidTestCase
+public class TopicExchangeTest extends UnitTestBase
 {
 
     private TopicExchange<?> _exchange;
@@ -51,12 +56,11 @@ public class TopicExchangeTest extends QpidTestCase
     private InstanceProperties _instanceProperties;
     private ServerMessage<?> _messageWithNoHeaders;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         BrokerTestHelper.setUp();
-        _vhost = BrokerTestHelper.createVirtualHost(getName());
+        _vhost = BrokerTestHelper.createVirtualHost(getTestName(), this);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Exchange.NAME, "test");
@@ -71,7 +75,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -84,11 +88,11 @@ public class TopicExchangeTest extends QpidTestCase
         finally
         {
             BrokerTestHelper.tearDown();
-            super.tearDown();
         }
     }
 
     /* Thus the routing pattern *.stock.# matches the routing keys usd.stock and eur.stock.db but not stock.nasdaq. */
+    @Test
     public void testNoRoute() throws Exception
     {
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
@@ -101,6 +105,7 @@ public class TopicExchangeTest extends QpidTestCase
         assertFalse("Message unexpected routed to queue after bind", result.hasRoutes());
     }
 
+    @Test
     public void testDirectMatch() throws Exception
     {
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
@@ -111,15 +116,18 @@ public class TopicExchangeTest extends QpidTestCase
                                                                                        "a.b",
                                                                                        _instanceProperties);
 
-        assertEquals("Message unexpected routed to queue after bind", 1, result.getNumberOfRoutes());
+        assertEquals("Message unexpected routed to queue after bind",
+                            (long) 1,
+                            (long) result.getNumberOfRoutes());
 
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.c", _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
     }
 
     /** * matches a single word */
+    @Test
     public void testStarMatch() throws Exception
     {
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
@@ -129,19 +137,20 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
                                                                                        "a.b",
                                                                                        _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.bb", _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.b.c", _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a", _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
     }
 
     /** # matches zero or more words */
+    @Test
     public void testHashMatch() throws Exception
     {
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
@@ -150,22 +159,23 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
                                                                                        "a.b",
                                                                                        _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.bb", _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.b.c", _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a", _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "b", _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
     }
 
 
+    @Test
     public void testMidHash() throws Exception
     {
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
@@ -174,15 +184,16 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
                                                                                        "a.c.d.b",
                                                                                        _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.c.d.d.b", _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.c.b", _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
     }
 
+    @Test
     public void testMatchAfterHash() throws Exception
     {
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
@@ -191,19 +202,20 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
                                                                                        "a.c.b.b",
                                                                                        _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.a.b.c", _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.b.c.b", _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.b.c.b.c", _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
     }
 
 
+    @Test
     public void testHashAfterHash() throws Exception
     {
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
@@ -213,15 +225,16 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
                                                                                        "a.c.b.b.c",
                                                                                        _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders,
                                  "a.a.b.c.d",
                                  _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
     }
 
+    @Test
     public void testHashHash() throws Exception
     {
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
@@ -230,15 +243,16 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
                                                                                        "a.c.b.b.c",
                                                                                        _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.c.b.b.c", _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.a.b.c.d", _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
     }
 
+    @Test
     public void testSubMatchFails() throws Exception
     {
         Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
@@ -247,9 +261,10 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
                                                                                        "a.b.c",
                                                                                        _instanceProperties);
-        Assert.assertEquals(0, result.getNumberOfRoutes());
+        assertEquals(0, result.getNumberOfRoutes());
     }
 
+    @Test
     public void testRouteToManyQueues() throws Exception
     {
         Queue<?> queue1 = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue1"));
@@ -260,22 +275,23 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
                                                                                        "a.b",
                                                                                        _instanceProperties);
-        Assert.assertEquals(2, result.getNumberOfRoutes());
+        assertEquals(2, result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders,
                                  "a.c",
                                  _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
         _exchange.deleteBinding("a.b", queue1);
 
         result = _exchange.route(_messageWithNoHeaders,
                                  "a.b",
                                  _instanceProperties);
-        Assert.assertEquals(1, result.getNumberOfRoutes());
+        assertEquals(1, result.getNumberOfRoutes());
 
     }
 
+    @Test
     public void testRouteToQueueWithSelector()
     {
         String bindingKey = "mybinding";
@@ -301,9 +317,12 @@ public class TopicExchangeTest extends QpidTestCase
         assertTrue("Unbind operation should be successful", unbind);
 
         result = _exchange.route(matchingMessage, "mybinding", instanceProperties);
-        assertFalse("Message with matching selector unexpectedly routed to queue after unbind", result.hasRoutes());
+        assertFalse("Message with matching selector unexpectedly routed to queue after unbind",
+                           result.hasRoutes());
+
     }
 
+    @Test
     public void testRouteToQueueViaTwoExchanges()
     {
         String bindingKey = "key";
@@ -327,6 +346,7 @@ public class TopicExchangeTest extends QpidTestCase
         assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
     }
 
+    @Test
     public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKey()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -353,11 +373,11 @@ public class TopicExchangeTest extends QpidTestCase
                                                                                        _instanceProperties);
         assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
 
-
         result = _exchange.route(_messageWithNoHeaders, replacementKey, _instanceProperties);
         assertFalse("Message unexpectedly was routed to queue", result.hasRoutes());
     }
 
+    @Test
     public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKeyAndFiltering()
     {
         String bindingKey = "key1";
@@ -396,6 +416,7 @@ public class TopicExchangeTest extends QpidTestCase
     }
 
 
+    @Test
     public void testHierachicalRouteToQueueViaTwoExchangesWithReplacementRoutingKey()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -414,37 +435,38 @@ public class TopicExchangeTest extends QpidTestCase
         String replacementKey2 = "key2";
 
         assertTrue("Exchange to exchange bind operation should be successful", _exchange.bind(via.getName(),
-                                                                                              bindingKey1,
-                                                                                              Collections.singletonMap(
+                                                                                                     bindingKey1,
+                                                                                                     Collections.singletonMap(
                                                                                                       Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY,
                                                                                                       replacementKey1),
-                                                                                              false));
+                                                                                                     false));
 
         assertTrue("Exchange to exchange bind operation should be successful", _exchange.bind(via.getName(),
-                                                                                              bindingKey2,
-                                                                                              Collections.singletonMap(
+                                                                                                     bindingKey2,
+                                                                                                     Collections.singletonMap(
                                                                                                       Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY,
                                                                                                       replacementKey2),
-                                                                                              false));
+                                                                                                     false));
 
         assertTrue("Exchange to queue1 bind operation should be successful",
-                   via.bind(queue1.getName(), replacementKey1, Collections.emptyMap(), false));
+                          via.bind(queue1.getName(), replacementKey1, Collections.emptyMap(), false));
 
         assertTrue("Exchange to queue2 bind operation should be successful",
-                   via.bind(queue2.getName(), replacementKey2, Collections.emptyMap(), false));
+                          via.bind(queue2.getName(), replacementKey2, Collections.emptyMap(), false));
 
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
                                                                                        "a.b",
                                                                                        _instanceProperties);
-        assertEquals("Unexpected number of routes", 2, result.getNumberOfRoutes());
+        assertEquals("Unexpected number of routes", (long) 2, (long) result.getNumberOfRoutes());
 
         result = _exchange.route(_messageWithNoHeaders, "a.b.c", _instanceProperties);
-        assertEquals("Unexpected number of routes", 1, result.getNumberOfRoutes());
+        assertEquals("Unexpected number of routes", (long) 1, (long) result.getNumberOfRoutes());
 
         assertTrue("Message is not routed into 'queue1'", result.getRoutes().contains(queue1));
     }
 
 
+    @Test
     public void testUpdateBindingReplacingSelector() throws Exception
     {
         String bindingKey = "mybinding";
@@ -462,7 +484,6 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(matchingMessage, bindingKey, instanceProperties);
         assertTrue("Message with matching selector not routed to queue", result.hasRoutes());
 
-
         _exchange.replaceBinding(bindingKey, queue, Collections.singletonMap(JMS_SELECTOR.toString(), "prop = False"));
 
         result = _exchange.route(matchingMessage, bindingKey, instanceProperties);
@@ -476,6 +497,7 @@ public class TopicExchangeTest extends QpidTestCase
         assertTrue("Message not routed to queue", result.hasRoutes());
     }
 
+    @Test
     public void testUpdateBindingRemovingSelector() throws Exception
     {
         String bindingKey = "mybinding";
@@ -493,13 +515,13 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(message, bindingKey, instanceProperties);
         assertFalse("Message that does not match selector routed to queue", result.hasRoutes());
 
-
         _exchange.replaceBinding(bindingKey, queue, Collections.emptyMap());
 
         result = _exchange.route(message, bindingKey, instanceProperties);
         assertTrue("Message not routed to queue after rebind", result.hasRoutes());
     }
 
+    @Test
     public void testUpdateBindingAddingSelector() throws Exception
     {
         String bindingKey = "mybinding";
@@ -517,17 +539,16 @@ public class TopicExchangeTest extends QpidTestCase
         RoutingResult<ServerMessage<?>> result = _exchange.route(message, bindingKey, instanceProperties);
         assertTrue("Message not routed to queue", result.hasRoutes());
 
-
         _exchange.replaceBinding(bindingKey, queue, Collections.singletonMap(JMS_SELECTOR.toString(), "prop = false"));
 
         result = _exchange.route(message, bindingKey, instanceProperties);
         assertTrue("Message that matches selector not routed to queue after rebind", result.hasRoutes());
 
-
         result = _exchange.route(message = createTestMessage(Collections.singletonMap("prop", true)), bindingKey, instanceProperties);
         assertFalse("Message that does not match selector routed to queue after rebind", result.hasRoutes());
     }
 
+    @Test
     public void testUpdateBindingChangeReplacementKey() throws Exception
     {
         String bindingKey = "mybinding";
@@ -556,7 +577,6 @@ public class TopicExchangeTest extends QpidTestCase
                                                                                        _instanceProperties);
         assertFalse("Message unexpectedly routed to queue", result.hasRoutes());
 
-
         _exchange.bind(via.getName(),
                        bindingKey,
                        Collections.singletonMap(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, replacementKey),
@@ -569,7 +589,8 @@ public class TopicExchangeTest extends QpidTestCase
         Queue<?> queue2 =
                 _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue2"));
         assertTrue("Binding of queue2 failed",
-                   via.bind(queue2.getName(), replacementKey2, Collections.emptyMap(), false));
+                          via.bind(queue2.getName(), replacementKey2, Collections.emptyMap(), false));
+
 
         _exchange.bind(via.getName(),
                        bindingKey,

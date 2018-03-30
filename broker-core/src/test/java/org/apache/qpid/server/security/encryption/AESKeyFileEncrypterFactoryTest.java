@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.security.encryption;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -45,31 +49,33 @@ import java.util.UUID;
 
 import javax.crypto.Cipher;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
+public class AESKeyFileEncrypterFactoryTest extends UnitTestBase
 {
     private Broker _broker;
     private Path _tmpDir;
     private AESKeyFileEncrypterFactory _factory;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _broker = mock(Broker.class);
         _tmpDir = Files.createTempDirectory(getTestName());
 
         when(_broker.getContextKeys(eq(false))).thenReturn(Collections.<String>emptySet());
         when(_broker.getContextValue(eq(String.class), eq(SystemConfig.QPID_WORK_DIR))).thenReturn(_tmpDir.toString());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
-        when(_broker.getName()).thenReturn(getName());
+        when(_broker.getName()).thenReturn(getTestName());
         final ArgumentCaptor<Map> attributesCaptor = ArgumentCaptor.forClass(Map.class);
 
         doAnswer(new Answer<Void>()
@@ -90,6 +96,7 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
         _factory = new AESKeyFileEncrypterFactory();
     }
 
+    @Test
     public void testCreateKeyInDefaultLocation() throws Exception
     {
         if(isStrongEncryptionEnabled() && supportsPosixFileAttributes())
@@ -120,9 +127,9 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
 
         // check the encrypter works
         assertEquals(secret, encrypter.decrypt(encrypter.encrypt(secret)));
-
     }
 
+    @Test
     public void testSettingContextKeyLeadsToFileCreation() throws Exception
     {
         if(isStrongEncryptionEnabled() && supportsPosixFileAttributes())
@@ -144,6 +151,7 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
     }
 
 
+    @Test
     public void testUnableToCreateFileInSpecifiedLocation() throws Exception
     {
         if(isStrongEncryptionEnabled())
@@ -172,6 +180,7 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
     }
 
 
+    @Test
     public void testPermissionsAreChecked() throws Exception
     {
         if(isStrongEncryptionEnabled() && supportsPosixFileAttributes())
@@ -204,6 +213,7 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testInvalidKey() throws Exception
     {
         if(isStrongEncryptionEnabled() && supportsPosixFileAttributes())
@@ -243,7 +253,7 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
         return Files.getFileAttributeView(_tmpDir, PosixFileAttributeView.class) != null;
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         Files.walkFileTree(_tmpDir,
@@ -265,7 +275,6 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
                                    return FileVisitResult.CONTINUE;
                                }
                            });
-        super.tearDown();
     }
 
     private boolean isStrongEncryptionEnabled() throws NoSuchAlgorithmException
@@ -283,7 +292,7 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
 
         public KeyFilePathChecker()
         {
-            this(AESKeyFileEncrypterFactory.DEFAULT_KEYS_SUBDIR_NAME, "Broker_" + AESKeyFileEncrypterFactoryTest.this.getName() + ".key");
+            this(AESKeyFileEncrypterFactory.DEFAULT_KEYS_SUBDIR_NAME, "Broker_" + getTestName() + ".key");
         }
 
         public KeyFilePathChecker(final String subdirName, final String fileName)

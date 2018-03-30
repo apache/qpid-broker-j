@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -33,6 +38,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Description;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -43,42 +51,47 @@ import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.PortHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
+
 
 /**
  * Class to test that specific VHN operations result in the expected Operational Log message(s) being performed.
  */
-public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
+public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 {
     private BDBHAVirtualHostNodeTestHelper _helper;
     private EventLogger _eventLogger;
     private PortHelper _portHelper = new PortHelper();
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+
         _helper = new BDBHAVirtualHostNodeTestHelper(getTestName());
         _eventLogger = mock(EventLogger.class);
         SystemConfig<?> context = (SystemConfig<?>) _helper.getBroker().getParent();
         when(context.getEventLogger()).thenReturn(_eventLogger);
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         try
         {
-            _helper.tearDown();
+            if (_helper != null)
+            {
+                _helper.tearDown();
+            }
         }
         finally
         {
-            super.tearDown();
+            _portHelper.waitUntilAllocatedPortsAreFree();
         }
-
-        _portHelper.waitUntilAllocatedPortsAreFree();
     }
 
+    @Test
     public void testCreate() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();
@@ -94,7 +107,10 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
         // stop node to avoid running into race when role change is reported after we performed the check
         node1.stop();
 
-        assertEquals("Unexpected VHN log subject", "[grp(/group)/vhn(/node1)] ", node1.getVirtualHostNodeLogSubject().getLogString());
+        assertEquals("Unexpected VHN log subject",
+                            "[grp(/group)/vhn(/node1)] ",
+                            node1.getVirtualHostNodeLogSubject().getLogString());
+
         assertEquals("Unexpected group log subject", "[grp(/group)] ", node1.getGroupLogSubject().getLogString());
 
         String expectedMessage = HighAvailabilityMessages.CREATED().toString();
@@ -106,6 +122,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
                 argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.ROLE_CHANGED_LOG_HIERARCHY)));
     }
 
+    @Test
     public void testDelete() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();
@@ -127,6 +144,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
 
     }
 
+    @Test
     public void testSetPriority() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();
@@ -150,6 +168,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
                 argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.PRIORITY_CHANGED_LOG_HIERARCHY)));
     }
 
+    @Test
     public void testSetQuorumOverride() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();
@@ -173,6 +192,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
                 argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.QUORUM_OVERRIDE_CHANGED_LOG_HIERARCHY)));
     }
 
+    @Test
     public void testSetDesignatedPrimary() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();
@@ -196,6 +216,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
                 argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.DESIGNATED_PRIMARY_CHANGED_LOG_HIERARCHY)));
     }
 
+    @Test
     public void testRemoteNodeAdded() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();
@@ -224,6 +245,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
                 argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.ADDED_LOG_HIERARCHY)));
     }
 
+    @Test
     public void testRemoteNodeRemoved() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();
@@ -256,6 +278,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
                 argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.REMOVED_LOG_HIERARCHY)));
     }
 
+    @Test
     public void testRemoteNodeDetached() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();
@@ -283,8 +306,8 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
         Map<String, Object> node2Attributes = _helper.createNodeAttributes("node2", groupName, "localhost:" + node2PortNumber, helperAddress, nodeName);
         BDBHAVirtualHostNodeImpl node2 = (BDBHAVirtualHostNodeImpl)_helper.createHaVHN(node2Attributes);
 
-        assertTrue("Remote node was not added during expected period of time", remoteNodeAdded.await(10, TimeUnit.SECONDS));
-
+        assertTrue("Remote node was not added during expected period of time",
+                          remoteNodeAdded.await(10, TimeUnit.SECONDS));
 
         BDBHARemoteReplicationNodeImpl remoteNode = (BDBHARemoteReplicationNodeImpl)node1.getRemoteReplicationNodes().iterator().next();
         waitForRemoteNodeToAttainRole(remoteNode, EnumSet.of(NodeRole.REPLICA));
@@ -308,6 +331,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
     }
 
 
+    @Test
     public void testRemoteNodeReAttached() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();

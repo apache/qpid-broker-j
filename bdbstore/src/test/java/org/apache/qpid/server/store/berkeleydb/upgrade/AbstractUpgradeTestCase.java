@@ -25,6 +25,11 @@ import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPrepare
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.PRIORITY_QUEUE_NAME;
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.QUEUE_NAME;
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.QUEUE_WITH_DLQ_NAME;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,18 +37,21 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.UUID;
 
-import org.apache.qpid.server.logging.LogSubject;
-import org.apache.qpid.server.logging.subjects.TestBlankSubject;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.server.util.FileUtils;
-
 import com.sleepycat.je.Database;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Transaction;
+import org.junit.After;
+import org.junit.Before;
 
-public abstract class AbstractUpgradeTestCase extends QpidTestCase
+import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.subjects.TestBlankSubject;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
+
+public abstract class AbstractUpgradeTestCase extends UnitTestBase
 {
     protected static final class StaticAnswerHandler implements UpgradeInteractionHandler
     {
@@ -75,10 +83,11 @@ public abstract class AbstractUpgradeTestCase extends QpidTestCase
     private File _storeLocation;
     protected Environment _environment;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+
         _storeLocation = copyStore(getStoreDirectoryName());
 
         _environment = createEnvironment(_storeLocation);
@@ -99,19 +108,24 @@ public abstract class AbstractUpgradeTestCase extends QpidTestCase
         return new Environment(storeLocation, envConfig);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            _environment.close();
+            if (_environment != null)
+            {
+                _environment.close();
+            }
         }
         finally
         {
             _environment = null;
-            deleteDirectoryIfExists(_storeLocation);
+            if (_storeLocation != null)
+            {
+                deleteDirectoryIfExists(_storeLocation);
+            }
         }
-        super.tearDown();
     }
 
     private File copyStore(String storeDirectoryName) throws Exception
@@ -174,7 +188,7 @@ public abstract class AbstractUpgradeTestCase extends QpidTestCase
     public VirtualHost getVirtualHost()
     {
         VirtualHost virtualHost = mock(VirtualHost.class);
-        when(virtualHost.getName()).thenReturn(getName());
+        when(virtualHost.getName()).thenReturn(getTestName());
         when(virtualHost.getId()).thenReturn(UUID.randomUUID());
         return virtualHost;
     }

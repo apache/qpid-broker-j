@@ -19,21 +19,30 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Abstract test class for QueueEntryList implementations.
  */
-public abstract class QueueEntryListTestBase extends QpidTestCase
+public abstract class QueueEntryListTestBase extends UnitTestBase
 {
     public abstract QueueEntryList getTestList() throws Exception;
     public abstract QueueEntryList getTestList(boolean newList) throws Exception;
@@ -41,6 +50,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
     public abstract int getExpectedListLength();
     public abstract ServerMessage getTestMessageToAdd();
 
+    @Test
     public void testGetQueue() throws Exception
     {
         assertEquals("Unexpected head entry returned by getHead()", getTestList().getQueue(), getTestQueue());
@@ -53,6 +63,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getTestMessageToAdd()
      */
+    @Test
     public void testAddSpecificMessage() throws Exception
     {
         final QueueEntryList list = getTestList();
@@ -65,7 +76,10 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
             iter.getNode();
             count++;
         }
-        assertEquals("List did not grow by one entry after an add", getExpectedListLength() + 1, count);
+        assertEquals("List did not grow by one entry after an add",
+                            (long) (getExpectedListLength() + 1),
+                            (long) count);
+
     }
 
     /**
@@ -73,6 +87,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedListLength()
      */
+    @Test
     public void testAddGenericMessage() throws Exception
     {
         final QueueEntryList list = getTestList();
@@ -86,8 +101,9 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
             iter.getNode();
             count++;
         }
-        assertEquals("List did not grow by one entry after a generic message added", getExpectedListLength() + 1, count);
-
+        assertEquals("List did not grow by one entry after a generic message added",
+                            (long) (getExpectedListLength() + 1),
+                            (long) count);
     }
 
     private ServerMessage createServerMessage(long number)
@@ -108,6 +124,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedListLength()
      */
+    @Test
     public void testListNext() throws Exception
     {
         final QueueEntryList entryList = getTestList();
@@ -118,7 +135,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
             entry = entryList.next(entry);
             count++;
         }
-        assertEquals("Get next didn't get all the list entries", getExpectedListLength(), count);
+        assertEquals("Get next didn't get all the list entries", (long) getExpectedListLength(), (long) count);
     }
 
     /**
@@ -126,6 +143,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedListLength()
      */
+    @Test
     public void testIterator() throws Exception
     {
         final QueueEntryIterator iter = getTestList().iterator();
@@ -135,7 +153,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
             iter.getNode();
             count++;
         }
-        assertEquals("Iterator invalid", getExpectedListLength(), count);
+        assertEquals("Iterator invalid", (long) getExpectedListLength(), (long) count);
     }
 
     /**
@@ -143,6 +161,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedListLength()
      */
+    @Test
     public void testDequeuedMessagedNotPresentInIterator() throws Exception
     {
         final int numberOfMessages = getExpectedListLength();
@@ -171,7 +190,8 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
         }
         final int expectedNumber = numberOfMessages / 2;
         assertEquals("Expected  " + expectedNumber + " number of entries in iterator but got " + counter2,
-                        expectedNumber, counter2);
+                            (long) expectedNumber,
+                            (long) counter2);
     }
 
     /**
@@ -179,18 +199,22 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedFirstMsgId()
      */
+    @Test
     public void testGetHead() throws Exception
     {
         final QueueEntry head = getTestList().getHead();
         assertNull("Head entry should not contain an actual message", head.getMessage());
-        assertEquals("Unexpected message id for first list entry", getExpectedFirstMsgId(), getTestList().next(head)
-                        .getMessage().getMessageNumber());
+        assertEquals("Unexpected message id for first list entry",
+                            getExpectedFirstMsgId(),
+                            getTestList().next(head)
+                                         .getMessage().getMessageNumber());
     }
 
     /**
      * Test to verify the entry deletion handled correctly.
      * @see QueueEntryListTestBase#getTestList()
      */
+    @Test
     public void testEntryDeleted() throws Exception
     {
         final QueueEntry head = getTestList().getHead();
@@ -200,12 +224,16 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
         first.delete();
 
         final QueueEntry second = getTestList().next(head);
-        assertNotSame("After deletion the next entry should be different", first.getMessage().getMessageNumber(), second
+        assertNotSame("After deletion the next entry should be different",
+                             first.getMessage().getMessageNumber(),
+                             second
                         .getMessage().getMessageNumber());
 
         final QueueEntry third = getTestList().next(first);
-        assertEquals("After deletion the deleted nodes next node should be the same as the next from head", second
-                        .getMessage().getMessageNumber(), third.getMessage().getMessageNumber());
+        assertEquals("After deletion the deleted nodes next node should be the same as the next from head",
+                            second
+                        .getMessage().getMessageNumber(),
+                            third.getMessage().getMessageNumber());
     }
 
     /**
@@ -215,6 +243,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedListLength()
      */
+    @Test
     public void testIteratorIgnoresDeletedFinalNode() throws Exception
     {
         QueueEntryList list = getTestList(true);

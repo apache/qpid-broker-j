@@ -31,6 +31,10 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -38,25 +42,24 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PlainPasswordDatabaseAuthenticationManagerTest extends QpidTestCase
+public class PlainPasswordDatabaseAuthenticationManagerTest extends UnitTestBase
 {
     private Broker<?> _broker;
     private File _passwordFile;
     private ConfiguredObjectFactory _objectFactory;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _broker = BrokerTestHelper.createBrokerMock();
         _objectFactory = _broker.getObjectFactory();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -68,10 +71,10 @@ public class PlainPasswordDatabaseAuthenticationManagerTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testExistingPasswordFile()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password", "user:password");
@@ -89,6 +92,7 @@ public class PlainPasswordDatabaseAuthenticationManagerTest extends QpidTestCase
         assertThat(user.getName(), is(equalTo("user")));
     }
 
+    @Test
     public void testAddUser()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password");
@@ -111,6 +115,7 @@ public class PlainPasswordDatabaseAuthenticationManagerTest extends QpidTestCase
         assertThat(user.getName(), is(equalTo("user")));
     }
 
+    @Test
     public void testRemoveUser()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password", "user:password");
@@ -129,6 +134,7 @@ public class PlainPasswordDatabaseAuthenticationManagerTest extends QpidTestCase
         assertThat(provider.getChildren(User.class).size(), is(equalTo(0)));
     }
 
+    @Test
     public void testDurability()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password");
@@ -172,6 +178,7 @@ public class PlainPasswordDatabaseAuthenticationManagerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testAuthenticate()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password", "user:password");
@@ -203,6 +210,7 @@ public class PlainPasswordDatabaseAuthenticationManagerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDeleteProvider()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password", "user:password");

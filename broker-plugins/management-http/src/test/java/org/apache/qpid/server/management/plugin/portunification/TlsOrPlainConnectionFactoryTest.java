@@ -22,6 +22,8 @@
 package org.apache.qpid.server.management.plugin.portunification;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -44,12 +46,14 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class TlsOrPlainConnectionFactoryTest extends QpidTestCase
+public class TlsOrPlainConnectionFactoryTest extends UnitTestBase
 {
     private SslContextFactory _sslContextFactory;
     private Connector _connector;
@@ -58,10 +62,9 @@ public class TlsOrPlainConnectionFactoryTest extends QpidTestCase
 
     private TlsOrPlainConnectionFactory _factory;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _sslContextFactory = mock(SslContextFactory.class);
         SSLEngine sslEngine = mock(SSLEngine.class);
@@ -83,6 +86,7 @@ public class TlsOrPlainConnectionFactoryTest extends QpidTestCase
         _endPoint = mock(EndPoint.class);
     }
 
+    @Test
     public void testOnFillableForTLS() throws Exception
     {
         AtomicBoolean firstPart = new AtomicBoolean(true);
@@ -118,17 +122,18 @@ public class TlsOrPlainConnectionFactoryTest extends QpidTestCase
 
         ByteBuffer buffer = BufferUtil.allocate(4);
         int result = connection.getEndPoint().fill(buffer);
-        assertEquals(4, result);
+        assertEquals((long) 4, (long) result);
 
         assertTrue(Arrays.equals(new byte[]{(byte) 22, (byte) 3, (byte) 1, (byte) 0}, buffer.array()));
         buffer = BufferUtil.allocate(2);
 
         result = connection.getEndPoint().fill(buffer);
-        assertEquals(2, result);
+        assertEquals((long) 2, (long) result);
         assertTrue(Arrays.equals(new byte[]{(byte) 0, (byte) 1}, buffer.array()));
         verify(_endPoint, times(3)).fill(any());
     }
 
+    @Test
     public void testOnFillableForPlain() throws Exception
     {
         AtomicBoolean firstPart = new AtomicBoolean(true);
@@ -157,13 +162,13 @@ public class TlsOrPlainConnectionFactoryTest extends QpidTestCase
 
         ByteBuffer buffer = BufferUtil.allocate(4);
         int result = connection.getEndPoint().fill(buffer);
-        assertEquals(4, result);
+        assertEquals((long) 4, (long) result);
 
         assertEquals("HTTP", new String(buffer.array()));
 
         buffer = BufferUtil.allocate(6);
         result = connection.getEndPoint().fill(buffer);
-        assertEquals(6, result);
+        assertEquals((long) 6, (long) result);
         assertEquals(" 1.1\n\n", new String(buffer.array()));
         verify(_endPoint, times(2)).fill(any());
     }

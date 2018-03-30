@@ -18,56 +18,78 @@
  */
 package org.apache.qpid.disttest.controller;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class HillClimberTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class HillClimberTest extends UnitTestBase
 {
     final static double EPSILON = 1e-6;
 
+    @Test
     public void testHomingIn()
     {
         HillClimber hillClimber = new HillClimber(0, 16);
-        assertEquals(16, hillClimber.nextHigher(), EPSILON);
-        assertEquals(8, hillClimber.nextLower(), EPSILON);
-        assertEquals(4, hillClimber.nextLower(), EPSILON);
-        assertEquals(2, hillClimber.nextLower(), EPSILON);
-        assertEquals(1, hillClimber.nextLower(), EPSILON);
+        assertEquals((double) 16, hillClimber.nextHigher(), EPSILON);
+        assertEquals((double) 8, hillClimber.nextLower(), EPSILON);
+        assertEquals((double) 4, hillClimber.nextLower(), EPSILON);
+        assertEquals((double) 2, hillClimber.nextLower(), EPSILON);
+        assertEquals((double) 1, hillClimber.nextLower(), EPSILON);
         assertEquals(0.5, hillClimber.nextLower(), EPSILON);
     }
 
+    @Test
     public void testHomingIn2()
     {
         HillClimber hillClimber = new HillClimber(0, 16);
-        assertEquals(16, hillClimber.nextHigher(), EPSILON);
-        assertEquals(8, hillClimber.nextLower(), EPSILON);
-        assertEquals(12, hillClimber.nextHigher(), EPSILON);
-        assertEquals(14, hillClimber.nextHigher(), EPSILON);
-        assertEquals(13, hillClimber.nextLower(), EPSILON);
+        assertEquals((double) 16, hillClimber.nextHigher(), EPSILON);
+        assertEquals((double) 8, hillClimber.nextLower(), EPSILON);
+        assertEquals((double) 12, hillClimber.nextHigher(), EPSILON);
+        assertEquals((double) 14, hillClimber.nextHigher(), EPSILON);
+        assertEquals((double) 13, hillClimber.nextLower(), EPSILON);
         assertEquals(12.5, hillClimber.nextLower(), EPSILON);
     }
 
+    @Test
     public void testHomingInNegative()
     {
         HillClimber hillClimber = new HillClimber(0, 16);
-        assertEquals(-16, hillClimber.nextLower(), EPSILON);
-        assertEquals(-8, hillClimber.nextHigher(), EPSILON);
-        assertEquals(-4, hillClimber.nextHigher(), EPSILON);
-        assertEquals(-2, hillClimber.nextHigher(), EPSILON);
-        assertEquals(-3, hillClimber.nextLower(), EPSILON);
+        assertEquals((double) -16, hillClimber.nextLower(), EPSILON);
+        assertEquals((double) -8, hillClimber.nextHigher(), EPSILON);
+        assertEquals((double) -4, hillClimber.nextHigher(), EPSILON);
+        assertEquals((double) -2, hillClimber.nextHigher(), EPSILON);
+        assertEquals((double) -3, hillClimber.nextLower(), EPSILON);
         assertEquals(-3.5, hillClimber.nextLower(), EPSILON);
     }
 
+    @Test
     public void testExpSearch()
     {
         HillClimber hillClimber = new HillClimber(10, 16);
-        assertEquals(-16 + 10, hillClimber.nextLower(), EPSILON);
-        assertEquals(-48 + 10, hillClimber.nextLower(), EPSILON);
-        assertEquals(-112 + 10, hillClimber.nextLower(), EPSILON);
-        assertEquals(-80 + 10, hillClimber.nextHigher(), EPSILON);
-        assertEquals(-96 + 10, hillClimber.nextLower(), EPSILON);
-        assertEquals(-104 + 10, hillClimber.nextLower(), EPSILON);
+        assertEquals((double) (-16 + 10), hillClimber.nextLower(), EPSILON);
+        assertEquals((double) (-48 + 10), hillClimber.nextLower(), EPSILON);
+        assertEquals((double) (-112 + 10), hillClimber.nextLower(), EPSILON);
+        assertEquals((double) (-80 + 10), hillClimber.nextHigher(), EPSILON);
+        assertEquals((double) (-96 + 10), hillClimber.nextLower(), EPSILON);
+        assertEquals((double) (-104 + 10), hillClimber.nextLower(), EPSILON);
     }
 
+    @Test
     public void testExhaustiveCoverage()
     {
         assertExhaustiveCoverageForBias(0.5);
@@ -75,6 +97,7 @@ public class HillClimberTest extends QpidTestCase
         assertExhaustiveCoverageForBias(0.66);
     }
 
+    @Test
     public void testRejectInvalidBias()
     {
         try

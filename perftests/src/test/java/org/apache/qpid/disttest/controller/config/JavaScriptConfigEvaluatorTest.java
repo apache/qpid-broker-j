@@ -28,39 +28,65 @@ import java.util.TreeMap;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.junit.Assert;
 
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 
 
-public class JavaScriptConfigEvaluatorTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class JavaScriptConfigEvaluatorTest extends UnitTestBase
 {
     private void performTest(Map configAsObject) throws Exception
     {
         // Tests are produced by the QPID.iterations js function
         List<?> countries = getPropertyAsList(configAsObject, "_countries");
-        assertEquals("Unexpected number of countries", 2, countries.size());
+        assertEquals("Unexpected number of countries", (long) 2, (long) countries.size());
 
         Map country0 = (Map) countries.get(0);
         assertEquals("Unexpected country name", "Country", country0.get("_name"));
-        assertEquals("Unexpected country iteration number", 0, ((Number)country0.get("_iterationNumber")).intValue());
+        assertEquals("Unexpected country iteration number",
+                            (long) 0,
+                            (long) ((Number) country0.get("_iterationNumber")).intValue());
 
         List<?> regions = getPropertyAsList(country0, "_regions");
-        assertEquals("Unexpected number of regions", 2, regions.size());
+        assertEquals("Unexpected number of regions", (long) 2, (long) regions.size());
         // Region names are produced by the QPID.times js function
         Map region0 = (Map) regions.get(0);
         assertEquals("Unexpected region name", "repeatingRegion0", region0.get("_name"));
         assertEquals("Unexpected region name", "repeatingRegion1", ((Map)regions.get(1)).get("_name"));
         // Iterating attribute are produced by the QPID.iterations js function
-        assertEquals("Unexpected iterating attribute", "0", ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"));
+        assertEquals("Unexpected iterating attribute",
+                            "0",
+                            ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"));
 
         Map country1 = (Map) countries.get(1);
         regions = getPropertyAsList(country1, "_regions");
         region0 = (Map) regions.get(0);
-        assertEquals("Unexpected country iteration number", 1, ((Number)country1.get("_iterationNumber")).intValue());
-        assertEquals("Unexpected iterating attribute", "1", ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"));
+        assertEquals("Unexpected country iteration number",
+                            (long) 1,
+                            (long) ((Number) country1.get("_iterationNumber")).intValue());
+        assertEquals("Unexpected iterating attribute",
+                            "1",
+                            ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"));
     }
 
+    @Test
     public void testEvaluateJavaScript() throws Exception
     {
         String jsFilePath = TestFileUtils.createTempFileFromResource(this, "JavaScriptConfigEvaluatorTest-test-config.js").getAbsolutePath();
@@ -71,6 +97,7 @@ public class JavaScriptConfigEvaluatorTest extends QpidTestCase
         performTest(configAsObject);
     }
 
+    @Test
     public void testEvaluateJavaScriptWithReader() throws Exception
     {
         String jsFilePath = TestFileUtils.createTempFileFromResource(this, "JavaScriptConfigEvaluatorTest-test-config.js").getAbsolutePath();

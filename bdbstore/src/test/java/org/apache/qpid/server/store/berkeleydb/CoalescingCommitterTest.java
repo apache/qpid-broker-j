@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -30,37 +35,38 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-
-public class CoalescingCommitterTest extends QpidTestCase
+public class CoalescingCommitterTest extends UnitTestBase
 {
     private EnvironmentFacade _environmentFacade;
     private CoalescingCommiter _coalescingCommitter;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+
         _environmentFacade = mock(EnvironmentFacade.class);
         _coalescingCommitter = new CoalescingCommiter("Test", _environmentFacade);
         _coalescingCommitter.start();
     }
 
-    @Override
-    public void tearDown() throws Exception
+    @After
+    public void tearDown()
     {
-        try
+        if (_coalescingCommitter != null)
         {
             _coalescingCommitter.stop();
         }
-        finally
-        {
-            super.tearDown();
-        }
     }
 
+    @Test
     public void testCommitterEnvironmentFacadeInteractionsOnSyncCommit() throws Exception
     {
         RuntimeException testFailure = new RuntimeException("Test");
@@ -85,6 +91,7 @@ public class CoalescingCommitterTest extends QpidTestCase
         verify(_environmentFacade, times(1)).flushLogFailed(testFailure);
     }
 
+    @Test
     public void testCommitterEnvironmentFacadeInteractionsOnAsyncCommit() throws Exception
     {
         RuntimeException testFailure = new RuntimeException("Test");

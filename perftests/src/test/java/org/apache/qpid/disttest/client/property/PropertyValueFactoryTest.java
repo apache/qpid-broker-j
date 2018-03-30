@@ -18,47 +18,72 @@
  */
 package org.apache.qpid.disttest.client.property;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class PropertyValueFactoryTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class PropertyValueFactoryTest extends UnitTestBase
 {
     private PropertyValueFactory _factory;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _factory = new PropertyValueFactory();
     }
 
+    @Test
     public void testCreateListPropertyValue()
     {
         PropertyValue propertyValue = _factory.createPropertyValue("list");
         assertNotNull("List generator is not created", propertyValue);
-        assertTrue("Unexpected type of list generator", propertyValue instanceof ListPropertyValue);
+        final boolean condition = propertyValue instanceof ListPropertyValue;
+        assertTrue("Unexpected type of list generator", condition);
     }
 
+    @Test
     public void testCreateRangePropertyValue()
     {
         PropertyValue propertyValue = _factory.createPropertyValue("range");
         assertNotNull("Range generator is not created", propertyValue);
-        assertTrue("Unexpected type of range generator", propertyValue instanceof RangePropertyValue);
+        final boolean condition = propertyValue instanceof RangePropertyValue;
+        assertTrue("Unexpected type of range generator", condition);
     }
 
+    @Test
     public void testCreateRandomPropertyValue()
     {
         PropertyValue propertyValue = _factory.createPropertyValue("random");
         assertNotNull("Random generator is not created", propertyValue);
-        assertTrue("Unexpected type of range generator", propertyValue instanceof RandomPropertyValue);
+        final boolean condition = propertyValue instanceof RandomPropertyValue;
+        assertTrue("Unexpected type of range generator", condition);
     }
 
+    @Test
     public void testCreateSimplePropertyValue()
     {
         PropertyValue propertyValue = _factory.createPropertyValue("simple");
         assertNotNull("Simple property value is not created", propertyValue);
-        assertTrue("Unexpected type of property value", propertyValue instanceof SimplePropertyValue);
+        final boolean condition = propertyValue instanceof SimplePropertyValue;
+        assertTrue("Unexpected type of property value", condition);
     }
 
+    @Test
     public void testCreateNonExistingPropertyValue()
     {
         try

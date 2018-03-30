@@ -19,18 +19,24 @@
 
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.junit.Assert.fail;
+
 import java.io.File;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class EnvHomeRegistryTest extends QpidTestCase
+import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class EnvHomeRegistryTest extends UnitTestBase
 {
 
     private final EnvHomeRegistry _ehr = new EnvHomeRegistry();
 
+    @Test
     public void testDuplicateEnvHomeRejected() throws Exception
     {
-        File home = new File(QpidTestCase.TMP_FOLDER, getName());
+        File home = new File(QpidTestCase.TMP_FOLDER, getTestName());
 
         _ehr.registerHome(home);
         try
@@ -44,18 +50,20 @@ public class EnvHomeRegistryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testUniqueEnvHomesAllowed() throws Exception
     {
-        File home1 = new File(QpidTestCase.TMP_FOLDER, getName() + "1");
-        File home2 = new File(QpidTestCase.TMP_FOLDER, getName() + "2");
+        File home1 = new File(QpidTestCase.TMP_FOLDER, getTestName() + "1");
+        File home2 = new File(QpidTestCase.TMP_FOLDER, getTestName() + "2");
 
         _ehr.registerHome(home1);
         _ehr.registerHome(home2);
     }
 
+    @Test
     public void testReuseOfEnvHomesAllowed() throws Exception
     {
-        File home = new File(QpidTestCase.TMP_FOLDER, getName() + "1");
+        File home = new File(QpidTestCase.TMP_FOLDER, getTestName() + "1");
 
         _ehr.registerHome(home);
 

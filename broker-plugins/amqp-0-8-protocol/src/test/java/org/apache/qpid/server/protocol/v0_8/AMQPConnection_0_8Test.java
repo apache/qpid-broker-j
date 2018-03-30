@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -32,9 +35,10 @@ import java.util.Collections;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.protocol.v0_8.transport.ProtocolInitiation;
-import org.apache.qpid.server.protocol.ProtocolVersion;
-import org.apache.qpid.server.properties.ConnectionStartProperties;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -50,6 +54,9 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.properties.ConnectionStartProperties;
+import org.apache.qpid.server.protocol.ProtocolVersion;
+import org.apache.qpid.server.protocol.v0_8.transport.ProtocolInitiation;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -59,13 +66,13 @@ import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
+import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.server.transport.ByteBufferSender;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AMQPConnection_0_8Test extends QpidTestCase
+public class AMQPConnection_0_8Test extends UnitTestBase
 {
     private static final String VIRTUAL_HOST_NAME = "vhost";
     private static final byte[] SASL_RESPONSE = "response".getBytes();
@@ -83,10 +90,9 @@ public class AMQPConnection_0_8Test extends QpidTestCase
     private AggregateTicker _ticker;
     private ByteBufferSender _sender;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         EventLogger value = new EventLogger();
 
@@ -163,7 +169,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         _ticker = new AggregateTicker();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -172,10 +178,10 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testCloseOnNoRoute()
     {
         {
@@ -206,6 +212,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         }
     }
 
+    @Test
     public void testConnectionEnforcesMaxSessions() throws Exception
     {
         AMQPConnection_0_8Impl
@@ -220,23 +227,28 @@ public class AMQPConnection_0_8Test extends QpidTestCase
 
         // check the channel count is correct
         int channelCount = conn.getSessionModels().size();
-        assertEquals("Initial channel count wrong", 0, channelCount);
+        assertEquals("Initial channel count wrong", (long) 0, (long) channelCount);
 
-        assertEquals("Number of channels not correctly set.", maxChannels, conn.getSessionCountLimit());
+        assertEquals("Number of channels not correctly set.",
+                            (long) maxChannels,
+                            (long) conn.getSessionCountLimit());
+
 
         assertFalse("Connection should not be closed after opening " + maxChannels + " channels",
-                    conn.isClosing());
+                           conn.isClosing());
         for (long currentChannel = 1L; currentChannel <= maxChannels; currentChannel++)
         {
             conn.receiveChannelOpen((int) currentChannel);
         }
 
         assertFalse("Connection should not be closed after opening " + maxChannels + " channels",
-                    conn.isClosing());
-        assertEquals("Maximum number of channels not set.", maxChannels, conn.getSessionModels().size());
+                           conn.isClosing());
+        assertEquals("Maximum number of channels not set.",
+                            (long) maxChannels,
+                            (long) conn.getSessionModels().size());
         conn.receiveChannelOpen(maxChannels + 1);
         assertTrue("Connection should be closed after opening " + (maxChannels + 1) + " channels",
-                   conn.isClosing());
+                          conn.isClosing());
     }
 
 }

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,78 +33,99 @@ import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.spi.FilterReply;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.apache.qpid.server.logging.logback.VirtualHostLogEventExcludingFilter;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class VirtualHostLogEventExcludingFilterTest extends QpidTestCase
+public class VirtualHostLogEventExcludingFilterTest extends UnitTestBase
 {
     private BrokerLogger<?> _brokerLogger;
     private ILoggingEvent _loggingEvent;
     private VirtualHostLogEventExcludingFilter _filter;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _brokerLogger = mock(BrokerLogger.class);
         _loggingEvent = mock(ILoggingEvent.class);
         _filter = new VirtualHostLogEventExcludingFilter(_brokerLogger);
     }
 
+    @Test
     public void testDecideOnNoVirtualHostPrincipalInSubjectAndVirtualHostLogEventNotExcluded() throws Exception
     {
         Subject subject = new Subject();
         subject.getPrincipals().add(mock(Principal.class));
         FilterReply reply = doTestDecide(subject);
-        assertEquals("Unexpected reply for BrokerLogger#virtualHostLogEventExcluded=false and no VH principal in subject",
-                FilterReply.NEUTRAL, reply);
+        assertEquals(
+                "Unexpected reply for BrokerLogger#virtualHostLogEventExcluded=false and no VH principal in subject",
+                FilterReply.NEUTRAL,
+                reply);
+
     }
 
+    @Test
     public void testDecideOnNoVirtualHostPrincipalInSubjectAndVirtualHostLogEventExcluded() throws Exception
     {
         when(_brokerLogger.isVirtualHostLogEventExcluded()).thenReturn(true);
         Subject subject = new Subject();
         subject.getPrincipals().add(mock(Principal.class));
         FilterReply reply = doTestDecide(subject);
-        assertEquals("Unexpected reply for BrokerLogger#virtualHostLogEventExcluded=true and no VH principal in subject",
-                FilterReply.NEUTRAL, reply);
+        assertEquals(
+                "Unexpected reply for BrokerLogger#virtualHostLogEventExcluded=true and no VH principal in subject",
+                FilterReply.NEUTRAL,
+                reply);
     }
 
+    @Test
     public void testDecideOnVirtualHostPrincipalInSubjectAndVirtualHostLogEventNotExcluded() throws Exception
     {
         Subject subject = new Subject();
         subject.getPrincipals().add(mock(VirtualHostPrincipal.class));
         FilterReply reply = doTestDecide(subject);
-        assertEquals("Unexpected reply for BrokerLogger#virtualHostLogEventExcluded=false and VH principal in subject",
-                FilterReply.NEUTRAL, reply);
+        assertEquals(
+                "Unexpected reply for BrokerLogger#virtualHostLogEventExcluded=false and VH principal in subject",
+                FilterReply.NEUTRAL,
+                reply);
     }
 
+    @Test
     public void testDecideOnVirtualHostPrincipalInSubjectAndVirtualHostLogEventExcluded() throws Exception
     {
         when(_brokerLogger.isVirtualHostLogEventExcluded()).thenReturn(true);
         Subject subject = new Subject();
         subject.getPrincipals().add(mock(VirtualHostPrincipal.class));
         FilterReply reply = doTestDecide(subject);
-        assertEquals("Unexpected reply for BrokerLogger#virtualHostLogEventExcluded=true and VH principal in subject",
-                FilterReply.DENY, reply);
+        assertEquals(
+                "Unexpected reply for BrokerLogger#virtualHostLogEventExcluded=true and VH principal in subject",
+                FilterReply.DENY,
+                reply);
     }
 
+    @Test
     public void testDecideOnVirtualHostLogEventNotExcludedAndNullSubject() throws Exception
     {
         FilterReply reply = _filter.decide(_loggingEvent);
-        assertEquals(" BrokerLogger#virtualHostLogEventExcluded=false and subject=null", FilterReply.NEUTRAL, reply);
-        assertNull("Subject should not be set in test environment", Subject.getSubject(AccessController.getContext()));
+        assertEquals(" BrokerLogger#virtualHostLogEventExcluded=false and subject=null",
+                            FilterReply.NEUTRAL,
+                            reply);
+        assertNull("Subject should not be set in test environment",
+                          Subject.getSubject(AccessController.getContext()));
     }
 
+    @Test
     public void testDecideOnVirtualHostLogEventExcludedAndNullSubject() throws Exception
     {
         when(_brokerLogger.isVirtualHostLogEventExcluded()).thenReturn(true);
         FilterReply reply = _filter.decide(_loggingEvent);
-        assertEquals(" BrokerLogger#virtualHostLogEventExcluded=true and subject=null", FilterReply.NEUTRAL, reply);
-        assertNull("Subject should not be set in test environment", Subject.getSubject(AccessController.getContext()));
+        assertEquals(" BrokerLogger#virtualHostLogEventExcluded=true and subject=null",
+                            FilterReply.NEUTRAL,
+                            reply);
+        assertNull("Subject should not be set in test environment",
+                          Subject.getSubject(AccessController.getContext()));
     }
 
     private FilterReply doTestDecide(Subject subject)

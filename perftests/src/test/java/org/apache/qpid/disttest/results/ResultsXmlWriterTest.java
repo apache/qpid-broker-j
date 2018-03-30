@@ -20,6 +20,12 @@
  */
 package org.apache.qpid.disttest.results;
 
+import static org.apache.qpid.test.utils.JvmVendor.IBM;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assume.assumeThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,19 +34,40 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 import com.google.common.io.Resources;
+import org.junit.Before;
 
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.results.aggregation.ITestResult;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-public class ResultsXmlWriterTest extends QpidTestCase
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ResultsXmlWriterTest extends UnitTestBase
 {
     private File _outputDir = TestFileUtils.createTestDirectory();
 
     private ResultsWriter _resultsFileWriter = new ResultsXmlWriter(_outputDir);
 
+    @Before
+    public void setUp() throws Exception
+    {
+        assumeThat("Transformer on IBM JDK has different whitespace behaviour", getJvmVendor(), is(not(equalTo(IBM))));
+    }
+
+    @Test
     public void testResultForNoTests() throws Exception
     {
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
@@ -55,6 +82,7 @@ public class ResultsXmlWriterTest extends QpidTestCase
         assertEquals(expectedXmlContent, Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
     }
 
+    @Test
     public void testResultForOneTest() throws Exception
     {
         ITestResult test = mock(ITestResult.class);
@@ -72,9 +100,10 @@ public class ResultsXmlWriterTest extends QpidTestCase
 
         File resultsFile = new File(_outputDir, "config.xml");
 
-        assertEquals(expectedXmlContent,   Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
+        assertEquals(expectedXmlContent, Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
     }
 
+    @Test
     public void testResultForOneTestWithError() throws Exception
     {
         ParticipantResult resultWithError = mock(ParticipantResult.class);

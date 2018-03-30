@@ -21,6 +21,7 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +35,8 @@ import java.util.HashMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -48,21 +51,21 @@ import org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter.MapT
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.typedmessage.mimecontentconverter.ListToJmsStreamMessage;
 import org.apache.qpid.server.typedmessage.mimecontentconverter.MapToJmsMapMessage;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
+public class MessageConverter_Internal_to_0_8Test extends UnitTestBase
 {
     private final MessageConverter_Internal_to_v0_8 _converter = new MessageConverter_Internal_to_v0_8();
     private final StoredMessage<InternalMessageMetaData> _handle = mock(StoredMessage.class);
     private final AMQMessageHeader _amqpHeader = mock(AMQMessageHeader.class);
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
     }
 
 
+    @Test
     public void testStringMessage() throws Exception
     {
         String content = "testContent";
@@ -70,6 +73,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, mimeType, content.getBytes(UTF_8), mimeType);
     }
 
+    @Test
     public void testStringMessageWithUnknownMimeType() throws Exception
     {
         String content = "testContent";
@@ -77,12 +81,14 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, mimeType, content.getBytes(UTF_8), "text/plain");
     }
 
+    @Test
     public void testStringMessageWithoutMimeType() throws Exception
     {
         String content = "testContent";
         doTest(content, null, content.getBytes(UTF_8), "text/plain");
     }
 
+    @Test
     public void testListMessageWithMimeType() throws Exception
     {
         ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
@@ -91,6 +97,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, "foo/bar", expectedContent, listToJmsStreamMessage.getMimeType());
     }
 
+    @Test
     public void testListMessageWithoutMimeType() throws Exception
     {
         ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
@@ -99,6 +106,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, null, expectedContent, listToJmsStreamMessage.getMimeType());
     }
 
+    @Test
     public void testListMessageWithoutMimeTypeWithNonJmsContent() throws Exception
     {
         ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42, Lists.newArrayList());
@@ -107,6 +115,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, null, expectedContent, listToAmqpListConverter.getMimeType());
     }
 
+    @Test
     public void testListMessageWithoutMimeTypeWithNonConvertibleItem() throws Exception
     {
         ArrayList<?> content = Lists.newArrayList(new MySerializable());
@@ -114,12 +123,14 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, null, getObjectStreamMessageBytes(content), "application/java-object-stream");
     }
 
+    @Test
     public void testByteArrayMessageWithoutMimeType() throws Exception
     {
         byte[] content = "testContent".getBytes(UTF_8);
         doTest(content, null, content, "application/octet-stream");
     }
 
+    @Test
     public void testByteArrayMessageWithMimeType() throws Exception
     {
         byte[] content = "testContent".getBytes(UTF_8);
@@ -127,6 +138,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, mimeType, content, mimeType);
     }
 
+    @Test
     public void testEmptyByteArrayMessageWithMimeType() throws Exception
     {
         byte[] content = new byte[0];
@@ -134,6 +146,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, mimeType, content, mimeType);
     }
 
+    @Test
     public void testMapMessageWithMimeType() throws Exception
     {
         HashMap<Object, Object> content = new HashMap<>();
@@ -145,6 +158,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, mimeType, expectedContent, mapToJmsMapMessage.getMimeType());
     }
 
+    @Test
     public void testMapMessageWithoutMimeType() throws Exception
     {
         HashMap<Object, Object> content = new HashMap<>();
@@ -155,6 +169,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, null, expectedContent, mapToJmsMapMessage.getMimeType());
     }
 
+    @Test
     public void testMapMessageWithMimeTypeWithNonJmsContent() throws Exception
     {
         HashMap<Object, Object> content = new HashMap<>();
@@ -165,6 +180,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, mimeType, expectedContent, mapToAmqpMapConverter.getMimeType());
     }
 
+    @Test
     public void testMapMessageWithoutMimeTypeWithNonConvertibleEntry() throws Exception
     {
         HashMap<Object, Object> content = new HashMap<>();
@@ -173,6 +189,7 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, null, getObjectStreamMessageBytes(content), "application/java-object-stream");
     }
 
+    @Test
     public void testSerializableMessageWithMimeType() throws Exception
     {
         Serializable content = new MySerializable();
@@ -180,12 +197,14 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         doTest(content, mimeType, getObjectStreamMessageBytes(content), "application/java-object-stream");
     }
 
+    @Test
     public void testSerializableMessageWithoutMimeType() throws Exception
     {
         Serializable content = new MySerializable();
         doTest(content, null, getObjectStreamMessageBytes(content), "application/java-object-stream");
     }
 
+    @Test
     public void testNullMessageWithoutMimeType() throws Exception
     {
         doTest(null, null, null, null);
@@ -249,7 +268,9 @@ public class MessageConverter_Internal_to_0_8Test extends QpidTestCase
         final QpidByteBuffer content = convertedMessage.getContent();
 
         assertArrayEquals("Unexpected content", expectedContent != null ? expectedContent : new byte[0], getBytes(content));
-        assertEquals("Unexpected content type", expectedContentType, convertedMessage.getMessageHeader().getMimeType());
+        assertEquals("Unexpected content type",
+                            expectedContentType,
+                            convertedMessage.getMessageHeader().getMimeType());
     }
 
     private byte[] getBytes(final QpidByteBuffer content) throws Exception

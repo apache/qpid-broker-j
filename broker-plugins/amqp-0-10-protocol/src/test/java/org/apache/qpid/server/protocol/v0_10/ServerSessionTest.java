@@ -18,17 +18,22 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -49,25 +54,24 @@ import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ServerSessionTest extends QpidTestCase
+public class ServerSessionTest extends UnitTestBase
 {
 
     private VirtualHost<?> _virtualHost;
     private CurrentThreadTaskExecutor _taskExecutor;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         BrokerTestHelper.setUp();
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
-        _virtualHost = BrokerTestHelper.createVirtualHost(getName());
+        _virtualHost = BrokerTestHelper.createVirtualHost(getTestName(), this);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -89,11 +93,11 @@ public class ServerSessionTest extends QpidTestCase
             finally
             {
                 BrokerTestHelper.tearDown();
-                super.tearDown();
             }
         }
     }
 
+    @Test
     public void testOverlargeMessageTest() throws Exception
     {
         final Broker<?> broker = mock(Broker.class);
@@ -124,7 +128,7 @@ public class ServerSessionTest extends QpidTestCase
 
         final List<Method> invokedMethods = new ArrayList<>();
         ServerSession session = new ServerSession(connection, new ServerSessionDelegate(),
-                                                   new Binary(getName().getBytes()), 0)
+                                                  new Binary(getTestName().getBytes()), 0)
         {
             @Override
             public void invoke(final Method m)
@@ -143,8 +147,11 @@ public class ServerSessionTest extends QpidTestCase
 
         assertFalse("No methods invoked - expecting at least 1", invokedMethods.isEmpty());
         Method firstInvoked = invokedMethods.get(0);
-        assertTrue("First invoked method not execution error", firstInvoked instanceof ExecutionException);
-        assertEquals(ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED, ((ExecutionException)firstInvoked).getErrorCode());
+        final boolean condition = firstInvoked instanceof ExecutionException;
+        assertTrue("First invoked method not execution error", condition);
+        assertEquals(ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED,
+                            ((ExecutionException)firstInvoked).getErrorCode());
+
 
         invokedMethods.clear();
 

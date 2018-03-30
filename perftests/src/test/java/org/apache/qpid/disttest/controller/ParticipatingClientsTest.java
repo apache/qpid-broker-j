@@ -25,9 +25,26 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class ParticipatingClientsTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ParticipatingClientsTest extends UnitTestBase
 {
     private static final String CLIENT1_CONFIGURED_NAME = "CLIENT1_CONFIGURED_NAME";
     private static final String CLIENT2_CONFIGURED_NAME = "CLIENT2_CONFIGURED_NAME";
@@ -38,13 +55,13 @@ public class ParticipatingClientsTest extends QpidTestCase
     private ClientRegistry _clientRegistry;
     private List<String> _configuredClientNamesForTest;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _clientRegistry = mock(ClientRegistry.class);
     }
 
+    @Test
     public void testTooFewRegisteredClientsForTest()
     {
         _configuredClientNamesForTest = Arrays.asList(CLIENT1_CONFIGURED_NAME, CLIENT2_CONFIGURED_NAME);
@@ -63,6 +80,7 @@ public class ParticipatingClientsTest extends QpidTestCase
     }
 
 
+    @Test
     public void testSelectOneClientFromPoolOfOne()
     {
         _configuredClientNamesForTest = Arrays.asList(CLIENT1_CONFIGURED_NAME);
@@ -72,6 +90,7 @@ public class ParticipatingClientsTest extends QpidTestCase
         assertBothWays(clients, CLIENT1_REGISTERED_NAME, CLIENT1_CONFIGURED_NAME);
     }
 
+    @Test
     public void testSelectTwoClientFromPoolOfMany()
     {
         _configuredClientNamesForTest = Arrays.asList(CLIENT1_CONFIGURED_NAME, CLIENT2_CONFIGURED_NAME);
@@ -83,6 +102,7 @@ public class ParticipatingClientsTest extends QpidTestCase
         assertBothWays(clients, CLIENT2_REGISTERED_NAME, CLIENT2_CONFIGURED_NAME);
     }
 
+    @Test
     public void testGetUnrecognisedConfiguredName()
     {
         _configuredClientNamesForTest = Arrays.asList(CLIENT1_CONFIGURED_NAME);
@@ -94,6 +114,7 @@ public class ParticipatingClientsTest extends QpidTestCase
         testUnrecognisedClientRegisteredName(clients, "unknown");
     }
 
+    @Test
     public void testGetRegisteredClientNames()
     {
         _configuredClientNamesForTest = Arrays.asList(CLIENT1_CONFIGURED_NAME);
@@ -103,7 +124,7 @@ public class ParticipatingClientsTest extends QpidTestCase
         ParticipatingClients clients = new ParticipatingClients(_clientRegistry, _configuredClientNamesForTest);
 
         Collection<String> registeredParticipatingNames = clients.getRegisteredNames();
-        assertEquals(1, registeredParticipatingNames.size());
+        assertEquals((long) 1, (long) registeredParticipatingNames.size());
         assertTrue(registeredParticipatingNames.contains(CLIENT1_REGISTERED_NAME));
     }
 

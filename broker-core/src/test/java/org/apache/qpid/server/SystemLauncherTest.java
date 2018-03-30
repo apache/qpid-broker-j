@@ -21,6 +21,10 @@
 package org.apache.qpid.server;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
@@ -28,17 +32,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SystemLauncherTest extends QpidTestCase
+public class SystemLauncherTest extends UnitTestBase
 {
     private static final String INITIAL_SYSTEM_PROPERTY = "test";
     private static final String INITIAL_SYSTEM_PROPERTY_VALUE = "testValue";
@@ -48,10 +55,9 @@ public class SystemLauncherTest extends QpidTestCase
     private File _brokerWork;
     private SystemLauncher _systemLauncher;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         // create empty initial configuration
         Map<String,Object> initialConfig = new HashMap<>();
@@ -68,12 +74,11 @@ public class SystemLauncherTest extends QpidTestCase
         setTestSystemProperty("QPID_WORK", _brokerWork.getAbsolutePath());
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            super.tearDown();
         }
         finally
         {
@@ -88,6 +93,7 @@ public class SystemLauncherTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testInitialSystemPropertiesAreSetOnBrokerStartup() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -99,20 +105,28 @@ public class SystemLauncherTest extends QpidTestCase
         _systemLauncher.startup(attributes);
 
         // test JVM system property should be set from initial system config file
-        assertEquals("Unexpected JVM system property", INITIAL_SYSTEM_PROPERTY_VALUE, System.getProperty(INITIAL_SYSTEM_PROPERTY));
+        assertEquals("Unexpected JVM system property",
+                            INITIAL_SYSTEM_PROPERTY_VALUE,
+                            System.getProperty(INITIAL_SYSTEM_PROPERTY));
+
 
         // existing system property should not be overridden
-        assertEquals("Unexpected QPID_WORK system property", _brokerWork.getAbsolutePath(), System.getProperty("QPID_WORK"));
+        assertEquals("Unexpected QPID_WORK system property",
+                            _brokerWork.getAbsolutePath(),
+                            System.getProperty("QPID_WORK"));
     }
 
+    @Test
     public void testConsoleLogsOnSuccessfulStartup() throws Exception
     {
         byte[] outputBytes = startBrokerAndCollectSystemOutput();
         String output = new String(outputBytes);
         assertFalse("Detected unexpected Exception: " + output, output.contains("Exception"));
-        assertTrue("Output does not contain Broker Ready Message", output.contains(BrokerMessages.READY().toString()));
+        assertTrue("Output does not contain Broker Ready Message",
+                          output.contains(BrokerMessages.READY().toString()));
     }
 
+    @Test
     public void testConsoleLogsOnUnsuccessfulStartup() throws Exception
     {
         Map<String,Object> initialConfig = new HashMap<>();

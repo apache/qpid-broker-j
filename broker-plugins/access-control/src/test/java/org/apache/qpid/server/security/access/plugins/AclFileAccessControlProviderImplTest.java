@@ -22,6 +22,8 @@
 package org.apache.qpid.server.security.access.plugins;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +32,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -37,18 +42,17 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AclFileAccessControlProviderImplTest extends QpidTestCase
+public class AclFileAccessControlProviderImplTest extends UnitTestBase
 {
     private TaskExecutor _taskExecutor;
     private Model _model;
     private Broker _broker;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         _model = BrokerModel.getInstance();
 
@@ -60,6 +64,7 @@ public class AclFileAccessControlProviderImplTest extends QpidTestCase
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
     }
 
+    @Test
     public void testValidationOnCreateWithNonExistingACLFile()
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -77,7 +82,10 @@ public class AclFileAccessControlProviderImplTest extends QpidTestCase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Unexpected exception message:" + e.getMessage(), String.format("Cannot convert %s to a readable resource", aclFilePath ), e.getMessage());
+            assertEquals("Unexpected exception message:" + e.getMessage(),
+                                String.format("Cannot convert %s to a readable resource", aclFilePath),
+                                e.getMessage());
+
         }
     }
 

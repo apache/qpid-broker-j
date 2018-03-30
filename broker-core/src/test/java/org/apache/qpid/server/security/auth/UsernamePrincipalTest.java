@@ -20,20 +20,27 @@
  */
 package org.apache.qpid.server.security.auth;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Tests the UsernamePrincipal.
- *
  */
-public class UsernamePrincipalTest extends QpidTestCase
+public class UsernamePrincipalTest extends UnitTestBase
 {
+    @Test
     public void testEqualitySameObject()
     {
         final UsernamePrincipal principal = new UsernamePrincipal("string", null);
         assertTrue(principal.equals(principal));
     }
 
+    @Test
     public void testEqualitySameName()
     {
         final String string = "string";
@@ -42,6 +49,7 @@ public class UsernamePrincipalTest extends QpidTestCase
         assertTrue(principal1.equals(principal2));
     }
 
+    @Test
     public void testEqualityEqualName()
     {
         final UsernamePrincipal principal1 = new UsernamePrincipal(new String("string"), null);
@@ -49,6 +57,7 @@ public class UsernamePrincipalTest extends QpidTestCase
         assertTrue(principal1.equals(principal2));
     }
 
+    @Test
     public void testInequalityDifferentUserPrincipals()
     {
         UsernamePrincipal principal1 = new UsernamePrincipal("string1", null);
@@ -56,12 +65,14 @@ public class UsernamePrincipalTest extends QpidTestCase
         assertFalse(principal1.equals(principal2));
     }
 
+    @Test
     public void testInequalityNonUserPrincipal()
     {
         UsernamePrincipal principal = new UsernamePrincipal("string", null);
         assertFalse(principal.equals(new String("string")));
     }
 
+    @Test
     public void testInequalityNull()
     {
         UsernamePrincipal principal = new UsernamePrincipal("string", null);

@@ -20,6 +20,11 @@
 package org.apache.qpid.server.store.derby;
 
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.assertRecords;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -39,6 +44,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,9 +57,10 @@ import org.apache.qpid.server.store.jdbc.AbstractJDBCPreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class DerbyPreferenceStoreTest extends QpidTestCase
+public class DerbyPreferenceStoreTest extends UnitTestBase
 {
     private PreferenceStoreUpdater _updater;
     private DerbyTestPreferenceStore _preferenceStore;
@@ -59,10 +68,10 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
     private String _connectionUrl;
     private Connection _testConnection;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.DERBY)));
 
         _updater = mock(PreferenceStoreUpdater.class);
         when(_updater.getLatestVersion()).thenReturn(BrokerModel.MODEL_VERSION);
@@ -79,7 +88,7 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
                 new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "test1")));
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -88,15 +97,21 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
             {
                 _testConnection.close();
             }
-            _preferenceStore.close();
-            shutdownDerby();
+            if (_preferenceStore != null)
+            {
+                _preferenceStore.close();
+            }
         }
         finally
         {
-            super.tearDown();
+            if (_connectionUrl != null)
+            {
+                DerbyUtils.shutdownDatabase(_connectionUrl);
+            }
         }
     }
 
+    @Test
     public void testVersionAfterUpgrade() throws Exception
     {
         ModelVersion storeVersion =
@@ -121,10 +136,11 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
         assertEquals("Unexpected version", BrokerModel.MODEL_VERSION, storedVersion.toString());
     }
 
+    @Test
     public void testOpenAndLoadEmptyStore() throws Exception
     {
         Collection<PreferenceRecord> records = _preferenceStore.openAndLoad(_updater);
-        assertEquals("Unexpected number of records", 0, records.size());
+        assertEquals("Unexpected number of records", (long) 0, (long) records.size());
 
         _testConnection = DriverManager.getConnection(_connectionUrl);
 
@@ -144,10 +160,11 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
             }
         }
 
-        assertEquals("Unexpected versions size", 1, versions.size());
+        assertEquals("Unexpected versions size", (long) 1, (long) versions.size());
         assertEquals("Unexpected version", BrokerModel.MODEL_VERSION, versions.get(0));
     }
 
+    @Test
     public void testOpenAndLoadNonEmptyStore() throws Exception
     {
         populateTestData();
@@ -156,6 +173,7 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
         assertRecords(_testRecords, records);
     }
 
+    @Test
     public void testClose() throws Exception
     {
         _preferenceStore.openAndLoad(_updater);
@@ -172,6 +190,7 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testUpdateOrCreate() throws Exception
     {
         _preferenceStore.openAndLoad(_updater);
@@ -183,6 +202,7 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
         assertRecords(_testRecords, records);
     }
 
+    @Test
     public void testReplace() throws Exception
     {
         populateTestData();
@@ -201,6 +221,7 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
         assertRecords(testRecords, records);
     }
 
+    @Test
     public void testUpdateFailIfNotOpened() throws Exception
     {
         populateTestData();
@@ -216,6 +237,7 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testReplaceFailIfNotOpened() throws Exception
     {
         populateTestData();
@@ -263,33 +285,6 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
             }
         }
         return records;
-    }
-
-    private void shutdownDerby() throws SQLException
-    {
-        Connection connection = null;
-        try
-        {
-            connection = DriverManager.getConnection("jdbc:derby:memory:/" + getTestName() + ";shutdown=true");
-        }
-        catch (SQLException e)
-        {
-            if (e.getSQLState().equalsIgnoreCase("08006"))
-            {
-                //expected and represents a clean shutdown of this database only, do nothing.
-            }
-            else
-            {
-                throw e;
-            }
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                connection.close();
-            }
-        }
     }
 
     private static class DerbyTestPreferenceStore extends AbstractJDBCPreferenceStore

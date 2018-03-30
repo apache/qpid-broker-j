@@ -21,7 +21,15 @@
 package org.apache.qpid.server.store.berkeleydb;
 
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.JUL_LOGGER_LEVEL_OVERRIDE;
-import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade
+        .LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -36,28 +44,32 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Transaction;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.util.FileUtils;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class StandardEnvironmentFacadeTest extends QpidTestCase
+public class StandardEnvironmentFacadeTest extends UnitTestBase
 {
     protected File _storePath;
     protected EnvironmentFacade _environmentFacade;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+
         _storePath = new File(TMP_FOLDER + File.separator + "bdb" + File.separator + getTestName());
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         try
         {
-            super.tearDown();
             if (_environmentFacade != null)
             {
                 _environmentFacade.close();
@@ -72,6 +84,7 @@ public class StandardEnvironmentFacadeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSecondEnvironmentFacadeUsingSamePathRejected() throws Exception
     {
         EnvironmentFacade ef = createEnvironmentFacade();
@@ -92,12 +105,14 @@ public class StandardEnvironmentFacadeTest extends QpidTestCase
         assertNotNull("Environment should not be null", ef2);
     }
 
+    @Test
     public void testClose() throws Exception
     {
         EnvironmentFacade ef = createEnvironmentFacade();
         ef.close();
     }
 
+    @Test
     public void testOverrideJeParameter() throws Exception
     {
         // verify that transactions can be created by default
@@ -121,6 +136,7 @@ public class StandardEnvironmentFacadeTest extends QpidTestCase
     }
 
 
+    @Test
     public void testOpenDatabaseReusesCachedHandle() throws Exception
     {
         DatabaseConfig createIfAbsentDbConfig = DatabaseConfig.DEFAULT.setAllowCreate(true);

@@ -19,5 +19,3 @@
 
 org.apache.qpid.server.store.berkeleydb.*
 org.apache.qpid.server.store.berkeleydb.replication.*
-org.apache.qpid.systest.rest.acl.VirtualHostACLTest#*
-org.apache.qpid.server.BrokerStartupTest#testStartupWithNoConfig

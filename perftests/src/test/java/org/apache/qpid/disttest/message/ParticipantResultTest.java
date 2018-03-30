@@ -46,11 +46,29 @@ import java.util.Date;
 
 import javax.jms.DeliveryMode;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class ParticipantResultTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ParticipantResultTest extends UnitTestBase
 {
 
+    @Test
     public void testSharedParticipantResultAttributes() throws Exception
     {
         final String participantName = "PARTICIPANT_NAME1";
@@ -93,22 +111,23 @@ public class ParticipantResultTest extends QpidTestCase
 
         result.setErrorMessage(errorMessage);
 
-        assertEquals(participantName,      result.getAttributes().get(PARTICIPANT_NAME));
-        assertEquals(testName,             result.getAttributes().get(TEST_NAME));
-        assertEquals(iterationNumber,         result.getAttributes().get(ITERATION_NUMBER));
-        assertEquals(clientConfiguredName,   result.getAttributes().get(CONFIGURED_CLIENT_NAME));
-        assertEquals(numberOfMessages,       result.getAttributes().get(NUMBER_OF_MESSAGES_PROCESSED));
-        assertEquals(timeTaken,              result.getAttributes().get(TIME_TAKEN));
-        assertEquals(timeTaken,              result.getAttributes().get(TIME_TAKEN));
-        assertEquals(timeTaken,              result.getAttributes().get(TIME_TAKEN));
-        assertEquals(batchSize,              result.getAttributes().get(BATCH_SIZE));
-        assertEquals(maximumDuration,        result.getAttributes().get(MAXIMUM_DURATION));
+        assertEquals(participantName, result.getAttributes().get(PARTICIPANT_NAME));
+        assertEquals(testName, result.getAttributes().get(TEST_NAME));
+        assertEquals(iterationNumber, result.getAttributes().get(ITERATION_NUMBER));
+        assertEquals(clientConfiguredName, result.getAttributes().get(CONFIGURED_CLIENT_NAME));
+        assertEquals(numberOfMessages, result.getAttributes().get(NUMBER_OF_MESSAGES_PROCESSED));
+        assertEquals(timeTaken, result.getAttributes().get(TIME_TAKEN));
+        assertEquals(timeTaken, result.getAttributes().get(TIME_TAKEN));
+        assertEquals(timeTaken, result.getAttributes().get(TIME_TAKEN));
+        assertEquals(batchSize, result.getAttributes().get(BATCH_SIZE));
+        assertEquals(maximumDuration, result.getAttributes().get(MAXIMUM_DURATION));
         assertEquals(totalNumberOfConsumers, result.getAttributes().get(TOTAL_NUMBER_OF_CONSUMERS));
         assertEquals(totalNumberOfProducers, result.getAttributes().get(TOTAL_NUMBER_OF_PRODUCERS));
-        assertEquals(acknowledgeMode,        result.getAttributes().get(ACKNOWLEDGE_MODE));
-        assertEquals(errorMessage,           result.getAttributes().get(ERROR_MESSAGE));
+        assertEquals(acknowledgeMode, result.getAttributes().get(ACKNOWLEDGE_MODE));
+        assertEquals(errorMessage, result.getAttributes().get(ERROR_MESSAGE));
     }
 
+    @Test
     public void testConsumerParticipantResultAttributes() throws Exception
     {
         ConsumerParticipantResult result = new ConsumerParticipantResult();
@@ -127,14 +146,15 @@ public class ParticipantResultTest extends QpidTestCase
         result.setNoLocal(noLocal);
         result.setSynchronousConsumer(synchronousConsumer);
 
-        assertEquals(topic,                  result.getAttributes().get(IS_TOPIC));
-        assertEquals(durable,                result.getAttributes().get(IS_DURABLE_SUBSCRIPTION));
-        assertEquals(browsingSubscription,   result.getAttributes().get(IS_BROWSING_SUBSCRIPTION));
-        assertEquals(selector,               result.getAttributes().get(IS_SELECTOR));
-        assertEquals(noLocal,                result.getAttributes().get(IS_NO_LOCAL));
-        assertEquals(synchronousConsumer,    result.getAttributes().get(IS_SYNCHRONOUS_CONSUMER));
+        assertEquals(topic, result.getAttributes().get(IS_TOPIC));
+        assertEquals(durable, result.getAttributes().get(IS_DURABLE_SUBSCRIPTION));
+        assertEquals(browsingSubscription, result.getAttributes().get(IS_BROWSING_SUBSCRIPTION));
+        assertEquals(selector, result.getAttributes().get(IS_SELECTOR));
+        assertEquals(noLocal, result.getAttributes().get(IS_NO_LOCAL));
+        assertEquals(synchronousConsumer, result.getAttributes().get(IS_SYNCHRONOUS_CONSUMER));
     }
 
+    @Test
     public void testProducerParticipantResultAttributes() throws Exception
     {
         ProducerParticipantResult result = new ProducerParticipantResult();
@@ -151,11 +171,10 @@ public class ParticipantResultTest extends QpidTestCase
         result.setPayloadSize(messageSize);
         result.setDeliveryMode(deliveryMode);
 
-
-        assertEquals(priority,           result.getAttributes().get(PRIORITY));
-        assertEquals(timeToLive,         result.getAttributes().get(TIME_TO_LIVE));
-        assertEquals(producerInterval,   result.getAttributes().get(PRODUCER_INTERVAL));
-        assertEquals(messageSize,        result.getAttributes().get(PAYLOAD_SIZE));
-        assertEquals(deliveryMode,       result.getAttributes().get(DELIVERY_MODE));
+        assertEquals(priority, result.getAttributes().get(PRIORITY));
+        assertEquals(timeToLive, result.getAttributes().get(TIME_TO_LIVE));
+        assertEquals(producerInterval, result.getAttributes().get(PRODUCER_INTERVAL));
+        assertEquals(messageSize, result.getAttributes().get(PAYLOAD_SIZE));
+        assertEquals(deliveryMode, result.getAttributes().get(DELIVERY_MODE));
     }
 }

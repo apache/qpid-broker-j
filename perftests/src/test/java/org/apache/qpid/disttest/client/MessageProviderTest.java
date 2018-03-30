@@ -33,27 +33,45 @@ import javax.jms.Message;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.client.property.ListPropertyValue;
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.client.property.SimplePropertyValue;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class MessageProviderTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class MessageProviderTest extends UnitTestBase
 {
     private Session _session;
     private TextMessage _message;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _session = mock(Session.class);
         _message = mock(TextMessage.class);
         when(_session.createTextMessage(isA(String.class))).thenReturn(_message);
         when(_session.createTextMessage()).thenReturn(_message);
     }
 
+    @Test
     public void testGetMessagePayload() throws Exception
     {
         MessageProvider messageProvider = new MessageProvider(null)
@@ -68,9 +86,10 @@ public class MessageProviderTest extends QpidTestCase
         command.setMessageSize(100);
         String payloadValue = messageProvider.getMessagePayload(command);
         assertNotNull("Mesage payload should not be null", payloadValue);
-        assertEquals("Unexpected payload size", 100, payloadValue.length());
+        assertEquals("Unexpected payload size", (long) 100, (long) payloadValue.length());
     }
 
+    @Test
     public void testNextMessage() throws Exception
     {
         MessageProvider messageProvider = new MessageProvider(null);
@@ -81,6 +100,7 @@ public class MessageProviderTest extends QpidTestCase
         verify(_message, atLeastOnce()).setText(isA(String.class));
     }
 
+    @Test
     public void testNextMessageWithProperties() throws Exception
     {
         Map<String, PropertyValue> properties = new HashMap<String, PropertyValue>();

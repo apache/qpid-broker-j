@@ -20,21 +20,27 @@
 
 package org.apache.qpid.server.security.auth.sasl.anonymous;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class AnonymousNegotiatorTest extends QpidTestCase
+import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class AnonymousNegotiatorTest extends UnitTestBase
 {
+    @Test
     public void testHandleResponse() throws Exception
     {
         final AuthenticationResult result = mock(AuthenticationResult.class);
         AnonymousNegotiator negotiator = new AnonymousNegotiator(result);
-        assertEquals("Unexpected result", result, negotiator.handleResponse(new byte[0]));
+        final Object actual = negotiator.handleResponse(new byte[0]);
+        assertEquals("Unexpected result", result, actual);
 
         AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
         assertEquals("Only first call to handleResponse should be successful",
-                     AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
     }
 }

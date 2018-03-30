@@ -20,11 +20,17 @@
 
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-
-public class EncodingUtilsTest extends QpidTestCase
+public class EncodingUtilsTest extends UnitTestBase
 {
     private static final int BUFFER_SIZE = 10;
     private static final int POOL_SIZE = 20;
@@ -32,16 +38,15 @@ public class EncodingUtilsTest extends QpidTestCase
 
     private QpidByteBuffer _buffer;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         QpidByteBuffer.deinitialisePool();
         QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
         _buffer = QpidByteBuffer.allocateDirect(BUFFER_SIZE);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -51,10 +56,10 @@ public class EncodingUtilsTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testReadLongAsShortStringWhenDigitsAreSpecified() throws Exception
     {
         _buffer.putUnsignedByte((short)3);
@@ -65,6 +70,7 @@ public class EncodingUtilsTest extends QpidTestCase
         assertEquals("Unexpected result", 920L, EncodingUtils.readLongAsShortString(_buffer));
     }
 
+    @Test
     public void testReadLongAsShortStringWhenNonDigitCharacterIsSpecified() throws Exception
     {
         _buffer.putUnsignedByte((short)2);

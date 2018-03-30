@@ -18,6 +18,9 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import java.io.File;
@@ -26,17 +29,19 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.List;
 
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.config.ObjectProperties.Property;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AclFileParserTest extends QpidTestCase
+public class AclFileParserTest extends UnitTestBase
 {
     private RuleSet writeACLConfig(String...aclData) throws Exception
     {
-        File acl = File.createTempFile(getClass().getName() + getName(), "acl");
+        File acl = File.createTempFile(getClass().getName() + getTestName(), "acl");
         acl.deleteOnExit();
 
         // Write ACL file
@@ -52,12 +57,14 @@ public class AclFileParserTest extends QpidTestCase
         return AclFileParser.parse(new FileReader(acl), mock(EventLoggerProvider.class));
     }
 
+    @Test
     public void testEmptyRuleSetDefaults() throws Exception
     {
         RuleSet ruleSet = writeACLConfig();
-        assertEquals(0, ruleSet.getRuleCount());
+        assertEquals((long) 0, (long) ruleSet.getRuleCount());
         assertEquals(Result.DENIED, ruleSet.getDefault());
     }
+    @Test
     public void testACLFileSyntaxContinuation() throws Exception
     {
         try
@@ -71,6 +78,7 @@ public class AclFileParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testACLFileSyntaxTokens() throws Exception
     {
         try
@@ -81,11 +89,13 @@ public class AclFileParserTest extends QpidTestCase
         catch (IllegalConfigurationException ce)
         {
             assertEquals(String.format(AclFileParser.PARSE_TOKEN_FAILED_MSG, 1), ce.getMessage());
-            assertTrue(ce.getCause() instanceof IllegalArgumentException);
+            final boolean condition = ce.getCause() instanceof IllegalArgumentException;
+            assertTrue(condition);
             assertEquals("Not a valid permission: unparsed", ce.getCause().getMessage());
         }
     }
 
+    @Test
     public void testACLFileSyntaxNotEnoughACL() throws Exception
     {
         try
@@ -99,6 +109,7 @@ public class AclFileParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testACLFileSyntaxNotEnoughConfig() throws Exception
     {
         try
@@ -112,6 +123,7 @@ public class AclFileParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testACLFileSyntaxNotEnough() throws Exception
     {
         try
@@ -125,6 +137,7 @@ public class AclFileParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testACLFileSyntaxPropertyKeyOnly() throws Exception
     {
         try
@@ -138,6 +151,7 @@ public class AclFileParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testACLFileSyntaxPropertyNoEquals() throws Exception
     {
         try
@@ -151,6 +165,7 @@ public class AclFileParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testACLFileSyntaxPropertyNoValue() throws Exception
     {
         try
@@ -164,10 +179,11 @@ public class AclFileParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testValidConfig() throws Exception
     {
         RuleSet ruleSet = writeACLConfig("CONFIG defaultdefer=true");
-        assertEquals("Unexpected number of rules", 0, ruleSet.getRuleCount());
+        assertEquals("Unexpected number of rules", (long) 0, (long) ruleSet.getRuleCount());
         assertEquals("Unexpected number of rules", Result.DEFER, ruleSet.getDefault());
     }
 
@@ -175,68 +191,78 @@ public class AclFileParserTest extends QpidTestCase
      * Tests interpretation of an acl rule with no object properties.
      *
      */
+    @Test
     public void testValidRule() throws Exception
     {
         final RuleSet rs = writeACLConfig("ACL DENY-LOG user1 ACCESS VIRTUALHOST");
-        assertEquals(1, rs.getRuleCount());
+        assertEquals((long) 1, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(1, rules.size());
+        assertEquals((long) 1, (long) rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
         assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.VIRTUALHOST, rule.getAction().getObjectType());
-        assertEquals("Rule has unexpected object properties", ObjectProperties.EMPTY, rule.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            ObjectProperties.EMPTY,
+                            rule.getAction().getProperties());
     }
 
     /**
      * Tests interpretation of an acl rule with object properties quoted in single quotes.
      */
+    @Test
     public void testValidRuleWithSingleQuotedProperty() throws Exception
     {
         final RuleSet rs = writeACLConfig("ACL ALLOW all CREATE EXCHANGE name = \'value\'");
-        assertEquals(1, rs.getRuleCount());
+        assertEquals((long) 1, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(1, rules.size());
+        assertEquals((long) 1, (long) rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "all", rule.getIdentity());
         assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.EXCHANGE, rule.getAction().getObjectType());
         final ObjectProperties expectedProperties = new ObjectProperties();
         expectedProperties.setName("value");
-        assertEquals("Rule has unexpected object properties", expectedProperties, rule.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            expectedProperties,
+                            rule.getAction().getProperties());
     }
 
     /**
      * Tests interpretation of an acl rule with object properties quoted in double quotes.
      */
+    @Test
     public void testValidRuleWithDoubleQuotedProperty() throws Exception
     {
         final RuleSet rs = writeACLConfig("ACL ALLOW all CREATE EXCHANGE name = \"value\"");
-        assertEquals(1, rs.getRuleCount());
+        assertEquals((long) 1, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(1, rules.size());
+        assertEquals((long) 1, (long) rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "all", rule.getIdentity());
         assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.EXCHANGE, rule.getAction().getObjectType());
         final ObjectProperties expectedProperties = new ObjectProperties();
         expectedProperties.setName("value");
-        assertEquals("Rule has unexpected object properties", expectedProperties, rule.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            expectedProperties,
+                            rule.getAction().getProperties());
     }
 
     /**
      * Tests interpretation of an acl rule with many object properties.
      */
+    @Test
     public void testValidRuleWithManyProperties() throws Exception
     {
         final RuleSet rs = writeACLConfig("ACL ALLOW admin DELETE QUEUE name=name1 owner = owner1");
-        assertEquals(1, rs.getRuleCount());
+        assertEquals((long) 1, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(1, rules.size());
+        assertEquals((long) 1, (long) rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "admin", rule.getIdentity());
         assertEquals("Rule has unexpected operation", LegacyOperation.DELETE, rule.getAction().getOperation());
@@ -251,50 +277,60 @@ public class AclFileParserTest extends QpidTestCase
      * Tests interpretation of an acl rule with object properties containing wildcards.  Values containing
      * hashes must be quoted otherwise they are interpreted as comments.
      */
+    @Test
     public void testValidRuleWithWildcardProperties() throws Exception
     {
         final RuleSet rs = writeACLConfig("ACL ALLOW all CREATE EXCHANGE routingKey = \'news.#\'",
                                                          "ACL ALLOW all CREATE EXCHANGE routingKey = \'news.co.#\'",
                                                          "ACL ALLOW all CREATE EXCHANGE routingKey = *.co.medellin");
-        assertEquals(3, rs.getRuleCount());
+        assertEquals((long) 3, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(3, rules.size());
+        assertEquals((long) 3, (long) rules.size());
         final Rule rule1 = rules.get(0);
         assertEquals("Rule has unexpected identity", "all", rule1.getIdentity());
         assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule1.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.EXCHANGE, rule1.getAction().getObjectType());
         final ObjectProperties expectedProperties1 = new ObjectProperties();
         expectedProperties1.put(Property.ROUTING_KEY,"news.#");
-        assertEquals("Rule has unexpected object properties", expectedProperties1, rule1.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            expectedProperties1,
+                            rule1.getAction().getProperties());
 
         final Rule rule2 = rules.get(1);
         final ObjectProperties expectedProperties2 = new ObjectProperties();
         expectedProperties2.put(Property.ROUTING_KEY,"news.co.#");
-        assertEquals("Rule has unexpected object properties", expectedProperties2, rule2.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            expectedProperties2,
+                            rule2.getAction().getProperties());
 
         final Rule rule3 = rules.get(2);
         final ObjectProperties expectedProperties3 = new ObjectProperties();
         expectedProperties3.put(Property.ROUTING_KEY,"*.co.medellin");
-        assertEquals("Rule has unexpected object properties", expectedProperties3, rule3.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            expectedProperties3,
+                            rule3.getAction().getProperties());
     }
 
     /**
      * Tests that rules are case insignificant.
      */
+    @Test
     public void testMixedCaseRuleInterpretation() throws Exception
     {
         final RuleSet rs  = writeACLConfig("AcL deny-LOG User1 BiND Exchange Name=AmQ.dIrect");
-        assertEquals(1, rs.getRuleCount());
+        assertEquals((long) 1, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(1, rules.size());
+        assertEquals((long) 1, (long) rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "User1", rule.getIdentity());
         assertEquals("Rule has unexpected operation", LegacyOperation.BIND, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.EXCHANGE, rule.getAction().getObjectType());
         final ObjectProperties expectedProperties = new ObjectProperties("AmQ.dIrect");
-        assertEquals("Rule has unexpected object properties", expectedProperties, rule.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            expectedProperties,
+                            rule.getAction().getProperties());
     }
 
     /**
@@ -302,58 +338,68 @@ public class AclFileParserTest extends QpidTestCase
      * be introduced anywhere in the ACL, whereas the C++ supports only whitespace at the beginning of
      * of line.
      */
+    @Test
     public void testCommentsSupported() throws Exception
     {
         final RuleSet rs = writeACLConfig("#Comment",
                                                          "ACL DENY-LOG user1 ACCESS VIRTUALHOST # another comment",
                                                          "  # final comment with leading whitespace");
-        assertEquals(1, rs.getRuleCount());
+        assertEquals((long) 1, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(1, rules.size());
+        assertEquals((long) 1, (long) rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
         assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.VIRTUALHOST, rule.getAction().getObjectType());
-        assertEquals("Rule has unexpected object properties", ObjectProperties.EMPTY, rule.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            ObjectProperties.EMPTY,
+                            rule.getAction().getProperties());
     }
 
     /**
      * Tests interpretation of an acl rule using mixtures of tabs/spaces as token separators.
      *
      */
+    @Test
     public void testWhitespace() throws Exception
     {
         final RuleSet rs = writeACLConfig("ACL\tDENY-LOG\t\t user1\t \tACCESS VIRTUALHOST");
-        assertEquals(1, rs.getRuleCount());
+        assertEquals((long) 1, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(1, rules.size());
+        assertEquals((long) 1, (long) rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
         assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.VIRTUALHOST, rule.getAction().getObjectType());
-        assertEquals("Rule has unexpected object properties", ObjectProperties.EMPTY, rule.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            ObjectProperties.EMPTY,
+                            rule.getAction().getProperties());
     }
 
     /**
      * Tests interpretation of an acl utilising line continuation.
      */
+    @Test
     public void testLineContinuation() throws Exception
     {
         final RuleSet rs = writeACLConfig("ACL DENY-LOG user1 \\",
                                                          "ACCESS VIRTUALHOST");
-        assertEquals(1, rs.getRuleCount());
+        assertEquals((long) 1, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(1, rules.size());
+        assertEquals((long) 1, (long) rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
         assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.VIRTUALHOST, rule.getAction().getObjectType());
-        assertEquals("Rule has unexpected object properties", ObjectProperties.EMPTY, rule.getAction().getProperties());
+        assertEquals("Rule has unexpected object properties",
+                            ObjectProperties.EMPTY,
+                            rule.getAction().getProperties());
     }
 
+    @Test
     public void testUserRuleParsing() throws Exception
     {
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE USER"),
@@ -377,6 +423,7 @@ public class AclFileParserTest extends QpidTestCase
                      "user1", LegacyOperation.ALL, ObjectType.USER, new ObjectProperties("otherUser"));
     }
 
+    @Test
     public void testGroupRuleParsing() throws Exception
     {
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE GROUP"),
@@ -401,6 +448,7 @@ public class AclFileParserTest extends QpidTestCase
     }
 
     /** explicitly test for exception indicating that this functionality has been moved to Group Providers */
+    @Test
     public void testGroupDefinitionThrowsException() throws Exception
     {
         try
@@ -414,6 +462,7 @@ public class AclFileParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testManagementRuleParsing() throws Exception
     {
         validateRule(writeACLConfig("ACL ALLOW user1 ALL MANAGEMENT"),
@@ -423,6 +472,7 @@ public class AclFileParserTest extends QpidTestCase
                      "user1", LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
     }
 
+    @Test
     public void testBrokerRuleParsing() throws Exception
     {
         validateRule(writeACLConfig("ACL ALLOW user1 CONFIGURE BROKER"), "user1", LegacyOperation.CONFIGURE, ObjectType.BROKER,
@@ -432,10 +482,10 @@ public class AclFileParserTest extends QpidTestCase
 
     private void validateRule(final RuleSet rs, String username, LegacyOperation operation, ObjectType objectType, ObjectProperties objectProperties)
     {
-        assertEquals(1, rs.getRuleCount());
+        assertEquals((long) 1, (long) rs.getRuleCount());
 
         final List<Rule> rules = rs.getAllRules();
-        assertEquals(1, rules.size());
+        assertEquals((long) 1, (long) rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", username, rule.getIdentity());
         assertEquals("Rule has unexpected operation", operation, rule.getAction().getOperation());

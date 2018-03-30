@@ -20,18 +20,22 @@
  */
 package org.apache.qpid.server.store.berkeleydb.tuple;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.qpid.server.model.UUIDGenerator;
-import org.apache.qpid.server.store.ConfiguredObjectRecord;
-
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
-import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class ConfiguredObjectBindingTest extends QpidTestCase
+import org.apache.qpid.server.model.UUIDGenerator;
+import org.apache.qpid.server.store.ConfiguredObjectRecord;
+import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class ConfiguredObjectBindingTest extends UnitTestBase
 {
 
     private ConfiguredObjectRecord _object;
@@ -42,15 +46,15 @@ public class ConfiguredObjectBindingTest extends QpidTestCase
     private static final String DUMMY_TYPE_STRING = "dummyType";
     private ConfiguredObjectBinding _configuredObjectBinding;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _configuredObjectBinding = ConfiguredObjectBinding.getInstance();
         _object = new ConfiguredObjectRecordImpl(UUIDGenerator.generateRandomUUID(), DUMMY_TYPE_STRING,
                 DUMMY_ATTRIBUTES_MAP);
     }
 
+    @Test
     public void testObjectToEntryAndEntryToObject()
     {
         TupleOutput tupleOutput = new TupleOutput();

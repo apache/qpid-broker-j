@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.exchange;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +29,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -36,11 +41,12 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  */
-public class HeadersBindingTest extends QpidTestCase
+public class HeadersBindingTest extends UnitTestBase
 {
 
 
@@ -168,8 +174,8 @@ public class HeadersBindingTest extends QpidTestCase
     private Queue<?> _queue;
     private Exchange<?> _exchange;
 
-    @Override
-    protected void setUp()
+    @Before
+    public void setUp() throws Exception
     {
         _count++;
         _queue = mock(Queue.class);
@@ -200,6 +206,7 @@ public class HeadersBindingTest extends QpidTestCase
         return "Queue" + _count;
     }
 
+    @Test
     public void testDefault_1()
     {
         bindHeaders.put("A", "Value of A");
@@ -211,6 +218,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testDefault_2()
     {
         bindHeaders.put("A", "Value of A");
@@ -223,6 +231,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testDefault_3()
     {
         bindHeaders.put("A", "Value of A");
@@ -234,6 +243,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAll_1()
     {
         bindHeaders.put("X-match", "all");
@@ -246,6 +256,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAll_2()
     {
         bindHeaders.put("X-match", "all");
@@ -259,6 +270,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAll_3()
     {
         bindHeaders.put("X-match", "all");
@@ -273,6 +285,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAll_4()
     {
         bindHeaders.put("X-match", "all");
@@ -288,6 +301,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAll_5()
     {
         bindHeaders.put("X-match", "all");
@@ -303,6 +317,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAny_1()
     {
         bindHeaders.put("X-match", "any");
@@ -315,6 +330,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAny_2()
     {
         bindHeaders.put("X-match", "any");
@@ -328,6 +344,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAny_3()
     {
         bindHeaders.put("X-match", "any");
@@ -342,6 +359,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAny_4()
     {
         bindHeaders.put("X-match", "any");
@@ -357,6 +375,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAny_5()
     {
         bindHeaders.put("X-match", "any");
@@ -372,6 +391,7 @@ public class HeadersBindingTest extends QpidTestCase
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
+    @Test
     public void testAny_6()
     {
         bindHeaders.put("X-match", "any");

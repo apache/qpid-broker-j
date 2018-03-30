@@ -20,24 +20,29 @@
  */
 package org.apache.qpid.server.util;
 
-import org.apache.qpid.server.util.StringUtil;
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-public class StringUtilTest extends QpidTestCase
+import org.junit.Before;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class StringUtilTest extends UnitTestBase
 {
     private StringUtil _util;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _util = new StringUtil();
     }
 
+    @Test
     public void testRandomAlphaNumericStringInt()
     {
         String password = _util.randomAlphaNumericString(10);
-        assertEquals("Unexpected password string length", 10, password.length());
+        assertEquals("Unexpected password string length", (long) 10, (long) password.length());
         assertCharacters(password);
     }
 
@@ -55,11 +60,14 @@ public class StringUtilTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreateUniqueJavaName()
     {
         assertEquals("MyName_973de1b4e26b629d4817c8255090e58e", _util.createUniqueJavaName("MyName"));
-        assertEquals("ContaisIllegalJavaCharacters_a68b2484f2eb790558d6527e56c595fa", _util.createUniqueJavaName("Contais+Illegal-Java*Characters"));
-        assertEquals("StartsWithIllegalInitial_93031eec569608c60c6a98ac9e84a0a7", _util.createUniqueJavaName("9StartsWithIllegalInitial"));
+        assertEquals("ContaisIllegalJavaCharacters_a68b2484f2eb790558d6527e56c595fa",
+                            _util.createUniqueJavaName("Contais+Illegal-Java*Characters"));
+        assertEquals("StartsWithIllegalInitial_93031eec569608c60c6a98ac9e84a0a7",
+                            _util.createUniqueJavaName("9StartsWithIllegalInitial"));
         assertEquals("97b247ba19ff869340d3797cc73ca065", _util.createUniqueJavaName("1++++----"));
         assertEquals("d41d8cd98f00b204e9800998ecf8427e", _util.createUniqueJavaName(""));
     }

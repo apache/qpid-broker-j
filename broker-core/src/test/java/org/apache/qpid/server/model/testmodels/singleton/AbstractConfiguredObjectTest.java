@@ -18,6 +18,11 @@
  */
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,13 +33,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
 
 import com.google.common.collect.Sets;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -45,16 +50,18 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Tests behaviour of AbstractConfiguredObject related to attributes including
  * persistence, defaulting, and attribute values derived from context variables.
  */
-public class AbstractConfiguredObjectTest extends QpidTestCase
+public class AbstractConfiguredObjectTest extends UnitTestBase
 {
     private final Model _model = TestModel.getInstance();
 
+    @Test
     public void testAttributePersistence()
     {
         final String objectName = "testNonPersistAttributes";
@@ -67,7 +74,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(objectName, object.getName());
         assertNull(object.getAutomatedNonPersistedValue());
         assertNull(object.getAutomatedPersistedValue());
-        assertEquals(TestSingletonImpl.DERIVED_VALUE, object.getDerivedValue());
+        assertEquals((long) TestSingletonImpl.DERIVED_VALUE, object.getDerivedValue());
 
         ConfiguredObjectRecord record = object.asObjectRecord();
 
@@ -95,9 +102,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertFalse(record.getAttributes().containsKey(TestSingleton.AUTOMATED_NONPERSISTED_VALUE));
         assertFalse(record.getAttributes().containsKey(TestSingleton.DERIVED_VALUE));
-
     }
 
+    @Test
     public void testDefaultedAttributeValue()
     {
         final String objectName = "myName";
@@ -111,6 +118,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(TestSingleton.DEFAULTED_VALUE_DEFAULT, object1.getDefaultedValue());
     }
 
+    @Test
     public void testOverriddenDefaultedAttributeValue()
     {
         final String objectName = "myName";
@@ -124,9 +132,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertEquals(objectName, object.getName());
         assertEquals("override", object.getDefaultedValue());
-
     }
 
+    @Test
     public void testOverriddenDefaultedAttributeValueRevertedToDefault()
     {
         final String objectName = "myName";
@@ -146,6 +154,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(TestSingleton.DEFAULTED_VALUE_DEFAULT, object.getDefaultedValue());
     }
 
+    @Test
     public void testDefaultInitialization()
     {
         TestSingleton object =
@@ -157,9 +166,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(object.getAttrWithDefaultFromContextMaterializeInit(), TestSingleton.testGlobalDefault);
 
         assertFalse(object.getActualAttributes().containsKey("attrWithDefaultFromContextNoInit"));
-        assertEquals("${"+TestSingleton.TEST_CONTEXT_DEFAULT+"}",object.getActualAttributes().get("attrWithDefaultFromContextCopyInit"));
-        assertEquals(TestSingleton.testGlobalDefault,object.getActualAttributes().get("attrWithDefaultFromContextMaterializeInit"));
-
+        assertEquals("${" + TestSingleton.TEST_CONTEXT_DEFAULT + "}",
+                            object.getActualAttributes().get("attrWithDefaultFromContextCopyInit"));
+        assertEquals(TestSingleton.testGlobalDefault,
+                            object.getActualAttributes().get("attrWithDefaultFromContextMaterializeInit"));
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, "testDefaultInitialization2");
@@ -171,9 +181,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("foo", object.getAttrWithDefaultFromContextMaterializeInit());
 
         assertFalse(object.getActualAttributes().containsKey("attrWithDefaultFromContextNoInit"));
-        assertEquals("${"+TestSingleton.TEST_CONTEXT_DEFAULT+"}",object.getActualAttributes().get("attrWithDefaultFromContextCopyInit"));
-        assertEquals("foo",object.getActualAttributes().get("attrWithDefaultFromContextMaterializeInit"));
-
+        assertEquals("${" + TestSingleton.TEST_CONTEXT_DEFAULT + "}",
+                            object.getActualAttributes().get("attrWithDefaultFromContextCopyInit"));
+        assertEquals("foo", object.getActualAttributes().get("attrWithDefaultFromContextMaterializeInit"));
 
         setTestSystemProperty(TestSingleton.TEST_CONTEXT_DEFAULT, "bar");
         object = _model.getObjectFactory().create(TestSingleton.class,
@@ -185,11 +195,12 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("bar", object.getAttrWithDefaultFromContextMaterializeInit());
 
         assertFalse(object.getActualAttributes().containsKey("attrWithDefaultFromContextNoInit"));
-        assertEquals("${"+TestSingleton.TEST_CONTEXT_DEFAULT+"}",object.getActualAttributes().get("attrWithDefaultFromContextCopyInit"));
-        assertEquals("bar",object.getActualAttributes().get("attrWithDefaultFromContextMaterializeInit"));
-
+        assertEquals("${" + TestSingleton.TEST_CONTEXT_DEFAULT + "}",
+                            object.getActualAttributes().get("attrWithDefaultFromContextCopyInit"));
+        assertEquals("bar", object.getActualAttributes().get("attrWithDefaultFromContextMaterializeInit"));
     }
 
+    @Test
     public void testEnumAttributeValueFromString()
     {
         final String objectName = "myName";
@@ -205,6 +216,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(TestEnum.TEST_ENUM1, object1.getEnumValue());
     }
 
+    @Test
     public void testEnumAttributeValueFromEnum()
     {
         final String objectName = "myName";
@@ -220,6 +232,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(TestEnum.TEST_ENUM1, object1.getEnumValue());
     }
 
+    @Test
     public void testIntegerAttributeValueFromString()
     {
         final String objectName = "myName";
@@ -232,9 +245,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                                                     attributes, null);
 
         assertEquals(objectName, object1.getName());
-        assertEquals(-4, object1.getIntValue());
+        assertEquals((long) -4, (long) object1.getIntValue());
     }
 
+    @Test
     public void testIntegerAttributeValueFromInteger()
     {
         final String objectName = "myName";
@@ -247,9 +261,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                                                     attributes, null);
 
         assertEquals(objectName, object1.getName());
-        assertEquals(5, object1.getIntValue());
+        assertEquals((long) 5, (long) object1.getIntValue());
     }
 
+    @Test
     public void testIntegerAttributeValueFromDouble()
     {
         final String objectName = "myName";
@@ -262,9 +277,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                                                     attributes, null);
 
         assertEquals(objectName, object.getName());
-        assertEquals(6, object.getIntValue());
+        assertEquals((long) 6, (long) object.getIntValue());
     }
 
+    @Test
     public void testDateAttributeFromMillis()
     {
         final String objectName = "myName";
@@ -281,6 +297,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(new Date(now), object.getDateValue());
     }
 
+    @Test
     public void testDateAttributeFromIso8601()
     {
         final String objectName = "myName";
@@ -297,6 +314,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(new Date(0), object.getDateValue());
     }
 
+    @Test
     public void testStringAttributeValueFromContextVariableProvidedBySystemProperty()
     {
         String sysPropertyName = "testStringAttributeValueFromContextVariableProvidedBySystemProperty";
@@ -334,6 +352,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(contextToken, object3.getStringValue());
     }
 
+    @Test
     public void testMapAttributeValueFromContextVariableProvidedBySystemProperty()
     {
         String sysPropertyName = "testMapAttributeValueFromContextVariableProvidedBySystemProperty";
@@ -361,6 +380,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         System.clearProperty(sysPropertyName);
     }
 
+    @Test
     public void testStringAttributeValueFromContextVariableProvidedObjectsContext()
     {
         String contextToken = "${myReplacement}";
@@ -382,6 +402,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("myValue", object1.getStringValue());
     }
 
+    @Test
     public void testInvalidIntegerAttributeValueFromContextVariable()
     {
         final Map<String, Object> attributes = new HashMap<>();
@@ -404,13 +425,13 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
             assertTrue("Message does not contain the attribute name", message.contains("intValue"));
             assertTrue("Message does not contain the non-interpolated value", message.contains("contextVal"));
             assertTrue("Message does not contain the interpolated value", message.contains("contextVal"));
-
         }
     }
 
+    @Test
     public void testCreateEnforcesAttributeValidValues() throws Exception
     {
-        final String objectName = getName();
+        final String objectName = getTestName();
         Map<String, Object> illegalCreateAttributes = new HashMap<>();
         illegalCreateAttributes.put(ConfiguredObject.NAME, objectName);
         illegalCreateAttributes.put(TestSingleton.VALID_VALUE, "illegal");
@@ -433,9 +454,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(TestSingleton.VALID_VALUE1, object.getValidValue());
     }
 
+    @Test
     public void testCreateEnforcesAttributeValidValuePattern() throws Exception
     {
-        final String objectName = getName();
+        final String objectName = getTestName();
         Map<String, Object> illegalCreateAttributes = new HashMap<>();
         illegalCreateAttributes.put(ConfiguredObject.NAME, objectName);
         illegalCreateAttributes.put(TestSingleton.VALUE_WITH_PATTERN, "illegal");
@@ -475,9 +497,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
     }
 
 
+    @Test
     public void testChangeEnforcesAttributeValidValues() throws Exception
     {
-        final String objectName = getName();
+        final String objectName = getTestName();
         Map<String, Object> legalCreateAttributes = new HashMap<>();
         legalCreateAttributes.put(ConfiguredObject.NAME, objectName);
         legalCreateAttributes.put(TestSingleton.VALID_VALUE, TestSingleton.VALID_VALUE1);
@@ -502,12 +525,12 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         object.setAttributes(Collections.singletonMap(TestSingleton.VALID_VALUE, null));
         assertNull(object.getValidValue());
-
     }
 
+    @Test
     public void testCreateEnforcesAttributeValidValuesWithSets() throws Exception
     {
-        final String objectName = getName();
+        final String objectName = getTestName();
         final Map<String, Object> name = Collections.singletonMap(ConfiguredObject.NAME, (Object)objectName);
 
         Map<String, Object> illegalCreateAttributes = new HashMap<>(name);
@@ -544,9 +567,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
     }
 
 
+    @Test
     public void testChangeEnforcesAttributeValidValuePatterns() throws Exception
     {
-        final String objectName = getName();
+        final String objectName = getTestName();
         Map<String, Object> legalCreateAttributes = new HashMap<>();
         legalCreateAttributes.put(ConfiguredObject.NAME, objectName);
         legalCreateAttributes.put(TestSingleton.VALUE_WITH_PATTERN, "foozzzzzbar");
@@ -561,7 +585,6 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         object.setAttributes(Collections.singletonMap(TestSingleton.LIST_VALUE_WITH_PATTERN, Collections.singletonList("1.2.3.4")));
         assertEquals(Collections.singletonList("1.2.3.4"), object.getListValueWithPattern());
-
 
         try
         {
@@ -587,7 +610,6 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("foobar", object.getValueWithPattern());
         assertEquals(Collections.singletonList("1.2.3.4"), object.getListValueWithPattern());
 
-
         object.setAttributes(Collections.singletonMap(TestSingleton.VALUE_WITH_PATTERN, null));
         assertNull(object.getValueWithPattern());
 
@@ -596,9 +618,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         object.setAttributes(Collections.singletonMap(TestSingleton.LIST_VALUE_WITH_PATTERN, null));
         assertNull(object.getListValueWithPattern());
-
     }
 
+    @Test
     public void testDefaultContextIsInContextKeys()
     {
         final String objectName = "myName";
@@ -609,18 +631,17 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
                                                                     attributes, null);
 
-
         assertTrue("context default not in contextKeys",
-                   object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT));
-        assertEquals("default",
-                     object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT));
+                          object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT));
+        assertEquals("default", object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT));
 
         setTestSystemProperty(TestSingleton.TEST_CONTEXT_DEFAULT, "notdefault");
         assertTrue("context default not in contextKeys",
-                   object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT));
+                          object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT));
         assertEquals("notdefault", object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT));
     }
 
+    @Test
     public void testDefaultContextVariableWhichRefersToThis()
     {
         final String objectName = "myName";
@@ -632,12 +653,14 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                                                     attributes, null);
 
         assertTrue("context default not in contextKeys",
-                   object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT_WITH_THISREF));
+                          object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT_WITH_THISREF));
 
         String expected = "a context var that refers to an attribute " + objectName;
-        assertEquals(expected, object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT_WITH_THISREF));
+        assertEquals(expected,
+                            object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT_WITH_THISREF));
     }
 
+    @Test
     public void testDerivedAttributeValue()
     {
         final String objectName = "myName";
@@ -647,14 +670,15 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
                                                                     attributes, null);
-        assertEquals(TestSingletonImpl.DERIVED_VALUE, object.getDerivedValue());
+        assertEquals((long) TestSingletonImpl.DERIVED_VALUE, object.getDerivedValue());
 
         // Check that update is ignored
         object.setAttributes(Collections.singletonMap(TestSingleton.DERIVED_VALUE, System.currentTimeMillis()));
 
-        assertEquals(TestSingletonImpl.DERIVED_VALUE, object.getDerivedValue());
+        assertEquals((long) TestSingletonImpl.DERIVED_VALUE, object.getDerivedValue());
     }
 
+    @Test
     public void testSecureValueRetrieval()
     {
         final String objectName = "myName";
@@ -667,7 +691,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
                                                                     attributes, null);
 
-        assertEquals(AbstractConfiguredObject.SECURED_STRING_VALUE, object.getAttribute(TestSingleton.SECURE_VALUE));
+        assertEquals(AbstractConfiguredObject.SECURED_STRING_VALUE,
+                            object.getAttribute(TestSingleton.SECURE_VALUE));
         assertEquals(secret, object.getSecureValue());
 
         //verify we can retrieve the actual secure value using system rights
@@ -684,6 +709,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                      });
     }
 
+    @Test
     public void testImmutableAttribute()
     {
         final String originalValue = "myvalue";
@@ -697,7 +723,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertEquals("Immutable value unexpectedly changed", originalValue, object.getImmutableValue());
 
-                     // Update to the same value is allowed
+        // Update to the same value is allowed
                      object.setAttributes(Collections.singletonMap(TestSingleton.IMMUTABLE_VALUE, originalValue));
 
         try
@@ -724,6 +750,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Immutable value unexpectedly changed", originalValue, object.getImmutableValue());
     }
 
+    @Test
     public void testImmutableAttributeNullValue()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -751,6 +778,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
     }
 
     /** Id and Type are key attributes in the model and are thus worthy of test of their own */
+    @Test
     public void testIdAndTypeAreImmutableAttribute()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -786,6 +814,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(originalType, object.getType());
     }
 
+    @Test
     public void testSetAttributesFiresListener()
     {
         final String objectName = "listenerFiring";
@@ -816,31 +845,32 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         // Set updated value (should cause listener to fire)
         object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "second"));
 
-        assertEquals(1, listenerCount.get());
+        assertEquals((long) 1, (long) listenerCount.get());
         String delta = updates.remove(TestSingleton.STRING_VALUE);
         assertEquals("first=>second", delta);
 
         // Set unchanged value (should not cause listener to fire)
         object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "second"));
-        assertEquals(1, listenerCount.get());
+        assertEquals((long) 1, (long) listenerCount.get());
 
         // Set value to null (should cause listener to fire)
         object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, null));
-        assertEquals(2, listenerCount.get());
+        assertEquals((long) 2, (long) listenerCount.get());
         delta = updates.remove(TestSingleton.STRING_VALUE);
         assertEquals("second=>null", delta);
 
         // Set to null again (should not cause listener to fire)
         object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, null));
-        assertEquals(2, listenerCount.get());
+        assertEquals((long) 2, (long) listenerCount.get());
 
         // Set updated value (should cause listener to fire)
         object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "third"));
-        assertEquals(3, listenerCount.get());
+        assertEquals((long) 3, (long) listenerCount.get());
         delta = updates.remove(TestSingleton.STRING_VALUE);
         assertEquals("null=>third", delta);
     }
 
+    @Test
     public void testSetAttributesInterpolateValues()
     {
         setTestSystemProperty("foo1", "myValue1");
@@ -872,22 +902,23 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         // Update the actual value ${foo1} => ${foo2}
         object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "${foo2}"));
-        assertEquals(1, listenerCount.get());
+        assertEquals((long) 1, (long) listenerCount.get());
 
         assertEquals("myValue2", object.getStringValue());
         assertEquals("${foo2}", object.getActualAttributes().get(TestSingleton.STRING_VALUE));
 
         // No change
         object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "${foo2}"));
-        assertEquals(1, listenerCount.get());
+        assertEquals((long) 1, (long) listenerCount.get());
 
         // Update the actual value ${foo2} => ${foo3} (which doesn't have a value)
         object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "${foo3}"));
-        assertEquals(2, listenerCount.get());
+        assertEquals((long) 2, (long) listenerCount.get());
         assertEquals("${foo3}", object.getStringValue());
         assertEquals("${foo3}", object.getActualAttributes().get(TestSingleton.STRING_VALUE));
     }
 
+    @Test
     public void testCreateAndLastUpdateDate() throws Exception
     {
         final String objectName = "myName";
@@ -906,9 +937,11 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         Thread.sleep(10);
         object.setAttributes(Collections.singletonMap(TestSingleton.DESCRIPTION, "desc"));
         assertEquals("Created time should not be updated by update", createdTime, object.getCreatedTime());
-        assertTrue("Last update time should be updated by update", object.getLastUpdatedTime().compareTo(createdTime) > 0);
+        assertTrue("Last update time should be updated by update",
+                          object.getLastUpdatedTime().compareTo(createdTime) > 0);
     }
 
+    @Test
     public void testStatistics() throws Exception
     {
         final String objectName = "myName";
@@ -920,10 +953,11 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                                                     attributes, null);
 
         final Map<String, Object> stats = object.getStatistics();
-        assertEquals("Unexpected number of statistics", 1, stats.size());
+        assertEquals("Unexpected number of statistics", (long) 1, (long) stats.size());
         assertTrue("Expected statistic not found", stats.containsKey("longStatistic"));
     }
 
+    @Test
     public void testAuditInformation() throws Exception
     {
         final String creatingUser = "creatingUser";
@@ -949,7 +983,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                      });
 
         assertEquals("Unexpected creating user after object creation", creatingUser, object.getCreatedBy());
-        assertEquals("Unexpected last updating user after object creation", creatingUser, object.getLastUpdatedBy());
+        assertEquals("Unexpected last updating user after object creation",
+                            creatingUser,
+                            object.getLastUpdatedBy());
 
         final Date originalCreatedTime = object.getCreatedTime();
         final Date originalLastUpdatedTime = object.getLastUpdatedTime();
@@ -970,12 +1006,16 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                      });
 
         assertEquals("Creating user should not be changed by update", creatingUser, object.getCreatedBy());
-        assertEquals("Created time should not be changed by update", originalCreatedTime, object.getCreatedTime());
+        assertEquals("Created time should not be changed by update",
+                            originalCreatedTime,
+                            object.getCreatedTime());
 
         assertEquals("Last updated by should be changed by update", updatingUser, object.getLastUpdatedBy());
-        assertTrue("Last updated time by should be changed by update", originalLastUpdatedTime.before(object.getLastUpdatedTime()));
+        assertTrue("Last updated time by should be changed by update",
+                          originalLastUpdatedTime.before(object.getLastUpdatedTime()));
     }
 
+    @Test
     public void testAuditInformationIgnoresUserSuppliedAttributes() throws Exception
     {
         final String user = "user";
@@ -1002,7 +1042,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                                       }
                                                   });
 
-        assertEquals("Unexpected creating user after object creation", user,  object.getCreatedBy());
+        assertEquals("Unexpected creating user after object creation", user, object.getCreatedBy());
         assertEquals("Unexpected last updating user after object creation", user, object.getLastUpdatedBy());
 
         final Date originalCreatedTime = object.getCreatedTime();
@@ -1032,13 +1072,17 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                      });
 
         assertEquals("Creating user should not be changed by update", user, object.getCreatedBy());
-        assertEquals("Created time should not be changed by update", originalCreatedTime, object.getCreatedTime());
+        assertEquals("Created time should not be changed by update",
+                            originalCreatedTime,
+                            object.getCreatedTime());
 
         assertEquals("Last updated by should be changed by update", user, object.getLastUpdatedBy());
-        assertTrue("Last updated time by should be changed by update", originalLastUpdatedTime.before(object.getLastUpdatedTime()));
+        assertTrue("Last updated time by should be changed by update",
+                          originalLastUpdatedTime.before(object.getLastUpdatedTime()));
     }
 
 
+    @Test
     public void testAuditInformationPersistenceAndRecovery() throws Exception
     {
         final String creatingUser = "creatingUser";
@@ -1081,12 +1125,19 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         recovered.open();
 
         assertEquals("Unexpected recovered object created by", object.getCreatedBy(), recovered.getCreatedBy());
-        assertEquals("Unexpected recovered object created time", object.getCreatedTime(), recovered.getCreatedTime());
+        assertEquals("Unexpected recovered object created time",
+                            object.getCreatedTime(),
+                            recovered.getCreatedTime());
 
-        assertEquals("Unexpected recovered object updated by", object.getLastUpdatedBy(), recovered.getLastUpdatedBy());
-        assertEquals("Unexpected recovered object updated time", object.getLastUpdatedTime(), recovered.getLastUpdatedTime());
+        assertEquals("Unexpected recovered object updated by",
+                            object.getLastUpdatedBy(),
+                            recovered.getLastUpdatedBy());
+        assertEquals("Unexpected recovered object updated time",
+                            object.getLastUpdatedTime(),
+                            recovered.getLastUpdatedTime());
     }
 
+    @Test
     public void testPostSetAttributesReportsChanges()
     {
         final String objectName = "myName";
@@ -1099,19 +1150,21 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertEquals(objectName, object.getName());
 
-
         object.setAttributes(Collections.emptyMap());
-        assertTrue("Unexpected member of update set for empty update", object.takeLastReportedSetAttributes().isEmpty());
+        assertTrue("Unexpected member of update set for empty update",
+                          object.takeLastReportedSetAttributes().isEmpty());
 
         Map<String, Object> update = new HashMap<>();
         update.put(TestSingleton.NAME, objectName);
         update.put(TestSingleton.DESCRIPTION, "an update");
 
         object.setAttributes(update);
-        assertEquals("Unexpected member of update set", Sets.newHashSet(TestSingleton.DESCRIPTION),
-                     object.takeLastReportedSetAttributes());
+        assertEquals("Unexpected member of update set",
+                            Sets.newHashSet(TestSingleton.DESCRIPTION),
+                            object.takeLastReportedSetAttributes());
     }
 
+    @Test
     public void testSetContextVariable()
     {
         final String objectName = "myName";
@@ -1135,6 +1188,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected previous value", contextVariableValue, previousValue);
     }
 
+    @Test
     public void testRemoveContextVariable()
     {
         final String objectName = "myName";
@@ -1154,7 +1208,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected context variable value", contextVariableValue, previousValue);
 
         context = object.getContext();
-        assertFalse("Context variable should not be present in context", context.containsKey(contextVariableName));
+        assertFalse("Context variable should not be present in context",
+                           context.containsKey(contextVariableName));
+
 
         previousValue = object.removeContextVariable(contextVariableName);
         assertNull("Previous value should be null", previousValue);

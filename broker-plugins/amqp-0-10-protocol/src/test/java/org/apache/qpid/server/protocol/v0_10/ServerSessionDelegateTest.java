@@ -26,25 +26,27 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentMatcher;
+
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.protocol.v0_10.transport.ExchangeDelete;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
 import org.apache.qpid.server.protocol.v0_10.transport.Option;
-import org.mockito.ArgumentMatcher;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ServerSessionDelegateTest extends QpidTestCase
+public class ServerSessionDelegateTest extends UnitTestBase
 {
     private VirtualHost<?> _host;
     private ServerSession _session;
     private ServerSessionDelegate _delegate;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _host = mock(VirtualHost.class);
 
         ServerConnection serverConnection = mock(ServerConnection.class);
@@ -56,6 +58,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
         _delegate = new ServerSessionDelegate();
     }
 
+    @Test
     public void testExchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings() throws Exception
     {
         Exchange<?> exchange = mock(Exchange.class);
@@ -78,6 +81,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
         }));
     }
 
+    @Test
     public void testExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding() throws Exception
     {
         Exchange<?> exchange = mock(Exchange.class);

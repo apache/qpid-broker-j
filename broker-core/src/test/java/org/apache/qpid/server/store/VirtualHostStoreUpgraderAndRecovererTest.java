@@ -20,6 +20,10 @@
 package org.apache.qpid.server.store;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,22 +34,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
+public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
 {
     private VirtualHostNode<?> _virtualHostNode;
     private VirtualHostStoreUpgraderAndRecoverer _upgraderAndRecoverer;
     private DurableConfigurationStore _store;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         final Broker broker = mock(Broker.class);
         _virtualHostNode = mock(VirtualHostNode.class);
@@ -54,6 +59,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         _upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(_virtualHostNode);
     }
 
+    @Test
     public void testUpgradeFlowControlFrom_6_1() throws Exception
     {
         Map<String, Object> rootAttributes = new HashMap<>();
@@ -79,15 +85,17 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         assertNotNull("Upgraded attributes not found", upgradedAttributes);
 
         assertEquals("Unexpected maximumQueueDepthBytes", 1000, upgradedAttributes.get("maximumQueueDepthBytes"));
+
         assertEquals("Unexpected queue.queueFlowResumeLimit",
-                     "70.00",
-                     ((Map<String, String>) upgradedAttributes.get("context")).get("queue.queueFlowResumeLimit"));
+                            "70.00",
+                            ((Map<String, String>) upgradedAttributes.get("context")).get("queue.queueFlowResumeLimit"));
 
         assertEquals("Unexpected overflowPolicy",
-                     OverflowPolicy.PRODUCER_FLOW_CONTROL.name(),
-                     String.valueOf(upgradedAttributes.get("overflowPolicy")));
+                            OverflowPolicy.PRODUCER_FLOW_CONTROL.name(),
+                            String.valueOf(upgradedAttributes.get("overflowPolicy")));
     }
 
+    @Test
     public void testUpgradeQueueAlternateExchangeFrom_6_1() throws Exception
     {
         Map<String, Object> rootAttributes = new HashMap<>();
@@ -118,14 +126,17 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
         assertNotNull("Upgraded attributes not found", upgradedAttributes);
 
-        assertTrue("Attribute 'alternateBinding' was not added", upgradedAttributes.containsKey("alternateBinding"));
+        assertTrue("Attribute 'alternateBinding' was not added",
+                          upgradedAttributes.containsKey("alternateBinding"));
         assertEquals("Unexpected alternateBinding",
-                     new HashMap<>(Collections.singletonMap("destination", "testExchange")),
-                     new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
-        assertFalse("Attribute 'alternateExchange' was not removed", upgradedAttributes.containsKey("alternateExchange"));
+                            new HashMap<>(Collections.singletonMap("destination", "testExchange")),
+                            new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
+        assertFalse("Attribute 'alternateExchange' was not removed",
+                           upgradedAttributes.containsKey("alternateExchange"));
 
     }
 
+    @Test
     public void testUpgradeExchangeAlternateExchangeFrom_6_1() throws Exception
     {
         Map<String, Object> rootAttributes = new HashMap<>();
@@ -158,13 +169,15 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
         assertNotNull("Upgraded attributes not found", upgradedAttributes);
 
-        assertTrue("Attribute 'alternateBinding' was not added", upgradedAttributes.containsKey("alternateBinding"));
+        assertTrue("Attribute 'alternateBinding' was not added",
+                          upgradedAttributes.containsKey("alternateBinding"));
         assertEquals("Unexpected alternateBinding",
-                     new HashMap<>(Collections.singletonMap("destination", "testExchange")),
-                     new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
-        assertFalse("Attribute 'alternateExchange' was not removed", upgradedAttributes.containsKey("alternateExchange"));
-
+                            new HashMap<>(Collections.singletonMap("destination", "testExchange")),
+                            new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
+        assertFalse("Attribute 'alternateExchange' was not removed",
+                           upgradedAttributes.containsKey("alternateExchange"));
     }
+    @Test
     public void testUpgradeExchangeAlternateExchangeSpecifiedWithUUIDFrom_6_1() throws Exception
     {
         Map<String, Object> rootAttributes = new HashMap<>();
@@ -197,13 +210,16 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
         assertNotNull("Upgraded attributes not found", upgradedAttributes);
 
-        assertTrue("Attribute 'alternateBinding' was not added", upgradedAttributes.containsKey("alternateBinding"));
+        assertTrue("Attribute 'alternateBinding' was not added",
+                          upgradedAttributes.containsKey("alternateBinding"));
         assertEquals("Unexpected alternateBinding",
-                     new HashMap<>(Collections.singletonMap("destination", "testExchange")),
-                     new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
-        assertFalse("Attribute 'alternateExchange' was not removed", upgradedAttributes.containsKey("alternateExchange"));
+                            new HashMap<>(Collections.singletonMap("destination", "testExchange")),
+                            new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
+        assertFalse("Attribute 'alternateExchange' was not removed",
+                           upgradedAttributes.containsKey("alternateExchange"));
     }
 
+    @Test
     public void testUpgradeQueueSharedMessageGroupsFrom_6_1() throws Exception
     {
         Map<String, Object> rootAttributes = new HashMap<>();
@@ -234,15 +250,22 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
         assertNotNull("Upgraded attributes not found", upgradedAttributes);
 
-        assertFalse("Attribute 'messageGroupKey' was not removed", upgradedAttributes.containsKey("messageGroupKey"));
-        assertFalse("Attribute 'messageGroupSharedGroups' was not removed", upgradedAttributes.containsKey("messageGroupSharedGroups"));
+        assertFalse("Attribute 'messageGroupKey' was not removed",
+                           upgradedAttributes.containsKey("messageGroupKey"));
+        assertFalse("Attribute 'messageGroupSharedGroups' was not removed",
+                           upgradedAttributes.containsKey("messageGroupSharedGroups"));
 
-        assertTrue("Attribute 'messageGroupKeyOverride' was not added", upgradedAttributes.containsKey("messageGroupKeyOverride"));
-        assertEquals("Unexpected messageGroupKeyOverride", "myheader", upgradedAttributes.get("messageGroupKeyOverride"));
-        assertTrue("Attribute 'messageGroupType' was not added", upgradedAttributes.containsKey("messageGroupType"));
+        assertTrue("Attribute 'messageGroupKeyOverride' was not added",
+                          upgradedAttributes.containsKey("messageGroupKeyOverride"));
+        assertEquals("Unexpected messageGroupKeyOverride",
+                            "myheader",
+                            upgradedAttributes.get("messageGroupKeyOverride"));
+        assertTrue("Attribute 'messageGroupType' was not added",
+                          upgradedAttributes.containsKey("messageGroupType"));
         assertEquals("Unexpected messageGroupType", "SHARED_GROUPS", upgradedAttributes.get("messageGroupType"));
     }
 
+    @Test
     public void testUpgradeQueueStandardMessageGroupsFrom_6_1() throws Exception
     {
         Map<String, Object> rootAttributes = new HashMap<>();
@@ -273,11 +296,15 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
         assertNotNull("Upgraded attributes not found", upgradedAttributes);
 
-        assertFalse("Attribute 'messageGroupKey' was not removed", upgradedAttributes.containsKey("messageGroupKey"));
-        assertFalse("Attribute 'messageGroupSharedGroups' was not removed", upgradedAttributes.containsKey("messageGroupSharedGroups"));
-        assertFalse("Attribute 'messageGroupKeyOverride' was added", upgradedAttributes.containsKey("messageGroupKeyOverride"));
+        assertFalse("Attribute 'messageGroupKey' was not removed",
+                           upgradedAttributes.containsKey("messageGroupKey"));
+        assertFalse("Attribute 'messageGroupSharedGroups' was not removed",
+                           upgradedAttributes.containsKey("messageGroupSharedGroups"));
+        assertFalse("Attribute 'messageGroupKeyOverride' was added",
+                           upgradedAttributes.containsKey("messageGroupKeyOverride"));
 
-        assertTrue("Attribute 'messageGroupType' was not added", upgradedAttributes.containsKey("messageGroupType"));
+        assertTrue("Attribute 'messageGroupType' was not added",
+                          upgradedAttributes.containsKey("messageGroupType"));
         assertEquals("Unexpected messageGroupType", "STANDARD", upgradedAttributes.get("messageGroupType"));
     }
 

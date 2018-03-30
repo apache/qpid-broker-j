@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.store;
 
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -35,20 +40,22 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.Description;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.EnqueueableMessage;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.Transaction.EnqueueRecord;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public abstract class MessageStoreTestCase extends QpidTestCase
+public abstract class MessageStoreTestCase extends UnitTestBase
 {
     private MessageStore _store;
     private VirtualHost<?> _parent;
@@ -58,11 +65,9 @@ public abstract class MessageStoreTestCase extends QpidTestCase
     private static final double SPARSITY_FRACTION = 1.0;
 
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
-
         _parent = createVirtualHost();
 
         _store = createMessageStore();
@@ -74,11 +79,10 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         QpidByteBuffer.deinitialisePool();
-        super.tearDown();
     }
 
     protected VirtualHost<?> getVirtualHost()
@@ -106,6 +110,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
 
     }
 
+    @Test
     public void testAddAndRemoveRecordXid() throws Exception
     {
         long format = 1l;
@@ -138,6 +143,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         verify(handler, never()).handle(eq(record), argThat(new RecordMatcher(enqueues)), argThat(new DequeueRecordMatcher(dequeues)));
     }
 
+    @Test
     public void testVisitMessages() throws Exception
     {
         long messageId = 1;
@@ -199,6 +205,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         txn.commitTran();
     }
 
+    @Test
     public void testVisitMessagesAborted() throws Exception
     {
         int contentSize = 0;
@@ -216,6 +223,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         verify(handler, times(2)).handle(any(StoredMessage.class));
     }
 
+    @Test
     public void testReopenedMessageStoreUsesLastMessageId() throws Exception
     {
         int contentSize = 0;
@@ -236,6 +244,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         assertTrue("Unexpected message id " + message.getMessageNumber(), message.getMessageNumber() >= 4);
     }
 
+    @Test
     public void testVisitMessageInstances() throws Exception
     {
         long messageId = 1;
@@ -256,6 +265,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         verify(handler, times(1)).handle(argThat(new EnqueueRecordMatcher(queueId, messageId)));
     }
 
+    @Test
     public void testVisitDistributedTransactions() throws Exception
     {
         long format = 1l;
@@ -280,6 +290,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
 
     }
 
+    @Test
     public void testCommitTransaction() throws Exception
     {
         final UUID mockQueueId = UUIDGenerator.generateRandomUUID();
@@ -305,6 +316,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         assertTrue("Message with id " + messageId2 + " is not found", enqueuedIds.contains(messageId2));
     }
 
+    @Test
     public void testRollbackTransactionBeforeCommit() throws Exception
     {
         final UUID mockQueueId = UUIDGenerator.generateRandomUUID();
@@ -336,6 +348,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         assertTrue("Message with id " + messageId3 + " is not found", enqueuedIds.contains(messageId3));
     }
 
+    @Test
     public void testRollbackTransactionAfterCommit() throws Exception
     {
         final UUID mockQueueId = UUIDGenerator.generateRandomUUID();
@@ -371,6 +384,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         assertTrue("Message with id " + messageId3 + " is not found", enqueuedIds.contains(messageId3));
     }
 
+    @Test
     public void testAddAndRemoveMessageWithoutContent() throws Exception
     {
         long messageId = 1;
@@ -410,6 +424,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         assertNull(retrievedMessageRef.get());
     }
 
+    @Test
     public void testMessageDeleted() throws Exception
     {
         MessageStore.MessageDeleteListener listener = mock(MessageStore.MessageDeleteListener.class);

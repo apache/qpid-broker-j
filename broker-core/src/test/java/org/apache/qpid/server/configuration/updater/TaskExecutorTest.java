@@ -20,6 +20,13 @@
  */
 package org.apache.qpid.server.configuration.updater;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.concurrent.BlockingQueue;
@@ -33,22 +40,25 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class TaskExecutorTest extends QpidTestCase
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class TaskExecutorTest extends UnitTestBase
 {
     private TaskExecutorImpl _executor;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _executor = new TaskExecutorImpl();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         try
         {
@@ -56,21 +66,23 @@ public class TaskExecutorTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testGetState()
     {
         assertFalse("Unexpected initial state", _executor.isRunning());
     }
 
+    @Test
     public void testStart()
     {
         _executor.start();
         assertTrue("Unexpected started state", _executor.isRunning());
     }
 
+    @Test
     public void testStopImmediately() throws Exception
     {
         _executor.start();
@@ -113,8 +125,11 @@ public class TaskExecutorTest extends QpidTestCase
 
         final long timeout = 2000l;
         boolean awaitSubmissions = submitLatch.await(timeout, TimeUnit.MILLISECONDS);
-        assertTrue(submitLatch.getCount() + " task(s) have not been submitted within expected time", awaitSubmissions);
-        assertTrue("The first task has not been triggered", waitForCallLatch.await(timeout, TimeUnit.MILLISECONDS));
+        assertTrue(submitLatch.getCount() + " task(s) have not been submitted within expected time",
+                          awaitSubmissions);
+
+        assertTrue("The first task has not been triggered",
+                          waitForCallLatch.await(timeout, TimeUnit.MILLISECONDS));
 
         _executor.stopImmediately();
         assertFalse("Unexpected stopped state", _executor.isRunning());
@@ -124,15 +139,18 @@ public class TaskExecutorTest extends QpidTestCase
         Exception e2 = submitExceptions.poll(timeout, TimeUnit.MILLISECONDS);
         assertNotNull("The task execution was not interrupted or cancelled", e2);
 
-        assertTrue("One of the exceptions should be CancellationException:", e2 instanceof CancellationException
-                || e instanceof CancellationException);
-        assertTrue("One of the exceptions should be InterruptedException:", e2 instanceof InterruptedException
-                || e instanceof InterruptedException);
+        final boolean condition1 = e2 instanceof CancellationException
+                || e instanceof CancellationException;
+        assertTrue("One of the exceptions should be CancellationException:", condition1);
+        final boolean condition = e2 instanceof InterruptedException
+                || e instanceof InterruptedException;
+        assertTrue("One of the exceptions should be InterruptedException:", condition);
 
         t1.join(timeout);
         t2.join(timeout);
     }
 
+    @Test
     public void testStop()
     {
         _executor.start();
@@ -140,6 +158,7 @@ public class TaskExecutorTest extends QpidTestCase
         assertFalse("Unexpected stopped state", _executor.isRunning());
     }
 
+    @Test
     public void testSubmitAndWait() throws Exception
     {
         _executor.start();
@@ -172,6 +191,7 @@ public class TaskExecutorTest extends QpidTestCase
         assertEquals("Unexpected task execution result", "DONE", result);
     }
 
+    @Test
     public void testSubmitAndWaitInNotAuthorizedContext()
     {
         _executor.start();
@@ -179,6 +199,7 @@ public class TaskExecutorTest extends QpidTestCase
         assertNull("Subject must be null", subject);
     }
 
+    @Test
     public void testSubmitAndWaitInAuthorizedContext()
     {
         _executor.start();
@@ -194,6 +215,7 @@ public class TaskExecutorTest extends QpidTestCase
         assertEquals("Unexpected subject", subject, result);
     }
 
+    @Test
     public void testSubmitAndWaitInAuthorizedContextWithNullSubject()
     {
         _executor.start();
@@ -208,6 +230,7 @@ public class TaskExecutorTest extends QpidTestCase
         assertEquals("Unexpected subject", null, result);
     }
 
+    @Test
     public void testSubmitAndWaitReThrowsOriginalRuntimeException()
     {
         final RuntimeException exception = new RuntimeException();
@@ -249,6 +272,7 @@ public class TaskExecutorTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSubmitAndWaitCurrentActorAndSecurityManagerSubjectAreRespected() throws Exception
     {
         _executor.start();

@@ -18,14 +18,19 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import org.junit.Test;
 
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.apache.qpid.test.utils.QpidTestCase;
-
-public class AclActionTest extends QpidTestCase
+public class AclActionTest extends UnitTestBase
 {
+    @Test
     public void testEqualsAndHashCode()
     {
         AclRulePredicates predicates = createAclRulePredicates();
@@ -42,14 +47,14 @@ public class AclActionTest extends QpidTestCase
         assertTrue(aclAction.hashCode() == equalAclAction.hashCode());
 
         assertFalse("Different operation should cause aclActions to be unequal",
-                aclAction.equals(new AclAction(LegacyOperation.BIND, objectType, predicates)));
+                           aclAction.equals(new AclAction(LegacyOperation.BIND, objectType, predicates)));
+
 
         assertFalse("Different operation type should cause aclActions to be unequal",
-                aclAction.equals(new AclAction(operation, ObjectType.GROUP, predicates)));
+                           aclAction.equals(new AclAction(operation, ObjectType.GROUP, predicates)));
 
         assertFalse("Different predicates should cause aclActions to be unequal",
-                aclAction.equals(new AclAction(operation, objectType, createAclRulePredicates())));
-
+                           aclAction.equals(new AclAction(operation, objectType, createAclRulePredicates())));
     }
 
     private AclRulePredicates createAclRulePredicates()

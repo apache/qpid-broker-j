@@ -21,47 +21,77 @@ package org.apache.qpid.disttest.charting.chartbuilder;
 
 import static org.mockito.Mockito.mock;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.charting.ChartType;
 import org.apache.qpid.disttest.charting.seriesbuilder.SeriesBuilder;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ChartBuilderFactoryTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ChartBuilderFactoryTest extends UnitTestBase
 {
     private SeriesBuilder _seriesBuilder = mock(SeriesBuilder.class);
 
+    @Test
     public void testLineChart()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.LINE, _seriesBuilder);
-        assertTrue(builder instanceof LineChartBuilder);
+        final boolean condition = builder instanceof LineChartBuilder;
+        assertTrue(condition);
     }
 
+    @Test
     public void testLineChart3D()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.LINE3D, _seriesBuilder);
-        assertTrue(builder instanceof LineChart3DBuilder);
+        final boolean condition = builder instanceof LineChart3DBuilder;
+        assertTrue(condition);
     }
 
+    @Test
     public void testBarChart()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.BAR, _seriesBuilder);
-        assertTrue(builder instanceof BarChartBuilder);
+        final boolean condition = builder instanceof BarChartBuilder;
+        assertTrue(condition);
     }
 
+    @Test
     public void testBarChart3D()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.BAR3D, _seriesBuilder);
-        assertTrue(builder instanceof BarChart3DBuilder);
+        final boolean condition = builder instanceof BarChart3DBuilder;
+        assertTrue(condition);
     }
 
+    @Test
     public void testXYLineChart()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.XYLINE, _seriesBuilder);
-        assertTrue(builder instanceof XYLineChartBuilder);
+        final boolean condition = builder instanceof XYLineChartBuilder;
+        assertTrue(condition);
     }
 
+    @Test
     public void testTimeSeriesLineChart()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.TIMELINE, _seriesBuilder);
-        assertTrue(builder instanceof TimeSeriesLineChartBuilder);
+        final boolean condition = builder instanceof TimeSeriesLineChartBuilder;
+        assertTrue(condition);
     }
 }

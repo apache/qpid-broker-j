@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,14 +33,16 @@ import java.util.Collections;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Test;
 
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ConfiguredObjectJacksonModuleTest extends QpidTestCase
+public class ConfiguredObjectJacksonModuleTest extends UnitTestBase
 {
     private static final String UTF8 = StandardCharsets.UTF_8.name();
 
+    @Test
     public void testPrincipalSerialisation() throws Exception
     {
         final String username = "testuser@withFunky%";
@@ -57,6 +61,7 @@ public class ConfiguredObjectJacksonModuleTest extends QpidTestCase
         assertEquals("unexpected principal serialisation", expectedSerialisation, json);
     }
 
+    @Test
     public void testManageableAttributeType() throws IOException
     {
         ManagedAttributeValue testType = new TestManagedAttributeValue();
@@ -65,14 +70,13 @@ public class ConfiguredObjectJacksonModuleTest extends QpidTestCase
         String encodedValue = encoder.writeValueAsString(testType);
         ObjectMapper decoder = new ObjectMapper();
         Map decodedMap = decoder.readValue(encodedValue, Map.class);
-        assertEquals(3, decodedMap.size());
+        assertEquals((long) 3, (long) decodedMap.size());
         assertTrue(decodedMap.containsKey("name"));
         assertTrue(decodedMap.containsKey("map"));
         assertTrue(decodedMap.containsKey("type"));
         assertEquals("foo", decodedMap.get("name"));
-        assertEquals(Collections.singletonMap("key","value"), decodedMap.get("map"));
-        assertEquals(Collections.singletonMap("nested",true), decodedMap.get("type"));
-
+        assertEquals(Collections.singletonMap("key", "value"), decodedMap.get("map"));
+        assertEquals(Collections.singletonMap("nested", true), decodedMap.get("type"));
     }
 
     @ManagedAttributeValueType(isAbstract = true)

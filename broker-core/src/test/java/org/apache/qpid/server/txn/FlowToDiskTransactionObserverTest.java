@@ -28,15 +28,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class FlowToDiskTransactionObserverTest extends QpidTestCase
+public class FlowToDiskTransactionObserverTest extends UnitTestBase
 {
     private static final int MAX_UNCOMMITTED_IN_MEMORY_SIZE = 100;
     private FlowToDiskTransactionObserver _flowToDiskMessageObserver;
@@ -44,10 +47,9 @@ public class FlowToDiskTransactionObserverTest extends QpidTestCase
     private LogSubject _logSubject;
     private ServerTransaction _transaction;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _eventLogger = mock(EventLogger.class);
         _logSubject = mock(LogSubject.class);
         _flowToDiskMessageObserver = new FlowToDiskTransactionObserver(MAX_UNCOMMITTED_IN_MEMORY_SIZE,
@@ -56,6 +58,7 @@ public class FlowToDiskTransactionObserverTest extends QpidTestCase
         _transaction = mock(ServerTransaction.class);
     }
 
+    @Test
     public void testOnMessageEnqueue() throws Exception
     {
         EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE);
@@ -85,6 +88,7 @@ public class FlowToDiskTransactionObserverTest extends QpidTestCase
         verify(_eventLogger).message(same(_logSubject), any(LogMessage.class));
     }
 
+    @Test
     public void testOnDischarge() throws Exception
     {
         EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE - 1);
@@ -106,6 +110,7 @@ public class FlowToDiskTransactionObserverTest extends QpidTestCase
         verify(_eventLogger, never()).message(same(_logSubject), any(LogMessage.class));
     }
 
+    @Test
     public void testBreachLimitTwice() throws Exception
     {
         EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE + 1);

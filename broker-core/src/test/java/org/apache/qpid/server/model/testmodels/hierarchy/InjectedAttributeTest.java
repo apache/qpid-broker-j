@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,14 +34,28 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.model.ConfiguredDerivedInjectedAttribute;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectInjectedAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectInjectedOperation;
+import org.apache.qpid.server.model.ConfiguredObjectInjectedStatistic;
+import org.apache.qpid.server.model.ConfiguredObjectOperation;
+import org.apache.qpid.server.model.ConfiguredSettableInjectedAttribute;
+import org.apache.qpid.server.model.Initialization;
+import org.apache.qpid.server.model.InjectedAttributeOrStatistic;
+import org.apache.qpid.server.model.InjectedAttributeStatisticOrOperation;
+import org.apache.qpid.server.model.OperationParameter;
+import org.apache.qpid.server.model.OperationParameterFromInjection;
+import org.apache.qpid.server.model.StatisticType;
+import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestCar.Colour;
 import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class InjectedAttributeTest extends QpidTestCase
+public class InjectedAttributeTest extends UnitTestBase
 {
 
     private static final InjectedAttributeStatisticOrOperation.TypeValidator TYPE_VALIDATOR =
@@ -112,6 +130,7 @@ public class InjectedAttributeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testInjectedSettableAttributeWithDefault()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attrInjector =
@@ -145,10 +164,10 @@ public class InjectedAttributeTest extends QpidTestCase
         testCar.setAttributes(Collections.<String,Object>singletonMap("meaningOfLife", "${varieties}"));
 
         assertEquals("incorrect attribute value", Integer.valueOf(57), testCar.getAttribute("meaningOfLife"));
-
     }
 
 
+    @Test
     public void testInjectedSettableAttributeValidValues()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attrInjector =
@@ -174,7 +193,6 @@ public class InjectedAttributeTest extends QpidTestCase
 
         testCar.setAttributes(Collections.<String,Object>singletonMap("meaningOfLife", 49));
 
-
         assertEquals("incorrect attribute value", Integer.valueOf(49), testCar.getAttribute("meaningOfLife"));
 
         try
@@ -188,6 +206,7 @@ public class InjectedAttributeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testInjectedSettableAttributeEnumValidValues_Unrestricted()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attribute =
@@ -207,10 +226,11 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                             null, Initialization.none);
 
         assertEquals("The attribute's valid values should match the set of the enum",
-                     Lists.newArrayList("BLACK", "RED", "BLUE", "GREY"),
-                     attribute.validValues());
+                            Lists.newArrayList("BLACK", "RED", "BLUE", "GREY"),
+                            attribute.validValues());
     }
 
+    @Test
     public void testInjectedSettableAttributeEnumValidValues_RestrictedSet()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attribute =
@@ -229,11 +249,13 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                             "",
                                                                             null, Initialization.none);
 
-        assertEquals("The attribute's valid values should match the restricted set defined on the attribute itself",
-                     Lists.newArrayList("GREY", "BLACK"),
-                     attribute.validValues());
+        assertEquals(
+                "The attribute's valid values should match the restricted set defined on the attribute itself",
+                Lists.newArrayList("GREY", "BLACK"),
+                attribute.validValues());
     }
 
+    @Test
     public void testInjectedDerivedAttribute() throws Exception
     {
         Method method = InjectedAttributeTest.class.getDeclaredMethod("getMeaningOfLife", TestCar.class);
@@ -253,12 +275,11 @@ public class InjectedAttributeTest extends QpidTestCase
 
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
-
         assertEquals("incorrect attribute value", Integer.valueOf(42), testCar.getAttribute("meaningOfLife"));
-
     }
 
 
+    @Test
     public void testInjectedStatistic() throws Exception
     {
 
@@ -278,11 +299,12 @@ public class InjectedAttributeTest extends QpidTestCase
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
         final Map<String, Object> statistics = testCar.getStatistics();
-        assertEquals("incorrect number of statistics", 1, statistics.size());
+        assertEquals("incorrect number of statistics", (long) 1, (long) statistics.size());
         assertEquals("incorrect statistic value", 42, statistics.get("meaningOfLife"));
     }
 
 
+    @Test
     public void testInjectedStatisticWithParameters() throws Exception
     {
 
@@ -309,12 +331,13 @@ public class InjectedAttributeTest extends QpidTestCase
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
         final Map<String, Object> statistics = testCar.getStatistics();
-        assertEquals("incorrect number of statistics", 2, statistics.size());
+        assertEquals("incorrect number of statistics", (long) 2, (long) statistics.size());
         assertEquals("incorrect statistic value", 1, statistics.get("whatISent1"));
         assertEquals("incorrect statistic value", 2, statistics.get("whatISent2"));
     }
 
 
+    @Test
     public void testInjectedOperation() throws Exception
     {
         Method method = InjectedAttributeTest.class.getDeclaredMethod("fly", TestCar.class, Integer.TYPE);
@@ -347,6 +370,7 @@ public class InjectedAttributeTest extends QpidTestCase
         assertEquals("Car should not be able to fly at 5000m", Boolean.FALSE, result);
     }
 
+    @Test
     public void testInjectedOperationWithStaticParams() throws Exception
     {
 
@@ -392,6 +416,7 @@ public class InjectedAttributeTest extends QpidTestCase
         assertEquals("Car say 'Goodbye' once", Collections.singletonList("Goodbye"), result);
     }
 
+    @Test
     public void testOperationWithMandatoryParameter_RejectsNullParameter() throws Exception
     {
         Method method = InjectedAttributeTest.class.getDeclaredMethod("ping", TestCar.class, String.class);

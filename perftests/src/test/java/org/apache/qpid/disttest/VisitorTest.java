@@ -19,13 +19,32 @@
  */
 package org.apache.qpid.disttest;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.message.Command;
-import org.apache.qpid.test.utils.QpidTestCase;
 
 
-public class VisitorTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class VisitorTest extends UnitTestBase
 {
 
+    @Test
     public void testStringVisited() throws Exception
     {
         Object argument = new String();
@@ -36,6 +55,7 @@ public class VisitorTest extends QpidTestCase
         assertSame(argument, visitor._string);
     }
 
+    @Test
     public void testCommandVisited() throws Exception
     {
         Object argument = new TestCommand();
@@ -46,6 +66,7 @@ public class VisitorTest extends QpidTestCase
         assertSame(argument, visitor._testCommand);
     }
 
+    @Test
     public void testNoVisitIntegerImplementatiom() throws Exception
     {
         Integer argument = Integer.valueOf(1);

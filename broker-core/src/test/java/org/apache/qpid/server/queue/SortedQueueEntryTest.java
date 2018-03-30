@@ -19,32 +19,30 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-
 public class SortedQueueEntryTest extends QueueEntryImplTestBase
 {
 
@@ -52,17 +50,17 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
 
     private SelfValidatingSortedQueueEntryList _queueEntryList;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         Map<String,Object> attributes = new HashMap<String,Object>();
         attributes.put(Queue.ID,UUID.randomUUID());
-        attributes.put(Queue.NAME, getName());
+        attributes.put(Queue.NAME, getTestName());
         attributes.put(Queue.DURABLE, false);
         attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);
         attributes.put(SortedQueue.SORT_KEY, "KEY");
 
-        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH");
+        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
         SortedQueueImpl queue = new SortedQueueImpl(attributes, virtualHost)
         {
             SelfValidatingSortedQueueEntryList _entries;
@@ -102,6 +100,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
     }
 
     @Override
+    @Test
     public void testCompareTo()
     {
         assertTrue(_queueEntry.compareTo(_queueEntry2) > 0);
@@ -119,22 +118,23 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
     }
 
     @Override
+    @Test
     public void testTraverseWithNoDeletedEntries()
     {
         QueueEntry current = _queueEntry2;
 
         current = current.getNextValidEntry();
-        assertSame("Unexpected current entry",_queueEntry3, current);
+        assertSame("Unexpected current entry", _queueEntry3, current);
 
         current = current.getNextValidEntry();
-        assertSame("Unexpected current entry",_queueEntry, current);
+        assertSame("Unexpected current entry", _queueEntry, current);
 
         current = current.getNextValidEntry();
         assertNull(current);
-
     }
 
     @Override
+    @Test
     public void testTraverseWithDeletedEntries()
     {
         // Delete 2nd queue entry
@@ -145,7 +145,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         QueueEntry current = _queueEntry2;
 
         current = current.getNextValidEntry();
-        assertSame("Unexpected current entry",_queueEntry, current);
+        assertSame("Unexpected current entry", _queueEntry, current);
 
         current = current.getNextValidEntry();
         assertNull(current);

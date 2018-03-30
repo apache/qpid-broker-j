@@ -22,11 +22,14 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
+import org.junit.Test;
+
 /**
  * Test SUB Log Messages
  */
 public class ConsumerMessagesTest extends AbstractTestMessages
 {
+    @Test
     public void testSubscriptionCreateALL()
     {
         String arguments = "arguments";
@@ -39,6 +42,7 @@ public class ConsumerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "SUB-1001", expected);
     }
 
+    @Test
     public void testSubscriptionCreateDurable()
     {
         _logMessage = SubscriptionMessages.CREATE(null, true, false);
@@ -49,6 +53,7 @@ public class ConsumerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "SUB-1001", expected);
     }
 
+    @Test
     public void testSubscriptionCreateArguments()
     {
         String arguments = "arguments";
@@ -62,6 +67,7 @@ public class ConsumerMessagesTest extends AbstractTestMessages
     }
 
 
+    @Test
     public void testSubscriptionClose()
     {
         _logMessage = SubscriptionMessages.CLOSE();

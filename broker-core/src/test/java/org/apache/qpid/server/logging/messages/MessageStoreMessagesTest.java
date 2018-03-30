@@ -22,11 +22,14 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
+import org.junit.Test;
+
 /**
  * Test MST Log Messages
  */
 public class MessageStoreMessagesTest extends AbstractTestMessages
 {
+    @Test
     public void testMessageStoreCreated()
     {
         _logMessage = MessageStoreMessages.CREATED();
@@ -37,6 +40,7 @@ public class MessageStoreMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "MST-1001", expected);
     }
 
+    @Test
     public void testMessageStoreStoreLocation()
     {
         String location = "/path/to/the/message/store.files";
@@ -49,6 +53,7 @@ public class MessageStoreMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "MST-1002", expected);
     }
 
+    @Test
     public void testMessageStoreClosed()
     {
         _logMessage = MessageStoreMessages.CLOSED();
@@ -59,7 +64,8 @@ public class MessageStoreMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "MST-1003", expected);
     }
 
-  public void testMessageStoreRecoveryStart()
+    @Test
+    public void testMessageStoreRecoveryStart()
     {
         _logMessage = MessageStoreMessages.RECOVERY_START();
         List<Object> log = performLog();

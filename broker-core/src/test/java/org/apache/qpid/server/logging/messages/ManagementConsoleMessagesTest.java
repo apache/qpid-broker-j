@@ -22,6 +22,8 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
+import org.junit.Test;
+
 import org.apache.qpid.server.model.Transport;
 
 /**
@@ -29,6 +31,7 @@ import org.apache.qpid.server.model.Transport;
  */
 public class ManagementConsoleMessagesTest extends AbstractTestMessages
 {
+    @Test
     public void testManagementStartup()
     {
         _logMessage = ManagementConsoleMessages.STARTUP("My");
@@ -39,6 +42,7 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "MNG-1001", expected);
     }
 
+    @Test
     public void testManagementListening()
     {
         String management = "HTTP";
@@ -52,6 +56,7 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "MNG-1002", expected);
     }
 
+    @Test
     public void testManagementShuttingDown()
     {
         String transport = "HTTP";
@@ -65,6 +70,7 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "MNG-1003", expected);
     }
 
+    @Test
     public void testManagementReady()
     {
         _logMessage = ManagementConsoleMessages.READY("My");
@@ -75,6 +81,7 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "MNG-1004", expected);
     }
 
+    @Test
     public void testManagementStopped()
     {
         _logMessage = ManagementConsoleMessages.STOPPED("My");

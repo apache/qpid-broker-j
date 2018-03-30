@@ -19,14 +19,21 @@
 
 package org.apache.qpid.server.store.jdbc;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class JDBCDetailsTest extends QpidTestCase
-{
+import org.apache.qpid.test.utils.UnitTestBase;
+
+
+public class JDBCDetailsTest extends UnitTestBase{
+    @Test
     public void testDerby()
     {
         JDBCDetails derbyDetails = JDBCDetails.getJdbcDetails("derby", Collections.emptyMap());
@@ -40,6 +47,7 @@ public class JDBCDetailsTest extends QpidTestCase
         assertFalse(derbyDetails.isOverridden());
     }
 
+    @Test
     public void testUnknownVendor_UsesFallbackDetails()
     {
         JDBCDetails details = JDBCDetails.getJdbcDetails("homedb", Collections.emptyMap());
@@ -52,6 +60,7 @@ public class JDBCDetailsTest extends QpidTestCase
         assertFalse(details.isKnownVendor());
     }
 
+    @Test
     public void testDerbyWithOverride()
     {
 
@@ -72,6 +81,7 @@ public class JDBCDetailsTest extends QpidTestCase
 
 
 
+    @Test
     public void testRecognisedDriver_AllDetailsProvidedByContext()
     {
         Map<String, String> contextMap = new HashMap<>();

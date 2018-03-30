@@ -21,17 +21,33 @@ package org.apache.qpid.disttest.client.property;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class ListPropertyValueTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ListPropertyValueTest extends UnitTestBase
 {
     private ListPropertyValue _generator;
     private List<PropertyValue> _items;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _generator = new ListPropertyValue();
         _items = new ArrayList<PropertyValue>();
         _items.add(new SimplePropertyValue(new Integer(1)));
@@ -46,12 +62,14 @@ public class ListPropertyValueTest extends QpidTestCase
         _generator.setItems(_items);
     }
 
+    @Test
     public void testGetItems()
     {
         List<? extends Object> items = _generator.getItems();
         assertEquals("Unexpected list items", _items, items);
     }
 
+    @Test
     public void testGetValue()
     {
         for (int i = 0; i < 2; i++)
@@ -70,6 +88,7 @@ public class ListPropertyValueTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testNonCyclicGetValue()
     {
         _generator.setCyclic(false);

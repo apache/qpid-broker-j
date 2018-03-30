@@ -20,15 +20,19 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.qpid.server.model.Queue;
+import org.junit.Before;
+import org.junit.Test;
 
+import org.apache.qpid.server.model.Queue;
 public class LastValueQueueTest extends AbstractQueueTestBase
 {
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         Map<String,Object> arguments = new HashMap<>();
@@ -41,14 +45,15 @@ public class LastValueQueueTest extends AbstractQueueTestBase
 
 
     @Override
+    @Test
     public void testOldestMessage()
     {
         Queue<?> queue = getQueue();
         queue.enqueue(createMessage(1l, (byte)1, Collections.singletonMap("lvqKey", (Object) "Z"), 10l), null, null);
-        assertEquals(10l,queue.getOldestMessageArrivalTime());
+        assertEquals(10l, queue.getOldestMessageArrivalTime());
         queue.enqueue(createMessage(2l, (byte)4, Collections.singletonMap("lvqKey", (Object) "M"), 100l), null, null);
-        assertEquals(10l,queue.getOldestMessageArrivalTime());
+        assertEquals(10l, queue.getOldestMessageArrivalTime());
         queue.enqueue(createMessage(3l, (byte)9, Collections.singletonMap("lvqKey", (Object) "Z"), 1000l), null, null);
-        assertEquals(100l,queue.getOldestMessageArrivalTime());
+        assertEquals(100l, queue.getOldestMessageArrivalTime());
     }
 }

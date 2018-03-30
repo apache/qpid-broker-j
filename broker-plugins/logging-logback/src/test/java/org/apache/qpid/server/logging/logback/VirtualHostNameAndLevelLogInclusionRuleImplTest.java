@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,33 +34,31 @@ import java.util.Map;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.LogLevel;
-import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRule;
-import org.apache.qpid.server.logging.logback.LoggerNameAndLevelFilter;
-import org.apache.qpid.server.logging.logback.VirtualHostNameAndLevelLogInclusionRule;
-import org.apache.qpid.server.logging.logback.VirtualHostNameAndLevelLogInclusionRuleImpl;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class VirtualHostNameAndLevelLogInclusionRuleImplTest extends QpidTestCase
+public class VirtualHostNameAndLevelLogInclusionRuleImplTest extends UnitTestBase
 {
     private VirtualHostLogger _virtualHostLogger;
     private TaskExecutor _taskExecutor;
     private final VirtualHost _virtualhost = mock(VirtualHost.class);
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _taskExecutor =  new TaskExecutorImpl();
         _taskExecutor.start();
@@ -86,7 +87,7 @@ public class VirtualHostNameAndLevelLogInclusionRuleImplTest extends QpidTestCas
         doReturn(VirtualHostLogger.class).when(_virtualHostLogger).getCategoryClass();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -95,24 +96,26 @@ public class VirtualHostNameAndLevelLogInclusionRuleImplTest extends QpidTestCas
         }
         finally
         {
-            super.tearDown();
         }
     }
 
 
+    @Test
     public void testAsFilter()
     {
         VirtualHostNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
 
         Filter<ILoggingEvent> filter = rule.asFilter();
 
-        assertTrue("Unexpected filter instance", filter instanceof LoggerNameAndLevelFilter);
+        final boolean condition = filter instanceof LoggerNameAndLevelFilter;
+        assertTrue("Unexpected filter instance", condition);
 
         LoggerNameAndLevelFilter f = (LoggerNameAndLevelFilter)filter;
         assertEquals("Unexpected log level", Level.INFO, f.getLevel());
         assertEquals("Unexpected logger name", "org.apache.qpid", f.getLoggerName());
     }
 
+    @Test
     public void testLevelChangeAffectsFilter()
     {
         VirtualHostNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
@@ -125,6 +128,7 @@ public class VirtualHostNameAndLevelLogInclusionRuleImplTest extends QpidTestCas
         assertEquals("Unexpected log level attribute", Level.DEBUG, filter.getLevel());
     }
 
+    @Test
     public void testLoggerNameChangeNotAllowed()
     {
         VirtualHostNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);

@@ -22,6 +22,8 @@ package org.apache.qpid.server.protocol.v1_0;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getContentType;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +38,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.collect.Lists;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -56,9 +60,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
+public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
 {
     private final MessageConverter_Internal_to_v1_0 _converter = new MessageConverter_Internal_to_v1_0();
     private final AMQPDescribedTypeRegistry _typeRegistry = AMQPDescribedTypeRegistry.newInstance()
@@ -71,13 +75,13 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
 
     private final AMQMessageHeader _amqpHeader = mock(AMQMessageHeader.class);
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
     }
 
 
+    @Test
     public void testStringMessage() throws Exception
     {
         String content = "testContent";
@@ -90,6 +94,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.TEXT_MESSAGE.getType());
     }
 
+    @Test
     public void testStringMessageWithUnknownMimeType() throws Exception
     {
         String content = "testContent";
@@ -102,6 +107,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.TEXT_MESSAGE.getType());
     }
 
+    @Test
     public void testStringMessageWithoutMimeType() throws Exception
     {
         String content = "testContent";
@@ -113,6 +119,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.TEXT_MESSAGE.getType());
     }
 
+    @Test
     public void testListMessageWithMimeType() throws Exception
     {
         ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
@@ -124,6 +131,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
+    @Test
     public void testListMessageWithoutMimeType() throws Exception
     {
         ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
@@ -135,6 +143,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
+    @Test
     public void testListMessageWithoutMimeTypeWithNonJmsContent() throws Exception
     {
         ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42, Lists.newArrayList());
@@ -146,6 +155,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                null);
     }
 
+    @Test
     public void testByteArrayMessageWithoutMimeType() throws Exception
     {
         byte[] content = "testContent".getBytes(UTF_8);
@@ -157,6 +167,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.BYTES_MESSAGE.getType());
     }
 
+    @Test
     public void testByteArrayMessageWithMimeType() throws Exception
     {
         byte[] content = "testContent".getBytes(UTF_8);
@@ -169,6 +180,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.BYTES_MESSAGE.getType());
     }
 
+    @Test
     public void testEmptyByteArrayMessageWithMimeType() throws Exception
     {
         byte[] content = new byte[0];
@@ -181,6 +193,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.BYTES_MESSAGE.getType());
     }
 
+    @Test
     public void testMapMessageWithMimeType() throws Exception
     {
         HashMap<Object, Object> content = new HashMap<>();
@@ -195,6 +208,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
     }
 
+    @Test
     public void testMapMessageWithoutMimeType() throws Exception
     {
         HashMap<Object, Object> content = new HashMap<>();
@@ -208,6 +222,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
     }
 
+    @Test
     public void testMapMessageWithMimeTypeWithNonJmsContent() throws Exception
     {
         HashMap<Object, Object> content = new HashMap<>();
@@ -221,6 +236,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                null);
     }
 
+    @Test
     public void testSerializableMessageWithMimeType() throws Exception
     {
         Serializable content = new MySerializable();
@@ -233,6 +249,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.OBJECT_MESSAGE.getType());
     }
 
+    @Test
     public void testSerializableMessageWithoutMimeType() throws Exception
     {
         Serializable content = new MySerializable();
@@ -244,6 +261,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.OBJECT_MESSAGE.getType());
     }
 
+    @Test
     public void testNullMessageWithoutMimeType() throws Exception
     {
         doTest(null,
@@ -254,6 +272,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
                JmsMessageTypeAnnotation.MESSAGE.getType());
     }
 
+    @Test
     public void testUuidMessageWithMimeType() throws Exception
     {
         UUID content = UUID.randomUUID();
@@ -284,7 +303,7 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
     {
         SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
         final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(content);
-        assertEquals("Unexpected number of sections", expectedNumberOfSections, sections.size());
+        assertEquals("Unexpected number of sections", (long) expectedNumberOfSections, (long) sections.size());
         return sections;
     }
 
@@ -387,8 +406,8 @@ public class MessageConverter_Internal_to_1_0Test extends QpidTestCase
         else
         {
             assertEquals("Unexpected annotation 'x-opt-jms-msg-type'",
-                         expectedJmsTypeAnnotation,
-                         jmsMessageTypeAnnotation);
+                                expectedJmsTypeAnnotation,
+                                jmsMessageTypeAnnotation);
         }
     }
 

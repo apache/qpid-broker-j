@@ -31,24 +31,27 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.Transaction;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class DatabaseTemplateTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class DatabaseTemplateTest extends UnitTestBase
 {
     private static final String SOURCE_DATABASE = "sourceDatabase";
     private Environment _environment;
     private Database _sourceDatabase;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _environment = mock(Environment.class);
         _sourceDatabase = mock(Database.class);
         when(_environment.openDatabase(any(Transaction.class), same(SOURCE_DATABASE), isA(DatabaseConfig.class)))
                 .thenReturn(_sourceDatabase);
     }
 
+    @Test
     public void testExecuteWithTwoDatabases()
     {
         String targetDatabaseName = "targetDatabase";
@@ -69,6 +72,7 @@ public class DatabaseTemplateTest extends QpidTestCase
         verify(targetDatabase).close();
     }
 
+    @Test
     public void testExecuteWithOneDatabases()
     {
         DatabaseTemplate databaseTemplate = new DatabaseTemplate(_environment, SOURCE_DATABASE, null, null);

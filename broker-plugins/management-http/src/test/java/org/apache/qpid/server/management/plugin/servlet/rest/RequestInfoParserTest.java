@@ -19,6 +19,10 @@
 
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,15 +34,18 @@ import java.util.Collections;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.junit.Test;
+
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class RequestInfoParserTest extends QpidTestCase
+public class RequestInfoParserTest extends UnitTestBase
 {
     private HttpServletRequest _request = mock(HttpServletRequest.class);
 
+    @Test
     public void testGetNoHierarchy()
     {
         RequestInfoParser parser = new RequestInfoParser();
@@ -51,6 +58,7 @@ public class RequestInfoParserTest extends QpidTestCase
         assertEquals("Unexpected model parts", Collections.emptyList(), info.getModelParts());
     }
 
+    @Test
     public void testGetWithHierarchy()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class);
@@ -68,6 +76,7 @@ public class RequestInfoParserTest extends QpidTestCase
         assertTrue("Expected exact object request", info.isSingletonRequest());
     }
 
+    @Test
     public void testGetParent()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class);
@@ -81,6 +90,7 @@ public class RequestInfoParserTest extends QpidTestCase
         assertFalse("Expected exact object request", info.isSingletonRequest());
     }
 
+    @Test
     public void testGetTooManyParts()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class);
@@ -98,11 +108,13 @@ public class RequestInfoParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testGetOperation()
     {
         doOperationTest("GET");
     }
 
+    @Test
     public void testPostToParent()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class);
@@ -119,6 +131,7 @@ public class RequestInfoParserTest extends QpidTestCase
     }
 
 
+    @Test
     public void testPostToObject()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class);
@@ -135,6 +148,7 @@ public class RequestInfoParserTest extends QpidTestCase
         assertEquals("Unexpected model parts", Arrays.asList(vhnName, vhName), info.getModelParts());
     }
 
+    @Test
     public void testPostTooFewParts()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class, Queue.class);
@@ -152,6 +166,7 @@ public class RequestInfoParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testPostTooManyParts()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class, Queue.class);
@@ -169,11 +184,13 @@ public class RequestInfoParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testPostOperation()
     {
         doOperationTest("POST");
     }
 
+    @Test
     public void testPutToObject()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class);
@@ -190,6 +207,7 @@ public class RequestInfoParserTest extends QpidTestCase
         assertEquals("Unexpected model parts", Arrays.asList(vhnName, vhName), info.getModelParts());
     }
 
+    @Test
     public void testPutToParent()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class, Queue.class);
@@ -204,6 +222,7 @@ public class RequestInfoParserTest extends QpidTestCase
         assertEquals("Unexpected model parts", Arrays.asList(vhnName, vhName), info.getModelParts());
     }
 
+    @Test
     public void testPutTooFewParts()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class, Queue.class);
@@ -221,6 +240,7 @@ public class RequestInfoParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testPutTooManyParts()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class, Queue.class);
@@ -238,6 +258,7 @@ public class RequestInfoParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDeleteObject()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class);
@@ -255,6 +276,7 @@ public class RequestInfoParserTest extends QpidTestCase
     }
 
 
+    @Test
     public void testDeleteParent()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class, Queue.class);
@@ -269,6 +291,7 @@ public class RequestInfoParserTest extends QpidTestCase
         assertEquals("Unexpected model parts", Arrays.asList(vhnName, vhName), info.getModelParts());
     }
 
+    @Test
     public void testDeleteTooManyParts()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class, Queue.class);
@@ -286,6 +309,7 @@ public class RequestInfoParserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testParseWithURLEncodedName() throws UnsupportedEncodingException
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class);
@@ -300,6 +324,7 @@ public class RequestInfoParserTest extends QpidTestCase
         assertEquals("Unexpected model parts", Arrays.asList(vhnName), info.getModelParts());
     }
 
+    @Test
     public void testWildHierarchy()
     {
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class);
@@ -338,6 +363,5 @@ public class RequestInfoParserTest extends QpidTestCase
         assertEquals("Unexpected model parts", Arrays.asList(vhnName), info.getModelParts());
         assertEquals("Unexpected operation name", operationName, info.getOperationName());
         assertTrue("Expected exact object request", info.isSingletonRequest());
-
     }
 }

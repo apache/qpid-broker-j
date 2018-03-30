@@ -60,7 +60,8 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 public class BrokerTestHelper
 {
@@ -164,14 +165,18 @@ public class BrokerTestHelper
     {
     }
 
-    public static QueueManagingVirtualHost<?> createVirtualHost(Map<String, Object> attributes)
+    public static QueueManagingVirtualHost<?> createVirtualHost(Map<String, Object> attributes,
+                                                                final UnitTestBase testBase)
     {
         Broker<?> broker = createBrokerMock(createAccessControlMock());
-        return createVirtualHost(attributes, broker, false, createAccessControlMock());
+        return createVirtualHost(attributes, broker, false, createAccessControlMock(), testBase);
     }
 
     private static QueueManagingVirtualHost<?> createVirtualHost(final Map<String, Object> attributes,
-                                                        final Broker<?> broker, boolean defaultVHN, AccessControl accessControl)
+                                                                 final Broker<?> broker,
+                                                                 boolean defaultVHN,
+                                                                 AccessControl accessControl,
+                                                                 final UnitTestBase testBase)
     {
         ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
 
@@ -203,28 +208,37 @@ public class BrokerTestHelper
         host.start();
         when(virtualHostNode.getVirtualHost()).thenReturn(host);
         _createdVirtualHosts.add(host);
-        QpidTestCase testCase = QpidTestCase.getCurrentInstance();
-        testCase.registerTearDown(_closeVirtualHosts);
+
+        testBase.registerTearDown(_closeVirtualHosts);
         return host;
     }
 
-    public static QueueManagingVirtualHost<?> createVirtualHost(String name) throws Exception
+    public static QueueManagingVirtualHost<?> createVirtualHost(String name,
+                                                                final UnitTestBase testBase) throws Exception
     {
-        return createVirtualHost(name, createBrokerMock(createAccessControlMock()), false, createAccessControlMock());
+        return createVirtualHost(name, createBrokerMock(createAccessControlMock()), false, createAccessControlMock(),
+                                 testBase);
     }
 
-    public static QueueManagingVirtualHost<?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN) throws Exception
+    public static QueueManagingVirtualHost<?> createVirtualHost(String name,
+                                                                Broker<?> broker,
+                                                                boolean defaultVHN,
+                                                                final UnitTestBase testBase) throws Exception
     {
-        return createVirtualHost(name, broker, defaultVHN, createAccessControlMock());
+        return createVirtualHost(name, broker, defaultVHN, createAccessControlMock(), testBase);
     }
 
-    private static QueueManagingVirtualHost<?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN, AccessControl accessControl) throws Exception
+    private static QueueManagingVirtualHost<?> createVirtualHost(String name,
+                                                                 Broker<?> broker,
+                                                                 boolean defaultVHN,
+                                                                 AccessControl accessControl,
+                                                                 final UnitTestBase testBase) throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(org.apache.qpid.server.model.VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
         attributes.put(org.apache.qpid.server.model.VirtualHost.NAME, name);
 
-        return createVirtualHost(attributes, broker, defaultVHN, accessControl);
+        return createVirtualHost(attributes, broker, defaultVHN, accessControl, testBase);
     }
 
     public static AMQPSession<?,?> createSession(int channelId, AMQPConnection<?> connection)

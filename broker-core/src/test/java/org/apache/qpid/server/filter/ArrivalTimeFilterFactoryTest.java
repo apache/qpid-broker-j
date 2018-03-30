@@ -20,15 +20,20 @@
  */
 package org.apache.qpid.server.filter;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class ArrivalTimeFilterFactoryTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class ArrivalTimeFilterFactoryTest extends UnitTestBase
 {
+    @Test
     public void testNewInstance() throws Exception
     {
         long currentTime = System.currentTimeMillis();
@@ -40,10 +45,11 @@ public class ArrivalTimeFilterFactoryTest extends QpidTestCase
         when(message.getArrivalTime()).thenReturn(currentTime - periodInSeconds * 1000 - 1);
 
         assertFalse("Message arrived before '1 minute before filter creation' should not be accepted",
-                    filter.matches(message));
+                           filter.matches(message));
+
         when(message.getArrivalTime()).thenReturn(currentTime - periodInSeconds  * 1000 / 2);
         assertTrue("Message arrived after '1 minute before filter creation' should be accepted",
-                   filter.matches(message));
+                          filter.matches(message));
         when(message.getArrivalTime()).thenReturn(System.currentTimeMillis());
         assertTrue("Message arrived after filter creation should be accepted", filter.matches(message));
     }

@@ -20,6 +20,12 @@
 
 package org.apache.qpid.server.bytebuffer;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,12 +40,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import com.google.common.io.ByteStreams;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.internal.util.Primitives;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class QpidByteBufferTest extends QpidTestCase
+public class QpidByteBufferTest extends UnitTestBase
 {
     private static final int BUFFER_FRAGMENT_SIZE = 5;
     private static final int BUFFER_SIZE = 10;
@@ -50,21 +59,19 @@ public class QpidByteBufferTest extends QpidTestCase
     private QpidByteBuffer _slicedBuffer;
     private QpidByteBuffer _parent;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         QpidByteBuffer.deinitialisePool();
         QpidByteBuffer.initialisePool(BUFFER_FRAGMENT_SIZE, POOL_SIZE, SPARSITY_FRACTION);
         _parent = QpidByteBuffer.allocateDirect(BUFFER_SIZE);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            super.tearDown();
         }
         finally
         {
@@ -80,6 +87,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testPutGetByIndex() throws Exception
     {
         testPutGetByIndex(double.class, 1.0);
@@ -91,6 +99,7 @@ public class QpidByteBufferTest extends QpidTestCase
         testPutGetByIndex(byte.class, (byte)1);
     }
 
+    @Test
     public void testPutGet() throws Exception
     {
         testPutGet(double.class, false, 1.0);
@@ -106,18 +115,20 @@ public class QpidByteBufferTest extends QpidTestCase
         testPutGet(byte.class, true, (short)1);
     }
 
+    @Test
     public void testMarkReset() throws Exception
     {
         _slicedBuffer = createSlice();
 
         _slicedBuffer.mark();
         _slicedBuffer.position(_slicedBuffer.position() + 1);
-        assertEquals("Unexpected position after move", 1, _slicedBuffer.position());
+        assertEquals("Unexpected position after move", (long) 1, (long) _slicedBuffer.position());
 
         _slicedBuffer.reset();
-        assertEquals("Unexpected position after reset", 0, _slicedBuffer.position());
+        assertEquals("Unexpected position after reset", (long) 0, (long) _slicedBuffer.position());
     }
 
+    @Test
     public void testMarkResetAcrossFragmentBoundary() throws Exception
     {
         for (int i = 0; i < BUFFER_SIZE; ++i)
@@ -128,23 +139,24 @@ public class QpidByteBufferTest extends QpidTestCase
         _parent.mark();
         for (int i = 0; i < BUFFER_FRAGMENT_SIZE + 2; ++i)
         {
-            assertEquals("Unexpected value", i, _parent.get());
+            assertEquals("Unexpected value", (long) i, (long) _parent.get());
         }
         _parent.reset();
         for (int i = 0; i < BUFFER_SIZE; ++i)
         {
-            assertEquals("Unexpected value", i, _parent.get());
+            assertEquals("Unexpected value", (long) i, (long) _parent.get());
         }
     }
 
+    @Test
     public void testPosition() throws Exception
     {
         _slicedBuffer = createSlice();
 
-        assertEquals("Unexpected position for new slice", 0, _slicedBuffer.position());
+        assertEquals("Unexpected position for new slice", (long) 0, (long) _slicedBuffer.position());
 
         _slicedBuffer.position(1);
-        assertEquals("Unexpected position after advance", 1, _slicedBuffer.position());
+        assertEquals("Unexpected position after advance", (long) 1, (long) _slicedBuffer.position());
 
         final int oldLimit = _slicedBuffer.limit();
         _slicedBuffer.limit(oldLimit - 1);
@@ -159,6 +171,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSettingPositionBackwardsResetsMark()
     {
         _parent.position(8);
@@ -175,6 +188,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSettingPositionForwardDoeNotResetMark()
     {
         final int originalPosition = 3;
@@ -184,9 +198,10 @@ public class QpidByteBufferTest extends QpidTestCase
 
         _parent.reset();
 
-        assertEquals("Unexpected position", originalPosition, _parent.position());
+        assertEquals("Unexpected position", (long) originalPosition, (long) _parent.position());
     }
 
+    @Test
     public void testRewind() throws Exception
     {
         final int expectedLimit = 7;
@@ -197,8 +212,8 @@ public class QpidByteBufferTest extends QpidTestCase
 
         _parent.rewind();
 
-        assertEquals("Unexpected position", 0, _parent.position());
-        assertEquals("Unexpected limit", expectedLimit, _parent.limit());
+        assertEquals("Unexpected position", (long) 0, (long) _parent.position());
+        assertEquals("Unexpected limit", (long) expectedLimit, (long) _parent.limit());
         try
         {
             _parent.reset();
@@ -210,6 +225,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testBulkPutGet() throws Exception
     {
         _slicedBuffer = createSlice();
@@ -240,7 +256,7 @@ public class QpidByteBufferTest extends QpidTestCase
             // pass
         }
 
-        assertEquals("Position should be unchanged after failed put", 1, _slicedBuffer.position());
+        assertEquals("Position should be unchanged after failed put", (long) 1, (long) _slicedBuffer.position());
 
         try
         {
@@ -252,11 +268,10 @@ public class QpidByteBufferTest extends QpidTestCase
             // pass
         }
 
-        assertEquals("Position should be unchanged after failed get", 1, _slicedBuffer.position());
-
-
+        assertEquals("Position should be unchanged after failed get", (long) 1, (long) _slicedBuffer.position());
     }
 
+    @Test
     public void testPutQpidByteBufferMultipleIntoMultiple() throws Exception
     {
         _slicedBuffer = createSlice();
@@ -276,6 +291,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testPutQpidByteBufferMultipleIntoSingle() throws Exception
     {
         _slicedBuffer = createSlice();
@@ -295,6 +311,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testPutQpidByteBufferSingleIntoMultiple() throws Exception
     {
         _slicedBuffer = createSlice();
@@ -312,6 +329,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testPutByteBuffer() throws Exception
     {
         final byte[] source = getTestBytes(_parent.remaining() - 1);
@@ -326,6 +344,7 @@ public class QpidByteBufferTest extends QpidTestCase
         Assert.assertArrayEquals("Unexpected but ByteBuffer result", source, target);
     }
 
+    @Test
     public void testDuplicate()
     {
         _slicedBuffer = createSlice();
@@ -335,18 +354,21 @@ public class QpidByteBufferTest extends QpidTestCase
 
         try (QpidByteBuffer duplicate = _slicedBuffer.duplicate())
         {
-            assertEquals("Unexpected position", _slicedBuffer.position(), duplicate.position() );
-            assertEquals("Unexpected limit", _slicedBuffer.limit(), duplicate.limit() );
-            assertEquals("Unexpected capacity", _slicedBuffer.capacity(), duplicate.capacity() );
+            assertEquals("Unexpected position", (long) _slicedBuffer.position(), (long) duplicate.position());
+            assertEquals("Unexpected limit", (long) _slicedBuffer.limit(), (long) duplicate.limit());
+            assertEquals("Unexpected capacity", (long) _slicedBuffer.capacity(), (long) duplicate.capacity());
 
             duplicate.position(2);
             duplicate.limit(originalLimit - 2);
 
-            assertEquals("Unexpected position in the original", 1, _slicedBuffer.position());
-            assertEquals("Unexpected limit in the original", originalLimit -1, _slicedBuffer.limit());
+            assertEquals("Unexpected position in the original", (long) 1, (long) _slicedBuffer.position());
+            assertEquals("Unexpected limit in the original",
+                                (long) (originalLimit - 1),
+                                (long) _slicedBuffer.limit());
         }
     }
 
+    @Test
     public void testCopyToByteBuffer()
     {
         _slicedBuffer = createSlice();
@@ -358,12 +380,15 @@ public class QpidByteBufferTest extends QpidTestCase
         ByteBuffer destination =  ByteBuffer.allocate(source.length);
         _slicedBuffer.copyTo(destination);
 
-        assertEquals("Unexpected remaining in original QBB", originalRemaining, _slicedBuffer.remaining());
-        assertEquals("Unexpected remaining in destination", 0, destination.remaining());
+        assertEquals("Unexpected remaining in original QBB",
+                            (long) originalRemaining,
+                            (long) _slicedBuffer.remaining());
+        assertEquals("Unexpected remaining in destination", (long) 0, (long) destination.remaining());
 
         Assert.assertArrayEquals("Unexpected copyTo result", source, destination.array());
     }
 
+    @Test
     public void testCopyToArray()
     {
         _slicedBuffer = createSlice();
@@ -375,11 +400,14 @@ public class QpidByteBufferTest extends QpidTestCase
         byte[] destination = new byte[source.length];
         _slicedBuffer.copyTo(destination);
 
-        assertEquals("Unexpected remaining in original QBB", originalRemaining, _slicedBuffer.remaining());
+        assertEquals("Unexpected remaining in original QBB",
+                            (long) originalRemaining,
+                            (long) _slicedBuffer.remaining());
 
         Assert.assertArrayEquals("Unexpected copyTo result", source, destination);
     }
 
+    @Test
     public void testPutCopyOfSingleIntoMultiple()
     {
         _slicedBuffer = createSlice();
@@ -388,8 +416,10 @@ public class QpidByteBufferTest extends QpidTestCase
         QpidByteBuffer sourceQpidByteBuffer =  QpidByteBuffer.wrap(source);
         _slicedBuffer.putCopyOf(sourceQpidByteBuffer);
 
-        assertEquals("Copied buffer should not be changed", source.length, sourceQpidByteBuffer.remaining());
-        assertEquals("Buffer should be full", 0, _slicedBuffer.remaining());
+        assertEquals("Copied buffer should not be changed",
+                            (long) source.length,
+                            (long) sourceQpidByteBuffer.remaining());
+        assertEquals("Buffer should be full", (long) 0, (long) _slicedBuffer.remaining());
         _slicedBuffer.flip();
 
         byte[] destination = new byte[source.length];
@@ -398,6 +428,7 @@ public class QpidByteBufferTest extends QpidTestCase
         Assert.assertArrayEquals("Unexpected putCopyOf result", source, destination);
     }
 
+    @Test
     public void testPutCopyOfMultipleIntoSingle()
     {
         _slicedBuffer = createSlice();
@@ -409,8 +440,10 @@ public class QpidByteBufferTest extends QpidTestCase
         {
             target.putCopyOf(_slicedBuffer);
 
-            assertEquals("Copied buffer should not be changed", source.length, _slicedBuffer.remaining());
-            assertEquals("Unexpected remaining", 1, target.remaining());
+            assertEquals("Copied buffer should not be changed",
+                                (long) source.length,
+                                (long) _slicedBuffer.remaining());
+            assertEquals("Unexpected remaining", (long) 1, (long) target.remaining());
             target.flip();
 
             byte[] destination = new byte[source.length];
@@ -420,6 +453,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testPutCopyOfMultipleIntoMultiple()
     {
         _slicedBuffer = createSlice();
@@ -431,8 +465,10 @@ public class QpidByteBufferTest extends QpidTestCase
         {
             target.putCopyOf(_slicedBuffer);
 
-            assertEquals("Copied buffer should not be changed", source.length, _slicedBuffer.remaining());
-            assertEquals("Unexpected remaining", 2, target.remaining());
+            assertEquals("Copied buffer should not be changed",
+                                (long) source.length,
+                                (long) _slicedBuffer.remaining());
+            assertEquals("Unexpected remaining", (long) 2, (long) target.remaining());
             target.flip();
 
             byte[] destination = new byte[source.length];
@@ -442,6 +478,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCompact()
     {
         _slicedBuffer = createSlice();
@@ -454,8 +491,8 @@ public class QpidByteBufferTest extends QpidTestCase
         int remaining =  _slicedBuffer.remaining();
         _slicedBuffer.compact();
 
-        assertEquals("Unexpected position", remaining, _slicedBuffer.position());
-        assertEquals("Unexpected limit", _slicedBuffer.capacity(), _slicedBuffer.limit());
+        assertEquals("Unexpected position", (long) remaining, (long) _slicedBuffer.position());
+        assertEquals("Unexpected limit", (long) _slicedBuffer.capacity(), (long) _slicedBuffer.limit());
 
         _slicedBuffer.flip();
 
@@ -469,6 +506,7 @@ public class QpidByteBufferTest extends QpidTestCase
         Assert.assertArrayEquals("Unexpected compact result", expected, destination);
     }
 
+    @Test
     public void testSliceOfSlice()
     {
         _slicedBuffer = createSlice();
@@ -482,11 +520,13 @@ public class QpidByteBufferTest extends QpidTestCase
 
         try (QpidByteBuffer newSlice = _slicedBuffer.slice())
         {
-            assertEquals("Unexpected position in original", 1, _slicedBuffer.position());
-            assertEquals("Unexpected limit in original", source.length - 1, _slicedBuffer.limit());
-            assertEquals("Unexpected position", 0, newSlice.position());
-            assertEquals("Unexpected limit", remaining, newSlice.limit());
-            assertEquals("Unexpected capacity", remaining, newSlice.capacity());
+            assertEquals("Unexpected position in original", (long) 1, (long) _slicedBuffer.position());
+            assertEquals("Unexpected limit in original",
+                                (long) (source.length - 1),
+                                (long) _slicedBuffer.limit());
+            assertEquals("Unexpected position", (long) 0, (long) newSlice.position());
+            assertEquals("Unexpected limit", (long) remaining, (long) newSlice.limit());
+            assertEquals("Unexpected capacity", (long) remaining, (long) newSlice.capacity());
 
             byte[] destination =  new byte[newSlice.remaining()];
             newSlice.get(destination);
@@ -497,6 +537,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testViewOfSlice()
     {
         _slicedBuffer = createSlice();
@@ -508,12 +549,14 @@ public class QpidByteBufferTest extends QpidTestCase
 
         try (QpidByteBuffer view = _slicedBuffer.view(0, _slicedBuffer.remaining()))
         {
-            assertEquals("Unexpected position in original", 1, _slicedBuffer.position());
-            assertEquals("Unexpected limit in original", source.length - 1, _slicedBuffer.limit());
+            assertEquals("Unexpected position in original", (long) 1, (long) _slicedBuffer.position());
+            assertEquals("Unexpected limit in original",
+                                (long) (source.length - 1),
+                                (long) _slicedBuffer.limit());
 
-            assertEquals("Unexpected position", 0, view.position());
-            assertEquals("Unexpected limit", _slicedBuffer.remaining(), view.limit());
-            assertEquals("Unexpected capacity", _slicedBuffer.remaining(), view.capacity());
+            assertEquals("Unexpected position", (long) 0, (long) view.position());
+            assertEquals("Unexpected limit", (long) _slicedBuffer.remaining(), (long) view.limit());
+            assertEquals("Unexpected capacity", (long) _slicedBuffer.remaining(), (long) view.capacity());
 
             byte[] destination =  new byte[view.remaining()];
             view.get(destination);
@@ -525,12 +568,14 @@ public class QpidByteBufferTest extends QpidTestCase
 
         try (QpidByteBuffer view = _slicedBuffer.view(1, _slicedBuffer.remaining() - 2))
         {
-            assertEquals("Unexpected position in original", 1, _slicedBuffer.position());
-            assertEquals("Unexpected limit in original", source.length - 1, _slicedBuffer.limit());
+            assertEquals("Unexpected position in original", (long) 1, (long) _slicedBuffer.position());
+            assertEquals("Unexpected limit in original",
+                                (long) (source.length - 1),
+                                (long) _slicedBuffer.limit());
 
-            assertEquals("Unexpected position", 0, view.position());
-            assertEquals("Unexpected limit", _slicedBuffer.remaining() - 2, view.limit());
-            assertEquals("Unexpected capacity", _slicedBuffer.remaining() - 2, view.capacity());
+            assertEquals("Unexpected position", (long) 0, (long) view.position());
+            assertEquals("Unexpected limit", (long) (_slicedBuffer.remaining() - 2), (long) view.limit());
+            assertEquals("Unexpected capacity", (long) (_slicedBuffer.remaining() - 2), (long) view.capacity());
 
             byte[] destination =  new byte[view.remaining()];
             view.get(destination);
@@ -541,6 +586,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testAsInputStream() throws Exception
     {
         _slicedBuffer = createSlice();
@@ -589,9 +635,9 @@ public class QpidByteBufferTest extends QpidTestCase
         _slicedBuffer = _parent.slice();
         _parent.limit(_parent.capacity());
 
-        assertEquals("Unexpected position ", 0, _slicedBuffer.position());
-        assertEquals("Unexpected limit ", size, _slicedBuffer.limit());
-        assertEquals("Unexpected capacity ", size, _slicedBuffer.capacity());
+        assertEquals("Unexpected position ", (long) 0, (long) _slicedBuffer.position());
+        assertEquals("Unexpected limit ", (long) size, (long) _slicedBuffer.limit());
+        assertEquals("Unexpected capacity ", (long) size, (long) _slicedBuffer.capacity());
 
         String methodSuffix = getMethodSuffix(primitiveTargetClass, unsigned);
         Method put = _slicedBuffer.getClass().getMethod("put" + methodSuffix, Primitives.primitiveTypeOf(value.getClass()));
@@ -602,7 +648,9 @@ public class QpidByteBufferTest extends QpidTestCase
         QpidByteBuffer rv = (QpidByteBuffer) put.invoke(_slicedBuffer, value);
         assertEquals("Unexpected builder return value for type " + methodSuffix, _slicedBuffer, rv);
 
-        assertEquals("Unexpected position for type " + methodSuffix, size, _slicedBuffer.position());
+        assertEquals("Unexpected position for type " + methodSuffix,
+                            (long) size,
+                            (long) _slicedBuffer.position());
 
         try
         {
@@ -616,7 +664,7 @@ public class QpidByteBufferTest extends QpidTestCase
 
         _slicedBuffer.reset();
 
-        assertEquals("Unexpected position after reset", 0, _slicedBuffer.position());
+        assertEquals("Unexpected position after reset", (long) 0, (long) _slicedBuffer.position());
 
         Object retrievedValue = get.invoke(_slicedBuffer);
         assertEquals("Unexpected value retrieved from get method for " + methodSuffix, value, retrievedValue);
@@ -651,7 +699,9 @@ public class QpidByteBufferTest extends QpidTestCase
         assertEquals("Unexpected builder return value for type " + methodSuffix, _slicedBuffer, rv);
 
         Object retrievedValue = get.invoke(_slicedBuffer, 0);
-        assertEquals("Unexpected value retrieved from index get method for " + methodSuffix, value, retrievedValue);
+        assertEquals("Unexpected value retrieved from index get method for " + methodSuffix,
+                            value,
+                            retrievedValue);
 
         try
         {
@@ -767,6 +817,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testPooledBufferIsZeroedLoan() throws Exception
     {
         try (QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(BUFFER_SIZE))
@@ -777,43 +828,47 @@ public class QpidByteBufferTest extends QpidTestCase
         try (QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(BUFFER_SIZE))
         {
             buffer.limit(1);
-            assertEquals("Pooled QpidByteBuffer is not zeroed.", (byte) 0x0, buffer.get());
+            assertEquals("Pooled QpidByteBuffer is not zeroed.", (long) (byte) 0x0, (long) buffer.get());
         }
     }
 
+    @Test
     public void testAllocateDirectOfSameSize() throws Exception
     {
         int bufferSize = BUFFER_SIZE;
         try (QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(bufferSize))
         {
-            assertEquals("Unexpected buffer size", bufferSize, buffer.capacity());
-            assertEquals("Unexpected position on newly created buffer", 0, buffer.position());
-            assertEquals("Unexpected limit on newly created buffer", bufferSize, buffer.limit());
+            assertEquals("Unexpected buffer size", (long) bufferSize, (long) buffer.capacity());
+            assertEquals("Unexpected position on newly created buffer", (long) 0, (long) buffer.position());
+            assertEquals("Unexpected limit on newly created buffer", (long) bufferSize, (long) buffer.limit());
         }
     }
 
+    @Test
     public void testAllocateDirectOfSmallerSize() throws Exception
     {
         int bufferSize = BUFFER_SIZE - 1;
         try (QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(bufferSize))
         {
-            assertEquals("Unexpected buffer size", bufferSize, buffer.capacity());
-            assertEquals("Unexpected position on newly created buffer", 0, buffer.position());
-            assertEquals("Unexpected limit on newly created buffer", bufferSize, buffer.limit());
+            assertEquals("Unexpected buffer size", (long) bufferSize, (long) buffer.capacity());
+            assertEquals("Unexpected position on newly created buffer", (long) 0, (long) buffer.position());
+            assertEquals("Unexpected limit on newly created buffer", (long) bufferSize, (long) buffer.limit());
         }
     }
 
+    @Test
     public void testAllocateDirectOfLargerSize() throws Exception
     {
         int bufferSize = BUFFER_SIZE + 1;
         try (QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(bufferSize))
         {
-            assertEquals("Unexpected buffer size", bufferSize, buffer.capacity());
-            assertEquals("Unexpected position on newly created buffer", 0, buffer.position());
-            assertEquals("Unexpected limit on newly created buffer", bufferSize, buffer.limit());
+            assertEquals("Unexpected buffer size", (long) bufferSize, (long) buffer.capacity());
+            assertEquals("Unexpected position on newly created buffer", (long) 0, (long) buffer.position());
+            assertEquals("Unexpected limit on newly created buffer", (long) bufferSize, (long) buffer.limit());
         }
     }
 
+    @Test
     public void testAllocateDirectWithNegativeSize() throws Exception
     {
         try
@@ -827,6 +882,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSettingUpPoolTwice() throws Exception
     {
         try
@@ -840,6 +896,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDeflateInflateDirect() throws Exception
     {
         byte[] input = "aaabbbcccddddeeeffff".getBytes();
@@ -848,12 +905,13 @@ public class QpidByteBufferTest extends QpidTestCase
             inputBuf.put(input);
             inputBuf.flip();
 
-            assertEquals(input.length, inputBuf.remaining());
+            assertEquals((long) input.length, (long) inputBuf.remaining());
 
             doDeflateInflate(input, inputBuf, true);
         }
     }
 
+    @Test
     public void testDeflateInflateHeap() throws Exception
     {
         byte[] input = "aaabbbcccddddeeeffff".getBytes();
@@ -864,6 +922,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testInflatingUncompressedBytes_ThrowsZipException() throws Exception
     {
         byte[] input = "not_a_compressed_stream".getBytes();
@@ -879,6 +938,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSlice() throws Exception
     {
         try (QpidByteBuffer directBuffer = QpidByteBuffer.allocate(true, 6))
@@ -888,13 +948,14 @@ public class QpidByteBufferTest extends QpidTestCase
             try (QpidByteBuffer directSlice = directBuffer.slice())
             {
                 assertTrue("Direct slice should be direct too", directSlice.isDirect());
-                assertEquals("Unexpected capacity", 3, directSlice.capacity());
-                assertEquals("Unexpected limit", 3, directSlice.limit());
-                assertEquals("Unexpected position", 0, directSlice.position());
+                assertEquals("Unexpected capacity", (long) 3, (long) directSlice.capacity());
+                assertEquals("Unexpected limit", (long) 3, (long) directSlice.limit());
+                assertEquals("Unexpected position", (long) 0, (long) directSlice.position());
             }
         }
     }
 
+    @Test
     public void testView() throws Exception
     {
         byte[] content = "ABCDEF".getBytes();
@@ -907,9 +968,9 @@ public class QpidByteBufferTest extends QpidTestCase
             try (QpidByteBuffer view = buffer.view(0, buffer.remaining()))
             {
                 assertTrue("Unexpected view direct", view.isDirect());
-                assertEquals("Unexpected capacity", 3, view.capacity());
-                assertEquals("Unexpected limit", 3, view.limit());
-                assertEquals("Unexpected position", 0, view.position());
+                assertEquals("Unexpected capacity", (long) 3, (long) view.capacity());
+                assertEquals("Unexpected limit", (long) 3, (long) view.limit());
+                assertEquals("Unexpected position", (long) 0, (long) view.position());
 
                 final byte[] destination = new byte[view.remaining()];
                 view.get(destination);
@@ -925,6 +986,7 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSparsity()
     {
         assertFalse("Unexpected sparsity after creation", _parent.isSparse());
@@ -942,20 +1004,24 @@ public class QpidByteBufferTest extends QpidTestCase
         grandChild.dispose();
     }
 
+    @Test
     public void testAsQpidByteBuffers() throws IOException
     {
         byte[] dataForTwoBufs = "01234567890".getBytes(StandardCharsets.US_ASCII);
         try (QpidByteBuffer qpidByteBuffer = QpidByteBuffer.asQpidByteBuffer(new ByteArrayInputStream(dataForTwoBufs)))
         {
-            assertEquals("Unexpected remaining in buf", 11, qpidByteBuffer.remaining());
+            assertEquals("Unexpected remaining in buf", (long) 11, (long) qpidByteBuffer.remaining());
         }
 
         try (QpidByteBuffer bufsForEmptyBytes = QpidByteBuffer.asQpidByteBuffer(new ByteArrayInputStream(new byte[]{})))
         {
-            assertEquals("Unexpected remaining in buf for empty buffer", 0, bufsForEmptyBytes.remaining());
+            assertEquals("Unexpected remaining in buf for empty buffer",
+                                (long) 0,
+                                (long) bufsForEmptyBytes.remaining());
         }
     }
 
+    @Test
     public void testConcatenate() throws Exception
     {
         try (QpidByteBuffer buffer1 = QpidByteBuffer.allocateDirect(10);
@@ -971,11 +1037,11 @@ public class QpidByteBufferTest extends QpidTestCase
 
             try (QpidByteBuffer concatenate = QpidByteBuffer.concatenate(buffer1, buffer2))
             {
-                assertEquals("Unexpected capacity", 6, concatenate.capacity());
-                assertEquals("Unexpected position", 0, concatenate.position());
-                assertEquals("Unexpected limit", 6, concatenate.limit());
-                assertEquals("Unexpected value 1", buffer1Value, concatenate.getShort());
-                assertEquals("Unexpected value 2", buffer2Value, concatenate.getChar(4));
+                assertEquals("Unexpected capacity", (long) 6, (long) concatenate.capacity());
+                assertEquals("Unexpected position", (long) 0, (long) concatenate.position());
+                assertEquals("Unexpected limit", (long) 6, (long) concatenate.limit());
+                assertEquals("Unexpected value 1", (long) buffer1Value, (long) concatenate.getShort());
+                assertEquals("Unexpected value 2", (long) buffer2Value, (long) concatenate.getChar(4));
             }
         }
     }
@@ -999,7 +1065,9 @@ public class QpidByteBufferTest extends QpidTestCase
                 byte[] expectedBytes = Arrays.copyOfRange(input, 0, inflatedBytes.length);
                 Assert.assertArrayEquals("Inflated buf has unexpected content", expectedBytes, inflatedBytes);
 
-                assertEquals("Unexpected number of inflated bytes", input.length, inflatedBytesCount);
+                assertEquals("Unexpected number of inflated bytes",
+                                    (long) input.length,
+                                    (long) inflatedBytesCount);
             }
         }
     }

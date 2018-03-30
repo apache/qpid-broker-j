@@ -20,6 +20,12 @@
  */
 package org.apache.qpid.server.security.encryption;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -32,13 +38,16 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class AESKeyFileEncrypterTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class AESKeyFileEncrypterTest extends UnitTestBase
 {
     private final SecureRandom _random = new SecureRandom();
     public static final String PLAINTEXT = "notaverygoodpassword";
 
+    @Test
     public void testSimpleEncryptDecrypt() throws Exception
     {
         if(isStrongEncryptionEnabled())
@@ -48,6 +57,7 @@ public class AESKeyFileEncrypterTest extends QpidTestCase
     }
 
 
+    @Test
     public void testRepeatedEncryptionsReturnDifferentValues() throws Exception
     {
         if(isStrongEncryptionEnabled())
@@ -64,7 +74,7 @@ public class AESKeyFileEncrypterTest extends QpidTestCase
                 encryptions.add(encrypter.encrypt(PLAINTEXT));
             }
 
-            assertEquals("Not all encryptions were distinct", iterations, encryptions.size());
+            assertEquals("Not all encryptions were distinct", (long) iterations, (long) encryptions.size());
 
             for (String encrypted : encryptions)
             {
@@ -73,6 +83,7 @@ public class AESKeyFileEncrypterTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreationFailsOnInvalidSecret() throws Exception
     {
         if(isStrongEncryptionEnabled())
@@ -101,6 +112,7 @@ public class AESKeyFileEncrypterTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testEncryptionOfEmptyString() throws Exception
     {
         if(isStrongEncryptionEnabled())
@@ -119,10 +131,11 @@ public class AESKeyFileEncrypterTest extends QpidTestCase
         assertNotNull("Encrypter did not return a result from encryption", encrypted);
         assertFalse("Plain text and encrypted version are equal", text.equals(encrypted));
         String decrypted = encrypter.decrypt(encrypted);
-        assertNotNull("Encrypter did not return a result from decryption",decrypted);
+        assertNotNull("Encrypter did not return a result from decryption", decrypted);
         assertTrue("Encryption was not reversible", text.equals(decrypted));
     }
 
+    @Test
     public void testEncryptingNullFails() throws Exception
     {
         if(isStrongEncryptionEnabled())
@@ -142,6 +155,7 @@ public class AESKeyFileEncrypterTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testEncryptingVeryLargeSecret() throws Exception
     {
         if(isStrongEncryptionEnabled())
@@ -162,6 +176,7 @@ public class AESKeyFileEncrypterTest extends QpidTestCase
         return Cipher.getMaxAllowedKeyLength("AES")>=256;
     }
 
+    @Test
     public void testDecryptNonsense() throws Exception
     {
         if(isStrongEncryptionEnabled())

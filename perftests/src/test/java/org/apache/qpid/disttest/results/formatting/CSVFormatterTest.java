@@ -22,14 +22,33 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.results.ResultsTestFixture;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class CSVFormatterTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class CSVFormatterTest extends UnitTestBase
 {
     private CSVFormatter _formatter = new CSVFormatter();
 
+    @Test
     public void testResultsFileWithWithOneRow() throws Exception
     {
         ResultsTestFixture resultsTestFixture = new ResultsTestFixture();

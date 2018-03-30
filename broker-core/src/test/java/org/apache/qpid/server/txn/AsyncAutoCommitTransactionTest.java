@@ -18,11 +18,18 @@
  */
 package org.apache.qpid.server.txn;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.queue.BaseQueue;
@@ -32,9 +39,9 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction.FutureRecorder;
 import org.apache.qpid.server.txn.ServerTransaction.Action;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AsyncAutoCommitTransactionTest extends QpidTestCase
+public class AsyncAutoCommitTransactionTest extends UnitTestBase
 {
     private static final String STRICT_ORDER_SYSTEM_PROPERTY = AsyncAutoCommitTransaction.QPID_STRICT_ORDER_WITH_MIXED_DELIVERY_MODE;
 
@@ -47,16 +54,16 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
     private ListenableFuture<Void> _future = mock(ListenableFuture.class);
 
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         when(_messageStore.newTransaction()).thenReturn(_storeTransaction);
         when(_storeTransaction.commitTranAsync((Void) null)).thenReturn(_future);
         when(_queue.getMessageDurability()).thenReturn(MessageDurability.DEFAULT);
     }
 
+    @Test
     public void testEnqueuePersistentMessagePostCommitNotCalledWhenFutureAlreadyComplete() throws Exception
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
@@ -74,6 +81,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
         verifyZeroInteractions(_postTransactionAction);
     }
 
+    @Test
     public void testEnqueuePersistentMessageOnMultipleQueuesPostCommitNotCalled() throws Exception
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
@@ -91,6 +99,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
         verifyZeroInteractions(_postTransactionAction);
     }
 
+    @Test
     public void testEnqueuePersistentMessagePostCommitNotCalledWhenFutureNotYetComplete() throws Exception
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
@@ -108,6 +117,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
         verifyZeroInteractions(_postTransactionAction);
     }
 
+    @Test
     public void testEnqueueTransientMessagePostCommitIsCalledWhenNotBehavingStrictly() throws Exception
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
@@ -124,6 +134,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
         verifyZeroInteractions(_futureRecorder);
     }
 
+    @Test
     public void testEnqueueTransientMessagePostCommitIsCalledWhenBehavingStrictly() throws Exception
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "true");

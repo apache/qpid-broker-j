@@ -30,23 +30,22 @@ import java.io.IOError;
 import java.io.IOException;
 
 import ch.qos.logback.core.status.Status;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.logback.BrokerFileLogger;
-import org.apache.qpid.server.logging.logback.BrokerFileLoggerImpl;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class BrokerFileLoggerStatusListenerTest extends QpidTestCase
+public class BrokerFileLoggerStatusListenerTest extends UnitTestBase
 {
     private BrokerFileLoggerImpl.BrokerFileLoggerStatusListener _statusListener;
     private BrokerFileLogger<?> _fileLogger;
     private SystemConfig<?> _systemConfig;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _fileLogger = mock(BrokerFileLogger.class);
         _systemConfig = mock(SystemConfig.class);
         EventLogger eventLogger = mock(EventLogger.class);
@@ -55,6 +54,7 @@ public class BrokerFileLoggerStatusListenerTest extends QpidTestCase
         when(_fileLogger.getContextValue(Boolean.class, BrokerFileLogger.BROKER_FAIL_ON_LOGGER_IO_ERROR)).thenReturn(true);
     }
 
+    @Test
     public void testAddStatusEventForIOError() throws Exception
     {
         Status event = createEvent(new IOError(new IOException("Mocked: No disk space left")), Status.ERROR);
@@ -63,6 +63,7 @@ public class BrokerFileLoggerStatusListenerTest extends QpidTestCase
         verify(_systemConfig).closeAsync();
     }
 
+    @Test
     public void testAddStatusEventForIOErrorWithFailOnLoggerIOErrorDisabled() throws Exception
     {
         Status event = createEvent(new IOError(new IOException("Mocked: No disk space left")), Status.ERROR);
@@ -72,6 +73,7 @@ public class BrokerFileLoggerStatusListenerTest extends QpidTestCase
         verify(_systemConfig, never()).closeAsync();
     }
 
+    @Test
     public void testAddStatusEventForIOException() throws Exception
     {
         Status event = createEvent(new IOException("Mocked: No disk space left"), Status.ERROR);
@@ -80,6 +82,7 @@ public class BrokerFileLoggerStatusListenerTest extends QpidTestCase
         verify(_systemConfig).closeAsync();
     }
 
+    @Test
     public void testAddStatusEventForIOExceptionReportedAsWarning() throws Exception
     {
         Status event = createEvent(new IOException("Mocked: No disk space left"), Status.WARN);
@@ -88,6 +91,7 @@ public class BrokerFileLoggerStatusListenerTest extends QpidTestCase
         verify(_systemConfig, never()).closeAsync();
     }
 
+    @Test
     public void testAddStatusEventForNonIOException() throws Exception
     {
         Status event = createEvent(new RuntimeException("Mocked: No disk space left"), Status.ERROR);

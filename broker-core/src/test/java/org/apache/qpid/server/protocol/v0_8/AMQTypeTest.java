@@ -20,19 +20,25 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
 
-public class AMQTypeTest extends QpidTestCase
+import org.junit.Test;
+
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class AMQTypeTest extends UnitTestBase
 {
     private static final int SIZE = 1024;
 
+    @Test
     public void testUnsignedShort()
     {
         doTest(AMQType.UNSIGNED_SHORT, 0);
         doTest(AMQType.UNSIGNED_SHORT, 65535);
     }
 
+    @Test
     public void testUnsignedByte()
     {
         doTest(AMQType.UNSIGNED_BYTE, (short)0);

@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.management.plugin.report;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -41,10 +45,11 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ReportRunnerTest extends QpidTestCase
+public class ReportRunnerTest extends UnitTestBase
 {
+    @Test
     public void testTextReportCountsMessages()
     {
         ReportRunner<String> runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME,
@@ -73,6 +78,7 @@ public class ReportRunnerTest extends QpidTestCase
         return message;
     }
 
+    @Test
     public void testTextReportSingleStringParam()
     {
         Queue queue2 = createMockQueue(createMockMessageForQueue(), createMockMessageForQueue());
@@ -84,6 +90,7 @@ public class ReportRunnerTest extends QpidTestCase
         assertEquals("There are 2 messages on the queue. stringParam = hello world.", runner.runReport(queue2));
     }
 
+    @Test
     public void testTextReportSingleStringArrayParam()
     {
         Queue queue = createMockQueue();
@@ -91,11 +98,13 @@ public class ReportRunnerTest extends QpidTestCase
         Map<String, String[]> parameterMap = new HashMap<>();
         parameterMap.put("stringArrayParam", new String[] { "hello world", "goodbye"});
         ReportRunner<String> runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME, parameterMap);
-        assertEquals("There are 0 messages on the queue. stringArrayParam = [hello world, goodbye].", runner.runReport(queue));
 
+        assertEquals("There are 0 messages on the queue. stringArrayParam = [hello world, goodbye].",
+                            runner.runReport(queue));
     }
 
 
+    @Test
     public void testTextReportBothParams()
     {
         Queue queue = createMockQueue();
@@ -104,10 +113,12 @@ public class ReportRunnerTest extends QpidTestCase
         parameterMap.put("stringParam", new String[]{"hello world"});
         parameterMap.put("stringArrayParam", new String[] { "hello world", "goodbye"});
         ReportRunner<String> runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME, parameterMap);
-        assertEquals("There are 0 messages on the queue. stringParam = hello world. stringArrayParam = [hello world, goodbye].", runner.runReport(queue));
-
+        assertEquals(
+                "There are 0 messages on the queue. stringParam = hello world. stringArrayParam = [hello world, goodbye].",
+                runner.runReport(queue));
     }
 
+    @Test
     public void testInvalidReportName()
     {
         try
@@ -121,6 +132,7 @@ public class ReportRunnerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testBinaryReportWithLimit() throws Exception
     {
         Queue queue = createMockQueue(createMessageWithAppProperties(Collections.<String,Object>singletonMap("key",1)),

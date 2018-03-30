@@ -23,10 +23,14 @@ package org.apache.qpid.server.model;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static java.util.Collections.unmodifiableSet;
 import static java.util.Collections.unmodifiableList;
-
+import static java.util.Collections.unmodifiableSet;
 import static org.apache.qpid.server.model.AttributeValueConverter.getConverter;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -41,25 +45,28 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.server.model.testmodels.hierarchy.TestModel;
-import org.apache.qpid.server.model.testmodels.hierarchy.TestCar;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class AttributeValueConverterTest extends QpidTestCase
+import org.apache.qpid.server.model.testmodels.hierarchy.TestCar;
+import org.apache.qpid.server.model.testmodels.hierarchy.TestModel;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class AttributeValueConverterTest extends UnitTestBase
 {
     private final ConfiguredObjectFactory _objectFactory = TestModel.getInstance().getObjectFactory();
     private final Map<String, Object> _attributes = new HashMap<>();
     private final Map<String, String> _context = new HashMap<>();
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _attributes.put(ConfiguredObject.NAME, "objectName");
         _attributes.put(ConfiguredObject.CONTEXT, _context);
     }
 
+    @Test
     public void testMapConverter()
     {
         _context.put("simpleMap", "{\"a\" : \"b\"}");
@@ -97,6 +104,7 @@ public class AttributeValueConverterTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDateConverter() throws Exception
     {
         final long nowMillis = System.currentTimeMillis();
@@ -110,14 +118,23 @@ public class AttributeValueConverterTest extends QpidTestCase
 
         assertEquals("Cannot convert date expressed as Date", now, converter.convert(now, object));
 
-        assertEquals("Cannot convert date expressed as Number", new Date(nowMillis), converter.convert(nowMillis, object));
-        assertEquals("Cannot convert date expressed as String containing Number", new Date(nowMillis), converter.convert(""+nowMillis, object));
+        assertEquals("Cannot convert date expressed as Number",
+                            new Date(nowMillis),
+                            converter.convert(nowMillis, object));
+
+        assertEquals("Cannot convert date expressed as String containing Number",
+                            new Date(nowMillis),
+                            converter.convert("" + nowMillis, object));
 
         final String iso8601DateTime = "1970-01-01T00:00:01Z";
-        assertEquals("Cannot convert date expressed as ISO8601 date time", new Date(1000), converter.convert(iso8601DateTime, object));
+        assertEquals("Cannot convert date expressed as ISO8601 date time",
+                            new Date(1000),
+                            converter.convert(iso8601DateTime, object));
 
         final String iso8601Date = "1970-01-02Z";
-        assertEquals("Cannot convert date expressed as ISO8601 date", new Date(TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)), converter.convert(iso8601Date, object));
+        assertEquals("Cannot convert date expressed as ISO8601 date",
+                            new Date(TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)),
+                            converter.convert(iso8601Date, object));
 
         try
         {
@@ -131,6 +148,7 @@ public class AttributeValueConverterTest extends QpidTestCase
 
     }
 
+    @Test
     public void testNonGenericCollectionConverter()
     {
         _context.put("simpleCollection", "[\"a\", \"b\"]");
@@ -146,12 +164,12 @@ public class AttributeValueConverterTest extends QpidTestCase
         assertTrue(emptyCollection.isEmpty());
 
         Collection<String> collection = collectionConverter.convert("[\"a\",  \"b\"]", object);
-        assertEquals(2, collection.size());
+        assertEquals((long) 2, (long) collection.size());
         assertTrue(collection.contains("a"));
         assertTrue(collection.contains("b"));
 
         Collection<String> collectionFromInterpolatedVar = collectionConverter.convert("${simpleCollection}", object);
-        assertEquals(2, collectionFromInterpolatedVar.size());
+        assertEquals((long) 2, (long) collectionFromInterpolatedVar.size());
         assertTrue(collectionFromInterpolatedVar.contains("a"));
         assertTrue(collectionFromInterpolatedVar.contains("b"));
 
@@ -166,6 +184,7 @@ public class AttributeValueConverterTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testNonGenericListConverter()
     {
         _context.put("simpleList", "[\"a\", \"b\"]");
@@ -199,6 +218,7 @@ public class AttributeValueConverterTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testNonGenericSetConverter()
     {
         _context.put("simpleSet", "[\"a\", \"b\"]");
@@ -250,17 +270,22 @@ public class AttributeValueConverterTest extends QpidTestCase
                                                         + "DvGOnwB5LOoTnZUCRaLFhQFcGFMIjdHpg0qt/QkEFX/0m+849RK6muHT1C"
                                                         + "NlcXtCFXwPTJ+9h+1auTP+Yp/6ii9SU3W1dzYawy2p9IhkMZEpJaHCLnaC";
 
+    @Test
     public void testBase64EncodedCertificateConverter() throws ParseException
     {
         ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
         AttributeValueConverter<Certificate> certificateConverter = getConverter(Certificate.class, Certificate.class);
         Certificate certificate = certificateConverter.convert(BASE_64_ENCODED_CERTIFICATE, object);
-        assertTrue("Unexpected certificate", certificate instanceof X509Certificate);
+        final boolean condition = certificate instanceof X509Certificate;
+        assertTrue("Unexpected certificate", condition);
         X509Certificate x509Certificate = (X509Certificate)certificate;
-        assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA", x509Certificate.getSubjectX500Principal().getName());
+        assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA",
+                            x509Certificate.getSubjectX500Principal().getName());
+
         assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA", x509Certificate.getIssuerX500Principal().getName());
     }
 
+    @Test
     public void testPEMCertificateConverter() throws ParseException
     {
         ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
@@ -276,12 +301,15 @@ public class AttributeValueConverterTest extends QpidTestCase
         pemCertificate.append("\n-----END CERTIFICATE-----\n");
 
         Certificate certificate = certificateConverter.convert(pemCertificate.toString(), object);
-        assertTrue("Unexpected certificate", certificate instanceof X509Certificate);
+        final boolean condition = certificate instanceof X509Certificate;
+        assertTrue("Unexpected certificate", condition);
         X509Certificate x509Certificate = (X509Certificate)certificate;
-        assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA", x509Certificate.getSubjectX500Principal().getName());
+        assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA",
+                            x509Certificate.getSubjectX500Principal().getName());
         assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA", x509Certificate.getIssuerX500Principal().getName());
     }
 
+    @Test
     public void testMapToManagedAttributeValue()
     {
         ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
@@ -301,14 +329,14 @@ public class AttributeValueConverterTest extends QpidTestCase
 
         assertEquals(expectedStringValue, value.getString());
         assertEquals(expectedIntegerValue, value.getInteger());
-        assertEquals(expectedIntegerPrimitiveValue, value.getInt());
+        assertEquals((long) expectedIntegerPrimitiveValue, (long) value.getInt());
         assertNull(expectedStringValue, value.getAnotherString());
 
         final TestManagedAttributeValue nullValues = converter.convert(Collections.emptyMap(), object);
 
         assertNull(nullValues.getString());
         assertNull(nullValues.getInteger());
-        assertEquals(0, nullValues.getInt());
+        assertEquals((long) 0, (long) nullValues.getInt());
         assertNull(expectedStringValue, nullValues.getAnotherString());
     }
 
@@ -321,6 +349,7 @@ public class AttributeValueConverterTest extends QpidTestCase
         String getAnotherString();
     }
 
+    @Test
     public void testMapToManagedAttributeValueEquality()
     {
         ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
@@ -352,6 +381,7 @@ public class AttributeValueConverterTest extends QpidTestCase
         String getString();
     }
 
+    @Test
     public void testMapToManagedAttributeValueWithFactory()
     {
         ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);

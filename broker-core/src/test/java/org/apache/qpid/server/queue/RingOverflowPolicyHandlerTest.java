@@ -28,6 +28,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
@@ -37,19 +40,18 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.ProducerFlowControlOverflowPolicyHandlerTest.LogMessageMatcher;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class RingOverflowPolicyHandlerTest extends QpidTestCase
+public class RingOverflowPolicyHandlerTest extends UnitTestBase
 {
     private RingOverflowPolicyHandler _ringOverflowPolicyHandler;
     private Queue<?> _queue;
     private EventLogger _eventLogger;
     private LogSubject _subject;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _eventLogger = mock(EventLogger.class);
         _subject = mock(LogSubject.class);
@@ -64,6 +66,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         _ringOverflowPolicyHandler = new RingOverflowPolicyHandler(_queue, _eventLogger);
     }
 
+    @Test
     public void testCheckOverflowWhenOverfullBytes() throws Exception
     {
         QueueEntry lastEntry = createLastEntry();
@@ -80,6 +83,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         verifyNoMoreInteractions(_eventLogger);
     }
 
+    @Test
     public void testCheckOverflowWhenOverfullMessages() throws Exception
     {
         QueueEntry lastEntry = createLastEntry();
@@ -96,6 +100,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         verifyNoMoreInteractions(_eventLogger);
     }
 
+    @Test
     public void testCheckOverflowWhenUnderfullBytes() throws Exception
     {
         when(_queue.getQueueDepthBytes()).thenReturn(5L);
@@ -108,6 +113,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         verifyNoMoreInteractions(_eventLogger);
     }
 
+    @Test
     public void testCheckOverflowWhenUnderfullMessages() throws Exception
     {
         when(_queue.getQueueDepthMessages()).thenReturn(5);

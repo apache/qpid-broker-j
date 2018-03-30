@@ -21,6 +21,10 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERATION_TIMEOUT;
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.createPreferenceAttributes;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +42,9 @@ import java.util.UUID;
 import javax.security.auth.Subject;
 
 import com.google.common.collect.Lists;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -51,9 +58,9 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class RestUserPreferenceHandlerTest extends QpidTestCase
+public class RestUserPreferenceHandlerTest extends UnitTestBase
 {
 
     private static final String MYGROUP = "mygroup";
@@ -70,10 +77,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     private PreferenceStore _preferenceStore;
     private TaskExecutor _preferenceTaskExecutor;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _configuredObject = mock(ConfiguredObject.class);
         _preferenceStore = mock(PreferenceStore.class);
         _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
@@ -88,13 +94,13 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         when(_configuredObject.getUserPreferences()).thenReturn(_userPreferences);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         _preferenceTaskExecutor.stop();
-        super.tearDown();
     }
 
+    @Test
     public void testPutWithVisibilityList_ValidGroup() throws Exception
     {
 
@@ -115,10 +121,14 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePUT(_configuredObject, requestInfo, pref);
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              Preference prefModel = preferences.iterator().next();
                              final Set<Principal> visibilityList = prefModel.getVisibilityList();
-                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
+                             assertEquals("Unexpected number of principals in visibility list",
+                                                 (long) 1,
+                                                 (long) visibilityList.size());
                              Principal principal = visibilityList.iterator().next();
                              assertEquals("Unexpected member of visibility list", MYGROUP, principal.getName());
                              return null;
@@ -127,6 +137,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    @Test
     public void testPutWithVisibilityList_InvalidGroup() throws Exception
     {
 
@@ -159,6 +170,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    @Test
     public void testPutByTypeAndName() throws Exception
     {
         final String prefName = "myprefname";
@@ -177,7 +189,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePUT(_configuredObject, requestInfo, pref);
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              Preference prefModel = preferences.iterator().next();
                              assertEquals("Unexpected preference name", prefName, prefModel.getName());
                              return null;
@@ -186,6 +200,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    @Test
     public void testReplaceViaPutByTypeAndName() throws Exception
     {
         final String prefName = "myprefname";
@@ -203,10 +218,15 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                               {
                                                                   _handler.handlePUT(_configuredObject, requestInfo, pref);
 
-                                                                  Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                                                                  assertEquals("Unexpected number of preferences", 1, preferences.size());
+                                                                  Set<Preference> preferences = awaitPreferenceFuture
+                                                                          (_userPreferences.getPreferences());
+                                                                  assertEquals("Unexpected number of preferences",
+                                                                                      (long) 1,
+                                                                                      (long) preferences.size());
                                                                   Preference prefModel = preferences.iterator().next();
-                                                                  assertEquals("Unexpected preference name", prefName, prefModel.getName());
+                                                                  assertEquals("Unexpected preference name",
+                                                                                      prefName,
+                                                                                      prefModel.getName());
                                                                   return prefModel;
                                                               }
                                                           }
@@ -226,11 +246,17 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePUT(_configuredObject, requestInfo, replacementPref);
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences after update", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences after update",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              Preference updatedPref = preferences.iterator().next();
-                             assertEquals("Unexpected preference id", createdPreference.getId(), updatedPref.getId());
+                             assertEquals("Unexpected preference id",
+                                                 createdPreference.getId(),
+                                                 updatedPref.getId());
                              assertEquals("Unexpected preference name", prefName, updatedPref.getName());
-                             assertEquals("Unexpected preference description", changedDescription, updatedPref.getDescription());
+                             assertEquals("Unexpected preference description",
+                                                 changedDescription,
+                                                 updatedPref.getDescription());
                              return null;
                          }
                      }
@@ -248,18 +274,24 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePUT(_configuredObject, requestInfo, replacementPref);
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences after update", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences after update",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              Preference updatedPref = preferences.iterator().next();
                              assertFalse("Replace without id should create new id",
-                                         createdPreference.getId().equals(updatedPref.getId()));
+                                                createdPreference.getId().equals(updatedPref.getId()));
+
                              assertEquals("Unexpected preference name", prefName, updatedPref.getName());
-                             assertEquals("Unexpected preference description", changedDescription2, updatedPref.getDescription());
+                             assertEquals("Unexpected preference description",
+                                                 changedDescription2,
+                                                 updatedPref.getDescription());
                              return null;
                          }
                      }
                     );
     }
 
+    @Test
     public void testReplaceViaPutByType() throws Exception
     {
         final String prefName = "myprefname";
@@ -279,7 +311,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePUT(_configuredObject, requestInfo, Lists.newArrayList(pref));
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              Preference prefModel = preferences.iterator().next();
                              assertEquals("Unexpected preference name", prefName, prefModel.getName());
                              return null;
@@ -306,20 +340,26 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePUT(_configuredObject, requestInfo, Lists.newArrayList(replacementPref1, replacementPref2));
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences after update", 2, preferences.size());
+                             assertEquals("Unexpected number of preferences after update",
+                                                 (long) 2,
+                                                 (long) preferences.size());
                              Set<String> prefNames = new HashSet<>(preferences.size());
                              for (Preference pref : preferences)
                              {
                                  prefNames.add(pref.getName());
                              }
-                             assertTrue("Replacement preference " + replacementPref1Name + " not found.", prefNames.contains(replacementPref1Name));
-                             assertTrue("Replacement preference " + replacementPref2Name + " not found.", prefNames.contains(replacementPref2Name));
+                             assertTrue("Replacement preference " + replacementPref1Name + " not found.",
+                                               prefNames.contains(replacementPref1Name));
+
+                             assertTrue("Replacement preference " + replacementPref2Name + " not found.",
+                                               prefNames.contains(replacementPref2Name));
                              return null;
                          }
                      }
                     );
     }
 
+    @Test
     public void testReplaceAllViaPut() throws Exception
     {
         final String pref1Name = "mypref1name";
@@ -353,7 +393,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePUT(_configuredObject, requestInfo, payload);
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences", 2, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 2,
+                                                 (long) preferences.size());
                              return null;
                          }
                      }
@@ -377,16 +419,21 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePUT(_configuredObject, requestInfo, payload);
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences after update", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences after update",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              Preference prefModel = preferences.iterator().next();
 
-                             assertEquals("Unexpected preference name", replacementPref1Name, prefModel.getName());
+                             assertEquals("Unexpected preference name",
+                                                 replacementPref1Name,
+                                                 prefModel.getName());
                              return null;
                          }
                      }
                     );
     }
 
+    @Test
     public void testPostToTypeWithVisibilityList_ValidGroup() throws Exception
     {
         final RequestInfo typeRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
@@ -406,10 +453,14 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePOST(_configuredObject, typeRequestInfo, Collections.singletonList(pref));
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              Preference prefModel = preferences.iterator().next();
                              final Set<Principal> visibilityList = prefModel.getVisibilityList();
-                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
+                             assertEquals("Unexpected number of principals in visibility list",
+                                                 (long) 1,
+                                                 (long) visibilityList.size());
                              Principal principal = visibilityList.iterator().next();
                              assertEquals("Unexpected member of visibility list", MYGROUP, principal.getName());
                              return null;
@@ -418,6 +469,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    @Test
     public void testPostToRootWithVisibilityList_ValidGroup() throws Exception
     {
         final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
@@ -438,10 +490,14 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handlePOST(_configuredObject, rootRequestInfo, payload);
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              Preference prefModel = preferences.iterator().next();
                              final Set<Principal> visibilityList = prefModel.getVisibilityList();
-                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
+                             assertEquals("Unexpected number of principals in visibility list",
+                                                 (long) 1,
+                                                 (long) visibilityList.size());
                              Principal principal = visibilityList.iterator().next();
                              assertEquals("Unexpected member of visibility list", MYGROUP, principal.getName());
 
@@ -451,6 +507,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    @Test
     public void testPostToTypeWithVisibilityList_InvalidGroup() throws Exception
     {
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
@@ -483,6 +540,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    @Test
     public void testPostToRootWithVisibilityList_InvalidGroup() throws Exception
     {
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
@@ -516,6 +574,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    @Test
     public void testGetHasCorrectVisibilityList() throws Exception
     {
         final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
@@ -541,22 +600,31 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
 
                              Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
-                                     (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
-                             assertEquals("Unexpected preference map size", 1, typeToPreferenceListMap.size());
+                                     (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences,
+                                                                                                 rootRequestInfo);
+                             assertEquals("Unexpected preference map size",
+                                                 (long) 1,
+                                                 (long) typeToPreferenceListMap.size());
                              assertEquals("Unexpected type in preference map",
-                                          type,
-                                          typeToPreferenceListMap.keySet().iterator().next());
+                                                 type,
+                                                 typeToPreferenceListMap.keySet().iterator().next());
                              List<Map<String, Object>> preferences = typeToPreferenceListMap.get(type);
-                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              Set<Principal> visibilityList = (Set<Principal>) preferences.get(0).get("visibilityList");
-                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
-                             assertTrue("Unexpected principal in visibility list", GenericPrincipal.principalsEqual(_groupPrincipal, visibilityList.iterator().next()));
+                             assertEquals("Unexpected number of principals in visibility list",
+                                                 (long) 1,
+                                                 (long) visibilityList.size());
+                             assertTrue("Unexpected principal in visibility list",
+                                               GenericPrincipal.principalsEqual(_groupPrincipal, visibilityList.iterator().next()));
                              return null;
                          }
                      }
                     );
     }
 
+    @Test
     public void testGetById() throws Exception
     {
         Subject.doAs(_subject, new PrivilegedAction<Void>()
@@ -597,12 +665,15 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
 
                              Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
                                      (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
-                             assertEquals("Unexpected p1 map size", 1, typeToPreferenceListMap.size());
-                             assertEquals("Unexpected type in p1 map",
-                                          type,
-                                          typeToPreferenceListMap.keySet().iterator().next());
+                             assertEquals("Unexpected p1 map size",
+                                                 (long) 1,
+                                                 (long) typeToPreferenceListMap.size());
+                             assertEquals("Unexpected type in p1 map", type, typeToPreferenceListMap.keySet()
+                                                                                                           .iterator().next());
                              List<Map<String, Object>> preferences = typeToPreferenceListMap.get(type);
-                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              assertEquals("Unexpected id", id, preferences.get(0).get(Preference.ID_ATTRIBUTE));
                              return null;
                          }
@@ -610,6 +681,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    @Test
     public void testDeleteById() throws Exception
     {
         Subject.doAs(_subject, new PrivilegedAction<Void>()
@@ -651,7 +723,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              _handler.handleDELETE(_userPreferences, rootRequestInfo);
 
                              final Set<Preference> retrievedPreferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Unexpected number of preferences", 1, retrievedPreferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) retrievedPreferences.size());
                              assertTrue("Unexpected type in p1 map", retrievedPreferences.contains(p2));
                              return null;
                          }
@@ -659,6 +733,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    @Test
     public void testDeleteByTypeAndName() throws Exception
     {
         final String preferenceType = "X-testtype";
@@ -674,6 +749,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         doTestDelete(preferenceType, preferenceName, requestInfo);
     }
 
+    @Test
     public void testDeleteByType() throws Exception
     {
         final String preferenceType = "X-testtype";
@@ -688,6 +764,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         doTestDelete(preferenceType, preferenceName, requestInfo);
     }
 
+    @Test
     public void testDeleteByRoot() throws Exception
     {
         final String preferenceType = "X-testtype";
@@ -702,6 +779,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         doTestDelete(preferenceType, preferenceName, requestInfo);
     }
 
+    @Test
     public void testGetVisiblePreferencesByRoot() throws Exception
     {
         final String prefName = "testpref";
@@ -754,28 +832,35 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          {
                              Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
                                      (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
-                             assertEquals("Unexpected preference map size", 1, typeToPreferenceListMap.size());
+                             assertEquals("Unexpected preference map size",
+                                                 (long) 1,
+                                                 (long) typeToPreferenceListMap.size());
                              assertEquals("Unexpected prefType in preference map",
-                                          prefType,
-                                          typeToPreferenceListMap.keySet().iterator().next());
+                                                 prefType,
+                                                 typeToPreferenceListMap.keySet().iterator().next());
                              List<Map<String, Object>> preferences = typeToPreferenceListMap.get(prefType);
-                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              assertEquals("Unexpected name of preferences",
-                                          prefName,
-                                          preferences.get(0).get(Preference.NAME_ATTRIBUTE));
+                                                 prefName,
+                                                 preferences.get(0).get(Preference.NAME_ATTRIBUTE));
                              Set<Principal> visibilityList = (Set<Principal>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
-                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
+                             assertEquals("Unexpected number of principals in visibility list",
+                                                 (long) 1,
+                                                 (long) visibilityList.size());
                              assertTrue("Unexpected principal in visibility list",
-                                        GenericPrincipal.principalsEqual(_groupPrincipal,
-                                                                         visibilityList.iterator().next()));
+                                               GenericPrincipal.principalsEqual(_groupPrincipal,
+                                                                                visibilityList.iterator().next()));
                              assertTrue("Unexpected owner", GenericPrincipal.principalsEqual(_userPrincipal,
-                                                                                               (Principal) preferences.get(0).get(Preference.OWNER_ATTRIBUTE)));
+                                                                                                    (Principal) preferences.get(0).get(Preference.OWNER_ATTRIBUTE)));
                              return null;
                          }
                      }
                     );
     }
 
+    @Test
     public void testGetVisiblePreferencesByType() throws Exception
     {
         final String prefName = "testpref";
@@ -828,25 +913,29 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          {
                              List<Map<String, Object>> preferences =
                                      (List<Map<String, Object>>) _handler.handleGET(_userPreferences, rootRequestInfo);
-                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected number of preferences",
+                                                 (long) 1,
+                                                 (long) preferences.size());
                              assertEquals("Unexpected name of preferences",
-                                          prefName,
-                                          preferences.get(0).get(Preference.NAME_ATTRIBUTE));
+                                                 prefName,
+                                                 preferences.get(0).get(Preference.NAME_ATTRIBUTE));
                              Set<Principal> visibilityList = (Set<Principal>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
-                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
+                             assertEquals("Unexpected number of principals in visibility list",
+                                                 (long) 1,
+                                                 (long) visibilityList.size());
                              assertTrue("Unexpected principal in visibility list",
-                                        GenericPrincipal.principalsEqual(_groupPrincipal,
-                                                                         visibilityList.iterator().next()));
-                             assertTrue("Unexpected owner",
-                                        GenericPrincipal.principalsEqual(_userPrincipal,
-                                                                         (Principal) preferences.get(0)
-                                                                                                .get(Preference.OWNER_ATTRIBUTE)));
+                                               GenericPrincipal.principalsEqual(_groupPrincipal,
+                                                                                visibilityList.iterator().next()));
+                             assertTrue("Unexpected owner", GenericPrincipal.principalsEqual(_userPrincipal,
+                                                                                                    (Principal) preferences.get(0)
+                                                                                                                           .get(Preference.OWNER_ATTRIBUTE)));
                              return null;
                          }
                      }
                     );
     }
 
+    @Test
     public void testGetVisiblePreferencesByTypeAndName() throws Exception
     {
         final String prefName = "testpref";
@@ -899,15 +988,18 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          {
                              Map<String, Object> preference =
                                      (Map<String, Object>) _handler.handleGET(_userPreferences, rootRequestInfo);
-                             assertEquals("Unexpected name of preferences", prefName, preference.get(Preference.NAME_ATTRIBUTE));
+                             assertEquals("Unexpected name of preferences",
+                                                 prefName,
+                                                 preference.get(Preference.NAME_ATTRIBUTE));
                              Set<Principal> visibilityList = (Set<Principal>) preference.get(Preference.VISIBILITY_LIST_ATTRIBUTE);
-                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
+                             assertEquals("Unexpected number of principals in visibility list",
+                                                 (long) 1,
+                                                 (long) visibilityList.size());
                              assertTrue("Unexpected principal in visibility list",
-                                        GenericPrincipal.principalsEqual(_groupPrincipal,
-                                                                         visibilityList.iterator().next()));
-                             assertTrue("Unexpected owner",
-                                        GenericPrincipal.principalsEqual(_userPrincipal,
-                                                                         (Principal) preference.get(Preference.OWNER_ATTRIBUTE)));
+                                               GenericPrincipal.principalsEqual(_groupPrincipal,
+                                                                                visibilityList.iterator().next()));
+                             assertTrue("Unexpected owner", GenericPrincipal.principalsEqual(_userPrincipal,
+                                                                                                    (Principal) preference.get(Preference.OWNER_ATTRIBUTE)));
                              return null;
                          }
                      }
@@ -934,12 +1026,14 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                                               preferenceAttributes);
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
                              Set<Preference> retrievedPreferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("adding pref failed", 1, retrievedPreferences.size());
+                             assertEquals("adding pref failed", (long) 1, (long) retrievedPreferences.size());
 
                              _handler.handleDELETE(_userPreferences, requestInfo);
 
                              retrievedPreferences = awaitPreferenceFuture(_userPreferences.getPreferences());
-                             assertEquals("Deletion of preference failed", 0, retrievedPreferences.size());
+                             assertEquals("Deletion of preference failed",
+                                                 (long) 0,
+                                                 (long) retrievedPreferences.size());
 
                              // this should be a noop
                              _handler.handleDELETE(_userPreferences, requestInfo);

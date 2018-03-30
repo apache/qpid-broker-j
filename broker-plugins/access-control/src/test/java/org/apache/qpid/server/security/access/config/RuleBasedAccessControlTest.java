@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,6 +33,9 @@ import java.security.PrivilegedExceptionAction;
 
 import javax.security.auth.Subject;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -40,14 +45,15 @@ import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * In these tests, the ruleset is configured programmatically rather than from an external file.
  *
  * @see RuleSetTest
  */
-public class RuleBasedAccessControlTest extends QpidTestCase
+public class RuleBasedAccessControlTest extends UnitTestBase
 {
     private static final String ALLOWED_GROUP = "allowed_group";
     private static final String DENIED_GROUP = "denied_group";
@@ -56,10 +62,9 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     private UnitTestMessageLogger _messageLogger;
     private EventLogger _eventLogger;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _messageLogger = new UnitTestMessageLogger();
         _eventLogger = new EventLogger(_messageLogger);
         _plugin = null;
@@ -95,6 +100,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     /**
      * ACL plugin must always defer if there is no  subject attached to the thread.
      */
+    @Test
     public void testNoSubjectAlwaysDefers()
     {
         setUpGroupAccessControl();
@@ -106,6 +112,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
      * Tests that an allow rule expressed with a username allows an operation performed by a thread running
      * with the same username.
      */
+    @Test
     public void testUsernameAllowsOperation()
     {
         setUpGroupAccessControl();
@@ -115,6 +122,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
             public Object run()
             {
                 final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+
                 assertEquals(Result.ALLOWED, result);
                 return null;
             }
@@ -125,6 +133,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
      * Tests that an allow rule expressed with an <b>ACL groupname</b> allows an operation performed by a thread running
      * by a user who belongs to the same group..
      */
+    @Test
     public void testGroupMembershipAllowsOperation()
     {
         setUpGroupAccessControl();
@@ -138,6 +147,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
      * Tests that a deny rule expressed with a <b>groupname</b> denies an operation performed by a thread running
      * by a user who belongs to the same group.
      */
+    @Test
     public void testGroupMembershipDeniesOperation()
     {
         setUpGroupAccessControl();
@@ -147,6 +157,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     /**
      * Tests that the catch all deny denies the operation and logs with the logging actor.
      */
+    @Test
     public void testCatchAllRuleDeniesUnrecognisedUsername()
     {
         setUpGroupAccessControl();
@@ -157,14 +168,18 @@ public class RuleBasedAccessControlTest extends QpidTestCase
                          public Object run()
                          {
                              assertEquals("Expecting zero messages before test",
-                                          0,
-                                          _messageLogger.getLogMessages().size());
-                             final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+                                                 (long) 0,
+                                                 (long) _messageLogger.getLogMessages().size());
+
+                             final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST,
+                                                                     ObjectProperties.EMPTY);
                              assertEquals(Result.DENIED, result);
 
-                             assertEquals("Expecting one message before test", 1, _messageLogger.getLogMessages().size());
+                             assertEquals("Expecting one message before test",
+                                                 (long) 1,
+                                                 (long) _messageLogger.getLogMessages().size());
                              assertTrue("Logged message does not contain expected string",
-                                        _messageLogger.messageContains(0, "ACL-1002"));
+                                               _messageLogger.messageContains(0, "ACL-1002"));
                              return null;
                          }
                      });
@@ -174,6 +189,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     /**
      * Tests that a grant access method rule allows any access operation to be performed on any component
      */
+    @Test
     public void testAuthoriseAccessMethodWhenAllAccessOperationsAllowedOnAllComponents()
     {
         final RuleSetCreator rs = new RuleSetCreator();
@@ -200,6 +216,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     /**
      * Tests that a grant access method rule allows any access operation to be performed on a specified component
      */
+    @Test
     public void testAuthoriseAccessMethodWhenAllAccessOperationsAllowedOnSpecifiedComponent()
     {
         final RuleSetCreator rs = new RuleSetCreator();
@@ -229,10 +246,11 @@ public class RuleBasedAccessControlTest extends QpidTestCase
 
     }
 
+    @Test
     public void testAccess() throws Exception
     {
         final Subject subject = TestPrincipalUtils.createTestSubject("user1");
-        final String testVirtualHost = getName();
+        final String testVirtualHost = getTestName();
         final InetAddress inetAddress = InetAddress.getLocalHost();
         final InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, 1);
 
@@ -261,6 +279,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
 
     }
 
+    @Test
     public void testAccessIsDeniedIfRuleThrowsException() throws Exception
     {
         final Subject subject = TestPrincipalUtils.createTestSubject("user1");
@@ -302,6 +321,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     /**
      * Tests that a grant access method rule allows any access operation to be performed on a specified component
      */
+    @Test
     public void testAuthoriseAccessMethodWhenSpecifiedAccessOperationsAllowedOnSpecifiedComponent()
     {
         final RuleSetCreator rs = new RuleSetCreator();
@@ -339,6 +359,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     /**
      * Tests that granting of all method rights on a method allows a specified operation to be performed on any component
      */
+    @Test
     public void testAuthoriseAccessUpdateMethodWhenAllRightsGrantedOnSpecifiedMethodForAllComponents()
     {
         final RuleSetCreator rs = new RuleSetCreator();
@@ -378,6 +399,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     /**
      * Tests that granting of all method rights allows any operation to be performed on any component
      */
+    @Test
     public void testAuthoriseAccessUpdateMethodWhenAllRightsGrantedOnAllMethodsInAllComponents()
     {
         final RuleSetCreator rs = new RuleSetCreator();
@@ -416,6 +438,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     /**
      * Tests that granting of access method rights with mask allows matching operations to be performed on the specified component
      */
+    @Test
     public void testAuthoriseAccessMethodWhenMatchingAccessOperationsAllowedOnSpecifiedComponent()
     {
         final RuleSetCreator rs = new RuleSetCreator();

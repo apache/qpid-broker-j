@@ -21,32 +21,35 @@
 
 package org.apache.qpid.server.bytebuffer;
 
+import static org.junit.Assert.assertEquals;
+
 import java.nio.charset.StandardCharsets;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class QpidByteBufferOutputStreamTest extends QpidTestCase
+public class QpidByteBufferOutputStreamTest extends UnitTestBase
 {
     private static final int BUFFER_SIZE = 10;
     private static final int POOL_SIZE = 20;
     private static final double SPARSITY_FRACTION = 0.5;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         QpidByteBuffer.deinitialisePool();
         QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            super.tearDown();
         }
         finally
         {
@@ -54,6 +57,7 @@ public class QpidByteBufferOutputStreamTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testWriteByteByByte() throws Exception
     {
         boolean direct = false;
@@ -66,6 +70,7 @@ public class QpidByteBufferOutputStreamTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testWriteByteArrays() throws Exception
     {
         boolean direct = false;
@@ -78,6 +83,7 @@ public class QpidByteBufferOutputStreamTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testWriteMixed() throws Exception
     {
         boolean direct = true;
@@ -91,6 +97,7 @@ public class QpidByteBufferOutputStreamTest extends QpidTestCase
     }
 
 
+    @Test
     public void testWriteByteArrays_ArrayTooLargeForSingleBuffer() throws Exception
     {
         boolean direct = false;

@@ -18,6 +18,9 @@
  */
 package org.apache.qpid.server.management.plugin.auth;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -31,6 +34,9 @@ import java.util.Set;
 import javax.security.auth.Subject;
 import javax.servlet.http.HttpServletRequest;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.security.SubjectCreator;
@@ -39,9 +45,9 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
+public class OAuth2PreemptiveAuthenticatorTest extends UnitTestBase
 {
     private static final String TEST_AUTHORIZED_USER = "testAuthorizedUser";
     private static final String TEST_UNAUTHORIZED_USER = "testUnauthorizedUser";
@@ -53,10 +59,9 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
     private HttpManagementConfiguration _mockConfiguration;
     private HttpPort _mockPort;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _mockPort = mock(HttpPort.class);
         _mockConfiguration = mock(HttpManagementConfiguration.class);
         OAuth2AuthenticationProvider<?> mockAuthProvider = createMockOAuth2AuthenticationProvider(_mockPort);
@@ -66,6 +71,7 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
         _authenticator = new OAuth2PreemptiveAuthenticator();
     }
 
+    @Test
     public void testAttemptAuthenticationSuccessful() throws Exception
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
@@ -73,9 +79,13 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
         assertNotNull("Authenticator failed unexpectedly", subject);
         final Set<Principal> principals = subject.getPrincipals();
-        assertEquals("Subject created with unexpected principal", TEST_AUTHORIZED_USER, principals.iterator().next().getName());
+        assertEquals("Subject created with unexpected principal",
+                            TEST_AUTHORIZED_USER,
+                            principals.iterator().next().getName());
+
     }
 
+    @Test
     public void testAttemptAuthenticationUnauthorizedUser() throws Exception
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
@@ -83,9 +93,12 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
         assertNotNull("Authenticator failed unexpectedly", subject);
         final Set<Principal> principals = subject.getPrincipals();
-        assertEquals("Subject created with unexpected principal", TEST_UNAUTHORIZED_USER, principals.iterator().next().getName());
+        assertEquals("Subject created with unexpected principal",
+                            TEST_UNAUTHORIZED_USER,
+                            principals.iterator().next().getName());
     }
 
+    @Test
     public void testAttemptAuthenticationInvalidToken() throws Exception
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
@@ -94,6 +107,7 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
         assertNull("Authenticator did not fail with invalid access token", subject);
     }
 
+    @Test
     public void testAttemptAuthenticationMissingHeader() throws Exception
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
@@ -101,6 +115,7 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
         assertNull("Authenticator did not failed without authentication header", subject);
     }
 
+    @Test
     public void testAttemptAuthenticationMalformedHeader() throws Exception
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);

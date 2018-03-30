@@ -21,15 +21,33 @@ package org.apache.qpid.disttest.client;
 
 import static org.mockito.Mockito.mock;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class ParticipantRegistryTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ParticipantRegistryTest extends UnitTestBase
 {
     private ParticipantExecutorRegistry _participantRegistry = new ParticipantExecutorRegistry();
 
     private ParticipantExecutor _testParticipant1 = mock(ParticipantExecutor.class);
     private ParticipantExecutor _testParticipant2 = mock(ParticipantExecutor.class);
 
+    @Test
     public void testAdd()
     {
         assertTrue(_participantRegistry.executors().isEmpty());
@@ -43,11 +61,12 @@ public class ParticipantRegistryTest extends QpidTestCase
         assertTrue(_participantRegistry.executors().contains(_testParticipant2));
     }
 
+    @Test
     public void testClear()
     {
         _participantRegistry.add(_testParticipant1);
 
-        assertEquals(1, _participantRegistry.executors().size());
+        assertEquals((long) 1, (long) _participantRegistry.executors().size());
 
         _participantRegistry.clear();
 

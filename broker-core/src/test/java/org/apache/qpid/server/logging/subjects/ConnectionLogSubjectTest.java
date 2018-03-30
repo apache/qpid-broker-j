@@ -20,12 +20,14 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.transport.AMQPConnection;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.Before;
+
+import org.apache.qpid.server.transport.AMQPConnection;
 
 /**
  * Validate ConnectionLogSubjects are logged as expected
@@ -40,7 +42,7 @@ public class ConnectionLogSubjectTest extends AbstractTestLogSubject
 
     private AMQPConnection _connection;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         super.setUp();

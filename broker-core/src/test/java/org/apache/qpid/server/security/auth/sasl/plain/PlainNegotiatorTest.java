@@ -22,6 +22,7 @@ package org.apache.qpid.server.security.auth.sasl.plain;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -29,11 +30,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PlainNegotiatorTest extends QpidTestCase
+public class PlainNegotiatorTest extends UnitTestBase
 {
     private static final String VALID_PASSWORD = "testPassword";
     private static final String VALID_USERNAME = "testUsername";
@@ -44,10 +49,9 @@ public class PlainNegotiatorTest extends QpidTestCase
     private AuthenticationResult _successfulResult;
     private AuthenticationResult _errorResult;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _successfulResult = mock(AuthenticationResult.class);
         _errorResult = mock(AuthenticationResult.class);
         _authenticationProvider = mock(UsernamePasswordAuthenticationProvider.class);
@@ -57,16 +61,16 @@ public class PlainNegotiatorTest extends QpidTestCase
         _negotiator = new PlainNegotiator(_authenticationProvider);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
-        super.tearDown();
         if (_negotiator != null)
         {
             _negotiator.dispose();
         }
     }
 
+    @Test
     public void testHandleResponse() throws Exception
     {
         final AuthenticationResult result = _negotiator.handleResponse(VALID_RESPONSE.getBytes(US_ASCII));
@@ -74,50 +78,66 @@ public class PlainNegotiatorTest extends QpidTestCase
         assertEquals("Unexpected authentication result", _successfulResult, result);
     }
 
+    @Test
     public void testMultipleAuthenticationAttempts() throws Exception
     {
         final AuthenticationResult firstResult = _negotiator.handleResponse(VALID_RESPONSE.getBytes(US_ASCII));
         assertEquals("Unexpected first authentication result", _successfulResult, firstResult);
         final AuthenticationResult secondResult = _negotiator.handleResponse(VALID_RESPONSE.getBytes(US_ASCII));
-        assertEquals("Unexpected second authentication result", AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus());
+        assertEquals("Unexpected second authentication result",
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
     }
 
+    @Test
     public void testHandleInvalidUser() throws Exception
     {
         final AuthenticationResult result = _negotiator.handleResponse(String.format(RESPONSE_FORMAT_STRING, "invalidUser", VALID_PASSWORD).getBytes(US_ASCII));
         assertEquals("Unexpected authentication result", _errorResult, result);
     }
 
+    @Test
     public void testHandleInvalidPassword() throws Exception
     {
         final AuthenticationResult result = _negotiator.handleResponse(String.format(RESPONSE_FORMAT_STRING, VALID_USERNAME, "invalidPassword").getBytes(US_ASCII));
         assertEquals("Unexpected authentication result", _errorResult, result);
     }
 
+    @Test
     public void testHandleNeverSendAResponse() throws Exception
     {
         final AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected authentication status", AuthenticationResult.AuthenticationStatus.CONTINUE, firstResult.getStatus());
+        assertEquals("Unexpected authentication status",
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            firstResult.getStatus());
         assertArrayEquals("Unexpected authentication challenge", new byte[0], firstResult.getChallenge());
 
         final AuthenticationResult secondResult = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first authentication result", AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus());
+        assertEquals("Unexpected first authentication result",
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
     }
 
+    @Test
     public void testHandleNoInitialResponse() throws Exception
     {
         final AuthenticationResult result = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected authentication status", AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus());
+        assertEquals("Unexpected authentication status",
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            result.getStatus());
         assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
 
         final AuthenticationResult firstResult = _negotiator.handleResponse(VALID_RESPONSE.getBytes());
         assertEquals("Unexpected first authentication result", _successfulResult, firstResult);
     }
 
+    @Test
     public void testHandleNoInitialResponseNull() throws Exception
     {
         final AuthenticationResult result = _negotiator.handleResponse(null);
-        assertEquals("Unexpected authentication status", AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus());
+        assertEquals("Unexpected authentication status",
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            result.getStatus());
         assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
 
         final AuthenticationResult firstResult = _negotiator.handleResponse(VALID_RESPONSE.getBytes());

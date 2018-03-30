@@ -21,6 +21,8 @@
 package org.apache.qpid.server.logging.logback;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,20 +40,22 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class StartupAppenderTest extends QpidTestCase
+public class StartupAppenderTest extends UnitTestBase
 {
     private StartupAppender _startupAppender;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _startupAppender = createAndStartStartupAppender();
     }
 
+    @Test
     public void testLogToConsole() throws Exception
     {
         ILoggingEvent event1 = createMockLoggingEvent("org.apache.qpid.Test", Level.WARN, "Test1", "Test-Thread-1");
@@ -65,12 +69,13 @@ public class StartupAppenderTest extends QpidTestCase
 
         List<String> lines = logToConsoleAndCollectSystemOutputLines();
 
-        assertEquals("Unexpected number of log events", 2, lines.size());
+        assertEquals("Unexpected number of log events", (long) 2, (long) lines.size());
         assertTrue(lines.get(0).contains("Test1"));
         assertTrue(lines.get(1).contains("Test3"));
     }
 
-    @SuppressWarnings(value = "unchecked")
+    @SuppressWarnings("unchecked")
+    @Test
     public void testReplayAccumulatedEvents()
     {
         ILoggingEvent event1 = createMockLoggingEvent("org.apache.qpid.Test", Level.DEBUG, "Test1", "Test-Thread-1");
@@ -86,6 +91,7 @@ public class StartupAppenderTest extends QpidTestCase
 
     }
 
+    @Test
     public void testLogToConsoleWithOverriddenLogLevel() throws Exception
     {
         setTestSystemProperty(StartupAppender.PROPERTY_STARTUP_FAILOVER_CONSOLE_LOG_LEVEL, "DEBUG");
@@ -103,7 +109,7 @@ public class StartupAppenderTest extends QpidTestCase
 
         List<String> lines = logToConsoleAndCollectSystemOutputLines();
 
-        assertEquals("Unexpected number of log events", 4, lines.size());
+        assertEquals("Unexpected number of log events", (long) 4, (long) lines.size());
         assertTrue(lines.get(0).contains("Test1"));
         assertTrue(lines.get(1).contains("Test2"));
         assertTrue(lines.get(2).contains("Test3"));

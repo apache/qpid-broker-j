@@ -18,17 +18,23 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class ActionTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class ActionTest extends UnitTestBase
 {
     private ObjectProperties _properties1 = mock(ObjectProperties.class);
     private ObjectProperties _properties2 = mock(ObjectProperties.class);
 
+    @Test
     public void testMatchesReturnsTrueForMatchingActions()
     {
         when(_properties1.propertiesMatch(_properties2)).thenReturn(true);
@@ -38,6 +44,7 @@ public class ActionTest extends QpidTestCase
                 new Action(LegacyOperation.CONSUME, ObjectType.QUEUE, _properties2));
     }
 
+    @Test
     public void testMatchesReturnsFalseWhenOperationsDiffer()
     {
         assertDoesntMatch(
@@ -45,6 +52,7 @@ public class ActionTest extends QpidTestCase
                 new Action(LegacyOperation.CREATE, ObjectType.QUEUE, _properties1));
     }
 
+    @Test
     public void testMatchesReturnsFalseWhenOperationTypesDiffer()
     {
         assertDoesntMatch(
@@ -52,6 +60,7 @@ public class ActionTest extends QpidTestCase
                 new Action(LegacyOperation.CREATE, ObjectType.EXCHANGE, _properties1));
     }
 
+    @Test
     public void testMatchesReturnsFalseWhenOperationPropertiesDiffer()
     {
         assertDoesntMatch(
@@ -59,6 +68,7 @@ public class ActionTest extends QpidTestCase
                 new Action(LegacyOperation.CREATE, ObjectType.QUEUE, _properties2));
     }
 
+    @Test
     public void testMatchesReturnsFalseWhenMyOperationPropertiesIsNull()
     {
         assertDoesntMatch(
@@ -66,6 +76,7 @@ public class ActionTest extends QpidTestCase
                 new Action(LegacyOperation.CREATE, ObjectType.QUEUE, _properties1));
     }
 
+    @Test
     public void testMatchesReturnsFalseWhenOtherOperationPropertiesIsNull()
     {
         assertDoesntMatch(
@@ -73,6 +84,7 @@ public class ActionTest extends QpidTestCase
                 new Action(LegacyOperation.CREATE, ObjectType.QUEUE, (ObjectProperties)null));
     }
 
+    @Test
     public void testMatchesReturnsTrueWhenBothOperationPropertiesAreNull()
     {
         assertMatches(
@@ -80,6 +92,7 @@ public class ActionTest extends QpidTestCase
                 new Action(LegacyOperation.CREATE, ObjectType.QUEUE, (ObjectProperties)null));
     }
 
+    @Test
     public void testAttributesIgnoredForCreate()
     {
         final ObjectProperties objectProperties1 = new ObjectProperties();
@@ -90,6 +103,7 @@ public class ActionTest extends QpidTestCase
                       new Action(LegacyOperation.CREATE, ObjectType.QUEUE, objectProperties2));
     }
 
+    @Test
     public void testAttributesDifferForUpdate()
     {
         final ObjectProperties objectProperties1 = new ObjectProperties();
@@ -100,6 +114,7 @@ public class ActionTest extends QpidTestCase
                           new Action(LegacyOperation.UPDATE, ObjectType.QUEUE, objectProperties2));
     }
 
+    @Test
     public void testAttributesMatchForUpdate()
     {
         final ObjectProperties objectProperties1 = new ObjectProperties();

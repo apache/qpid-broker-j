@@ -21,16 +21,21 @@
 package org.apache.qpid.server.util;
 
 
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.apache.qpid.server.util.GZIPUtils;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class GZIPUtilsTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class GZIPUtilsTest extends UnitTestBase
 {
+    @Test
     public void testCompressUncompress() throws Exception
     {
         byte[] data = new byte[1024];
@@ -38,16 +43,20 @@ public class GZIPUtilsTest extends QpidTestCase
         byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
         assertTrue("Compression didn't compress", compressed.length < data.length);
         byte[] uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(compressed));
-        assertTrue("Compression not reversible", Arrays.equals(data,uncompressed));
+        assertTrue("Compression not reversible", Arrays.equals(data, uncompressed));
     }
 
+    @Test
     public void testUncompressNonZipReturnsNull() throws Exception
     {
         byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'a');
-        assertNull("Non zipped data should not uncompress", GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data)));
+        assertNull("Non zipped data should not uncompress",
+                          GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data)));
+
     }
 
+    @Test
     public void testUncompressStreamWithErrorReturnsNull() throws Exception
     {
         InputStream is = new InputStream()
@@ -62,20 +71,24 @@ public class GZIPUtilsTest extends QpidTestCase
     }
 
 
+    @Test
     public void testUncompressNullStreamReturnsNull() throws Exception
     {
         assertNull("Null Stream should return null", GZIPUtils.uncompressStreamToArray(null));
     }
+    @Test
     public void testUncompressNullBufferReturnsNull() throws Exception
     {
         assertNull("Null buffer should return null", GZIPUtils.uncompressBufferToArray(null));
     }
 
+    @Test
     public void testCompressNullArrayReturnsNull()
     {
         assertNull(GZIPUtils.compressBufferToArray(null));
     }
 
+    @Test
     public void testNonHeapBuffers() throws Exception
     {
 
@@ -97,7 +110,6 @@ public class GZIPUtilsTest extends QpidTestCase
 
         byte[] uncompressed = GZIPUtils.uncompressBufferToArray(directBuffer);
 
-        assertTrue("Compression not reversible", Arrays.equals(data,uncompressed));
-
+        assertTrue("Compression not reversible", Arrays.equals(data, uncompressed));
     }
 }

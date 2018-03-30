@@ -21,45 +21,56 @@
 
 package org.apache.qpid.server;
 
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
+import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.filter.selector.ParseException;
-import org.apache.qpid.server.filter.JMSSelectorFilter;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SelectorParserTest extends QpidTestCase
+public class SelectorParserTest extends UnitTestBase
 {
+    @Test
     public void testSelectorWithHyphen()
     {
         testPass("Cost = 2 AND \"property-with-hyphen\" = 'wibble'");
     }
 
+    @Test
     public void testLike()
     {        
         testFail("Cost LIKE 2");
         testPass("Cost LIKE 'Hello'");
     }
 
+    @Test
     public void testStringQuoted()
     {
         testPass("string = 'Test'");
     }
 
+    @Test
     public void testProperty()
     {
         testPass("prop1 = prop2");
     }
 
+    @Test
     public void testPropertyInvalid()
     {
         testFail("prop1 = prop2 foo AND string = 'Test'");
     }
 
 
+    @Test
     public void testPropertyNames()
     {
         testPass("$min= TRUE AND _max= FALSE AND Prop_2 = true AND prop$3 = false");
     }
 
+    @Test
     public void testProtected()
     {
         testFail("NULL = 0 ");
@@ -76,33 +87,39 @@ public class SelectorParserTest extends QpidTestCase
    }
 
 
+    @Test
     public void testBoolean()
     {
         testPass("min= TRUE  AND max= FALSE ");
         testPass("min= true AND max= false");
     }
 
+    @Test
     public void testDouble()
     {
         testPass("positive=31E2 AND negative=-31.4E3");
         testPass("min=" + Double.MIN_VALUE + " AND max=" + Double.MAX_VALUE);
     }
 
+    @Test
     public void testLong()
     {
         testPass("minLong=" + Long.MIN_VALUE + "L AND maxLong=" + Long.MAX_VALUE + "L");
     }
 
+    @Test
     public void testInt()
     {
         testPass("minInt=" + Integer.MIN_VALUE + " AND maxInt=" + Integer.MAX_VALUE);
     }
 
+    @Test
     public void testSigned()
     {
         testPass("negative=-42 AND positive=+42");
     }
 
+    @Test
     public void testOctal()
     {
         testPass("octal=042");

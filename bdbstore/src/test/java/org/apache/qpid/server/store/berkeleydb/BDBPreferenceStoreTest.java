@@ -20,6 +20,14 @@
 package org.apache.qpid.server.store.berkeleydb;
 
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,7 +40,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-
 import com.sleepycat.bind.tuple.ByteBinding;
 import com.sleepycat.bind.tuple.StringBinding;
 import com.sleepycat.je.Database;
@@ -40,6 +47,9 @@ import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -50,20 +60,21 @@ import org.apache.qpid.server.store.berkeleydb.tuple.UUIDTupleBinding;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class BDBPreferenceStoreTest extends QpidTestCase
+public class BDBPreferenceStoreTest extends UnitTestBase
 {
     private File _storeFile;
     private PreferenceStoreUpdater _updater;
     private BDBPreferenceStore _preferenceStore;
     private List<PreferenceRecord> _testInitialRecords;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
 
         _storeFile = new File(TMP_FOLDER, getTestName() + System.currentTimeMillis() + ".preferences.bdb");
         boolean result = _storeFile.mkdirs();
@@ -83,20 +94,26 @@ public class BDBPreferenceStoreTest extends QpidTestCase
         populateTestData(_testInitialRecords, BrokerModel.MODEL_VERSION);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            _preferenceStore.close();
-            FileUtils.delete(_storeFile, true);
+            if (_preferenceStore != null)
+            {
+                _preferenceStore.close();
+            }
         }
         finally
         {
-            super.tearDown();
+            if (_storeFile != null)
+            {
+                FileUtils.delete(_storeFile, true);
+            }
         }
     }
 
+    @Test
     public void testVersionAfterUpgrade() throws Exception
     {
         FileUtils.delete(_storeFile, true);
@@ -112,26 +129,30 @@ public class BDBPreferenceStoreTest extends QpidTestCase
         assertEquals("Unexpected version", BrokerModel.MODEL_VERSION, storedVersion.toString());
     }
 
+    @Test
     public void testOpenAndLoad() throws Exception
     {
         Collection<PreferenceRecord> recovered = _preferenceStore.openAndLoad(_updater);
         assertEquals("Unexpected store state",
-                     AbstractBDBPreferenceStore.StoreState.OPENED,
-                     _preferenceStore.getStoreState());
+                            AbstractBDBPreferenceStore.StoreState.OPENED,
+                            _preferenceStore.getStoreState());
+
         assertNotNull("Store was not properly opened", _preferenceStore.getEnvironmentFacade());
         PreferenceTestHelper.assertRecords(_testInitialRecords, recovered);
     }
 
+    @Test
     public void testClose() throws Exception
     {
         _preferenceStore.openAndLoad(_updater);
         _preferenceStore.close();
         assertEquals("Unexpected store state",
-                     AbstractBDBPreferenceStore.StoreState.CLOSED,
-                     _preferenceStore.getStoreState());
+                            AbstractBDBPreferenceStore.StoreState.CLOSED,
+                            _preferenceStore.getStoreState());
         assertNull("Store was not properly closed", _preferenceStore.getEnvironmentFacade());
     }
 
+    @Test
     public void testUpdateOrCreate() throws Exception
     {
         _preferenceStore.openAndLoad(_updater);
@@ -150,6 +171,7 @@ public class BDBPreferenceStoreTest extends QpidTestCase
         PreferenceTestHelper.assertRecords(expected, recovered);
     }
 
+    @Test
     public void testReplace() throws Exception
     {
         _preferenceStore.openAndLoad(_updater);
@@ -168,6 +190,7 @@ public class BDBPreferenceStoreTest extends QpidTestCase
         PreferenceTestHelper.assertRecords(recordsToAddUpdate, recovered);
     }
 
+    @Test
     public void testUpdateFailIfNotOpened() throws Exception
     {
         try
@@ -181,6 +204,7 @@ public class BDBPreferenceStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testReplaceFailIfNotOpened() throws Exception
     {
         try

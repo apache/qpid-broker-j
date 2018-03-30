@@ -28,13 +28,28 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreTestCase;
 import org.apache.qpid.server.virtualhost.derby.DerbyVirtualHost;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
+import static junit.framework.TestCase.assertFalse;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.Test;
 
 public class DerbyMessageStoreTest extends MessageStoreTestCase
 {
     private String _storeLocation;
+
+    @Override
+    public void setUp() throws Exception
+    {
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.DERBY)));
+        super.setUp();
+    }
 
     @Override
     public void tearDown() throws Exception
@@ -49,6 +64,7 @@ public class DerbyMessageStoreTest extends MessageStoreTestCase
         }
     }
 
+    @Test
     public void testOnDelete() throws Exception
     {
         File location = new File(_storeLocation);

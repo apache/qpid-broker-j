@@ -20,12 +20,16 @@
  */
 package org.apache.qpid.server.management.plugin;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -36,18 +40,17 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class HttpManagementTest extends QpidTestCase
+public class HttpManagementTest extends UnitTestBase
 {
     private UUID _id;
     private Broker _broker;
     private HttpManagement _management;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _id = UUID.randomUUID();
         _broker = mock(Broker.class);
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
@@ -75,37 +78,49 @@ public class HttpManagementTest extends QpidTestCase
         _management.open();
     }
 
+    @Test
     public void testGetSessionTimeout()
     {
-        assertEquals("Unexpected session timeout", 10000l, _management.getSessionTimeout());
+        assertEquals("Unexpected session timeout", 10000l, (long) _management.getSessionTimeout());
     }
 
+    @Test
     public void testGetName()
     {
         assertEquals("Unexpected name", getTestName(), _management.getName());
     }
 
+    @Test
     public void testIsHttpsSaslAuthenticationEnabled()
     {
-        assertEquals("Unexpected value for the https sasl enabled attribute", true,
-                _management.isHttpsSaslAuthenticationEnabled());
+        assertEquals("Unexpected value for the https sasl enabled attribute",
+                            true,
+                            _management.isHttpsSaslAuthenticationEnabled());
+
     }
 
+    @Test
     public void testIsHttpSaslAuthenticationEnabled()
     {
-        assertEquals("Unexpected value for the http sasl enabled attribute", false, _management.isHttpSaslAuthenticationEnabled());
+        assertEquals("Unexpected value for the http sasl enabled attribute",
+                            false,
+                            _management.isHttpSaslAuthenticationEnabled());
     }
 
+    @Test
     public void testIsHttpsBasicAuthenticationEnabled()
     {
-        assertEquals("Unexpected value for the https basic authentication enabled attribute", true,
-                _management.isHttpsBasicAuthenticationEnabled());
+        assertEquals("Unexpected value for the https basic authentication enabled attribute",
+                            true,
+                            _management.isHttpsBasicAuthenticationEnabled());
     }
 
+    @Test
     public void testIsHttpBasicAuthenticationEnabled()
     {
-        assertEquals("Unexpected value for the http basic authentication enabled attribute", false,
-                _management.isHttpBasicAuthenticationEnabled());
+        assertEquals("Unexpected value for the http basic authentication enabled attribute",
+                            false,
+                            _management.isHttpBasicAuthenticationEnabled());
     }
 
 

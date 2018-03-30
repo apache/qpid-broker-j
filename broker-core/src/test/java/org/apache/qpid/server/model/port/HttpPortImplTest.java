@@ -20,6 +20,8 @@
 
 package org.apache.qpid.server.model.port;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +29,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -37,19 +42,18 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class HttpPortImplTest extends QpidTestCase
+public class HttpPortImplTest extends UnitTestBase
 {
     private static final String AUTHENTICATION_PROVIDER_NAME = "test";
 
     private TaskExecutor _taskExecutor;
     private Broker _broker;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         Model model = BrokerModel.getInstance();
         SystemConfig systemConfig = mock(SystemConfig.class);
@@ -71,6 +75,7 @@ public class HttpPortImplTest extends QpidTestCase
 
     }
 
+    @Test
     public void testCreateWithIllegalThreadPoolValues() throws Exception
     {
         int threadPoolMinimumSize = 37;
@@ -95,6 +100,7 @@ public class HttpPortImplTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testIllegalChangeWithMaxThreadPoolSizeSmallerThanMinThreadPoolSize() throws Exception
     {
         int threadPoolMinimumSize = 37;
@@ -122,6 +128,7 @@ public class HttpPortImplTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testIllegalChangeWithNegativeThreadPoolSize() throws Exception
     {
         int illegalThreadPoolMinimumSize = -1;
@@ -149,6 +156,7 @@ public class HttpPortImplTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testChangeWithLegalThreadPoolValues() throws Exception
     {
         int threadPoolMinimumSize = 37;
@@ -166,8 +174,13 @@ public class HttpPortImplTest extends QpidTestCase
         updates.put(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize);
         updates.put(HttpPort.THREAD_POOL_MAXIMUM, threadPoolMaximumSize);
         port.setAttributes(updates);
-        assertEquals("Port did not pickup changes to minimum thread pool size", port.getThreadPoolMinimum(), threadPoolMinimumSize);
-        assertEquals("Port did not pickup changes to maximum thread pool size", port.getThreadPoolMaximum(), threadPoolMaximumSize);
+        assertEquals("Port did not pickup changes to minimum thread pool size",
+                            (long) port.getThreadPoolMinimum(),
+                            (long) threadPoolMinimumSize);
+
+        assertEquals("Port did not pickup changes to maximum thread pool size",
+                            (long) port.getThreadPoolMaximum(),
+                            (long) threadPoolMaximumSize);
     }
 
 }

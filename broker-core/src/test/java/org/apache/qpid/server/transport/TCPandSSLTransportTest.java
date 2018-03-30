@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.transport;
 
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,6 +42,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +51,13 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class TCPandSSLTransportTest extends QpidTestCase
+public class TCPandSSLTransportTest extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(TCPandSSLTransportTest.class);
 
+    @Test
     public void testNoSSLv3SupportOnSSLOnlyPort() throws Exception
     {
         try
@@ -69,6 +72,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
     }
 
 
+    @Test
     public void testNoTLSv1SupportOnSharedPort() throws Exception
     {
         try
@@ -83,6 +87,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
     }
 
 
+    @Test
     public void testNoTLSv1SupportOnSSLOnlyPort() throws Exception
     {
         try
@@ -97,6 +102,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
     }
 
 
+    @Test
     public void testNoSSLv3SupportOnSharedPort() throws Exception
     {
         try
@@ -111,6 +117,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
     }
 
 
+    @Test
     public void testTLSSupportOnSharedPort() throws Exception
     {
         try

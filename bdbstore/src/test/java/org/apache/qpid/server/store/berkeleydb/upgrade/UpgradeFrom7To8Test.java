@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +37,7 @@ import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
+import org.junit.Test;
 
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -63,6 +66,7 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
         return "bdbstore-v7";
     }
 
+    @Test
     public void testPerformUpgrade() throws Exception
     {
         UpgradeFrom7To8 upgrade = new UpgradeFrom7To8();

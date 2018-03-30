@@ -20,25 +20,32 @@
  */
 package org.apache.qpid.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.server.protocol.ErrorCodes;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * This test is to ensure that when an AMQException is rethrown that the specified exception is correctly wrapped up.
- *
+ * <p>
  * There are three cases:
  * Re-throwing an AMQException
  * Re-throwing a Subclass of AMQException
  * Re-throwing a Subclass of AMQException that does not have the default AMQException constructor which will force the
  * creation of an AMQException.
  */
-public class QpidExceptionTest extends QpidTestCase
+public class QpidExceptionTest extends UnitTestBase
 {
     /**
      * Test that an AMQException will be correctly created and rethrown.
      */
+    @Test
     public void testRethrowGeneric()
     {
         QpidException test = new QpidException("refused", new RuntimeException());
@@ -46,12 +53,12 @@ public class QpidExceptionTest extends QpidTestCase
         QpidException e = reThrowException(test);
 
         assertEquals("Exception not of correct class", QpidException.class, e.getClass());
-
     }
 
     /**
      * Test that a subclass of AMQException that has the default constructor will be correctly created and rethrown.
      */
+    @Test
     public void testRethrowAMQESubclass()
     {
         AMQFrameDecodingException test = new AMQFrameDecodingException(
@@ -66,6 +73,7 @@ public class QpidExceptionTest extends QpidTestCase
      * Test that a subclass of AMQException that doesnot have the  default constructor will be correctly rethrown as an
      * AMQException
      */
+    @Test
     public void testRethrowAMQESubclassNoConstructor()
     {
         AMQExceptionSubclass test = new AMQExceptionSubclass("Invalid Argument Exception");
@@ -85,15 +93,20 @@ public class QpidExceptionTest extends QpidTestCase
         QpidException amqe = test.cloneForCurrentThread();
         if(test instanceof AMQException)
         {
-            assertEquals("Error code does not match.", ((AMQException)test).getErrorCode(), ((AMQException)amqe).getErrorCode());
+            assertEquals("Error code does not match.",
+                                (long) ((AMQException) test).getErrorCode(),
+                                (long) ((AMQException) amqe).getErrorCode());
+
         }
-        assertTrue("Exception message does not start as expected.", amqe.getMessage().startsWith(test.getMessage()));
+        assertTrue("Exception message does not start as expected.",
+                          amqe.getMessage().startsWith(test.getMessage()));
         assertEquals("Test Exception is not set as the cause", test, amqe.getCause());
         assertEquals("Cause is not correct", test.getCause(), amqe.getCause().getCause());
 
         return amqe;
     }
 
+    @Test
     public void testGetMessageAsString()
     {
         StringBuilder sb = new StringBuilder();

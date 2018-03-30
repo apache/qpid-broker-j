@@ -59,6 +59,12 @@
       <scope>runtime</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-test-utils</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>

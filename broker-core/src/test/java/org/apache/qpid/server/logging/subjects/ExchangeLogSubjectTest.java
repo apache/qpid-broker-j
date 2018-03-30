@@ -20,10 +20,12 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
+import org.junit.After;
+import org.junit.Before;
+
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.BrokerTestHelper;
-
 
 /**
  * Validate ExchangeLogSubjects are logged as expected
@@ -33,18 +35,18 @@ public class ExchangeLogSubjectTest extends AbstractTestLogSubject
     private Exchange<?> _exchange;
     private VirtualHost<?> _testVhost;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         super.setUp();
 
-        _testVhost = BrokerTestHelper.createVirtualHost("test");
+        _testVhost = BrokerTestHelper.createVirtualHost("test", this);
 
         _exchange = (Exchange<?>) _testVhost.getChildByName(Exchange.class, "amq.direct");
         _subject = new ExchangeLogSubject(_exchange,_testVhost);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         if (_testVhost != null)

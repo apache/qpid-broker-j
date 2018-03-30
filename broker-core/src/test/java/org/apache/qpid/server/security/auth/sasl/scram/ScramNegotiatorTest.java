@@ -21,6 +21,10 @@
 package org.apache.qpid.server.security.auth.sasl.scram;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,6 +42,10 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.SaslException;
 import javax.xml.bind.DatatypeConverter;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -49,10 +57,10 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
 import org.apache.qpid.server.security.auth.sasl.PasswordSource;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.util.Strings;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ScramNegotiatorTest extends QpidTestCase
+public class ScramNegotiatorTest extends UnitTestBase
 {
     private static final String VALID_USER_NAME = "testUser";
     private static final String VALID_USER_PASSWORD = "testPassword";
@@ -69,10 +77,9 @@ public class ScramNegotiatorTest extends QpidTestCase
     private AuthenticationProvider<?> _authenticationProvider;
     private Broker<?> _broker;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _clientNonce = UUID.randomUUID().toString();
         _passwordSource = mock(PasswordSource.class);
         when(_passwordSource.getPassword(eq(VALID_USER_NAME))).thenReturn(VALID_USER_PASSWORD.toCharArray());
@@ -80,12 +87,11 @@ public class ScramNegotiatorTest extends QpidTestCase
         _broker = BrokerTestHelper.createBrokerMock();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            super.tearDown();
         }
         finally
         {
@@ -93,6 +99,7 @@ public class ScramNegotiatorTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testHandleResponseForScramSha256ValidCredentialsAdapterSource() throws Exception
     {
         final ScramSaslServerSource scramSaslServerSource =
@@ -105,6 +112,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                               scramSaslServerSource);
     }
 
+    @Test
     public void testHandleResponseForScramSha1ValidCredentialsAdapterSource() throws Exception
     {
         final ScramSaslServerSource scramSaslServerSource =
@@ -117,6 +125,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                               scramSaslServerSource);
     }
 
+    @Test
     public void testHandleResponseForScramSha256InvalidPasswordAdapterSource() throws Exception
     {
         final ScramSaslServerSource scramSaslServerSource =
@@ -131,6 +140,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                                 scramSaslServerSource);
     }
 
+    @Test
     public void testHandleResponseForScramSha1InvalidPasswordAdapterSource() throws Exception
     {
         final ScramSaslServerSource scramSaslServerSource =
@@ -145,6 +155,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                                 scramSaslServerSource);
     }
 
+    @Test
     public void testHandleResponseForScramSha256InvalidUsernameAdapterSource() throws Exception
     {
         final ScramSaslServerSource scramSaslServerSource =
@@ -159,6 +170,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                                 scramSaslServerSource);
     }
 
+    @Test
     public void testHandleResponseForScramSha1InvalidUsernameAdapterSource() throws Exception
     {
         final ScramSaslServerSource scramSaslServerSource =
@@ -173,6 +185,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                                 scramSaslServerSource);
     }
 
+    @Test
     public void testHandleResponseForScramSha256ValidCredentialsAuthenticationProvider() throws Exception
     {
         _authenticationProvider = createTestAuthenticationManager(ScramSHA256AuthenticationManager.PROVIDER_TYPE);
@@ -180,6 +193,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                               (ScramSaslServerSource) _authenticationProvider);
     }
 
+    @Test
     public void testHandleResponseForScramSha1ValidCredentialsAuthenticationProvider() throws Exception
     {
         _authenticationProvider = createTestAuthenticationManager(ScramSHA1AuthenticationManager.PROVIDER_TYPE);
@@ -187,6 +201,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                               (ScramSaslServerSource) _authenticationProvider);
     }
 
+    @Test
     public void testHandleResponseForScramSha256InvalidPasswordAuthenticationProvider() throws Exception
     {
         _authenticationProvider = createTestAuthenticationManager(ScramSHA256AuthenticationManager.PROVIDER_TYPE);
@@ -197,6 +212,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                                 (ScramSaslServerSource) _authenticationProvider);
     }
 
+    @Test
     public void testHandleResponseForScramSha1InvalidPasswordAuthenticationProvider() throws Exception
     {
         _authenticationProvider = createTestAuthenticationManager(ScramSHA1AuthenticationManager.PROVIDER_TYPE);
@@ -207,6 +223,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                                 (ScramSaslServerSource) _authenticationProvider);
     }
 
+    @Test
     public void testHandleResponseForScramSha256InvalidUsernameAuthenticationProvider() throws Exception
     {
         _authenticationProvider = createTestAuthenticationManager(ScramSHA256AuthenticationManager.PROVIDER_TYPE);
@@ -217,6 +234,7 @@ public class ScramNegotiatorTest extends QpidTestCase
                                                 (ScramSaslServerSource) _authenticationProvider);
     }
 
+    @Test
     public void testHandleResponseForScramSha1InvalidUsernameAuthenticationProvider() throws Exception
     {
         _authenticationProvider = createTestAuthenticationManager(ScramSHA1AuthenticationManager.PROVIDER_TYPE);
@@ -240,8 +258,9 @@ public class ScramNegotiatorTest extends QpidTestCase
 
         AuthenticationResult firstResult = scramNegotiator.handleResponse(initialResponse);
         assertEquals("Unexpected first result status",
-                     AuthenticationResult.AuthenticationStatus.CONTINUE,
-                     firstResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            firstResult.getStatus());
+
         assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
 
         byte[] response = calculateClientProof(firstResult.getChallenge(),
@@ -250,10 +269,12 @@ public class ScramNegotiatorTest extends QpidTestCase
                                                VALID_USER_PASSWORD);
         AuthenticationResult secondResult = scramNegotiator.handleResponse(response);
         assertEquals("Unexpected second result status",
-                     AuthenticationResult.AuthenticationStatus.SUCCESS,
-                     secondResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            secondResult.getStatus());
         assertNotNull("Unexpected second result challenge", secondResult.getChallenge());
-        assertEquals("Unexpected second result principal", VALID_USER_NAME, secondResult.getMainPrincipal().getName());
+        assertEquals("Unexpected second result principal",
+                            VALID_USER_NAME,
+                            secondResult.getMainPrincipal().getName());
 
         String serverFinalMessage = new String(secondResult.getChallenge(), ASCII);
         String[] parts = serverFinalMessage.split(",");
@@ -269,8 +290,8 @@ public class ScramNegotiatorTest extends QpidTestCase
 
         AuthenticationResult thirdResult = scramNegotiator.handleResponse(initialResponse);
         assertEquals("Unexpected result status after completion of negotiation",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     thirdResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            thirdResult.getStatus());
         assertNull("Unexpected principal after completion of negotiation", thirdResult.getMainPrincipal());
     }
 
@@ -288,8 +309,8 @@ public class ScramNegotiatorTest extends QpidTestCase
         byte[] initialResponse = createInitialResponse(userName);
         AuthenticationResult firstResult = scramNegotiator.handleResponse(initialResponse);
         assertEquals("Unexpected first result status",
-                     AuthenticationResult.AuthenticationStatus.CONTINUE,
-                     firstResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            firstResult.getStatus());
         assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
 
         byte[] response = calculateClientProof(firstResult.getChallenge(),
@@ -298,8 +319,8 @@ public class ScramNegotiatorTest extends QpidTestCase
                                                userPassword);
         AuthenticationResult secondResult = scramNegotiator.handleResponse(response);
         assertEquals("Unexpected second result status",
-                     AuthenticationResult.AuthenticationStatus.ERROR,
-                     secondResult.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
         assertNull("Unexpected second result challenge", secondResult.getChallenge());
         assertNull("Unexpected second result principal", secondResult.getMainPrincipal());
     }

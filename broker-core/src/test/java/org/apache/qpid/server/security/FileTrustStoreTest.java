@@ -22,6 +22,15 @@ package org.apache.qpid.server.security;
 
 import static org.apache.qpid.server.security.FileKeyStoreTest.EMPTY_KEYSTORE_RESOURCE;
 import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.getInitializedKeyStore;
+import static org.apache.qpid.test.utils.JvmVendor.IBM;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +48,9 @@ import java.util.Map;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -51,10 +63,10 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.server.util.FileUtils;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestSSLConstants;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class FileTrustStoreTest extends QpidTestCase
+public class FileTrustStoreTest extends UnitTestBase
 {
     static final String KEYSTORE_PK_ONLY_RESOURCE = "/ssl/test_pk_only_keystore.pkcs12";
     static final String SYMMETRIC_KEY_KEYSTORE_RESOURCE = "/ssl/test_symmetric_key_keystore.pkcs12";
@@ -65,10 +77,9 @@ public class FileTrustStoreTest extends QpidTestCase
     private final Model _model = BrokerModel.getInstance();
     private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
@@ -79,6 +90,7 @@ public class FileTrustStoreTest extends QpidTestCase
         when(_broker.getTypeClass()).thenReturn(Broker.class);
     }
 
+    @Test
     public void testCreateTrustStoreFromFile_Success() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -90,10 +102,11 @@ public class FileTrustStoreTest extends QpidTestCase
 
         TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
+        assertEquals("Unexpected number of trust managers", (long) 1, (long) trustManagers.length);
         assertNotNull("Trust manager unexpected null", trustManagers[0]);
     }
 
+    @Test
     public void testCreateTrustStoreFromFile_WrongPassword() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -109,10 +122,13 @@ public class FileTrustStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Check trust store password"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Check trust store password"));
+
         }
     }
 
+    @Test
     public void testCreatePeersOnlyTrustStoreFromFile_Success() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -125,13 +141,20 @@ public class FileTrustStoreTest extends QpidTestCase
 
         TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
+        assertEquals("Unexpected number of trust managers", (long) 1, (long) trustManagers.length);
         assertNotNull("Trust manager unexpected null", trustManagers[0]);
-        assertTrue("Trust manager unexpected null", trustManagers[0] instanceof QpidPeersOnlyTrustManager);
+        final boolean condition = trustManagers[0] instanceof QpidPeersOnlyTrustManager;
+        assertTrue("Trust manager unexpected null", condition);
     }
 
+    @Test
     public void testUseOfExpiredTrustAnchorAllowed() throws Exception
     {
+        // https://www.ibm.com/support/knowledgecenter/en/SSYKE2_8.0.0/com.ibm.java.security.component.80.doc/security-
+        assumeThat("IBMJSSE2 trust factory (IbmX509) validates the entire chain, including trusted certificates.",
+                getJvmVendor(),
+                is(not(equalTo(IBM))));
+
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_EXPIRED_TRUSTSTORE);
@@ -141,8 +164,9 @@ public class FileTrustStoreTest extends QpidTestCase
 
         TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
-        assertTrue("Unexpected trust manager type",trustManagers[0] instanceof X509TrustManager);
+        assertEquals("Unexpected number of trust managers", (long) 1, (long) trustManagers.length);
+        final boolean condition = trustManagers[0] instanceof X509TrustManager;
+        assertTrue("Unexpected trust manager type", condition);
         X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
         KeyStore clientStore = getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
@@ -154,6 +178,7 @@ public class FileTrustStoreTest extends QpidTestCase
         trustManager.checkClientTrusted(new X509Certificate[] {certificate}, "NULL");
     }
 
+    @Test
     public void testUseOfExpiredTrustAnchorDenied() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -166,8 +191,9 @@ public class FileTrustStoreTest extends QpidTestCase
 
         TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
-        assertTrue("Unexpected trust manager type",trustManagers[0] instanceof X509TrustManager);
+        assertEquals("Unexpected number of trust managers", (long) 1, (long) trustManagers.length);
+        final boolean condition = trustManagers[0] instanceof X509TrustManager;
+        assertTrue("Unexpected trust manager type", condition);
         X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
         KeyStore clientStore = getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
@@ -196,6 +222,7 @@ public class FileTrustStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreateTrustStoreFromDataUrl_Success() throws Exception
     {
         String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.TRUSTSTORE);
@@ -209,10 +236,11 @@ public class FileTrustStoreTest extends QpidTestCase
 
         TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
+        assertEquals("Unexpected number of trust managers", (long) 1, (long) trustManagers.length);
         assertNotNull("Trust manager unexpected null", trustManagers[0]);
     }
 
+    @Test
     public void testCreateTrustStoreFromDataUrl_WrongPassword() throws Exception
     {
         String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.TRUSTSTORE);
@@ -230,10 +258,12 @@ public class FileTrustStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Check trust store password"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Check trust store password"));
         }
     }
 
+    @Test
     public void testCreateTrustStoreFromDataUrl_BadTruststoreBytes() throws Exception
     {
         String trustStoreAsDataUrl = DataUrlUtils.getDataUrlForBytes("notatruststore".getBytes());
@@ -251,11 +281,12 @@ public class FileTrustStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Cannot instantiate trust store"));
-
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Cannot instantiate trust store"));
         }
     }
 
+    @Test
     public void testUpdateTrustStore_Success() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -265,7 +296,10 @@ public class FileTrustStoreTest extends QpidTestCase
 
         FileTrustStore<?> fileTrustStore = (FileTrustStore<?>) _factory.create(TrustStore.class, attributes,  _broker);
 
-        assertEquals("Unexpected path value before change", TestSSLConstants.TRUSTSTORE, fileTrustStore.getStoreUrl());
+        assertEquals("Unexpected path value before change",
+                            TestSSLConstants.TRUSTSTORE,
+                            fileTrustStore.getStoreUrl());
+
 
         try
         {
@@ -278,10 +312,13 @@ public class FileTrustStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Cannot instantiate trust store"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Cannot instantiate trust store"));
         }
 
-        assertEquals("Unexpected path value after failed change", TestSSLConstants.TRUSTSTORE, fileTrustStore.getStoreUrl());
+        assertEquals("Unexpected path value after failed change",
+                            TestSSLConstants.TRUSTSTORE,
+                            fileTrustStore.getStoreUrl());
 
         Map<String,Object> changedAttributes = new HashMap<>();
         changedAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
@@ -290,10 +327,11 @@ public class FileTrustStoreTest extends QpidTestCase
         fileTrustStore.setAttributes(changedAttributes);
 
         assertEquals("Unexpected path value after change that is expected to be successful",
-                     TestSSLConstants.BROKER_TRUSTSTORE,
-                     fileTrustStore.getStoreUrl());
+                            TestSSLConstants.BROKER_TRUSTSTORE,
+                            fileTrustStore.getStoreUrl());
     }
 
+    @Test
     public void testEmptyTrustStoreRejected()
     {
         final URL emptyKeystore = getClass().getResource(EMPTY_KEYSTORE_RESOURCE);
@@ -315,6 +353,7 @@ public class FileTrustStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testTrustStoreWithNoCertificateRejected()
     {
         final URL keystoreUrl = getClass().getResource(KEYSTORE_PK_ONLY_RESOURCE);
@@ -334,10 +373,12 @@ public class FileTrustStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("must contain at least one certificate"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("must contain at least one certificate"));
         }
     }
 
+    @Test
     public void testSymmetricKeyEntryIgnored() throws Exception
     {
         final URL keystoreUrl = getClass().getResource(SYMMETRIC_KEY_KEYSTORE_RESOURCE);
@@ -353,10 +394,11 @@ public class FileTrustStoreTest extends QpidTestCase
 
         Certificate[] certificates = trustStore.getCertificates();
         assertEquals("Unexpected number of certificates",
-                     getNumberOfCertificates(keystoreUrl, "PKCS12"),
-                     certificates.length);
+                            (long) getNumberOfCertificates(keystoreUrl, "PKCS12"),
+                            (long) certificates.length);
     }
 
+    @Test
     public void testPrivateKeyEntryIgnored() throws Exception
     {
         final URL keystoreUrl = getClass().getResource(KEYSTORE_RESOURCE);
@@ -371,8 +413,8 @@ public class FileTrustStoreTest extends QpidTestCase
 
         Certificate[] certificates = trustStore.getCertificates();
         assertEquals("Unexpected number of certificates",
-                     getNumberOfCertificates(keystoreUrl, "jks"),
-                     certificates.length);
+                            (long) getNumberOfCertificates(keystoreUrl, "jks"),
+                            (long) certificates.length);
     }
 
     private int getNumberOfCertificates(URL url, String type) throws Exception

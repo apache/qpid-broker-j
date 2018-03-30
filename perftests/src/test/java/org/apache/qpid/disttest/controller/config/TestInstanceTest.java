@@ -26,13 +26,31 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.controller.CommandForClient;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.NoOpCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class TestInstanceTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class TestInstanceTest extends UnitTestBase
 {
     private static final String CLIENT_NAME = "CLIENT_NAME";
     private static final int ITERATION_NUMBER = 0;
@@ -41,10 +59,9 @@ public class TestInstanceTest extends QpidTestCase
     private CreateProducerCommand _createProducerCommand;
     private CreateConsumerCommand _createConsumerCommand;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _noOpCommand = mock(NoOpCommand.class);
         _createProducerCommand = mock(CreateProducerCommand.class);
         when(_createProducerCommand.getMaximumDuration()).thenReturn(1l);
@@ -53,6 +70,7 @@ public class TestInstanceTest extends QpidTestCase
         when(_createConsumerCommand.getMaximumDuration()).thenReturn(1l);
     }
 
+    @Test
     public void testCreateCommandsWithIterationValues()
     {
         IterationValue iterationValue = mock(IterationValue.class);
@@ -62,22 +80,24 @@ public class TestInstanceTest extends QpidTestCase
         TestInstance testInstance = new TestInstance(config, ITERATION_NUMBER, iterationValue);
 
         List<CommandForClient> commandsForClients = testInstance.createCommands();
-        assertEquals("Unexpected number of commands for client", 3, commandsForClients.size());
+        assertEquals("Unexpected number of commands for client", (long) 3, (long) commandsForClients.size());
 
         verify(iterationValue).applyToCommand(_noOpCommand);
         verify(iterationValue).applyToCommand(_createProducerCommand);
         verify(iterationValue).applyToCommand(_createConsumerCommand);
     }
 
+    @Test
     public void testCreateCommandsWithoutIterationValues()
     {
         TestConfig config = createTestConfig();
         TestInstance testInstance = new TestInstance(config);
 
         List<CommandForClient> commandsForClients = testInstance.createCommands();
-        assertEquals("Unexpected number of commands for client", 3, commandsForClients.size());
+        assertEquals("Unexpected number of commands for client", (long) 3, (long) commandsForClients.size());
     }
 
+    @Test
     public void testGetConfiguredClientNames()
     {
         TestConfig testConfig = mock(TestConfig.class);
@@ -85,7 +105,7 @@ public class TestInstanceTest extends QpidTestCase
         TestInstance testInstance = new TestInstance(testConfig);
 
         List<String> clientNames = testInstance.getClientNames();
-        assertEquals(1, clientNames.size());
+        assertEquals((long) 1, (long) clientNames.size());
         assertEquals(CLIENT_NAME, clientNames.get(0));
     }
 

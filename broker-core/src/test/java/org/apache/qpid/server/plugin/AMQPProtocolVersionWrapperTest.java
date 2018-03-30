@@ -20,39 +20,46 @@
  */
 package org.apache.qpid.server.plugin;
 
-import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-public class AMQPProtocolVersionWrapperTest extends QpidTestCase
+import org.junit.Test;
+
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class AMQPProtocolVersionWrapperTest extends UnitTestBase
 {
+    @Test
     public void testAMQPProtocolVersionWrapper() throws Exception
     {
         final AMQPProtocolVersionWrapper wrapper0_8 = new AMQPProtocolVersionWrapper(Protocol.AMQP_0_8);
-        assertEquals(0 ,wrapper0_8.getMajor());
-        assertEquals(8 ,wrapper0_8.getMinor());
-        assertEquals(0 ,wrapper0_8.getPatch());
+        assertEquals((long) 0, (long) wrapper0_8.getMajor());
+        assertEquals((long) 8, (long) wrapper0_8.getMinor());
+        assertEquals((long) 0, (long) wrapper0_8.getPatch());
 
         final AMQPProtocolVersionWrapper wrapper0_9 = new AMQPProtocolVersionWrapper(Protocol.AMQP_0_9);
-        assertEquals(0 ,wrapper0_9.getMajor());
-        assertEquals(9 ,wrapper0_9.getMinor());
-        assertEquals(0 ,wrapper0_9.getPatch());
+        assertEquals((long) 0, (long) wrapper0_9.getMajor());
+        assertEquals((long) 9, (long) wrapper0_9.getMinor());
+        assertEquals((long) 0, (long) wrapper0_9.getPatch());
 
         final AMQPProtocolVersionWrapper wrapper0_9_1 = new AMQPProtocolVersionWrapper(Protocol.AMQP_0_9_1);
-        assertEquals(0 ,wrapper0_9_1.getMajor());
-        assertEquals(9 ,wrapper0_9_1.getMinor());
-        assertEquals(1 ,wrapper0_9_1.getPatch());
+        assertEquals((long) 0, (long) wrapper0_9_1.getMajor());
+        assertEquals((long) 9, (long) wrapper0_9_1.getMinor());
+        assertEquals((long) 1, (long) wrapper0_9_1.getPatch());
 
         final AMQPProtocolVersionWrapper wrapper0_10 = new AMQPProtocolVersionWrapper(Protocol.AMQP_0_10);
-        assertEquals(0 ,wrapper0_10.getMajor());
-        assertEquals(10 ,wrapper0_10.getMinor());
-        assertEquals(0 ,wrapper0_10.getPatch());
+        assertEquals((long) 0, (long) wrapper0_10.getMajor());
+        assertEquals((long) 10, (long) wrapper0_10.getMinor());
+        assertEquals((long) 0, (long) wrapper0_10.getPatch());
 
         final AMQPProtocolVersionWrapper wrapper1_0 = new AMQPProtocolVersionWrapper(Protocol.AMQP_1_0);
-        assertEquals(1 ,wrapper1_0.getMajor());
-        assertEquals(0 ,wrapper1_0.getMinor());
-        assertEquals(0 ,wrapper1_0.getPatch());
+        assertEquals((long) 1, (long) wrapper1_0.getMajor());
+        assertEquals((long) 0, (long) wrapper1_0.getMinor());
+        assertEquals((long) 0, (long) wrapper1_0.getPatch());
     }
 
+    @Test
     public void testAMQPProtocolVersionWrapperGetProtocol() throws Exception
     {
         for (final Protocol protocol : Protocol.values())
@@ -64,6 +71,7 @@ public class AMQPProtocolVersionWrapperTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testWrappingNonAMQPProtocol() throws Exception
     {
         try

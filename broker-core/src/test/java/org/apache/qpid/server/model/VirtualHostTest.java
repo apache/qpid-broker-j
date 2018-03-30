@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.model;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.argThat;
@@ -46,6 +51,9 @@ import java.util.UUID;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
@@ -74,9 +82,9 @@ import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class VirtualHostTest extends QpidTestCase
+public class VirtualHostTest extends UnitTestBase
 {
     private final AccessControl _mockAccessControl = BrokerTestHelper.createAccessControlMock();
     private Broker _broker;
@@ -87,10 +95,9 @@ public class VirtualHostTest extends QpidTestCase
     private StoreConfigurationChangeListener _storeConfigurationChangeListener;
     private PreferenceStore _preferenceStore;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _broker = BrokerTestHelper.createBrokerMock();
 
@@ -123,7 +130,7 @@ public class VirtualHostTest extends QpidTestCase
         when(_virtualHostNode.createPreferenceStore()).thenReturn(_preferenceStore);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -142,13 +149,13 @@ public class VirtualHostTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testNewVirtualHost()
     {
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
         QueueManagingVirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         assertNotNull("Unexpected id", virtualHost.getId());
@@ -158,9 +165,10 @@ public class VirtualHostTest extends QpidTestCase
         verify(_configStore).update(eq(true), matchesRecord(virtualHost.getId(), virtualHost.getType()));
     }
 
+    @Test
     public void testDeleteVirtualHost()
     {
-        VirtualHost<?> virtualHost = createVirtualHost(getName());
+        VirtualHost<?> virtualHost = createVirtualHost(getTestName());
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         virtualHost.delete();
@@ -170,9 +178,10 @@ public class VirtualHostTest extends QpidTestCase
         verify(_preferenceStore).onDelete();
     }
 
+    @Test
     public void testStopAndStartVirtualHost()
     {
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
 
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
@@ -189,9 +198,10 @@ public class VirtualHostTest extends QpidTestCase
         verify(_preferenceStore, times(2)).openAndLoad(any(PreferenceStoreUpdater.class));
     }
 
+    @Test
     public void testRestartingVirtualHostRecoversChildren()
     {
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
 
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
@@ -208,8 +218,13 @@ public class VirtualHostTest extends QpidTestCase
         Exchange exchange = virtualHost.createChild(Exchange.class, exchangeArgs);
         final ConfiguredObjectRecord exchangeCor = exchange.asObjectRecord();
 
-        assertEquals("Unexpected number of queues before stop", 1, virtualHost.getChildren(Queue.class).size());
-        assertEquals("Unexpected number of exchanges before stop", 5, virtualHost.getChildren(Exchange.class).size());
+        assertEquals("Unexpected number of queues before stop",
+                            (long) 1,
+                            (long) virtualHost.getChildren(Queue.class).size());
+
+        assertEquals("Unexpected number of exchanges before stop",
+                            (long) 5,
+                            (long) virtualHost.getChildren(Exchange.class).size());
 
         final List<ConfiguredObjectRecord> allObjects = new ArrayList<>();
         allObjects.add(virtualHostCor);
@@ -222,9 +237,12 @@ public class VirtualHostTest extends QpidTestCase
 
         ((AbstractConfiguredObject<?>)virtualHost).stop();
         assertEquals("Unexpected state", State.STOPPED, virtualHost.getState());
-        assertEquals("Unexpected number of queues after stop", 0, virtualHost.getChildren(Queue.class).size());
-        assertEquals("Unexpected number of exchanges after stop", 0, virtualHost.getChildren(Exchange.class).size());
-
+        assertEquals("Unexpected number of queues after stop",
+                            (long) 0,
+                            (long) virtualHost.getChildren(Queue.class).size());
+        assertEquals("Unexpected number of exchanges after stop",
+                            (long) 0,
+                            (long) virtualHost.getChildren(Exchange.class).size());
 
         // Setup an answer that will return the configured object records
         doAnswer(new Answer()
@@ -248,14 +266,19 @@ public class VirtualHostTest extends QpidTestCase
         ((AbstractConfiguredObject<?>)virtualHost).start();
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
-        assertEquals("Unexpected number of queues after restart", 1, virtualHost.getChildren(Queue.class).size());
-        assertEquals("Unexpected number of exchanges after restart", 5, virtualHost.getChildren(Exchange.class).size());
+        assertEquals("Unexpected number of queues after restart",
+                            (long) 1,
+                            (long) virtualHost.getChildren(Queue.class).size());
+        assertEquals("Unexpected number of exchanges after restart",
+                            (long) 5,
+                            (long) virtualHost.getChildren(Exchange.class).size());
     }
 
 
+    @Test
     public void testModifyDurableChildAfterRestartingVirtualHost()
     {
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
 
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         final ConfiguredObjectRecord virtualHostCor = virtualHost.asObjectRecord();
@@ -292,7 +315,7 @@ public class VirtualHostTest extends QpidTestCase
         ((AbstractConfiguredObject<?>)virtualHost).start();
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
         final Collection<Queue> queues = virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after restart", 1, queues.size());
+        assertEquals("Unexpected number of queues after restart", (long) 1, (long) queues.size());
 
         final Queue recoveredQueue = queues.iterator().next();
         recoveredQueue.setAttributes(Collections.singletonMap(ConfiguredObject.DESCRIPTION, "testDescription"));
@@ -302,65 +325,72 @@ public class VirtualHostTest extends QpidTestCase
     }
 
 
+    @Test
     public void testStopVirtualHost_ClosesConnections()
     {
-        String virtualHostName = getName();
-
-        QueueManagingVirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
-        assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
-
-        AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
-        assertEquals("Unexpected number of connections before connection registered", 0, virtualHost.getConnectionCount());
-
-        AMQPConnection modelConnection = mock(AMQPConnection.class);
-        when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
-        virtualHost.registerConnection(modelConnection, new NoopConnectionEstablishmentPolicy());
-
-        assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getConnectionCount());
-
-        ((AbstractConfiguredObject<?>)virtualHost).stop();
-        assertEquals("Unexpected state", State.STOPPED, virtualHost.getState());
-
-        assertEquals("Unexpected number of connections after virtualhost stopped",
-                     0,
-                     virtualHost.getConnectionCount());
-
-        verify(modelConnection).closeAsync();
-    }
-
-    public void testDeleteVirtualHost_ClosesConnections()
-    {
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
 
         QueueManagingVirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
         assertEquals("Unexpected number of connections before connection registered",
-                     0,
-                     virtualHost.getConnectionCount());
+                            (long) 0,
+                            virtualHost.getConnectionCount());
 
         AMQPConnection modelConnection = mock(AMQPConnection.class);
         when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         virtualHost.registerConnection(modelConnection, new NoopConnectionEstablishmentPolicy());
 
         assertEquals("Unexpected number of connections after connection registered",
-                     1,
-                     virtualHost.getConnectionCount());
+                            (long) 1,
+                            virtualHost.getConnectionCount());
+
+        ((AbstractConfiguredObject<?>)virtualHost).stop();
+        assertEquals("Unexpected state", State.STOPPED, virtualHost.getState());
+
+        assertEquals("Unexpected number of connections after virtualhost stopped",
+                            (long) 0,
+                            virtualHost.getConnectionCount());
+
+        verify(modelConnection).closeAsync();
+    }
+
+    @Test
+    public void testDeleteVirtualHost_ClosesConnections()
+    {
+        String virtualHostName = getTestName();
+
+        QueueManagingVirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
+        assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
+
+        AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
+        assertEquals("Unexpected number of connections before connection registered",
+                            (long) 0,
+                            virtualHost.getConnectionCount());
+
+        AMQPConnection modelConnection = mock(AMQPConnection.class);
+        when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
+        virtualHost.registerConnection(modelConnection, new NoopConnectionEstablishmentPolicy());
+
+        assertEquals("Unexpected number of connections after connection registered",
+                            (long) 1,
+                            virtualHost.getConnectionCount());
 
         virtualHost.delete();
         assertEquals("Unexpected state", State.DELETED, virtualHost.getState());
 
         assertEquals("Unexpected number of connections after virtualhost deleted",
-                0,
-                virtualHost.getConnectionCount());
+                            (long) 0,
+                            virtualHost.getConnectionCount());
 
         verify(modelConnection).closeAsync();
     }
 
+    @Test
     public void testCreateDurableQueue()
     {
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         String queueName = "myQueue";
@@ -375,9 +405,10 @@ public class VirtualHostTest extends QpidTestCase
         verify(_configStore).update(eq(true), matchesRecord(queue.getId(), queue.getType()));
     }
 
+    @Test
     public void testCreateNonDurableQueue()
     {
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         String queueName = "myQueue";
@@ -394,13 +425,15 @@ public class VirtualHostTest extends QpidTestCase
 
     // ***************  VH Access Control Tests  ***************
 
+    @Test
     public void testUpdateDeniedByACL()
     {
 
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         when(_mockAccessControl.authorise(eq(null), eq(Operation.UPDATE), eq(virtualHost), any(Map.class))).thenReturn(Result.DENIED);
+
 
         assertNull(virtualHost.getDescription());
 
@@ -417,9 +450,10 @@ public class VirtualHostTest extends QpidTestCase
         verify(_configStore, never()).update(eq(false), matchesRecord(virtualHost.getId(), virtualHost.getType()));
     }
 
+    @Test
     public void testStopDeniedByACL()
     {
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         when(_mockAccessControl.authorise(eq(null),
@@ -440,9 +474,10 @@ public class VirtualHostTest extends QpidTestCase
         verify(_configStore, never()).update(eq(false), matchesRecord(virtualHost.getId(), virtualHost.getType()));
     }
 
+    @Test
     public void testDeleteDeniedByACL()
     {
-        String virtualHostName = getName();
+        String virtualHostName = getTestName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         when(_mockAccessControl.authorise(eq(null),
@@ -463,6 +498,7 @@ public class VirtualHostTest extends QpidTestCase
         verify(_configStore, never()).remove(matchesRecord(virtualHost.getId(), virtualHost.getType()));
     }
 
+    @Test
     public void testExistingConnectionBlocking()
     {
         VirtualHost<?> host = createVirtualHost(getTestName());
@@ -472,11 +508,13 @@ public class VirtualHostTest extends QpidTestCase
         verify(connection).block();
     }
 
+    @Test
     public void testCreateValidation()
     {
         try
         {
-            createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "-1"));
+            createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS,
+                                                                      "-1"));
             fail("Exception not thrown for negative number of selectors");
         }
         catch (IllegalConfigurationException e)
@@ -503,6 +541,7 @@ public class VirtualHostTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testChangeValidation()
     {
         QueueManagingVirtualHost<?> virtualHost = createVirtualHost(getTestName());
@@ -536,30 +575,37 @@ public class VirtualHostTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testRegisterConnection()
     {
         QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
 
-        assertEquals("unexpected number of connections before test", 0, vhost.getConnectionCount());
+        assertEquals("unexpected number of connections before test", (long) 0, vhost.getConnectionCount());
         vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
-        assertEquals("unexpected number of connections after registerConnection", 1, vhost.getConnectionCount());
+        assertEquals("unexpected number of connections after registerConnection",
+                            (long) 1,
+                            vhost.getConnectionCount());
         assertEquals("unexpected connection object", Collections.singleton(connection), vhost.getConnections());
     }
 
+    @Test
     public void testStopVirtualhostClosesConnections()
     {
         QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
 
         vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
-        assertEquals("unexpected number of connections after registerConnection", 1, vhost.getConnectionCount());
+        assertEquals("unexpected number of connections after registerConnection",
+                            (long) 1,
+                            vhost.getConnectionCount());
         assertEquals("unexpected connection object", Collections.singleton(connection), vhost.getConnections());
         ((AbstractConfiguredObject<?>)vhost).stop();
         verify(connection).stopConnection();
         verify(connection).closeAsync();
     }
 
+    @Test
     public void testRegisterConnectionOnStoppedVirtualhost()
     {
         QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
@@ -575,12 +621,13 @@ public class VirtualHostTest extends QpidTestCase
         {
             // pass
         }
-        assertEquals("unexpected number of connections", 0, vhost.getConnectionCount());
+        assertEquals("unexpected number of connections", (long) 0, vhost.getConnectionCount());
         ((AbstractConfiguredObject<?>)vhost).start();
         vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
-        assertEquals("unexpected number of connections", 1, vhost.getConnectionCount());
+        assertEquals("unexpected number of connections", (long) 1, vhost.getConnectionCount());
     }
 
+    @Test
     public void testAddValidAutoCreationPolicies()
     {
         NodeAutoCreationPolicy[] policies = new NodeAutoCreationPolicy[] {
@@ -659,7 +706,9 @@ public class VirtualHostTest extends QpidTestCase
         vhost.setAttributes(newAttributes);
 
         List<NodeAutoCreationPolicy> retrievedPoliciesList = vhost.getNodeAutoCreationPolicies();
-        assertEquals("Retrieved node policies list has incorrect size", 2, retrievedPoliciesList.size());
+        assertEquals("Retrieved node policies list has incorrect size",
+                            (long) 2,
+                            (long) retrievedPoliciesList.size());
         NodeAutoCreationPolicy firstPolicy =  retrievedPoliciesList.get(0);
         NodeAutoCreationPolicy secondPolicy = retrievedPoliciesList.get(1);
         assertEquals("fooQ*", firstPolicy.getPattern());
@@ -668,6 +717,7 @@ public class VirtualHostTest extends QpidTestCase
         assertEquals(false, secondPolicy.isCreatedOnConsume());
     }
 
+    @Test
     public void testAddInvalidAutoCreationPolicies()
     {
         NodeAutoCreationPolicy[] policies = new NodeAutoCreationPolicy[] {

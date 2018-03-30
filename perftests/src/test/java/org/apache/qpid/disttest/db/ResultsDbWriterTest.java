@@ -40,14 +40,32 @@ import java.util.TimeZone;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.db.ResultsDbWriter.Clock;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.results.ResultsTestFixture;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-public class ResultsDbWriterTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ResultsDbWriterTest extends UnitTestBase
 {
     private static final long _dummyTimestamp = 1234;
 
@@ -55,17 +73,16 @@ public class ResultsDbWriterTest extends QpidTestCase
     private Clock _clock = mock(Clock.class);
     private ResultsTestFixture _resultsTestFixture = new ResultsTestFixture();
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _tempDbDirectory = createTestDirectory();
         when(_clock.currentTimeMillis()).thenReturn(_dummyTimestamp);
     }
 
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         try
         {
@@ -73,11 +90,11 @@ public class ResultsDbWriterTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
 
+    @Test
     public void testWriteResults() throws Exception
     {
         Context context = getContext();
@@ -93,6 +110,7 @@ public class ResultsDbWriterTest extends QpidTestCase
         assertResultsAreInDb(context, expectedResult, runId);
     }
 
+    @Test
     public void testDefaultRunId() throws Exception
     {
         TimeZone defaultTimeZone = TimeZone.getDefault();
@@ -102,10 +120,11 @@ public class ResultsDbWriterTest extends QpidTestCase
             TimeZone.setDefault(TimeZone.getTimeZone("GMT-05:00"));
             ResultsDbWriter resultsDbWriter = new ResultsDbWriter(getContext(), null, _clock);
             String runId = resultsDbWriter.getRunId();
-            assertEquals(
-                    "Default run id '" + runId + "' should correspond to dummy timestamp " + _clock.currentTimeMillis(),
-                    "run 1970-01-01 00:00:01.234",
-                    runId);
+            assertEquals("Default run id '" + runId + "' should correspond to dummy timestamp " + _clock.currentTimeMillis(),
+
+                                "run 1970-01-01 00:00:01.234",
+                                runId);
+
         }
         finally
         {
@@ -144,9 +163,11 @@ public class ResultsDbWriterTest extends QpidTestCase
         {
             rs.next();
             assertEquals(participantResult.getTestName(), rs.getString(TEST_NAME.getDisplayName()));
-            assertEquals(participantResult.getIterationNumber(), rs.getInt(ITERATION_NUMBER.getDisplayName()));
+            assertEquals((long) participantResult.getIterationNumber(),
+                                (long) rs.getInt(ITERATION_NUMBER.getDisplayName()));
+
             assertEquals(participantResult.getParticipantName(), rs.getString(PARTICIPANT_NAME.getDisplayName()));
-            assertEquals(participantResult.getThroughput(), rs.getDouble(THROUGHPUT.getDisplayName()));
+            assertEquals(participantResult.getThroughput(), (Object) rs.getDouble(THROUGHPUT.getDisplayName()));
             assertEquals(expectedRunId, rs.getString(ResultsDbWriter.RUN_ID));
             assertEquals(new Timestamp(_dummyTimestamp), rs.getTimestamp(ResultsDbWriter.INSERTED_TIMESTAMP));
         }

@@ -31,9 +31,25 @@ import javax.jms.Session;
 import org.apache.qpid.disttest.jms.ClientJmsDelegate;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ProducerParticipantTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ProducerParticipantTest extends UnitTestBase
 {
     public static final int MAXIMUM_DURATION = 1000;
     private ProducerParticipant _producer;
@@ -52,10 +68,9 @@ public class ProducerParticipantTest extends QpidTestCase
     /** used to check start/end time of results */
     private long _testStartTime;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _delegate = mock(ClientJmsDelegate.class);
 
         _command.setSessionName(SESSION_NAME1);
@@ -72,6 +87,7 @@ public class ProducerParticipantTest extends QpidTestCase
         _testStartTime = System.currentTimeMillis();
     }
 
+    @Test
     public void testSendMessagesForDuration() throws Exception
     {
         _producer.startDataCollection();
@@ -102,6 +118,7 @@ public class ProducerParticipantTest extends QpidTestCase
         verify(_delegate, atLeastOnce()).commitIfNecessary(SESSION_NAME1);
     }
 
+    @Test
     public void testReleaseResources()
     {
         _producer.releaseResources();

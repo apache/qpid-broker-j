@@ -21,10 +21,14 @@
 package org.apache.qpid.server.protocol.v1_0.framing;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -34,20 +38,20 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class FrameHandlerTest extends QpidTestCase
+public class FrameHandlerTest extends UnitTestBase
 {
     private static final int MAX_FRAME_SIZE = 4096;
     private ValueHandler _valueHandler;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _valueHandler = new ValueHandler(AMQPDescribedTypeRegistry.newInstance());
     }
 
+    @Test
     public void testSaslHeartbeat()
     {
         ConnectionHandler connectionHandler = mock(ConnectionHandler.class);
@@ -69,9 +73,11 @@ public class FrameHandlerTest extends QpidTestCase
         Error error = errorCaptor.getValue();
         assertNotNull(error);
         assertEquals(ConnectionError.FRAMING_ERROR, error.getCondition());
-        assertEquals("Empty (heartbeat) frames are not permitted during SASL negotiation", error.getDescription());
+        assertEquals("Empty (heartbeat) frames are not permitted during SASL negotiation",
+                            error.getDescription());
     }
 
+    @Test
     public void testOversizedFrame()
     {
         ConnectionHandler connectionHandler = mock(ConnectionHandler.class);
@@ -95,7 +101,7 @@ public class FrameHandlerTest extends QpidTestCase
         assertNotNull(error);
         assertEquals(ConnectionError.FRAMING_ERROR, error.getCondition());
         assertEquals(String.format("specified frame size %s larger than maximum frame header size %s",
-                                   body.capacity(),
-                                   MAX_FRAME_SIZE), error.getDescription());
+                                          body.capacity(),
+                                          MAX_FRAME_SIZE), error.getDescription());
     }
 }

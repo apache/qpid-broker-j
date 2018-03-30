@@ -19,6 +19,9 @@
 
 package org.apache.qpid.server.store.preferences;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -37,23 +40,25 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class JsonFilePreferenceStoreTest extends QpidTestCase
+public class JsonFilePreferenceStoreTest extends UnitTestBase
 {
     private File _storeFile;
     private ObjectMapper _objectMapper;
     private PreferenceStoreUpdater _updater;
     private JsonFilePreferenceStore _store;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _storeFile = new File(TMP_FOLDER, getTestName() + System.currentTimeMillis() + ".preferences.json");
         _store = new JsonFilePreferenceStore(_storeFile.getPath(), SystemConfig.DEFAULT_POSIX_FILE_PERMISSIONS);
         _objectMapper = new ObjectMapper();
@@ -61,8 +66,8 @@ public class JsonFilePreferenceStoreTest extends QpidTestCase
         when(_updater.getLatestVersion()).thenReturn(BrokerModel.MODEL_VERSION);
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         try
         {
@@ -71,10 +76,10 @@ public class JsonFilePreferenceStoreTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testOpenAndLoad() throws Exception
     {
         UUID prefId = UUID.randomUUID();
@@ -83,15 +88,18 @@ public class JsonFilePreferenceStoreTest extends QpidTestCase
 
         Collection<PreferenceRecord> records = _store.openAndLoad(_updater);
 
-        assertEquals("Unexpected size of stored preferences", 1, records.size());
+        assertEquals("Unexpected size of stored preferences", (long) 1, (long) records.size());
 
         PreferenceRecord storeRecord = records.iterator().next();
         assertEquals("Unexpected stored preference id", prefId, storeRecord.getId());
-        assertEquals("Unexpected stored preference attributes", attributes, new HashMap<>(storeRecord.getAttributes()));
+        assertEquals("Unexpected stored preference attributes",
+                            attributes,
+                            new HashMap<>(storeRecord.getAttributes()));
 
         verify(_updater, never()).updatePreferences(anyString(), anyCollection());
     }
 
+    @Test
     public void testUpdateOrCreate() throws Exception
     {
         final UUID id = UUID.randomUUID();
@@ -105,6 +113,7 @@ public class JsonFilePreferenceStoreTest extends QpidTestCase
         assertSinglePreferenceRecordInStore(id, attributes);
     }
 
+    @Test
     public void testReplace() throws Exception
     {
         UUID prefId = UUID.randomUUID();
@@ -122,6 +131,7 @@ public class JsonFilePreferenceStoreTest extends QpidTestCase
         assertSinglePreferenceRecordInStore(newPrefId, newAttributes);
     }
 
+    @Test
     public void testReplaceToDelete() throws Exception
     {
         UUID prefId = UUID.randomUUID();
@@ -134,6 +144,7 @@ public class JsonFilePreferenceStoreTest extends QpidTestCase
         assertStoreVersionAndSizeAndGetData(0);
     }
 
+    @Test
     public void testUpdateFailIfNotOpened() throws Exception
     {
         try
@@ -147,6 +158,7 @@ public class JsonFilePreferenceStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testReplaceFailIfNotOpened() throws Exception
     {
         try
@@ -194,7 +206,7 @@ public class JsonFilePreferenceStoreTest extends QpidTestCase
         assertEquals("Unexpected stored version", BrokerModel.MODEL_VERSION, storedData.get("version"));
         Collection preferences = (Collection) storedData.get("preferences");
 
-        assertEquals("Unexpected size of preference records", expectedSize, preferences.size());
+        assertEquals("Unexpected size of preference records", (long) expectedSize, (long) preferences.size());
         return preferences;
     }
 }

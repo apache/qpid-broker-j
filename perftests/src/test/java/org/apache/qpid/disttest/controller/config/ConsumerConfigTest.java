@@ -19,17 +19,37 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
-import org.apache.qpid.disttest.message.CreateConsumerCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class ConsumerConfigTest extends QpidTestCase
+import org.apache.qpid.disttest.message.CreateConsumerCommand;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ConsumerConfigTest extends UnitTestBase
 {
+    @Test
     public void testConsumerHasZeroArgConstructorForGson()
     {
         ConsumerConfig c = new ConsumerConfig();
         assertNotNull(c);
     }
 
+    @Test
     public void testCreateConsumerCommand()
     {
         boolean isTopic = true;
@@ -64,7 +84,7 @@ public class ConsumerConfigTest extends QpidTestCase
         assertEquals(consumerName, createConsumerCommand.getParticipantName());
         assertEquals(destinationName, createConsumerCommand.getDestinationName());
         assertEquals(numberOfMessages, createConsumerCommand.getNumberOfMessages());
-        assertEquals(batchSize, createConsumerCommand.getBatchSize());
+        assertEquals((long) batchSize, (long) createConsumerCommand.getBatchSize());
         assertEquals(maximumDuration, createConsumerCommand.getMaximumDuration());
 
         assertEquals(isTopic, createConsumerCommand.isTopic());

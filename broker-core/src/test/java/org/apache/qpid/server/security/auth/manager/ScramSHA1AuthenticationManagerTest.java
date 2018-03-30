@@ -20,17 +20,15 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
+import static org.junit.Assert.fail;
+
 import java.util.Collections;
 import java.util.Map;
 
+import org.junit.Test;
+
 public class ScramSHA1AuthenticationManagerTest extends ManagedAuthenticationManagerTestBase
 {
-    @Override
-    public void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
     @Override
     protected ConfigModelPasswordManagingAuthenticationProvider<?> createAuthManager(final Map<String, Object> attributesMap)
     {
@@ -43,13 +41,7 @@ public class ScramSHA1AuthenticationManagerTest extends ManagedAuthenticationMan
         return false;
     }
 
-    @Override
-    public void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
-
+    @Test
     public void testNonASCIIUser()
     {
         try

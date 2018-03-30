@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -41,9 +47,9 @@ import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class BrokerRecovererTest extends QpidTestCase
+public class BrokerRecovererTest extends UnitTestBase
 {
     private ConfiguredObjectRecord _brokerEntry = mock(ConfiguredObjectRecord.class);
 
@@ -53,10 +59,9 @@ public class BrokerRecovererTest extends QpidTestCase
     private SystemConfig<?> _systemConfig;
     private TaskExecutor _taskExecutor;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
@@ -74,7 +79,7 @@ public class BrokerRecovererTest extends QpidTestCase
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());
         Map<String, Object> attributesMap = new HashMap<String, Object>();
         attributesMap.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-        attributesMap.put(Broker.NAME, getName());
+        attributesMap.put(Broker.NAME, getTestName());
 
         when(_brokerEntry.getAttributes()).thenReturn(attributesMap);
         when(_brokerEntry.getParents()).thenReturn(Collections.singletonMap(SystemConfig.class.getSimpleName(), _systemConfig
@@ -86,12 +91,11 @@ public class BrokerRecovererTest extends QpidTestCase
         when(_authenticationProvider1.getId()).thenReturn(_authenticationProvider1Id);
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         try
         {
-            super.tearDown();
         }
         finally
         {
@@ -99,10 +103,11 @@ public class BrokerRecovererTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreateBrokerAttributes()
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Broker.NAME, getName());
+        attributes.put(Broker.NAME, getTestName());
         attributes.put(Broker.STATISTICS_REPORTING_PERIOD, 4000);
         attributes.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
 
@@ -127,7 +132,10 @@ public class BrokerRecovererTest extends QpidTestCase
         for (Map.Entry<String, Object> attribute : attributes.entrySet())
         {
             Object attributeValue = broker.getAttribute(attribute.getKey());
-            assertEquals("Unexpected value of attribute '" + attribute.getKey() + "'", attribute.getValue(), attributeValue);
+            assertEquals("Unexpected value of attribute '" + attribute.getKey() + "'",
+                                attribute.getValue(),
+                                attributeValue);
+
         }
     }
 
@@ -166,6 +174,7 @@ public class BrokerRecovererTest extends QpidTestCase
     }
 
 
+    @Test
     public void testCreateBrokerWithPorts()
     {
         UUID authProviderId = UUID.randomUUID();
@@ -177,13 +186,13 @@ public class BrokerRecovererTest extends QpidTestCase
                 "authProvider"));
         Broker<?> broker = _systemConfig.getContainer(Broker.class);
 
-
         assertNotNull(broker);
         broker.open();
         assertEquals(_brokerId, broker.getId());
-        assertEquals(1, broker.getPorts().size());
+        assertEquals((long) 1, (long) broker.getPorts().size());
     }
 
+    @Test
     public void testCreateBrokerWithOneAuthenticationProvider()
     {
         UUID authProviderId = UUID.randomUUID();
@@ -191,14 +200,13 @@ public class BrokerRecovererTest extends QpidTestCase
         resolveObjects(_brokerEntry, createAuthProviderRecord(authProviderId, "authProvider"));
         Broker<?> broker = _systemConfig.getContainer(Broker.class);
 
-
         assertNotNull(broker);
         broker.open();
         assertEquals(_brokerId, broker.getId());
-        assertEquals(1, broker.getAuthenticationProviders().size());
-
+        assertEquals((long) 1, (long) broker.getAuthenticationProviders().size());
     }
 
+    @Test
     public void testCreateBrokerWithMultipleAuthenticationProvidersAndPorts()
     {
         UUID authProviderId = UUID.randomUUID();
@@ -213,16 +221,18 @@ public class BrokerRecovererTest extends QpidTestCase
                                       createPortRecord(port2Id, 5673, "authProvider2"));
         Broker<?> broker = _systemConfig.getContainer(Broker.class);
 
-
         assertNotNull(broker);
         broker.open();
         assertEquals(_brokerId, broker.getId());
-        assertEquals(2, broker.getPorts().size());
+        assertEquals((long) 2, (long) broker.getPorts().size());
 
-        assertEquals("Unexpected number of authentication providers", 2, broker.getAuthenticationProviders().size());
+        assertEquals("Unexpected number of authentication providers",
+                            (long) 2,
+                            (long) broker.getAuthenticationProviders().size());
 
     }
 
+    @Test
     public void testCreateBrokerWithGroupProvider()
     {
 
@@ -231,14 +241,13 @@ public class BrokerRecovererTest extends QpidTestCase
         resolveObjects(_brokerEntry, createGroupProviderRecord(authProviderId, "groupProvider"));
         Broker<?> broker = _systemConfig.getContainer(Broker.class);
 
-
         assertNotNull(broker);
         broker.open();
         assertEquals(_brokerId, broker.getId());
-        assertEquals(1, broker.getGroupProviders().size());
-
+        assertEquals((long) 1, (long) broker.getGroupProviders().size());
     }
 
+    @Test
     public void testModelVersionValidationForIncompatibleMajorVersion() throws Exception
     {
         Map<String, Object> brokerAttributes = new HashMap<String, Object>();
@@ -248,7 +257,7 @@ public class BrokerRecovererTest extends QpidTestCase
             // need to reset all the shared objects for every iteration of the test
             setUp();
             brokerAttributes.put(Broker.MODEL_VERSION, incompatibleVersion);
-            brokerAttributes.put(Broker.NAME, getName());
+            brokerAttributes.put(Broker.NAME, getTestName());
             when(_brokerEntry.getAttributes()).thenReturn(brokerAttributes);
 
             resolveObjects(_brokerEntry);
@@ -259,12 +268,13 @@ public class BrokerRecovererTest extends QpidTestCase
     }
 
 
+    @Test
     public void testModelVersionValidationForIncompatibleMinorVersion() throws Exception
     {
         Map<String, Object> brokerAttributes = new HashMap<String, Object>();
         String incompatibleVersion = BrokerModel.MODEL_MAJOR_VERSION + "." + Integer.MAX_VALUE;
         brokerAttributes.put(Broker.MODEL_VERSION, incompatibleVersion);
-        brokerAttributes.put(Broker.NAME, getName());
+        brokerAttributes.put(Broker.NAME, getTestName());
 
         when(_brokerEntry.getAttributes()).thenReturn(brokerAttributes);
 
@@ -276,10 +286,11 @@ public class BrokerRecovererTest extends QpidTestCase
         assertEquals("Unexpected broker state", State.ERRORED, broker.getState());
     }
 
+    @Test
     public void testIncorrectModelVersion() throws Exception
     {
         Map<String, Object> brokerAttributes = new HashMap<String, Object>();
-        brokerAttributes.put(Broker.NAME, getName());
+        brokerAttributes.put(Broker.NAME, getTestName());
 
         String[] versions = { Integer.MAX_VALUE + "_" + 0, "", null };
         for (String modelVersion : versions)

@@ -21,6 +21,9 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -40,6 +43,9 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -78,9 +84,9 @@ import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class Session_1_0Test extends QpidTestCase
+public class Session_1_0Test extends UnitTestBase
 {
     private static final AMQPDescribedTypeRegistry DESCRIBED_TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
                                                                                                       .registerTransportLayer()
@@ -100,27 +106,26 @@ public class Session_1_0Test extends QpidTestCase
     private int _handle;
     private CurrentThreadTaskExecutor _taskExecutor;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         Map<String, Object> virtualHostAttributes = new HashMap<>();
         virtualHostAttributes.put(QueueManagingVirtualHost.NAME, "testVH");
         virtualHostAttributes.put(QueueManagingVirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-        _virtualHost = BrokerTestHelper.createVirtualHost(virtualHostAttributes);
+        _virtualHost = BrokerTestHelper.createVirtualHost(virtualHostAttributes, this);
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         _connection = createAmqpConnection_1_0("testContainerId");
         this._session = createSession_1_0(_connection, 0);
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         _taskExecutor.stop();
-        super.tearDown();
     }
 
+    @Test
     public void testReceiveAttachTopicNonDurableNoContainer() throws Exception
     {
         final String linkName = "testLink";
@@ -133,6 +138,7 @@ public class Session_1_0Test extends QpidTestCase
         assertQueues(TOPIC_NAME, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
     }
 
+    @Test
     public void testReceiveAttachTopicNonDurableWithContainer() throws Exception
     {
         final String linkName = "testLink";
@@ -145,6 +151,7 @@ public class Session_1_0Test extends QpidTestCase
         assertQueues(TOPIC_NAME, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
     }
 
+    @Test
     public void testReceiveAttachTopicDurableNoContainer() throws Exception
     {
         final String linkName = "testLink";
@@ -157,6 +164,7 @@ public class Session_1_0Test extends QpidTestCase
         assertQueues(TOPIC_NAME, LifetimePolicy.PERMANENT);
     }
 
+    @Test
     public void testReceiveAttachTopicDurableWithContainer() throws Exception
     {
         final String linkName = "testLink";
@@ -175,9 +183,15 @@ public class Session_1_0Test extends QpidTestCase
 
         assertAttachSent(secondConnection, secondSession, attach2);
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after second subscription with the same subscription name but different container id ", 2, queues.size());
+        assertEquals(
+                "Unexpected number of queues after second subscription with the same subscription name but different "
+                + "container id ",
+                (long) 2,
+                (long) queues.size());
+
     }
 
+    @Test
     public void testReceiveAttachSharedTopicNonDurableNoContainer() throws Exception
     {
         final String linkName = "testLink";
@@ -199,13 +213,14 @@ public class Session_1_0Test extends QpidTestCase
         assertQueues(TOPIC_NAME, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
 
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", 1, queues.size());
+        assertEquals("Unexpected number of queues after attach", (long) 1, (long) queues.size());
         Queue<?> queue = queues.iterator().next();
 
         Collection<QueueConsumer<?,?>> consumers = queue.getConsumers();
-        assertEquals("Unexpected number of consumers", 2, consumers.size());
+        assertEquals("Unexpected number of consumers", (long) 2, (long) consumers.size());
     }
 
+    @Test
     public void testReceiveAttachSharedTopicNonDurableWithContainer() throws Exception
     {
         final String linkName = "testLink";
@@ -226,15 +241,18 @@ public class Session_1_0Test extends QpidTestCase
         assertAttachSent(secondConnection, secondSession, attach2);
 
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", 2, queues.size());
+        assertEquals("Unexpected number of queues after attach", (long) 2, (long) queues.size());
 
         for (Queue<?> queue : queues)
         {
             Collection<QueueConsumer<?,?>> consumers = queue.getConsumers();
-            assertEquals("Unexpected number of consumers on queue " + queue.getName(),  1, consumers.size());
+            assertEquals("Unexpected number of consumers on queue " + queue.getName(),
+                                (long) 1,
+                                (long) consumers.size());
         }
     }
 
+    @Test
     public void testSeparateSubscriptionNameSpaces() throws Exception
     {
         AMQPConnection_1_0 secondConnection = createAmqpConnection_1_0();
@@ -248,52 +266,65 @@ public class Session_1_0Test extends QpidTestCase
         assertAttachSent(_connection, _session, durableSharedWithContainerId, 0);
 
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId", 1, queues.size());
+        assertEquals("Unexpected number of queues after durable non shared with containerId", (long) 1, (long)
+                queues.size());
 
         Attach durableNonSharedWithContainerId = createTopicAttach(true, linkName, address, false);
         _session.receiveAttach(durableNonSharedWithContainerId);
         assertAttachFailed(_connection, _session, durableNonSharedWithContainerId, 1);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId", 1, queues.size());
+        assertEquals("Unexpected number of queues after durable non shared with containerId",
+                            (long) 1,
+                            (long) queues.size());
 
         Attach nonDurableSharedWithContainerId = createSharedTopicAttach(false, linkName + "|3", address, false);
         _session.receiveAttach(nonDurableSharedWithContainerId);
         assertAttachSent(_connection, _session, nonDurableSharedWithContainerId, 3);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId", 2, queues.size());
+        assertEquals("Unexpected number of queues after durable non shared with containerId",
+                            (long) 2,
+                            (long) queues.size());
 
         Attach durableSharedWithoutContainerId = createSharedTopicAttach(true, linkName + "|4", address, true);
         secondSession.receiveAttach(durableSharedWithoutContainerId);
         assertAttachSent(secondConnection, secondSession, durableSharedWithoutContainerId, 0);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId", 3, queues.size());
+        assertEquals("Unexpected number of queues after durable non shared with containerId",
+                            (long) 3,
+                            (long) queues.size());
 
         Attach nonDurableSharedWithoutContainerId = createSharedTopicAttach(false, linkName + "|5", address, true);
         secondSession.receiveAttach(nonDurableSharedWithoutContainerId);
         assertAttachSent(secondConnection, secondSession, nonDurableSharedWithoutContainerId, 1);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId", 4, queues.size());
+        assertEquals("Unexpected number of queues after durable non shared with containerId",
+                            (long) 4,
+                            (long) queues.size());
 
         Attach nonDurableNonSharedWithoutContainerId = createTopicAttach(false, linkName + "|6", address, true);
         secondSession.receiveAttach(nonDurableNonSharedWithoutContainerId);
         assertAttachSent(secondConnection, secondSession, nonDurableNonSharedWithoutContainerId, 2);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId", 5, queues.size());
+        assertEquals("Unexpected number of queues after durable non shared with containerId",
+                            (long) 5,
+                            (long) queues.size());
 
         Attach nonDurableNonSharedWithContainerId = createTopicAttach(false, linkName + "|6", address, false);
         _session.receiveAttach(nonDurableNonSharedWithContainerId);
         assertAttachSent(_connection, _session, nonDurableNonSharedWithContainerId, 4);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId", 6, queues.size());
-
+        assertEquals("Unexpected number of queues after durable non shared with containerId",
+                            (long) 6,
+                            (long) queues.size());
     }
 
+    @Test
     public void testReceiveAttachForInvalidUnsubscribe() throws Exception
     {
         final String linkName = "testLink";
@@ -306,9 +337,10 @@ public class Session_1_0Test extends QpidTestCase
         assertAttachFailed(_connection, _session, unsubscribeAttach);
 
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after unsubscribe", 0, queues.size());
+        assertEquals("Unexpected number of queues after unsubscribe", (long) 0, (long) queues.size());
     }
 
+    @Test
     public void testNullSourceLookup() throws Exception
     {
         final String linkName = "testLink";
@@ -335,12 +367,15 @@ public class Session_1_0Test extends QpidTestCase
         assertNotNull("Unexpected source", sentAttach.getSource());
         Source source = (Source)sentAttach.getSource();
         assertEquals("Unexpected address", address, source.getAddress());
-        assertTrue("Unexpected source capabilities", Arrays.asList(source.getCapabilities()).contains(Symbol.valueOf("topic")));
+        assertTrue("Unexpected source capabilities",
+                          Arrays.asList(source.getCapabilities()).contains(Symbol.valueOf("topic")));
+
 
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after unsubscribe", 1, queues.size());
+        assertEquals("Unexpected number of queues after unsubscribe", (long) 1, (long) queues.size());
     }
 
+    @Test
     public void testReceiveDetachClosed() throws Exception
     {
         final String linkName = "testLink";
@@ -355,9 +390,10 @@ public class Session_1_0Test extends QpidTestCase
         sendDetach(_session, attach.getHandle(), true);
 
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after unsubscribe", 0, queues.size());
+        assertEquals("Unexpected number of queues after unsubscribe", (long) 0, (long) queues.size());
     }
 
+    @Test
     public void testReceiveAttachToExistingQueue() throws Exception
     {
         final String linkName = "testLink";
@@ -372,6 +408,7 @@ public class Session_1_0Test extends QpidTestCase
         assertAttachActions(queue, attach);
     }
 
+    @Test
     public void testReceiveAttachToNonExistingQueue() throws Exception
     {
         final String linkName = "testLink";
@@ -380,6 +417,7 @@ public class Session_1_0Test extends QpidTestCase
         assertAttachFailed(_connection, _session, attach);
     }
 
+    @Test
     public void testReceiveAttachRebindingQueueNoActiveLinks()
     {
         final String linkName = "testLink";
@@ -394,7 +432,8 @@ public class Session_1_0Test extends QpidTestCase
 
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
         verify(_connection, times(2)).sendFrame(eq(_session.getChannelId()), frameCapture.capture());
-        assertTrue(frameCapture.getAllValues().get(1) instanceof Detach);
+        final boolean condition = frameCapture.getAllValues().get(1) instanceof Detach;
+        assertTrue(condition);
 
         assertQueues(TOPIC_NAME, LifetimePolicy.PERMANENT);
 
@@ -408,6 +447,7 @@ public class Session_1_0Test extends QpidTestCase
         assertQueues(topicName2, LifetimePolicy.PERMANENT);
     }
 
+    @Test
     public void testReceiveReattachRebindingQueueNoActiveLinks()
     {
         final String linkName = "testLink";
@@ -422,7 +462,8 @@ public class Session_1_0Test extends QpidTestCase
 
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
         verify(_connection, times(2)).sendFrame(eq(_session.getChannelId()), frameCapture.capture());
-        assertTrue(frameCapture.getAllValues().get(1) instanceof Detach);
+        final boolean condition = frameCapture.getAllValues().get(1) instanceof Detach;
+        assertTrue(condition);
 
         assertQueues(TOPIC_NAME, LifetimePolicy.PERMANENT);
 
@@ -436,6 +477,7 @@ public class Session_1_0Test extends QpidTestCase
         assertQueues(topicName2, LifetimePolicy.PERMANENT);
     }
 
+    @Test
     public void testReceiveAttachTopicNonDurableNoContainerWithInvalidSelector() throws Exception
     {
         final String linkName = "testLink";
@@ -447,9 +489,10 @@ public class Session_1_0Test extends QpidTestCase
 
         assertAttachFailed(_connection, _session, attach);
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", 0, queues.size());
+        assertEquals("Unexpected number of queues after attach", (long) 0, (long) queues.size());
     }
 
+    @Test
     public void testReceiveAttachTopicNonDurableNoContainerWithValidSelector() throws Exception
     {
         final String linkName = "testLink";
@@ -472,9 +515,12 @@ public class Session_1_0Test extends QpidTestCase
         assertNotNull("Binding is not found", binding);
         Map<String,Object> arguments = binding.getArguments();
         assertNotNull("Unexpected arguments", arguments);
-        assertEquals("Unexpected filter on binding", selectorExpression, arguments.get(AMQPFilterTypes.JMS_SELECTOR.toString()));
+        assertEquals("Unexpected filter on binding",
+                            selectorExpression,
+                            arguments.get(AMQPFilterTypes.JMS_SELECTOR.toString()));
     }
 
+    @Test
     public void testLinkStealing()
     {
         _virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, QUEUE_NAME));
@@ -501,11 +547,14 @@ public class Session_1_0Test extends QpidTestCase
         Source source = (Source)sentAttach.getSource();
         Map<Symbol, Filter> filter = source.getFilter();
         assertNotNull("Filter is not set in response", filter);
-        assertEquals("Unexpected filter size", 1, filter.size());
+        assertEquals("Unexpected filter size", (long) 1, (long) filter.size());
         assertTrue("Selector is not found", filter.containsKey(JMS_SELECTOR_FILTER));
         Filter jmsSelectorFilter = filter.get(JMS_SELECTOR_FILTER);
-        assertTrue("Unexpected selector filter", jmsSelectorFilter instanceof JMSSelectorFilter);
-        assertEquals("Unexpected selector", selectorExpression, ((JMSSelectorFilter) jmsSelectorFilter).getValue());
+        final boolean condition = jmsSelectorFilter instanceof JMSSelectorFilter;
+        assertTrue("Unexpected selector filter", condition);
+        assertEquals("Unexpected selector",
+                            selectorExpression,
+                            ((JMSSelectorFilter) jmsSelectorFilter).getValue());
     }
 
     private Binding findBinding(final String exchangeName, final String bindingName)
@@ -535,7 +584,7 @@ public class Session_1_0Test extends QpidTestCase
     private void assertAttachActions(final Queue<?> queue, final Attach receivedAttach)
     {
         Collection<QueueConsumer<?,?>> consumers = queue.getConsumers();
-        assertEquals("Unexpected consumers size", 1, consumers.size());
+        assertEquals("Unexpected consumers size", (long) 1, (long) consumers.size());
 
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
         verify(_connection).sendFrame(eq(_session.getChannelId()), frameCapture.capture());
@@ -549,7 +598,9 @@ public class Session_1_0Test extends QpidTestCase
         assertEquals("Unexpected source address", receivedSource.getAddress(), sentSource.getAddress());
         assertArrayEquals("Unexpected source capabilities", receivedSource.getCapabilities(), sentSource.getCapabilities());
         assertEquals("Unexpected source durability", receivedSource.getDurable(), sentSource.getDurable());
-        assertEquals("Unexpected source expiry policy", receivedSource.getExpiryPolicy(), sentSource.getExpiryPolicy());
+        assertEquals("Unexpected source expiry policy",
+                            receivedSource.getExpiryPolicy(),
+                            sentSource.getExpiryPolicy());
         assertEquals("Unexpected source dynamic flag", receivedSource.getDynamic(), sentSource.getDynamic());
 
         Target receivedTarget = (Target) receivedAttach.getTarget();
@@ -557,11 +608,13 @@ public class Session_1_0Test extends QpidTestCase
         assertEquals("Unexpected target address", receivedTarget.getAddress(), sentTarget.getAddress());
         assertArrayEquals("Unexpected target capabilities", receivedTarget.getCapabilities(), sentTarget.getCapabilities());
         assertEquals("Unexpected target durability", receivedTarget.getDurable(), sentTarget.getDurable());
-        assertEquals("Unexpected target expiry policy", receivedTarget.getExpiryPolicy(), sentTarget.getExpiryPolicy());
+        assertEquals("Unexpected target expiry policy",
+                            receivedTarget.getExpiryPolicy(),
+                            sentTarget.getExpiryPolicy());
         assertEquals("Unexpected target dynamic flag", receivedTarget.getDynamic(), sentTarget.getDynamic());
 
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", 1, queues.size());
+        assertEquals("Unexpected number of queues after attach", (long) 1, (long) queues.size());
     }
 
     private void assertDetachSent(final AMQPConnection_1_0 connection,
@@ -573,10 +626,13 @@ public class Session_1_0Test extends QpidTestCase
         verify(connection, times(invocationOffset + 1)).sendFrame(eq(session.getChannelId()), frameCapture.capture());
         List<FrameBody> sentFrames = frameCapture.getAllValues();
 
-        assertTrue("unexpected Frame sent", sentFrames.get(invocationOffset) instanceof Detach);
+        final boolean condition = sentFrames.get(invocationOffset) instanceof Detach;
+        assertTrue("unexpected Frame sent", condition);
         Detach sentDetach = (Detach) sentFrames.get(invocationOffset);
         assertTrue("Unexpected closed state", sentDetach.getClosed());
-        assertEquals("Closed with unexpected error condition", expectedError, sentDetach.getError().getCondition());
+        assertEquals("Closed with unexpected error condition",
+                            expectedError,
+                            sentDetach.getError().getCondition());
     }
 
     private void assertAttachSent(final AMQPConnection_1_0 connection,
@@ -610,14 +666,15 @@ public class Session_1_0Test extends QpidTestCase
     private void assertQueues(final String publishingLinkName, final LifetimePolicy expectedLifetimePolicy)
     {
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", 1, queues.size());
+        assertEquals("Unexpected number of queues after attach", (long) 1, (long) queues.size());
         Queue<?> queue = queues.iterator().next();
-        assertEquals("Unexpected queue durability",
-                     expectedLifetimePolicy, queue.getLifetimePolicy());
+        assertEquals("Unexpected queue durability", expectedLifetimePolicy, queue.getLifetimePolicy());
 
         Collection<PublishingLink> queuePublishingLinks = queue.getPublishingLinks();
-        assertEquals("Unexpected number of publishing links", 1, queuePublishingLinks.size());
-        assertEquals("Unexpected link name", publishingLinkName, queuePublishingLinks.iterator().next().getName());
+        assertEquals("Unexpected number of publishing links", (long) 1, (long) queuePublishingLinks.size());
+        assertEquals("Unexpected link name",
+                            publishingLinkName,
+                            queuePublishingLinks.iterator().next().getName());
 
         Exchange<?> exchange = _virtualHost.getChildByName(Exchange.class, "amq.direct");
         assertTrue("Binding should exist", exchange.hasBinding(publishingLinkName, queue));
@@ -629,13 +686,15 @@ public class Session_1_0Test extends QpidTestCase
         verify(connection, times(invocationOffset + 2)).sendFrame(eq(session.getChannelId()), frameCapture.capture());
         List<FrameBody> sentFrames = frameCapture.getAllValues();
 
-        assertTrue("unexpected Frame sent", sentFrames.get(invocationOffset) instanceof Attach);
+        final boolean condition1 = sentFrames.get(invocationOffset) instanceof Attach;
+        assertTrue("unexpected Frame sent", condition1);
         Attach sentAttach = (Attach) sentFrames.get(invocationOffset);
         assertEquals("Unexpected name", attach.getName(), sentAttach.getName());
         assertEquals("Unexpected role", Role.SENDER, sentAttach.getRole());
         assertEquals("Unexpected source", null, sentAttach.getSource());
 
-        assertTrue("unexpected Frame sent", sentFrames.get(invocationOffset + 1) instanceof Detach);
+        final boolean condition = sentFrames.get(invocationOffset + 1) instanceof Detach;
+        assertTrue("unexpected Frame sent", condition);
         Detach sentDetach = (Detach) sentFrames.get(invocationOffset + 1);
         assertTrue("Unexpected closed state", sentDetach.getClosed());
     }

@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.virtualhostalias;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,8 +34,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PatternMatchingAlias;
@@ -40,20 +49,18 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class VirtualHostAliasTest extends QpidTestCase
+public class VirtualHostAliasTest extends UnitTestBase
 {
 
     private final Map<String, VirtualHost<?>> _vhosts = new HashMap<>();
     private Broker<?> _broker;
     private AmqpPort _port;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _broker = BrokerTestHelper.createBrokerMock();
 
         AuthenticationProvider dummyAuthProvider = mock(AuthenticationProvider.class);
@@ -64,7 +71,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         for(String name : new String[] { "red", "blue", "purple", "black" })
         {
             boolean defaultVHN = "black".equals(name);
-            VirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(name, _broker, defaultVHN);
+            VirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(name, _broker, defaultVHN, this);
             VirtualHostNode vhn = (VirtualHostNode) virtualHost.getParent();
             assertNotSame(vhn.getName(), virtualHost.getName());
             _vhosts.put(name, virtualHost);
@@ -85,17 +92,17 @@ public class VirtualHostAliasTest extends QpidTestCase
 
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         _port.close();
         for (VirtualHost vhost : _vhosts.values())
         {
             vhost.close();
         }
-        super.tearDown();
     }
 
+    @Test
     public void testDefaultAliases_VirtualHostNameAlias()
     {
         NamedAddressSpace addressSpace = _port.getAddressSpace("red");
@@ -113,6 +120,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         assertNull(addressSpace);
     }
 
+    @Test
     public void testDefaultAliases_DefaultVirtualHostAlias()
     {
 
@@ -123,6 +131,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         assertEquals(_vhosts.get("black"), addressSpace);
     }
 
+    @Test
     public void testDefaultAliases_HostNameAlias()
     {
         // 127.0.0.1 should always resolve and thus return the default vhost
@@ -132,6 +141,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         assertEquals(_vhosts.get("black"), addressSpace);
     }
 
+    @Test
     public void testPatternMatching()
     {
         final Map<String, Object> attributes = new HashMap<>();
@@ -151,20 +161,17 @@ public class VirtualHostAliasTest extends QpidTestCase
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("purple"), addressSpace);
 
-
         addressSpace = _port.getAddressSpace("pinker");
 
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("purple"), addressSpace);
 
-
-
         addressSpace = _port.getAddressSpace("o.*");
 
         assertNull(addressSpace);
-
     }
 
+    @Test
     public void testPriority()
     {
 
@@ -177,8 +184,6 @@ public class VirtualHostAliasTest extends QpidTestCase
 
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("black"), addressSpace);
-
-
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(VirtualHostAlias.NAME, "matcher10");
@@ -197,7 +202,6 @@ public class VirtualHostAliasTest extends QpidTestCase
 
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("purple"), addressSpace);
-
 
         attributes = new HashMap<>();
         attributes.put(VirtualHostAlias.NAME, "matcher5");
@@ -219,14 +223,9 @@ public class VirtualHostAliasTest extends QpidTestCase
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("purple"), addressSpace);
 
-
-
         addressSpace = _port.getAddressSpace("purple");
 
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("red"), addressSpace);
-
-
-
     }
 }

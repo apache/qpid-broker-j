@@ -20,15 +20,20 @@
  */
 package org.apache.qpid.server.util;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class StringsTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class StringsTest extends UnitTestBase
 {
+    @Test
     public void testSubstitutionResolver()
     {
         Strings.MapResolver mapResolver =
@@ -44,10 +49,10 @@ public class StringsTest extends QpidTestCase
                                                                            });
 
         assertEquals("{ \"path\" : \"C:\\\\TEMP\\\\\\\"Hello World\\\"\\foo\" }",
-                     Strings.expand("{ \"path\" : \"${json:test}\\foo\" }",Strings.chain(jsonResolver,mapResolver)));
-
+                            Strings.expand("{ \"path\" : \"${json:test}\\foo\" }", Strings.chain(jsonResolver, mapResolver)));
     }
 
+    @Test
     public void testNestedSubstitutionResolver()
     {
         Map<String,String> context = new HashMap<>();
@@ -66,7 +71,6 @@ public class StringsTest extends QpidTestCase
                                                                            });
 
         assertEquals("{ \"path\" : \"C:\\\\TEMP\\\\\\\"Hello World\\\"\\foo\" }",
-                     Strings.expand("{ \"path\" : \"${json:nestedTest}\\foo\" }",Strings.chain(jsonResolver,mapResolver)));
-
+                            Strings.expand("{ \"path\" : \"${json:nestedTest}\\foo\" }", Strings.chain(jsonResolver, mapResolver)));
     }
 }

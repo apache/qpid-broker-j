@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,6 +36,9 @@ import java.util.Map;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,11 +60,11 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class VirtualHostLoggerTest  extends QpidTestCase
+public class VirtualHostLoggerTest extends UnitTestBase
 {
     private VirtualHost<?> _virtualHost;
     private TaskExecutor _taskExecutor;
@@ -66,10 +72,9 @@ public class VirtualHostLoggerTest  extends QpidTestCase
     private File _logFile;
 
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
 
@@ -105,7 +110,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
 
         // use real VH object rather then mock in order to test create/start/stop functionality
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHost.NAME, getName());
+        attributes.put(VirtualHost.NAME, getTestName());
         attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
         _virtualHost = new TestMemoryVirtualHost(attributes, node);
         _virtualHost.open();
@@ -118,24 +123,24 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         }
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
             _virtualHost.close();
             _taskExecutor.stopImmediately();
+        }
+        finally
+        {
             if (_baseFolder != null && _baseFolder.exists())
             {
                 FileUtils.delete(_baseFolder, true);
             }
         }
-        finally
-        {
-            super.tearDown();
-        }
     }
 
+    @Test
     public void testAddLoggerWithDefaultSettings()
     {
         VirtualHostLogger logger = createVirtualHostLogger();
@@ -150,6 +155,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         assertTrue("Appender was not started", appender.isStarted());
     }
 
+    @Test
     public void testAddLoggerWithRollDailyOn()
     {
         VirtualHostLogger logger = createVirtualHostLogger(Collections.<String, Object>singletonMap("rollDaily", true));
@@ -164,6 +170,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         assertTrue("Appender was not started", appender.isStarted());
     }
 
+    @Test
     public void testDeleteLogger()
     {
         VirtualHostLogger logger = createVirtualHostLogger();
@@ -180,6 +187,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
     }
 
 
+    @Test
     public void testLoggersRemovedOnVirtualHostStop()
     {
         VirtualHostLogger logger = createVirtualHostLogger();
@@ -190,6 +198,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         assertNull("Appender was not deleted", appender);
     }
 
+    @Test
     public void testLoggersRemovedOnVirtualHostClose()
     {
         VirtualHostLogger logger = createVirtualHostLogger();
@@ -200,6 +209,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         assertNull("Appender was not deleted", appender);
     }
 
+    @Test
     public void testGetLogFiles()
     {
         VirtualHostFileLogger logger = (VirtualHostFileLogger)createVirtualHostLogger();
@@ -215,6 +225,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         }
     }
 
+    @Test
     public void testGetLogFilesOnResolutionErrors()
     {
         VirtualHostFileLogger logger = createErrorredLogger();
@@ -223,6 +234,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         assertTrue("File details should be empty", logFileDetails.isEmpty());
     }
 
+    @Test
     public void testStopLoggingLoggerInErroredState()
     {
         VirtualHostFileLogger logger = createErrorredLogger();

@@ -21,17 +21,19 @@
 package org.apache.qpid.server.management.plugin;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
+
 import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-
-public class GunzipOutputStreamTest extends QpidTestCase
+public class GunzipOutputStreamTest extends UnitTestBase
 {
     // base64 encoded content of 'gzip -N test.txt' containing text: This is test
     private static final String GZIP_CONTENT_WITH_EMBEDDED_FILE_NAME =
@@ -45,6 +47,7 @@ public class GunzipOutputStreamTest extends QpidTestCase
     private static final String TEST_TEXT = "This is test";
     private static final String TEST_TEXT2 = "Another test text";
 
+    @Test
     public void testDecompressing() throws Exception
     {
         final byte[] originalUncompressedInput = generateTestBytes();
@@ -58,6 +61,7 @@ public class GunzipOutputStreamTest extends QpidTestCase
         assertArrayEquals("Unexpected content", originalUncompressedInput, outputStream.toByteArray());
     }
 
+    @Test
     public void testDecompressingWithEmbeddedFileName() throws Exception
     {
         byte[] data = DatatypeConverter.parseBase64Binary(GZIP_CONTENT_WITH_EMBEDDED_FILE_NAME);
@@ -70,6 +74,7 @@ public class GunzipOutputStreamTest extends QpidTestCase
         assertEquals("Unexpected content", TEST_TEXT, new String(outputStream.toByteArray()));
     }
 
+    @Test
     public void testDecompressingMultipleMembers() throws Exception
     {
         byte[] data = DatatypeConverter.parseBase64Binary(GZIP_CONTENT_WITH_MULTIPLE_MEMBERS);

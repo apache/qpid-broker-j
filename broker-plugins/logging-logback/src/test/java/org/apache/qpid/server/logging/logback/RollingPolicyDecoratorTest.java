@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -44,16 +45,19 @@ import ch.qos.logback.core.rolling.helper.FileNamePattern;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.util.FileUtils;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class RollingPolicyDecoratorTest extends QpidTestCase
+public class RollingPolicyDecoratorTest extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RollingPolicyDecoratorTest.class);
 
@@ -64,10 +68,9 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
     private File _testFile;
     private Pattern _rolledFileRegExp;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _baseFolder = TestFileUtils.createTestDirectory("rollover", true);
         _testFile = createTestFile("test.2015-06-25.0.gz");
@@ -85,10 +88,9 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
         LOGGER.debug("Rolled file reg exp: {} ", _rolledFileRegExp);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
-        super.tearDown();
         if (_baseFolder.exists())
         {
             FileUtils.delete(_baseFolder, true);
@@ -122,18 +124,21 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
         return executorService;
     }
 
+    @Test
     public void testRollover()
     {
         _policy.rollover();
         verify(_delegate).rollover();
     }
 
+    @Test
     public void testRolloverListener() throws InterruptedException
     {
         _policy.rollover();
         verify(_listener).onRollover(any(Path.class), any(String[].class));
     }
 
+    @Test
     public void testRolloverWithFile() throws IOException
     {
         _policy.rollover();
@@ -143,6 +148,7 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher));
     }
 
+    @Test
     public void testRolloverRescanLimit() throws IOException
     {
         _policy.rollover();
@@ -154,6 +160,7 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
         verify(_listener).onNoRolloverDetected(eq(_baseFolder.toPath()), argThat(matcher));
     }
 
+    @Test
     public void testSequentialRollover() throws IOException
     {
         _policy.rollover();
@@ -187,18 +194,21 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
         };
     }
 
+    @Test
     public void testGetActiveFileName()
     {
         _policy.getActiveFileName();
         verify(_delegate).getActiveFileName();
     }
 
+    @Test
     public void testGetCompressionMode()
     {
         _policy.getCompressionMode();
         verify(_delegate).getCompressionMode();
     }
 
+    @Test
     public void testSetParent()
     {
         FileAppender appender = mock(FileAppender.class);
@@ -206,18 +216,21 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
         verify(_delegate).setParent(appender);
     }
 
+    @Test
     public void testStart()
     {
         _policy.start();
         verify(_delegate).start();
     }
 
+    @Test
     public void testStop()
     {
         _policy.stop();
         verify(_delegate).stop();
     }
 
+    @Test
     public void testIsStarted()
     {
         _policy.isStarted();

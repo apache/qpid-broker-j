@@ -22,7 +22,11 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
+import org.junit.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
@@ -38,22 +43,28 @@ import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.ConfiguredSettableAttribute;
 import org.apache.qpid.server.model.ManagedInterface;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
+public class ConfiguredObjectTypeRegistryTest extends UnitTestBase
 {
     private ConfiguredObjectTypeRegistry _typeRegistry = TestModel.getInstance().getTypeRegistry();
 
+    @Test
     public void testTypeSpecialisations()
     {
         Collection<Class<? extends ConfiguredObject>> types = _typeRegistry.getTypeSpecialisations(TestEngine.class);
 
-        assertEquals("Unexpected number of specialisations for " + TestEngine.class + " Found : " + types, 3, types.size());
+        assertEquals("Unexpected number of specialisations for " + TestEngine.class + " Found : " + types,
+                            (long) 3,
+                            (long) types.size());
+
+
         assertTrue(types.contains(TestPetrolEngineImpl.class));
         assertTrue(types.contains(TestHybridEngineImpl.class));
         assertTrue(types.contains(TestElecEngineImpl.class));
     }
 
+    @Test
     public void testGetValidChildTypes()
     {
         // The standard car restricts its engine type
@@ -67,6 +78,7 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         assertNull(kitCarValidEngineTypes);
     }
 
+    @Test
     public void testManagedInterfaces()
     {
         // The electric engine is rechargable
@@ -79,6 +91,7 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         assertThat(stdCarIntfcs.size(), is(0));
     }
 
+    @Test
     public void testOperations()
     {
         final String objectName = "testKitCar";
@@ -125,6 +138,7 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testOperationWithMandatoryParameter_RejectsNullParameter()
     {
         final String objectName = "testKitCar";
@@ -158,23 +172,27 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testEnumValidValues_UnrestrictedSet() throws Exception
     {
         Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes = _typeRegistry.getAttributeTypes(TestCar.class);
         ConfiguredSettableAttribute<?, ?> attribute = (ConfiguredSettableAttribute<?, ?>) attributeTypes.get("bodyColour");
 
+
         assertEquals("The attribute's valid values should match the set of the enum",
-                     Lists.newArrayList("BLACK", "RED", "BLUE", "GREY"),
-                     attribute.validValues());
+                            Lists.newArrayList("BLACK", "RED", "BLUE", "GREY"),
+                            attribute.validValues());
     }
 
+    @Test
     public void testEnumValidValues_RestrictedSet() throws Exception
     {
         Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes = _typeRegistry.getAttributeTypes(TestCar.class);
         ConfiguredSettableAttribute<?, ?> attribute = (ConfiguredSettableAttribute<?, ?>) attributeTypes.get("interiorColour");
 
-        assertEquals("The attribute's valid values should match the restricted set defined on the attribute itself",
-                   Lists.newArrayList("GREY", "BLACK"),
-                   attribute.validValues());
+        assertEquals(
+                "The attribute's valid values should match the restricted set defined on the attribute itself",
+                Lists.newArrayList("GREY", "BLACK"),
+                attribute.validValues());
     }
 }

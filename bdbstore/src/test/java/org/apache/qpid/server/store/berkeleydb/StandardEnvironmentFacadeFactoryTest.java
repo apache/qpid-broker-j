@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,24 +33,27 @@ import java.io.File;
 import java.util.Collections;
 
 import com.sleepycat.je.EnvironmentConfig;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.util.FileUtils;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class StandardEnvironmentFacadeFactoryTest extends QpidTestCase
+public class StandardEnvironmentFacadeFactoryTest extends UnitTestBase
 {
     private File _path;
     private ConfiguredObject<?> _parent;
 
-    @Override
-    public void setUp()throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
 
         _path = TestFileUtils.createTestDirectory(".je.test", true);
 
@@ -65,20 +72,19 @@ public class StandardEnvironmentFacadeFactoryTest extends QpidTestCase
         }));
 
     }
-    @Override
     public void tearDown()throws Exception
     {
         try
         {
             EnvHomeRegistry.getInstance().deregisterHome(_path);
-            FileUtils.delete(_path, true);
         }
         finally
         {
-            super.tearDown();
+            FileUtils.delete(_path, true);
         }
     }
 
+    @Test
     public void testCreateEnvironmentFacade()
     {
         when(_parent.getName()).thenReturn(getTestName());

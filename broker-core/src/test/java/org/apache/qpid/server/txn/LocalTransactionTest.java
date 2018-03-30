@@ -20,8 +20,11 @@
  */
 package org.apache.qpid.server.txn;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -29,6 +32,9 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
@@ -39,16 +45,16 @@ import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.MockStoreTransaction.TransactionState;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * A unit test ensuring that LocalTransactionTest creates a long-lived store transaction
  * that spans many dequeue/enqueue operations of enlistable messages.  Verifies
  * that the long-lived transaction is properly committed and rolled back, and that
  * post transaction actions are correctly fired.
- *
  */
-public class LocalTransactionTest extends QpidTestCase
+public class LocalTransactionTest extends UnitTestBase
 {
     private ServerTransaction _transaction = null;  // Class under test
     
@@ -62,11 +68,10 @@ public class LocalTransactionTest extends QpidTestCase
     private MessageStore _transactionLog;
 
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
-        
+
         _storeTransaction = createTestStoreTransaction(false);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _action1 = new MockAction();
@@ -81,6 +86,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the enqueue of a non persistent message to a single non durable queue.
      * Asserts that a store transaction has not been started.
      */
+    @Test
     public void testEnqueueToNonDurableQueueOfNonPersistentMessage() throws Exception
     {
         _message = createTestMessage(false);
@@ -88,7 +94,10 @@ public class LocalTransactionTest extends QpidTestCase
         
         _transaction.enqueue(_queue, _message, _action1);
 
-        assertEquals("Enqueue of non-persistent message must not cause message to be enqueued", 0, _storeTransaction.getNumberOfEnqueuedMessages());
+        assertEquals("Enqueue of non-persistent message must not cause message to be enqueued",
+                            (long) 0,
+                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
+
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
     }
@@ -97,6 +106,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the enqueue of a persistent message to a durable queue.
      * Asserts that a store transaction has been started.
      */
+    @Test
     public void testEnqueueToDurableQueueOfPersistentMessage() throws Exception
     {
         _message = createTestMessage(true);
@@ -104,7 +114,9 @@ public class LocalTransactionTest extends QpidTestCase
         
         _transaction.enqueue(_queue, _message, _action1);
 
-        assertEquals("Enqueue of persistent message to durable queue must cause message to be enqueued", 1, _storeTransaction.getNumberOfEnqueuedMessages());
+        assertEquals("Enqueue of persistent message to durable queue must cause message to be enqueued",
+                            (long) 1,
+                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
     }
@@ -113,6 +125,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the case where the store operation throws an exception.
      * Asserts that the transaction is aborted.
      */
+    @Test
     public void testStoreEnqueueCausesException() throws Exception
     {
         _message = createTestMessage(true);
@@ -130,19 +143,19 @@ public class LocalTransactionTest extends QpidTestCase
         catch (RuntimeException re)
         {
             // PASS
-        } 
+        }
 
         assertTrue("Rollback action must be fired", _action1.isRollbackActionFired());
         assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
-        
+
         assertFalse("Post commit action must not be fired", _action1.isPostCommitActionFired());
-        
     }
     
     /**
      * Tests the enqueue of a non persistent message to a many non durable queues.
      * Asserts that a store transaction has not been started.
      */
+    @Test
     public void testEnqueueToManyNonDurableQueuesOfNonPersistentMessage() throws Exception
     {
         _message = createTestMessage(false);
@@ -150,7 +163,9 @@ public class LocalTransactionTest extends QpidTestCase
         
         _transaction.enqueue(_queues, _message, _action1);
 
-        assertEquals("Enqueue of non-persistent message must not cause message to be enqueued", 0, _storeTransaction.getNumberOfEnqueuedMessages());
+        assertEquals("Enqueue of non-persistent message must not cause message to be enqueued",
+                            (long) 0,
+                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
     }
@@ -159,14 +174,17 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the enqueue of a persistent message to a many non durable queues.
      * Asserts that a store transaction has not been started.
      */
+    @Test
     public void testEnqueueToManyNonDurableQueuesOfPersistentMessage() throws Exception
     {
         _message = createTestMessage(true);
         _queues = createTestBaseQueues(new boolean[] {false, false, false});
         
         _transaction.enqueue(_queues, _message, _action1);
-  
-        assertEquals("Enqueue of persistent message to non-durable queues must not cause message to be enqueued", 0, _storeTransaction.getNumberOfEnqueuedMessages());
+
+        assertEquals("Enqueue of persistent message to non-durable queues must not cause message to be enqueued",
+                            (long) 0,
+                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
 
@@ -176,6 +194,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the enqueue of a persistent message to many queues, some durable others not.
      * Asserts that a store transaction has been started.
      */
+    @Test
     public void testEnqueueToDurableAndNonDurableQueuesOfPersistentMessage() throws Exception
     {
         _message = createTestMessage(true);
@@ -183,7 +202,10 @@ public class LocalTransactionTest extends QpidTestCase
         
         _transaction.enqueue(_queues, _message, _action1);
 
-        assertEquals("Enqueue of persistent message to durable/non-durable queues must cause messages to be enqueued", 2, _storeTransaction.getNumberOfEnqueuedMessages());
+        assertEquals(
+                "Enqueue of persistent message to durable/non-durable queues must cause messages to be enqueued",
+                (long) 2,
+                (long) _storeTransaction.getNumberOfEnqueuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
 
@@ -193,6 +215,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the case where the store operation throws an exception.
      * Asserts that the transaction is aborted.
      */
+    @Test
     public void testStoreEnqueuesCausesExceptions() throws Exception
     {
         _message = createTestMessage(true);
@@ -221,6 +244,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the dequeue of a non persistent message from a single non durable queue.
      * Asserts that a store transaction has not been started.
      */
+    @Test
     public void testDequeueFromNonDurableQueueOfNonPersistentMessage() throws Exception
     {
         _message = createTestMessage(false);
@@ -228,7 +252,9 @@ public class LocalTransactionTest extends QpidTestCase
 
         _transaction.dequeue((MessageEnqueueRecord)null, _action1);
 
-        assertEquals("Dequeue of non-persistent message must not cause message to be enqueued", 0, _storeTransaction.getNumberOfEnqueuedMessages());
+        assertEquals("Dequeue of non-persistent message must not cause message to be enqueued",
+                            (long) 0,
+                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
 
@@ -238,6 +264,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the dequeue of a persistent message from a single non durable queue.
      * Asserts that a store transaction has not been started.
      */
+    @Test
     public void testDequeueFromDurableQueueOfPersistentMessage() throws Exception
     {
         _message = createTestMessage(true);
@@ -245,7 +272,9 @@ public class LocalTransactionTest extends QpidTestCase
         
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1);
 
-        assertEquals("Dequeue of non-persistent message must cause message to be dequeued", 1, _storeTransaction.getNumberOfDequeuedMessages());
+        assertEquals("Dequeue of non-persistent message must cause message to be dequeued",
+                            (long) 1,
+                            (long) _storeTransaction.getNumberOfDequeuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
     }
@@ -254,6 +283,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the case where the store operation throws an exception.
      * Asserts that the transaction is aborted.
      */
+    @Test
     public void testStoreDequeueCausesException() throws Exception
     {
         _message = createTestMessage(true);
@@ -271,25 +301,27 @@ public class LocalTransactionTest extends QpidTestCase
         catch (RuntimeException re)
         {
             // PASS
-        }        
-        
+        }
+
         assertTrue("Rollback action must be fired", _action1.isRollbackActionFired());
         assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
         assertFalse("Post commit action must not be fired", _action1.isPostCommitActionFired());
-
     }
 
     /**
      * Tests the dequeue of a non persistent message from many non durable queues.
      * Asserts that a store transaction has not been started.
      */
+    @Test
     public void testDequeueFromManyNonDurableQueuesOfNonPersistentMessage() throws Exception
     {
         _queueEntries = createTestQueueEntries(new boolean[] {false, false, false}, new boolean[] {false, false, false});
         
         _transaction.dequeue(_queueEntries, _action1);
 
-        assertEquals("Dequeue of non-persistent messages must not cause message to be dequeued", 0, _storeTransaction.getNumberOfDequeuedMessages());
+        assertEquals("Dequeue of non-persistent messages must not cause message to be dequeued",
+                            (long) 0,
+                            (long) _storeTransaction.getNumberOfDequeuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
   
@@ -299,13 +331,17 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the dequeue of a persistent message from a many non durable queues.
      * Asserts that a store transaction has not been started.
      */
+    @Test
     public void testDequeueFromManyNonDurableQueuesOfPersistentMessage() throws Exception
     {
         _queueEntries = createTestQueueEntries(new boolean[] {false, false, false}, new boolean[] {true, true, true});
         
         _transaction.dequeue(_queueEntries, _action1);
 
-        assertEquals("Dequeue of persistent message from non-durable queues must not cause message to be enqueued", 0, _storeTransaction.getNumberOfDequeuedMessages());
+        assertEquals(
+                "Dequeue of persistent message from non-durable queues must not cause message to be enqueued",
+                (long) 0,
+                (long) _storeTransaction.getNumberOfDequeuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
     }
@@ -314,6 +350,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the dequeue of a persistent message from many queues, some durable others not.
      * Asserts that a store transaction has not been started.
      */
+    @Test
     public void testDequeueFromDurableAndNonDurableQueuesOfPersistentMessage() throws Exception
     {
         // A transaction will exist owing to the 1st and 3rd.
@@ -321,7 +358,10 @@ public class LocalTransactionTest extends QpidTestCase
         
         _transaction.dequeue(_queueEntries, _action1);
 
-        assertEquals("Dequeue of persistent messages from durable/non-durable queues must cause messages to be dequeued", 2, _storeTransaction.getNumberOfDequeuedMessages());
+        assertEquals(
+                "Dequeue of persistent messages from durable/non-durable queues must cause messages to be dequeued",
+                (long) 2,
+                (long) _storeTransaction.getNumberOfDequeuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
         assertNotFired(_action1);
     }
@@ -330,6 +370,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the case where the store operation throws an exception.
      * Asserts that the transaction is aborted.
      */
+    @Test
     public void testStoreDequeuesCauseExceptions() throws Exception
     {
         // Transactions will exist owing to the 1st and 3rd queue entries in the collection
@@ -351,13 +392,14 @@ public class LocalTransactionTest extends QpidTestCase
 
         assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
         assertTrue("Rollback action must be fired", _action1.isRollbackActionFired());
-        assertFalse("Post commit action must not be fired",  _action1.isPostCommitActionFired());
+        assertFalse("Post commit action must not be fired", _action1.isPostCommitActionFired());
     }
     
     /** 
      * Tests the add of a post-commit action.  Unlike AutoCommitTransactions, the post transaction actions
      * is added to a list to be fired on commit or rollback.
      */
+    @Test
     public void testAddingPostCommitActionNotFiredImmediately() throws Exception
     {
         
@@ -371,13 +413,18 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests committing a transaction without work accepted without error and without causing store
      * enqueues or dequeues.
      */
+    @Test
     public void testCommitNoWork() throws Exception
     {
         
         _transaction.commit();
-        
-        assertEquals("Unexpected number of store dequeues", 0, _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected number of store enqueues", 0, _storeTransaction.getNumberOfEnqueuedMessages());
+
+        assertEquals("Unexpected number of store dequeues",
+                            (long) 0,
+                            (long) _storeTransaction.getNumberOfDequeuedMessages());
+        assertEquals("Unexpected number of store enqueues",
+                            (long) 0,
+                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
     }
     
@@ -385,13 +432,18 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests rolling back a transaction without work accepted without error and without causing store
      * enqueues or dequeues.
      */
+    @Test
     public void testRollbackNoWork() throws Exception
     {
         
         _transaction.rollback();
 
-        assertEquals("Unexpected number of store dequeues", 0, _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected number of store enqueues", 0, _storeTransaction.getNumberOfEnqueuedMessages());
+        assertEquals("Unexpected number of store dequeues",
+                            (long) 0,
+                            (long) _storeTransaction.getNumberOfDequeuedMessages());
+        assertEquals("Unexpected number of store enqueues",
+                            (long) 0,
+                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
     }
     
@@ -399,6 +451,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the dequeuing of a message with a commit.  Test ensures that the underlying store transaction is 
      * correctly controlled and the post commit action is fired.
      */
+    @Test
     public void testCommitWork() throws Exception
     {
         
@@ -407,13 +460,13 @@ public class LocalTransactionTest extends QpidTestCase
 
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
         assertFalse("Post commit action must not be fired yet", _action1.isPostCommitActionFired());
-        
+
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1);
         assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
         assertFalse("Post commit action must not be fired yet", _action1.isPostCommitActionFired());
-        
+
         _transaction.commit();
-        
+
         assertEquals("Unexpected transaction state", TransactionState.COMMITTED, _storeTransaction.getState());
         assertTrue("Post commit action must be fired", _action1.isPostCommitActionFired());
     }
@@ -422,32 +475,32 @@ public class LocalTransactionTest extends QpidTestCase
      * Tests the dequeuing of a message with a rollback.  Test ensures that the underlying store transaction is 
      * correctly controlled and the post rollback action is fired.
      */
+    @Test
     public void testRollbackWork() throws Exception
     {
         
         _message = createTestMessage(true);
         _queue = createQueue(true);
 
-
         assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
         assertFalse("Rollback action must not be fired yet", _action1.isRollbackActionFired());
 
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1);
-        
+
         assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
         assertFalse("Rollback action must not be fired yet", _action1.isRollbackActionFired());
 
         _transaction.rollback();
-        
+
         assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
         assertTrue("Rollback action must be fired", _action1.isRollbackActionFired());
-
     }
     
     /**
      * Variation of testCommitWork with an additional post transaction action.
      * 
      */
+    @Test
     public void testCommitWorkWithAdditionalPostAction() throws Exception
     {
         
@@ -457,12 +510,12 @@ public class LocalTransactionTest extends QpidTestCase
         _transaction.addPostTransactionAction(_action1);
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action2);
         _transaction.commit();
-        
+
         assertEquals("Unexpected transaction state", TransactionState.COMMITTED, _storeTransaction.getState());
 
         assertTrue("Post commit action1 must be fired", _action1.isPostCommitActionFired());
         assertTrue("Post commit action2 must be fired", _action2.isPostCommitActionFired());
-        
+
         assertFalse("Rollback action1 must not be fired", _action1.isRollbackActionFired());
         assertFalse("Rollback action2 must not be fired", _action1.isRollbackActionFired());
     }
@@ -471,6 +524,7 @@ public class LocalTransactionTest extends QpidTestCase
      * Variation of testRollbackWork with an additional post transaction action.
      * 
      */
+    @Test
     public void testRollbackWorkWithAdditionalPostAction() throws Exception
     {
         _message = createTestMessage(true);
@@ -479,20 +533,25 @@ public class LocalTransactionTest extends QpidTestCase
         _transaction.addPostTransactionAction(_action1);
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action2);
         _transaction.rollback();
-        
+
         assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
 
         assertFalse("Post commit action1 must not be fired", _action1.isPostCommitActionFired());
         assertFalse("Post commit action2 must not be fired", _action2.isPostCommitActionFired());
-        
+
         assertTrue("Rollback action1 must be fired", _action1.isRollbackActionFired());
         assertTrue("Rollback action2 must be fired", _action1.isRollbackActionFired());
     }
 
+    @Test
     public void testFirstEnqueueRecordsTransactionStartAndUpdateTime() throws Exception
     {
-        assertEquals("Unexpected transaction start time before test", 0, _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test", 0, _transaction.getTransactionUpdateTime());
+        assertEquals("Unexpected transaction start time before test",
+                            (long) 0,
+                            _transaction.getTransactionStartTime());
+        assertEquals("Unexpected transaction update time before test",
+                            (long) 0,
+                            _transaction.getTransactionUpdateTime());
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -500,14 +559,22 @@ public class LocalTransactionTest extends QpidTestCase
         long startTime = System.currentTimeMillis();
         _transaction.enqueue(_queue, _message, _action1);
 
-        assertTrue("Transaction start time should have been recorded", _transaction.getTransactionStartTime() >= startTime);
-        assertEquals("Transaction update time should be the same as transaction start time", _transaction.getTransactionStartTime(), _transaction.getTransactionUpdateTime());
+        assertTrue("Transaction start time should have been recorded",
+                          _transaction.getTransactionStartTime() >= startTime);
+        assertEquals("Transaction update time should be the same as transaction start time",
+                            _transaction.getTransactionStartTime(),
+                            _transaction.getTransactionUpdateTime());
     }
 
+    @Test
     public void testSubsequentEnqueueAdvancesTransactionUpdateTimeOnly() throws Exception
     {
-        assertEquals("Unexpected transaction start time before test", 0, _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test", 0, _transaction.getTransactionUpdateTime());
+        assertEquals("Unexpected transaction start time before test",
+                            (long) 0,
+                            _transaction.getTransactionStartTime());
+        assertEquals("Unexpected transaction update time before test",
+                            (long) 0,
+                            _transaction.getTransactionUpdateTime());
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -523,14 +590,22 @@ public class LocalTransactionTest extends QpidTestCase
         final long transactionStartTimeAfterSecondEnqueue = _transaction.getTransactionStartTime();
         final long transactionUpdateTimeAfterSecondEnqueue = _transaction.getTransactionUpdateTime();
 
-        assertEquals("Transaction start time after second enqueue should be unchanged", transactionStartTimeAfterFirstEnqueue, transactionStartTimeAfterSecondEnqueue);
-        assertTrue("Transaction update time after second enqueue should be greater than first update time", transactionUpdateTimeAfterSecondEnqueue > transactionUpdateTimeAfterFirstEnqueue);
+        assertEquals("Transaction start time after second enqueue should be unchanged",
+                            transactionStartTimeAfterFirstEnqueue,
+                            transactionStartTimeAfterSecondEnqueue);
+        assertTrue("Transaction update time after second enqueue should be greater than first update time",
+                          transactionUpdateTimeAfterSecondEnqueue > transactionUpdateTimeAfterFirstEnqueue);
     }
 
+    @Test
     public void testFirstDequeueRecordsTransactionStartAndUpdateTime() throws Exception
     {
-        assertEquals("Unexpected transaction start time before test", 0, _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test", 0, _transaction.getTransactionUpdateTime());
+        assertEquals("Unexpected transaction start time before test",
+                            (long) 0,
+                            _transaction.getTransactionStartTime());
+        assertEquals("Unexpected transaction update time before test",
+                            (long) 0,
+                            _transaction.getTransactionUpdateTime());
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -538,14 +613,22 @@ public class LocalTransactionTest extends QpidTestCase
         long startTime = System.currentTimeMillis();
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1);
 
-        assertTrue("Transaction start time should have been recorded", _transaction.getTransactionStartTime() >= startTime);
-        assertEquals("Transaction update time should be the same as transaction start time", _transaction.getTransactionStartTime(), _transaction.getTransactionUpdateTime());
+        assertTrue("Transaction start time should have been recorded",
+                          _transaction.getTransactionStartTime() >= startTime);
+        assertEquals("Transaction update time should be the same as transaction start time",
+                            _transaction.getTransactionStartTime(),
+                            _transaction.getTransactionUpdateTime());
     }
 
+    @Test
     public void testMixedEnqueuesAndDequeuesAdvancesTransactionUpdateTimeOnly() throws Exception
     {
-        assertEquals("Unexpected transaction start time before test", 0, _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test", 0, _transaction.getTransactionUpdateTime());
+        assertEquals("Unexpected transaction start time before test",
+                            (long) 0,
+                            _transaction.getTransactionStartTime());
+        assertEquals("Unexpected transaction update time before test",
+                            (long) 0,
+                            _transaction.getTransactionUpdateTime());
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -561,14 +644,22 @@ public class LocalTransactionTest extends QpidTestCase
         final long transactionStartTimeAfterFirstDequeue = _transaction.getTransactionStartTime();
         final long transactionUpdateTimeAfterFirstDequeue = _transaction.getTransactionUpdateTime();
 
-        assertEquals("Transaction start time after first dequeue should be unchanged", transactionStartTimeAfterFirstEnqueue, transactionStartTimeAfterFirstDequeue);
-        assertTrue("Transaction update time after first dequeue should be greater than first update time", transactionUpdateTimeAfterFirstDequeue > transactionUpdateTimeAfterFirstEnqueue);
+        assertEquals("Transaction start time after first dequeue should be unchanged",
+                            transactionStartTimeAfterFirstEnqueue,
+                            transactionStartTimeAfterFirstDequeue);
+        assertTrue("Transaction update time after first dequeue should be greater than first update time",
+                          transactionUpdateTimeAfterFirstDequeue > transactionUpdateTimeAfterFirstEnqueue);
     }
 
+    @Test
     public void testCommitResetsTransactionStartAndUpdateTime() throws Exception
     {
-        assertEquals("Unexpected transaction start time before test", 0, _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test", 0, _transaction.getTransactionUpdateTime());
+        assertEquals("Unexpected transaction start time before test",
+                            (long) 0,
+                            _transaction.getTransactionStartTime());
+        assertEquals("Unexpected transaction update time before test",
+                            (long) 0,
+                            _transaction.getTransactionUpdateTime());
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -581,14 +672,23 @@ public class LocalTransactionTest extends QpidTestCase
 
         _transaction.commit();
 
-        assertEquals("Transaction start time should be reset after commit", 0, _transaction.getTransactionStartTime());
-        assertEquals("Transaction update time should be reset after commit", 0, _transaction.getTransactionUpdateTime());
+        assertEquals("Transaction start time should be reset after commit",
+                            (long) 0,
+                            _transaction.getTransactionStartTime());
+        assertEquals("Transaction update time should be reset after commit",
+                            (long) 0,
+                            _transaction.getTransactionUpdateTime());
     }
 
+    @Test
     public void testRollbackResetsTransactionStartAndUpdateTime() throws Exception
     {
-        assertEquals("Unexpected transaction start time before test", 0, _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test", 0, _transaction.getTransactionUpdateTime());
+        assertEquals("Unexpected transaction start time before test",
+                            (long) 0,
+                            _transaction.getTransactionStartTime());
+        assertEquals("Unexpected transaction update time before test",
+                            (long) 0,
+                            _transaction.getTransactionUpdateTime());
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -601,10 +701,15 @@ public class LocalTransactionTest extends QpidTestCase
 
         _transaction.rollback();
 
-        assertEquals("Transaction start time should be reset after rollback", 0, _transaction.getTransactionStartTime());
-        assertEquals("Transaction update time should be reset after rollback", 0, _transaction.getTransactionUpdateTime());
+        assertEquals("Transaction start time should be reset after rollback",
+                            (long) 0,
+                            _transaction.getTransactionStartTime());
+        assertEquals("Transaction update time should be reset after rollback",
+                            (long) 0,
+                            _transaction.getTransactionUpdateTime());
     }
 
+    @Test
     public void testEnqueueInvokesTransactionObserver() throws Exception
     {
         final TransactionObserver
@@ -628,9 +733,10 @@ public class LocalTransactionTest extends QpidTestCase
     private Collection<MessageInstance> createTestQueueEntries(boolean[] queueDurableFlags, boolean[] messagePersistentFlags)
     {
         Collection<MessageInstance> queueEntries = new ArrayList<MessageInstance>();
-        
-        assertTrue("Boolean arrays must be the same length", queueDurableFlags.length == messagePersistentFlags.length);
-        
+
+        assertTrue("Boolean arrays must be the same length",
+                          queueDurableFlags.length == messagePersistentFlags.length);
+
         for(int i = 0; i < queueDurableFlags.length; i++)
         {
             final TransactionLogResource queue = createQueue(queueDurableFlags[i]);

@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,25 +33,27 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.security.auth.sasl.SaslUtil;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SimpleAuthenticationManagerTest extends QpidTestCase
+public class SimpleAuthenticationManagerTest extends UnitTestBase
 {
     private static final String TEST_USER = "testUser";
     private static final String TEST_PASSWORD = "testPassword";
     private SimpleAuthenticationManager _authenticationManager;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         Map<String,Object> authManagerAttrs = new HashMap<String, Object>();
         authManagerAttrs.put(AuthenticationProvider.NAME,"MANAGEMENT_MODE_AUTHENTICATION");
         authManagerAttrs.put(AuthenticationProvider.ID, UUID.randomUUID());
@@ -59,16 +64,18 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
 
     }
 
+    @Test
     public void testGetMechanisms()
     {
         List<String> mechanisms = _authenticationManager.getMechanisms();
-        assertEquals("Unexpected number of mechanisms", 4, mechanisms.size());
+        assertEquals("Unexpected number of mechanisms", (long) 4, (long) mechanisms.size());
         assertTrue("PLAIN was not present: " + mechanisms, mechanisms.contains("PLAIN"));
         assertTrue("CRAM-MD5 was not present: " + mechanisms, mechanisms.contains("CRAM-MD5"));
         assertTrue("SCRAM-SHA-1 was not present: " + mechanisms, mechanisms.contains("SCRAM-SHA-1"));
         assertTrue("SCRAM-SHA-256 was not present: " + mechanisms, mechanisms.contains("SCRAM-SHA-256"));
     }
 
+    @Test
     public void testCreateSaslNegotiatorForUnsupportedMechanisms() throws Exception
     {
         String[] unsupported = new String[] { "EXTERNAL", "CRAM-MD5-HEX", "CRAM-MD5-HASHED", "ANONYMOUS", "GSSAPI"};
@@ -76,46 +83,54 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
         {
             String mechanism = unsupported[i];
             SaslNegotiator negotiator = _authenticationManager.createSaslNegotiator(mechanism, null, null);
-            assertNull("Mechanism " + mechanism + " should not be supported by SimpleAuthenticationManager", negotiator);
+            assertNull("Mechanism " + mechanism + " should not be supported by SimpleAuthenticationManager",
+                              negotiator);
         }
     }
 
+    @Test
     public void testAuthenticateWithPlainSaslServer() throws Exception
     {
         AuthenticationResult result = authenticatePlain(TEST_USER, TEST_PASSWORD);
         assertAuthenticated(result);
     }
 
+    @Test
     public void testAuthenticateWithPlainSaslServerInvalidPassword() throws Exception
     {
         AuthenticationResult result = authenticatePlain(TEST_USER, "wrong-password");
         assertUnauthenticated(result);
     }
 
+    @Test
     public void testAuthenticateWithPlainSaslServerInvalidUsername() throws Exception
     {
         AuthenticationResult result = authenticatePlain("wrong-user", TEST_PASSWORD);
         assertUnauthenticated(result);
     }
 
+    @Test
     public void testAuthenticateWithCramMd5SaslServer() throws Exception
     {
         AuthenticationResult result = authenticateCramMd5(TEST_USER, TEST_PASSWORD);
         assertAuthenticated(result);
     }
 
+    @Test
     public void testAuthenticateWithCramMd5SaslServerInvalidPassword() throws Exception
     {
         AuthenticationResult result = authenticateCramMd5(TEST_USER, "wrong-password");
         assertUnauthenticated(result);
     }
 
+    @Test
     public void testAuthenticateWithCramMd5SaslServerInvalidUsername() throws Exception
     {
         AuthenticationResult result = authenticateCramMd5("wrong-user", TEST_PASSWORD);
         assertUnauthenticated(result);
     }
 
+    @Test
     public void testAuthenticateValidCredentials()
     {
         AuthenticationResult result = _authenticationManager.authenticate(TEST_USER, TEST_PASSWORD);
@@ -123,12 +138,14 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
         assertAuthenticated(result);
     }
 
+    @Test
     public void testAuthenticateInvalidPassword()
     {
         AuthenticationResult result = _authenticationManager.authenticate(TEST_USER, "invalid");
         assertUnauthenticated(result);
     }
 
+    @Test
     public void testAuthenticateInvalidUserName()
     {
         AuthenticationResult result = _authenticationManager.authenticate("invalid", TEST_PASSWORD);
@@ -141,7 +158,7 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
         Principal principal = result.getMainPrincipal();
         assertEquals("Unexpected principal name", TEST_USER, principal.getName());
         Set<Principal> principals = result.getPrincipals();
-        assertEquals("Unexpected principals size", 1, principals.size());
+        assertEquals("Unexpected principals size", (long) 1, (long) principals.size());
         assertEquals("Unexpected principal name", TEST_USER, principals.iterator().next().getName());
     }
 
@@ -150,7 +167,7 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
         assertEquals("Unexpected authentication result", AuthenticationStatus.ERROR, result.getStatus());
         assertNull("Unexpected principal", result.getMainPrincipal());
         Set<Principal> principals = result.getPrincipals();
-        assertEquals("Unexpected principals size", 0, principals.size());
+        assertEquals("Unexpected principals size", (long) 0, (long) principals.size());
     }
 
     private AuthenticationResult authenticatePlain(String userName, String userPassword) throws Exception

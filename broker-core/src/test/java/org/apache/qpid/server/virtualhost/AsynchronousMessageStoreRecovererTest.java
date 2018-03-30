@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -37,6 +40,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -54,18 +59,17 @@ import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
+public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
 {
     private QueueManagingVirtualHost _virtualHost;
     private MessageStore _store;
     private MessageStore.MessageStoreReader _storeReader;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _virtualHost = mock(QueueManagingVirtualHost.class);
         _store = mock(MessageStore.class);
@@ -76,6 +80,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         when(_store.newMessageStoreReader()).thenReturn(_storeReader);
     }
 
+    @Test
     public void testExceptionOnRecovery() throws Exception
     {
         ServerScopedRuntimeException exception = new ServerScopedRuntimeException("test");
@@ -97,6 +102,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testRecoveryEmptyQueue() throws Exception
     {
         Queue<?> queue = mock(Queue.class);
@@ -107,6 +113,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         assertNull(result.get());
     }
 
+    @Test
     public void testRecoveryWhenLastRecoveryMessageIsConsumedBeforeRecoveryCompleted() throws Exception
     {
         Queue<?> queue = mock(Queue.class);

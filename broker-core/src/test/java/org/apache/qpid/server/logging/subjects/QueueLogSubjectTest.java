@@ -20,13 +20,15 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.After;
+import org.junit.Before;
+
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 /**
  * Validate QueueLogSubjects are logged as expected
@@ -37,12 +39,12 @@ public class QueueLogSubjectTest extends AbstractTestLogSubject
     private Queue<?> _queue;
     private QueueManagingVirtualHost _testVhost;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         super.setUp();
 
-        _testVhost = BrokerTestHelper.createVirtualHost("test");
+        _testVhost = BrokerTestHelper.createVirtualHost("test", this);
 
         _queue = mock(Queue.class);
         when(_queue.getName()).thenReturn("QueueLogSubjectTest");
@@ -51,7 +53,7 @@ public class QueueLogSubjectTest extends AbstractTestLogSubject
         _subject = new QueueLogSubject(_queue);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         if (_testVhost != null)

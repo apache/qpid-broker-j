@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -32,6 +33,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -57,16 +60,15 @@ import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.Xid;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SynchronousMessageStoreRecovererTest extends QpidTestCase
+public class SynchronousMessageStoreRecovererTest extends UnitTestBase
 {
     private QueueManagingVirtualHost<?> _virtualHost;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _virtualHost = mock(QueueManagingVirtualHost.class);
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
@@ -74,6 +76,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
     }
 
     @SuppressWarnings("unchecked")
+    @Test
     public void testRecoveryOfSingleMessageOnSingleQueue()
     {
         final Queue<?> queue = createRegisteredMockQueue();
@@ -107,6 +110,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
     }
 
     @SuppressWarnings("unchecked")
+    @Test
     public void testRecoveryOfMessageInstanceForNonExistingMessage()
     {
         final Queue<?> queue = createRegisteredMockQueue();
@@ -146,6 +150,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         verify(transaction, times(1)).commitTranAsync((Void) null);
     }
 
+    @Test
     public void testRecoveryOfMessageInstanceForNonExistingQueue()
     {
         final UUID queueId = UUID.randomUUID();
@@ -184,6 +189,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         verify(transaction, times(1)).commitTranAsync((Void) null);
     }
 
+    @Test
     public void testRecoveryDeletesOrphanMessages()
     {
 
@@ -215,6 +221,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
     }
 
     @SuppressWarnings("unchecked")
+    @Test
     public void testRecoveryOfSingleEnqueueWithDistributedTransaction()
     {
         Queue<?> queue = createRegisteredMockQueue();
@@ -297,6 +304,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         verify(transaction).commitTran();
     }
 
+    @Test
     public void testRecoveryOfSingleDequeueWithDistributedTransaction()
     {
         final UUID queueId = UUID.randomUUID();

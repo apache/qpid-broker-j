@@ -23,14 +23,19 @@ package org.apache.qpid.server.store.jdbc.bonecp;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.MAX_CONNECTIONS_PER_PARTITION;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.MIN_CONNECTIONS_PER_PARTITION;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.PARTITION_COUNT;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Set;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class BoneCPConnectionProviderFactoryTest extends TestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class BoneCPConnectionProviderFactoryTest extends UnitTestBase
 {
-    public void testGetProviderAttributeNames() throws Exception
+    @Test
+    public void testGetProviderAttributeNames()
     {
         BoneCPConnectionProviderFactory factory = new BoneCPConnectionProviderFactory();
         Set<String> supported = factory.getProviderAttributeNames();

@@ -20,18 +20,25 @@
  */
 package org.apache.qpid.server.security.auth.database;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /*
     Note User is mainly tested by Base64MD5PFPDTest this is just to catch the extra methods
  */
-public class HashedUserTest extends QpidTestCase
+public class HashedUserTest extends UnitTestBase
 {
 
     private String USERNAME = "username";
     private String PASSWORD = "password";
     private String B64_ENCODED_PASSWORD = "cGFzc3dvcmQ=";
 
+    @Test
     public void testToLongArrayConstructor()
     {
         try
@@ -46,6 +53,7 @@ public class HashedUserTest extends QpidTestCase
 
     }
 
+    @Test
     public void testArrayConstructor()
     {
         HashedUser user = new HashedUser(new String[]{USERNAME, B64_ENCODED_PASSWORD}, null);
@@ -58,7 +66,7 @@ public class HashedUserTest extends QpidTestCase
         {
             for (byte c : user.getEncodedPassword())
             {
-                assertEquals("Password incorrect", hash[index], (char) c);
+                assertEquals("Password incorrect", (long) hash[index], (long) (char) c);
                 index++;
             }
         }
@@ -72,7 +80,7 @@ public class HashedUserTest extends QpidTestCase
         index=0;
         for (char c : user.getPassword())
         {
-            assertEquals("Password incorrect", hash[index], c);
+            assertEquals("Password incorrect", (long) hash[index], (long) c);
             index++;
         }
 

@@ -20,12 +20,16 @@
 package org.apache.qpid.server.management.plugin.session;
 
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.when;
 
 import javax.security.auth.Subject;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -33,19 +37,17 @@ import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.mockito.ArgumentMatcher;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class LoginLogoutReporterTest extends QpidTestCase
+public class LoginLogoutReporterTest extends UnitTestBase
 {
     private LoginLogoutReporter _loginLogoutReport;
     private Subject _subject = new Subject();
     private MessageLogger _logger = mock(MessageLogger.class);
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("mockusername", null)));
         when(_logger.isEnabled()).thenReturn(true);
@@ -56,12 +58,14 @@ public class LoginLogoutReporterTest extends QpidTestCase
         _loginLogoutReport = new LoginLogoutReporter(_subject, provider);
     }
 
+    @Test
     public void testLoginLogged()
     {
         _loginLogoutReport.valueBound(null);
         verify(_logger).message(isLogMessageWithMessage("MNG-1007 : Open : User mockusername"));
     }
 
+    @Test
     public void testLogoutLogged()
     {
         _loginLogoutReport.valueUnbound(null);

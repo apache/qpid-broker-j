@@ -21,17 +21,22 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.model.AncestorAttributeResolver;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AncestorAttributeResolverTest extends QpidTestCase
+public class AncestorAttributeResolverTest extends UnitTestBase
 {
 
     public static final String CAR_NAME = "myCar";
@@ -41,10 +46,9 @@ public class AncestorAttributeResolverTest extends QpidTestCase
     private TestCar _car;
     private TestEngine _engine;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         Map<String, Object> carAttributes = new HashMap<>();
         carAttributes.put(ConfiguredObject.NAME, CAR_NAME);
@@ -66,6 +70,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
 
     }
 
+    @Test
     public void testResolveToParent() throws Exception
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_engine);
@@ -73,6 +78,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         assertEquals(CAR_NAME, actual);
     }
 
+    @Test
     public void testResolveToSelf() throws Exception
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
@@ -80,6 +86,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         assertEquals(CAR_NAME, actual);
     }
 
+    @Test
     public void testUnrecognisedCategoryName() throws Exception
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
@@ -87,6 +94,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         assertNull(actual);
     }
 
+    @Test
     public void testUnrecognisedAttributeName() throws Exception
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
@@ -94,6 +102,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         assertNull(actual);
     }
 
+    @Test
     public void testBadAncestorRef() throws Exception
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
@@ -101,6 +110,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         assertNull(actual);
     }
 
+    @Test
     public void testResolveAncestorAttributeOfTypeMap() throws Exception
     {
         Map<String, Object> carAttributes = new HashMap<>();
@@ -121,6 +131,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         assertEquals("Unexpected resolved ancestor attribute of type Map", parameters, data);
     }
 
+    @Test
     public void testResolveAncestorAttributeOfTypeConfiguredObject() throws Exception
     {
         Map<String, Object> carAttributes = new HashMap<>();
@@ -133,7 +144,10 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
         String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:alternateEngine", null);
 
-        assertEquals("Unexpected resolved ancestor attribute of type ConfiguredObject" , _engine.getId().toString(), actual);
+        assertEquals("Unexpected resolved ancestor attribute of type ConfiguredObject",
+                            _engine.getId().toString(),
+                            actual);
+
     }
 
 }

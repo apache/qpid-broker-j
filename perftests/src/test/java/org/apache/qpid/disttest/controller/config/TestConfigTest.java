@@ -26,52 +26,75 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.controller.CommandForClient;
 import org.apache.qpid.disttest.message.NoOpCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class TestConfigTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class TestConfigTest extends UnitTestBase
 {
     private static final QueueConfig[] EMPTY_QUEUES_ARRAY = new QueueConfig[0];
     private static final String CLIENT1 = "client1";
     private static final String CLIENT2 = "client2";
     private static final String TEST1 = "test1";
 
+    @Test
     public void testConfigHasZeroArgConstructorForGson()
     {
         TestConfig c = new TestConfig();
         assertNotNull(c);
     }
 
+    @Test
     public void testCreateCommandsForClient()
     {
         TestConfig config = createTestConfigWithClientConfigReturningChildCommands();
 
         List<CommandForClient> commandsForClients = config.createCommands();
-        assertEquals("Unexpected number of commands for client", 3, commandsForClients.size());
+        assertEquals("Unexpected number of commands for client", (long) 3, (long) commandsForClients.size());
 
         assertCommandForClient(commandsForClients, 0, CLIENT1, NoOpCommand.class);
         assertCommandForClient(commandsForClients, 1, CLIENT1, NoOpCommand.class);
         assertCommandForClient(commandsForClients, 2, CLIENT2, NoOpCommand.class);
     }
 
+    @Test
     public void testGetClientNames()
     {
         TestConfig config = createTestConfigWithTwoClients();
 
-        assertEquals(2, config.getClientNames().size());
+        assertEquals((long) 2, (long) config.getClientNames().size());
     }
 
+    @Test
     public void testGetTotalNumberOfClients()
     {
         TestConfig config = createTestConfigWithTwoClients();
-        assertEquals(2, config.getTotalNumberOfClients());
+        assertEquals((long) 2, (long) config.getTotalNumberOfClients());
     }
 
+    @Test
     public void testGetTotalNumberOfParticipants()
     {
         TestConfig config = createTestConfigWithTwoClients();
-        assertEquals(2, config.getTotalNumberOfParticipants());
+        assertEquals((long) 2, (long) config.getTotalNumberOfParticipants());
     }
 
     private TestConfig createTestConfigWithClientConfigReturningChildCommands()

@@ -21,18 +21,17 @@ package org.apache.qpid.server.security;
 
 
 import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
-
-import javax.net.ssl.KeyManager;
-import javax.xml.bind.DatatypeConverter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -49,6 +48,12 @@ import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.KeyManager;
+import javax.xml.bind.DatatypeConverter;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -63,10 +68,10 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class NonJavaKeyStoreTest extends QpidTestCase
+public class NonJavaKeyStoreTest extends UnitTestBase
 {
     private final Broker<?> _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
@@ -75,10 +80,9 @@ public class NonJavaKeyStoreTest extends QpidTestCase
     private List<File> _testResources;
     private MessageLogger _messageLogger;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _messageLogger = mock(MessageLogger.class);
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
@@ -88,12 +92,11 @@ public class NonJavaKeyStoreTest extends QpidTestCase
         _testResources = new ArrayList<>();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            super.tearDown();
         }
         finally
         {
@@ -174,11 +177,13 @@ public class NonJavaKeyStoreTest extends QpidTestCase
         return new File[]{privateKeyFile,certificateFile};
     }
 
+    @Test
     public void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDERFormat() throws Exception
     {
         runTestCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDerFormat(false);
     }
 
+    @Test
     public void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInPEMFormat() throws Exception
     {
         runTestCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDerFormat(true);
@@ -200,10 +205,11 @@ public class NonJavaKeyStoreTest extends QpidTestCase
 
         KeyManager[] keyManagers = fileTrustStore.getKeyManagers();
         assertNotNull(keyManagers);
-        assertEquals("Unexpected number of key managers", 1, keyManagers.length);
+        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManagers.length);
         assertNotNull("Key manager is null", keyManagers[0]);
     }
 
+    @Test
     public void testCreationOfTrustStoreFromValidPrivateKeyAndInvalidCertificate()throws Exception
     {
         File[] resources = extractResourcesFromTestKeyStore(true);
@@ -229,6 +235,7 @@ public class NonJavaKeyStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreationOfTrustStoreFromInvalidPrivateKeyAndValidCertificate()throws Exception
     {
         File[] resources = extractResourcesFromTestKeyStore(true);
@@ -254,6 +261,7 @@ public class NonJavaKeyStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testExpiryCheckingFindsExpired() throws Exception
     {
         doCertExpiryChecking(1);
@@ -262,6 +270,7 @@ public class NonJavaKeyStoreTest extends QpidTestCase
 
     }
 
+    @Test
     public void testExpiryCheckingIgnoresValid() throws Exception
     {
         doCertExpiryChecking(-1);

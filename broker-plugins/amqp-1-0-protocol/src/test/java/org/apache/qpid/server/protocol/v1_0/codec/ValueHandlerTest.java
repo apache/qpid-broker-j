@@ -20,13 +20,19 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ValueHandlerTest extends QpidTestCase
+public class ValueHandlerTest extends UnitTestBase
 {
 
     private final byte[] FORMAT_CODES = {
@@ -53,14 +59,14 @@ public class ValueHandlerTest extends QpidTestCase
     private ValueHandler _valueHandle;
     private ValueHandler _sectionValueHandler;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _valueHandle = new ValueHandler(TYPE_REGISTRY);
         _sectionValueHandler = new ValueHandler(TYPE_REGISTRY.getSectionDecoderRegistry());
     }
 
+    @Test
     public void testIncompleteValueParsingFormatCodeOnly()
     {
         for (byte b : FORMAT_CODES)
@@ -70,6 +76,7 @@ public class ValueHandlerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testIncompleteValueParsingVariableOneFormatCodeOnlyAndSize()
     {
         byte[] variableOne = {(byte) 0xA0, (byte) 0xA1, (byte) 0xA3};
@@ -80,6 +87,7 @@ public class ValueHandlerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testIncompleteValueParsingVariableFour()
     {
         byte[] variableFour = {(byte) 0xB0, (byte) 0xB1, (byte) 0xB3};
@@ -90,6 +98,7 @@ public class ValueHandlerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testIncompleteValueParsingCompoundOneOrArrayOne()
     {
         byte[] compoundOne = {(byte) 0xC0, (byte) 0xC1, (byte) 0xE0};
@@ -100,6 +109,7 @@ public class ValueHandlerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testIncompleteValueParsingCompoundFourOrArrayFour()
     {
         byte[] compoundFour = {(byte) 0xD0, (byte) 0xD1, (byte) 0xF0};
@@ -111,6 +121,7 @@ public class ValueHandlerTest extends QpidTestCase
     }
 
 
+    @Test
     public void testIncompleteValueParsingCompoundOneWhenOnlySizeAndCountSpecified()
     {
         byte[] compoundOne = {(byte) 0xC0, (byte) 0xC1, (byte) 0xE0};
@@ -121,6 +132,7 @@ public class ValueHandlerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testIncompleteValueParsingCompoundFourWhenOnlySizeAndCountSpecified()
     {
         byte[] compoundFour = {(byte) 0xD0, (byte) 0xD1, (byte) 0xF0};
@@ -131,24 +143,28 @@ public class ValueHandlerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testIncompleteValueParsingArrayOneElementConstructor()
     {
         byte[] in = {(byte) 0xE0, (byte) 3, (byte) 1, 0x50};
         performTest((byte) 0xE0, in);
     }
 
+    @Test
     public void testIncompleteValueParsingArrayOneElementConstructorWhenSizeIsWrong()
     {
         byte[] in = {(byte) 0xE0, (byte) 2, (byte) 1, 0x50, (byte) 1};
         performTest((byte) 0xE0, in);
     }
 
+    @Test
     public void testIncompleteValueParsingArrayFourElementConstructor()
     {
         byte[] in = {(byte) 0xF0, (byte) 0, (byte) 0, (byte) 0, (byte) 2, (byte) 0, (byte) 0, (byte) 0, (byte) 1, 0x50};
         performTest((byte) 0xF0, in);
     }
 
+    @Test
     public void testIncompleteSection()
     {
         byte[] in = { 0x00, 0x53, 0x75, (byte) 0xA0, 0x01, 0x00 };
@@ -182,8 +198,9 @@ public class ValueHandlerTest extends QpidTestCase
         catch (AmqpErrorException e)
         {
             assertEquals(String.format("Unexpected error code for %#02x", type),
-                         AmqpError.DECODE_ERROR,
-                         e.getError().getCondition());
+                                AmqpError.DECODE_ERROR,
+                                e.getError().getCondition());
+
         }
         catch (Exception e)
         {

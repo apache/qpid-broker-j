@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.logging.actors;
 
+import org.junit.After;
+import org.junit.Before;
+
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -29,13 +32,13 @@ public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
     private AMQPConnection<?> _connection;
     private VirtualHost<?> _virtualHost;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         super.setUp();
         BrokerTestHelper.setUp();
         _connection = BrokerTestHelper.createConnection();
-        _virtualHost = BrokerTestHelper.createVirtualHost("test");
+        _virtualHost = BrokerTestHelper.createVirtualHost("test", this);
     }
 
     public VirtualHost<?> getVirtualHost()
@@ -43,7 +46,7 @@ public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
         return _virtualHost;
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try

@@ -22,11 +22,14 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
+import org.junit.Test;
+
 /**
  * Test QUE Log Messages
  */
 public class QueueMessagesTest extends AbstractTestMessages
 {
+    @Test
     public void testQueueCreatedALL()
     {
         String owner = "guest";
@@ -42,6 +45,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedOwnerAutoDelete()
     {
         String owner = "guest";
@@ -54,6 +58,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedOwnerPriority()
     {
         String owner = "guest";
@@ -68,6 +73,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedOwnerAutoDeletePriority()
     {
         String owner = "guest";
@@ -83,6 +89,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedOwnerAutoDeleteTransient()
     {
         String owner = "guest";
@@ -96,6 +103,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedOwnerAutoDeleteTransientPriority()
     {
         String owner = "guest";
@@ -111,6 +119,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedOwnerAutoDeleteDurable()
     {
         String owner = "guest";
@@ -124,6 +133,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedOwnerAutoDeleteDurablePriority()
     {
         String owner = "guest";
@@ -139,6 +149,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedAutoDelete()
     {
         _logMessage = QueueMessages.CREATED("uuid", null, null, false, true, false, false, false);
@@ -149,6 +160,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedPriority()
     {
         Integer priority = 3;
@@ -162,6 +174,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedAutoDeletePriority()
     {
         Integer priority = 3;
@@ -176,6 +189,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedAutoDeleteTransient()
     {
         _logMessage = QueueMessages.CREATED("uuid", null, null, false, true, false, true, false);
@@ -187,6 +201,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedAutoDeleteTransientPriority()
     {
         Integer priority = 3;
@@ -201,6 +216,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedAutoDeleteDurable()
     {
         _logMessage = QueueMessages.CREATED("uuid", null, null, false, true, true, false, false);
@@ -212,6 +228,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueCreatedAutoDeleteDurablePriority()
     {
         Integer priority = 3;
@@ -226,6 +243,7 @@ public class QueueMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "QUE-1001", expected);
     }
 
+    @Test
     public void testQueueDeleted()
     {
         _logMessage = QueueMessages.DELETED("uuid");

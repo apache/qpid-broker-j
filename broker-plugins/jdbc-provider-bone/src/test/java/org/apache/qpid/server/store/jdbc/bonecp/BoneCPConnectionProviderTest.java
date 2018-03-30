@@ -22,17 +22,20 @@ package org.apache.qpid.server.store.jdbc.bonecp;
 
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProvider.DEFAULT_MAX_CONNECTIONS_PER_PARTITION;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProvider.DEFAULT_MIN_CONNECTIONS_PER_PARTITION;
-import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProvider.DEFAULT_PARTITION_COUNT;
+import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import com.jolbox.bonecp.BoneCPConfig;
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class BoneCPConnectionProviderTest extends TestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class BoneCPConnectionProviderTest extends UnitTestBase
 {
-    public void testCreateBoneCPConfig() throws Exception
+    @Test
+    public void testCreateBoneCPConfig()
     {
 
         final Map<String, String> attributes = new HashMap<>();

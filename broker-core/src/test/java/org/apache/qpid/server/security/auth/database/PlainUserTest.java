@@ -20,17 +20,24 @@
  */
 package org.apache.qpid.server.security.auth.database;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /*
     Note PlainUser is mainly tested by PlainPFPDTest, this is just to catch the extra methods
  */
-public class PlainUserTest extends QpidTestCase
+public class PlainUserTest extends UnitTestBase
 {
 
     private String USERNAME = "username";
     private String PASSWORD = "password";
 
+    @Test
     public void testTooLongArrayConstructor()
     {
         try
@@ -44,6 +51,7 @@ public class PlainUserTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testStringArrayConstructor()
     {
         PlainUser user = new PlainUser(new String[]{USERNAME, PASSWORD}, null);
@@ -56,7 +64,7 @@ public class PlainUserTest extends QpidTestCase
         {
             for (byte c : user.getEncodedPassword())
             {
-                assertEquals("Password incorrect", password[index], (char) c);
+                assertEquals("Password incorrect", (long) password[index], (long) (char) c);
                 index++;
             }
         }
@@ -70,7 +78,7 @@ public class PlainUserTest extends QpidTestCase
         index=0;
         for (char c : user.getPassword())
         {
-            assertEquals("Password incorrect", password[index], c);
+            assertEquals("Password incorrect", (long) password[index], (long) c);
             index++;
         }
     }

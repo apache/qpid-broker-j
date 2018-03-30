@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,6 +30,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
@@ -40,19 +44,19 @@ import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class QueueMessageRecoveryTest extends QpidTestCase
+public class QueueMessageRecoveryTest extends UnitTestBase
 {
     QueueManagingVirtualHost<?> _vhost;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
-        _vhost = BrokerTestHelper.createVirtualHost("host");
+        _vhost = BrokerTestHelper.createVirtualHost("host", this);
     }
 
+    @Test
     public void testSimpleRecovery() throws Exception
     {
         // Simple deterministic test to prove that interleaved recovery and new publishing onto a queue is correctly
@@ -70,7 +74,7 @@ public class QueueMessageRecoveryTest extends QpidTestCase
         queue.enqueue(createMockMessage(6), null, null);
         queue.recover(createMockMessage(3), createEnqueueRecord(3, queue));
 
-        assertEquals(4, messageList.size());
+        assertEquals((long) 4, (long) messageList.size());
         for(int i = 0; i < 4; i++)
         {
             assertEquals((long)i, messageList.get(i).getMessageNumber());
@@ -80,7 +84,7 @@ public class QueueMessageRecoveryTest extends QpidTestCase
 
         queue.enqueue(createMockMessage(7), null, null);
 
-        assertEquals(8, messageList.size());
+        assertEquals((long) 8, (long) messageList.size());
 
         for(int i = 0; i < 8; i++)
         {
@@ -90,6 +94,7 @@ public class QueueMessageRecoveryTest extends QpidTestCase
     }
 
 
+    @Test
     public void testMultiThreadedRecovery() throws Exception
     {
         // Non deterministic test with separate publishing and recovery threads
@@ -97,6 +102,7 @@ public class QueueMessageRecoveryTest extends QpidTestCase
         performMultiThreadedRecovery(5000);
     }
 
+    @Test
     public void testRepeatedMultiThreadedRecovery() throws Exception
     {
         // Repeated non deterministic test with separate publishing and recovery threads(but with fewer messages being
@@ -150,7 +156,7 @@ public class QueueMessageRecoveryTest extends QpidTestCase
         recoveryThread.join(10000);
         publishingThread.join(10000);
 
-        assertEquals(size*2, messageList.size());
+        assertEquals((long) (size * 2), (long) messageList.size());
 
         for(int i = 0; i < (size*2); i++)
         {

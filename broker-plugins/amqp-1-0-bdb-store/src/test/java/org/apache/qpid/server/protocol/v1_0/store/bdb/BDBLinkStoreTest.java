@@ -22,6 +22,9 @@ package org.apache.qpid.server.protocol.v1_0.store.bdb;
 
 
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -35,6 +38,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.io.Files;
 import com.sleepycat.je.CacheMode;
+import org.junit.Before;
 
 import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreTestCase;
@@ -43,11 +47,20 @@ import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentConfiguration;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentFacade;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
 public class BDBLinkStoreTest extends LinkStoreTestCase
 {
     private StandardEnvironmentFacade _facade;
     private File _storeFolder;
+
+    @Override
+    @Before
+    public void setUp() throws Exception
+    {
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        super.setUp();
+    }
 
     @Override
     protected LinkStore createLinkStore()
@@ -75,7 +88,13 @@ public class BDBLinkStoreTest extends LinkStoreTestCase
     @Override
     protected void deleteLinkStore()
     {
-        _facade.close();
-        FileUtils.delete(_storeFolder, true);
+        if (_facade != null)
+        {
+            _facade.close();
+        }
+        if (_storeFolder != null)
+        {
+            FileUtils.delete(_storeFolder, true);
+        }
     }
 }

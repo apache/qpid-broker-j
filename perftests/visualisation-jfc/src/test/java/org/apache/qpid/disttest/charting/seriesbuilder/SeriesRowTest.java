@@ -18,17 +18,36 @@
  */
 package org.apache.qpid.disttest.charting.seriesbuilder;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class SeriesRowTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class SeriesRowTest extends UnitTestBase
 {
     private static final Integer[] PAIR = new Integer[] {10, 11};
 
+    @Test
     public void testValidSeriesRow()
     {
         assertEquals(11, SeriesRow.createValidSeriesRow(2, PAIR).dimension(1));
     }
 
+    @Test
     public void testValidSeriesRowThrowsExceptionIfArrayTooSmall()
     {
         try
@@ -42,6 +61,7 @@ public class SeriesRowTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDimension()
     {
         SeriesRow seriesRow = new SeriesRow(10, 11);
@@ -49,12 +69,14 @@ public class SeriesRowTest extends QpidTestCase
         assertEquals(11, seriesRow.dimension(1));
     }
 
+    @Test
     public void testDimensionAsString()
     {
         SeriesRow seriesRow = new SeriesRow(10);
         assertEquals("10", seriesRow.dimensionAsString(0));
     }
 
+    @Test
     public void testDimensionAsDouble()
     {
         SeriesRow seriesRow = new SeriesRow(10.1);

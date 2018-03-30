@@ -19,6 +19,11 @@
 
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMap;
@@ -38,9 +43,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -50,12 +59,12 @@ import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
-import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class BDBHARemoteReplicationNodeTest extends QpidTestCase
+public class BDBHARemoteReplicationNodeTest extends UnitTestBase
 {
     private final AccessControl _mockAccessControl = mock(AccessControl.class);
 
@@ -66,10 +75,10 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
     private ReplicatedEnvironmentFacade _facade;
 
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
 
         _facade = mock(ReplicatedEnvironmentFacade.class);
 
@@ -97,9 +106,10 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
 
     }
 
+    @Test
     public void testUpdateRole() throws Exception
     {
-        String remoteReplicationName = getName();
+        String remoteReplicationName = getTestName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
         // Simulate an election that put the node in REPLICA state
         ((BDBHARemoteReplicationNodeImpl)remoteReplicationNode).setRole(NodeRole.REPLICA);
@@ -141,9 +151,10 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDelete()
     {
-        String remoteReplicationName = getName();
+        String remoteReplicationName = getTestName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
 
         remoteReplicationNode.delete();
@@ -153,11 +164,13 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
 
     // ***************  ReplicationNode Access Control Tests  ***************
 
+    @Test
     public void testUpdateDeniedByACL()
     {
-        String remoteReplicationName = getName();
+        String remoteReplicationName = getTestName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
         when(_mockAccessControl.authorise(any(SecurityToken.class), eq(Operation.UPDATE), eq(remoteReplicationNode), anyMap())).thenReturn(Result.DENIED);
+
 
         assertNull(remoteReplicationNode.getDescription());
 
@@ -172,9 +185,10 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDeleteDeniedByACL()
     {
-        String remoteReplicationName = getName();
+        String remoteReplicationName = getTestName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
 
         when(_mockAccessControl.authorise(any(SecurityToken.class), eq(Operation.DELETE), eq(remoteReplicationNode), anyMap())).thenReturn(Result.DENIED);

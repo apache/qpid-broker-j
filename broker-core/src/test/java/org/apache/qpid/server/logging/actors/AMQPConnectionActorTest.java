@@ -29,6 +29,10 @@ import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 /**
  * Test : AMQPConnectionActorTest
  * Validate the AMQPConnectionActor class.
@@ -40,7 +44,7 @@ import java.util.List;
  */
 public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
 {
-    @Override
+    @Before
     public void setUp()
     {
         //Prevent logger creation
@@ -54,6 +58,7 @@ public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
      * The log message should be fully replaced (no '{n}' values) and should
      * not contain any channel identification.
      */
+    @Test
     public void testConnection() throws Exception
     {
         super.setUp();
@@ -64,26 +69,25 @@ public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
 
         List<Object> logs = getRawLogger().getLogMessages();
 
-        assertEquals("Message log size not as expected.", 1, logs.size());
+        Assert.assertEquals("Message log size not as expected.", (long) 1, (long) logs.size());
 
         // Verify that the logged message is present in the output
-        assertTrue("Message was not found in log message",
-                   logs.get(0).toString().contains(message));
+        Assert.assertTrue("Message was not found in log message", logs.get(0).toString().contains(message));
 
         // Verify that the message has the correct type
-        assertTrue("Message does not contain the [con: prefix",
-                   logs.get(0).toString().contains("[con:"));
+        Assert.assertTrue("Message does not contain the [con: prefix", logs.get(0).toString().contains("[con:"));
 
         // Verify that all the values were presented to the MessageFormatter
         // so we will not end up with '{n}' entries in the log.
-        assertFalse("Verify that the string does not contain any '{'.",
-                    logs.get(0).toString().contains("{"));
+        Assert.assertFalse("Verify that the string does not contain any '{'.", logs.get(0).toString().contains("{"));
 
         // Verify that the logged message does not contains the 'ch:' marker
-        assertFalse("Message was logged with a channel identifier." + logs.get(0),
-                    logs.get(0).toString().contains("/ch:"));
+        Assert.assertFalse("Message was logged with a channel identifier." + logs.get(0),
+                           logs.get(0).toString().contains("/ch:"));
+
     }
 
+    @Test
     public void testConnectionLoggingOff() throws Exception
     {
         setStatusUpdatesEnabled(false);
@@ -94,8 +98,7 @@ public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
 
         List<Object> logs = getRawLogger().getLogMessages();
 
-        assertEquals("Message log size not as expected.", 0, logs.size());
-
+        Assert.assertEquals("Message log size not as expected.", (long) 0, (long) logs.size());
     }
 
     private String sendLogMessage()

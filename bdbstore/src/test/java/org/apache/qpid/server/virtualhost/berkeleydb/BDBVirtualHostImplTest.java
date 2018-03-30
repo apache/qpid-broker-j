@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.virtualhost.berkeleydb;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,27 +33,33 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.DurableConfigurationStore;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class BDBVirtualHostImplTest extends QpidTestCase
+public class BDBVirtualHostImplTest extends UnitTestBase
 {
     private File _storePath;
     private VirtualHostNode<?> _node;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+
         Broker broker = BrokerTestHelper.createBrokerMock();
 
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
@@ -67,22 +78,16 @@ public class BDBVirtualHostImplTest extends QpidTestCase
         when(_node.getId()).thenReturn(UUID.randomUUID());
     }
 
-    @Override
-    public void  tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
-        try
+        if (_storePath != null)
         {
-            if (_storePath != null)
-            {
-                FileUtils.delete(_storePath, true);
-            }
-        }
-        finally
-        {
-            super.tearDown();
+            FileUtils.delete(_storePath, true);
         }
     }
 
+    @Test
     public void testValidateOnCreateForInvalidStorePath() throws Exception
     {
         String hostName = getTestName();
@@ -102,7 +107,8 @@ public class BDBVirtualHostImplTest extends QpidTestCase
         }
         catch (IllegalConfigurationException e)
         {
-            assertTrue("Unexpected exception " + e.getMessage(), e.getMessage().startsWith("Cannot open virtual host message store"));
+            assertTrue("Unexpected exception " + e.getMessage(),
+                              e.getMessage().startsWith("Cannot open virtual host message store"));
         }
     }
 

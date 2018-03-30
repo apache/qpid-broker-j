@@ -21,12 +21,20 @@
 package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -42,21 +50,21 @@ import org.apache.qpid.server.protocol.v1_0.Message_1_0;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
+public class PropertyConverter_0_8_to_1_0Test extends UnitTestBase
 {
     private NamedAddressSpace _namedAddressSpace;
     private MessageConverter_0_8_to_1_0 _messageConverter;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _namedAddressSpace = mock(NamedAddressSpace.class);
         _messageConverter = new MessageConverter_0_8_to_1_0();
     }
 
+    @Test
     public void testContentTypeConversion()
     {
         String contentType = "test-content-type";
@@ -70,6 +78,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected content type", contentType, properties.getContentType().toString());
     }
 
+    @Test
     public void testContentTypeJavaObjectStreamConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -80,10 +89,12 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
 
         Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals("Unexpected content type",
-                     "application/x-java-serialized-object",
-                     properties.getContentType().toString());
+                            "application/x-java-serialized-object",
+                            properties.getContentType().toString());
+
     }
 
+    @Test
     public void testContentEncodingConversion()
     {
         String contentEncoding = "my-test-encoding";
@@ -97,6 +108,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected content encoding", contentEncoding, properties.getContentEncoding().toString());
     }
 
+    @Test
     public void testHeaderConversion()
     {
         Map<String, Object> headers = new HashMap<>();
@@ -112,6 +124,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected applicationProperties", headers, new HashMap<>(applicationProperties));
     }
 
+    @Test
     public void testHeaderConversionWhenQpidSubjectIsPresent()
     {
         String testSubject = "testSubject";
@@ -127,9 +140,12 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals("Unexpected subject", testSubject, properties.getSubject());
         Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
-        assertFalse("Unexpected subject in application properties", applicationProperties.containsKey("qpid.subject"));
+        assertFalse("Unexpected subject in application properties",
+                           applicationProperties.containsKey("qpid.subject"));
+
     }
 
+    @Test
     public void testPersistentDeliveryModeConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -142,6 +158,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertTrue("Unexpected durable header", header.getDurable());
     }
 
+    @Test
     public void testNonPersistentDeliveryModeConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -154,6 +171,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertFalse("Unexpected durable header", header.getDurable());
     }
 
+    @Test
     public void testPriorityConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -164,9 +182,10 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         Header header = convertedMessage.getHeaderSection().getValue();
-        assertEquals("Unexpected priority", priority, header.getPriority().byteValue());
+        assertEquals("Unexpected priority", (long) priority, (long) header.getPriority().byteValue());
     }
 
+    @Test
     public void testCorrelationIdConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -180,6 +199,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected correlationId", correlationId, properties.getCorrelationId());
     }
 
+    @Test
     public void testReplyToConversionWhenBindingURLFormatIsUsed()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -194,6 +214,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected reply-to", "amq.direct/test_routing_key", properties.getReplyTo());
     }
 
+    @Test
     public void testReplyToConversionWhenBindingURLFormatIsUsed2()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -208,6 +229,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected reply-to", "amq.direct/queue_name", properties.getReplyTo());
     }
 
+    @Test
     public void testReplyToConversionWhenBindingURLFormatIsUsed3()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -222,6 +244,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected reply-to", "queue_name", properties.getReplyTo());
     }
 
+    @Test
     public void testReplyToConversionWhenBindingURLFormatIsUsed4()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -236,6 +259,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected reply-to", "test_routing_key", properties.getReplyTo());
     }
 
+    @Test
     public void testReplyToConversionWhenNonBindingURLFormatIsUsed()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -250,6 +274,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected reply-to", "test", properties.getReplyTo());
     }
 
+    @Test
     public void testExpirationConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -263,12 +288,13 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         Header header = convertedMessage.getHeaderSection().getValue();
-        assertEquals("Unexpected TTL", ttl, header.getTtl().longValue());
+        assertEquals("Unexpected TTL", (long) ttl, header.getTtl().longValue());
 
         Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertNull("Unexpected expiration", properties.getAbsoluteExpiryTime());
     }
 
+    @Test
     public void testMessageIdConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -282,6 +308,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected messageId", messageId, properties.getMessageId());
     }
 
+    @Test
     public void testTimestampConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -295,6 +322,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected creation timestamp", timestamp, properties.getCreationTime().getTime());
     }
 
+    @Test
     public void testArrivalTimeConversion()
     {
         final long timestamp = System.currentTimeMillis() - 10000;
@@ -306,6 +334,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected creation timestamp", timestamp, properties.getCreationTime().getTime());
     }
 
+    @Test
     public void testTypeConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -319,6 +348,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected subject", type, properties.getSubject());
     }
 
+    @Test
     public void testUserIdConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -332,6 +362,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected user-id", userId, new String(properties.getUserId().getArray(), UTF_8));
     }
 
+    @Test
     public void testHeaderJMSXGroupIdConversion()
     {
         Map<String, Object> headers = new HashMap<>();
@@ -350,9 +381,10 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
 
         Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
         assertFalse("Unexpected JMSXGroupID in application properties",
-                    applicationProperties.containsKey("JMSXGroupID"));
+                           applicationProperties.containsKey("JMSXGroupID"));
     }
 
+    @Test
     public void testHeaderJMSXGroupSeqConversion()
     {
         Map<String, Object> headers = new HashMap<>();
@@ -367,13 +399,17 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
 
         Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        assertEquals("Unexpected group-sequence", testGroupSequenceNumber, properties.getGroupSequence().intValue());
+        assertEquals("Unexpected group-sequence",
+                            (long) testGroupSequenceNumber,
+                            (long) properties.getGroupSequence().intValue());
+
 
         Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
         assertFalse("Unexpected JMSXGroupSeq in application properties",
-                    applicationProperties.containsKey("JMSXGroupSeq"));
+                           applicationProperties.containsKey("JMSXGroupSeq"));
     }
 
+    @Test
     public void testHeaderJMSXGroupSeqConversionWhenWrongType()
     {
         Map<String, Object> headers = new HashMap<>();
@@ -393,9 +429,11 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
 
         assertTrue("JMSXGroupSeq was removed from application properties",
-                   applicationProperties.containsKey("JMSXGroupSeq"));
+                          applicationProperties.containsKey("JMSXGroupSeq"));
+
     }
 
+    @Test
     public void testHeaderWithFiledTableValueConversionFails()
     {
         Map<String, Object> headers = Collections.singletonMap("mapHeader", Collections.emptyMap());
@@ -414,6 +452,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         }
     }
 
+    @Test
     public void testHeaderWithFieldArrayValueConversionFails()
     {
         Map<String, Object> headers = Collections.singletonMap("listHeader", Collections.emptyList());
@@ -432,6 +471,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         }
     }
 
+    @Test
     public void testExchangeRoutingKeyConversion()
     {
         final String testExchange = "testExchange";

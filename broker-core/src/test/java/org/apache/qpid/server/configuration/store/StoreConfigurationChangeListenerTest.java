@@ -30,6 +30,9 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.UUID;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
@@ -38,21 +41,21 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class StoreConfigurationChangeListenerTest extends QpidTestCase
+public class StoreConfigurationChangeListenerTest extends UnitTestBase
 {
     private DurableConfigurationStore _store;
     private StoreConfigurationChangeListener _listener;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _store = mock(DurableConfigurationStore.class);
         _listener = new StoreConfigurationChangeListener(_store);
     }
 
+    @Test
     public void testStateChanged()
     {
         notifyBrokerStarted();
@@ -66,6 +69,7 @@ public class StoreConfigurationChangeListenerTest extends QpidTestCase
         verify(_store).remove(record);
     }
 
+    @Test
     public void testChildAdded()
     {
         notifyBrokerStarted();
@@ -83,6 +87,7 @@ public class StoreConfigurationChangeListenerTest extends QpidTestCase
         verify(_store).update(eq(true), any(ConfiguredObjectRecord.class));
     }
 
+    @Test
     public void testAttributeSet()
     {
         notifyBrokerStarted();
@@ -93,6 +98,7 @@ public class StoreConfigurationChangeListenerTest extends QpidTestCase
         verify(_store).update(eq(false), any(ConfiguredObjectRecord.class));
     }
 
+    @Test
     public void testChildAddedWhereParentManagesChildStorage()
     {
         notifyBrokerStarted();

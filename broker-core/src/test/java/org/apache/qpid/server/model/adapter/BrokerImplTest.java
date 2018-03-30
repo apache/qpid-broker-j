@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.model.adapter;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +39,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.security.auth.Subject;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
@@ -58,20 +65,18 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhostnode.TestVirtualHostNode;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-
-public class BrokerImplTest extends QpidTestCase
+public class BrokerImplTest extends UnitTestBase
 {
     private TaskExecutorImpl _taskExecutor;
     private SystemConfig _systemConfig;
     private BrokerImpl _brokerImpl;
     private PreferenceStore _preferenceStore;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
@@ -86,7 +91,7 @@ public class BrokerImplTest extends QpidTestCase
         when(_systemConfig.createPreferenceStore()).thenReturn(_preferenceStore);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -104,25 +109,28 @@ public class BrokerImplTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testAssignTargetSizes_NoQueueDepth() throws Exception
     {
         doAssignTargetSizeTest(new long[] {0, 0}, 1024 * 1024 * 1024);
     }
 
+    @Test
     public void testAssignTargetSizes_OneQueue() throws Exception
     {
         doAssignTargetSizeTest(new long[] {37}, 1024 * 1024 * 1024);
     }
 
+    @Test
     public void testAssignTargetSizes_ThreeQueues() throws Exception
     {
         doAssignTargetSizeTest(new long[] {37, 47, 0}, 1024 * 1024 * 1024);
     }
 
+    @Test
     public void testAssignTargetSizes_QueuesOversize() throws Exception
     {
         int flowToDiskThreshold = 1024 * 1024 * 1024;
@@ -130,6 +138,7 @@ public class BrokerImplTest extends QpidTestCase
                                flowToDiskThreshold);
     }
 
+    @Test
     public void testNetworkBufferSize()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -144,13 +153,16 @@ public class BrokerImplTest extends QpidTestCase
         _brokerImpl = new BrokerImpl(attributes, _systemConfig);
         _brokerImpl.open();
         assertEquals("Broker open should fail with network buffer size less then minimum",
-                     State.ERRORED,
-                     _brokerImpl.getState());
+                            State.ERRORED,
+                            _brokerImpl.getState());
+
         assertEquals("Unexpected buffer size",
-                     Broker.DEFAULT_NETWORK_BUFFER_SIZE,
-                     _brokerImpl.getNetworkBufferSize());
+                            (long) Broker.DEFAULT_NETWORK_BUFFER_SIZE,
+                            (long) _brokerImpl.getNetworkBufferSize());
+
     }
 
+    @Test
     public void testPurgeUser() throws Exception
     {
         final String testUsername = "testUser";
@@ -205,16 +217,26 @@ public class BrokerImplTest extends QpidTestCase
 
         // test pre-conditions
         Collection<Preference> preferencesBeforePurge = getPreferencesAs(testUserSubject);
-        assertEquals("Unexpected number of preferences before userPurge", 1, preferencesBeforePurge.size());
-        assertEquals("Unexpected preference before userPurge", preferenceId, preferencesBeforePurge.iterator().next().getId());
-        assertTrue("User was not valid before userPurge", authenticationProvider.getUsers().containsKey(testUsername));
+        assertEquals("Unexpected number of preferences before userPurge",
+                            (long) 1,
+                            (long) preferencesBeforePurge.size());
+        assertEquals("Unexpected preference before userPurge",
+                            preferenceId,
+                            preferencesBeforePurge.iterator().next().getId());
+
+        assertTrue("User was not valid before userPurge",
+                          authenticationProvider.getUsers().containsKey(testUsername));
 
         _brokerImpl.purgeUser(authenticationProvider, testUsername);
 
         // test post-conditions
         Collection<Preference> preferencesAfterPurge = getPreferencesAs(testUserSubject);
-        assertEquals("Preferences were not deleted during userPurge", Collections.EMPTY_SET, preferencesAfterPurge);
-        assertEquals("User was not deleted from authentication Provider", Collections.EMPTY_MAP, authenticationProvider.getUsers());
+        assertEquals("Preferences were not deleted during userPurge",
+                            Collections.EMPTY_SET,
+                            preferencesAfterPurge);
+        assertEquals("User was not deleted from authentication Provider",
+                            Collections.EMPTY_MAP,
+                            authenticationProvider.getUsers());
         verify(_preferenceStore).replace(Collections.singleton(preferenceId), Collections.EMPTY_SET);
     }
 
@@ -270,7 +292,8 @@ public class BrokerImplTest extends QpidTestCase
 
         long diff = Math.abs(flowToDiskThreshold - totalAssignedTargetSize);
         long tolerance = _brokerImpl.getVirtualHostNodes().size() * 2;
-        assertTrue(String.format("Assigned target size not within expected tolerance. Diff %d Tolerance %d", diff, tolerance), diff < tolerance);
+        assertTrue(String.format("Assigned target size not within expected tolerance. Diff %d Tolerance %d", diff, tolerance),
+                          diff < tolerance);
     }
 
     private void createVhnWithVh(final BrokerImpl brokerImpl, int nameSuffix, final long totalQueueSize)

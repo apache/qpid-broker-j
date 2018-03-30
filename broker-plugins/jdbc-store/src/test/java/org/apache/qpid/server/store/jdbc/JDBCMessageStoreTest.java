@@ -22,6 +22,9 @@ package org.apache.qpid.server.store.jdbc;
 
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.assertTablesExistence;
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.getTableNames;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,6 +36,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -55,7 +61,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
     private static final double SPARSITY_FRACTION = 1.0;
 
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         super.setUp();
@@ -63,7 +69,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -80,6 +86,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         }
     }
 
+    @Test
     public void testTablePrefix() throws Exception
     {
         Collection<String> expectedTables = ((GenericJDBCMessageStore)getStore()).getTableNames();
@@ -93,6 +100,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         }
     }
 
+    @Test
     public void testOnDelete() throws Exception
     {
         try(Connection connection = openConnection())
@@ -107,6 +115,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         }
     }
 
+    @Test
     public void testEnqueueTransactionCommitAsync() throws Exception
     {
         final String queueName = getTestName();
@@ -127,6 +136,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         future.get(1000, TimeUnit.MILLISECONDS);
     }
 
+    @Test
     public void testDequeueTransactionCommitAsync() throws Exception
     {
         final String queueName = getTestName();
@@ -147,6 +157,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         future.get(1000, TimeUnit.MILLISECONDS);
     }
 
+    @Test
     public void testDeleteAction()
     {
         GenericJDBCMessageStore store = (GenericJDBCMessageStore) getStore();

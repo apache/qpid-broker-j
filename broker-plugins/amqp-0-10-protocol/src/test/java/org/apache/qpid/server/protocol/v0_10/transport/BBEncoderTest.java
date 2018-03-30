@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v0_10.transport;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -31,24 +32,28 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class BBEncoderTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class BBEncoderTest extends UnitTestBase
 {
 
+    @Test
     public void testGrow()
     {
         BBEncoder enc = new BBEncoder(4);
         enc.writeInt32(0xDEADBEEF);
         ByteBuffer buf = enc.buffer();
-        assertEquals(0xDEADBEEF, buf.getInt(0));
+        assertEquals((long) 0xDEADBEEF, (long) buf.getInt(0));
         enc.writeInt32(0xBEEFDEAD);
         buf = enc.buffer();
-        assertEquals(0xDEADBEEF, buf.getInt(0));
-        assertEquals(0xBEEFDEAD, buf.getInt(4));
+        assertEquals((long) 0xDEADBEEF, (long) buf.getInt(0));
+        assertEquals((long) 0xBEEFDEAD, (long) buf.getInt(4));
     }
 
 
+    @Test
     public void testReadWriteStruct()
     {
         BBEncoder encoder = new BBEncoder(4);
@@ -58,7 +63,9 @@ public class BBEncoderTest extends QpidTestCase
 
         ByteBuffer buffer = encoder.buffer();
 
-        assertEquals("Unexpected size", EncoderUtils.getStructLength(ReplyTo.TYPE, replyTo), buffer.remaining());
+        assertEquals("Unexpected size",
+                            (long) EncoderUtils.getStructLength(ReplyTo.TYPE, replyTo),
+                            (long) buffer.remaining());
 
         BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
@@ -69,6 +76,7 @@ public class BBEncoderTest extends QpidTestCase
         assertEquals("Unexpected routing key", replyTo.getRoutingKey(), decoded.getRoutingKey());
     }
 
+    @Test
     public void testReadWriteStruct32()
     {
         BBEncoder encoder = new BBEncoder(4);
@@ -90,21 +98,30 @@ public class BBEncoderTest extends QpidTestCase
 
         ByteBuffer buffer = encoder.buffer();
 
-        assertEquals("Unexpected size", EncoderUtils.getStruct32Length(messageProperties), buffer.remaining());
+        assertEquals("Unexpected size",
+                            (long) EncoderUtils.getStruct32Length(messageProperties),
+                            (long) buffer.remaining());
 
         BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
 
         MessageProperties decoded = (MessageProperties)decoder.readStruct32();
 
-        assertEquals("Unexpected content length", messageProperties.getContentLength(), decoded.getContentLength());
+        assertEquals("Unexpected content length",
+                            messageProperties.getContentLength(),
+                            decoded.getContentLength());
         assertEquals("Unexpected message id", messageProperties.getMessageId(), decoded.getMessageId());
-        assertArrayEquals("Unexpected correlation id", messageProperties.getCorrelationId(), decoded.getCorrelationId());
+        assertArrayEquals("Unexpected correlation id", messageProperties.getCorrelationId(), decoded.getCorrelationId
+                ());
         assertEquals("Unexpected reply to", messageProperties.getReplyTo(), decoded.getReplyTo());
         assertEquals("Unexpected content type", messageProperties.getContentType(), decoded.getContentType());
-        assertEquals("Unexpected content encoding", messageProperties.getContentEncoding(), decoded.getContentEncoding());
+        assertEquals("Unexpected content encoding",
+                            messageProperties.getContentEncoding(),
+                            decoded.getContentEncoding());
         assertArrayEquals("Unexpected user id", messageProperties.getUserId(), decoded.getUserId());
         assertArrayEquals("Unexpected application id", messageProperties.getAppId(), decoded.getAppId());
-        assertEquals("Unexpected application headers", messageProperties.getApplicationHeaders(), decoded.getApplicationHeaders());
+        assertEquals("Unexpected application headers",
+                            messageProperties.getApplicationHeaders(),
+                            decoded.getApplicationHeaders());
     }
 }

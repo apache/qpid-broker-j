@@ -30,6 +30,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -38,19 +41,18 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class FlowToDiskOverflowPolicyHandlerTest extends QpidTestCase
+public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
 {
     private Queue<?> _queue;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         BrokerTestHelper.setUp();
 
-        VirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(getClass().getName());
+        VirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(getClass().getName(), this);
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, "testQueue");
@@ -59,6 +61,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends QpidTestCase
         _queue = (AbstractQueue<?>) virtualHost.createChild(Queue.class, attributes);
     }
 
+    @Test
     public void testOverflowAfterLoweringLimit() throws Exception
     {
         ServerMessage<?> message = createMessage(10L);
@@ -76,6 +79,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends QpidTestCase
         verify(storedMessage2).flowToDisk();
     }
 
+    @Test
     public void testOverflowOnSecondMessage() throws Exception
     {
         _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10));
@@ -90,6 +94,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends QpidTestCase
         verify(storedMessage2).flowToDisk();
     }
 
+    @Test
     public void testBytesOverflow() throws Exception
     {
         _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 0));
@@ -99,6 +104,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends QpidTestCase
         verify(storedMessage).flowToDisk();
     }
 
+    @Test
     public void testMessagesOverflow() throws Exception
     {
         _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 0));
@@ -108,6 +114,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends QpidTestCase
         verify(storedMessage).flowToDisk();
     }
 
+    @Test
     public void testNoOverflow() throws Exception
     {
         _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10));

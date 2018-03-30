@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
@@ -38,10 +46,9 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-
-public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
+public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
 {
     private static final long BROKER_CREATE_TIME = 1401385808828l;
     private static final String BROKER_NAME = "Broker";
@@ -56,10 +63,9 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
     private UUID _hostId;
     private UUID _brokerId;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _virtaulHosts = new ArrayList<>();
         _hostId = UUID.randomUUID();
         _brokerId = UUID.randomUUID();
@@ -82,6 +88,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
                                                  null, new HashMap<String,Object>());
     }
 
+    @Test
     public void testUpgradeVirtualHostWithJDBCStoreAndBoneCPPool()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -143,6 +150,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         return recoverer.upgrade(dcs, handler.getRecords());
     }
 
+    @Test
     public void testUpgradeVirtualHostWithJDBCStoreAndDefaultPool()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -191,6 +199,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertBrokerRecord(records);
     }
 
+    @Test
     public void testUpgradeVirtualHostWithDerbyStore()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -223,6 +232,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertBrokerRecord(records);
     }
 
+    @Test
     public void testUpgradeVirtualHostWithBDBStore()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -257,6 +267,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertBrokerRecord(records);
     }
 
+    @Test
     public void testUpgradeVirtualHostWithBDBHAStore()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -306,6 +317,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertBrokerRecord(records);
     }
 
+    @Test
     public void testUpgradeVirtualHostWithMemoryStore()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -336,6 +348,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertBrokerRecord(records);
     }
 
+    @Test
     public void testUpgradeBrokerRecordWithModelVersion1_0()
     {
         _brokerRecord.getAttributes().put("modelVersion", "1.0");
@@ -353,6 +366,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         upgradeBrokerRecordAndAssertUpgradeResults();
     }
 
+    @Test
     public void testUpgradeBrokerRecordWithModelVersion1_1()
     {
         _brokerRecord.getAttributes().put("modelVersion", "1.1");
@@ -370,6 +384,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         upgradeBrokerRecordAndAssertUpgradeResults();
     }
 
+    @Test
     public void testUpgradeBrokerRecordWithModelVersion1_2()
     {
         _brokerRecord.getAttributes().put("modelVersion", "1.2");
@@ -387,6 +402,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         upgradeBrokerRecordAndAssertUpgradeResults();
     }
 
+    @Test
     public void testUpgradeBrokerRecordWithModelVersion1_3()
     {
         _brokerRecord.getAttributes().put("modelVersion", "1.3");
@@ -404,6 +420,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         upgradeBrokerRecordAndAssertUpgradeResults();
     }
 
+    @Test
     public void testUpgradeNonAMQPPort()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -421,10 +438,11 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         assertTrue("No virtualhostalias rescords should be returned",
-                findRecordByType("VirtualHostAlias", records).isEmpty());
+                          findRecordByType("VirtualHostAlias", records).isEmpty());
 
     }
 
+    @Test
     public void testUpgradeImpliedAMQPPort()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -441,11 +459,12 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         assertFalse("VirtualHostAlias rescords should be returned",
-                findRecordByType("VirtualHostAlias", records).isEmpty());
+                           findRecordByType("VirtualHostAlias", records).isEmpty());
 
     }
 
 
+    @Test
     public void testUpgradeImpliedNonAMQPPort()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -463,10 +482,10 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         assertTrue("No virtualhostalias rescords should be returned",
-                findRecordByType("VirtualHostAlias", records).isEmpty());
-
+                          findRecordByType("VirtualHostAlias", records).isEmpty());
     }
 
+    @Test
     public void testUpgradeBrokerType()
     {
         _brokerRecord.getAttributes().put("modelVersion", "3.0");
@@ -478,10 +497,11 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> brokerRecords = findRecordByType("Broker", records);
-        assertEquals("Unexpected number of broker records", 1, brokerRecords.size());
+        assertEquals("Unexpected number of broker records", (long) 1, (long) brokerRecords.size());
         assertFalse("Unexpected type", brokerRecords.get(0).getAttributes().containsKey("type"));
     }
 
+    @Test
     public void testUpgradeAMQPPortWithNetworkBuffers()
     {
         Map<String, Object> portAttributes = new HashMap<>();
@@ -500,14 +520,17 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
-        assertEquals("Unexpected port size", 1, ports.size());
+        assertEquals("Unexpected port size", (long) 1, (long) ports.size());
         ConfiguredObjectRecord upgradedRecord = ports.get(0);
         Map<String, Object> attributes = upgradedRecord.getAttributes();
-        assertFalse("receiveBufferSize is found " + attributes.get("receiveBufferSize"), attributes.containsKey("receiveBufferSize"));
-        assertFalse("sendBufferSize is found " + attributes.get("sendBufferSize"), attributes.containsKey("sendBufferSize"));
+        assertFalse("receiveBufferSize is found " + attributes.get("receiveBufferSize"),
+                           attributes.containsKey("receiveBufferSize"));
+        assertFalse("sendBufferSize is found " + attributes.get("sendBufferSize"),
+                           attributes.containsKey("sendBufferSize"));
         assertEquals("Unexpected name", getTestName(), attributes.get("name"));
     }
 
+    @Test
     public void testUpgradeRemoveJmxPlugin()
     {
         Map<String, Object> jmxPlugin = new HashMap<>();
@@ -530,6 +553,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertTrue("JMX Plugin was not removed", plugins.isEmpty());
     }
 
+    @Test
     public void testUpgradeRemoveJmxPortByType()
     {
         Map<String, Object> jmxPort = new HashMap<>();
@@ -552,6 +576,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertTrue("Port was not removed", ports.isEmpty());
     }
 
+    @Test
     public void testUpgradeRemoveRmiPortByType()
     {
         Map<String, Object> rmiPort = new HashMap<>();
@@ -573,6 +598,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertTrue("Port was not removed", ports.isEmpty());
     }
 
+    @Test
     public void testUpgradeRemoveJmxPortByProtocol()
     {
         Map<String, Object> jmxPort = new HashMap<>();
@@ -595,6 +621,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertTrue("Port was not removed", ports.isEmpty());
     }
 
+    @Test
     public void testUpgradeRemoveRmiPortByProtocol()
     {
         Map<String, Object> rmiPort2 = new HashMap<>();
@@ -617,6 +644,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertTrue("Port was not removed", ports.isEmpty());
     }
 
+    @Test
     public void testUpgradeRemovePreferencesProviderNonJsonLikeStore()
     {
         _brokerRecord.getAttributes().put("modelVersion", "6.0");
@@ -648,9 +676,10 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertTrue("PreferencesProvider was not removed", preferencesProviders.isEmpty());
 
         List<ConfiguredObjectRecord> authenticationProviders = findRecordByType("AuthenticationProvider", records);
-        assertEquals("AuthenticationProvider was removed", 1, authenticationProviders.size());
+        assertEquals("AuthenticationProvider was removed", (long) 1, (long) authenticationProviders.size());
     }
 
+    @Test
     public void testUpgradeRemovePreferencesProviderJsonLikeStore()
     {
         _brokerRecord.getAttributes().put("modelVersion", "6.0");
@@ -672,11 +701,12 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> authenticationProviders = findRecordByType("AuthenticationProvider", records);
-        assertEquals("AuthenticationProviders was removed", 1, authenticationProviders.size());
+        assertEquals("AuthenticationProviders was removed", (long) 1, (long) authenticationProviders.size());
         assertFalse("PreferencesProvider was not removed",
-                    authenticationProviders.get(0).getAttributes().containsKey("preferencesproviders"));
+                           authenticationProviders.get(0).getAttributes().containsKey("preferencesproviders"));
     }
 
+    @Test
     public void testUpgradeTrustStoreRecordsFrom_6_0() throws Exception
     {
         _brokerRecord.getAttributes().put("modelVersion", "6.0");
@@ -724,23 +754,24 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertNotNull("Trust store 3 is not found after upgrade", trustStore3Upgraded);
 
         assertEquals("Unexpected attributes after upgrade for Trust store 1",
-                     trustStoreAttributes1,
-                     new HashMap<>(trustStore1Upgraded.getAttributes()));
+                            trustStoreAttributes1,
+                            new HashMap<>(trustStore1Upgraded.getAttributes()));
 
         assertEquals("includedVirtualHostNodeMessageSources is not found",
-                     "true",
-                     trustStore2Upgraded.getAttributes().get("includedVirtualHostNodeMessageSources"));
+                            "true",
+                            trustStore2Upgraded.getAttributes().get("includedVirtualHostNodeMessageSources"));
         assertNull("includedVirtualHostMessageSources is  found",
-                     trustStore2Upgraded.getAttributes().get("includedVirtualHostMessageSources"));
+                          trustStore2Upgraded.getAttributes().get("includedVirtualHostMessageSources"));
 
         assertEquals("includedVirtualHostNodeMessageSources is not found",
-                     "true",
-                     trustStore3Upgraded.getAttributes().get("excludedVirtualHostNodeMessageSources"));
+                            "true",
+                            trustStore3Upgraded.getAttributes().get("excludedVirtualHostNodeMessageSources"));
         assertNull("includedVirtualHostMessageSources is  found",
-                   trustStore3Upgraded.getAttributes().get("excludedVirtualHostMessageSources"));
+                          trustStore3Upgraded.getAttributes().get("excludedVirtualHostMessageSources"));
         assertModelVersionUpgraded(records);
     }
 
+    @Test
     public void testUpgradeJmxRecordsFrom_3_0() throws Exception
     {
         _brokerRecord.getAttributes().put("modelVersion", "3.0");
@@ -782,6 +813,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertModelVersionUpgraded(records);
     }
 
+    @Test
     public void testUpgradeHttpPortFrom_6_0() throws Exception
     {
         _brokerRecord.getAttributes().put("modelVersion", "6.0");
@@ -812,13 +844,15 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
 
         Map<String, String> upgradedContext = (Map<String, String>) upgradedAttributes.get("context");
         assertFalse("Context variable \"port.http.additionalInternalThreads\" is not removed",
-                    upgradedContext.containsKey("port.http.additionalInternalThreads"));
+                           upgradedContext.containsKey("port.http.additionalInternalThreads"));
         assertFalse("Context variable \"port.http.maximumQueuedRequests\" is not removed",
-                    upgradedContext.containsKey("port.http.maximumQueuedRequests"));
+                           upgradedContext.containsKey("port.http.maximumQueuedRequests"));
         assertEquals("Context variable \"port.http.maximumQueuedRequests\" is not renamed",
-                     "1000", upgradedContext.get("qpid.port.http.acceptBacklog"));
+                            "1000",
+                            upgradedContext.get("qpid.port.http.acceptBacklog"));
     }
 
+    @Test
     public void testBrokerConnectionAttributesRemoval() throws Exception
     {
         _brokerRecord.getAttributes().put("modelVersion", "6.1");
@@ -840,20 +874,26 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         expectedContext.put("qpid.port.closeWhenNoRoute", "false");
 
         Object upgradedContext = upgradedAttributes.get("context");
-        assertTrue("Unpexcted context", upgradedContext instanceof Map);
-        assertEquals("Unexpected context", expectedContext, new HashMap<>(((Map<String, String>) upgradedContext)));
+        final boolean condition = upgradedContext instanceof Map;
+        assertTrue("Unpexcted context", condition);
+        assertEquals("Unexpected context",
+                            expectedContext,
+                            new HashMap<>(((Map<String, String>) upgradedContext)));
 
-        assertFalse("Session count limit is not removed", upgradedAttributes.containsKey("connection.sessionCountLimit"));
-        assertFalse("Heart beat delay is not removed", upgradedAttributes.containsKey("connection.heartBeatDelay"));
-        assertFalse("Close when no route is not removed", upgradedAttributes.containsKey("conection.closeWhenNoRoute"));
+        assertFalse("Session count limit is not removed",
+                           upgradedAttributes.containsKey("connection.sessionCountLimit"));
+        assertFalse("Heart beat delay is not removed",
+                           upgradedAttributes.containsKey("connection.heartBeatDelay"));
+        assertFalse("Close when no route is not removed",
+                           upgradedAttributes.containsKey("conection.closeWhenNoRoute"));
     }
 
     private void assertModelVersionUpgraded(final List<ConfiguredObjectRecord> records)
     {
         ConfiguredObjectRecord upgradedBrokerRecord = findRecordById(_brokerRecord.getId(), records);
         assertEquals("Unexpected model version",
-                     BrokerModel.MODEL_VERSION,
-                     upgradedBrokerRecord.getAttributes().get(Broker.MODEL_VERSION));
+                            BrokerModel.MODEL_VERSION,
+                            upgradedBrokerRecord.getAttributes().get(Broker.MODEL_VERSION));
     }
 
     private void upgradeBrokerRecordAndAssertUpgradeResults()

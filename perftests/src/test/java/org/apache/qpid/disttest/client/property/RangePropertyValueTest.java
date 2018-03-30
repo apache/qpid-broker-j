@@ -18,16 +18,32 @@
  */
 package org.apache.qpid.disttest.client.property;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class RangePropertyValueTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class RangePropertyValueTest extends UnitTestBase
 {
     private RangePropertyValue _generator;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _generator = new RangePropertyValue();
         _generator.setUpper(10.0);
         _generator.setLower(0.0);
@@ -35,15 +51,17 @@ public class RangePropertyValueTest extends QpidTestCase
         _generator.setType("double");
     }
 
+    @Test
     public void testGetters()
     {
-        assertEquals("Unexpected upper boundary", new Double(10.0), _generator.getUpper());
-        assertEquals("Unexpected lower boundary", new Double(0.0), _generator.getLower());
-        assertEquals("Unexpected step", new Double(2.0), _generator.getStep());
+        assertEquals("Unexpected upper boundary", new Double(10.0), (Object) _generator.getUpper());
+        assertEquals("Unexpected lower boundary", new Double(0.0), (Object) _generator.getLower());
+        assertEquals("Unexpected step", new Double(2.0), (Object) _generator.getStep());
         assertEquals("Unexpected type", "double", _generator.getType());
         assertTrue("Unexpected cyclic", _generator.isCyclic());
     }
 
+    @Test
     public void testGetValue()
     {
         double[] expected = { 0.0, 2.0, 4.0, 6.0, 8.0, 10.0 };
@@ -52,12 +70,14 @@ public class RangePropertyValueTest extends QpidTestCase
             for (int i = 0; i < expected.length; i++)
             {
                 Object value = _generator.getValue();
-                assertTrue("Should be Double", value instanceof Double);
+                final boolean condition = value instanceof Double;
+                assertTrue("Should be Double", condition);
                 assertEquals("Unexpected value ", expected[i], value);
             }
         }
     }
 
+    @Test
     public void testGetValueNonCyclic()
     {
         _generator.setCyclic(false);
@@ -65,7 +85,8 @@ public class RangePropertyValueTest extends QpidTestCase
         for (int i = 0; i < expected.length; i++)
         {
             Object value = _generator.getValue();
-            assertTrue("Should be Double", value instanceof Double);
+            final boolean condition = value instanceof Double;
+            assertTrue("Should be Double", condition);
             assertEquals("Unexpected value ", expected[i], value);
         }
         for (int i = 0; i < expected.length; i++)
@@ -75,6 +96,7 @@ public class RangePropertyValueTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testGetValueInt()
     {
         _generator.setType("int");
@@ -84,12 +106,14 @@ public class RangePropertyValueTest extends QpidTestCase
             for (int i = 0; i < expected.length; i++)
             {
                 Object value = _generator.getValue();
-                assertTrue("Should be Double", value instanceof Integer);
+                final boolean condition = value instanceof Integer;
+                assertTrue("Should be Double", condition);
                 assertEquals("Unexpected value ", expected[i], value);
             }
         }
     }
 
+    @Test
     public void testGetValueByte()
     {
         _generator.setType("byte");
@@ -99,12 +123,14 @@ public class RangePropertyValueTest extends QpidTestCase
             for (int i = 0; i < expected.length; i++)
             {
                 Object value = _generator.getValue();
-                assertTrue("Should be Double", value instanceof Byte);
+                final boolean condition = value instanceof Byte;
+                assertTrue("Should be Double", condition);
                 assertEquals("Unexpected value ", expected[i], value);
             }
         }
     }
 
+    @Test
     public void testGetValueLong()
     {
         _generator.setType("long");
@@ -114,12 +140,14 @@ public class RangePropertyValueTest extends QpidTestCase
             for (int i = 0; i < expected.length; i++)
             {
                 Object value = _generator.getValue();
-                assertTrue("Should be Double", value instanceof Long);
+                final boolean condition = value instanceof Long;
+                assertTrue("Should be Double", condition);
                 assertEquals("Unexpected value ", expected[i], value);
             }
         }
     }
 
+    @Test
     public void testGetValueShort()
     {
         _generator.setType("short");
@@ -129,12 +157,14 @@ public class RangePropertyValueTest extends QpidTestCase
             for (int i = 0; i < expected.length; i++)
             {
                 Object value = _generator.getValue();
-                assertTrue("Should be Double", value instanceof Short);
+                final boolean condition = value instanceof Short;
+                assertTrue("Should be Double", condition);
                 assertEquals("Unexpected value ", expected[i], value);
             }
         }
     }
 
+    @Test
     public void testGetValueFloat()
     {
         _generator.setType("float");
@@ -144,7 +174,8 @@ public class RangePropertyValueTest extends QpidTestCase
             for (int i = 0; i < expected.length; i++)
             {
                 Object value = _generator.getValue();
-                assertTrue("Should be Double", value instanceof Float);
+                final boolean condition = value instanceof Float;
+                assertTrue("Should be Double", condition);
                 assertEquals("Unexpected value ", expected[i], value);
             }
         }

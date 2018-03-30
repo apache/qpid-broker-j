@@ -21,6 +21,10 @@
 package org.apache.qpid.server.logging.logback;
 
 import static org.apache.qpid.server.util.LoggerTestHelper.assertLoggedEvent;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,25 +38,24 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.read.ListAppender;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.LogLevel;
-import org.apache.qpid.server.logging.logback.AbstractBrokerLogger;
-import org.apache.qpid.server.logging.logback.BrokerMemoryLogger;
-import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRule;
-import org.apache.qpid.server.logging.logback.LogRecord;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class BrokerLoggerTest extends QpidTestCase
+public class BrokerLoggerTest extends UnitTestBase
 {
     public static final String APPENDER_NAME = "test";
 
@@ -61,10 +64,9 @@ public class BrokerLoggerTest extends QpidTestCase
     private TaskExecutor _taskExecutor;
     private Broker _broker;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
@@ -97,7 +99,7 @@ public class BrokerLoggerTest extends QpidTestCase
 
 
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -107,22 +109,22 @@ public class BrokerLoggerTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testAddNewLogInclusionRule()
     {
         Map<String, Object> attributes = createBrokerNameAndLevelLogInclusionRuleAttributes("org.apache.qpid", LogLevel.INFO);
 
         Collection<BrokerLogInclusionRule> rulesBefore = _brokerLogger.getChildren(BrokerLogInclusionRule.class);
-        assertEquals("Unexpected number of rules before creation", 0, rulesBefore.size());
+        assertEquals("Unexpected number of rules before creation", (long) 0, (long) rulesBefore.size());
 
         BrokerLogInclusionRule<?> createdRule = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
         assertEquals("Unexpected rule name", "test", createdRule.getName());
 
         Collection<BrokerLogInclusionRule> rulesAfter = _brokerLogger.getChildren(BrokerLogInclusionRule.class);
-        assertEquals("Unexpected number of rules after creation", 1, rulesAfter.size());
+        assertEquals("Unexpected number of rules after creation", (long) 1, (long) rulesAfter.size());
 
         BrokerLogInclusionRule filter = rulesAfter.iterator().next();
         assertEquals("Unexpected rule", createdRule, filter);
@@ -135,6 +137,7 @@ public class BrokerLoggerTest extends QpidTestCase
         assertLoggedEvent(_loggerAppender, true, "Test3", logger.getName(), Level.INFO);
     }
 
+    @Test
     public void testRemoveExistingRule()
     {
         Map<String, Object> attributes = createBrokerNameAndLevelLogInclusionRuleAttributes("org.apache.qpid", LogLevel.INFO);
@@ -150,16 +153,21 @@ public class BrokerLoggerTest extends QpidTestCase
         assertLoggedEvent(_loggerAppender, false, "Test2", logger.getName(), Level.INFO);
     }
 
+    @Test
     public void testDeleteLogger()
     {
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        assertNotNull("Appender not found when it should have been created", rootLogger.getAppender(_brokerLogger.getName()));
+        assertNotNull("Appender not found when it should have been created",
+                             rootLogger.getAppender(_brokerLogger.getName()));
+
         _brokerLogger.delete();
         assertEquals("Unexpected state after deletion", State.DELETED, _brokerLogger.getState());
-        assertNull("Appender found when it should have been deleted", rootLogger.getAppender(_brokerLogger.getName()));
+        assertNull("Appender found when it should have been deleted",
+                          rootLogger.getAppender(_brokerLogger.getName()));
     }
 
+    @Test
     public void testBrokerMemoryLoggerGetLogEntries()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -186,7 +194,9 @@ public class BrokerLoggerTest extends QpidTestCase
             Collection<LogRecord> logRecords2 = logger.getLogEntries(foundRecord.getId());
             for (LogRecord record: logRecords2)
             {
-                assertTrue("Record id " + record.getId() + " is below " + foundRecord.getId(), record.getId() > foundRecord.getId());
+                assertTrue("Record id " + record.getId() + " is below " + foundRecord.getId(),
+                                  record.getId() > foundRecord.getId());
+
             }
 
             LogRecord foundRecord2 = findLogRecord("test message 2", logRecords2);
@@ -199,6 +209,7 @@ public class BrokerLoggerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testStatistics()
     {
         Map<String, Object> attributes;

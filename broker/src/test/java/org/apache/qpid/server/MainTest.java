@@ -20,24 +20,30 @@
  */
 package org.apache.qpid.server;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
+import org.junit.Test;
 
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Test to verify the command line parsing within the Main class, by
  * providing it a series of command line arguments and verifying the
  * BrokerOptions emerging for use in starting the Broker instance.
  */
-public class MainTest extends QpidTestCase
+public class MainTest extends UnitTestBase
 {
     private Exception _startupException;
 
+    @Test
     public void testNoOptionsSpecified()
     {
         String qpidWork = "/qpid/work";
@@ -52,6 +58,7 @@ public class MainTest extends QpidTestCase
     }
 
 
+    @Test
     public void testConfigurationStoreLocation()
     {
         Map<String,Object> attributes = startDummyMain("-sp abcd/config.xml");
@@ -61,6 +68,7 @@ public class MainTest extends QpidTestCase
         assertEquals("abcd/config2.xml", attributes.get("storePath"));
     }
 
+    @Test
     public void testConfigurationStoreType()
     {
         Map<String,Object> attributes = startDummyMain("-st dby");
@@ -70,6 +78,7 @@ public class MainTest extends QpidTestCase
         assertEquals("bdb", attributes.get(SystemConfig.TYPE));
     }
 
+    @Test
     public void testVersion()
     {
         final TestMain main = new TestMain("-v".split("\\s"));
@@ -78,6 +87,7 @@ public class MainTest extends QpidTestCase
         assertTrue("Parsed command line didnt pick up version option", main.getCommandLine().hasOption("v"));
     }
 
+    @Test
     public void testHelp()
     {
         final TestMain main = new TestMain("-h".split("\\s"));
@@ -86,6 +96,7 @@ public class MainTest extends QpidTestCase
         assertTrue("Parsed command line didnt pick up help option", main.getCommandLine().hasOption("h"));
     }
 
+    @Test
     public void testInitialConfigurationLocation()
     {
         Map<String,Object> attributes = startDummyMain("-icp abcd/initial-config.json");
@@ -95,6 +106,7 @@ public class MainTest extends QpidTestCase
         assertEquals("abcd/initial-config.json", attributes.get(SystemConfig.INITIAL_CONFIGURATION_LOCATION));
     }
 
+    @Test
     public void testManagementMode()
     {
         Map<String,Object> attributes = startDummyMain("-mm");
@@ -104,6 +116,7 @@ public class MainTest extends QpidTestCase
         assertEquals("true", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE)));
     }
 
+    @Test
     public void testManagementModeHttpPortOverride()
     {
         Map<String,Object> attributes = startDummyMain("-mm -mmhttp 9999");
@@ -118,6 +131,7 @@ public class MainTest extends QpidTestCase
         assertNotEquals("9999", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE)));
     }
 
+    @Test
     public void testManagementModePassword()
     {
         String password = getTestName();
@@ -133,6 +147,7 @@ public class MainTest extends QpidTestCase
         assertEquals(password, attributes.get(SystemConfig.MANAGEMENT_MODE_PASSWORD));
     }
 
+    @Test
     public void testDefaultManagementModePassword()
     {
         Map<String,Object> attributes = startDummyMain("-mm");
@@ -140,6 +155,7 @@ public class MainTest extends QpidTestCase
         assertNotNull(attributes.get(SystemConfig.MANAGEMENT_MODE_PASSWORD));
     }
 
+    @Test
     public void testSetConfigProperties()
     {
         //short name
@@ -161,17 +177,18 @@ public class MainTest extends QpidTestCase
         assertEquals("value2", props.get("name2"));
     }
 
+    @Test
     public void testSetConfigPropertiesInvalidFormat()
     {
         //missing equals
         startDummyMain("-prop namevalue");
-        assertTrue("expected exception did not occur",
-                _startupException instanceof IllegalArgumentException);
+        final boolean condition1 = _startupException instanceof IllegalArgumentException;
+        assertTrue("expected exception did not occur", condition1);
 
         //no name specified
         startDummyMain("-prop =value");
-        assertTrue("expected exception did not occur",
-                _startupException instanceof IllegalArgumentException);
+        final boolean condition = _startupException instanceof IllegalArgumentException;
+        assertTrue("expected exception did not occur", condition);
     }
 
     private Map<String,Object> startDummyMain(String commandLine)

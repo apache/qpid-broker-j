@@ -20,7 +20,12 @@
  */
 package org.apache.qpid.server.util;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -31,7 +36,11 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 
-public class FileUtilsTest extends QpidTestCase
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class FileUtilsTest extends UnitTestBase
 {
     private static final String COPY = "-Copy";
     private static final String SUB = "-Sub";
@@ -40,6 +49,7 @@ public class FileUtilsTest extends QpidTestCase
      * Additional test for the copy method.
      * Ensures that the directory count did increase by more than 1 after the copy.
      */
+    @Test
     public void testCopyFile()
     {
         final String TEST_DATA = "FileUtilsTest-testCopy-TestDataTestDataTestDataTestDataTestDataTestData";
@@ -69,9 +79,14 @@ public class FileUtilsTest extends QpidTestCase
             int afterCopyFromCopy = new File(fileNameCopy).getAbsoluteFile().getParentFile().listFiles().length;
 
             // Validate the copy counts
-            assertEquals("The file listing from the original and the copy differ in length.", afterCopy, afterCopyFromCopy);
-            assertEquals("The number of files did not increase.", beforeCopy + 1, afterCopy);
-            assertEquals("The number of files did not increase.", beforeCopy + 1, afterCopyFromCopy);
+            assertEquals("The file listing from the original and the copy differ in length.",
+                                (long) afterCopy,
+                                (long) afterCopyFromCopy);
+
+            assertEquals("The number of files did not increase.", (long) (beforeCopy + 1), (long) afterCopy);
+            assertEquals("The number of files did not increase.",
+                                (long) (beforeCopy + 1),
+                                (long) afterCopyFromCopy);
 
             //Validate copy
             // Load content
@@ -104,6 +119,7 @@ public class FileUtilsTest extends QpidTestCase
      *
      * Validate that the file count in the copy is correct and contents of the copied files is correct.
      */
+    @Test
     public void testCopyRecursive()
     {
         final String TEST_DATA = "FileUtilsTest-testDirectoryCopy-TestDataTestDataTestDataTestDataTestDataTestData";
@@ -119,7 +135,8 @@ public class FileUtilsTest extends QpidTestCase
         try
         {
             //Create Directories
-            assertTrue("Test directory already exists cannot test.", !testDir.exists());
+            final boolean condition = !testDir.exists();
+            assertTrue("Test directory already exists cannot test.", condition);
 
             if (!testDir.mkdir())
             {
@@ -156,17 +173,25 @@ public class FileUtilsTest extends QpidTestCase
             }
 
             //Validate Copy
-            assertEquals("Copied directory should only have one file and one directory in it.", 2, copyDir.listFiles().length);
+            assertEquals("Copied directory should only have one file and one directory in it.",
+                                (long) 2,
+                                (long) copyDir.listFiles().length);
 
             //Validate Copy File Contents
             String copiedFileContent = FileUtils.readFileAsString(copyDir.toString() + File.separator + fileName);
             assertEquals(TEST_DATA, copiedFileContent);
 
             //Validate Name of Sub Directory
-            assertTrue("Expected subdirectory is not a directory", new File(copyDir.toString() + File.separator + TEST_DIR + SUB).isDirectory());
+            assertTrue("Expected subdirectory is not a directory",
+                              new File(copyDir.toString() + File.separator + TEST_DIR + SUB).isDirectory());
 
             //Assert that it contains only one item
-            assertEquals("Copied sub directory should only have one directory in it.", 1, new File(copyDir.toString() + File.separator + TEST_DIR + SUB).listFiles().length);
+            assertEquals("Copied sub directory should only have one directory in it.",
+                                (long) 1,
+                                (long) new File(copyDir.toString()
+                                                + File.separator
+                                                + TEST_DIR
+                                                + SUB).listFiles().length);
 
             //Validate content of Sub file
             copiedFileContent = FileUtils.readFileAsString(copyDir.toString() + File.separator + TEST_DIR + SUB + File.separator + fileName + SUB);
@@ -257,6 +282,7 @@ public class FileUtilsTest extends QpidTestCase
     }
 
     /** Test that deleteFile only deletes the specified file */
+    @Test
     public void testDeleteFile()
     {
         File test = new File("FileUtilsTest-testDelete");
@@ -281,31 +307,36 @@ public class FileUtilsTest extends QpidTestCase
 
         //Check that file creation can be seen on disk
         int fileCountCreated = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles().length;
-        assertEquals("File creation was no registered", fileCountBefore + 1, fileCountCreated);
+        assertEquals("File creation was no registered", (long) (fileCountBefore + 1), (long) fileCountCreated);
 
         //Perform Delete
         assertTrue("Unable to cleanup", FileUtils.deleteFile("FileUtilsTest-testDelete"));
 
-        assertTrue("File exists after delete", !test.exists());
+        final boolean condition = !test.exists();
+        assertTrue("File exists after delete", condition);
 
         //Check that after deletion the file count is now accurate
         File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
         int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", fileCountBefore, fileCountAfter);
+        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
 
         checkFileLists(filesBefore, filesAfter);
     }
 
+    @Test
     public void testDeleteNonExistentFile()
     {
         File test = new File("FileUtilsTest-testDelete-" + System.currentTimeMillis());
 
-        assertTrue("File exists", !test.exists());
+        final boolean condition1 = !test.exists();
+        assertTrue("File exists", condition1);
         assertFalse("File is a directory", test.isDirectory());
 
-        assertTrue("Delete Succeeded ", !FileUtils.delete(test, true));
+        final boolean condition = !FileUtils.delete(test, true);
+        assertTrue("Delete Succeeded ", condition);
     }
 
+    @Test
     public void testDeleteNull()
     {
         try
@@ -323,6 +354,7 @@ public class FileUtilsTest extends QpidTestCase
      * Tests that openFileOrDefaultResource can open a file on the filesystem.
      *
      */
+    @Test
     public void testOpenFileOrDefaultResourceOpensFileOnFileSystem() throws Exception
     {
         final File testFile = createTestFileInTmpDir("src=tmpfile");
@@ -331,6 +363,7 @@ public class FileUtilsTest extends QpidTestCase
 
         
         final InputStream is = FileUtils.openFileOrDefaultResource(filenameOnFilesystem, defaultResource, this.getClass().getClassLoader());
+
         assertNotNull("Stream must not be null", is);
         final Properties p = new Properties();
         p.load(is);
@@ -341,6 +374,7 @@ public class FileUtilsTest extends QpidTestCase
      * Tests that openFileOrDefaultResource can open a file on the classpath.
      *
      */
+    @Test
     public void testOpenFileOrDefaultResourceOpensFileOnClasspath() throws Exception
     {
         final String mydefaultsResource = "org/apache/qpid/server/util/mydefaults.properties";
@@ -357,11 +391,12 @@ public class FileUtilsTest extends QpidTestCase
     /**
      * Tests that openFileOrDefaultResource returns the default resource when file cannot be found.
      */
+    @Test
     public void testOpenFileOrDefaultResourceOpensDefaultResource() throws Exception
     {
         final File fileThatDoesNotExist = new File("/does/not/exist.properties");
         assertFalse("Test must not exist", fileThatDoesNotExist.exists());
-        
+
         final String defaultResource = "org/apache/qpid/server/util/default.properties";
         
         final InputStream is = FileUtils.openFileOrDefaultResource(fileThatDoesNotExist.getCanonicalPath(), defaultResource, this.getClass().getClassLoader());
@@ -375,6 +410,7 @@ public class FileUtilsTest extends QpidTestCase
      * Tests that openFileOrDefaultResource returns null if neither the file nor
      * the default resource can be found..
      */
+    @Test
     public void testOpenFileOrDefaultResourceReturnsNullWhenNeitherCanBeFound() throws Exception
     {
 
@@ -382,6 +418,7 @@ public class FileUtilsTest extends QpidTestCase
         final String defaultResource = "org/apache/qpid/server/util/doesnotexisteiether.properties";
         
         final InputStream is = FileUtils.openFileOrDefaultResource(mydefaultsResource, defaultResource, this.getClass().getClassLoader());
+
         assertNull("Stream must  be null", is);
     }
     
@@ -396,7 +433,7 @@ public class FileUtilsTest extends QpidTestCase
         assertNotNull("Before file list cannot be null", filesBefore);
         assertNotNull("After file list cannot be null", filesAfter);
 
-        assertEquals("File lists are unequal", filesBefore.length, filesAfter.length);
+        assertEquals("File lists are unequal", (long) filesBefore.length, (long) filesAfter.length);
 
         for (File fileBefore : filesBefore)
         {
@@ -415,6 +452,7 @@ public class FileUtilsTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testNonRecursiveNonEmptyDirectoryDeleteFails()
     {
         String directoryName = "FileUtilsTest-testRecursiveDelete";
@@ -425,7 +463,8 @@ public class FileUtilsTest extends QpidTestCase
         File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
         int fileCountBefore = filesBefore.length;
 
-        assertTrue("Directory exists", !test.exists());
+        final boolean condition = !test.exists();
+        assertTrue("Directory exists", condition);
 
         test.mkdir();
 
@@ -459,12 +498,13 @@ public class FileUtilsTest extends QpidTestCase
         //Check that after deletion the file count is now accurate
         File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
         int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", fileCountBefore, fileCountAfter);
+        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
 
         checkFileLists(filesBefore, filesAfter);
     }
 
     /** Test that an empty directory can be deleted with deleteDirectory */
+    @Test
     public void testEmptyDirectoryDelete()
     {
         String directoryName = "FileUtilsTest-testRecursiveDelete";
@@ -475,7 +515,8 @@ public class FileUtilsTest extends QpidTestCase
         File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
         int fileCountBefore = filesBefore.length;
 
-        assertTrue("Directory exists", !test.exists());
+        final boolean condition1 = !test.exists();
+        assertTrue("Directory exists", condition1);
 
         test.mkdir();
         //Ensure the JVM cleans up if cleanup failues
@@ -485,24 +526,27 @@ public class FileUtilsTest extends QpidTestCase
         assertTrue("Non Empty Directory was successfully deleted.", FileUtils.deleteDirectory(directoryName));
 
         //Check directory is still there
-        assertTrue("Directory was deleted.", !test.exists());
+        final boolean condition = !test.exists();
+        assertTrue("Directory was deleted.", condition);
 
         //Check that after deletion the file count is now accurate
         File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
         int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", fileCountBefore, fileCountAfter);
+        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
 
         checkFileLists(filesBefore, filesAfter);
 
     }
 
     /** Test that deleteDirectory on a non empty directory to complete */
+    @Test
     public void testNonEmptyDirectoryDelete()
     {
         String directoryName = "FileUtilsTest-testRecursiveDelete";
         File test = new File(directoryName);
 
-        assertTrue("Directory exists", !test.exists());
+        final boolean condition = !test.exists();
+        assertTrue("Directory exists", condition);
 
         //Record file count in parent directory to check it is not changed by delete
         String path = test.getAbsolutePath();
@@ -542,19 +586,21 @@ public class FileUtilsTest extends QpidTestCase
         //Check that after deletion the file count is now accurate
         File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
         int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", fileCountBefore, fileCountAfter);
+        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
 
         checkFileLists(filesBefore, filesAfter);
 
     }
 
     /** Test that a recursive delete successeds */
+    @Test
     public void testRecursiveDelete()
     {
         String directoryName = "FileUtilsTest-testRecursiveDelete";
         File test = new File(directoryName);
 
-        assertTrue("Directory exists", !test.exists());
+        final boolean condition1 = !test.exists();
+        assertTrue("Directory exists", condition1);
 
         //Record file count in parent directory to check it is not changed by delete
         String path = test.getAbsolutePath();
@@ -576,12 +622,13 @@ public class FileUtilsTest extends QpidTestCase
 
         assertTrue("Unable to cleanup", FileUtils.delete(test, true));
 
-        assertTrue("File  exist after recursive delete", !test.exists());
+        final boolean condition = !test.exists();
+        assertTrue("File  exist after recursive delete", condition);
 
         //Check that after deletion the file count is now accurate
         File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
         int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", fileCountBefore, fileCountAfter);
+        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
 
         checkFileLists(filesBefore, filesAfter);
 
@@ -632,6 +679,7 @@ public class FileUtilsTest extends QpidTestCase
      *
      * @throws java.io.IOException if unable to perform test setup
      */
+    @Test
     public void testSearchSucceed() throws IOException
     {
         final File logfile = File.createTempFile("FileUtilsTest-testSearchSucceed", ".out");
@@ -645,7 +693,7 @@ public class FileUtilsTest extends QpidTestCase
 
             assertNotNull("Null result set returned", results);
 
-            assertEquals("Results do not contain expected count", 1, results.size());
+            assertEquals("Results do not contain expected count", (long) 1, (long) results.size());
         }
         finally
         {
@@ -659,6 +707,7 @@ public class FileUtilsTest extends QpidTestCase
      *
      * @throws java.io.IOException if unable to perform test setup
      */
+    @Test
     public void testSearchFail() throws IOException
     {
         final File logfile = File.createTempFile("FileUtilsTest-testSearchFail", ".out");
@@ -683,8 +732,7 @@ public class FileUtilsTest extends QpidTestCase
                 }
             }
 
-            assertEquals("Results contains data when it was not expected",
-                         0, results.size());
+            assertEquals("Results contains data when it was not expected", (long) 0, (long) results.size());
         }
         finally
         {

@@ -22,11 +22,14 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
+import org.junit.Test;
+
 /**
  * Test VHT Log Messages
  */
 public class VirtualHostMessagesTest extends AbstractTestMessages
 {
+    @Test
     public void testVirtualhostCreated()
     {
         String name = "test";
@@ -38,6 +41,7 @@ public class VirtualHostMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "VHT-1001", expected);
     }
 
+    @Test
     public void testVirtualhostClosed()
     {
         String name = "test";

@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
@@ -40,6 +43,9 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.read.ListAppender;
 import ch.qos.logback.core.spi.FilterReply;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,20 +65,19 @@ import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AbstractVirtualHostTest extends QpidTestCase
+public class AbstractVirtualHostTest extends UnitTestBase
 {
     private TaskExecutor _taskExecutor;
     private VirtualHostNode _node;
     private MessageStore _failingStore;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         SystemConfig systemConfig = mock(SystemConfig.class);
         when(systemConfig.getEventLogger()).thenReturn(mock(EventLogger.class));
@@ -103,22 +108,16 @@ public class AbstractVirtualHostTest extends QpidTestCase
         doThrow(new RuntimeException("Cannot open store")).when(_failingStore).openMessageStore(any(ConfiguredObject.class));
     }
 
-    @Override
+    @After
     public void  tearDown() throws Exception
     {
-        try
+        if (_taskExecutor != null)
         {
-            if (_taskExecutor != null)
-            {
-                _taskExecutor.stop();
-            }
-        }
-        finally
-        {
-            super.tearDown();
+            _taskExecutor.stop();
         }
     }
 
+    @Test
     public void testValidateMessageStoreCreationFails()
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
@@ -139,7 +138,9 @@ public class AbstractVirtualHostTest extends QpidTestCase
         }
         catch(IllegalConfigurationException e)
         {
-            assertTrue("Unexpected exception " + e.getMessage(), e.getMessage().startsWith("Cannot open virtual host message store"));
+            assertTrue("Unexpected exception " + e.getMessage(),
+                              e.getMessage().startsWith("Cannot open virtual host message store"));
+
         }
         finally
         {
@@ -147,6 +148,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testValidateMessageStoreCreationSucceeds()
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
@@ -166,6 +168,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         host.close();
     }
 
+    @Test
     public void testOpenFails()
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
@@ -184,6 +187,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         host.close();
     }
 
+    @Test
     public void testOpenSucceeds()
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
@@ -211,6 +215,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         host.close();
     }
 
+    @Test
     public void testDeleteInErrorStateAfterOpen() throws Exception
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
@@ -231,6 +236,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         assertEquals("Unexpected state", State.DELETED, host.getState());
     }
 
+    @Test
     public void testActivateInErrorStateAfterOpen() throws Exception
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME,
@@ -257,6 +263,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         host.close();
     }
 
+    @Test
     public void testStartInErrorStateAfterOpen() throws Exception
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
@@ -283,6 +290,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
     }
 
     // This indirectly tests QPID-6283
+    @Test
     public void testFileSystemCheckWarnsWhenFileSystemDoesNotExist() throws Exception
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME,

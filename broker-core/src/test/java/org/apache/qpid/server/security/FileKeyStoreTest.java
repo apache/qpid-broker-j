@@ -21,6 +21,11 @@ package org.apache.qpid.server.security;
 
 
 import static org.apache.qpid.server.security.FileTrustStoreTest.SYMMETRIC_KEY_KEYSTORE_RESOURCE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +34,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.net.ssl.KeyManager;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -41,10 +49,10 @@ import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.server.util.FileUtils;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestSSLConstants;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class FileKeyStoreTest extends QpidTestCase
+public class FileKeyStoreTest extends UnitTestBase
 {
     static final String EMPTY_KEYSTORE_RESOURCE = "/ssl/test_empty_keystore.jks";
     static final String KEYSTORE_CERTIFICATE_ONLY_RESOURCE = "/ssl/test_cert_only_keystore.pkcs12";
@@ -55,10 +63,9 @@ public class FileKeyStoreTest extends QpidTestCase
     private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
 
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
@@ -68,6 +75,7 @@ public class FileKeyStoreTest extends QpidTestCase
         when(_broker.getTypeClass()).thenReturn(Broker.class);
     }
 
+    @Test
     public void testCreateKeyStoreFromFile_Success() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -79,10 +87,11 @@ public class FileKeyStoreTest extends QpidTestCase
 
         KeyManager[] keyManager = fileKeyStore.getKeyManagers();
         assertNotNull(keyManager);
-        assertEquals("Unexpected number of key managers", 1, keyManager.length);
+        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManager.length);
         assertNotNull("Key manager unexpected null", keyManager[0]);
     }
 
+    @Test
     public void testCreateKeyStoreWithAliasFromFile_Success() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -95,10 +104,11 @@ public class FileKeyStoreTest extends QpidTestCase
 
         KeyManager[] keyManager = fileKeyStore.getKeyManagers();
         assertNotNull(keyManager);
-        assertEquals("Unexpected number of key managers", 1, keyManager.length);
+        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManager.length);
         assertNotNull("Key manager unexpected null", keyManager[0]);
     }
 
+    @Test
     public void testCreateKeyStoreFromFile_WrongPassword() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -114,10 +124,13 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Check key store password"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Check key store password"));
+
         }
     }
 
+    @Test
     public void testCreateKeyStoreFromFile_UnknownAlias() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -134,10 +147,12 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Cannot find a certificate with alias 'notknown' in key store"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Cannot find a certificate with alias 'notknown' in key store"));
         }
     }
 
+    @Test
     public void testCreateKeyStoreFromFile_NonKeyAlias() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -154,10 +169,12 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("does not identify a private key"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("does not identify a private key"));
         }
     }
 
+    @Test
     public void testCreateKeyStoreFromDataUrl_Success() throws Exception
     {
         String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
@@ -171,10 +188,11 @@ public class FileKeyStoreTest extends QpidTestCase
 
         KeyManager[] keyManagers = fileKeyStore.getKeyManagers();
         assertNotNull(keyManagers);
-        assertEquals("Unexpected number of key managers", 1, keyManagers.length);
+        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManagers.length);
         assertNotNull("Key manager unexpected null", keyManagers[0]);
     }
 
+    @Test
     public void testCreateKeyStoreWithAliasFromDataUrl_Success() throws Exception
     {
         String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
@@ -189,10 +207,11 @@ public class FileKeyStoreTest extends QpidTestCase
 
         KeyManager[] keyManagers = fileKeyStore.getKeyManagers();
         assertNotNull(keyManagers);
-        assertEquals("Unexpected number of key managers", 1, keyManagers.length);
+        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManagers.length);
         assertNotNull("Key manager unexpected null", keyManagers[0]);
     }
 
+    @Test
     public void testCreateKeyStoreFromDataUrl_WrongPassword() throws Exception
     {
         String keyStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
@@ -210,10 +229,12 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Check key store password"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Check key store password"));
         }
     }
 
+    @Test
     public void testCreateKeyStoreFromDataUrl_BadKeystoreBytes() throws Exception
     {
         String keyStoreAsDataUrl = DataUrlUtils.getDataUrlForBytes("notatruststore".getBytes());
@@ -231,11 +252,12 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Cannot instantiate key store"));
-
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Cannot instantiate key store"));
         }
     }
 
+    @Test
     public void testCreateKeyStoreFromDataUrl_UnknownAlias() throws Exception
     {
         String keyStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
@@ -254,10 +276,12 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Cannot find a certificate with alias 'notknown' in key store"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Cannot find a certificate with alias 'notknown' in key store"));
         }
     }
 
+    @Test
     public void testEmptyKeystoreRejected() throws Exception
     {
         final URL emptyKeystore = getClass().getResource(EMPTY_KEYSTORE_RESOURCE);
@@ -279,6 +303,7 @@ public class FileKeyStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testKeystoreWithNoPrivateKeyRejected()
     {
         final URL keystoreUrl = getClass().getResource(KEYSTORE_CERTIFICATE_ONLY_RESOURCE);
@@ -298,10 +323,12 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("must contain at least one private key"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("must contain at least one private key"));
         }
     }
 
+    @Test
     public void testSymmetricKeysIgnored()
     {
         final URL keystoreUrl = getClass().getResource(SYMMETRIC_KEY_KEYSTORE_RESOURCE);
@@ -317,6 +344,7 @@ public class FileKeyStoreTest extends QpidTestCase
         assertNotNull(keyStore);
     }
 
+    @Test
     public void testUpdateKeyStore_Success() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -339,7 +367,8 @@ public class FileKeyStoreTest extends QpidTestCase
         catch (IllegalConfigurationException ice)
         {
             String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message, message.contains("Cannot find a certificate with alias 'notknown' in key store"));
+            assertTrue("Exception text not as unexpected:" + message,
+                              message.contains("Cannot find a certificate with alias 'notknown' in key store"));
         }
 
         assertNull("Unexpected alias value after failed change", fileKeyStore.getCertificateAlias());
@@ -350,8 +379,8 @@ public class FileKeyStoreTest extends QpidTestCase
         fileKeyStore.setAttributes(changedAttributes);
 
         assertEquals("Unexpected alias value after change that is expected to be successful",
-                     TestSSLConstants.BROKER_KEYSTORE_ALIAS,
-                     fileKeyStore.getCertificateAlias());
+                            TestSSLConstants.BROKER_KEYSTORE_ALIAS,
+                            fileKeyStore.getCertificateAlias());
 
     }
 

@@ -20,8 +20,16 @@
 
 package org.apache.qpid.server.protocol.v1_0.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.Collection;
 import java.util.Collections;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.LinkDefinition;
 import org.apache.qpid.server.protocol.v1_0.LinkDefinitionImpl;
@@ -37,9 +45,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public abstract class LinkStoreTestCase extends QpidTestCase
+public abstract class LinkStoreTestCase extends UnitTestBase
 {
     private static final String ADDRESS = "amqp.direct/test";
     private static final String CAPABILITY = "test.capability";
@@ -48,10 +56,9 @@ public abstract class LinkStoreTestCase extends QpidTestCase
     private Source _source;
     private Target _target;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _linkStore = createLinkStore();
 
         _source = new Source();
@@ -80,13 +87,13 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         _target.setDurable(TerminusDurability.CONFIGURATION);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
-        super.tearDown();
         deleteLinkStore();
     }
 
+    @Test
     public void testOpenAndLoad() throws Exception
     {
         Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
@@ -111,6 +118,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
     }
 
 
+    @Test
     public void testClose() throws Exception
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
@@ -128,6 +136,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         }
     }
 
+    @Test
     public void testSaveLink() throws Exception
     {
 
@@ -158,6 +167,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         assertEquals("Unexpected target", linkDefinition.getTarget(), recoveredLink.getTarget());
     }
 
+    @Test
     public void testDeleteLink() throws Exception
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
@@ -193,6 +203,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         assertEquals("Unexpected target", linkDefinition.getTarget(), recoveredLink.getTarget());
     }
 
+    @Test
     public void testDelete() throws Exception
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());

@@ -18,6 +18,12 @@
  */
 package org.apache.qpid.server.model.testmodels.lifecycle;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -33,14 +40,15 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AbstractConfiguredObjectTest extends QpidTestCase
+public class AbstractConfiguredObjectTest extends UnitTestBase
 {
 
+    @Test
     public void testOpeningResultsInErroredStateWhenResolutionFails() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnPostResolve(true);
         object.open();
         assertFalse("Unexpected opened", object.isOpened());
@@ -52,9 +60,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected state", State.ACTIVE, object.getState());
     }
 
+    @Test
     public void testOpeningResultsInErroredStateWhenActivationFails() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnActivate(true);
         object.open();
         assertEquals("Unexpected state", State.ERRORED, object.getState());
@@ -64,9 +73,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected state", State.ACTIVE, object.getState());
     }
 
+    @Test
     public void testOpeningInERROREDStateAfterFailedOpenOnDesiredStateChangeToActive() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
         object.open();
         assertFalse("Unexpected opened", object.isOpened());
@@ -78,9 +88,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected state", State.ACTIVE, object.getState());
     }
 
+    @Test
     public void testOpeningInERROREDStateAfterFailedOpenOnStart() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
         object.open();
         assertFalse("Unexpected opened", object.isOpened());
@@ -92,9 +103,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected state", State.ACTIVE, object.getState());
     }
 
+    @Test
     public void testDeletionERROREDStateAfterFailedOpenOnDelete() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
         object.open();
         assertFalse("Unexpected opened", object.isOpened());
@@ -105,9 +117,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected state", State.DELETED, object.getState());
     }
 
+    @Test
     public void testDeletionInERROREDStateAfterFailedOpenOnDesiredStateChangeToDelete() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
         object.open();
         assertFalse("Unexpected opened", object.isOpened());
@@ -119,9 +132,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
     }
 
 
+    @Test
     public void testCreationWithExceptionThrownFromValidationOnCreate() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnValidationOnCreate(true);
         try
         {
@@ -135,18 +149,20 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertFalse("Unexpected opened", object.isOpened());
     }
 
+    @Test
     public void testCreationWithoutExceptionThrownFromValidationOnCreate() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnValidationOnCreate(false);
         object.create();
         assertTrue("Unexpected opened", object.isOpened());
         assertEquals("Unexpected state", State.ACTIVE, object.getState());
     }
 
+    @Test
     public void testCreationWithExceptionThrownFromOnOpen() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
         try
         {
@@ -162,9 +178,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected state", State.DELETED, object.getState());
     }
 
+    @Test
     public void testCreationWithExceptionThrownFromOnCreate() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnCreate(true);
         try
         {
@@ -180,9 +197,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected state", State.DELETED, object.getState());
     }
 
+    @Test
     public void testCreationWithExceptionThrownFromActivate() throws Exception
     {
-        TestConfiguredObject object = new TestConfiguredObject(getName());
+        TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnActivate(true);
         try
         {
@@ -197,6 +215,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected state", State.DELETED, object.getState());
     }
 
+    @Test
     public void testUnresolvedChildInERROREDStateIsNotValidatedOrOpenedOrAttainedDesiredStateOnParentOpen() throws Exception
     {
         TestConfiguredObject parent = new TestConfiguredObject("parent");
@@ -225,6 +244,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected child1 state", State.ERRORED, child1.getState());
     }
 
+    @Test
     public void testUnvalidatedChildInERROREDStateIsNotOpenedOrAttainedDesiredStateOnParentOpen() throws Exception
     {
         TestConfiguredObject parent = new TestConfiguredObject("parent");
@@ -253,6 +273,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected child1 state", State.ERRORED, child1.getState());
     }
 
+    @Test
     public void testSuccessfulStateTransitionInvokesListener() throws Exception
     {
         TestConfiguredObject parent = new TestConfiguredObject("parent");
@@ -273,7 +294,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         parent.delete();
         assertEquals(State.DELETED, newState.get());
-        assertEquals(1, callCounter.get());
+        assertEquals((long) 1, (long) callCounter.get());
     }
 
     // TODO - not sure if I want to keep the state transition methods on delete
@@ -318,12 +339,13 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         {
             assertSame("State transition threw unexpected exception.", expectedException, e);
         }
-        assertEquals(0, callCounter.get());
+        assertEquals((long) 0, (long) callCounter.get());
         assertEquals(State.ACTIVE, parent.getDesiredState());
         assertEquals(State.ACTIVE, parent.getState());
     }
 
 
+    @Test
     public void testSuccessfulDeletion() throws Exception
     {
         TestConfiguredObject configuredObject = new TestConfiguredObject("configuredObject");
@@ -346,18 +368,21 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         });
 
         configuredObject.delete();
-        assertEquals(2, events.size());
+        assertEquals((long) 2, (long) events.size());
         assertEquals(State.DELETED, configuredObject.getDesiredState());
         assertEquals(State.DELETED, configuredObject.getState());
 
-        assertEquals("Unexpected events number", 2, events.size());
+        assertEquals("Unexpected events number", (long) 2, (long) events.size());
         ChangeEvent event0 = events.get(0);
         ChangeEvent event1 = events.get(1);
 
         assertEquals("Unexpected first event: " + event0,
-                new ChangeEvent(EventType.STATE_CHANGED, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE, State.DELETED), event0 );
+                            new ChangeEvent(EventType.STATE_CHANGED, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE, State.DELETED),
+                            event0);
+
         assertEquals("Unexpected second event: " + event1,
-                new ChangeEvent(EventType.ATTRIBUTE_SET, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE, State.DELETED), event1 );
+                            new ChangeEvent(EventType.ATTRIBUTE_SET, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE, State.DELETED),
+                            event1);
     }
 
     private enum EventType

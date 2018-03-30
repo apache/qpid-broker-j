@@ -22,6 +22,8 @@
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +31,7 @@ import com.sleepycat.bind.tuple.StringBinding;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
+import org.junit.Test;
 
 public class UpgradeFrom8To9Test extends AbstractUpgradeTestCase
 {
@@ -41,6 +44,7 @@ public class UpgradeFrom8To9Test extends AbstractUpgradeTestCase
         return "bdbstore-v8";
     }
 
+    @Test
     public void testPerformUpgrade() throws Exception
     {
         UpgradeFrom8To9 upgrade = new UpgradeFrom8To9();

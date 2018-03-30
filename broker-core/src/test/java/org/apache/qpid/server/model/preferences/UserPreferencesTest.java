@@ -36,9 +36,11 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import org.hamcrest.Description;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -50,9 +52,9 @@ import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class UserPreferencesTest extends QpidTestCase
+public class UserPreferencesTest extends UnitTestBase
 {
 
     private static final String MYGROUP = "mygroup";
@@ -67,10 +69,9 @@ public class UserPreferencesTest extends QpidTestCase
     private AuthenticatedPrincipal _owner;
     private TaskExecutor _preferenceTaskExecutor;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _configuredObject = mock(ConfiguredObject.class);
         _preferenceStore = mock(PreferenceStore.class);
         _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
@@ -88,13 +89,13 @@ public class UserPreferencesTest extends QpidTestCase
         _testId = UUID.randomUUID();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         _preferenceTaskExecutor.stop();
-        super.tearDown();
     }
 
+    @Test
     public void testUpdateOrAppend() throws Exception
     {
         final Preference preference = createPreference(_testId,
@@ -116,6 +117,7 @@ public class UserPreferencesTest extends QpidTestCase
     }
 
 
+    @Test
     public void testReplace() throws Exception
     {
         final Preference preference = createPreference(_testId,
@@ -138,6 +140,7 @@ public class UserPreferencesTest extends QpidTestCase
     }
 
 
+    @Test
     public void testReplaceByType() throws Exception
     {
         final UUID queryUUID = UUID.randomUUID();
@@ -166,6 +169,7 @@ public class UserPreferencesTest extends QpidTestCase
                                          argThat(new PreferenceRecordMatcher(newQueryPreference)));
     }
 
+    @Test
     public void testReplaceByTypeAndName() throws Exception
     {
         final UUID query1UUID = UUID.randomUUID();

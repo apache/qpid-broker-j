@@ -23,6 +23,8 @@ package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getContentType;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +38,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.collect.Lists;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -62,9 +66,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSect
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
+public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
 {
     private final MessageConverter_0_8_to_1_0 _converter = new MessageConverter_0_8_to_1_0();
     private final AMQPDescribedTypeRegistry _typeRegistry = AMQPDescribedTypeRegistry.newInstance()
@@ -80,10 +84,9 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
     private final ContentHeaderBody _contentHeaderBody = mock(ContentHeaderBody.class);
     private final BasicContentHeaderProperties _basicContentHeaderProperties = mock(BasicContentHeaderProperties.class);
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         when(_handle.getMetaData()).thenReturn(_metaData);
         when(_metaData.getMessageHeader()).thenReturn(_header);
         when(_metaData.getMessagePublishInfo()).thenReturn(new MessagePublishInfo());
@@ -91,76 +94,91 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         when(_contentHeaderBody.getProperties()).thenReturn(_basicContentHeaderProperties);
     }
 
+    @Test
     public void testConvertStringMessageBody() throws Exception
     {
         doTestTextMessage("helloworld", "text/plain");
     }
 
+    @Test
     public void testConvertEmptyStringMessageBody() throws Exception
     {
         doTestTextMessage(null, "text/plain");
     }
 
+    @Test
     public void testConvertStringXmlMessageBody() throws Exception
     {
         doTestTextMessage("<helloworld></helloworld>", "text/xml");
     }
 
+    @Test
     public void testConvertEmptyStringXmlMessageBody() throws Exception
     {
         doTestTextMessage(null, "text/xml");
     }
 
+    @Test
     public void testConvertEmptyStringApplicationXmlMessageBody() throws Exception
     {
         doTestTextMessage(null, "application/xml");
     }
 
+    @Test
     public void testConvertStringWithContentTypeText() throws Exception
     {
         doTestTextMessage("foo","text/foobar");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationXml() throws Exception
     {
         doTestTextMessage("<helloworld></helloworld>","application/xml");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationXmlDtd() throws Exception
     {
         doTestTextMessage("<!DOCTYPE name []>","application/xml-dtd");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationFooXml() throws Exception
     {
         doTestTextMessage("<helloworld></helloworld>","application/foo+xml");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationJson() throws Exception
     {
         doTestTextMessage("[]","application/json");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationFooJson() throws Exception
     {
         doTestTextMessage("[]","application/foo+json");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationJavascript() throws Exception
     {
         doTestTextMessage("var foo","application/javascript");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationEcmascript() throws Exception
     {
         doTestTextMessage("var foo","application/ecmascript");
     }
 
+    @Test
     public void testConvertBytesMessageBody() throws Exception
     {
         doTestBytesMessage("helloworld".getBytes(), "application/octet-stream");
     }
 
+    @Test
     public void testConvertBytesMessageBodyNoContentType() throws Exception
     {
         final byte[] messageContent = "helloworld".getBytes();
@@ -172,6 +190,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
                null);
     }
 
+    @Test
     public void testConvertBytesMessageBodyUnknownContentType() throws Exception
     {
         final byte[] messageContent = "helloworld".getBytes();
@@ -184,11 +203,13 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
     }
 
 
+    @Test
     public void testConvertEmptyBytesMessageBody() throws Exception
     {
         doTestBytesMessage(new byte[0], "application/octet-stream");
     }
 
+    @Test
     public void testConvertJmsStreamMessageBody() throws Exception
     {
         final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
@@ -198,6 +219,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestStreamMessage(messageBytes, mimeType, expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
+    @Test
     public void testConvertJmsStreamMessageEmptyBody() throws Exception
     {
         final List<Object> expected = Collections.emptyList();
@@ -205,6 +227,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestStreamMessage(null, "jms/stream-message", expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
+    @Test
     public void testConvertAmqpListMessageBody() throws Exception
     {
         final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
@@ -214,6 +237,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestStreamMessage(messageBytes, mimeType, expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
+    @Test
     public void testConvertAmqpListMessageBodyWithNonJmsContent() throws Exception
     {
         final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D, Lists.newArrayList("nonJMSList"));
@@ -223,6 +247,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestStreamMessage(messageBytes, mimeType, expected, null);
     }
 
+    @Test
     public void testConvertJmsMapMessageBody() throws Exception
     {
         final Map<String, Object> expected = Collections.singletonMap("key", "value");
@@ -231,6 +256,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestMapMessage(messageBytes, "jms/map-message", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
     }
 
+    @Test
     public void testConvertJmsMapMessageEmptyBody() throws Exception
     {
         final Map<String, Object> expected = Collections.emptyMap();
@@ -238,6 +264,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestMapMessage(null, "jms/map-message", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
     }
 
+    @Test
     public void testConvertAmqpMapMessageBody() throws Exception
     {
         final Map<String, Object> expected = Collections.singletonMap("key", "value");
@@ -246,6 +273,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestMapMessage(messageBytes, "amqp/map", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
     }
 
+    @Test
     public void testConvertAmqpMapMessageBodyWithNonJmsContent() throws Exception
     {
         final Map<String, Object> expected = Collections.singletonMap("key", Collections.singletonList("nonJmsList"));
@@ -254,6 +282,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestMapMessage(messageBytes, "amqp/map", expected, null);
     }
 
+    @Test
     public void testConvertObjectStreamMessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
@@ -262,6 +291,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestObjectMessage(messageBytes, "application/java-object-stream", expectedBytes);
     }
 
+    @Test
     public void testConvertObjectStream2MessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
@@ -270,6 +300,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestObjectMessage(messageBytes, "application/x-java-serialized-object", expectedBytes);
     }
 
+    @Test
     public void testConvertEmptyObjectStreamMessageBody() throws Exception
     {
         final byte[] messageBytes = null;
@@ -279,16 +310,19 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         doTestObjectMessage(messageBytes, mimeType, expectedBytes);
     }
 
+    @Test
     public void testConvertEmptyMessageWithoutContentType() throws Exception
     {
         doTest(null, null, AmqpValueSection.class, null, null, JmsMessageTypeAnnotation.MESSAGE.getType());
     }
 
+    @Test
     public void testConvertEmptyMessageWithUnknownContentType() throws Exception
     {
         doTest(null, "foo/bar", DataSection.class, new byte[0], Symbol.valueOf("foo/bar"), null);
     }
 
+    @Test
     public void testConvertMessageWithoutContentType() throws Exception
     {
         final byte[] expectedContent = "someContent".getBytes(UTF_8);
@@ -342,7 +376,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
     {
         SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
         final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(content);
-        assertEquals("Unexpected number of sections", expectedNumberOfSections, sections.size());
+        assertEquals("Unexpected number of sections", (long) expectedNumberOfSections, (long) sections.size());
         return sections;
     }
 
@@ -490,8 +524,8 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         else
         {
             assertEquals("Unexpected annotation 'x-opt-jms-msg-type'",
-                         expectedJmsTypeAnnotation,
-                         jmsMessageTypeAnnotation);
+                                expectedJmsTypeAnnotation,
+                                jmsMessageTypeAnnotation);
         }
     }
 }

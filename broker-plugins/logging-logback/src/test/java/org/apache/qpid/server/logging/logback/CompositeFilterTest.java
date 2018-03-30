@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -31,12 +32,13 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
+import org.junit.Test;
 
-import org.apache.qpid.server.logging.logback.CompositeFilter;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class CompositeFilterTest extends QpidTestCase
+public class CompositeFilterTest extends UnitTestBase
 {
+    @Test
     public void testDecideWithNoRule()
     {
         CompositeFilter compositeFilter = new CompositeFilter();
@@ -44,6 +46,7 @@ public class CompositeFilterTest extends QpidTestCase
         assertEquals("Unexpected reply with no rule added", FilterReply.DENY, reply);
     }
 
+    @Test
     public void testDecideWithAcceptRule()
     {
         CompositeFilter compositeFilter = new CompositeFilter();
@@ -56,6 +59,7 @@ public class CompositeFilterTest extends QpidTestCase
         assertEquals("Unexpected reply with ACCEPT rule added", FilterReply.ACCEPT, reply);
     }
 
+    @Test
     public void testDecideWithNeutralRule()
     {
         CompositeFilter compositeFilter = new CompositeFilter();
@@ -68,6 +72,7 @@ public class CompositeFilterTest extends QpidTestCase
         assertEquals("Unexpected reply with NEUTRAL rule added", FilterReply.DENY, reply);
     }
 
+    @Test
     public void testDecideWithMultipleRules()
     {
         CompositeFilter compositeFilter = new CompositeFilter();
@@ -89,6 +94,7 @@ public class CompositeFilterTest extends QpidTestCase
         verify(accept.asFilter(), never()).decide(any(ILoggingEvent.class));
     }
 
+    @Test
     public void testRemoveLogInclusionRule()
     {
         CompositeFilter compositeFilter = new CompositeFilter();
@@ -117,6 +123,7 @@ public class CompositeFilterTest extends QpidTestCase
         verify(accept.asFilter()).decide(any(ILoggingEvent.class));
     }
 
+    @Test
     public void testAddLogInclusionRule()
     {
         CompositeFilter compositeFilter = new CompositeFilter();

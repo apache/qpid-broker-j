@@ -22,6 +22,8 @@
 package org.apache.qpid.server.streams;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,11 +33,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class CompositeInputStreamTest extends TestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class CompositeInputStreamTest extends UnitTestBase
 {
 
+    @Test
     public void testReadByteByByte_MultipleStreams() throws Exception
     {
         InputStream bis1 = new ByteArrayInputStream("ab".getBytes());
@@ -51,6 +56,7 @@ public class CompositeInputStreamTest extends TestCase
         assertEquals("Expecting EOF", -1, cis.read());
     }
 
+    @Test
     public void testReadByteArray_MultipleStreams() throws Exception
     {
         InputStream bis1 = new ByteArrayInputStream("ab".getBytes());
@@ -72,6 +78,7 @@ public class CompositeInputStreamTest extends TestCase
         assertEquals("Expecting EOF", -1, read3);
     }
 
+    @Test
     public void testReadsMixed_SingleStream() throws Exception
     {
         InputStream bis = new ByteArrayInputStream("abcd".getBytes());
@@ -89,6 +96,7 @@ public class CompositeInputStreamTest extends TestCase
         assertEquals("Expecting EOF", -1, cis.read(buf));
     }
 
+    @Test
     public void testAvailable_MultipleStreams() throws Exception
     {
         InputStream bis1 = new ByteArrayInputStream("ab".getBytes());
@@ -106,6 +114,7 @@ public class CompositeInputStreamTest extends TestCase
         assertEquals("Unexpected number of available bytes after last byte read", 0, cis.available());
     }
 
+    @Test
     public void testClose() throws Exception
     {
         InputStream bis1 = mock(InputStream.class);

@@ -20,6 +20,8 @@
 
 package org.apache.qpid.server.management.plugin.servlet.query;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,13 +40,14 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.junit.Test;
 
 import org.apache.qpid.server.filter.OrderByExpression;
 import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ConfiguredObjectQueryTest extends QpidTestCase
+public class ConfiguredObjectQueryTest extends UnitTestBase
 {
     private static final String NUMBER_ATTR = "numberAttr";
     private static final String DATE_ATTR = "dateAttr";
@@ -61,6 +64,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
     private final List<ConfiguredObject<?>> _objects = new ArrayList<>();
     private ConfiguredObjectQuery _query;
 
+    @Test
     public void testNoClauses_SingleResult()
     {
         final UUID objectUuid = UUID.randomUUID();
@@ -77,15 +81,19 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         _query = new ConfiguredObjectQuery(_objects, null, null);
 
         final List<String> headers = _query.getHeaders();
-        assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME), headers);
+        assertEquals("Unexpected headers",
+                            Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME),
+                            headers);
+
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
 
         List<Object> row = results.iterator().next();
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, objectName), row);
     }
 
+    @Test
     public void testArithmeticStatementInOrderBy()
     {
         final List<OrderByExpression> orderByExpressions;
@@ -95,7 +103,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         try
         {
             orderByExpressions = parser.parseOrderBy(orderByClause);
-            assertEquals(1, orderByExpressions.size());
+            assertEquals((long) 1, (long) orderByExpressions.size());
         }
         catch (ParseException | TokenMgrError e)
         {
@@ -104,6 +112,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
     }
 
 
+    @Test
     public void testInvalidStatementInOrderBy()
     {
         String orderByClause = "a + b foo";
@@ -120,6 +129,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testNoClauses_TwoResult()
     {
         final UUID object1Uuid = UUID.randomUUID();
@@ -147,7 +157,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         _query = new ConfiguredObjectQuery(_objects, null, null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 2, results.size());
+        assertEquals("Unexpected number of results", (long) 2, (long) results.size());
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row1 = iterator.next();
@@ -157,6 +167,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(object2Uuid, object2Name), row2);
     }
 
+    @Test
     public void testSelectClause()
     {
         final UUID objectUuid = UUID.randomUUID();
@@ -174,7 +185,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
 
         final List<String> headers = _query.getHeaders();
         assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, NUMBER_ATTR), headers);
@@ -184,6 +195,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, 1234), row);
     }
 
+    @Test
     public void testSelectClause_NonExistingColumn()
     {
        ConfiguredObject obj = createCO(new HashMap<String, Object>()
@@ -194,11 +206,12 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
 
         _query = new ConfiguredObjectQuery(_objects, "foo", null);
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
         assertEquals("Unexpected headers", Collections.singletonList("foo"), _query.getHeaders());
         assertEquals("Unexpected row", Collections.singletonList(null), results.get(0));
     }
 
+    @Test
     public void testSelectClause_ColumnAliases()
     {
         final UUID objectUuid = UUID.randomUUID();
@@ -217,7 +230,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
 
         final List<String> headers = _query.getHeaders();
         assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, "alias"), headers);
@@ -227,6 +240,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "myObj1234"), row);
     }
 
+    @Test
     public void testQuery_StringEquality()
     {
         final UUID objectUuid = UUID.randomUUID();
@@ -250,16 +264,19 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         _query = new ConfiguredObjectQuery(_objects, null, String.format("name = '%s'", objectName));
 
         final List<String> headers = _query.getHeaders();
-        assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME), headers);
+        assertEquals("Unexpected headers",
+                            Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME),
+                            headers);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
         assertEquals("Unexpected row", objectUuid, row.get(0));
     }
 
+    @Test
     public void testQuery_DateInequality()
     {
         final long now = System.currentTimeMillis();
@@ -288,13 +305,14 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            String.format("%s > NOW()", DATE_ATTR));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
         assertEquals("Unexpected row", objectUuid, row.get(0));
     }
 
+    @Test
     public void testQuery_DateEquality()
     {
         final long now = System.currentTimeMillis();
@@ -325,13 +343,14 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                                          nowIso8601Str));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
         assertEquals("Unexpected row", objectUuid, row.get(0));
     }
 
+    @Test
     public void testQuery_DateExpressions()
     {
         final UUID objectUuid = UUID.randomUUID();
@@ -352,13 +371,14 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                                          "-PT10H"));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
         assertEquals("Unexpected row", objectUuid, row.get(0));
     }
 
+    @Test
     public void testDateToString()
     {
         final UUID objectUuid = UUID.randomUUID();
@@ -376,13 +396,14 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "1970-01-01T00:00:00Z"), row);
     }
 
+    @Test
     public void testDateToFormattedString()
     {
         final UUID objectUuid = UUID.randomUUID();
@@ -403,13 +424,14 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "1970-01-01 UTC"), row);
     }
 
+    @Test
     public void testQuery_EnumEquality()
     {
         final UUID objectUuid = UUID.randomUUID();
@@ -428,7 +450,9 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            String.format("%s = '%s'", ENUM_ATTR, Snakes.PYTHON));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results - enumAttr equality with enum constant", 1, results.size());
+        assertEquals("Unexpected number of results - enumAttr equality with enum constant",
+                            (long) 1,
+                            (long) results.size());
 
         List<Object> row = _query.getResults().iterator().next();
         assertEquals("Unexpected row", objectUuid, row.get(0));
@@ -438,7 +462,9 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            String.format("'%s' = %s", Snakes.PYTHON, ENUM_ATTR));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - enum constant equality with enumAttr", 1, results.size());
+        assertEquals("Unexpected number of results - enum constant equality with enumAttr",
+                            (long) 1,
+                            (long) results.size());
 
         row = _query.getResults().iterator().next();
         assertEquals("Unexpected row", objectUuid, row.get(0));
@@ -448,17 +474,21 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            String.format("%s <> '%s'", ENUM_ATTR, "toad"));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - enumAttr not equal enum constant", 1, results.size());
+        assertEquals("Unexpected number of results - enumAttr not equal enum constant",
+                            (long) 1,
+                            (long) results.size());
 
         _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s", ConfiguredObject.ID),
                                            String.format("%s = %s", ENUM_ATTR, ENUM2_ATTR));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - two attributes of type enum", 1, results.size());
-
+        assertEquals("Unexpected number of results - two attributes of type enum",
+                            (long) 1,
+                            (long) results.size());
     }
 
+    @Test
     public void testQuery_EnumEquality_InExpresssions()
     {
         final UUID objectUuid = UUID.randomUUID();
@@ -479,23 +509,28 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                                          "toad", Snakes.VIPER, Snakes.PYTHON));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results - emumAttr with set including the enum's constants", 1, results.size());
+        assertEquals("Unexpected number of results - emumAttr with set including the enum's constants",
+                            (long) 1,
+                            (long) results.size());
 
         _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s", ConfiguredObject.ID),
                                            String.format("%s in (%s)", ENUM_ATTR, ENUM2_ATTR));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - enumAttr with set including enum2Attr", 1, results.size());
+        assertEquals("Unexpected number of results - enumAttr with set including enum2Attr",
+                            (long) 1,
+                            (long) results.size());
 
         _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s", ConfiguredObject.ID),
                                            String.format("'%s' in (%s)", Snakes.PYTHON, ENUM_ATTR));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - attribute within the set", 1, results.size());
+        assertEquals("Unexpected number of results - attribute within the set", (long) 1, (long) results.size());
     }
 
+    @Test
     public void testFunctionActualParameterMismatch()
     {
         try
@@ -511,6 +546,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSingleOrderByClause()
     {
         final int NUMBER_OF_OBJECTS = 3;
@@ -547,6 +583,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertQueryResults(new Object[][]{{null}, {0}, {1}, {2}}, results);
     }
 
+    @Test
     public void testAliasInOrderByClause()
     {
         _objects.add(createCO(new HashMap<String, Object>()
@@ -568,6 +605,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertQueryResults(new Object[][]{{1}, {2}, {4}}, _query.getResults());
     }
 
+    @Test
     public void testExpressionToTermsOfAliasInOrderByClause()
     {
         _objects.add(createCO(new HashMap<String, Object>()
@@ -586,6 +624,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertQueryResults(new Object[][]{{"A", "A"}, {"A", "B"}}, _query.getResults());
     }
 
+    @Test
     public void testDelimitedAliasInOrderByClause()
     {
         _objects.add(createCO(new HashMap<String, Object>()
@@ -607,6 +646,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertQueryResults(new Object[][]{{4}, {2}, {1}}, _query.getResults());
     }
 
+    @Test
     public void testTwoOrderByClauses()
     {
         ConfiguredObject object;
@@ -669,6 +709,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertQueryResults(new Object[][]{{1, 2}, {1, 1}, {2, 0}}, _query.getResults());
     }
 
+    @Test
     public void testOrderByWithInvalidColumnIndex()
     {
         try
@@ -693,6 +734,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
     }
 
 
+    @Test
     public void testLimitWithoutOffset()
     {
         int numberOfTestObjects = 3;
@@ -735,13 +777,13 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                     final List<List<Object>> results)
     {
         final int rows = expectedAttributes.length;
-        assertEquals("Unexpected number of result rows", rows, results.size());
+        assertEquals("Unexpected number of result rows", (long) rows, (long) results.size());
         if (rows > 0)
         {
             final int cols = expectedAttributes[0].length;
             for (int row = 0; row < rows; ++row)
             {
-                assertEquals("Unexpected number of result columns", cols, results.get(row).size());
+                assertEquals("Unexpected number of result columns", (long) cols, (long) results.get(row).size());
                 for (int col = 0; col < cols; ++col)
                 {
                     assertEquals("Unexpected row order", expectedAttributes[row][col], results.get(row).get(col));

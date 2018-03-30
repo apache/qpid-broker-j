@@ -18,10 +18,16 @@
  */
 package org.apache.qpid.server.filter;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
-public class JMSSelectorFilterTest extends QpidTestCase
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class JMSSelectorFilterTest extends UnitTestBase
 {
+    @Test
     public void testEqualsAndHashCodeUsingSelectorString() throws Exception
     {
         final String selectorString = "1 = 1";
@@ -45,7 +51,9 @@ public class JMSSelectorFilterTest extends QpidTestCase
         assertEquals(message, filter2, filter1);
 
         assertEquals("HashCodes of " + filter1 + " and " + filter2 + " should be equal",
-                filter1.hashCode(), filter2.hashCode());
+                            (long) filter1.hashCode(),
+                            (long) filter2.hashCode());
+
     }
 
     private void assertNotEqual(JMSSelectorFilter filter, JMSSelectorFilter differentFilter)

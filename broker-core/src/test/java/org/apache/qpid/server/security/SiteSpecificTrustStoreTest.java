@@ -21,6 +21,8 @@
 package org.apache.qpid.server.security;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +45,10 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -52,10 +58,10 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestSSLConstants;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SiteSpecificTrustStoreTest extends QpidTestCase
+public class SiteSpecificTrustStoreTest extends UnitTestBase
 {
     private static final String EXPECTED_SUBJECT = "CN=localhost,OU=Unknown,O=Unknown,L=Unknown,ST=Unknown,C=Unknown";
     private static final String EXPECTED_ISSUER = "CN=MyRootCA,O=ACME,ST=Ontario,C=CA";
@@ -65,10 +71,9 @@ public class SiteSpecificTrustStoreTest extends QpidTestCase
     private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
     private TestPeer _testPeer;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         int connectTimeout = Integer.getInteger("SiteSpecificTrustStoreTest.connectTimeout", 1000);
         int readTimeout = Integer.getInteger("SiteSpecificTrustStoreTest.readTimeout", 1000);
         setTestSystemProperty(SiteSpecificTrustStore.TRUST_STORE_SITE_SPECIFIC_CONNECT_TIMEOUT, String.valueOf(connectTimeout));
@@ -81,12 +86,11 @@ public class SiteSpecificTrustStoreTest extends QpidTestCase
         when(((Broker) _broker).getCategoryClass()).thenReturn(Broker.class);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            super.tearDown();
         }
         finally
         {
@@ -97,6 +101,7 @@ public class SiteSpecificTrustStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testMalformedSiteUrl() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -115,6 +120,7 @@ public class SiteSpecificTrustStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSiteUrlDoesNotSupplyHostPort() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -133,6 +139,7 @@ public class SiteSpecificTrustStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testUnresponsiveSite() throws Exception
     {
         _testPeer = new TestPeer();
@@ -152,6 +159,7 @@ public class SiteSpecificTrustStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testValidSiteUrl() throws Exception
     {
         _testPeer = new TestPeer();
@@ -163,13 +171,14 @@ public class SiteSpecificTrustStoreTest extends QpidTestCase
                 (SiteSpecificTrustStore) _factory.create(TrustStore.class, attributes, _broker);
 
         List<CertificateDetails> certDetails = trustStore.getCertificateDetails();
-        assertEquals("Unexpected number of certificates", 1, certDetails.size());
+        assertEquals("Unexpected number of certificates", (long) 1, (long) certDetails.size());
         CertificateDetails certificateDetails = certDetails.get(0);
 
         assertEquals("Unexpected certificate subject", EXPECTED_SUBJECT, certificateDetails.getSubjectName());
         assertEquals("Unexpected certificate issuer", EXPECTED_ISSUER, certificateDetails.getIssuerName());
     }
 
+    @Test
     public void testRefreshCertificate() throws Exception
     {
         _testPeer = new TestPeer();
@@ -181,7 +190,7 @@ public class SiteSpecificTrustStoreTest extends QpidTestCase
                 (SiteSpecificTrustStore) _factory.create(TrustStore.class, attributes, _broker);
 
         List<CertificateDetails> certDetails = trustStore.getCertificateDetails();
-        assertEquals("Unexpected number of certificates",1, certDetails.size());
+        assertEquals("Unexpected number of certificates", (long) 1, (long) certDetails.size());
 
         CertificateDetails certificateDetails = certDetails.get(0);
 

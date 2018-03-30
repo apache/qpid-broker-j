@@ -20,10 +20,18 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+
+import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.VirtualHost;
@@ -39,6 +47,7 @@ import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
 /**
  * Subclass of MessageStoreTestCase which runs the standard tests from the superclass against
@@ -49,6 +58,13 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
     private static byte[] CONTENT_BYTES = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     private String _storeLocation;
+
+    @Override
+    public void setUp() throws Exception
+    {
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        super.setUp();
+    }
 
     @Override
     public void tearDown() throws Exception
@@ -90,6 +106,7 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
      * interrogating the store with its own implementation methods and verifying
      * expected exceptions are thrown to indicate the message is not present.
      */
+    @Test
     public void testMessageCreationAndRemoval() throws Exception
     {
         BDBMessageStore bdbStore = (BDBMessageStore) getStore();
@@ -143,6 +160,7 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
         return storedMessage_0_8.allContentAdded();
     }
 
+    @Test
     public void testOnDelete() throws Exception
     {
         String storeLocation = getStore().getStoreLocation();

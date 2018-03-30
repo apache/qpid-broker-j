@@ -20,19 +20,27 @@
  */
 package org.apache.qpid.server.security.group;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.apache.qpid.test.utils.QpidTestCase;
-
-public class GroupPrincipalTest extends QpidTestCase
+public class GroupPrincipalTest extends UnitTestBase
 {
+    @Test
     public void testGetName()
     {
         final GroupPrincipal principal = new GroupPrincipal("group", (GroupProvider) null);
         assertEquals("group", principal.getName());
     }
 
+    @Test
     public void testAddRejected()
     {
         final GroupPrincipal principal = new GroupPrincipal("group", (GroupProvider) null);
@@ -49,6 +57,7 @@ public class GroupPrincipalTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testEqualitySameName()
     {
         final String string = "string";
@@ -57,6 +66,7 @@ public class GroupPrincipalTest extends QpidTestCase
         assertTrue(principal1.equals(principal2));
     }
 
+    @Test
     public void testEqualityEqualName()
     {
         final GroupPrincipal principal1 = new GroupPrincipal(new String("string"), (GroupProvider) null);
@@ -64,6 +74,7 @@ public class GroupPrincipalTest extends QpidTestCase
         assertTrue(principal1.equals(principal2));
     }
 
+    @Test
     public void testInequalityDifferentGroupPrincipals()
     {
         GroupPrincipal principal1 = new GroupPrincipal("string1", (GroupProvider) null);
@@ -71,12 +82,14 @@ public class GroupPrincipalTest extends QpidTestCase
         assertFalse(principal1.equals(principal2));
     }
 
+    @Test
     public void testInequalityNonGroupPrincipal()
     {
         GroupPrincipal principal = new GroupPrincipal("string", (GroupProvider) null);
         assertFalse(principal.equals(new UsernamePrincipal("string", null)));
     }
 
+    @Test
     public void testInequalityNull()
     {
         GroupPrincipal principal = new GroupPrincipal("string", (GroupProvider) null);

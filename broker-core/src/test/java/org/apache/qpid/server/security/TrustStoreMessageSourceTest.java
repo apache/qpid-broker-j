@@ -19,6 +19,9 @@
 package org.apache.qpid.server.security;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,6 +35,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -43,18 +49,16 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-
-public class TrustStoreMessageSourceTest extends QpidTestCase
+public class TrustStoreMessageSourceTest extends UnitTestBase
 {
     private TrustStoreMessageSource _trustStoreMessageSource;
     private Certificate[] _certificates;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         VirtualHost vhost = mock(VirtualHost.class);
         MessageStore messageStore = new TestMemoryMessageStore();
         TrustStore trustStore = mock(TrustStore.class);
@@ -68,6 +72,7 @@ public class TrustStoreMessageSourceTest extends QpidTestCase
         _trustStoreMessageSource= new TrustStoreMessageSource(trustStore, vhost);
     }
 
+    @Test
     public void testAddConsumer() throws Exception
     {
         final EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
@@ -97,7 +102,7 @@ public class TrustStoreMessageSourceTest extends QpidTestCase
         final ByteArrayInputStream bytesIn;
         try (QpidByteBuffer allData = message.getStoredMessage().getContent(0, bodySize))
         {
-            assertEquals("Unexpected message size was retrieved", bodySize, allData.remaining());
+            assertEquals("Unexpected message size was retrieved", (long) bodySize, (long) allData.remaining());
             allData.get(msgContent);
         }
 

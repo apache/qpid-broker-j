@@ -18,6 +18,9 @@
 
 package org.apache.qpid.server.ssl;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.cert.Certificate;
@@ -30,13 +33,15 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestSSLConstants;
+import org.junit.Test;
+
 import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.test.utils.TestSSLConstants;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class TrustManagerTest extends QpidTestCase
+public class TrustManagerTest extends UnitTestBase
 {
     private static final String STORE_TYPE = "JKS";
     private static final String DEFAULT_TRUST_MANAGER_ALGORITHM = TrustManagerFactory.getDefaultAlgorithm();
@@ -67,6 +72,7 @@ public class TrustManagerTest extends QpidTestCase
      * Tests that the QpidPeersOnlyTrustManager gives the expected behaviour when loaded separately
      * with the broker peerstore and truststore.
      */
+    @Test
     public void testQpidPeersOnlyTrustManager() throws Exception
     {
         // first let's check that peer manager loaded with the PEERstore succeeds
@@ -156,6 +162,7 @@ public class TrustManagerTest extends QpidTestCase
      * Tests that the QpidMultipleTrustManager gives the expected behaviour when wrapping a
      * regular TrustManager against the broker truststore.
      */
+    @Test
     public void testQpidMultipleTrustManagerWithRegularTrustStore() throws Exception
     {
         final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
@@ -214,6 +221,7 @@ public class TrustManagerTest extends QpidTestCase
      * Tests that the QpidMultipleTrustManager gives the expected behaviour when wrapping a
      * QpidPeersOnlyTrustManager against the broker peerstore.
      */
+    @Test
     public void testQpidMultipleTrustManagerWithPeerStore() throws Exception
     {
         final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
@@ -274,6 +282,7 @@ public class TrustManagerTest extends QpidTestCase
      * QpidPeersOnlyTrustManager against the broker peerstore, a regular TrustManager
      * against the broker truststore.
      */
+    @Test
     public void testQpidMultipleTrustManagerWithTrustAndPeerStores() throws Exception
     {
         final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();

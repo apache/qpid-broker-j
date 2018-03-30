@@ -18,30 +18,33 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.EnumSet;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class VirtualHostPropertiesNodeTest extends QpidTestCase
+public class VirtualHostPropertiesNodeTest extends UnitTestBase
 {
     private VirtualHostPropertiesNode _virtualHostPropertiesNode;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         VirtualHost vhost = mock(VirtualHost.class);
         MessageStore messageStore = new TestMemoryMessageStore();
         when(vhost.getMessageStore()).thenReturn(messageStore);
@@ -49,6 +52,7 @@ public class VirtualHostPropertiesNodeTest extends QpidTestCase
         _virtualHostPropertiesNode = new VirtualHostPropertiesNode(vhost);
     }
 
+    @Test
     public void testAddConsumer() throws Exception
     {
         final EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);

@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,14 +30,17 @@ import java.util.concurrent.Callable;
 
 import javax.security.auth.Subject;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AuthenticationResultCacherTest extends QpidTestCase
+public class AuthenticationResultCacherTest extends UnitTestBase
 {
     private AuthenticationResultCacher _authenticationResultCacher;
     private final AuthenticationResult _successfulAuthenticationResult =
@@ -46,10 +50,9 @@ public class AuthenticationResultCacherTest extends QpidTestCase
     private AMQPConnection _connection;
     private Callable<AuthenticationResult> _loader;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _connection = mock(AMQPConnection.class);
         when(_connection.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("example.com", 9999));
         _subject = new Subject(true,
@@ -70,6 +73,7 @@ public class AuthenticationResultCacherTest extends QpidTestCase
         };
     }
 
+    @Test
     public void testCacheHit() throws Exception
     {
         Subject.doAs(_subject, new PrivilegedAction<Void>()
@@ -80,15 +84,16 @@ public class AuthenticationResultCacherTest extends QpidTestCase
                 AuthenticationResult result;
                 result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
                 assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", 1, _loadCallCount);
+                assertEquals("Unexpected number of loads before cache hit", (long) 1, (long) _loadCallCount);
                 result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
                 assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads after cache hit", 1, _loadCallCount);
+                assertEquals("Unexpected number of loads after cache hit", (long) 1, (long) _loadCallCount);
                 return null;
             }
         });
     }
 
+    @Test
     public void testCacheMissDifferentCredentials() throws Exception
     {
         Subject.doAs(_subject, new PrivilegedAction<Void>()
@@ -99,16 +104,17 @@ public class AuthenticationResultCacherTest extends QpidTestCase
                 AuthenticationResult result;
                 result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
                 assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", 1, _loadCallCount);
+                assertEquals("Unexpected number of loads before cache hit", (long) 1, (long) _loadCallCount);
                 result = _authenticationResultCacher.getOrLoad(new String[]{"other credentials"}, _loader);
                 assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", 2, _loadCallCount);
+                assertEquals("Unexpected number of loads before cache hit", (long) 2, (long) _loadCallCount);
                 return null;
             }
         });
     }
 
 
+    @Test
     public void testCacheMissDifferentAddress() throws Exception
     {
         Subject.doAs(_subject, new PrivilegedAction<Void>()
@@ -119,7 +125,7 @@ public class AuthenticationResultCacherTest extends QpidTestCase
                 AuthenticationResult result;
                 result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
                 assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", 1, _loadCallCount);
+                assertEquals("Unexpected number of loads before cache hit", (long) 1, (long) _loadCallCount);
                 return null;
             }
         });
@@ -133,7 +139,7 @@ public class AuthenticationResultCacherTest extends QpidTestCase
                 AuthenticationResult result;
                 result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
                 assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", 2, _loadCallCount);
+                assertEquals("Unexpected number of loads before cache hit", (long) 2, (long) _loadCallCount);
                 return null;
             }
         });

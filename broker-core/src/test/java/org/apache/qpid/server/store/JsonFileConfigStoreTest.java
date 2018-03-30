@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.store;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.inOrder;
@@ -34,6 +37,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 
@@ -44,13 +50,13 @@ import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class JsonFileConfigStoreTest extends QpidTestCase
+public class JsonFileConfigStoreTest extends UnitTestBase
 {
     private JsonFileConfigStore _store;
     private JsonVirtualHostNode<?> _parent;
@@ -63,15 +69,14 @@ public class JsonFileConfigStoreTest extends QpidTestCase
     private static final String VIRTUAL_HOST_TYPE = "VirtualHost";
     private ConfiguredObjectRecord _rootRecord;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
 
         _parent = mock(JsonVirtualHostNode.class);
-        when(_parent.getName()).thenReturn(getName());
+        when(_parent.getName()).thenReturn(getTestName());
         when(_parent.getObjectFactory()).thenReturn(factory);
         when(_parent.getModel()).thenReturn(factory.getModel());
         _storeLocation = TestFileUtils.createTestDirectory("json", true);
@@ -82,19 +87,13 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         _handler = mock(ConfiguredObjectRecordHandler.class);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
-        try
-        {
-            super.tearDown();
-        }
-        finally
-        {
-            FileUtils.delete(_storeLocation, true);
-        }
+        FileUtils.delete(_storeLocation, true);
     }
 
+    @Test
     public void testNoStorePath() throws Exception
     {
         when(_parent.getStorePath()).thenReturn(null);
@@ -111,6 +110,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
     }
 
 
+    @Test
     public void testInvalidStorePath() throws Exception
     {
         when(_parent.getStorePath()).thenReturn(System.getProperty("file.separator"));
@@ -125,6 +125,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testVisitEmptyStore()
     {
         _store.init(_parent);
@@ -136,6 +137,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         _store.closeConfigurationStore();
     }
 
+    @Test
     public void testInsertAndUpdateTopLevelObject() throws Exception
     {
         _store.init(_parent);
@@ -167,6 +169,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         _store.closeConfigurationStore();
     }
 
+    @Test
     public void testCreateObject() throws Exception
     {
         _store.init(_parent);
@@ -188,6 +191,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         _store.closeConfigurationStore();
     }
 
+    @Test
     public void testCreateAndUpdateObject() throws Exception
     {
         _store.init(_parent);
@@ -213,6 +217,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
     }
 
 
+    @Test
     public void testCreateAndRemoveObject() throws Exception
     {
         _store.init(_parent);
@@ -237,6 +242,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         _store.closeConfigurationStore();
     }
 
+    @Test
     public void testCreateUnknownObjectType() throws Exception
     {
         _store.init(_parent);
@@ -254,6 +260,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testTwoObjectsWithSameId() throws Exception
     {
         _store.init(_parent);
@@ -278,6 +285,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
     }
 
 
+    @Test
     public void testObjectWithoutName() throws Exception
     {
         _store.init(_parent);
@@ -298,6 +306,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testObjectWithNonStringName() throws Exception
     {
         _store.init(_parent);
@@ -318,6 +327,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testChangeTypeOfObject() throws Exception
     {
         _store.init(_parent);
@@ -345,6 +355,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testLockFileGuaranteesExclusiveAccess() throws Exception
     {
         _store.init(_parent);
@@ -364,6 +375,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         secondStore.init(_parent);
     }
 
+    @Test
     public void testStoreFileLifecycle()
     {
         File expectedJsonFile = new File(_storeLocation, _parent.getName() + ".json");
@@ -388,6 +400,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         assertFalse("JSON lock should not exist after delete", expectedJsonFileLck.exists());
     }
 
+    @Test
     public void testCreatedNestedObjects() throws Exception
     {
         _store.init(_parent);

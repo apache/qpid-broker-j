@@ -20,6 +20,8 @@
 
 package org.apache.qpid.server.transport;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
@@ -42,6 +44,9 @@ import javax.net.ssl.X509TrustManager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.SystemLauncher;
 import org.apache.qpid.server.SystemLauncherListener.DefaultSystemLauncherListener;
@@ -58,10 +63,10 @@ import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil.KeyCertPair;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SNITest extends QpidTestCase
+public class SNITest extends UnitTestBase
 {
     private static final int SOCKET_TIMEOUT = 10000;
     private static final String KEYSTORE_PASSWORD = "password";
@@ -75,7 +80,7 @@ public class SNITest extends QpidTestCase
     private int _boundPort;
     private File _brokerWork;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         if(SSLUtil.canGenerateCerts())
@@ -132,11 +137,10 @@ public class SNITest extends QpidTestCase
                 inMemoryKeyStore.store(os, KEYSTORE_PASSWORD.toCharArray());
             }
         }
-        super.setUp();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         try
         {
@@ -156,26 +160,29 @@ public class SNITest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
 
     }
 
+    @Test
     public void testValidCertChosen() throws Exception
     {
         performTest(true, "fooinvalid", "foo", _fooValid);
     }
 
+    @Test
     public void testMatchCertChosenEvenIfInvalid() throws Exception
     {
         performTest(true, "fooinvalid", "bar", _barInvalid);
     }
 
+    @Test
     public void testDefaultCertChose() throws Exception
     {
         performTest(true, "fooinvalid", null, _fooInvalid);
     }
 
+    @Test
     public void testMatchingCanBeDisabled() throws Exception
     {
         performTest(false, "fooinvalid", "foo", _fooInvalid);
@@ -228,7 +235,7 @@ public class SNITest extends QpidTestCase
                 socket.connect(address, SOCKET_TIMEOUT);
 
                 final Certificate[] certs = socket.getSession().getPeerCertificates();
-                assertEquals(1, certs.length);
+                assertEquals((long) 1, (long) certs.length);
                 assertEquals(expectedCert.getCertificate(), certs[0]);
             }
         }

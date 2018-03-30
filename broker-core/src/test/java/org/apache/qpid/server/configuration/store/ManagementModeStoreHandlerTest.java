@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.configuration.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
@@ -38,6 +41,9 @@ import java.util.UUID;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -60,9 +66,9 @@ import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ManagementModeStoreHandlerTest extends QpidTestCase
+public class ManagementModeStoreHandlerTest extends UnitTestBase
 {
     private ManagementModeStoreHandler _handler;
     private Map<String,Object> _systemConfigAttributes;
@@ -73,10 +79,9 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     private SystemConfig _systemConfig;
     private TaskExecutor _taskExecutor;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _rootId = UUID.randomUUID();
         _portEntryId = UUID.randomUUID();
         _store = mock(DurableConfigurationStore.class);
@@ -159,12 +164,11 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         return new ManagementModeStoreHandler(_store, _systemConfig);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         _taskExecutor.stop();
         _systemConfig.close();
-        super.tearDown();
     }
 
     private Collection<ConfiguredObjectRecord> openAndGetRecords()
@@ -230,6 +234,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         return childIds;
     }
 
+    @Test
     public void testGetRootEntryWithEmptyOptions()
     {
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
@@ -238,6 +243,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         assertEquals("Unexpected children", Collections.singleton(_portEntryId), getChildrenIds(records, root));
     }
 
+    @Test
     public void testGetRootEntryWithHttpPortOverriden()
     {
         _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,9090);
@@ -248,10 +254,11 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         ConfiguredObjectRecord root = getRootEntry(records);
         assertEquals("Unexpected root id", _rootId, root.getId());
         Collection<UUID> childrenIds = getChildrenIds(records, root);
-        assertEquals("Unexpected children size", 2, childrenIds.size());
+        assertEquals("Unexpected children size", (long) 2, (long) childrenIds.size());
         assertTrue("Store port entry id is not found", childrenIds.contains(_portEntryId));
     }
 
+    @Test
     public void testGetRootEntryWithManagementPortsOverriden()
     {
         _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
@@ -262,10 +269,11 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         ConfiguredObjectRecord root = getRootEntry(records);
         assertEquals("Unexpected root id", _rootId, root.getId());
         Collection<UUID> childrenIds = getChildrenIds(records, root);
-        assertEquals("Unexpected children size", 2, childrenIds.size());
+        assertEquals("Unexpected children size", (long) 2, (long) childrenIds.size());
         assertTrue("Store port entry id is not found", childrenIds.contains(_portEntryId));
     }
 
+    @Test
     public void testGetEntryByRootId()
     {
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
@@ -275,6 +283,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         assertEquals("Unexpected children", Collections.singleton(_portEntryId), getChildrenIds(records, root));
     }
 
+    @Test
     public void testGetEntryByPortId()
     {
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
@@ -285,6 +294,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.STATE));
     }
 
+    @Test
     public void testGetEntryByCLIHttpPortId()
     {
         _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,9090);
@@ -298,6 +308,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         assertCLIPortEntry(records, portEntry, optionsPort, Protocol.HTTP);
     }
 
+    @Test
     public void testHttpPortEntryIsQuiesced()
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
@@ -313,11 +324,13 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.STATE));
     }
 
+    @Test
     public void testVirtualHostEntryIsNotQuiescedByDefault()
     {
         virtualHostEntryQuiescedStatusTestImpl(false);
     }
 
+    @Test
     public void testVirtualHostEntryIsQuiescedWhenRequested()
     {
         virtualHostEntryQuiescedStatusTestImpl(true);
@@ -377,6 +390,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
                 (Collection<Protocol>) attributes.get(Port.PROTOCOLS)));
     }
 
+    @Test
     public void testSavePort()
     {
         _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
@@ -393,6 +407,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         verify(_store).create(any(ConfiguredObjectRecord.class));
     }
 
+    @Test
     public void testSaveRoot()
     {
         _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
@@ -409,6 +424,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         verify(_store).update(anyBoolean(), any(ConfiguredObjectRecord.class));
     }
 
+    @Test
     public void testSaveCLIHttpPort()
     {
         _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
@@ -434,6 +450,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testRemove()
     {
         _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
@@ -471,6 +488,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         verify(_store).remove(record);
     }
 
+    @Test
     public void testRemoveCLIPort()
     {
         _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);

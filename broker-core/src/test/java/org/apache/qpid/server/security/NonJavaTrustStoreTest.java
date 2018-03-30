@@ -19,6 +19,10 @@
 
 package org.apache.qpid.server.security;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +36,9 @@ import java.util.Map;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -42,21 +49,19 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestSSLConstants;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-
-public class NonJavaTrustStoreTest extends QpidTestCase
+public class NonJavaTrustStoreTest extends UnitTestBase
 {
     private final Broker<?> _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
     private final Model _model = BrokerModel.getInstance();
     private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
@@ -65,6 +70,7 @@ public class NonJavaTrustStoreTest extends QpidTestCase
         when(((Broker) _broker).getCategoryClass()).thenReturn(Broker.class);
     }
 
+    @Test
     public void testCreationOfTrustStoreFromValidCertificate() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -76,10 +82,11 @@ public class NonJavaTrustStoreTest extends QpidTestCase
 
         TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
+        assertEquals("Unexpected number of trust managers", (long) 1, (long) trustManagers.length);
         assertNotNull("Trust manager unexpected null", trustManagers[0]);
     }
 
+    @Test
     public void testUseOfExpiredTrustAnchorDenied() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -92,8 +99,9 @@ public class NonJavaTrustStoreTest extends QpidTestCase
 
         TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
-        assertTrue("Unexpected trust manager type",trustManagers[0] instanceof X509TrustManager);
+        assertEquals("Unexpected number of trust managers", (long) 1, (long) trustManagers.length);
+        final boolean condition = trustManagers[0] instanceof X509TrustManager;
+        assertTrue("Unexpected trust manager type", condition);
         X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
         KeyStore clientStore = SSLUtil.getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
@@ -122,6 +130,7 @@ public class NonJavaTrustStoreTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreationOfTrustStoreFromNonCertificate() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();

@@ -20,6 +20,8 @@
 package org.apache.qpid.server.security.auth.manager;
 
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,15 +31,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SimpleLDAPAuthenticationManagerFactoryTest extends QpidTestCase
+public class SimpleLDAPAuthenticationManagerFactoryTest extends UnitTestBase
 {
     private ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
     private Map<String, Object> _configuration = new HashMap<String, Object>();
@@ -45,18 +50,18 @@ public class SimpleLDAPAuthenticationManagerFactoryTest extends QpidTestCase
 
     private TrustStore _trustStore = mock(TrustStore.class);
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         when(_trustStore.getName()).thenReturn("mytruststore");
         when(_trustStore.getId()).thenReturn(UUID.randomUUID());
 
         _configuration.put(AuthenticationProvider.ID, UUID.randomUUID());
-        _configuration.put(AuthenticationProvider.NAME, getName());
+        _configuration.put(AuthenticationProvider.NAME, getTestName());
     }
 
+    @Test
     public void testLdapCreated() throws Exception
     {
         _configuration.put(AuthenticationProvider.TYPE, SimpleLDAPAuthenticationManager.PROVIDER_TYPE);
@@ -68,6 +73,7 @@ public class SimpleLDAPAuthenticationManagerFactoryTest extends QpidTestCase
         _factory.create(AuthenticationProvider.class, _configuration, _broker);
     }
 
+    @Test
     public void testLdapsWhenTrustStoreNotFound() throws Exception
     {
         when(_broker.getChildren(eq(TrustStore.class))).thenReturn(Collections.singletonList(_trustStore));

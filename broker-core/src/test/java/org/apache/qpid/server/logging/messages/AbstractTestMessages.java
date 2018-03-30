@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.logging.messages;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
@@ -27,31 +30,32 @@ import org.apache.qpid.server.logging.UnitTestMessageLogger;
 import org.apache.qpid.server.logging.subjects.TestBlankSubject;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
 import java.util.List;
 
-public abstract class AbstractTestMessages extends QpidTestCase
+import org.junit.After;
+import org.junit.Before;
+
+public abstract class AbstractTestMessages extends UnitTestBase
 {
     protected LogMessage _logMessage = null;
     protected UnitTestMessageLogger _logger;
     protected LogSubject _logSubject = new TestBlankSubject();
     private EventLogger _eventLogger;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
-
         BrokerTestHelper.setUp();
         _logger = new UnitTestMessageLogger();
         _eventLogger = new EventLogger(_logger);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         BrokerTestHelper.tearDown();
-        super.tearDown();
     }
 
     protected List<Object> getLog()

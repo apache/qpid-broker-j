@@ -19,6 +19,13 @@
 
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +39,7 @@ import java.util.concurrent.ExecutionException;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -42,16 +50,18 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Tests behaviour of AbstractConfiguredObjects when hierarchies of objects are used together.
  * Responsibilities to include adding/removing of children and correct firing of listeners.
  */
-public class AbstractConfiguredObjectTest extends QpidTestCase
+public class AbstractConfiguredObjectTest extends UnitTestBase
 {
     private final Model _model = TestModel.getInstance();
 
+    @Test
     public void testCreateCategoryDefault()
     {
         final String objectName = "testCreateCategoryDefault";
@@ -61,9 +71,11 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertEquals(objectName, object.getName());
         assertEquals(TestStandardCarImpl.TEST_STANDARD_CAR_TYPE, object.getType());
-        assertTrue(object instanceof TestStandardCar);
+        final boolean condition = object instanceof TestStandardCar;
+        assertTrue(condition);
     }
 
+    @Test
     public void testCreateUnrecognisedType()
     {
         final String objectName = "testCreateCategoryDefault";
@@ -82,6 +94,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreateCarWithEngine()
     {
         final String carName = "myCar";
@@ -93,7 +106,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertEquals(carName, car.getName());
 
-        assertEquals(0, car.getChildren(TestEngine.class).size());
+        assertEquals((long) 0, (long) car.getChildren(TestEngine.class).size());
 
         String engineName = "myEngine";
 
@@ -103,13 +116,13 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        assertEquals(1, car.getChildren(TestEngine.class).size());
+        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
 
         assertEquals(engineName, engine.getName());
         assertEquals(TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE, engine.getType());
-
     }
 
+    @Test
     public void testGetChildren_NewChild()
     {
         TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"), null);
@@ -122,7 +135,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         // Check we can observe the new child from the parent
 
-        assertEquals(1, car.getChildren(TestEngine.class).size());
+        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
         assertEquals(engine, car.getChildById(TestEngine.class, engine.getId()));
         assertEquals(engine, car.getChildByName(TestEngine.class, engine.getName()));
 
@@ -131,12 +144,13 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertTrue("Engine should have already attained state", attainedChild.isDone());
     }
 
+    @Test
     public void testGetChildren_RecoveredChild() throws Exception
     {
         final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
-        assertEquals(1, car.getChildren(TestEngine.class).size());
+        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
         TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
 
         assertEquals(engine, car.getChildById(TestEngine.class, engine.getId()));
@@ -152,6 +166,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(engine, attainedChild.get());
     }
 
+    @Test
     public void testOpenAwaitsChildToAttainState() throws Exception
     {
         SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
@@ -159,7 +174,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
-        assertEquals(1, car.getChildren(TestEngine.class).size());
+        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
         TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
         engine.setStateChangeFuture(engineStateChangeControllingFuture);
 
@@ -172,6 +187,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         carFuture.get();
     }
 
+    @Test
     public void testOpenAwaitsChildToAttainState_ChildStateChangeAsyncErrors() throws Exception
     {
         SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
@@ -179,7 +195,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
-        assertEquals(1, car.getChildren(TestEngine.class).size());
+        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
         TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
         engine.setStateChangeFuture(engineStateChangeControllingFuture);
 
@@ -194,12 +210,13 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(State.ERRORED, engine.getState());
     }
 
+    @Test
     public void testOpenAwaitsChildToAttainState_ChildStateChangeSyncErrors() throws Exception
     {
         final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
-        assertEquals(1, car.getChildren(TestEngine.class).size());
+        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
         TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
 
         engine.setStateChangeException(new RuntimeException("child attain state exception"));
@@ -212,6 +229,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(State.ERRORED, engine.getState());
     }
 
+    @Test
     public void testCreateAwaitsAttainState()
     {
         SettableFuture<Void> stateChangeFuture = SettableFuture.create();
@@ -230,6 +248,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertTrue("create child has not completed", engine.isDone());
     }
 
+    @Test
     public void testCreateAwaitsAttainState_StateChangeAsyncErrors() throws Exception
     {
         SettableFuture stateChangeFuture = SettableFuture.create();
@@ -257,9 +276,13 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
             assertSame(stateChangeException, ee.getCause());
         }
 
-        assertEquals("Failed engine should not be registered with parent", 0,  car.getChildren(TestEngine.class).size());
+        assertEquals("Failed engine should not be registered with parent",
+                            (long) 0,
+                            (long) car.getChildren(TestEngine.class).size());
+
     }
 
+    @Test
     public void testCreateAwaitsAttainState_StateChangeSyncErrors() throws Exception
     {
         RuntimeException stateChangeException = new RuntimeException("state change error");
@@ -283,10 +306,12 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
             assertSame(stateChangeException, ee.getCause());
         }
 
-        assertEquals("Failed engine should not be registered with parent", 0,  car.getChildren(TestEngine.class).size());
-
+        assertEquals("Failed engine should not be registered with parent",
+                            (long) 0,
+                            (long) car.getChildren(TestEngine.class).size());
     }
 
+    @Test
     public void testCloseAwaitsChildCloseCompletion()
     {
         SettableFuture<Void> engineCloseControllingFuture = SettableFuture.create();
@@ -304,7 +329,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         ListenableFuture carListenableFuture = car.closeAsync();
         assertFalse("car close future has completed before engine closed", carListenableFuture.isDone());
-        assertSame("engine deregistered from car too early", engine, car.getChildById(TestEngine.class, engine.getId()));
+        assertSame("engine deregistered from car too early",
+                          engine,
+                          car.getChildById(TestEngine.class, engine.getId()));
+
 
         engineCloseControllingFuture.set(null);
 
@@ -312,6 +340,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertNull("engine not deregistered", car.getChildById(TestEngine.class, engine.getId()));
     }
 
+    @Test
     public void testGlobalContextDefault()
     {
         final String carName = "myCar";
@@ -321,13 +350,16 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        assertTrue("context var not in contextKeys",
-                   car.getContextKeys(true).contains(TestCar.TEST_CONTEXT_VAR));
+        assertTrue("context var not in contextKeys", car.getContextKeys(true).contains(TestCar.TEST_CONTEXT_VAR));
 
         String expected = "a value";
-        assertEquals("Context variable has unexpected value", expected, car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR));
+        assertEquals("Context variable has unexpected value",
+                            expected,
+                            car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR));
+
     }
 
+    @Test
     public void testGlobalContextDefaultWithThisRef()
     {
         final String carName = "myCar";
@@ -337,7 +369,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        assertEquals("Context variable has unexpected value", "a value myCar", car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF));
+        assertEquals("Context variable has unexpected value",
+                            "a value myCar",
+                            car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF));
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
@@ -347,9 +381,12 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        assertEquals("Context variable has unexpected value", "a value myEngine", engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF));
+        assertEquals("Context variable has unexpected value",
+                            "a value myEngine",
+                            engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF));
     }
 
+    @Test
     public void testHierarchyContextVariableWithThisRef()
     {
         final String contentVarName = "contentVar";
@@ -361,7 +398,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        assertEquals("Context variable has unexpected value", "name myCar", car.getContextValue(String.class, contentVarName));
+        assertEquals("Context variable has unexpected value",
+                            "name myCar",
+                            car.getContextValue(String.class, contentVarName));
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
@@ -371,9 +410,12 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
         // TODO: we have different behaviour depending on whether the variable is a  global context default or hierarchy context variable.
-        assertEquals("Context variable has unexpected value", "name myCar", engine.getContextValue(String.class, contentVarName));
+        assertEquals("Context variable has unexpected value",
+                            "name myCar",
+                            engine.getContextValue(String.class, contentVarName));
     }
 
+    @Test
     public void testGlobalContextDefaultWithAncestorRef()
     {
         final String carName = "myCar";
@@ -384,7 +426,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         String expected = "a value " + carName;
-        assertEquals("Context variable has unexpected value", expected, car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF));
+        assertEquals("Context variable has unexpected value",
+                            expected,
+                            car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF));
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
@@ -393,9 +437,12 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        assertEquals("Context variable has unexpected value", expected, engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF));
+        assertEquals("Context variable has unexpected value",
+                            expected,
+                            engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF));
     }
 
+    @Test
     public void testHierarchyContextVariableWithAncestorRef()
     {
         final String contentVarName = "contentVar";
@@ -407,7 +454,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        assertEquals("Context variable has unexpected value", "name myCar", car.getContextValue(String.class, contentVarName));
+        assertEquals("Context variable has unexpected value",
+                            "name myCar",
+                            car.getContextValue(String.class, contentVarName));
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
@@ -416,9 +465,12 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        assertEquals("Context variable has unexpected value", "name myCar", engine.getContextValue(String.class, contentVarName));
+        assertEquals("Context variable has unexpected value",
+                            "name myCar",
+                            engine.getContextValue(String.class, contentVarName));
     }
 
+    @Test
     public void testUserPreferencesCreatedOnEngineCreation()
     {
         Map<String, Object> carAttributes = new HashMap<>();
@@ -436,16 +488,19 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertNotNull("Unexpected user preferences", engine.getUserPreferences());
     }
 
+    @Test
     public void testDuplicateChildRejected_Name()
     {
         doDuplicateChildCheck(ConfiguredObject.NAME);
     }
 
+    @Test
     public void testDuplicateChildRejected_Id()
     {
         doDuplicateChildCheck(ConfiguredObject.ID);
     }
 
+    @Test
     public void testParentDeletePropagatesToChild()
     {
         TestCar car = _model.getObjectFactory().create(TestCar.class,
@@ -463,10 +518,11 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertEquals("Unexpected child state after parent delete", State.DELETED, engine.getState());
         final List<State> newStates = listener.getNewStates();
-        assertEquals("Child heard an unexpected number of state chagnes", 1, newStates.size());
+        assertEquals("Child heard an unexpected number of state chagnes", (long) 1, (long) newStates.size());
         assertEquals("Child heard listener has unexpected state", State.DELETED, newStates.get(0));
     }
 
+    @Test
     public void testParentDeleteValidationFailureLeavesChildreIntact()
     {
         TestCar car = _model.getObjectFactory().create(TestCar.class,
@@ -493,9 +549,10 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertEquals("Unexpected child state after failed parent deletion", State.ACTIVE, engine.getState());
         final List<State> newStates = listener.getNewStates();
-        assertEquals("Child heard an unexpected number of state changes", 0, newStates.size());
+        assertEquals("Child heard an unexpected number of state changes", (long) 0, (long) newStates.size());
     }
 
+    @Test
     public void testDeleteConfiguredObjectReferredFromAttribute()
     {
         Map<String, Object> carAttributes = new HashMap<>();
@@ -530,6 +587,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDeleteConfiguredObjectReferredFromCollection()
     {
         Map<String, Object> carAttributes = new HashMap<>();
@@ -569,6 +627,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDeleteConfiguredObject()
     {
         Map<String, Object> carAttributes = new HashMap<>();
@@ -586,13 +645,18 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
         TestSensor sensor1 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
-        assertEquals("Unexpected number of sensors after creation", 1, instrumentPanel.getChildren(TestSensor.class).size());
+        assertEquals("Unexpected number of sensors after creation",
+                            (long) 1,
+                            (long) instrumentPanel.getChildren(TestSensor.class).size());
 
         sensor1.delete();
 
-        assertEquals("Unexpected number of sensors after deletion", 0, instrumentPanel.getChildren(TestSensor.class).size());
+        assertEquals("Unexpected number of sensors after deletion",
+                            (long) 0,
+                            (long) instrumentPanel.getChildren(TestSensor.class).size());
     }
 
+    @Test
     public void testDeleteConfiguredObjectWithReferredChildren()
     {
         Map<String, Object> carAttributes = new HashMap<>();
@@ -627,6 +691,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testDeleteConfiguredObjectWithChildrenReferringEachOther()
     {
         Map<String, Object> carAttributes = new HashMap<>();
@@ -665,7 +730,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
         TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
-        assertEquals(0, car.getChildren(TestEngine.class).size());
+        assertEquals((long) 0, (long) car.getChildren(TestEngine.class).size());
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
@@ -673,8 +738,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
 
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
-        assertEquals(1, car.getChildren(TestEngine.class).size());
-
+        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
 
         Map<String, Object> secondEngineNameAttribute = new HashMap<>();
         secondEngineNameAttribute.put(ConfiguredObject.TYPE, TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE);
@@ -705,10 +769,11 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         {
             // PASS
             assertEquals(ConfiguredObject.ID, attrToDuplicate);
-
         }
 
-        assertEquals("Unexpected number of children after rejected duplicate", 1, car.getChildren(TestEngine.class).size());
+        assertEquals("Unexpected number of children after rejected duplicate",
+                            (long) 1,
+                            (long) car.getChildren(TestEngine.class).size());
         assertSame(engine, car.getChildById(TestEngine.class, engine.getId()));
         assertSame(engine, car.getChildByName(TestEngine.class, engine.getName()));
     }

@@ -22,11 +22,14 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
+import org.junit.Test;
+
 /**
  * Test CON Log Messages
  */
 public class ConnectionMessagesTest extends AbstractTestMessages
 {
+    @Test
     public void testConnectionOpen_WithOptional()
     {
         String port = "myport";
@@ -49,6 +52,7 @@ public class ConnectionMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "CON-1001", expected);
     }
 
+    @Test
     public void testConnectionOpen()
     {
         String port = "myport";
@@ -65,6 +69,7 @@ public class ConnectionMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "CON-1001", expected);
     }
 
+    @Test
     public void testSslConnectionOpen()
     {
         String port = "myport";
@@ -83,6 +88,7 @@ public class ConnectionMessagesTest extends AbstractTestMessages
     }
 
 
+    @Test
     public void testConnectionClose()
     {
         _logMessage = ConnectionMessages.CLOSE(null, false);
@@ -93,6 +99,7 @@ public class ConnectionMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "CON-1002", expected);
     }
 
+    @Test
     public void testConnectionCloseWithCause()
     {
         _logMessage = ConnectionMessages.CLOSE("Test", true);

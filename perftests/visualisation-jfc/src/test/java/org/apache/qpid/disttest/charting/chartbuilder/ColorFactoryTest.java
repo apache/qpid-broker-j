@@ -21,10 +21,28 @@ package org.apache.qpid.disttest.charting.chartbuilder;
 
 import java.awt.Color;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class ColorFactoryTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ColorFactoryTest extends UnitTestBase
 {
+    @Test
     public void testBlue()
     {
         assertEquals(Color.blue, ColorFactory.toColour("blue"));
@@ -32,6 +50,7 @@ public class ColorFactoryTest extends QpidTestCase
         assertEquals(Color.blue, ColorFactory.toColour("Blue"));
     }
 
+    @Test
     public void testDarkBlue()
     {
         assertEquals(Color.blue.darker(), ColorFactory.toColour("dark_blue"));

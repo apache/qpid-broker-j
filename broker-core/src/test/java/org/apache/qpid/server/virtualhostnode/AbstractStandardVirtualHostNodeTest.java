@@ -20,6 +20,12 @@
  */
 package org.apache.qpid.server.virtualhostnode;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
@@ -40,12 +46,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Model;
@@ -62,11 +72,10 @@ import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.NullMessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
-import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
+public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
 {
     private static final String TEST_VIRTUAL_HOST_NODE_NAME = "testNode";
     private static final String TEST_VIRTUAL_HOST_NAME = "testVirtualHost";
@@ -75,10 +84,9 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
     private Broker<?> _broker;
     private TaskExecutor _taskExecutor;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _broker = BrokerTestHelper.createBrokerMock();
         SystemConfig<?> systemConfig = (SystemConfig<?>) _broker.getParent();
@@ -91,8 +99,8 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         try
         {
@@ -100,7 +108,6 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
@@ -108,6 +115,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
      *  Tests activating a virtualhostnode with a config store that specifies a
      *  virtualhost.  Ensures that the virtualhost created.
      */
+    @Test
     public void testActivateVHN_StoreHasVH() throws Exception
     {
         UUID virtualHostId = UUID.randomUUID();
@@ -134,6 +142,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
      *  Tests activating a virtualhostnode with a config store which does not specify
      *  a virtualhost.  Checks no virtualhost is created.
      */
+    @Test
     public void testActivateVHN_StoreHasNoVH() throws Exception
     {
         DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
@@ -155,6 +164,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
      *  Tests activating a virtualhostnode with a blueprint context variable.  Config store
      *  does not specify a virtualhost.  Checks virtualhost is created from the blueprint.
      */
+    @Test
     public void testActivateVHNWithVHBlueprint_StoreHasNoVH() throws Exception
     {
         DurableConfigurationStore configStore = new NullMessageStore() {};
@@ -189,6 +199,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
      *  but the virtualhostInitialConfiguration set to empty.  Config store does not specify a virtualhost.
      *  Checks virtualhost is not recreated from the blueprint.
      */
+    @Test
     public void testActivateVHNWithVHBlueprintUsed_StoreHasNoVH() throws Exception
     {
         DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
@@ -220,6 +231,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
      *  does specify a virtualhost.  Checks that virtualhost is recovered from store and
      *  blueprint is ignored..
      */
+    @Test
     public void testActivateVHNWithVHBlueprint_StoreHasExistingVH() throws Exception
     {
         UUID virtualHostId = UUID.randomUUID();
@@ -250,6 +262,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.close();
     }
 
+    @Test
     public void testStopStartVHN() throws Exception
     {
         DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
@@ -275,6 +288,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
     // ***************  VHN Access Control Tests  ***************
 
+    @Test
     public void testUpdateVHNDeniedByACL() throws Exception
     {
         AccessControl mockAccessControl = mock(AccessControl.class);
@@ -305,6 +319,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.close();
     }
 
+    @Test
     public void testDeleteVHNDeniedByACL() throws Exception
     {
         AccessControl mockAccessControl = mock(AccessControl.class);
@@ -336,6 +351,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.close();
     }
 
+    @Test
     public void testStopVHNDeniedByACL() throws Exception
     {
         AccessControl mockAccessControl = mock(AccessControl.class);
@@ -368,6 +384,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.close();
     }
 
+    @Test
     public void testValidateOnCreateFails_StoreFails() throws Exception
     {
         String nodeName = getTestName();
@@ -384,10 +401,13 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         }
         catch (IllegalConfigurationException e)
         {
-            assertTrue("Unexpected exception " + e.getMessage(), e.getMessage().startsWith("Cannot open node configuration store"));
+            assertTrue("Unexpected exception " + e.getMessage(),
+                              e.getMessage().startsWith("Cannot open node configuration store"));
+
         }
     }
 
+    @Test
     public void testValidateOnCreateFails_ExistingDefaultVHN() throws Exception
     {
         String nodeName = getTestName();
@@ -410,10 +430,12 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         }
         catch (IllegalConfigurationException e)
         {
-            assertTrue("Unexpected exception " + e.getMessage(), e.getMessage().startsWith("The existing virtual host node 'existingDefault' is already the default for the Broker"));
+            assertTrue("Unexpected exception " + e.getMessage(),
+                              e.getMessage().startsWith("The existing virtual host node 'existingDefault' is already the default for the Broker"));
         }
     }
 
+    @Test
     public void testValidateOnCreateSucceeds() throws Exception
     {
         String nodeName = getTestName();
@@ -428,6 +450,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.close();
     }
 
+    @Test
     public void testOpenFails() throws Exception
     {
         String nodeName = getTestName();
@@ -440,6 +463,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.close();
     }
 
+    @Test
     public void testOpenSucceeds() throws Exception
     {
         String nodeName = getTestName();
@@ -476,6 +500,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
     }
 
 
+    @Test
     public void testDeleteInErrorStateAfterOpen()
     {
         String nodeName = getTestName();
@@ -491,6 +516,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         assertEquals("Unexpected state", State.DELETED, node.getState());
     }
 
+    @Test
     public void testActivateInErrorStateAfterOpen() throws Exception
     {
         String nodeName = getTestName();
@@ -508,6 +534,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.close();
     }
 
+    @Test
     public void testStartInErrorStateAfterOpen() throws Exception
     {
         String nodeName = getTestName();

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
@@ -33,6 +35,9 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageInstance;
@@ -55,9 +60,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSec
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ConsumerTarget_1_0Test extends QpidTestCase
+public class ConsumerTarget_1_0Test extends UnitTestBase
 {
     private final AMQPDescribedTypeRegistry _describedTypeRegistry = AMQPDescribedTypeRegistry.newInstance()
                                                                                               .registerTransportLayer()
@@ -68,10 +73,9 @@ public class ConsumerTarget_1_0Test extends QpidTestCase
     private ConsumerTarget_1_0 _consumerTarget;
     private SendingLinkEndpoint _sendingLinkEndpoint;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         final AMQPConnection_1_0 connection = mock(AMQPConnection_1_0.class);
         final Session_1_0 session = mock(Session_1_0.class);
         _sendingLinkEndpoint = mock(SendingLinkEndpoint.class);
@@ -85,6 +89,7 @@ public class ConsumerTarget_1_0Test extends QpidTestCase
         _consumerTarget = new ConsumerTarget_1_0(_sendingLinkEndpoint, true);
     }
 
+    @Test
     public void testTTLAdjustedOnSend() throws Exception
     {
         final MessageInstanceConsumer comsumer = mock(MessageInstanceConsumer.class);

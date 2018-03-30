@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.model.adapter;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,6 +37,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -53,9 +62,9 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.port.PortFactory;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PortFactoryTest extends QpidTestCase
+public class PortFactoryTest extends UnitTestBase
 {
     private UUID _portId = UUID.randomUUID();
     private int _portNumber;
@@ -75,10 +84,9 @@ public class PortFactoryTest extends QpidTestCase
     private Port<?> _port;
 
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         SystemConfig systemConfig = mock(SystemConfig.class);
         _portNumber = findFreePort();
         TaskExecutor executor = CurrentThreadTaskExecutor.newStartedInstance();
@@ -112,7 +120,7 @@ public class PortFactoryTest extends QpidTestCase
 
         _factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         _attributes.put(Port.ID, _portId);
-        _attributes.put(Port.NAME, getName());
+        _attributes.put(Port.NAME, getTestName());
         _attributes.put(Port.PORT, _portNumber);
         _attributes.put(Port.TRANSPORTS, _tcpStringSet);
         _attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
@@ -120,7 +128,7 @@ public class PortFactoryTest extends QpidTestCase
         _attributes.put(Port.BINDING_ADDRESS, "127.0.0.1");
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -132,37 +140,49 @@ public class PortFactoryTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testCreatePortWithMinimumAttributes()
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Port.PORT, _portNumber);
-        attributes.put(Port.NAME, getName());
+        attributes.put(Port.NAME, getTestName());
         attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
         attributes.put(Port.DESIRED_STATE, State.QUIESCED);
 
         _port = _factory.create(Port.class, attributes, _broker);
 
         assertNotNull(_port);
-        assertTrue(_port instanceof AmqpPort);
-        assertEquals("Unexpected _port", _portNumber, _port.getPort());
-        assertEquals("Unexpected transports", Collections.singleton(PortFactory.DEFAULT_TRANSPORT), _port.getTransports());
-        assertEquals("Unexpected need client auth", PortFactory.DEFAULT_AMQP_NEED_CLIENT_AUTH,
-                _port.getAttribute(Port.NEED_CLIENT_AUTH));
-        assertEquals("Unexpected want client auth", PortFactory.DEFAULT_AMQP_WANT_CLIENT_AUTH,
-                _port.getAttribute(Port.WANT_CLIENT_AUTH));
-        assertEquals("Unexpected tcp no delay", PortFactory.DEFAULT_AMQP_TCP_NO_DELAY, _port.getAttribute(Port.TCP_NO_DELAY));
-        assertEquals("Unexpected binding", PortFactory.DEFAULT_AMQP_BINDING, _port.getAttribute(Port.BINDING_ADDRESS));
+        final boolean condition = _port instanceof AmqpPort;
+        assertTrue(condition);
+        assertEquals("Unexpected _port", (long) _portNumber, (long) _port.getPort());
+        assertEquals("Unexpected transports",
+                            Collections.singleton(PortFactory.DEFAULT_TRANSPORT),
+                            _port.getTransports());
+
+        assertEquals("Unexpected need client auth",
+                            PortFactory.DEFAULT_AMQP_NEED_CLIENT_AUTH,
+                            _port.getAttribute(Port.NEED_CLIENT_AUTH));
+        assertEquals("Unexpected want client auth",
+                            PortFactory.DEFAULT_AMQP_WANT_CLIENT_AUTH,
+                            _port.getAttribute(Port.WANT_CLIENT_AUTH));
+        assertEquals("Unexpected tcp no delay",
+                            PortFactory.DEFAULT_AMQP_TCP_NO_DELAY,
+                            _port.getAttribute(Port.TCP_NO_DELAY));
+        assertEquals("Unexpected binding",
+                            PortFactory.DEFAULT_AMQP_BINDING,
+                            _port.getAttribute(Port.BINDING_ADDRESS));
     }
 
+    @Test
     public void testCreateAmqpPort()
     {
         createAmqpPortTestImpl(false, false, false, null, null);
     }
 
+    @Test
     public void testCreateAmqpPortUsingSslFailsWithoutKeyStore()
     {
         try
@@ -176,6 +196,7 @@ public class PortFactoryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreateAmqpPortUsingSslSucceedsWithKeyStore()
     {
         String keyStoreName = "myKeyStore";
@@ -185,6 +206,7 @@ public class PortFactoryTest extends QpidTestCase
         createAmqpPortTestImpl(true, false, false, keyStoreName, null);
     }
 
+    @Test
     public void testCreateAmqpPortNeedingClientAuthFailsWithoutTrustStore()
     {
         String keyStoreName = "myKeyStore";
@@ -202,6 +224,7 @@ public class PortFactoryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreateAmqpPortNeedingClientAuthSucceedsWithTrustStore()
     {
         String keyStoreName = "myKeyStore";
@@ -215,6 +238,7 @@ public class PortFactoryTest extends QpidTestCase
         createAmqpPortTestImpl(true, true, false, keyStoreName, new String[]{trustStoreName});
     }
 
+    @Test
     public void testCreateAmqpPortWantingClientAuthFailsWithoutTrustStore()
     {
         String keyStoreName = "myKeyStore";
@@ -232,6 +256,7 @@ public class PortFactoryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreateAmqpPortWantingClientAuthSucceedsWithTrustStore()
     {
         String keyStoreName = "myKeyStore";
@@ -282,9 +307,10 @@ public class PortFactoryTest extends QpidTestCase
         _port = _factory.create(Port.class, _attributes, _broker);
 
         assertNotNull(_port);
-        assertTrue(_port instanceof AmqpPort);
+        final boolean condition = _port instanceof AmqpPort;
+        assertTrue(condition);
         assertEquals(_portId, _port.getId());
-        assertEquals(_portNumber, _port.getPort());
+        assertEquals((long) _portNumber, (long) _port.getPort());
         if(useSslTransport)
         {
             assertEquals(_sslTransports, _port.getTransports());
@@ -300,6 +326,7 @@ public class PortFactoryTest extends QpidTestCase
         assertEquals("Unexpected binding", "127.0.0.1", _port.getAttribute(Port.BINDING_ADDRESS));
     }
 
+    @Test
     public void testCreateHttpPort()
     {
         Set<Protocol> httpProtocolSet = Collections.singleton(Protocol.HTTP);
@@ -309,19 +336,21 @@ public class PortFactoryTest extends QpidTestCase
         _attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
         _attributes.put(Port.PORT, _portNumber);
         _attributes.put(Port.TRANSPORTS, _tcpStringSet);
-        _attributes.put(Port.NAME, getName());
+        _attributes.put(Port.NAME, getTestName());
         _attributes.put(Port.ID, _portId);
 
         _port = _factory.create(Port.class, _attributes, _broker);
 
         assertNotNull(_port);
-        assertFalse("Port should not be an AMQP-specific subclass", _port instanceof AmqpPort);
+        final boolean condition = _port instanceof AmqpPort;
+        assertFalse("Port should not be an AMQP-specific subclass", condition);
         assertEquals(_portId, _port.getId());
-        assertEquals(_portNumber, _port.getPort());
+        assertEquals((long) _portNumber, (long) _port.getPort());
         assertEquals(_tcpTransports, _port.getTransports());
         assertEquals(httpProtocolSet, _port.getProtocols());
     }
 
+    @Test
     public void testCreateHttpPortWithPartiallySetAttributes()
     {
         Set<Protocol> httpProtocolSet = Collections.singleton(Protocol.HTTP);
@@ -330,20 +359,21 @@ public class PortFactoryTest extends QpidTestCase
         _attributes.put(Port.PROTOCOLS, httpStringSet);
         _attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
         _attributes.put(Port.PORT, _portNumber);
-        _attributes.put(Port.NAME, getName());
+        _attributes.put(Port.NAME, getTestName());
         _attributes.put(Port.ID, _portId);
 
         _port = _factory.create(Port.class, _attributes, _broker);
 
         assertNotNull(_port);
-        assertFalse("Port not be an AMQP-specific _port subclass", _port instanceof AmqpPort);
+        final boolean condition = _port instanceof AmqpPort;
+        assertFalse("Port not be an AMQP-specific _port subclass", condition);
         assertEquals(_portId, _port.getId());
-        assertEquals(_portNumber, _port.getPort());
+        assertEquals((long) _portNumber, (long) _port.getPort());
         assertEquals(Collections.singleton(PortFactory.DEFAULT_TRANSPORT), _port.getTransports());
         assertEquals(httpProtocolSet, _port.getProtocols());
-
     }
 
+    @Test
     public void testCreateMixedAmqpAndNonAmqpThrowsException()
     {
         Set<String> mixedProtocolSet = new HashSet<>(Arrays.asList(Protocol.AMQP_0_10.name(), Protocol.HTTP.name()));
@@ -360,6 +390,7 @@ public class PortFactoryTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreatePortWithoutAuthenticationMechanism()
     {
         when(_authProvider.getDisabledMechanisms()).thenReturn(Arrays.asList("PLAIN"));

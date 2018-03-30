@@ -21,6 +21,8 @@
 
 package org.apache.qpid.server.transport;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -30,12 +32,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.base.Supplier;
+import org.junit.Test;
 import org.mockito.InOrder;
 
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class TransactionTimeoutTickerTest extends QpidTestCase
+public class TransactionTimeoutTickerTest extends UnitTestBase
 {
 
     private TransactionTimeoutTicker _ticker;
@@ -44,6 +47,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
     private long _timeoutValue = 100;
     private long _notificationRepeatPeriod = 5000;
 
+    @Test
     public void testTickWhenNoTransaction() throws Exception
     {
         final long timeNow = System.currentTimeMillis();
@@ -61,6 +65,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         verify(_notificationAction, never()).performAction(anyLong());
     }
 
+    @Test
     public void testTickDuringSingleTransaction() throws Exception
     {
         final long timeNow = System.currentTimeMillis();
@@ -80,6 +85,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         verify(_notificationAction, never()).performAction(anyLong());
     }
 
+    @Test
     public void testTickDuringSingleTransactionWithSchedulingDelay() throws Exception
     {
         final long timeNow = System.currentTimeMillis();
@@ -101,6 +107,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         verify(_notificationAction, never()).performAction(anyLong());
     }
 
+    @Test
     public void testTicksDuringManyTransactions() throws Exception
     {
         long timeNow = System.currentTimeMillis();
@@ -132,6 +139,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         verify(_notificationAction, never()).performAction(anyLong());
     }
 
+    @Test
     public void testTicksDuringManyTransactionsWithSchedulingDelay() throws Exception
     {
         long timeNow = System.currentTimeMillis();
@@ -164,6 +172,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         verify(_notificationAction, never()).performAction(anyLong());
     }
 
+    @Test
     public void testSingleTimeoutsDuringSingleTransaction() throws Exception
     {
         long timeNow = System.currentTimeMillis();
@@ -183,6 +192,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         verify(_notificationAction, times(1)).performAction(expectedInitialIdle);
     }
 
+    @Test
     public void testMultipleTimeoutsDuringSingleTransaction_NotificationsRespectPeriod() throws Exception
     {
         InOrder inorder = inOrder(_notificationAction);
@@ -240,7 +250,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
                                 final long currentTime,
                                 final TransactionTimeoutTicker ticker)
     {
-        assertEquals(message, expectedValue, ticker.getTimeToNextTick(currentTime));
-        assertEquals(message, expectedValue, ticker.tick(currentTime));
+        assertEquals(message, expectedValue, (long) ticker.getTimeToNextTick(currentTime));
+        assertEquals(message, expectedValue, (long) ticker.tick(currentTime));
     }
 }

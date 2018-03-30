@@ -25,21 +25,39 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
+
 import org.apache.qpid.test.utils.TestFileUtils;
 
-public class ConfigFileHelperTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ConfigFileHelperTest extends UnitTestBase
 {
     private File _testDir;
     private ConfigFileHelper _configFileHelper = new ConfigFileHelper();
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _testDir = TestFileUtils.createTestDirectory();
     }
 
+    @Test
     public void testGetTestConfigFilesForDirectory() throws Exception
     {
         String jsFile = createFile("file1.js");

@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.virtualhostnode.derby;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,30 +36,36 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerImpl;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.model.BrokerImpl;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class DerbyVirtualHostNodeTest extends QpidTestCase
+public class DerbyVirtualHostNodeTest extends UnitTestBase
 {
     private TaskExecutor _taskExecutor;
     private File _workDir;
     private Broker<BrokerImpl> _broker;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.DERBY)));
+
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
         _workDir = TestFileUtils.createTestDirectory("qpid.work_dir", true);
@@ -62,21 +73,30 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
         _broker = createBroker();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            _broker.close();
+            if (_broker != null)
+            {
+                _broker.close();
+            }
         }
         finally
         {
-            _taskExecutor.stop();
-            TestFileUtils.delete(_workDir, true);
-            super.tearDown();
+            if (_taskExecutor != null)
+            {
+                _taskExecutor.stop();
+            }
+            if (_workDir != null)
+            {
+                TestFileUtils.delete(_workDir, true);
+            }
         }
     }
 
+    @Test
     public void testCreateAndCloseVirtualHostNode() throws Exception
     {
         String nodeName = getTestName();
@@ -90,6 +110,7 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
     }
 
 
+    @Test
     public void testCreateDuplicateVirtualHostNodeAndClose() throws Exception
     {
 
@@ -107,11 +128,15 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
         }
         catch(Exception e)
         {
-            assertEquals("Unexpected message", "Child of type " + virtualHostNode.getClass().getSimpleName() + " already exists with name of " + getTestName(), e.getMessage());
+            assertEquals("Unexpected message",
+                                "Child of type " + virtualHostNode.getClass().getSimpleName() + " already exists with name of " + getTestName(),
+                                e.getMessage());
+
         }
         virtualHostNode.close();
     }
 
+    @Test
     public void testOnCreateValidationForFileStorePath() throws Exception
     {
         File file = new File(_workDir, getTestName());
@@ -135,6 +160,7 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
     }
 
 
+    @Test
     public void testOnCreateValidationForNonWritableStorePath() throws Exception
     {
         if (Files.getFileAttributeView(_workDir.toPath(), PosixFileAttributeView.class) != null)

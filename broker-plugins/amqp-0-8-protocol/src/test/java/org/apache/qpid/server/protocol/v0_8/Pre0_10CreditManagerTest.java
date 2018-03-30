@@ -19,23 +19,28 @@
 
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class Pre0_10CreditManagerTest extends QpidTestCase
+import org.apache.qpid.server.transport.ProtocolEngine;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class Pre0_10CreditManagerTest extends UnitTestBase
 {
     private Pre0_10CreditManager _creditManager;
     private ProtocolEngine _protocolEngine;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _protocolEngine = mock(ProtocolEngine.class);
     }
 
+    @Test
     public void testBasicMessageCredit() throws Exception
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);
@@ -51,6 +56,7 @@ public class Pre0_10CreditManagerTest extends QpidTestCase
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(37));
     }
 
+    @Test
     public void testBytesLimitDoesNotPreventLargeMessage() throws Exception
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);
@@ -61,6 +67,7 @@ public class Pre0_10CreditManagerTest extends QpidTestCase
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(30));
     }
 
+    @Test
     public void testUseCreditWithNegativeMessageCredit() throws Exception
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);
@@ -79,6 +86,7 @@ public class Pre0_10CreditManagerTest extends QpidTestCase
         assertTrue("Creditmanager should have credit", _creditManager.hasCredit());
     }
 
+    @Test
     public void testUseCreditWithNegativeBytesCredit() throws Exception
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);
@@ -97,6 +105,7 @@ public class Pre0_10CreditManagerTest extends QpidTestCase
         assertTrue("Creditmanager should have credit", _creditManager.hasCredit());
     }
 
+    @Test
     public void testCreditAccountingWhileMessageLimitNotSet() throws Exception
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);

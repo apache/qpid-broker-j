@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.transport.network.security.ssl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.security.KeyStore;
@@ -34,11 +38,14 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.TrustManagerFactory;
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.server.transport.TransportException;
+import org.junit.Test;
 
-public class SSLUtilTest extends QpidTestCase
+import org.apache.qpid.server.transport.TransportException;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class SSLUtilTest extends UnitTestBase
 {
+    @Test
     public void testFilterEntries_empty()
     {
         String[] enabled = {};
@@ -46,9 +53,10 @@ public class SSLUtilTest extends QpidTestCase
         List<String> whiteList = Arrays.asList();
         List<String> blackList = Arrays.asList();
         String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
-        assertEquals("filtered list is not empty", 0, result.length);
+        assertEquals("filtered list is not empty", (long) 0, (long) result.length);
     }
 
+    @Test
     public void testFilterEntries_whiteListNotEmpty_blackListEmpty()
     {
         List<String> whiteList = Arrays.asList("TLSv1\\.[0-9]+");
@@ -61,6 +69,7 @@ public class SSLUtilTest extends QpidTestCase
                 result), Arrays.equals(expected, result));
     }
 
+    @Test
     public void testFilterEntries_whiteListEmpty_blackListNotEmpty()
     {
         List<String> whiteList = Arrays.asList();
@@ -73,6 +82,7 @@ public class SSLUtilTest extends QpidTestCase
                 result), Arrays.equals(expected, result));
     }
 
+    @Test
     public void testFilterEntries_respectOrder()
     {
         List<String> whiteList = Arrays.asList("b", "c", "a");
@@ -91,6 +101,7 @@ public class SSLUtilTest extends QpidTestCase
                 result), Arrays.equals(expected, result));
     }
 
+    @Test
     public void testFilterEntries_blackListAppliesToWhiteList()
     {
         List<String> whiteList = Arrays.asList("a", "b");
@@ -103,6 +114,7 @@ public class SSLUtilTest extends QpidTestCase
                 result), Arrays.equals(expected, result));
     }
 
+    @Test
     public void testFilterEntries_whiteListIgnoresEnabled()
     {
         List<String> whiteList = Arrays.asList("b");
@@ -115,32 +127,37 @@ public class SSLUtilTest extends QpidTestCase
                 result), Arrays.equals(expected, result));
     }
 
+    @Test
     public void testGetIdFromSubjectDN()
     {
         // "normal" dn
-        assertEquals("user@somewhere.example.org",SSLUtil.getIdFromSubjectDN("cn=user,dc=somewhere,dc=example,dc=org"));
+        assertEquals("user@somewhere.example.org",
+                            SSLUtil.getIdFromSubjectDN("cn=user,dc=somewhere,dc=example,dc=org"));
+
         // quoting of values, case of types, spacing all ignored
-        assertEquals("user2@somewhere.example.org",SSLUtil.getIdFromSubjectDN("DC=somewhere, dc=example,cn=\"user2\",dc=org"));
+        assertEquals("user2@somewhere.example.org",
+                            SSLUtil.getIdFromSubjectDN("DC=somewhere, dc=example,cn=\"user2\",dc=org"));
         // only first cn is used
-        assertEquals("user@somewhere.example.org",SSLUtil.getIdFromSubjectDN("DC=somewhere, dc=example,cn=\"user\",dc=org, cn=user2"));
+        assertEquals("user@somewhere.example.org",
+                            SSLUtil.getIdFromSubjectDN("DC=somewhere, dc=example,cn=\"user\",dc=org, cn=user2"));
         // no cn, no Id
-        assertEquals("",SSLUtil.getIdFromSubjectDN("DC=somewhere, dc=example,dc=org"));
+        assertEquals("", SSLUtil.getIdFromSubjectDN("DC=somewhere, dc=example,dc=org"));
         // cn in value is ignored
-        assertEquals("",SSLUtil.getIdFromSubjectDN("C=CZ,O=Scholz,OU=\"JAKUB CN=USER1\""));
+        assertEquals("", SSLUtil.getIdFromSubjectDN("C=CZ,O=Scholz,OU=\"JAKUB CN=USER1\""));
         // cn with no dc gives just user
-        assertEquals("someone",SSLUtil.getIdFromSubjectDN("ou=someou, CN=\"someone\""));
+        assertEquals("someone", SSLUtil.getIdFromSubjectDN("ou=someou, CN=\"someone\""));
         // null results in empty string
-        assertEquals("",SSLUtil.getIdFromSubjectDN(null));
+        assertEquals("", SSLUtil.getIdFromSubjectDN(null));
         // invalid name results in empty string
-        assertEquals("",SSLUtil.getIdFromSubjectDN("ou=someou, ="));
+        assertEquals("", SSLUtil.getIdFromSubjectDN("ou=someou, ="));
         // component containing whitespace
-        assertEquals("me@example.com",SSLUtil.getIdFromSubjectDN("CN=me,DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB"));
+        assertEquals("me@example.com",
+                            SSLUtil.getIdFromSubjectDN("CN=me,DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB"));
         // empty CN
-        assertEquals("",SSLUtil.getIdFromSubjectDN("CN=,DC=somewhere, dc=example,dc=org"));
-
-
+        assertEquals("", SSLUtil.getIdFromSubjectDN("CN=,DC=somewhere, dc=example,dc=org"));
     }
 
+    @Test
     public void testWildCardAndSubjectAltNameMatchingWorks() throws Exception
     {
         doNameMatchingTest(KEYSTORE_1,

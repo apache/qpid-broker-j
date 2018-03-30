@@ -36,11 +36,29 @@ import org.apache.qpid.disttest.message.Command;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.Response;
 import org.apache.qpid.disttest.message.StopClientCommand;
-import org.apache.qpid.test.utils.QpidTestCase;
+
+import org.junit.Assert;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-public class ClientTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ClientTest extends UnitTestBase
 {
     private Client _client;
     private ClientJmsDelegate _delegate;
@@ -49,10 +67,9 @@ public class ClientTest extends QpidTestCase
     private ParticipantExecutorRegistry _participantRegistry;
     private Participant _participant;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _delegate = mock(ClientJmsDelegate.class);
         _visitor = mock(ClientCommandVisitor.class);
         _client = new Client(_delegate);
@@ -66,11 +83,13 @@ public class ClientTest extends QpidTestCase
         _client.setParticipantRegistry(_participantRegistry);
     }
 
+    @Test
     public void testInitialState() throws Exception
     {
         assertEquals("Expected client to be in CREATED state", ClientState.CREATED, _client.getState());
     }
 
+    @Test
     public void testStart() throws Exception
     {
         _client.start();
@@ -80,6 +99,7 @@ public class ClientTest extends QpidTestCase
         assertEquals("Expected client to be in STARTED state", ClientState.READY, _client.getState());
     }
 
+    @Test
     public void testStopClient() throws Exception
     {
         _client.stop();
@@ -87,6 +107,7 @@ public class ClientTest extends QpidTestCase
         assertEquals("Expected client to be in STOPPED state", ClientState.STOPPED, _client.getState());
     }
 
+    @Test
     public void testProcessInstructionVisitsCommandAndResponds() throws Exception
     {
         // has to be declared to be of supertype Command otherwise Mockito verify()
@@ -98,6 +119,7 @@ public class ClientTest extends QpidTestCase
         verify(_delegate).sendResponseMessage(isA(Response.class));
     }
 
+    @Test
     public void testWaitUntilStopped() throws Exception
     {
         stopClientLater(500);
@@ -105,6 +127,7 @@ public class ClientTest extends QpidTestCase
         verify(_delegate).destroy();
     }
 
+    @Test
     public void testStartTest() throws Exception
     {
         _client.start();
@@ -119,6 +142,7 @@ public class ClientTest extends QpidTestCase
         inOrder.verify(_participantExecutor).start(eq(_client.getClientName()), any(ResultReporter.class));
     }
 
+    @Test
     public void testTearDownTest() throws Exception
     {
         // before we can tear down the test the client needs to be in the "running test" state, which requires a participant
@@ -133,6 +157,7 @@ public class ClientTest extends QpidTestCase
         verify(_participantRegistry).clear();
     }
 
+    @Test
     public void testResults() throws Exception
     {
         ParticipantResult testResult = mock(ParticipantResult.class);

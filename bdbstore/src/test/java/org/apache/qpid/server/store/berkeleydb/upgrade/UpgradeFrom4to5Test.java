@@ -26,6 +26,9 @@ import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPrepare
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.QUEUE_WITH_DLQ_NAME;
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.SELECTOR_TOPIC_NAME;
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.TOPIC_NAME;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -38,6 +41,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.sleepycat.bind.tuple.LongBinding;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Transaction;
+import org.junit.Test;
+
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -48,11 +57,6 @@ import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom4To5.MessageCo
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom4To5.QueueEntryKey;
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom4To5.QueueEntryKeyBinding;
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom4To5.QueueRecord;
-
-import com.sleepycat.bind.tuple.LongBinding;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Transaction;
 
 public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
 {
@@ -70,6 +74,7 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
         return "bdbstore-v4";
     }
 
+    @Test
     public void testPerformUpgradeWithHandlerAnsweringYes() throws Exception
     {
         UpgradeFrom4To5 upgrade = new UpgradeFrom4To5();
@@ -100,6 +105,7 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
         assertContent();
     }
 
+    @Test
     public void testPerformUpgradeWithHandlerAnsweringNo() throws Exception
     {
         UpgradeFrom4To5 upgrade = new UpgradeFrom4To5();

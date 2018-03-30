@@ -21,6 +21,10 @@
 
 package org.apache.qpid.server.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,30 +33,31 @@ import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.server.util.FileUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class FileHelperTest extends QpidTestCase
+import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class FileHelperTest extends UnitTestBase
 {
     private static final String TEST_FILE_PERMISSIONS = "rwxr-x---";
     private File _testFile;
     private FileHelper _fileHelper;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _testFile = new File(TMP_FOLDER, "test-" + System.currentTimeMillis());
         _fileHelper = new FileHelper();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            super.tearDown();
         }
         finally
         {
@@ -60,6 +65,7 @@ public class FileHelperTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreateNewFile() throws Exception
     {
         assertFalse("File should not exist", _testFile.exists());
@@ -71,6 +77,7 @@ public class FileHelperTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testCreateNewFileUsingRelativePath() throws Exception
     {
         _testFile = new File("./tmp-" + System.currentTimeMillis());
@@ -83,6 +90,7 @@ public class FileHelperTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testWriteFileSafely() throws Exception
     {
         Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
@@ -107,6 +115,7 @@ public class FileHelperTest extends QpidTestCase
         assertEquals("Unexpected file content", "test", content);
     }
 
+    @Test
     public void testAtomicFileMoveOrReplace() throws Exception
     {
         Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
@@ -122,6 +131,7 @@ public class FileHelperTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testIsWritableDirectoryForFilePath() throws Exception
     {
         File workDir = TestFileUtils.createTestDirectory("test", true);
@@ -129,7 +139,8 @@ public class FileHelperTest extends QpidTestCase
         {
             File file = new File(workDir, getTestName());
             file.createNewFile();
-            assertFalse("Should return false for a file", _fileHelper.isWritableDirectory(file.getAbsolutePath()));
+            assertFalse("Should return false for a file",
+                               _fileHelper.isWritableDirectory(file.getAbsolutePath()));
         }
         finally
         {
@@ -138,6 +149,7 @@ public class FileHelperTest extends QpidTestCase
     }
 
 
+    @Test
     public void testIsWritableDirectoryForNonWritablePath() throws Exception
     {
         File workDir = TestFileUtils.createTestDirectory("test", true);
@@ -150,7 +162,7 @@ public class FileHelperTest extends QpidTestCase
                 if (file.setWritable(false, false))
                 {
                     assertFalse("Should return false for non writable folder",
-                            _fileHelper.isWritableDirectory(new File(file, "test").getAbsolutePath()));
+                                       _fileHelper.isWritableDirectory(new File(file, "test").getAbsolutePath()));
                 }
             }
         }
@@ -171,6 +183,7 @@ public class FileHelperTest extends QpidTestCase
         assertTrue("Unexpected group exec permission", permissions.contains(PosixFilePermission.GROUP_EXECUTE));
         assertFalse("Unexpected others read permission", permissions.contains(PosixFilePermission.OTHERS_READ));
         assertFalse("Unexpected others write permission", permissions.contains(PosixFilePermission.OTHERS_WRITE));
-        assertFalse("Unexpected others exec permission", permissions.contains(PosixFilePermission.OTHERS_EXECUTE));
+        assertFalse("Unexpected others exec permission",
+                           permissions.contains(PosixFilePermission.OTHERS_EXECUTE));
     }
 }

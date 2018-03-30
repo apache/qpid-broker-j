@@ -20,6 +20,15 @@
 
 package org.apache.qpid.server.logging.logback;
 
+import static org.apache.qpid.test.utils.JvmVendor.IBM;
+import static org.apache.qpid.test.utils.JvmVendor.OPENJDK;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeThat;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,36 +43,44 @@ import ch.qos.logback.core.LogbackException;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
 import ch.qos.logback.core.status.Status;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class Logback1027WorkaroundTurboFilterTest extends QpidTestCase
+public class Logback1027WorkaroundTurboFilterTest extends UnitTestBase
 {
     private static final String TEST_LOG_MESSAGE = "hello";
     private Logback1027WorkaroundTurboFilter _filter = new Logback1027WorkaroundTurboFilter();
     private Logger _logger;
     private SnoopingAppender _snoopingAppender;
 
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         LoggerContext context = new LoggerContext();
         _logger = context.getLogger(Logback1027WorkaroundTurboFilterTest.class);
         _snoopingAppender = new SnoopingAppender();
         _logger.addAppender(_snoopingAppender);
     }
 
+    @Test
     public void testOneException()
     {
         Exception e = new Exception();
         final FilterReply reply = doDecide(e);
         assertEquals(FilterReply.NEUTRAL, reply);
 
-        assertEquals(0, _snoopingAppender.getEvents().size());
+        assertEquals((long) 0, (long) _snoopingAppender.getEvents().size());
     }
 
+    @Test
     public void testSuppressedExceptionRecursion()
     {
+        // https://www.ibm.com/developerworks/community/forums/html/topic?id=8482d948-665c-47a2-862e-457e49ac71a4&ps=25
+        assumeThat("(QPID-7955) Behaviourial difference between the IBM JDK and the Open JDK", getJvmVendor(),
+                   not(anyOf(equalTo(OPENJDK), equalTo(IBM))));
+
         Exception e1 = new Exception();
         Exception e2 = new Exception();
         e2.addSuppressed(e1);
@@ -73,7 +90,7 @@ public class Logback1027WorkaroundTurboFilterTest extends QpidTestCase
         assertEquals(FilterReply.DENY, reply);
 
         final List<ILoggingEvent> events = _snoopingAppender.getEvents();
-        assertEquals(1, events.size());
+        assertEquals((long) 1, (long) events.size());
 
         assertLoggingEvent(events.get(0));
     }
@@ -87,8 +104,13 @@ public class Logback1027WorkaroundTurboFilterTest extends QpidTestCase
         assertEquals(Logback1027WorkaroundTurboFilter.StringifiedException.class.getName(), thing.getClassName());
     }
 
+    @Test
     public void testInitCauseRecursion() throws Exception
     {
+        // https://www.ibm.com/developerworks/community/forums/html/topic?id=8482d948-665c-47a2-862e-457e49ac71a4&ps=25
+        assumeThat("(QPID-7955) Behaviourial difference between the IBM JDK and the Open JDK", getJvmVendor(),
+                   not(anyOf(equalTo(OPENJDK), equalTo(IBM))));
+
         Exception e1 = new Exception();
         Exception e2 = new Exception();
         e2.initCause(e1);
@@ -96,9 +118,10 @@ public class Logback1027WorkaroundTurboFilterTest extends QpidTestCase
 
         final FilterReply reply = doDecide(e1);
         assertEquals(FilterReply.DENY, reply);
-        assertEquals(1, _snoopingAppender.getEvents().size());
+        assertEquals((long) 1, (long) _snoopingAppender.getEvents().size());
     }
 
+    @Test
     public void testNoRecursion()
     {
         Exception e1 = new Exception();
@@ -111,9 +134,10 @@ public class Logback1027WorkaroundTurboFilterTest extends QpidTestCase
 
         final FilterReply reply = doDecide(e1);
         assertEquals(FilterReply.NEUTRAL, reply);
-        assertEquals(0, _snoopingAppender.getEvents().size());
+        assertEquals((long) 0, (long) _snoopingAppender.getEvents().size());
     }
 
+    @Test
     public void testNoRecursion2()
     {
         Exception e1 = new Exception();
@@ -126,7 +150,7 @@ public class Logback1027WorkaroundTurboFilterTest extends QpidTestCase
 
         final FilterReply reply = doDecide(e1);
         assertEquals(FilterReply.NEUTRAL, reply);
-        assertEquals(0, _snoopingAppender.getEvents().size());
+        assertEquals((long) 0, (long) _snoopingAppender.getEvents().size());
     }
 
     private FilterReply doDecide(final Exception e1)

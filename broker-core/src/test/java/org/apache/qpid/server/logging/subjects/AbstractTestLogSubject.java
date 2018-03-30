@@ -21,17 +21,25 @@
 package org.apache.qpid.server.logging.subjects;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.util.List;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Abstract Test for LogSubject testing
@@ -44,23 +52,20 @@ import org.apache.qpid.test.utils.QpidTestCase;
  * The resulting log file is then validated.
  *
  */
-public abstract class AbstractTestLogSubject extends QpidTestCase
+public abstract class AbstractTestLogSubject extends UnitTestBase
 {
     protected LogSubject _subject = null;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         BrokerTestHelper.setUp();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         BrokerTestHelper.tearDown();
-        super.tearDown();
-
     }
 
     protected List<Object> performLog(boolean statusUpdatesEnabled)
@@ -105,14 +110,14 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
         // This should return us MockProtocolSessionUser@null/test
         String connectionSlice = getSlice("con:" + connectionID, message);
 
-        assertNotNull("Unable to find connection 'con:" + connectionID + "' in '"+message+"'",
-                      connectionSlice);
+        assertNotNull("Unable to find connection 'con:" + connectionID + "' in '" + message + "'",
+                             connectionSlice);
 
         // Extract the userName
         String[] userNameParts = connectionSlice.split("@");
 
         assertEquals("Unable to split Username from rest of Connection:"
-                     + connectionSlice, 2, userNameParts.length);
+                            + connectionSlice, (long) 2, (long) userNameParts.length);
 
         assertEquals("Username not as expected", userNameParts[0], user);
 
@@ -123,7 +128,7 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
 
         // We will have three sections
         assertEquals("Unable to split IP from rest of Connection:"
-                     + userNameParts[1] + " in '"+message+"'", 3, ipParts.length);
+                            + userNameParts[1] + " in '" + message + "'", (long) 3, (long) ipParts.length);
 
         // We need to skip the first '/' split will be empty so validate 1 as IP
         assertEquals("IP not as expected", ipString, ipParts[1]);
@@ -144,8 +149,7 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
 
         assertNotNull("Routing Key not found:" + message, routingKeySlice);
 
-        assertEquals("Routing key not correct",
-                     routingKey, routingKeySlice);
+        assertEquals("Routing key not correct", routingKey, routingKeySlice);
     }
 
     /**
@@ -160,8 +164,7 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
 
         assertNotNull("Queue not found:" + message, queueSlice);
 
-        assertEquals("Queue name not correct",
-                     queue.getName(), queueSlice);
+        assertEquals("Queue name not correct", queue.getName(), queueSlice);
     }
 
     /**
@@ -179,15 +182,11 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
 
         String[] exchangeParts = exchangeSlice.split("/");
 
-        assertEquals("Exchange should be in two parts ex(type/name)", 2,
-                     exchangeParts.length);
+        assertEquals("Exchange should be in two parts ex(type/name)", (long) 2, (long) exchangeParts.length);
 
-        assertEquals("Exchange type not correct",
-                     exchange.getType(), exchangeParts[0]);
+        assertEquals("Exchange type not correct", exchange.getType(), exchangeParts[0]);
 
-        assertEquals("Exchange name not correct",
-                     exchange.getName(), exchangeParts[1]);
-
+        assertEquals("Exchange name not correct", exchange.getName(), exchangeParts[1]);
     }
 
     /**
@@ -248,11 +247,12 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
      * Test that when Logging occurs a single log statement is provided
      *
      */
+    @Test
     public void testEnabled()
     {
         List<Object> logs = performLog(true);
 
-        assertEquals("Log has incorrect message count", 1, logs.size());
+        assertEquals("Log has incorrect message count", (long) 1, (long) logs.size());
 
         validateLogStatement(String.valueOf(logs.get(0)));
     }
@@ -268,11 +268,12 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
     /**
      * Ensure that when status updates are off this does not perform logging
      */
+    @Test
     public void testDisabled()
     {
         List<Object> logs = performLog(false);
 
-        assertEquals("Log has incorrect message count", 0, logs.size());
+        assertEquals("Log has incorrect message count", (long) 0, (long) logs.size());
     }
 
 }

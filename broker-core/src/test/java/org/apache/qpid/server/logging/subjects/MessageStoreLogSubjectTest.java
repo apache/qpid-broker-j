@@ -20,8 +20,14 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.model.VirtualHost;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import org.junit.After;
+import org.junit.Before;
+
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.VirtualHost;
 
 /**
  * Validate MessageStoreLogSubjects are logged as expected
@@ -30,18 +36,18 @@ public class MessageStoreLogSubjectTest extends AbstractTestLogSubject
 {
     private VirtualHost<?> _testVhost;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         super.setUp();
 
-        _testVhost = BrokerTestHelper.createVirtualHost("test");
+        _testVhost = BrokerTestHelper.createVirtualHost("test", this);
 
         _subject = new MessageStoreLogSubject(_testVhost.getName(),
                                               _testVhost.getMessageStore().getClass().getSimpleName());
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         if (_testVhost != null)
@@ -66,8 +72,9 @@ public class MessageStoreLogSubjectTest extends AbstractTestLogSubject
         assertNotNull("MessageStore not found:" + message, msSlice);
 
         assertEquals("MessageStore not correct",
-                     _testVhost.getMessageStore().getClass().getSimpleName(),
-                     msSlice);
+                            _testVhost.getMessageStore().getClass().getSimpleName(),
+                            msSlice);
+
     }
 
 }

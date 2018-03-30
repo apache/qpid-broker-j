@@ -21,6 +21,8 @@
 
 package org.apache.qpid.server.virtualhostnode;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,6 +32,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -43,9 +49,9 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class RedirectingVirtualHostNodeTest extends QpidTestCase
+public class RedirectingVirtualHostNodeTest extends UnitTestBase
 {
     private static final String TEST_VIRTUAL_HOST_NODE_NAME = "testNode";
 
@@ -54,10 +60,9 @@ public class RedirectingVirtualHostNodeTest extends QpidTestCase
     private TaskExecutor _taskExecutor;
     private AmqpPort _port;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _broker = BrokerTestHelper.createBrokerMock();
         SystemConfig<?> systemConfig = (SystemConfig<?>) _broker.getParent();
@@ -82,8 +87,8 @@ public class RedirectingVirtualHostNodeTest extends QpidTestCase
         _port = (AmqpPort) _broker.getObjectFactory().create(Port.class, attributes, _broker);
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         try
         {
@@ -91,10 +96,10 @@ public class RedirectingVirtualHostNodeTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testRedirectingVHNHasRedirectingVHToo() throws Exception
     {
         final Map<String, Object> attributes = createVirtualHostNodeAttributes();
@@ -104,11 +109,15 @@ public class RedirectingVirtualHostNodeTest extends QpidTestCase
                                                                                attributes,
                                                                                _broker);
         assertEquals("Unexpected number of virtualhost children",
-                     1, node.getChildren(VirtualHost.class).size());
-        assertTrue("Virtualhost child is of unexpected type",
-                   node.getChildren(VirtualHost.class).iterator().next() instanceof RedirectingVirtualHost);
+                            (long) 1,
+                            (long) node.getChildren(VirtualHost.class).size());
+
+        final boolean condition =
+                node.getChildren(VirtualHost.class).iterator().next() instanceof RedirectingVirtualHost;
+        assertTrue("Virtualhost child is of unexpected type", condition);
     }
 
+    @Test
     public void testStopAndRestartVHN() throws Exception
     {
         final Map<String, Object> attributes = createVirtualHostNodeAttributes();
@@ -118,13 +127,16 @@ public class RedirectingVirtualHostNodeTest extends QpidTestCase
                                                                                attributes,
                                                                                _broker);
         assertEquals("Unexpected number of virtualhost children before stop",
-                     1, node.getChildren(VirtualHost.class).size());
+                            (long) 1,
+                            (long) node.getChildren(VirtualHost.class).size());
         node.stop();
         assertEquals("Unexpected number of virtualhost children after stop",
-                     0, node.getChildren(VirtualHost.class).size());
+                            (long) 0,
+                            (long) node.getChildren(VirtualHost.class).size());
         node.start();
         assertEquals("Unexpected number of virtualhost children after restart",
-                     1, node.getChildren(VirtualHost.class).size());
+                            (long) 1,
+                            (long) node.getChildren(VirtualHost.class).size());
     }
 
     private Map<String, Object> createVirtualHostNodeAttributes()

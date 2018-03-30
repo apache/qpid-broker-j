@@ -20,11 +20,17 @@
  */
 package org.apache.qpid.server.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +38,10 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public abstract class MessageStoreQuotaEventsTestBase extends QpidTestCase implements EventListener, TransactionLogResource
+public abstract class MessageStoreQuotaEventsTestBase extends UnitTestBase implements EventListener, TransactionLogResource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageStoreQuotaEventsTestBase.class);
 
@@ -50,11 +56,9 @@ public abstract class MessageStoreQuotaEventsTestBase extends QpidTestCase imple
     protected abstract MessageStore createStore() throws Exception;
     protected abstract int getNumberOfMessagesToFillStore();
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
-
         _storeLocation = new File(new File(TMP_FOLDER), getTestName());
         FileUtils.delete(_storeLocation, true);
 
@@ -71,23 +75,20 @@ public abstract class MessageStoreQuotaEventsTestBase extends QpidTestCase imple
 
     protected abstract VirtualHost createVirtualHost(String storeLocation);
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
-        try
+        if (_store != null)
         {
-            super.tearDown();
+            _store.closeMessageStore();
         }
-        finally
+        if (_storeLocation != null)
         {
-            if (_store != null)
-            {
-                _store.closeMessageStore();
-            }
             FileUtils.delete(_storeLocation, true);
         }
     }
 
+    @Test
     public void testOverflow() throws Exception
     {
         Transaction transaction = _store.newTransaction();
@@ -182,5 +183,11 @@ public abstract class MessageStoreQuotaEventsTestBase extends QpidTestCase imple
     public MessageDurability getMessageDurability()
     {
         return MessageDurability.DEFAULT;
+    }
+
+    @Override
+    public String getName()
+    {
+        return getTestName();
     }
 }

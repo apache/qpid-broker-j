@@ -20,13 +20,17 @@
  */
 package org.apache.qpid.server.protocol.v0_8.transport;
 
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-
-public class BasicContentHeaderPropertiesTest extends QpidTestCase
+public class BasicContentHeaderPropertiesTest extends UnitTestBase
 {
 
     private BasicContentHeaderProperties _testProperties;
@@ -42,10 +46,9 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         _testProperties = new BasicContentHeaderProperties();
     }
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _testTable = new FieldTable();
         _testTable.setString("TestString", _testString);
         _testTable.setInteger("Testint", _testint);
@@ -53,6 +56,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         _testProperties.setHeaders(_testTable);
     }
 
+    @Test
     public void testGetPropertyListSize()
     {
         //needs a better test but at least we're exercising the code !
@@ -70,21 +74,24 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
 
         int size = _testProperties.getPropertyListSize();
 
-        assertEquals(expectedSize, size);
+        assertEquals((long) expectedSize, (long) size);
     }
 
+    @Test
     public void testGetSetPropertyFlags()
     {
         _testProperties.setPropertyFlags(99);
-        assertEquals(99, _testProperties.getPropertyFlags());
+        assertEquals((long) 99, (long) _testProperties.getPropertyFlags());
     }
 
+    @Test
     public void testPopulatePropertiesFromBuffer() throws Exception
     {
         QpidByteBuffer buf = QpidByteBuffer.wrap(new byte[300]);
         _testProperties.populatePropertiesFromBuffer(buf, 99, 99);
     }
 
+    @Test
     public void testSetGetContentType()
     {
         String contentType = "contentType";
@@ -92,6 +99,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(contentType, _testProperties.getContentTypeAsString());
     }
 
+    @Test
     public void testSetGetEncoding()
     {
         String encoding = "encoding";
@@ -99,26 +107,30 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(encoding, _testProperties.getEncodingAsString());
     }
 
+    @Test
     public void testSetGetHeaders()
     {
         _testProperties.setHeaders(_testTable);
         assertEquals(_testTable, _testProperties.getHeaders());
     }
 
+    @Test
     public void testSetGetDeliveryMode()
     {
         byte deliveryMode = 1;
         _testProperties.setDeliveryMode(deliveryMode);
-        assertEquals(deliveryMode, _testProperties.getDeliveryMode());
+        assertEquals((long) deliveryMode, (long) _testProperties.getDeliveryMode());
     }
 
+    @Test
     public void testSetGetPriority()
     {
         byte priority = 1;
         _testProperties.setPriority(priority);
-        assertEquals(priority, _testProperties.getPriority());
+        assertEquals((long) priority, (long) _testProperties.getPriority());
     }
 
+    @Test
     public void testSetGetCorrelationId()
     {
         String correlationId = "correlationId";
@@ -126,6 +138,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(correlationId, _testProperties.getCorrelationIdAsString());
     }
 
+    @Test
     public void testSetGetReplyTo()
     {
         String replyTo = "replyTo";
@@ -133,6 +146,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(replyTo, _testProperties.getReplyToAsString());
     }
 
+    @Test
     public void testSetGetExpiration()
     {
         long expiration = 999999999;
@@ -143,6 +157,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(expiration, _testProperties.getExpiration());
     }
 
+    @Test
     public void testSetGetMessageId()
     {
         String messageId = "messageId";
@@ -150,6 +165,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(messageId, _testProperties.getMessageIdAsString());
     }
 
+    @Test
     public void testSetGetTimestamp()
     {
         long timestamp = System.currentTimeMillis();
@@ -157,6 +173,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(timestamp, _testProperties.getTimestamp());
     }
 
+    @Test
     public void testSetGetType()
     {
         String type = "type";
@@ -164,6 +181,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(type, _testProperties.getTypeAsString());
     }
 
+    @Test
     public void testSetGetUserId()
     {
         String userId = "userId";
@@ -171,6 +189,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(userId, _testProperties.getUserIdAsString());
     }
 
+    @Test
     public void testSetGetAppId()
     {
         String appId = "appId";
@@ -178,6 +197,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(appId, _testProperties.getAppIdAsString());
     }
 
+    @Test
     public void testSetGetClusterId()
     {
         String clusterId = "clusterId";

@@ -23,11 +23,12 @@ package org.apache.qpid.server.queue;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.qpid.server.model.Queue;
+import org.junit.Before;
 
+import org.apache.qpid.server.model.Queue;
 public class SortedQueueTest extends AbstractQueueTestBase
 {
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         Map<String,Object> arguments = new HashMap<>();

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,12 +31,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogFileDetails;
-import org.apache.qpid.server.logging.logback.BrokerFileLogger;
-import org.apache.qpid.server.logging.logback.BrokerFileLoggerImpl;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.BrokerModel;
@@ -42,10 +46,10 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class BrokerFileLoggerTest extends QpidTestCase
+public class BrokerFileLoggerTest extends UnitTestBase
 {
     private TaskExecutor _taskExecutor;
     private File _baseFolder;
@@ -53,10 +57,9 @@ public class BrokerFileLoggerTest extends QpidTestCase
     private Broker _broker;
     private BrokerFileLogger<?> _logger;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
 
@@ -84,7 +87,7 @@ public class BrokerFileLoggerTest extends QpidTestCase
         }
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -102,10 +105,10 @@ public class BrokerFileLoggerTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testGetLogFilesOnResolutionErrors()
     {
         _logger = createLoggerInErroredState();

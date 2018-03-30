@@ -20,34 +20,38 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.apache.qpid.server.logging.logback.LoggerNameAndLevelFilter;
-import org.apache.qpid.server.logging.logback.QpidLoggerTurboFilter;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class QpidLoggerTurboFilterTest extends QpidTestCase
+public class QpidLoggerTurboFilterTest extends UnitTestBase
 {
     private LoggerContext _loggerContext;
     private QpidLoggerTurboFilter _turboFilter;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _loggerContext = new LoggerContext();
         _turboFilter = QpidLoggerTurboFilter.installIfNecessary(_loggerContext);
     }
 
-    @Override
-    public  void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         QpidLoggerTurboFilter.uninstall(_loggerContext);
-        super.tearDown();
     }
 
+    @Test
     public void testDebugOffByDefault()
     {
         Logger fooLogger = _loggerContext.getLogger("foo");
@@ -58,6 +62,7 @@ public class QpidLoggerTurboFilterTest extends QpidTestCase
     }
 
 
+    @Test
     public void testInstallFilterWorksCorrectly()
     {
         Logger fooBarLogger = _loggerContext.getLogger("foo.bar");
@@ -106,11 +111,14 @@ public class QpidLoggerTurboFilterTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testUninstall()
     {
         Logger fooBarLogger = _loggerContext.getLogger("foo.bar");
-        assertFalse("Debug should not be enabled when QpidLoggerTurboFilter is installed but no regular filter is set",
+        assertFalse(
+                "Debug should not be enabled when QpidLoggerTurboFilter is installed but no regular filter is set",
                 fooBarLogger.isDebugEnabled());
+
         QpidLoggerTurboFilter.uninstall(_loggerContext);
         assertTrue("Debug should be enabled as per test logback configuration", fooBarLogger.isDebugEnabled());
     }

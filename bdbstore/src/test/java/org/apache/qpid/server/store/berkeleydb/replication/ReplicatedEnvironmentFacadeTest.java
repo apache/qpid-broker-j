@@ -21,19 +21,37 @@
 package org.apache.qpid.server.store.berkeleydb.replication;
 
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.JUL_LOGGER_LEVEL_OVERRIDE;
-import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
-import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME;
-import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME;
-import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME;
-import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade
+        .LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade
+        .DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade
+        .ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade
+        .EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade
+        .MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME;
 import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.PERMITTED_NODE_LIST;
-import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME;
-import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade
+        .REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade
+        .REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME;
 import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.ReplicationNodeImpl;
 import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.getRemoteNodeState;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -75,6 +93,9 @@ import com.sleepycat.je.rep.ReplicationConfig;
 import com.sleepycat.je.rep.ReplicationNode;
 import com.sleepycat.je.rep.StateChangeEvent;
 import com.sleepycat.je.rep.StateChangeListener;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,10 +103,12 @@ import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.PortHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
+
+public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatedEnvironmentFacadeTest.class);
     private int _timeout = 30;
@@ -105,15 +128,14 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
     private File _storePath;
     private final Map<String, ReplicatedEnvironmentFacade> _nodes = new HashMap<String, ReplicatedEnvironmentFacade>();
     private Thread.UncaughtExceptionHandler _defaultUncaughtExceptionHandler;
-    private CopyOnWriteArrayList<Throwable> _unhandledExceptions;
+    private CopyOnWriteArrayList<Throwable> _unhandledExceptions = new CopyOnWriteArrayList<>();
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
+        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
         _timeout = Integer.getInteger("ReplicatedEnvironmentFacadeTest.timeout", 30);
 
-        _unhandledExceptions = new CopyOnWriteArrayList<>();
         _defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) ->
                                                   {
@@ -125,7 +147,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         setTestSystemProperty(DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME, "100");
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -151,16 +173,9 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
             }
             finally
             {
-                try
+                if (!_unhandledExceptions.isEmpty())
                 {
-                    super.tearDown();
-                }
-                finally
-                {
-                    if (!_unhandledExceptions.isEmpty())
-                    {
-                        fail("Unhandled exception(s) detected:" + _unhandledExceptions);
-                    }
+                    fail("Unhandled exception(s) detected:" + _unhandledExceptions);
                 }
             }
         }
@@ -168,13 +183,18 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         _portHelper.waitUntilAllocatedPortsAreFree();
     }
 
+    @Test
     public void testClose() throws Exception
     {
         ReplicatedEnvironmentFacade ef = createMaster();
         ef.close();
-        assertEquals("Unexpected state after close", ReplicatedEnvironmentFacade.State.CLOSED, ef.getFacadeState());
+        assertEquals("Unexpected state after close",
+                            ReplicatedEnvironmentFacade.State.CLOSED,
+                            ef.getFacadeState());
+
     }
 
+    @Test
     public void testOpenDatabaseReusesCachedHandle() throws Exception
     {
         DatabaseConfig createIfAbsentDbConfig = DatabaseConfig.DEFAULT.setAllowCreate(true);
@@ -192,6 +212,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         assertNotSame("Expecting a new handle after database closure", handle1, handle3);
     }
 
+    @Test
     public void testOpenDatabaseWhenFacadeIsNotOpened() throws Exception
     {
         DatabaseConfig createIfAbsentDbConfig = DatabaseConfig.DEFAULT.setAllowCreate(true);
@@ -210,54 +231,66 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testGetGroupName() throws Exception
     {
         assertEquals("Unexpected group name", TEST_GROUP_NAME, createMaster().getGroupName());
     }
 
+    @Test
     public void testGetNodeName() throws Exception
     {
         assertEquals("Unexpected group name", TEST_NODE_NAME, createMaster().getNodeName());
     }
 
+    @Test
     public void testLastKnownReplicationTransactionId() throws Exception
     {
         ReplicatedEnvironmentFacade master = createMaster();
         long lastKnownReplicationTransactionId = master.getLastKnownReplicationTransactionId();
-        assertTrue("Unexpected LastKnownReplicationTransactionId " + lastKnownReplicationTransactionId, lastKnownReplicationTransactionId > 0);
+        assertTrue("Unexpected LastKnownReplicationTransactionId " + lastKnownReplicationTransactionId,
+                          lastKnownReplicationTransactionId > 0);
+
     }
 
+    @Test
     public void testGetNodeHostPort() throws Exception
     {
         assertEquals("Unexpected node host port", TEST_NODE_HOST_PORT, createMaster().getHostPort());
     }
 
+    @Test
     public void testGetHelperHostPort() throws Exception
     {
-        assertEquals("Unexpected node helper host port", TEST_NODE_HELPER_HOST_PORT, createMaster().getHelperHostPort());
+        assertEquals("Unexpected node helper host port",
+                            TEST_NODE_HELPER_HOST_PORT,
+                            createMaster().getHelperHostPort());
     }
 
+    @Test
     public void testSetMessageStoreDurability() throws Exception
     {
         ReplicatedEnvironmentFacade master = createMaster();
         assertEquals("Unexpected message store durability",
-                new Durability(Durability.SyncPolicy.NO_SYNC, Durability.SyncPolicy.NO_SYNC, Durability.ReplicaAckPolicy.SIMPLE_MAJORITY),
-                master.getRealMessageStoreDurability());
+                            new Durability(Durability.SyncPolicy.NO_SYNC, Durability.SyncPolicy.NO_SYNC, Durability.ReplicaAckPolicy.SIMPLE_MAJORITY),
+                            master.getRealMessageStoreDurability());
         assertEquals("Unexpected durability", TEST_DURABILITY, master.getMessageStoreDurability());
         assertTrue("Unexpected coalescing sync", master.isCoalescingSync());
 
         master.setMessageStoreDurability(Durability.SyncPolicy.WRITE_NO_SYNC, Durability.SyncPolicy.SYNC, Durability.ReplicaAckPolicy.ALL);
         assertEquals("Unexpected message store durability",
-                new Durability(Durability.SyncPolicy.WRITE_NO_SYNC, Durability.SyncPolicy.SYNC, Durability.ReplicaAckPolicy.ALL),
-                master.getRealMessageStoreDurability());
+                            new Durability(Durability.SyncPolicy.WRITE_NO_SYNC, Durability.SyncPolicy.SYNC, Durability.ReplicaAckPolicy.ALL),
+                            master.getRealMessageStoreDurability());
         assertFalse("Coalescing sync committer is still running", master.isCoalescingSync());
     }
 
+    @Test
     public void testGetNodeState() throws Exception
     {
         assertEquals("Unexpected state", State.MASTER.name(), createMaster().getNodeState());
     }
 
+    @Test
     public void testPriority() throws Exception
     {
         final TestStateChangeListener masterListener = new TestStateChangeListener();
@@ -266,18 +299,19 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         ReplicatedEnvironmentConfiguration masterConfig = createReplicatedEnvironmentConfiguration(TEST_NODE_NAME, TEST_NODE_HOST_PORT, TEST_DESIGNATED_PRIMARY);
         ReplicatedEnvironmentFacade facade = createReplicatedEnvironmentFacade(TEST_NODE_NAME, masterListener, masterGroupListener, masterConfig);
         assertTrue("Master was not created", masterListener.awaitForStateChange(State.MASTER,
-                                                                                _timeout, TimeUnit.SECONDS));
+                                                                                       _timeout, TimeUnit.SECONDS));
 
-        assertEquals("Unexpected priority", TEST_PRIORITY, facade.getPriority());
+        assertEquals("Unexpected priority", (long) TEST_PRIORITY, (long) facade.getPriority());
 
         int newPriority = TEST_PRIORITY + 1;
         when(masterConfig.getPriority()).thenReturn(newPriority);
         Future<Void> future = facade.reapplyPriority();
 
         future.get(_timeout, TimeUnit.SECONDS);
-        assertEquals("Unexpected priority after change", newPriority, facade.getPriority());
+        assertEquals("Unexpected priority after change", (long) newPriority, (long) facade.getPriority());
     }
 
+    @Test
     public void testDesignatedPrimary()  throws Exception
     {
         final TestStateChangeListener masterListener = new TestStateChangeListener();
@@ -286,7 +320,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         ReplicatedEnvironmentConfiguration masterConfig = createReplicatedEnvironmentConfiguration(TEST_NODE_NAME, TEST_NODE_HOST_PORT, TEST_DESIGNATED_PRIMARY);
         ReplicatedEnvironmentFacade master = createReplicatedEnvironmentFacade(TEST_NODE_NAME, masterListener, masterGroupListener, masterConfig);
         assertTrue("Master was not created", masterListener.awaitForStateChange(State.MASTER,
-                                                                                _timeout, TimeUnit.SECONDS));
+                                                                                       _timeout, TimeUnit.SECONDS));
 
         assertEquals("Unexpected designated primary", TEST_DESIGNATED_PRIMARY, master.isDesignatedPrimary());
         boolean newDesignatedPrimary = !TEST_DESIGNATED_PRIMARY;
@@ -294,9 +328,11 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         Future<Void> future = master.reapplyDesignatedPrimary();
         future.get(_timeout, TimeUnit.SECONDS);
         assertEquals("Unexpected designated primary after change",
-                     newDesignatedPrimary, master.isDesignatedPrimary());
+                            newDesignatedPrimary,
+                            master.isDesignatedPrimary());
     }
 
+    @Test
     public void testElectableGroupSizeOverride() throws Exception
     {
         final TestStateChangeListener masterListener = new TestStateChangeListener();
@@ -305,9 +341,11 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         ReplicatedEnvironmentConfiguration masterConfig = createReplicatedEnvironmentConfiguration(TEST_NODE_NAME, TEST_NODE_HOST_PORT, false);
         ReplicatedEnvironmentFacade facade = createReplicatedEnvironmentFacade(TEST_NODE_NAME, masterListener, masterGroupListener, masterConfig);
         assertTrue("Master was not created", masterListener.awaitForStateChange(State.MASTER,
-                                                                                _timeout, TimeUnit.SECONDS));
+                                                                                       _timeout, TimeUnit.SECONDS));
 
-        assertEquals("Unexpected Electable Group Size Override", TEST_ELECTABLE_GROUP_OVERRIDE, facade.getElectableGroupSizeOverride());
+        assertEquals("Unexpected Electable Group Size Override",
+                            (long) TEST_ELECTABLE_GROUP_OVERRIDE,
+                            (long) facade.getElectableGroupSizeOverride());
 
 
         int newElectableGroupOverride = TEST_ELECTABLE_GROUP_OVERRIDE + 1;
@@ -315,9 +353,12 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         Future<Void> future = facade.reapplyElectableGroupSizeOverride();
 
         future.get(_timeout, TimeUnit.SECONDS);
-        assertEquals("Unexpected Electable Group Size Override after change", newElectableGroupOverride, facade.getElectableGroupSizeOverride());
+        assertEquals("Unexpected Electable Group Size Override after change",
+                            (long) newElectableGroupOverride,
+                            (long) facade.getElectableGroupSizeOverride());
     }
 
+    @Test
     public void testReplicationGroupListenerHearsAboutExistingRemoteReplicationNodes() throws Exception
     {
         ReplicatedEnvironmentFacade master = createMaster();
@@ -340,12 +381,13 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
 
         createReplica(nodeName2, node2NodeHostPort, listener);
 
-        assertEquals("Unexpected number of nodes", 2, master.getNumberOfElectableGroupMembers());
+        assertEquals("Unexpected number of nodes", (long) 2, (long) master.getNumberOfElectableGroupMembers());
 
         assertTrue("Listener not fired within timeout", nodeRecoveryLatch.await(_timeout, TimeUnit.SECONDS));
-        assertEquals("Unexpected number of listener invocations", 1, invocationCount.get());
+        assertEquals("Unexpected number of listener invocations", (long) 1, (long) invocationCount.get());
     }
 
+    @Test
     public void testReplicationGroupListenerHearsNodeAdded() throws Exception
     {
         final CountDownLatch nodeAddedLatch = new CountDownLatch(1);
@@ -363,9 +405,12 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         TestStateChangeListener stateChangeListener = new TestStateChangeListener();
         ReplicatedEnvironmentFacade replicatedEnvironmentFacade = addNode(stateChangeListener, listener);
         assertTrue("Master was not started", stateChangeListener.awaitForStateChange(State.MASTER,
-                                                                                     _timeout, TimeUnit.SECONDS));
+                                                                                            _timeout, TimeUnit
+                                                                                                    .SECONDS));
 
-        assertEquals("Unexpected number of nodes at start of test", 1, replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
+        assertEquals("Unexpected number of nodes at start of test",
+                            (long) 1,
+                            (long) replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
 
         String node2Name = TEST_NODE_NAME + "_2";
         String node2NodeHostPort = "localhost" + ":" + _portHelper.getNextAvailable();
@@ -374,11 +419,14 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
 
         assertTrue("Listener not fired within timeout", nodeAddedLatch.await(_timeout, TimeUnit.SECONDS));
 
-        assertEquals("Unexpected number of nodes", 2, replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
+        assertEquals("Unexpected number of nodes",
+                            (long) 2,
+                            (long) replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
 
-        assertEquals("Unexpected number of listener invocations", 1, invocationCount.get());
+        assertEquals("Unexpected number of listener invocations", (long) 1, (long) invocationCount.get());
     }
 
+    @Test
     public void testReplicationGroupListenerHearsNodeRemoved() throws Exception
     {
         final CountDownLatch nodeDeletedLatch = new CountDownLatch(1);
@@ -411,14 +459,16 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         // Set the node to be primary so that the node will remain master even when the 2nd node is shutdown
         replicatedEnvironmentFacade.reapplyDesignatedPrimary();
         assertTrue("Master was not started", stateChangeListener.awaitForStateChange(State.MASTER,
-                                                                                     _timeout, TimeUnit.SECONDS));
+                                                                                            _timeout, TimeUnit.SECONDS));
 
         String node2Name = TEST_NODE_NAME + "_2";
         String node2NodeHostPort = "localhost" + ":" + _portHelper.getNextAvailable();
         replicatedEnvironmentFacade.setPermittedNodes(Arrays.asList(replicatedEnvironmentFacade.getHostPort(), node2NodeHostPort));
         createReplica(node2Name, node2NodeHostPort, new NoopReplicationGroupListener());
 
-        assertEquals("Unexpected number of nodes at start of test", 2, replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
+        assertEquals("Unexpected number of nodes at start of test",
+                            (long) 2,
+                            (long) replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
 
         // Need to await the listener hearing the addition of the node to the model.
         assertTrue("Node add not fired within timeout", nodeAddedLatch.await(_timeout, TimeUnit.SECONDS));
@@ -428,11 +478,14 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
 
         assertTrue("Node delete not fired within timeout", nodeDeletedLatch.await(_timeout, TimeUnit.SECONDS));
 
-        assertEquals("Unexpected number of nodes after node removal", 1, replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
+        assertEquals("Unexpected number of nodes after node removal",
+                            (long) 1,
+                            (long) replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
 
-        assertEquals("Unexpected number of listener invocations", 1, invocationCount.get());
+        assertEquals("Unexpected number of listener invocations", (long) 1, (long) invocationCount.get());
     }
 
+    @Test
     public void testMasterHearsRemoteNodeRoles() throws Exception
     {
         final String node2Name = TEST_NODE_NAME + "_2";
@@ -463,13 +516,16 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         TestStateChangeListener stateChangeListener = new TestStateChangeListener();
         ReplicatedEnvironmentFacade replicatedEnvironmentFacade = addNode(stateChangeListener, listener);
         assertTrue("Master was not started", stateChangeListener.awaitForStateChange(State.MASTER,
-                                                                                     _timeout, TimeUnit.SECONDS));
+                                                                                            _timeout, TimeUnit
+                                                                                                    .SECONDS));
 
         String node2NodeHostPort = "localhost" + ":" + _portHelper.getNextAvailable();
         replicatedEnvironmentFacade.setPermittedNodes(Arrays.asList(replicatedEnvironmentFacade.getHostPort(), node2NodeHostPort));
         createReplica(node2Name, node2NodeHostPort, new NoopReplicationGroupListener());
 
-        assertEquals("Unexpected number of nodes at start of test", 2, replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
+        assertEquals("Unexpected number of nodes at start of test",
+                            (long) 2,
+                            (long) replicatedEnvironmentFacade.getNumberOfElectableGroupMembers());
 
         assertTrue("Node add not fired within timeout", nodeAddedLatch.await(_timeout, TimeUnit.SECONDS));
 
@@ -480,25 +536,30 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         assertEquals("Unexpected node state", State.REPLICA, stateRef.get().getNodeState());
     }
 
+    @Test
     public void testRemoveNodeFromGroup() throws Exception
     {
         TestStateChangeListener stateChangeListener = new TestStateChangeListener();
         ReplicatedEnvironmentFacade environmentFacade = addNode(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, stateChangeListener, new NoopReplicationGroupListener());
         assertTrue("Environment was not created", stateChangeListener.awaitForStateChange(State.MASTER,
-                                                                                          _timeout, TimeUnit.SECONDS));
-
+                                                                                                 _timeout, TimeUnit.SECONDS));
 
         String node2Name = TEST_NODE_NAME + "_2";
         String node2NodeHostPort = "localhost:" + _portHelper.getNextAvailable();
         ReplicatedEnvironmentFacade ref2 = createReplica(node2Name, node2NodeHostPort, new NoopReplicationGroupListener());
 
-        assertEquals("Unexpected group members count", 2, environmentFacade.getNumberOfElectableGroupMembers());
+        assertEquals("Unexpected group members count",
+                            (long) 2,
+                            (long) environmentFacade.getNumberOfElectableGroupMembers());
         ref2.close();
 
         environmentFacade.removeNodeFromGroup(node2Name);
-        assertEquals("Unexpected group members count", 1, environmentFacade.getNumberOfElectableGroupMembers());
+        assertEquals("Unexpected group members count",
+                            (long) 1,
+                            (long) environmentFacade.getNumberOfElectableGroupMembers());
     }
 
+    @Test
     public void testRemoveNodeFromGroupTwice() throws Exception
     {
         TestStateChangeListener stateChangeListener = new TestStateChangeListener();
@@ -508,7 +569,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
                                                                 stateChangeListener,
                                                                 new NoopReplicationGroupListener());
         assertTrue("Environment was not created", stateChangeListener.awaitForStateChange(State.MASTER,
-                                                                                          _timeout, TimeUnit.SECONDS));
+                                                                                                 _timeout, TimeUnit.SECONDS));
 
         String node2Name = TEST_NODE_NAME + "_2";
         String node2NodeHostPort = "localhost:" + _portHelper.getNextAvailable();
@@ -528,6 +589,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testEnvironmentFacadeDetectsRemovalOfRemoteNode() throws Exception
     {
         final String replicaName = TEST_NODE_NAME + "_1";
@@ -570,7 +632,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         TestStateChangeListener stateChangeListener = new TestStateChangeListener();
         final ReplicatedEnvironmentFacade masterEnvironment = addNode(stateChangeListener, listener);
         assertTrue("Master was not started", stateChangeListener.awaitForStateChange(State.MASTER,
-                                                                                     _timeout, TimeUnit.SECONDS));
+                                                                                            _timeout, TimeUnit.SECONDS));
 
         masterEnvironment.reapplyDesignatedPrimary();
 
@@ -591,19 +653,26 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         replica.close();
         masterEnvironment.removeNodeFromGroup(node.getName());
 
-        assertTrue("Node deleting is undetected by the environment facade", nodeRemovedLatch.await(_timeout, TimeUnit.SECONDS));
+        assertTrue("Node deleting is undetected by the environment facade",
+                          nodeRemovedLatch.await(_timeout, TimeUnit.SECONDS));
         assertEquals("Unexpected node is deleted", node, removedNodeRef.get());
     }
 
+    @Test
     public void testCloseStateTransitions() throws Exception
     {
         ReplicatedEnvironmentFacade replicatedEnvironmentFacade = createMaster();
 
-        assertEquals("Unexpected state " + replicatedEnvironmentFacade.getFacadeState(), ReplicatedEnvironmentFacade.State.OPEN, replicatedEnvironmentFacade.getFacadeState());
+        assertEquals("Unexpected state " + replicatedEnvironmentFacade.getFacadeState(),
+                            ReplicatedEnvironmentFacade.State.OPEN,
+                            replicatedEnvironmentFacade.getFacadeState());
         replicatedEnvironmentFacade.close();
-        assertEquals("Unexpected state " + replicatedEnvironmentFacade.getFacadeState(), ReplicatedEnvironmentFacade.State.CLOSED, replicatedEnvironmentFacade.getFacadeState());
+        assertEquals("Unexpected state " + replicatedEnvironmentFacade.getFacadeState(),
+                            ReplicatedEnvironmentFacade.State.CLOSED,
+                            replicatedEnvironmentFacade.getFacadeState());
     }
 
+    @Test
     public void testEnvironmentAutomaticallyRestartsAndBecomesUnknownOnInsufficientReplicas() throws Exception
     {
         final CountDownLatch masterLatch = new CountDownLatch(1);
@@ -655,18 +724,23 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         replica1.close();
         replica2.close();
 
-        assertTrue("Environment should be recreated and go into unknown state",
-                unknownLatch.await(_timeout, TimeUnit.SECONDS));
+        assertTrue("Environment should be recreated and go into unknown state", unknownLatch.await(_timeout,
+                                                                                                          TimeUnit.SECONDS));
 
         // bring back the cluster in order to make sure that no extra state transition happens between UNKNOWN and MASTER
         createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
 
         assertTrue("Master node did not resume", secondMasterLatch.await(_timeout, TimeUnit.SECONDS));
 
-        assertEquals("Node transited into Master state unexpected number of times", 2, masterStateChangeCount.get());
-        assertEquals("Node transited into Unknown state unexpected number of times", 1, unknownStateChangeCount.get());
+        assertEquals("Node transited into Master state unexpected number of times",
+                            (long) 2,
+                            (long) masterStateChangeCount.get());
+        assertEquals("Node transited into Unknown state unexpected number of times",
+                            (long) 1,
+                            (long) unknownStateChangeCount.get());
     }
 
+    @Test
     public void testTransferMasterToSelf() throws Exception
     {
         final CountDownLatch firstNodeReplicaStateLatch = new CountDownLatch(1);
@@ -688,12 +762,13 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
             }
         };
         ReplicatedEnvironmentFacade firstNode = addNode(stateChangeListener, new NoopReplicationGroupListener());
-        assertTrue("Environment did not become a master", firstNodeMasterStateLatch.await(_timeout, TimeUnit.SECONDS));
+        assertTrue("Environment did not become a master",
+                          firstNodeMasterStateLatch.await(_timeout, TimeUnit.SECONDS));
 
         int replica1Port = _portHelper.getNextAvailable();
         String node1NodeHostPort = "localhost:" + replica1Port;
         ReplicatedEnvironmentFacade secondNode = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
-        assertEquals("Unexpected state", ReplicatedEnvironment.State.REPLICA.name(), secondNode.getNodeState());
+        assertEquals("Unexpected state", State.REPLICA.name(), secondNode.getNodeState());
 
         int replica2Port = _portHelper.getNextAvailable();
         String node2NodeHostPort = "localhost:" + replica2Port;
@@ -718,15 +793,16 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         ReplicatedEnvironmentFacade thirdNode = addNode(TEST_NODE_NAME + "_2", node2NodeHostPort, TEST_DESIGNATED_PRIMARY,
                                                         testStateChangeListener, new NoopReplicationGroupListener());
         assertTrue("Environment did not become a replica", replicaStateLatch.await(_timeout, TimeUnit.SECONDS));
-        assertEquals(3, thirdNode.getNumberOfElectableGroupMembers());
+        assertEquals((long) 3, (long) thirdNode.getNumberOfElectableGroupMembers());
 
         thirdNode.transferMasterToSelfAsynchronously();
         assertTrue("Environment did not become a master", masterStateLatch.await(_timeout, TimeUnit.SECONDS));
         assertTrue("First node environment did not become a replica", firstNodeReplicaStateLatch.await(
                 _timeout, TimeUnit.SECONDS));
-        assertEquals("Unexpected state", ReplicatedEnvironment.State.REPLICA.name(), firstNode.getNodeState());
+        assertEquals("Unexpected state", State.REPLICA.name(), firstNode.getNodeState());
     }
 
+    @Test
     public void testTransferMasterAnotherNode() throws Exception
     {
         final CountDownLatch firstNodeReplicaStateLatch = new CountDownLatch(1);
@@ -748,12 +824,13 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
             }
         };
         ReplicatedEnvironmentFacade firstNode = addNode(stateChangeListener, new NoopReplicationGroupListener());
-        assertTrue("Environment did not become a master", firstNodeMasterStateLatch.await(_timeout, TimeUnit.SECONDS));
+        assertTrue("Environment did not become a master",
+                          firstNodeMasterStateLatch.await(_timeout, TimeUnit.SECONDS));
 
         int replica1Port = _portHelper.getNextAvailable();
         String node1NodeHostPort = "localhost:" + replica1Port;
         ReplicatedEnvironmentFacade secondNode = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
-        assertEquals("Unexpected state", ReplicatedEnvironment.State.REPLICA.name(), secondNode.getNodeState());
+        assertEquals("Unexpected state", State.REPLICA.name(), secondNode.getNodeState());
 
         int replica2Port = _portHelper.getNextAvailable();
         String node2NodeHostPort = "localhost:" + replica2Port;
@@ -779,15 +856,16 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         ReplicatedEnvironmentFacade thirdNode = addNode(thirdNodeName, node2NodeHostPort, TEST_DESIGNATED_PRIMARY,
                                                         testStateChangeListener, new NoopReplicationGroupListener());
         assertTrue("Environment did not become a replica", replicaStateLatch.await(_timeout, TimeUnit.SECONDS));
-        assertEquals(3, thirdNode.getNumberOfElectableGroupMembers());
+        assertEquals((long) 3, (long) thirdNode.getNumberOfElectableGroupMembers());
 
         firstNode.transferMasterAsynchronously(thirdNodeName);
         assertTrue("Environment did not become a master", masterStateLatch.await(_timeout, TimeUnit.SECONDS));
         assertTrue("First node environment did not become a replica", firstNodeReplicaStateLatch.await(
                 _timeout, TimeUnit.SECONDS));
-        assertEquals("Unexpected state", ReplicatedEnvironment.State.REPLICA.name(), firstNode.getNodeState());
+        assertEquals("Unexpected state", State.REPLICA.name(), firstNode.getNodeState());
     }
 
+    @Test
     public void testBeginTransaction() throws Exception
     {
         ReplicatedEnvironmentFacade facade = createMaster();
@@ -810,6 +888,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testSetPermittedNodes() throws Exception
     {
         ReplicatedEnvironmentFacade firstNode = createMaster();
@@ -829,6 +908,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         assertEquals("Unexpected permitted nodes", permittedNodes, new HashSet<String>(appStatePermittedNodes));
     }
 
+    @Test
     public void testPermittedNodeIsAllowedToConnect() throws Exception
     {
         ReplicatedEnvironmentFacade firstNode = createMaster();
@@ -848,10 +928,11 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         ReplicatedEnvironmentFacade secondNode = createReplicatedEnvironmentFacade(TEST_NODE_NAME + "_1",
                 stateChangeListener, new NoopReplicationGroupListener(), configuration);
         assertTrue("Environment was not created", stateChangeListener.awaitForStateChange(State.REPLICA,
-                                                                                          _timeout, TimeUnit.SECONDS));
+                                                                                                 _timeout, TimeUnit.SECONDS));
         assertEquals("Unexpected state", State.REPLICA.name(), secondNode.getNodeState());
     }
 
+    @Test
     public void testIntruderNodeIsDetected() throws Exception
     {
         final CountDownLatch intruderLatch = new CountDownLatch(1);
@@ -878,6 +959,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         assertTrue("Intruder node was not detected", intruderLatch.await(_timeout, TimeUnit.SECONDS));
     }
 
+    @Test
     public void testNodeRolledback()  throws Exception
     {
         DatabaseConfig createConfig = new DatabaseConfig();
@@ -887,7 +969,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         TestStateChangeListener masterListener = new TestStateChangeListener();
         ReplicatedEnvironmentFacade node1 = addNode(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, masterListener, new NoopReplicationGroupListener());
         assertTrue("Environment was not created", masterListener.awaitForStateChange(State.MASTER,
-                                                                                     _timeout, TimeUnit.SECONDS));
+                                                                                            _timeout, TimeUnit.SECONDS));
 
         String replicaNodeHostPort = "localhost:" + _portHelper.getNextAvailable();
         String replicaName = TEST_NODE_NAME + 1;
@@ -915,7 +997,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         boolean awaitForStateChange = node2StateChangeListener.awaitForStateChange(State.MASTER,
                                                                                    _timeout, TimeUnit.SECONDS);
         assertTrue(replicaName + " did not go into desired state; current actual state is "
-                   + node2StateChangeListener.getCurrentActualState(), awaitForStateChange);
+                          + node2StateChangeListener.getCurrentActualState(), awaitForStateChange);
 
         db = node2.openDatabase("mydb", DatabaseConfig.DEFAULT);
 
@@ -935,11 +1017,10 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
                 _replicaRolledback.countDown();
             }
         });
-        assertTrue("Node 1 did not go into desired state",
-                   node1StateChangeListener.awaitForStateChange(State.REPLICA,
-                                                                _timeout, TimeUnit.SECONDS));
+        assertTrue("Node 1 did not go into desired state", node1StateChangeListener.awaitForStateChange(State.REPLICA,
+                                                                                                               _timeout, TimeUnit.SECONDS));
         assertTrue("Node 1 did not experience rollback within timeout",
-                   _replicaRolledback.await(_timeout, TimeUnit.SECONDS));
+                          _replicaRolledback.await(_timeout, TimeUnit.SECONDS));
 
         // Finally do one more transaction through the master
         putRecord(node2, db, 4, "value4");
@@ -950,6 +1031,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         node2.close();
     }
 
+    @Test
     public void testReplicaTransactionBeginsImmediately()  throws Exception
     {
         ReplicatedEnvironmentFacade master = createMaster();
@@ -987,6 +1069,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testReplicaWriteExceptionIsConvertedIntoConnectionScopedRuntimeException()  throws Exception
     {
         ReplicatedEnvironmentFacade master = createMaster();
@@ -1008,10 +1091,12 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         catch(ReplicaWriteException e)
         {
             RuntimeException handledException = master.handleDatabaseException("test", e);
-            assertTrue("Unexpected exception", handledException instanceof ConnectionScopedRuntimeException);
+            final boolean condition = handledException instanceof ConnectionScopedRuntimeException;
+            assertTrue("Unexpected exception", condition);
         }
     }
 
+    @Test
     public void testSetElectableGroupSizeOverrideAfterMajorityLost()  throws Exception
     {
         final SettableFuture<Boolean> majorityLost = SettableFuture.create();
@@ -1029,7 +1114,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         ReplicatedEnvironmentConfiguration masterConfig = createReplicatedEnvironmentConfiguration(TEST_NODE_NAME, TEST_NODE_HOST_PORT, false);
         ReplicatedEnvironmentFacade master = createReplicatedEnvironmentFacade(TEST_NODE_NAME, masterListener, masterGroupListener, masterConfig);
         assertTrue("Master was not created", masterListener.awaitForStateChange(State.MASTER,
-                                                                                _timeout, TimeUnit.SECONDS));
+                                                                                       _timeout, TimeUnit.SECONDS));
 
         int replica1Port = _portHelper.getNextAvailable();
         String node1NodeHostPort = "localhost:" + replica1Port;
@@ -1045,19 +1130,22 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         replica2.close();
 
         assertTrue("Node that was master did not become detached after the replica closed",
-                   masterListener.awaitForStateChange(State.DETACHED, _timeout, TimeUnit.SECONDS));
+                          masterListener.awaitForStateChange(State.DETACHED, _timeout, TimeUnit.SECONDS));
         assertTrue("Majority lost is undetected", majorityLost.get(_timeout, TimeUnit.SECONDS));
 
-        assertEquals("Unexpected facade state", ReplicatedEnvironmentFacade.State.RESTARTING, master.getFacadeState());
-
+        assertEquals("Unexpected facade state",
+                            ReplicatedEnvironmentFacade.State.RESTARTING,
+                            master.getFacadeState());
 
         when(masterConfig.getQuorumOverride()).thenReturn(1);
         master.reapplyElectableGroupSizeOverride();
 
-        assertTrue("Master did not become available again following the application of the electable group override",
-                   masterListener.awaitForStateChange(State.MASTER, _timeout, TimeUnit.SECONDS));
+        assertTrue(
+                "Master did not become available again following the application of the electable group override",
+                masterListener.awaitForStateChange(State.MASTER, _timeout, TimeUnit.SECONDS));
     }
 
+    @Test
     public void testSetDesignatedPrimaryAfterMajorityLost()  throws Exception
     {
         final SettableFuture<Boolean> majorityLost = SettableFuture.create();
@@ -1075,8 +1163,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         ReplicatedEnvironmentConfiguration masterConfig = createReplicatedEnvironmentConfiguration(TEST_NODE_NAME, TEST_NODE_HOST_PORT, false);
         ReplicatedEnvironmentFacade master = createReplicatedEnvironmentFacade(TEST_NODE_NAME, masterListener, masterGroupListener, masterConfig);
         assertTrue("Master was not created", masterListener.awaitForStateChange(State.MASTER,
-                                                                                _timeout, TimeUnit.SECONDS));
-
+                                                                                       _timeout, TimeUnit.SECONDS));
 
         int replicaPort = _portHelper.getNextAvailable();
         String replicaNodeHostPort = "localhost:" + replicaPort;
@@ -1087,16 +1174,18 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         replica1.close();
 
         assertTrue("Node that was master did not become detached after the replica closed",
-                   masterListener.awaitForStateChange(State.DETACHED, _timeout, TimeUnit.SECONDS));
+                          masterListener.awaitForStateChange(State.DETACHED, _timeout, TimeUnit.SECONDS));
         assertTrue("Majority lost is undetected", majorityLost.get(_timeout, TimeUnit.SECONDS));
 
-        assertEquals("Unexpected facade state", ReplicatedEnvironmentFacade.State.RESTARTING, master.getFacadeState());
+        assertEquals("Unexpected facade state",
+                            ReplicatedEnvironmentFacade.State.RESTARTING,
+                            master.getFacadeState());
 
         when(masterConfig.isDesignatedPrimary()).thenReturn(true);
         master.reapplyDesignatedPrimary();
 
         assertTrue("Master did not become available again following designated primary",
-                   masterListener.awaitForStateChange(State.MASTER, _timeout, TimeUnit.SECONDS));
+                          masterListener.awaitForStateChange(State.MASTER, _timeout, TimeUnit.SECONDS));
     }
 
     private void putRecord(final ReplicatedEnvironmentFacade master, final Database db, final int keyValue,
@@ -1153,7 +1242,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         TestStateChangeListener stateChangeListener = new TestStateChangeListener();
         ReplicatedEnvironmentFacade env = addNode(stateChangeListener, replicationGroupListener);
         assertTrue("Environment was not created", stateChangeListener.awaitForStateChange(State.MASTER,
-                                                                                          _timeout, TimeUnit.SECONDS));
+                                                                                                 _timeout, TimeUnit.SECONDS));
         return env;
     }
 
@@ -1171,7 +1260,8 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
                                                                        testStateChangeListener, replicationGroupListener);
         boolean awaitForStateChange = testStateChangeListener.awaitForStateChange(State.REPLICA,
                                                                                   _timeout, TimeUnit.SECONDS);
-        assertTrue("Replica " + nodeName + " did not go into desired state; current actual state is " + testStateChangeListener.getCurrentActualState(), awaitForStateChange);
+        assertTrue("Replica " + nodeName + " did not go into desired state; current actual state is " + testStateChangeListener.getCurrentActualState(),
+                          awaitForStateChange);
         return replicaEnvironmentFacade;
     }
 

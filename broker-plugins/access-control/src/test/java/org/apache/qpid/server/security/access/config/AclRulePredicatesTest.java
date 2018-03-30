@@ -23,6 +23,8 @@ import static org.apache.qpid.server.security.access.config.ObjectProperties.Pro
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.FROM_HOSTNAME;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.FROM_NETWORK;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.NAME;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -30,27 +32,29 @@ import static org.mockito.Mockito.when;
 
 import java.util.Set;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.internal.util.collections.Sets;
 
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AclRulePredicatesTest extends QpidTestCase
+public class AclRulePredicatesTest extends UnitTestBase
 {
     private AclRulePredicates _aclRulePredicates = new AclRulePredicates();
     private FirewallRuleFactory _firewallRuleFactory = mock(FirewallRuleFactory.class);
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _aclRulePredicates.setFirewallRuleFactory(_firewallRuleFactory);
 
         when(_firewallRuleFactory.createForHostname(any())).thenReturn(mock(FirewallRule.class));
         when(_firewallRuleFactory.createForNetwork(any())).thenReturn(mock(FirewallRule.class));
     }
 
+    @Test
     public void testParse()
     {
         String name = "name";
@@ -63,6 +67,7 @@ public class AclRulePredicatesTest extends QpidTestCase
         assertEquals(className, _aclRulePredicates.getObjectProperties().get(CLASS));
     }
 
+    @Test
     public void testParseHostnameFirewallRule()
     {
         String hostname = "hostname1,hostname2";
@@ -71,6 +76,7 @@ public class AclRulePredicatesTest extends QpidTestCase
         verify(_firewallRuleFactory).createForHostname(new String[] {"hostname1", "hostname2"});
     }
 
+    @Test
     public void testParseNetworkFirewallRule()
     {
         _aclRulePredicates.setFirewallRuleFactory(_firewallRuleFactory);
@@ -81,6 +87,7 @@ public class AclRulePredicatesTest extends QpidTestCase
         verify(_firewallRuleFactory).createForNetwork(new String[] {"network1", "network2"});
     }
 
+    @Test
     public void testParseThrowsExceptionIfBothHostnameAndNetworkSpecified()
     {
         _aclRulePredicates.parse(FROM_NETWORK.name(), "network1,network2");
@@ -95,6 +102,7 @@ public class AclRulePredicatesTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testParseAttributesRule()
     {
         String attributes = "attribute1,attribute2";
@@ -102,7 +110,8 @@ public class AclRulePredicatesTest extends QpidTestCase
 
         final Set<String> attributesSet = Sets.newSet(attributes.split(","));
         assertEquals("Unexpected attributes",
-                     attributesSet,
-                     _aclRulePredicates.getObjectProperties().getAttributeNames());
+                            attributesSet,
+                            _aclRulePredicates.getObjectProperties().getAttributeNames());
+
     }
 }

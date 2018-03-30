@@ -18,15 +18,21 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
 
+import org.junit.Test;
+
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.apache.qpid.test.utils.QpidTestCase;
-
-public class ClientActionTest extends QpidTestCase
+public class ClientActionTest extends UnitTestBase
 {
     private Action _action = mock(Action.class);
     private AclAction _ruleAction = mock(AclAction.class);
@@ -34,6 +40,7 @@ public class ClientActionTest extends QpidTestCase
 
     private ClientAction _clientAction = new ClientAction(_action);
 
+    @Test
     public void testMatches_returnsTrueWhenActionsMatchAndNoFirewallRule()
     {
         when(_action.matches(any(Action.class))).thenReturn(true);
@@ -42,6 +49,7 @@ public class ClientActionTest extends QpidTestCase
         assertTrue(_clientAction.matches(_ruleAction, _addressOfClient));
     }
 
+    @Test
     public void testMatches_returnsFalseWhenActionsDontMatch()
     {
         FirewallRule firewallRule = mock(FirewallRule.class);
@@ -53,6 +61,7 @@ public class ClientActionTest extends QpidTestCase
         assertFalse(_clientAction.matches(_ruleAction, _addressOfClient));
     }
 
+    @Test
     public void testMatches_returnsTrueWhenActionsAndFirewallRuleMatch()
     {
         FirewallRule firewallRule = mock(FirewallRule.class);
@@ -64,6 +73,7 @@ public class ClientActionTest extends QpidTestCase
         assertTrue(_clientAction.matches(_ruleAction, _addressOfClient));
     }
 
+    @Test
     public void testMatches_ignoresFirewallRuleIfClientAddressIsNull()
     {
         FirewallRule firewallRule = mock(FirewallRule.class);

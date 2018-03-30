@@ -21,6 +21,7 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +38,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.collect.Lists;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -50,9 +53,9 @@ import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
+public class MessageConverter_0_8_to_InternalTest extends UnitTestBase
 {
     private final MessageConverter_v0_8_to_Internal _converter = new MessageConverter_v0_8_to_Internal();
 
@@ -63,10 +66,9 @@ public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
     private final ContentHeaderBody _contentHeaderBody = mock(ContentHeaderBody.class);
     private final BasicContentHeaderProperties _basicContentHeaderProperties = mock(BasicContentHeaderProperties.class);
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         when(_handle.getMetaData()).thenReturn(_metaData);
         when(_metaData.getMessageHeader()).thenReturn(_header);
         when(_metaData.getMessagePublishInfo()).thenReturn(new MessagePublishInfo());
@@ -74,82 +76,98 @@ public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
         when(_contentHeaderBody.getProperties()).thenReturn(_basicContentHeaderProperties);
     }
 
+    @Test
     public void testConvertStringMessageBody() throws Exception
     {
         doTestTextMessage("helloworld", "text/plain");
     }
 
+    @Test
     public void testConvertEmptyStringMessageBody() throws Exception
     {
         doTestTextMessage(null, "text/plain");
     }
 
+    @Test
     public void testConvertStringXmlMessageBody() throws Exception
     {
         doTestTextMessage("<helloworld></helloworld>", "text/xml");
     }
 
+    @Test
     public void testConvertEmptyStringXmlMessageBody() throws Exception
     {
         doTestTextMessage(null, "text/xml");
     }
 
+    @Test
     public void testConvertEmptyStringApplicationXmlMessageBody() throws Exception
     {
         doTestTextMessage(null, "application/xml");
     }
 
+    @Test
     public void testConvertStringWithContentTypeText() throws Exception
     {
         doTestTextMessage("foo","text/foobar");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationXml() throws Exception
     {
         doTestTextMessage("<helloworld></helloworld>","application/xml");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationXmlDtd() throws Exception
     {
         doTestTextMessage("<!DOCTYPE name []>","application/xml-dtd");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationFooXml() throws Exception
     {
         doTestTextMessage("<helloworld></helloworld>","application/foo+xml");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationJson() throws Exception
     {
         doTestTextMessage("[]","application/json");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationFooJson() throws Exception
     {
         doTestTextMessage("[]","application/foo+json");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationJavascript() throws Exception
     {
         doTestTextMessage("var foo","application/javascript");
     }
 
+    @Test
     public void testConvertStringWithContentTypeApplicationEcmascript() throws Exception
     {
         doTestTextMessage("var foo","application/ecmascript");
     }
 
+    @Test
     public void testConvertBytesMessageBody() throws Exception
     {
         doTestBytesMessage("helloworld".getBytes());
     }
 
+    @Test
     public void testConvertBytesMessageBodyNoContentType() throws Exception
     {
         final byte[] messageContent = "helloworld".getBytes();
         doTest(messageContent, null, messageContent, null);
     }
 
+    @Test
     public void testConvertMessageBodyUnknownContentType() throws Exception
     {
         final byte[] messageContent = "helloworld".getBytes();
@@ -158,11 +176,13 @@ public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
     }
 
 
+    @Test
     public void testConvertEmptyBytesMessageBody() throws Exception
     {
         doTestBytesMessage(new byte[0]);
     }
 
+    @Test
     public void testConvertJmsStreamMessageBody() throws Exception
     {
         final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
@@ -172,6 +192,7 @@ public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
         doTestStreamMessage(messageBytes, mimeType, expected);
     }
 
+    @Test
     public void testConvertEmptyJmsStreamMessageBody() throws Exception
     {
         final List<Object> expected = Lists.newArrayList();
@@ -179,6 +200,7 @@ public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
         doTestStreamMessage(null, mimeType, expected);
     }
 
+    @Test
     public void testConvertAmqpListMessageBody() throws Exception
     {
         final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
@@ -187,12 +209,14 @@ public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
         doTestStreamMessage(messageBytes, "amqp/list", expected);
     }
 
+    @Test
     public void testConvertEmptyAmqpListMessageBody() throws Exception
     {
         final List<Object> expected = Lists.newArrayList();
         doTestStreamMessage(null, "amqp/list", expected);
     }
 
+    @Test
     public void testConvertJmsMapMessageBody() throws Exception
     {
         final Map<String, Object> expected = Collections.singletonMap("key", "value");
@@ -201,11 +225,13 @@ public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
         doTestMapMessage(messageBytes, "jms/map-message", expected);
     }
 
+    @Test
     public void testConvertEmptyJmsMapMessageBody() throws Exception
     {
         doTestMapMessage(null, "jms/map-message", Collections.emptyMap());
     }
 
+    @Test
     public void testConvertAmqpMapMessageBody() throws Exception
     {
         final Map<String, Object> expected = Collections.singletonMap("key", "value");
@@ -214,38 +240,45 @@ public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
         doTestMapMessage(messageBytes, "amqp/map", expected);
     }
 
+    @Test
     public void testConvertEmptyAmqpMapMessageBody() throws Exception
     {
         doTestMapMessage(null, "amqp/map", Collections.emptyMap());
     }
 
+    @Test
     public void testConvertObjectStreamMessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
         doTestObjectMessage(messageBytes, "application/java-object-stream", messageBytes);
     }
 
+    @Test
     public void testConvertObjectStream2MessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
         doTestObjectMessage(messageBytes, "application/x-java-serialized-object", messageBytes);
     }
 
+    @Test
     public void testConvertEmptyObjectStreamMessageBody() throws Exception
     {
         doTestObjectMessage(null, "application/java-object-stream", new byte[0]);
     }
 
+    @Test
     public void testConvertEmptyMessageWithoutContentType() throws Exception
     {
         doTest(null, null, null, null);
     }
 
+    @Test
     public void testConvertEmptyMessageWithUnknownContentType() throws Exception
     {
         doTest(null, "foo/bar", new byte[0], "foo/bar");
     }
 
+    @Test
     public void testConvertMessageWithoutContentType() throws Exception
     {
         final byte[] expectedContent = "someContent".getBytes(UTF_8);
@@ -386,14 +419,14 @@ public class MessageConverter_0_8_to_InternalTest extends QpidTestCase
         else if (expectedContent instanceof List)
         {
             assertEquals("Unexpected content",
-                         new ArrayList((Collection) expectedContent),
-                         new ArrayList((Collection) convertedMessage.getMessageBody()));
+                                new ArrayList((Collection) expectedContent),
+                                new ArrayList((Collection) convertedMessage.getMessageBody()));
         }
         else if (expectedContent instanceof Map)
         {
             assertEquals("Unexpected content",
-                         new HashMap((Map) expectedContent),
-                         new HashMap((Map) convertedMessage.getMessageBody()));
+                                new HashMap((Map) expectedContent),
+                                new HashMap((Map) convertedMessage.getMessageBody()));
         }
         else
         {

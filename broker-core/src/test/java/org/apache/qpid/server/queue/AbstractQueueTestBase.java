@@ -21,6 +21,12 @@
 
 package org.apache.qpid.server.queue;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
@@ -40,6 +46,9 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -75,9 +84,10 @@ import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.UnknownAlternateBindingException;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-abstract class AbstractQueueTestBase extends QpidTestCase
+
+abstract class AbstractQueueTestBase extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQueueTestBase.class);
     private Queue<?> _queue;
@@ -90,13 +100,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     private QueueConsumer<?,?> _consumer;
     private Map<String,Object> _arguments = Collections.emptyMap();
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         BrokerTestHelper.setUp();
 
-        _virtualHost = BrokerTestHelper.createVirtualHost(getClass().getName());
+        _virtualHost = BrokerTestHelper.createVirtualHost(getClass().getName(), this);
 
         Map<String,Object> attributes = new HashMap<>(_arguments);
         attributes.put(Queue.NAME, _qname);
@@ -107,7 +116,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _exchange = (DirectExchangeImpl) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -118,10 +127,10 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         finally
         {
             BrokerTestHelper.tearDown();
-            super.tearDown();
         }
     }
 
+    @Test
     public void testCreateQueue() throws Exception
     {
         _queue.close();
@@ -134,8 +143,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         }
         catch (IllegalArgumentException e)
         {
-            assertTrue("Exception was not about missing name",
-                            e.getMessage().contains("name"));
+            assertTrue("Exception was not about missing name", e.getMessage().contains("name"));
         }
 
         Map<String,Object> attributes = new HashMap<>(_arguments);
@@ -146,31 +154,28 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
 
 
+    @Test
     public void testGetVirtualHost()
     {
         assertEquals("Virtual host was wrong", _virtualHost, _queue.getVirtualHost());
     }
 
+    @Test
     public void testBinding()
     {
         _exchange.addBinding(_routingKey, _queue, Collections.EMPTY_MAP);
 
-        assertTrue("Routing key was not bound",
-                        _exchange.isBound(_routingKey));
-        assertTrue("Queue was not bound to key",
-                    _exchange.isBound(_routingKey,_queue));
-        assertEquals("Exchange binding count", 1,
-                     _queue.getPublishingLinks().size());
+        assertTrue("Routing key was not bound", _exchange.isBound(_routingKey));
+        assertTrue("Queue was not bound to key", _exchange.isBound(_routingKey, _queue));
+        assertEquals("Exchange binding count", (long) 1, (long) _queue.getPublishingLinks().size());
         final Binding firstBinding = (Binding) _queue.getPublishingLinks().iterator().next();
-        assertEquals("Wrong binding key", _routingKey,
-                     firstBinding.getBindingKey());
+        assertEquals("Wrong binding key", _routingKey, firstBinding.getBindingKey());
 
         _exchange.deleteBinding(_routingKey, _queue);
-        assertFalse("Routing key was still bound",
-                _exchange.isBound(_routingKey));
-
+        assertFalse("Routing key was still bound", _exchange.isBound(_routingKey));
     }
 
+    @Test
     public void testRegisterConsumerThenEnqueueMessage() throws Exception
     {
         ServerMessage messageA = createMessage(new Long(24));
@@ -179,10 +184,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerOption.ACQUIRES,
                                                                      ConsumerOption.SEES_REQUEUES), 0);
-        assertEquals("Queue does not have consumer", 1,
-                     _queue.getConsumerCount());
-        assertEquals("Queue does not have active consumer", 1,
-                     _queue.getConsumerCountWithCredit());
+        assertEquals("Queue does not have consumer", (long) 1, (long) _queue.getConsumerCount());
+        assertEquals("Queue does not have active consumer", (long) 1, (long) _queue.getConsumerCountWithCredit());
 
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
@@ -195,15 +198,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer.close();
         assertTrue("Consumer still had queue", _consumerTarget.isClosed());
         assertFalse("Queue still has consumer", 1 == _queue.getConsumerCount());
-        assertFalse("Queue still has active consumer",
-                    1 == _queue.getConsumerCountWithCredit());
+        assertFalse("Queue still has active consumer", 1 == _queue.getConsumerCountWithCredit());
 
         ServerMessage messageB = createMessage(new Long (25));
         _queue.enqueue(messageB, null, null);
-         assertNull(_consumer.getQueueContext());
-
+        assertNull(_consumer.getQueueContext());
     }
 
+    @Test
     public void testEnqueueMessageThenRegisterConsumer() throws Exception, InterruptedException
     {
         ServerMessage messageA = createMessage(new Long(24));
@@ -214,12 +216,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         while(_consumerTarget.processPending());
         assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after an enqueue",
-                   _consumer.getQueueContext().getReleasedEntry());
+                          _consumer.getQueueContext().getReleasedEntry());
     }
 
     /**
      * Tests enqueuing two messages.
      */
+    @Test
     public void testEnqueueTwoMessagesThenRegisterConsumer() throws Exception
     {
         ServerMessage messageA = createMessage(new Long(24));
@@ -232,9 +235,10 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         while(_consumerTarget.processPending());
         assertEquals(messageB, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after enqueues",
-                   _consumer.getQueueContext().getReleasedEntry());
+                          _consumer.getQueueContext().getReleasedEntry());
     }
 
+    @Test
     public void testMessageHeldIfNotYetValidWhenConsumerAdded() throws Exception
     {
         _queue.close();
@@ -254,13 +258,18 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                                                                      ConsumerOption.SEES_REQUEUES), 0);
         while(_consumerTarget.processPending());
 
-        assertEquals("Message which was not yet valid was received", 0, _consumerTarget.getMessages().size());
+        assertEquals("Message which was not yet valid was received",
+                            (long) 0,
+                            (long) _consumerTarget.getMessages().size());
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
         while(_consumerTarget.processPending());
-        assertEquals("Message which was valid was not received", 1, _consumerTarget.getMessages().size());
+        assertEquals("Message which was valid was not received",
+                            (long) 1,
+                            (long) _consumerTarget.getMessages().size());
     }
 
+    @Test
     public void testMessageHoldingDependentOnQueueProperty() throws Exception
     {
         _queue.close();
@@ -280,10 +289,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                                                                      ConsumerOption.SEES_REQUEUES), 0);
         while(_consumerTarget.processPending());
 
-        assertEquals("Message was held despite queue not having holding enabled", 1, _consumerTarget.getMessages().size());
-
+        assertEquals("Message was held despite queue not having holding enabled",
+                            (long) 1,
+                            (long) _consumerTarget.getMessages().size());
     }
 
+    @Test
     public void testUnheldMessageOvertakesHeld() throws Exception
     {
         _queue.close();
@@ -306,21 +317,28 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                                                                      ConsumerOption.SEES_REQUEUES), 0);
         while(_consumerTarget.processPending());
 
-        assertEquals("Expect one message (message B)", 1, _consumerTarget.getMessages().size());
-        assertEquals("Wrong message received", messageB.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(0).getMessage().getMessageHeader().getMessageId());
+        assertEquals("Expect one message (message B)", (long) 1, (long) _consumerTarget.getMessages().size());
+        assertEquals("Wrong message received",
+                            messageB.getMessageHeader().getMessageId(),
+                            _consumerTarget.getMessages().get(0).getMessage().getMessageHeader().getMessageId());
+
 
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
         while(_consumerTarget.processPending());
-        assertEquals("Message which was valid was not received", 2, _consumerTarget.getMessages().size());
-        assertEquals("Wrong message received", messageA.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(1).getMessage().getMessageHeader().getMessageId());
-
+        assertEquals("Message which was valid was not received",
+                            (long) 2,
+                            (long) _consumerTarget.getMessages().size());
+        assertEquals("Wrong message received",
+                            messageA.getMessageHeader().getMessageId(),
+                            _consumerTarget.getMessages().get(1).getMessage().getMessageHeader().getMessageId());
     }
 
     /**
      * Tests that a released queue entry is resent to the subscriber.  Verifies also that the
      * QueueContext._releasedEntry is reset to null after the entry has been reset.
      */
+    @Test
     public void testReleasedMessageIsResentToSubscriber() throws Exception
     {
 
@@ -345,8 +363,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
-                     3,
-                     _consumerTarget.getMessages().size());
+                            (long) 3,
+                            (long) _consumerTarget.getMessages().size());
         assertFalse("Redelivery flag should not be set", queueEntries.get(0).isRedelivered());
         assertFalse("Redelivery flag should not be set", queueEntries.get(1).isRedelivered());
         assertFalse("Redelivery flag should not be set", queueEntries.get(2).isRedelivered());
@@ -358,13 +376,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
-                     4,
-                     _consumerTarget.getMessages().size());
+                            (long) 4,
+                            (long) _consumerTarget.getMessages().size());
         assertTrue("Redelivery flag should now be set", queueEntries.get(0).isRedelivered());
         assertFalse("Redelivery flag should remain be unset", queueEntries.get(1).isRedelivered());
-        assertFalse("Redelivery flag should remain be unset",queueEntries.get(2).isRedelivered());
+        assertFalse("Redelivery flag should remain be unset", queueEntries.get(2).isRedelivered());
         assertNull("releasedEntry should be cleared after requeue processed",
-                   _consumer.getQueueContext().getReleasedEntry());
+                          _consumer.getQueueContext().getReleasedEntry());
     }
 
     /**
@@ -372,6 +390,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
      * This tests ensures that SimpleAMQQueue<?>Entry.getNextAvailableEntry avoids expired entries.
      * Verifies also that the QueueContext._releasedEntry is reset to null after the entry has been reset.
      */
+    @Test
     public void testReleaseMessageThatBecomesExpiredIsNotRedelivered() throws Exception
     {
         ServerMessage messageA = createMessage(new Long(24));
@@ -413,9 +432,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         _queue.enqueue(messageA, postEnqueueAction, null);
 
-        assertTrue("Message was not sent during expected time interval", sendIndicator.await(5000, TimeUnit.MILLISECONDS));
+        assertTrue("Message was not sent during expected time interval",
+                          sendIndicator.await(5000, TimeUnit.MILLISECONDS));
 
-        assertEquals("Unexpected total number of messages sent to consumer", 1, _consumerTarget.getMessages().size());
+        assertEquals("Unexpected total number of messages sent to consumer",
+                            (long) 1,
+                            (long) _consumerTarget.getMessages().size());
         QueueEntry queueEntry = queueEntries.get(0);
 
         final CountDownLatch dequeueIndicator = new CountDownLatch(1);
@@ -441,9 +463,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertTrue("Expecting the queue entry to be now expired", queueEntry.expired());
         queueEntry.release();
 
-        assertTrue("Message was not de-queued due to expiration", dequeueIndicator.await(5000, TimeUnit.MILLISECONDS));
+        assertTrue("Message was not de-queued due to expiration",
+                          dequeueIndicator.await(5000, TimeUnit.MILLISECONDS));
 
-        assertEquals("Total number of messages sent should not have changed", 1, _consumerTarget.getMessages().size());
+        assertEquals("Total number of messages sent should not have changed",
+                            (long) 1,
+                            (long) _consumerTarget.getMessages().size());
         assertFalse("Redelivery flag should not be set", queueEntry.isRedelivered());
 
         // QueueContext#_releasedEntry is updated after notification, thus, we need to make sure that it is updated
@@ -452,9 +477,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         {
             Thread.sleep(10);
         }
-        assertNull("releasedEntry should be cleared after requeue processed:" +  _consumer.getQueueContext().getReleasedEntry(),
-                   _consumer.getQueueContext().getReleasedEntry());
-
+        assertNull("releasedEntry should be cleared after requeue processed:" + _consumer.getQueueContext().getReleasedEntry(),
+                          _consumer.getQueueContext().getReleasedEntry());
     }
 
     /**
@@ -463,6 +487,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
      * successfully.  Specifically this test ensures the {@see AbstractQueue#requeue()}
      * can correctly move the _releasedEntry to an earlier position in the QueueEntry list.
      */
+    @Test
     public void testReleasedOutOfComparableOrderAreRedelivered() throws Exception
     {
 
@@ -486,8 +511,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
-                     3,
-                     _consumerTarget.getMessages().size());
+                            (long) 3,
+                            (long) _consumerTarget.getMessages().size());
         assertFalse("Redelivery flag should not be set", queueEntries.get(0).isRedelivered());
         assertFalse("Redelivery flag should not be set", queueEntries.get(1).isRedelivered());
         assertFalse("Redelivery flag should not be set", queueEntries.get(2).isRedelivered());
@@ -500,13 +525,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
-                     5,
-                     _consumerTarget.getMessages().size());
+                            (long) 5,
+                            (long) _consumerTarget.getMessages().size());
         assertTrue("Redelivery flag should now be set", queueEntries.get(0).isRedelivered());
         assertFalse("Redelivery flag should remain be unset", queueEntries.get(1).isRedelivered());
-        assertTrue("Redelivery flag should now be set",queueEntries.get(2).isRedelivered());
+        assertTrue("Redelivery flag should now be set", queueEntries.get(2).isRedelivered());
         assertNull("releasedEntry should be cleared after requeue processed",
-                   _consumer.getQueueContext().getReleasedEntry());
+                          _consumer.getQueueContext().getReleasedEntry());
     }
 
 
@@ -514,6 +539,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
      * Tests that a release requeues an entry for a queue with multiple consumers.  Verifies that a
      * requeue resends a message to a <i>single</i> subscriber.
      */
+    @Test
     public void testReleaseForQueueWithMultipleConsumers() throws Exception
     {
         ServerMessage messageA = createMessage(new Long(24));
@@ -544,8 +570,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         while(target2.processPending());
 
         assertEquals("Unexpected total number of messages sent to both after enqueue",
-                     2,
-                     target1.getMessages().size() + target2.getMessages().size());
+                            (long) 2,
+                            (long) (target1.getMessages().size() + target2.getMessages().size()));
 
         /* Now release the first message only, causing it to be requeued */
         queueEntries.get(0).release();
@@ -554,14 +580,15 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         while(target2.processPending());
 
         assertEquals("Unexpected total number of messages sent to both consumers after release",
-                     3,
-                     target1.getMessages().size() + target2.getMessages().size());
+                            (long) 3,
+                            (long) (target1.getMessages().size() + target2.getMessages().size()));
         assertNull("releasedEntry should be cleared after requeue processed",
-                   consumer1.getQueueContext().getReleasedEntry());
+                          consumer1.getQueueContext().getReleasedEntry());
         assertNull("releasedEntry should be cleared after requeue processed",
-                   consumer2.getQueueContext().getReleasedEntry());
+                          consumer2.getQueueContext().getReleasedEntry());
     }
 
+    @Test
     public void testExclusiveConsumer() throws Exception
     {
         ServerMessage messageA = createMessage(new Long(24));
@@ -571,10 +598,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                                                           EnumSet.of(ConsumerOption.EXCLUSIVE, ConsumerOption.ACQUIRES,
                                                                      ConsumerOption.SEES_REQUEUES), 0);
 
-        assertEquals("Queue does not have consumer", 1,
-                     _queue.getConsumerCount());
-        assertEquals("Queue does not have active consumer", 1,
-                     _queue.getConsumerCountWithCredit());
+        assertEquals("Queue does not have consumer", (long) 1, (long) _queue.getConsumerCount());
+        assertEquals("Queue does not have active consumer", (long) 1, (long) _queue.getConsumerCountWithCredit());
 
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
@@ -582,7 +607,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         while(_consumerTarget.processPending());
 
         assertEquals("Queue context did not see expected message",
-                     messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
+                            messageA,
+                            _consumer.getQueueContext().getLastSeenEntry().getMessage());
 
         // Check we cannot add a second subscriber to the queue
         TestConsumerTarget subB = new TestConsumerTarget();
@@ -626,6 +652,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
      * Tests that dequeued message is not present in the list returned form
      * {@link AbstractQueue#getMessagesOnTheQueue()}
      */
+    @Test
     public void testGetMessagesOnTheQueueWithDequeuedEntry()
     {
         int messageNumber = 4;
@@ -641,7 +668,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         List<? extends QueueEntry> entries = _queue.getMessagesOnTheQueue();
 
         // assert queue entries
-        assertEquals(messageNumber - 1, entries.size());
+        assertEquals((long) (messageNumber - 1), (long) entries.size());
         int expectedId = 0;
         for (int i = 0; i < messageNumber - 1; i++)
         {
@@ -649,12 +676,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
             if (i == dequeueMessageIndex)
             {
                 assertFalse("Message with id " + dequeueMessageIndex
-                        + " was dequeued and should not be returned by method getMessagesOnTheQueue!",
-                        new Long(expectedId).equals(id));
+                                   + " was dequeued and should not be returned by method getMessagesOnTheQueue!",
+                                   new Long(expectedId).equals(id));
                 expectedId++;
             }
             assertEquals("Expected message with id " + expectedId + " but got message with id " + id,
-                    new Long(expectedId), id);
+                                new Long(expectedId),
+                                id);
             expectedId++;
         }
     }
@@ -663,6 +691,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
      * Tests that dequeued message is not present in the list returned form
      * {@link AbstractQueue#getMessagesOnTheQueue(QueueEntryFilter)}
      */
+    @Test
     public void testGetMessagesOnTheQueueByQueueEntryFilterWithDequeuedEntry()
     {
         int messageNumber = 4;
@@ -691,7 +720,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         });
 
         // assert entries on the queue
-        assertEquals(messageNumber - 1, entries.size());
+        assertEquals((long) (messageNumber - 1), (long) entries.size());
         int expectedId = 0;
         for (int i = 0; i < messageNumber - 1; i++)
         {
@@ -699,12 +728,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
             if (i == dequeueMessageIndex)
             {
                 assertFalse("Message with id " + dequeueMessageIndex
-                        + " was dequeued and should not be returned by method getMessagesOnTheQueue!",
-                        new Long(expectedId).equals(id));
+                                   + " was dequeued and should not be returned by method getMessagesOnTheQueue!",
+                                   new Long(expectedId).equals(id));
                 expectedId++;
             }
             assertEquals("Expected message with id " + expectedId + " but got message with id " + id,
-                    new Long(expectedId), id);
+                                new Long(expectedId),
+                                id);
             expectedId++;
         }
     }
@@ -713,6 +743,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
      * Tests that all messages including dequeued one are deleted from the queue
      * on invocation of {@link AbstractQueue#clearQueue()}
      */
+    @Test
     public void testClearQueueWithDequeuedEntry() throws Exception
     {
         int messageNumber = 4;
@@ -732,10 +763,10 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         // assert queue entries
         assertNotNull(entries);
-        assertEquals(0, entries.size());
+        assertEquals((long) 0, (long) entries.size());
     }
 
-
+    @Test
     public void testNotificationFiredOnEnqueue() throws Exception
     {
         QueueNotificationListener listener = mock(QueueNotificationListener .class);
@@ -752,6 +783,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         verify(listener, atLeastOnce()).notifyClients(eq(NotificationCheck.MESSAGE_COUNT_ALERT), eq(_queue), contains("Maximum count on queue threshold"));
     }
 
+    @Test
     public void testNotificationFiredAsync() throws Exception
     {
         QueueNotificationListener  listener = mock(QueueNotificationListener .class);
@@ -769,9 +801,11 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.checkMessageStatus();
 
         verify(listener, atLeastOnce()).notifyClients(eq(NotificationCheck.MESSAGE_COUNT_ALERT), eq(_queue), contains("Maximum count on queue threshold"));
+
     }
 
 
+    @Test
     public void testMaximumMessageTtl() throws Exception
     {
 
@@ -791,11 +825,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         long tooLateExpiration = System.currentTimeMillis() + 20000l;
 
-        assertTrue("TTL has not been overridden", tooLateExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
+        assertTrue("TTL has not been overridden",
+                          tooLateExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
 
         long acceptableExpiration = System.currentTimeMillis() + 5000l;
 
-        assertEquals("TTL has been incorrectly overriden", acceptableExpiration, getExpirationOnQueue(queue, 0l, acceptableExpiration));
+        assertEquals("TTL has been incorrectly overriden",
+                            acceptableExpiration,
+                            getExpirationOnQueue(queue, 0l, acceptableExpiration));
 
         // Test the scenarios where only the minimum TTL has been set
 
@@ -813,12 +850,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         long unacceptableExpiration = System.currentTimeMillis() + 5000l;
 
-        assertTrue("TTL has not been overridden", unacceptableExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
+        assertTrue("TTL has not been overridden",
+                          unacceptableExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
 
         acceptableExpiration = System.currentTimeMillis() + 20000l;
 
-        assertEquals("TTL has been incorrectly overridden", acceptableExpiration, getExpirationOnQueue(queue, 0l, acceptableExpiration));
-
+        assertEquals("TTL has been incorrectly overridden",
+                            acceptableExpiration,
+                            getExpirationOnQueue(queue, 0l, acceptableExpiration));
 
         // Test the scenarios where both the minimum and maximum TTL have been set
 
@@ -834,11 +873,9 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertEquals("TTL has been overridden incorrectly", 65000l, getExpirationOnQueue(queue, 50000l, 65000l));
 
         assertEquals("TTL has not been overridden", 60000l, getExpirationOnQueue(queue, 50000l, 55000l));
-
-
-
     }
 
+    @Test
     public void testOldestMessage()
     {
         Queue<?> queue = getQueue();
@@ -846,9 +883,10 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         queue.enqueue(createMessage(2l, (byte)4, Collections.singletonMap("sortKey", (Object) "M"), 100l), null, null);
         queue.enqueue(createMessage(3l, (byte)9, Collections.singletonMap("sortKey", (Object) "A"), 1000l), null, null);
 
-        assertEquals(10l,queue.getOldestMessageArrivalTime());
+        assertEquals(10l, queue.getOldestMessageArrivalTime());
     }
 
+    @Test
     public void testNoneOverflowPolicy()
     {
         Map<String,Object> attributes = new HashMap<>(_arguments);
@@ -868,12 +906,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         when(message.getArrivalTime()).thenReturn(200l);
         queue.enqueue(message, null, null);
 
-        assertEquals("Wrong number of messages in queue",3, queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue",300, queue.getQueueDepthBytes());
-        assertEquals("Wrong oldest message", 10l,
-                ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
+        assertEquals("Wrong number of messages in queue", (long) 3, (long) queue.getQueueDepthMessages());
+        assertEquals("Wrong size of messages in queue", (long) 300, queue.getQueueDepthBytes());
+        assertEquals("Wrong oldest message",
+                            10l,
+                            ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
     }
 
+    @Test
     public void testRingOverflowPolicyMaxCount()
     {
         Map<String,Object> attributes = new HashMap<>(_arguments);
@@ -899,12 +939,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         when(message.getArrivalTime()).thenReturn(1000l);
         queue.enqueue(message, null, null);
 
-        assertEquals("Wrong number of messages in queue",4, queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue",80, queue.getQueueDepthBytes());
-        assertEquals("Wrong oldest message", 50l,
-                ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
+        assertEquals("Wrong number of messages in queue", (long) 4, (long) queue.getQueueDepthMessages());
+        assertEquals("Wrong size of messages in queue", (long) 80, queue.getQueueDepthBytes());
+        assertEquals("Wrong oldest message",
+                            50l,
+                            ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
     }
 
+    @Test
     public void testRingOverflowPolicyMaxSize()
     {
         Map<String,Object> attributes = new HashMap<>(_arguments);
@@ -928,19 +970,21 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         when(message.getArrivalTime()).thenReturn(200l);
         queue.enqueue(message, null, null);
 
-        assertEquals("Wrong number of messages in queue",4, queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue",100, queue.getQueueDepthBytes());
+        assertEquals("Wrong number of messages in queue", (long) 4, (long) queue.getQueueDepthMessages());
+        assertEquals("Wrong size of messages in queue", (long) 100, queue.getQueueDepthBytes());
 
         message = createMessage(new Long(27), 20, 10);
         when(message.getArrivalTime()).thenReturn(500l);
         queue.enqueue(message, null, null);
 
-        assertEquals("Wrong number of messages in queue",3, queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue",90, queue.getQueueDepthBytes());
-        assertEquals("Wrong oldest message", 200l,
-                ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
+        assertEquals("Wrong number of messages in queue", (long) 3, (long) queue.getQueueDepthMessages());
+        assertEquals("Wrong size of messages in queue", (long) 90, queue.getQueueDepthBytes());
+        assertEquals("Wrong oldest message",
+                            200l,
+                            ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
     }
 
+    @Test
     public void testRingOverflowPolicyMessagesRejected()
     {
         Map<String,Object> attributes = new HashMap<>(_arguments);
@@ -971,6 +1015,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertTrue("Result should include not accepting route", result.isRejected());
     }
 
+    @Test
     public void testAlternateBindingValidationRejectsNonExistingDestination()
     {
         Map<String, Object> attributes = new HashMap<>(_arguments);
@@ -989,6 +1034,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         }
     }
 
+    @Test
     public void testAlternateBindingValidationRejectsSelf()
     {
         Map<String, String> alternateBinding = Collections.singletonMap(AlternateBinding.DESTINATION, _qname);
@@ -1004,6 +1050,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         }
     }
 
+    @Test
     public void testDurableQueueRejectsNonDurableAlternateBinding()
     {
         Map<String, Object> dlqAttributes = new HashMap<>(_arguments);
@@ -1028,6 +1075,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         }
     }
 
+    @Test
     public void testAlternateBinding()
     {
         Map<String, Object> attributes = new HashMap<>(_arguments);
@@ -1039,6 +1087,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertEquals("Unexpected alternate binding", _qname, newQueue.getAlternateBinding().getDestination());
     }
 
+    @Test
     public void testDeleteOfQueueSetAsAlternate()
     {
         Map<String, Object> attributes = new HashMap<>(_arguments);
@@ -1059,11 +1108,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertFalse(_queue.isDeleted());
     }
 
+    @Test
     public void testMoveMessages() throws Exception
     {
         doMoveOrCopyMessageTest(true);
     }
 
+    @Test
     public void testCopyMessages() throws Exception
     {
         doMoveOrCopyMessageTest(false);
@@ -1077,8 +1128,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(createMessage(2L), null, null);
         _queue.enqueue(createMessage(3L), null, null);
 
-        assertEquals("Unexpected number of messages on source queue", 3, _queue.getQueueDepthMessages());
-        assertEquals("Unexpected number of messages on target queue before test", 0, target.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on source queue",
+                            (long) 3,
+                            (long) _queue.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on target queue before test",
+                            (long) 0,
+                            (long) target.getQueueDepthMessages());
 
         if (move)
         {
@@ -1090,10 +1145,15 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         }
 
-        assertEquals("Unexpected number of messages on source queue after test", move ? 0 : 3, _queue.getQueueDepthMessages());
-        assertEquals("Unexpected number of messages on target queue after test", 3, target.getQueueDepthMessages());
+        final long expected = move ? 0 : 3;
+        assertEquals("Unexpected number of messages on source queue after test", expected,
+                            (long) _queue.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on target queue after test",
+                            (long) 3,
+                            (long) target.getQueueDepthMessages());
     }
 
+    @Test
     public void testCopyMessageRespectsQueueSizeLimits() throws Exception
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -1107,13 +1167,21 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(createMessage(2L), null, null);
         _queue.enqueue(createMessage(3L), null, null);
 
-        assertEquals("Unexpected number of messages on source queue", 3, _queue.getQueueDepthMessages());
-        assertEquals("Unexpected number of messages on target queue before test", 0, target.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on source queue",
+                            (long) 3,
+                            (long) _queue.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on target queue before test",
+                            (long) 0,
+                            (long) target.getQueueDepthMessages());
 
         _queue.copyMessages(target, null, "true = true", -1);
 
-        assertEquals("Unexpected number of messages on source queue after test", 3, _queue.getQueueDepthMessages());
-        assertEquals("Unexpected number of messages on target queue after test", 2, target.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on source queue after test",
+                            (long) 3,
+                            (long) _queue.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on target queue after test",
+                            (long) 2,
+                            (long) target.getQueueDepthMessages());
     }
 
     private long getExpirationOnQueue(final Queue<?> queue, long arrivalTime, long expiration)
@@ -1133,7 +1201,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                 return true;
             }
         });
-        assertEquals("Expected only one entry in the queue", 1, entries.size());
+        assertEquals("Expected only one entry in the queue", (long) 1, (long) entries.size());
 
         Long entryExpiration =
                 (Long) entries.get(0).getInstanceProperties().getProperty(InstanceProperties.Property.EXPIRATION);
@@ -1159,7 +1227,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         // make sure that all enqueued messages are on the queue
         List<? extends QueueEntry> entries = queue.getMessagesOnTheQueue();
-        assertEquals(messageNumber, entries.size());
+        assertEquals((long) messageNumber, (long) entries.size());
         for (int i = 0; i < messageNumber; i++)
         {
             assertEquals((long)i, (entries.get(i).getMessage()).getMessageNumber());
@@ -1216,12 +1284,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                                         List<MessageInstance> delivered)
     {
         assertEquals("Consumer did not receive the expected number of messages",
-                    expected.size(), delivered.size());
+                            (long) expected.size(),
+                            (long) delivered.size());
 
         for (MessageInstance msg : expected)
         {
             assertTrue("Consumer did not receive msg: "
-                    + msg.getMessage().getMessageNumber(), delivered.contains(msg));
+                              + msg.getMessage().getMessageNumber(), delivered.contains(msg));
         }
     }
 

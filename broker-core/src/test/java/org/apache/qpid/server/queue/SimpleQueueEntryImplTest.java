@@ -20,40 +20,37 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
+import org.junit.Before;
+
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-
 public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
 {
 
     private OrderedQueueEntryList queueEntryList;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, "SimpleQueueEntryImplTest");
-        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH");
+        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
         StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, virtualHost);
         queue.open();
         queueEntryList = queue.getEntries();
@@ -96,14 +93,13 @@ public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
         QueueEntry current = _queueEntry;
 
         current = current.getNextValidEntry();
-        assertSame("Unexpected current entry",_queueEntry2, current);
+        assertSame("Unexpected current entry", _queueEntry2, current);
 
         current = current.getNextValidEntry();
-        assertSame("Unexpected current entry",_queueEntry3, current);
+        assertSame("Unexpected current entry", _queueEntry3, current);
 
         current = current.getNextValidEntry();
         assertNull(current);
-
     }
 
     @Override
@@ -117,7 +113,7 @@ public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
         QueueEntry current = _queueEntry;
 
         current = current.getNextValidEntry();
-        assertSame("Unexpected current entry",_queueEntry3, current);
+        assertSame("Unexpected current entry", _queueEntry3, current);
 
         current = current.getNextValidEntry();
         assertNull(current);

@@ -20,6 +20,9 @@
 
 package org.apache.qpid.server.security.auth.sasl.crammd5;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -31,14 +34,18 @@ import java.security.NoSuchAlgorithmException;
 
 import javax.xml.bind.DatatypeConverter;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.database.HashedUser;
 import org.apache.qpid.server.security.auth.sasl.PasswordSource;
 import org.apache.qpid.server.security.auth.sasl.SaslUtil;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class CramMd5NegotiatorTest extends QpidTestCase
+public class CramMd5NegotiatorTest extends UnitTestBase
 {
     private static final String TEST_FQDN = "example.com";
     private static final String VALID_USERNAME = "testUser";
@@ -50,43 +57,45 @@ public class CramMd5NegotiatorTest extends QpidTestCase
     private PasswordSource _passwordSource;
     private PasswordCredentialManagingAuthenticationProvider<?> _authenticationProvider;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _passwordSource = mock(PasswordSource.class);
         when(_passwordSource.getPassword(eq(VALID_USERNAME))).thenReturn(VALID_USERPASSWORD);
         _authenticationProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
-        super.tearDown();
         if (_negotiator != null)
         {
             _negotiator.dispose();
         }
     }
 
+    @Test
     public void testHandleResponseCramMD5ValidCredentials() throws Exception
     {
         _negotiator = new CramMd5Negotiator(_authenticationProvider, TEST_FQDN, _passwordSource);
         doHandleResponseWithValidCredentials(CramMd5Negotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5InvalidPassword() throws Exception
     {
         _negotiator = new CramMd5Negotiator(_authenticationProvider, TEST_FQDN, _passwordSource);
         doHandleResponseWithInvalidPassword(CramMd5Negotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5InvalidUsername() throws Exception
     {
         _negotiator = new CramMd5Negotiator(_authenticationProvider, TEST_FQDN, _passwordSource);
         doHandleResponseWithInvalidUsername(CramMd5Negotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5HashedValidCredentials() throws Exception
     {
         hashPassword();
@@ -96,6 +105,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithValidCredentials(CramMd5HashedNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5HashedInvalidPassword() throws Exception
     {
         hashPassword();
@@ -105,6 +115,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithInvalidPassword(CramMd5HashedNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5HashedInvalidUsername() throws Exception
     {
         hashPassword();
@@ -114,6 +125,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithInvalidUsername(CramMd5HashedNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5HexValidCredentials() throws Exception
     {
         hashPassword();
@@ -123,6 +135,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithValidCredentials(CramMd5HexNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5HexInvalidPassword() throws Exception
     {
         hashPassword();
@@ -132,6 +145,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithInvalidPassword(CramMd5HexNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5HexInvalidUsername() throws Exception
     {
         hashPassword();
@@ -141,6 +155,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithInvalidUsername(CramMd5HexNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5Base64HexValidCredentials() throws Exception
     {
         base64Password();
@@ -150,6 +165,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithValidCredentials(CramMd5Base64HexNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5Base64HexInvalidPassword() throws Exception
     {
         base64Password();
@@ -159,6 +175,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithInvalidPassword(CramMd5Base64HexNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5Base64HexInvalidUsername() throws Exception
     {
         base64Password();
@@ -168,6 +185,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithInvalidUsername(CramMd5Base64HexNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5Base64HashedValidCredentials() throws Exception
     {
         base64Password();
@@ -177,6 +195,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithValidCredentials(CramMd5Base64HashedNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5Base64HashedInvalidPassword() throws Exception
     {
         base64Password();
@@ -186,6 +205,7 @@ public class CramMd5NegotiatorTest extends QpidTestCase
         doHandleResponseWithInvalidPassword(CramMd5Base64HashedNegotiator.MECHANISM);
     }
 
+    @Test
     public void testHandleResponseCramMD5Base64HashedInvalidUsername() throws Exception
     {
         base64Password();
@@ -198,61 +218,83 @@ public class CramMd5NegotiatorTest extends QpidTestCase
     private void doHandleResponseWithValidCredentials(final String mechanism) throws Exception
     {
         AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status", AuthenticationResult.AuthenticationStatus.CONTINUE, firstResult.getStatus());
+        assertEquals("Unexpected first result status",
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            firstResult.getStatus());
+
+
         assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
 
         byte[] responseBytes = SaslUtil.generateCramMD5ClientResponse(mechanism, VALID_USERNAME, new String(VALID_USERPASSWORD), firstResult.getChallenge());
 
         AuthenticationResult secondResult = _negotiator.handleResponse(responseBytes);
 
-        assertEquals("Unexpected second result status", AuthenticationResult.AuthenticationStatus.SUCCESS, secondResult.getStatus());
+        assertEquals("Unexpected second result status",
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            secondResult.getStatus());
         assertNull("Unexpected second result challenge", secondResult.getChallenge());
-        assertEquals("Unexpected second result main principal", VALID_USERNAME, secondResult.getMainPrincipal().getName());
+        assertEquals("Unexpected second result main principal",
+                            VALID_USERNAME,
+                            secondResult.getMainPrincipal().getName());
 
         verify(_passwordSource).getPassword(eq(VALID_USERNAME));
 
         AuthenticationResult thirdResult =  _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected third result status", AuthenticationResult.AuthenticationStatus.ERROR, thirdResult.getStatus());
+        assertEquals("Unexpected third result status",
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            thirdResult.getStatus());
     }
 
     private void doHandleResponseWithInvalidPassword(final String mechanism) throws Exception
     {
         AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status", AuthenticationResult.AuthenticationStatus.CONTINUE, firstResult.getStatus());
+        assertEquals("Unexpected first result status",
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            firstResult.getStatus());
         assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
 
         byte[] responseBytes = SaslUtil.generateCramMD5ClientResponse(mechanism, VALID_USERNAME, INVALID_USERPASSWORD, firstResult.getChallenge());
 
         AuthenticationResult secondResult = _negotiator.handleResponse(responseBytes);
 
-        assertEquals("Unexpected second result status", AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus());
+        assertEquals("Unexpected second result status",
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
         assertNull("Unexpected second result challenge", secondResult.getChallenge());
-        assertNull("Unexpected second result main principal",  secondResult.getMainPrincipal());
+        assertNull("Unexpected second result main principal", secondResult.getMainPrincipal());
 
         verify(_passwordSource).getPassword(eq(VALID_USERNAME));
 
         AuthenticationResult thirdResult =  _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected third result status", AuthenticationResult.AuthenticationStatus.ERROR, thirdResult.getStatus());
+        assertEquals("Unexpected third result status",
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            thirdResult.getStatus());
     }
 
     private void doHandleResponseWithInvalidUsername(final String mechanism) throws Exception
     {
         AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status", AuthenticationResult.AuthenticationStatus.CONTINUE, firstResult.getStatus());
+        assertEquals("Unexpected first result status",
+                            AuthenticationResult.AuthenticationStatus.CONTINUE,
+                            firstResult.getStatus());
         assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
 
         byte[] responseBytes = SaslUtil.generateCramMD5ClientResponse(mechanism, INVALID_USERNAME, new String(VALID_USERPASSWORD), firstResult.getChallenge());
 
         AuthenticationResult secondResult = _negotiator.handleResponse(responseBytes);
 
-        assertEquals("Unexpected second result status", AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus());
+        assertEquals("Unexpected second result status",
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            secondResult.getStatus());
         assertNull("Unexpected second result challenge", secondResult.getChallenge());
-        assertNull("Unexpected second result main principal",  secondResult.getMainPrincipal());
+        assertNull("Unexpected second result main principal", secondResult.getMainPrincipal());
 
         verify(_passwordSource).getPassword(eq(INVALID_USERNAME));
 
         AuthenticationResult thirdResult =  _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected third result status", AuthenticationResult.AuthenticationStatus.ERROR, thirdResult.getStatus());
+        assertEquals("Unexpected third result status",
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            thirdResult.getStatus());
     }
 
     private void hashPassword()

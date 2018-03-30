@@ -24,21 +24,39 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 
-import org.apache.qpid.disttest.controller.ResultsForAllTests;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class AggregatorTest extends QpidTestCase
+import org.apache.qpid.disttest.controller.ResultsForAllTests;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class AggregatorTest extends UnitTestBase
 {
     private Aggregator _aggregator = new Aggregator();
     private TestResultAggregator _testResultAggregator = mock(TestResultAggregator.class);
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _aggregator.setTestResultAggregator(_testResultAggregator);
     }
 
+    @Test
     public void testAggregrateManyTestResults() throws Exception
     {
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
@@ -50,7 +68,7 @@ public class AggregatorTest extends QpidTestCase
         when(_testResultAggregator.aggregateTestResult(testResult2)).thenReturn(mock(AggregatedTestResult.class));
 
         ResultsForAllTests aggregatedResultsForAllTests = _aggregator.aggregateResults(resultsForAllTests);
-        assertEquals(2, aggregatedResultsForAllTests.getTestResults().size());
+        assertEquals((long) 2, (long) aggregatedResultsForAllTests.getTestResults().size());
 
         verify(_testResultAggregator).aggregateTestResult(testResult1);
         verify(_testResultAggregator).aggregateTestResult(testResult2);

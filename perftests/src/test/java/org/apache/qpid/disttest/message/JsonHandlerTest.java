@@ -24,20 +24,37 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.client.property.ListPropertyValue;
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.json.JsonHandler;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class JsonHandlerTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class JsonHandlerTest extends UnitTestBase
 {
     private JsonHandler _jsonHandler = null;
     private SendChristmasCards _testCommand = null;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _jsonHandler = new JsonHandler();
 
@@ -45,15 +62,20 @@ public class JsonHandlerTest extends QpidTestCase
         _testCommand._persons = Arrays.asList(new Person("Phil"), new Person("Andrew"));
     }
 
+    @Test
     public void testMarshallUnmarshall() throws Exception
     {
         final String jsonString = _jsonHandler.marshall(_testCommand);
 
         final SendChristmasCards unmarshalledCommand = _jsonHandler.unmarshall(jsonString, SendChristmasCards.class);
 
-        assertEquals("Unmarshalled command should be equal to the original object", _testCommand, unmarshalledCommand);
+        assertEquals("Unmarshalled command should be equal to the original object",
+                            _testCommand,
+                            unmarshalledCommand);
+
     }
 
+    @Test
     public void testSimplePropertyValueMarshallUnmarshall() throws Exception
     {
         String json = "{'_messageProperties': {'test': 1}}";
@@ -62,17 +84,21 @@ public class JsonHandlerTest extends QpidTestCase
         Map<String, PropertyValue> properties = unmarshalledCommand.getMessageProperties();
         assertNotNull("Properties should not be null", properties);
         assertFalse("Properties should not be empty", properties.isEmpty());
-        assertEquals("Unexpected properties size", 1, properties.size());
+        assertEquals("Unexpected properties size", (long) 1, (long) properties.size());
         PropertyValue testProperty = properties.get("test");
         assertNotNull("Unexpected property test", testProperty);
-        assertTrue("Unexpected property test", testProperty.getValue() instanceof Number);
-        assertEquals("Unexpected property value", 1, ((Number)testProperty.getValue()).intValue());
+        final boolean condition = testProperty.getValue() instanceof Number;
+        assertTrue("Unexpected property test", condition);
+        assertEquals("Unexpected property value", (long) 1, (long) ((Number) testProperty.getValue()).intValue());
 
         String newJson =_jsonHandler.marshall(unmarshalledCommand);
         final TestCommand newUnmarshalledCommand = _jsonHandler.unmarshall(newJson, TestCommand.class);
-        assertEquals("Unmarshalled command should be equal to the original object", unmarshalledCommand, newUnmarshalledCommand);
+        assertEquals("Unmarshalled command should be equal to the original object",
+                            unmarshalledCommand,
+                            newUnmarshalledCommand);
     }
 
+    @Test
     public void testGeneratorDesrialization() throws Exception
     {
         String json = "{'_messageProperties': {'test': 1, 'generator': {'@def': 'list',  '_cyclic': false, '_items': ['first', " +
@@ -82,14 +108,16 @@ public class JsonHandlerTest extends QpidTestCase
         Map<String, PropertyValue> properties = unmarshalledCommand.getMessageProperties();
         assertNotNull("Properties should not be null", properties);
         assertFalse("Properties should not be empty", properties.isEmpty());
-        assertEquals("Unexpected properties size", 2, properties.size());
+        assertEquals("Unexpected properties size", (long) 2, (long) properties.size());
         PropertyValue testProperty = properties.get("test");
         assertNotNull("Unexpected property test", testProperty);
-        assertTrue("Unexpected property test", testProperty.getValue() instanceof Number);
-        assertEquals("Unexpected property value", 1, ((Number)testProperty.getValue()).intValue());
+        final boolean condition1 = testProperty.getValue() instanceof Number;
+        assertTrue("Unexpected property test", condition1);
+        assertEquals("Unexpected property value", (long) 1, (long) ((Number) testProperty.getValue()).intValue());
         Object generatorObject = properties.get("generator");
 
-        assertTrue("Unexpected generator object : " + generatorObject, generatorObject instanceof ListPropertyValue);
+        final boolean condition = generatorObject instanceof ListPropertyValue;
+        assertTrue("Unexpected generator object : " + generatorObject, condition);
 
         PropertyValue generator = (PropertyValue)generatorObject;
         assertEquals("Unexpected generator value", "first", generator.getValue());
@@ -100,7 +128,9 @@ public class JsonHandlerTest extends QpidTestCase
 
         String newJson =_jsonHandler.marshall(unmarshalledCommand);
         final TestCommand newUnmarshalledCommand = _jsonHandler.unmarshall(newJson, TestCommand.class);
-        assertEquals("Unmarshalled command should be equal to the original object", unmarshalledCommand, newUnmarshalledCommand);
+        assertEquals("Unmarshalled command should be equal to the original object",
+                            unmarshalledCommand,
+                            newUnmarshalledCommand);
     }
 
     /**

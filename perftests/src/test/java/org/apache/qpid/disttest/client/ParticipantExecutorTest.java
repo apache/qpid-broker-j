@@ -31,9 +31,25 @@ import org.mockito.InOrder;
 
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.message.ParticipantResult;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ParticipantExecutorTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ParticipantExecutorTest extends UnitTestBase
 {
     private static final ResultHasError HAS_ERROR = new ResultHasError();
     private static final String CLIENT_NAME = "CLIENT_NAME";
@@ -42,10 +58,9 @@ public class ParticipantExecutorTest extends QpidTestCase
     private Participant _participant = null;
     private ResultReporter _resultReporter;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _participant = mock(Participant.class);
 
@@ -54,6 +69,7 @@ public class ParticipantExecutorTest extends QpidTestCase
         _resultReporter = mock(ResultReporter.class);
     }
 
+    @Test
     public void testStart() throws Exception
     {
         _participantExecutor.start(CLIENT_NAME, _resultReporter);
@@ -63,6 +79,7 @@ public class ParticipantExecutorTest extends QpidTestCase
         inOrder.verify(_participant).releaseResources();
     }
 
+    @Test
     public void testParticipantThrowsException() throws Exception
     {
         doThrow(DistributedTestException.class).when(_participant).startTest(CLIENT_NAME, _resultReporter);

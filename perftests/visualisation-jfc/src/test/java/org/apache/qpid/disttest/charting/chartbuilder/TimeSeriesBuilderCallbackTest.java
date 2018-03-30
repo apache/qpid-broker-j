@@ -28,12 +28,30 @@ import java.util.TimeZone;
 
 import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
 import org.apache.qpid.disttest.charting.seriesbuilder.SeriesRow;
-import org.apache.qpid.test.utils.QpidTestCase;
+
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.time.TimeSeriesDataItem;
+import org.junit.Assert;
 
-public class TimeSeriesBuilderCallbackTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class TimeSeriesBuilderCallbackTest extends UnitTestBase
 {
     private static final String SERIES_LEGEND = "mySeriesLegend";
 
@@ -42,10 +60,9 @@ public class TimeSeriesBuilderCallbackTest extends QpidTestCase
     private Date[] _dates;
     private double[] _values;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT+00:00"));
 
         calendar.set(2013, Calendar.JANUARY, 1);
@@ -62,6 +79,7 @@ public class TimeSeriesBuilderCallbackTest extends QpidTestCase
     }
 
 
+    @Test
     public void testAddPointToSeries()
     {
         TimeSeriesHolder timeSeriesHolder = new TimeSeriesHolder();

@@ -23,6 +23,8 @@ package org.apache.qpid.server.logging.subjects;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.junit.Assert;
+
 import org.apache.qpid.server.session.AMQPSession;
 
 /**
@@ -32,7 +34,7 @@ public class ChannelLogSubjectTest extends ConnectionLogSubjectTest
 {
     private final int _channelID = 1;
 
-    @Override
+    @org.junit.Before
     public void setUp() throws Exception
     {
         super.setUp();
@@ -56,8 +58,7 @@ public class ChannelLogSubjectTest extends ConnectionLogSubjectTest
         super.validateLogStatement(message);
 
         // Finally check that the channel identifier is correctly added
-        assertTrue("Channel 1 identifier not found as part of Subject",
-                   message.contains(")/ch:1]"));
+        Assert.assertTrue("Channel 1 identifier not found as part of Subject", message.contains(")/ch:1]"));
     }
 
 }

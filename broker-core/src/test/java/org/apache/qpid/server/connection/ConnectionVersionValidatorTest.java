@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.connection;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
@@ -35,15 +37,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ConnectionVersionValidatorTest extends QpidTestCase
+public class ConnectionVersionValidatorTest extends UnitTestBase
 {
 
     private QueueManagingVirtualHost _virtualHostMock;
@@ -51,10 +56,9 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
     private EventLogger _eventLoggerMock;
     private ConnectionVersionValidator _connectionValidator;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _connectionValidator = new ConnectionVersionValidator();
         _virtualHostMock = mock(QueueManagingVirtualHost.class);
@@ -75,6 +79,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testInvalidRegex()
     {
         Map<String, List<String>> contextValues = new HashMap<>();
@@ -86,17 +91,20 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
         // TODO: We should verify that the invalid regex is logged
     }
 
+    @Test
     public void testNullClientDefaultAllowed()
     {
         assertTrue(_connectionValidator.validateConnectionCreation(_connectionMock, _virtualHostMock));
     }
 
+    @Test
     public void testClientDefaultAllowed()
     {
         when(_connectionMock.getClientVersion()).thenReturn("foo");
         assertTrue(_connectionValidator.validateConnectionCreation(_connectionMock, _virtualHostMock));
     }
 
+    @Test
     public void testEmptyList()
     {
         Map<String, List<String>> contextValues = new HashMap<>();
@@ -107,6 +115,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
         verify(_eventLoggerMock, never()).message(any(LogMessage.class));
     }
 
+    @Test
     public void testEmptyString()
     {
         Map<String, List<String>> contextValues = new HashMap<>();
@@ -121,6 +130,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
         verify(_eventLoggerMock).message(ConnectionMessages.CLIENT_VERSION_REJECT(null));
     }
 
+    @Test
     public void testClientRejected()
     {
         when(_connectionMock.getClientVersion()).thenReturn("foo");
@@ -131,6 +141,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
         verify(_eventLoggerMock).message(ConnectionMessages.CLIENT_VERSION_REJECT("foo"));
     }
 
+    @Test
     public void testClientLogged()
     {
         when(_connectionMock.getClientVersion()).thenReturn("foo");
@@ -141,6 +152,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
         verify(_eventLoggerMock).message(ConnectionMessages.CLIENT_VERSION_LOG("foo"));
     }
 
+    @Test
     public void testAllowedTakesPrecedence()
     {
         when(_connectionMock.getClientVersion()).thenReturn("foo");
@@ -153,6 +165,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
         verify(_eventLoggerMock, never()).message(any(LogMessage.class));
     }
 
+    @Test
     public void testLoggedTakesPrecedenceOverRejected()
     {
         when(_connectionMock.getClientVersion()).thenReturn("foo");
@@ -164,6 +177,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
         verify(_eventLoggerMock).message(ConnectionMessages.CLIENT_VERSION_LOG("foo"));
     }
 
+    @Test
     public void testRegex()
     {
         Map<String, List<String>> contextValues = new HashMap<>();
@@ -181,6 +195,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
         verify(_eventLoggerMock, never()).message(ConnectionMessages.CLIENT_VERSION_LOG("baz"));
     }
 
+    @Test
     public void testRegexLists()
     {
         Map<String, List<String>> contextValues = new HashMap<>();

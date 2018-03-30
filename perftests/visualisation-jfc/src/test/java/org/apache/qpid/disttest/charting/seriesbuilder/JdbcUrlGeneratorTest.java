@@ -21,11 +21,30 @@ package org.apache.qpid.disttest.charting.seriesbuilder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class JdbcUrlGeneratorTest extends QpidTestCase
+import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class JdbcUrlGeneratorTest extends UnitTestBase
 {
+    @Test
     public void testGetJdbcUrlWithoutProvidingAUrlReturnsCsvUrlWithCorrectDirectory()
     {
         JdbcUrlGenerator jdbcUrlGenerator = new JdbcUrlGenerator(null);
@@ -37,6 +56,7 @@ public class JdbcUrlGeneratorTest extends QpidTestCase
         assertEquals("jdbc:relique:csv:mydir", jdbcUrl);
     }
 
+    @Test
     public void testGetJdbcUrlReturnsProvidedUrl()
     {
         String urlTemplate = "urlTemplate";
@@ -48,6 +68,7 @@ public class JdbcUrlGeneratorTest extends QpidTestCase
         assertEquals(urlTemplate, jdbcUrl);
     }
 
+    @Test
     public void testGetJdbcUrlThrowsExceptionIfUrlProvidedAndSeriesDirectorySpecified()
     {
         String urlTemplate = "urlTemplate";
@@ -66,6 +87,7 @@ public class JdbcUrlGeneratorTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testGetJdbcUrlThrowsExceptionWithoutAProvidedUrlOrSeriesDirectory()
     {
         JdbcUrlGenerator jdbcUrlGenerator = new JdbcUrlGenerator(null);

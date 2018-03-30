@@ -29,14 +29,32 @@ import java.io.InputStream;
 import java.util.Scanner;
 
 import org.apache.qpid.disttest.charting.definition.ChartingDefinition;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.server.util.FileUtils;
+
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.general.DefaultPieDataset;
+import org.junit.Assert;
 
-public class ChartWriterTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ChartWriterTest extends UnitTestBase
 {
     private JFreeChart _chart1;
     private JFreeChart _chart2;
@@ -44,10 +62,9 @@ public class ChartWriterTest extends QpidTestCase
     private File _chartDir;
     private ChartWriter _writer;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         DefaultPieDataset dataset = new DefaultPieDataset();
         dataset.setValue("a", 1);
         dataset.setValue("b", 2);
@@ -61,6 +78,7 @@ public class ChartWriterTest extends QpidTestCase
         _writer.setOutputDirectory(_chartDir);
     }
 
+    @Test
     public void testWriteChartToFileSystem()
     {
         ChartingDefinition chartDef1 = mock(ChartingDefinition.class);
@@ -74,6 +92,7 @@ public class ChartWriterTest extends QpidTestCase
         assertTrue("chart1 png does not exist", chart1File.exists());
     }
 
+    @Test
     public void testWriteHtmlSummaryToFileSystemOverwritingExistingFile() throws Exception
     {
         ChartingDefinition chartDef1 = mock(ChartingDefinition.class);
@@ -99,6 +118,7 @@ public class ChartWriterTest extends QpidTestCase
         assertEquals("HTML summary file has unexpected content", expectedSummaryContent, actualSummaryContent);
     }
 
+    @Test
     public void testWriteHtmlSummaryToFileSystemDoesNothingIfLessThanTwoCharts()
     {
         ChartingDefinition chartDef1 = mock(ChartingDefinition.class);
@@ -111,8 +131,8 @@ public class ChartWriterTest extends QpidTestCase
 
         _writer.writeHtmlSummaryToFileSystem("Performance Charts");
 
-        assertFalse("Only one chart generated so no summary file should have been written",
-                summaryFile.exists());
+        assertFalse("Only one chart generated so no summary file should have been written", summaryFile.exists());
+
     }
 
     private void writeDummyContentToSummaryFileToEnsureItGetsOverwritten(File summaryFile) throws Exception

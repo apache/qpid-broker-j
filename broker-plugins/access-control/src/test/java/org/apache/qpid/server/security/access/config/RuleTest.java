@@ -18,14 +18,19 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import org.junit.Test;
 
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.apache.qpid.test.utils.QpidTestCase;
-
-public class RuleTest extends QpidTestCase
+public class RuleTest extends UnitTestBase
 {
+    @Test
     public void testEqualsAndHashCode()
     {
         AclAction aclAction = mock(AclAction.class);
@@ -42,7 +47,8 @@ public class RuleTest extends QpidTestCase
         assertTrue(rule.hashCode() == equalRule.hashCode());
 
         assertFalse("Different identity should cause rules to be unequal",
-                    rule.equals(new Rule("identity2", aclAction, allow)));
+                           rule.equals(new Rule("identity2", aclAction, allow)));
+
 
         final AclAction differentAclAction = mock(AclAction.class);
         Action action = new Action(LegacyOperation.PURGE);
@@ -50,9 +56,9 @@ public class RuleTest extends QpidTestCase
         when(aclAction.getAction()).thenReturn(action);
         when(differentAclAction.getAction()).thenReturn(differentAction);
         assertFalse("Different action should cause rules to be unequal",
-                    rule.equals(new Rule(identity, differentAclAction, allow)));
+                           rule.equals(new Rule(identity, differentAclAction, allow)));
 
         assertFalse("Different permission should cause rules to be unequal",
-                rule.equals(new Rule(identity, aclAction, RuleOutcome.DENY)));
+                           rule.equals(new Rule(identity, aclAction, RuleOutcome.DENY)));
     }
 }

@@ -19,6 +19,11 @@
 package org.apache.qpid.server.queue;
 
 import static org.apache.qpid.server.message.MessageInstance.NON_CONSUMER_ACQUIRED_STATE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
@@ -27,34 +32,31 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
-import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.message.MessageInstance.StealableConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageInstance.UnstealableConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
+
 
 /**
  * Tests for {@link QueueEntryImpl}
  */
-public abstract class QueueEntryImplTestBase extends QpidTestCase
+public abstract class QueueEntryImplTestBase extends UnitTestBase
 {
     // tested entry
     protected QueueEntryImpl _queueEntry;
@@ -64,13 +66,16 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
 
     public abstract QueueEntryImpl getQueueEntryImpl(int msgId);
 
+    @Test
     public abstract void testCompareTo();
 
+    @Test
     public abstract void testTraverseWithNoDeletedEntries();
 
+    @Test
     public abstract void testTraverseWithDeletedEntries();
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         _queueEntry = getQueueEntryImpl(1);
@@ -78,13 +83,16 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         _queueEntry3 = getQueueEntryImpl(3);
     }
 
+    @Test
     public void testAcquire()
     {
         assertTrue("Queue entry should be in AVAILABLE state before invoking of acquire method",
-                _queueEntry.isAvailable());
+                          _queueEntry.isAvailable());
+
         acquire();
     }
 
+    @Test
     public void testDelete()
     {
         delete();
@@ -101,7 +109,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         acquire();
         _queueEntry.release();
         assertTrue("Queue entry should be in AVAILABLE state after invoking of release method",
-                   _queueEntry.isAvailable());
+                          _queueEntry.isAvailable());
     }
 
     /**
@@ -110,12 +118,13 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
      * Invoking release on deleted entry should not have any effect on its
      * state.
      */
+    @Test
     public void testReleaseDeleted()
     {
         delete();
         _queueEntry.release();
         assertTrue("Invoking of release on entry in DELETED state should not have any effect",
-                _queueEntry.isDeleted());
+                          _queueEntry.isDeleted());
     }
 
     /**
@@ -126,7 +135,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         _queueEntry.acquire();
         _queueEntry.delete();
         assertTrue("Queue entry should be in DELETED state after invoking of delete method",
-                _queueEntry.isDeleted());
+                          _queueEntry.isDeleted());
     }
 
 
@@ -137,7 +146,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
     {
         _queueEntry.acquire(newConsumer());
         assertTrue("Queue entry should be in ACQUIRED state after invoking of acquire method",
-                _queueEntry.isAcquired());
+                          _queueEntry.isAcquired());
     }
 
     private QueueConsumer newConsumer()
@@ -153,6 +162,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         return consumer;
     }
 
+    @Test
     public void testStateChanges()
     {
         QueueConsumer consumer = newConsumer();
@@ -172,6 +182,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
                                                  eq(NON_CONSUMER_ACQUIRED_STATE));
     }
 
+    @Test
     public void testLocking()
     {
         QueueConsumer consumer = newConsumer();
@@ -179,16 +190,19 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
 
         _queueEntry.acquire(consumer);
         assertTrue("Queue entry should be in ACQUIRED state after invoking of acquire method",
-                   _queueEntry.isAcquired());
+                          _queueEntry.isAcquired());
 
-        assertFalse("Acquisition should initially be locked",_queueEntry.removeAcquisitionFromConsumer(consumer));
+        assertFalse("Acquisition should initially be locked",
+                           _queueEntry.removeAcquisitionFromConsumer(consumer));
+
         assertTrue("Should be able to unlock locked queue entry", _queueEntry.makeAcquisitionStealable());
         assertFalse("Acquisition should not be able to be removed from the wrong consumer",
-                    _queueEntry.removeAcquisitionFromConsumer(consumer2));
+                           _queueEntry.removeAcquisitionFromConsumer(consumer2));
         assertTrue("Acquisition should be able to be removed once unlocked",
-                   _queueEntry.removeAcquisitionFromConsumer(consumer));
+                          _queueEntry.removeAcquisitionFromConsumer(consumer));
         assertTrue("Queue Entry should still be acquired", _queueEntry.isAcquired());
-        assertFalse("Queue Entry should not be marked as acquired by a consumer", _queueEntry.acquiredByConsumer());
+        assertFalse("Queue Entry should not be marked as acquired by a consumer",
+                           _queueEntry.acquiredByConsumer());
 
         _queueEntry.release();
 
@@ -196,17 +210,20 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
 
         _queueEntry.acquire(consumer);
         assertTrue("Queue entry should be in ACQUIRED state after invoking of acquire method",
-                   _queueEntry.isAcquired());
+                          _queueEntry.isAcquired());
 
-        assertFalse("Acquisition should initially be locked",_queueEntry.removeAcquisitionFromConsumer(consumer));
-        assertTrue("Should be able to unlock locked queue entry",_queueEntry.makeAcquisitionStealable());
-        assertTrue("Should be able to lock queue entry",_queueEntry.makeAcquisitionUnstealable(consumer));
-        assertFalse("Acquisition should not be able to be hijacked when locked",_queueEntry.removeAcquisitionFromConsumer(consumer));
+        assertFalse("Acquisition should initially be locked",
+                           _queueEntry.removeAcquisitionFromConsumer(consumer));
+        assertTrue("Should be able to unlock locked queue entry", _queueEntry.makeAcquisitionStealable());
+        assertTrue("Should be able to lock queue entry", _queueEntry.makeAcquisitionUnstealable(consumer));
+        assertFalse("Acquisition should not be able to be hijacked when locked",
+                           _queueEntry.removeAcquisitionFromConsumer(consumer));
 
         _queueEntry.delete();
         assertTrue("Locked queue entry should be able to be deleted", _queueEntry.isDeleted());
     }
 
+    @Test
     public void testLockAcquisitionOwnership()
     {
         QueueConsumer consumer1 = newConsumer();
@@ -252,11 +269,13 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
      * Tests rejecting a queue entry records the Consumer ID
      * for later verification by isRejectedBy(consumerId).
      */
+    @Test
     public void testRejectAndRejectedBy()
     {
         QueueConsumer sub = newConsumer();
 
-        assertFalse("Queue entry should not yet have been rejected by the consumer", _queueEntry.isRejectedBy(sub));
+        assertFalse("Queue entry should not yet have been rejected by the consumer",
+                           _queueEntry.isRejectedBy(sub));
         assertFalse("Queue entry should not yet have been acquired by a consumer", _queueEntry.isAcquired());
 
         //acquire, reject, and release the message using the consumer
@@ -270,7 +289,8 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         //repeat rejection using a second consumer
         QueueConsumer sub2 = newConsumer();
 
-        assertFalse("Queue entry should not yet have been rejected by the consumer", _queueEntry.isRejectedBy(sub2));
+        assertFalse("Queue entry should not yet have been rejected by the consumer",
+                           _queueEntry.isRejectedBy(sub2));
         assertTrue("Queue entry should have been able to be acquired", _queueEntry.acquire(sub2));
         _queueEntry.reject(sub2);
 
@@ -282,14 +302,15 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
     /**
      * Tests if entries in DEQUEUED or DELETED state are not returned by getNext method.
      */
+    @Test
     public void testGetNext() throws Exception
     {
         int numberOfEntries = 5;
         QueueEntryImpl[] entries = new QueueEntryImpl[numberOfEntries];
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
-        queueAttributes.put(Queue.NAME, getName());
-        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH");
+        queueAttributes.put(Queue.NAME, getTestName());
+        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
         StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, virtualHost);
         queue.open();
         OrderedQueueEntryList queueEntryList = queue.getEntries();
@@ -331,7 +352,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         entries[2].delete();
 
         QueueEntry next = entries[0].getNextValidEntry();
-        assertEquals("expected forth entry",entries[3], next);
+        assertEquals("expected forth entry", entries[3], next);
         next = next.getNextValidEntry();
         assertEquals("expected fifth entry", entries[4], next);
         next = next.getNextValidEntry();

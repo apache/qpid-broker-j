@@ -72,9 +72,36 @@ public class TestFileUtils
         return createTempFile(testcase, SUFFIX);
     }
 
+    public static File createTempFile(UnitTestBase testcase)
+    {
+        return createTempFile(testcase, SUFFIX);
+    }
+
     public static File createTempFile(TestCase testcase, String suffix)
     {
         String prefix = testcase.getClass().getSimpleName() + "-" + testcase.getName();
+
+        File tmpFile;
+        try
+        {
+            tmpFile = File.createTempFile(prefix, suffix);
+            tmpFile.deleteOnExit();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(String.format(
+                    "Cannot create temporary file with prefix '%s' and suffix '%s'. ${java.io.tmpdir}='%s'",
+                    prefix,
+                    suffix,
+                    System.getProperty("java.io.tmpdir")), e);
+        }
+
+        return tmpFile;
+    }
+
+    public static File createTempFile(UnitTestBase testcase, String suffix)
+    {
+        String prefix = testcase.getClass().getSimpleName() + "-" + testcase.getTestName();
 
         File tmpFile;
         try
@@ -116,11 +143,42 @@ public class TestFileUtils
         return dst;
     }
 
+    public static File createTempFileFromResource(UnitTestBase testCase, String resourceName)
+    {
+        File dst = createTempFile(testCase, resourceName);
+        InputStream in = testCase.getClass().getResourceAsStream(resourceName);
+        try
+        {
+            copy(in, dst);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Cannot copy resource " + resourceName +
+                                       " to temp file " + dst.getAbsolutePath(), e);
+        }
+        dst.deleteOnExit();
+        return dst;
+    }
+
     /**
      * Creates a temporary file for given test with given suffix in file name.
      * The given content is stored in the file using UTF-8 encoding.
      */
     public static File createTempFile(TestCase testcase, String suffix, String content)
+    {
+        File file = createTempFile(testcase, suffix);
+        if (content != null)
+        {
+            saveTextContentInFile(content, file);
+        }
+        return file;
+    }
+
+    /**
+     * Creates a temporary file for given test with given suffix in file name.
+     * The given content is stored in the file using UTF-8 encoding.
+     */
+    public static File createTempFile(UnitTestBase testcase, String suffix, String content)
     {
         File file = createTempFile(testcase, suffix);
         if (content != null)

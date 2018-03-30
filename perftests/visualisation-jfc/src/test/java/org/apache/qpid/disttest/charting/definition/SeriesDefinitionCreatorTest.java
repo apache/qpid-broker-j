@@ -28,9 +28,26 @@ import static org.apache.qpid.disttest.charting.definition.SeriesDefinitionCreat
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Assert;
 
-public class SeriesDefinitionCreatorTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class SeriesDefinitionCreatorTest extends UnitTestBase
 {
     private static final String SYSTEM_PROPERTY_NAME = "SeriesDefinitionProp";
     private static final String TEST_SERIES_1_SELECT_STATEMENT = "SERIES_1_SELECT_STATEMENT";
@@ -50,18 +67,18 @@ public class SeriesDefinitionCreatorTest extends QpidTestCase
 
     private SeriesDefinitionCreator _seriesDefinitionLoader = new SeriesDefinitionCreator();
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
     }
 
+    @Test
     public void testOneSeriesDefinition() throws Exception
     {
         createTestProperties(1, TEST_SERIES_1_SELECT_STATEMENT, TEST_SERIES_1_LEGEND, TEST_SERIES_1_DIR, TEST_SERIES_1_COLOUR_NAME, TEST_SERIES_1_STROKE_WIDTH);
 
         List<SeriesDefinition> definitions = _seriesDefinitionLoader.createFromProperties(_properties);
-        assertEquals(1, definitions.size());
+        assertEquals((long) 1, (long) definitions.size());
 
         SeriesDefinition definition = definitions.get(0);
         assertEquals(TEST_SERIES_1_SELECT_STATEMENT, definition.getSeriesStatement());
@@ -71,13 +88,14 @@ public class SeriesDefinitionCreatorTest extends QpidTestCase
         assertEquals(TEST_SERIES_1_STROKE_WIDTH, definition.getStrokeWidth());
     }
 
+    @Test
     public void testTwoSeriesDefinitions() throws Exception
     {
         createTestProperties(1, TEST_SERIES_1_SELECT_STATEMENT, TEST_SERIES_1_LEGEND, TEST_SERIES_1_DIR, TEST_SERIES_1_COLOUR_NAME, TEST_SERIES_1_STROKE_WIDTH);
         createTestProperties(2, TEST_SERIES_2_SELECT_STATEMENT, TEST_SERIES_2_LEGEND, TEST_SERIES_2_DIR, null, null);
 
         List<SeriesDefinition> definitions = _seriesDefinitionLoader.createFromProperties(_properties);
-        assertEquals(2, definitions.size());
+        assertEquals((long) 2, (long) definitions.size());
 
         SeriesDefinition seriesDefinition1 = definitions.get(0);
         assertEquals(TEST_SERIES_1_SELECT_STATEMENT, seriesDefinition1.getSeriesStatement());
@@ -90,22 +108,24 @@ public class SeriesDefinitionCreatorTest extends QpidTestCase
         assertEquals(TEST_SERIES_2_DIR, seriesDefinition2.getSeriesDirectory());
     }
 
+    @Test
     public void testNonSequentialSeriesDefinitionsIgnored() throws Exception
     {
         createTestProperties(1, TEST_SERIES_1_SELECT_STATEMENT, TEST_SERIES_1_LEGEND, TEST_SERIES_1_DIR, TEST_SERIES_1_COLOUR_NAME, TEST_SERIES_1_STROKE_WIDTH);
         createTestProperties(3, TEST_SERIES_2_SELECT_STATEMENT, TEST_SERIES_2_LEGEND, TEST_SERIES_2_DIR, null, null);
 
         List<SeriesDefinition> definitions = _seriesDefinitionLoader.createFromProperties(_properties);
-        assertEquals(1, definitions.size());
+        assertEquals((long) 1, (long) definitions.size());
     }
 
+    @Test
     public void testSeriesDirectoryAndNameSubstitution() throws Exception
     {
         setTestSystemProperty(SYSTEM_PROPERTY_NAME, "propValue");
         createTestProperties(1, TEST_SERIES_1_SELECT_STATEMENT, TEST_SERIES_1_LEGEND_WITH_SYSPROP, TEST_SERIES_1_DIR_WITH_SYSPROP, null, null);
 
         List<SeriesDefinition> definitions = _seriesDefinitionLoader.createFromProperties(_properties);
-        assertEquals(1, definitions.size());
+        assertEquals((long) 1, (long) definitions.size());
 
         SeriesDefinition seriesDefinition1 = definitions.get(0);
         assertEquals("propValue/mydir", seriesDefinition1.getSeriesDirectory());

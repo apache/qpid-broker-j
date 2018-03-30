@@ -19,6 +19,9 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,24 +32,26 @@ import java.util.UUID;
 
 import javax.security.auth.x500.X500Principal;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ExternalAuthenticationManagerTest extends QpidTestCase
+public class ExternalAuthenticationManagerTest extends UnitTestBase
 {
     private ExternalAuthenticationManager _manager;
     private ExternalAuthenticationManager _managerUsingFullDN;
     private SaslSettings _saslSettings;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         Map<String,Object> attrs = new HashMap<>();
         attrs.put(AuthenticationProvider.ID, UUID.randomUUID());
         attrs.put(AuthenticationProvider.NAME, getTestName());
@@ -65,16 +70,19 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
         when(_saslSettings.getLocalFQDN()).thenReturn("example.example.com");
     }
 
+    @Test
     public void testGetMechanisms() throws Exception
     {
         assertEquals(Collections.singletonList("EXTERNAL"), _manager.getMechanisms());
     }
 
+    @Test
     public void testCreateSaslNegotiator() throws Exception
     {
         createSaslNegotiatorTestImpl(_manager);
     }
 
+    @Test
     public void testAuthenticatePrincipalNull_CausesAuthError() throws Exception
     {
         SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
@@ -82,11 +90,13 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
 
         assertNotNull(result);
         assertEquals("Expected authentication to be unsuccessful",
-                AuthenticationResult.AuthenticationStatus.ERROR,
-                result.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            result.getStatus());
+
         assertNull(result.getMainPrincipal());
     }
 
+    @Test
     public void testAuthenticatePrincipalNoCn_CausesAuthError() throws Exception
     {
         X500Principal principal = new X500Principal("DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
@@ -96,11 +106,12 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
 
         assertNotNull(result);
         assertEquals("Expected authentication to be unsuccessful",
-                AuthenticationResult.AuthenticationStatus.ERROR,
-                result.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            result.getStatus());
         assertNull(result.getMainPrincipal());
     }
 
+    @Test
     public void testAuthenticatePrincipalEmptyCn_CausesAuthError() throws Exception
     {
         X500Principal principal = new X500Principal("CN=, DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
@@ -110,11 +121,12 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
 
         assertNotNull(result);
         assertEquals("Expected authentication to be unsuccessful",
-                AuthenticationResult.AuthenticationStatus.ERROR,
-                result.getStatus());
+                            AuthenticationResult.AuthenticationStatus.ERROR,
+                            result.getStatus());
         assertNull(result.getMainPrincipal());
     }
 
+    @Test
     public void testAuthenticatePrincipalCnOnly() throws Exception
     {
         X500Principal principal = new X500Principal("CN=person");
@@ -125,12 +137,13 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
 
         assertNotNull(result);
         assertEquals("Expected authentication to be successful",
-                     AuthenticationResult.AuthenticationStatus.SUCCESS,
-                     result.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            result.getStatus());
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals("person", result.getMainPrincipal().getName());
     }
 
+    @Test
     public void testAuthenticatePrincipalCnAndDc() throws Exception
     {
         X500Principal principal = new X500Principal("CN=person, DC=example, DC=com");
@@ -141,12 +154,13 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
 
         assertNotNull(result);
         assertEquals("Expected authentication to be successful",
-                AuthenticationResult.AuthenticationStatus.SUCCESS,
-                result.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            result.getStatus());
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals("person@example.com", result.getMainPrincipal().getName());
     }
 
+    @Test
     public void testAuthenticatePrincipalCnDc_OtherComponentsIgnored() throws Exception
     {
         X500Principal principal = new X500Principal("CN=person, DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
@@ -157,12 +171,13 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
 
         assertNotNull(result);
         assertEquals("Expected authentication to be successful",
-                AuthenticationResult.AuthenticationStatus.SUCCESS,
-                result.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            result.getStatus());
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals("person@example.com", result.getMainPrincipal().getName());
     }
 
+    @Test
     public void testAuthenticatePrincipalCn_OtherComponentsIgnored() throws Exception
     {
         X500Principal principal = new X500Principal("CN=person, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
@@ -173,17 +188,19 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
         assertNotNull(result);
         assertEquals("Expected authentication to be successful",
-                AuthenticationResult.AuthenticationStatus.SUCCESS,
-                result.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            result.getStatus());
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals("person", result.getMainPrincipal().getName());
     }
 
+    @Test
     public void testFullDNMode_CreateSaslNegotiator() throws Exception
     {
         createSaslNegotiatorTestImpl(_managerUsingFullDN);
     }
 
+    @Test
     public void testFullDNMode_Authenticate() throws Exception
     {
         X500Principal principal = new X500Principal("CN=person, DC=example, DC=com");
@@ -193,8 +210,8 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
 
         assertNotNull(result);
         assertEquals("Expected authentication to be successful",
-                     AuthenticationResult.AuthenticationStatus.SUCCESS,
-                     result.getStatus());
+                            AuthenticationResult.AuthenticationStatus.SUCCESS,
+                            result.getStatus());
 
         assertOnlyContainsWrapped(principal, result.getPrincipals());
         assertEquals("CN=person,DC=example,DC=com", result.getMainPrincipal().getName());

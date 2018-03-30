@@ -23,11 +23,14 @@ package org.apache.qpid.server.logging.messages;
 import java.text.NumberFormat;
 import java.util.List;
 
+import org.junit.Test;
+
 /**
  * Test BRK log Messages
  */
 public class BrokerMessagesTest extends AbstractTestMessages
 {
+    @Test
     public void testBrokerStartup()
     {
         String version = "Qpid 0.6";
@@ -41,6 +44,7 @@ public class BrokerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "BRK-1001", expected);
     }
 
+    @Test
     public void testBrokerListening()
     {
         String transport = "TCP";
@@ -56,6 +60,7 @@ public class BrokerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "BRK-1002", expected);
     }
 
+    @Test
     public void testBrokerShuttingDown()
     {
         String transport = "TCP";
@@ -70,6 +75,7 @@ public class BrokerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "BRK-1003", expected);
     }
 
+    @Test
     public void testBrokerReady()
     {
         _logMessage = BrokerMessages.READY();
@@ -80,6 +86,7 @@ public class BrokerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "BRK-1004", expected);
     }
 
+    @Test
     public void testBrokerStopped()
     {
         _logMessage = BrokerMessages.STOPPED();
@@ -90,6 +97,7 @@ public class BrokerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "BRK-1005", expected);
     }
 
+    @Test
     public void testBrokerConfig()
     {
         String path = "/file/path/to/configuration.xml";
@@ -102,6 +110,7 @@ public class BrokerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "BRK-1006", expected);
     }
 
+    @Test
     public void testBrokerPlatform()
     {
         String javaVendor = "jvendor";
@@ -121,6 +130,7 @@ public class BrokerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "BRK-1010", expected);
     }
 
+    @Test
     public void testBrokerMemory()
     {
         long oneGiga = 1024*1024*1024;

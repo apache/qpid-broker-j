@@ -30,9 +30,25 @@ import java.io.PrintWriter;
 import java.util.Collections;
 
 import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class JdbcSeriesBuilderTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class JdbcSeriesBuilderTest extends UnitTestBase
 {
     private static final String TEST_SERIES_1_SELECT_STATEMENT = "SELECT A, B FROM test";
     private static final String TEST_SERIES_1_LEGEND = "SERIES_1_LEGEND";
@@ -44,15 +60,15 @@ public class JdbcSeriesBuilderTest extends QpidTestCase
 
     private File _testTempDir;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         when(_seriesWalkerCallback.getNumberOfDimensions()).thenReturn(2);
         _testTempDir = createTestTemporaryDirectory();
         createTestCsvIn(_testTempDir);
     }
 
+    @Test
     public void testBuildOneSeries() throws Exception
     {
         SeriesDefinition seriesDefinition = createTestSeriesDefinition();

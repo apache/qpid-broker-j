@@ -18,13 +18,17 @@
  */
 package org.apache.qpid.server.security.access.firewall;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.net.InetAddress;
 
-import org.apache.qpid.server.security.access.firewall.NetworkFirewallRule;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class NetworkFirewallRuleTest extends QpidTestCase
+public class NetworkFirewallRuleTest extends UnitTestBase
 {
     private static final String LOCALHOST_IP = "127.0.0.1";
     private static final String OTHER_IP_1 = "192.168.23.1";
@@ -34,13 +38,13 @@ public class NetworkFirewallRuleTest extends QpidTestCase
 
     private NetworkFirewallRule _networkFirewallRule;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         _addressNotInRule = InetAddress.getByName(LOCALHOST_IP);
     }
 
+    @Test
     public void testIpRule() throws Exception
     {
         String ipAddressInRule = OTHER_IP_1;
@@ -51,6 +55,7 @@ public class NetworkFirewallRuleTest extends QpidTestCase
         assertTrue(_networkFirewallRule.matches(InetAddress.getByName(ipAddressInRule)));
     }
 
+    @Test
     public void testNetMask() throws Exception
     {
         String ipAddressInRule = "192.168.23.0/24";
@@ -61,6 +66,7 @@ public class NetworkFirewallRuleTest extends QpidTestCase
         assertTrue(_networkFirewallRule.matches(InetAddress.getByName("192.168.23.255")));
     }
 
+    @Test
     public void testWildcard() throws Exception
     {
         // Test xxx.xxx.*
@@ -86,6 +92,7 @@ public class NetworkFirewallRuleTest extends QpidTestCase
             .matches(InetAddress.getByName("192.168.1.255")));
     }
 
+    @Test
     public void testMultipleNetworks() throws Exception
     {
         String[] ipAddressesInRule = new String[] {OTHER_IP_1, OTHER_IP_2};
@@ -99,6 +106,7 @@ public class NetworkFirewallRuleTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testEqualsAndHashCode()
     {
         NetworkFirewallRule rule = new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_1);
@@ -111,6 +119,7 @@ public class NetworkFirewallRuleTest extends QpidTestCase
         assertTrue(rule.hashCode() == equalRule.hashCode());
 
         assertFalse("Different networks should cause rules to be unequal",
-                rule.equals(new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_2)));
+                           rule.equals(new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_2)));
+
     }
 }

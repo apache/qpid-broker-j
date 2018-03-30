@@ -23,15 +23,33 @@ import java.util.Date;
 
 import javax.jms.DeliveryMode;
 
+import org.junit.Assert;
+
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
 import org.apache.qpid.disttest.message.CreateParticipantCommand;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.ProducerParticipantResult;
-import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ParticipantResultFactoryTest extends QpidTestCase
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+
+import org.apache.qpid.test.utils.UnitTestBase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class ParticipantResultFactoryTest extends UnitTestBase
 {
     private static final String PARTICIPANT_NAME = "participantName";
     private static final String REGISTERED_CLIENT_NAME = "registeredClientName";
@@ -51,14 +69,14 @@ public class ParticipantResultFactoryTest extends QpidTestCase
 
     private ParticipantResultFactory _participantResultFactory;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
 
         _participantResultFactory = new ParticipantResultFactory();
     }
 
+    @Test
     public void testCreateForProducer()
     {
         CreateProducerCommand command = new CreateProducerCommand();
@@ -94,14 +112,15 @@ public class ParticipantResultFactoryTest extends QpidTestCase
 
         assertCommonResultProperties(result);
 
-        assertEquals(deliveryMode, result.getDeliveryMode());
-        assertEquals(acknowledgeMode, result.getAcknowledgeMode());
-        assertEquals(priority, result.getPriority());
+        assertEquals((long) deliveryMode, (long) result.getDeliveryMode());
+        assertEquals((long) acknowledgeMode, (long) result.getAcknowledgeMode());
+        assertEquals((long) priority, (long) result.getPriority());
         assertEquals(producerInterval, result.getInterval());
         assertEquals(timeToLive, result.getTimeToLive());
-        assertEquals(totalNumberOfConsumers, result.getTotalNumberOfConsumers());
+        assertEquals((long) totalNumberOfConsumers, (long) result.getTotalNumberOfConsumers());
     }
 
+    @Test
     public void testCreateForConsumer()
     {
         CreateConsumerCommand command = new CreateConsumerCommand();
@@ -145,16 +164,17 @@ public class ParticipantResultFactoryTest extends QpidTestCase
 
         assertCommonResultProperties(result);
 
-        assertEquals(topic,                  result.isTopic());
-        assertEquals(durable,                result.isDurableSubscription());
-        assertEquals(browsingSubscription,   result.isBrowsingSubscription());
-        assertEquals(isSelector,             result.isSelector());
-        assertEquals(noLocal,                result.isNoLocal());
-        assertEquals(synchronousConsumer,    result.isSynchronousConsumer());
-        assertEquals(totalNumberOfConsumers, result.getTotalNumberOfConsumers());
-        assertEquals(totalNumberOfProducers, result.getTotalNumberOfProducers());
+        assertEquals(topic, result.isTopic());
+        assertEquals(durable, result.isDurableSubscription());
+        assertEquals(browsingSubscription, result.isBrowsingSubscription());
+        assertEquals(isSelector, result.isSelector());
+        assertEquals(noLocal, result.isNoLocal());
+        assertEquals(synchronousConsumer, result.isSynchronousConsumer());
+        assertEquals((long) totalNumberOfConsumers, (long) result.getTotalNumberOfConsumers());
+        assertEquals((long) totalNumberOfProducers, (long) result.getTotalNumberOfProducers());
     }
 
+    @Test
     public void testCreateForError()
     {
         String errorMessage = "error";
@@ -175,12 +195,12 @@ public class ParticipantResultFactoryTest extends QpidTestCase
     {
         assertEquals(PARTICIPANT_NAME, result.getParticipantName());
         assertEquals(REGISTERED_CLIENT_NAME, result.getRegisteredClientName());
-        assertEquals(BATCH_SIZE, result.getBatchSize());
+        assertEquals((long) BATCH_SIZE, (long) result.getBatchSize());
         assertEquals(MAXIMUM_DURATION, result.getMaximumDuration());
         assertEquals(TIME_TAKEN, result.getTimeTaken());
-        assertEquals(NUMBER_OF_MESSAGES_PROCESSED, result.getNumberOfMessagesProcessed());
+        assertEquals((long) NUMBER_OF_MESSAGES_PROCESSED, result.getNumberOfMessagesProcessed());
         assertEquals(TOTAL_PAYLOAD_PROCESSED, result.getTotalPayloadProcessed());
-        assertEquals(PAYLOAD_SIZE, result.getPayloadSize());
+        assertEquals((long) PAYLOAD_SIZE, (long) result.getPayloadSize());
         assertEquals(PROVIDER_VERSION, result.getProviderVersion());
         assertEquals(PROTOCOL_VERSION, result.getProtocolVersion());
     }

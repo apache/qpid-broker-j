@@ -38,14 +38,12 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
-import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
-import org.apache.qpid.server.protocol.ProtocolVersion;
-import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -59,6 +57,10 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ProtocolVersion;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
+import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.store.MessageHandle;
@@ -67,9 +69,9 @@ import org.apache.qpid.server.store.NullMessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMemoryMessage;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AMQChannelTest extends QpidTestCase
+public class AMQChannelTest extends UnitTestBase
 {
     public static final AMQShortString ROUTING_KEY = AMQShortString.valueOf("routingKey");
 
@@ -81,10 +83,9 @@ public class AMQChannelTest extends QpidTestCase
     private ProtocolOutputConverter _protocolOutputConverter;
     private MessageDestination _messageDestination;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         TaskExecutor taskExecutor = mock(TaskExecutor.class);
 
@@ -134,6 +135,7 @@ public class AMQChannelTest extends QpidTestCase
         _messageDestination = mock(MessageDestination.class);
     }
 
+    @Test
     public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings() throws Exception
     {
         String testExchangeName = getTestName();
@@ -150,6 +152,7 @@ public class AMQChannelTest extends QpidTestCase
                                                          eq("Exchange has bindings"));
     }
 
+    @Test
     public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding() throws Exception
     {
         Exchange<?> exchange = mock(Exchange.class);
@@ -162,6 +165,7 @@ public class AMQChannelTest extends QpidTestCase
         verify(exchange).delete();
     }
 
+    @Test
     public void testOversizedMessageClosesChannel() throws Exception
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(mock(MessageDestination.class));
@@ -180,6 +184,7 @@ public class AMQChannelTest extends QpidTestCase
 
     }
 
+    @Test
     public void testPublishContentHeaderWhenMessageAuthorizationFails() throws Exception
     {
         final String impostorId = "impostor";
@@ -208,6 +213,7 @@ public class AMQChannelTest extends QpidTestCase
         verifyZeroInteractions(_messageDestination);
     }
 
+    @Test
     public void testPublishContentHeaderWhenMessageAuthorizationSucceeds() throws Exception
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);

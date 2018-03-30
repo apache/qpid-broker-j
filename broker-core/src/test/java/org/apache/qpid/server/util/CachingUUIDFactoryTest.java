@@ -20,14 +20,19 @@
 
 package org.apache.qpid.server.util;
 
+import static org.junit.Assert.assertSame;
+
 import java.util.UUID;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class CachingUUIDFactoryTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class CachingUUIDFactoryTest extends UnitTestBase
 {
     private final CachingUUIDFactory _factory = new CachingUUIDFactory();
 
+    @Test
     public void testUuidFromBits()
     {
         UUID first = _factory.createUuidFromBits(0L,0L);
@@ -35,6 +40,7 @@ public class CachingUUIDFactoryTest extends QpidTestCase
         assertSame("UUIDFactory should return the same object", first, second);
     }
 
+    @Test
     public void testUuidFromString()
     {
         String uuidStr = UUID.randomUUID().toString();

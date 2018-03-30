@@ -24,7 +24,10 @@ import static org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl.GR
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
@@ -39,6 +42,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
@@ -47,25 +53,24 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.GroupProvider;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class FileBasedGroupProviderImplTest extends QpidTestCase
+public class FileBasedGroupProviderImplTest extends UnitTestBase
 {
     private Broker<?> _broker;
     private File _groupFile;
     private ConfiguredObjectFactory _objectFactory;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         _broker = BrokerTestHelper.createBrokerMock();
         _objectFactory = _broker.getObjectFactory();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
@@ -77,10 +82,10 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
         }
         finally
         {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testValidationOnCreateWithInvalidPath()
     {
         Map<String,Object> attributes = new HashMap<>();
@@ -98,10 +103,14 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
             fail("Exception is expected on validation of groups provider with invalid path");
         } catch (IllegalConfigurationException e)
         {
-            assertEquals("Unexpected exception message:" + e.getMessage(), String.format("Cannot create groups file at '%s'", groupsFile), e.getMessage());
+            assertEquals("Unexpected exception message:" + e.getMessage(),
+                                String.format("Cannot create groups file at '%s'", groupsFile),
+                                e.getMessage());
+
         }
     }
 
+    @Test
     public void testValidationOnCreateWithInvalidGroups()
     {
         _groupFile = TestFileUtils.createTempFile(this, "groups", "=blah");
@@ -118,10 +127,13 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Unexpected exception message:" + e.getMessage(), String.format("Cannot load groups from '%s'", groupsFile), e.getMessage());
+            assertEquals("Unexpected exception message:" + e.getMessage(),
+                                String.format("Cannot load groups from '%s'", groupsFile),
+                                e.getMessage());
         }
     }
 
+    @Test
     public void testExistingGroupFile() throws Exception
     {
         Map<String, Set<String>> input = new HashMap<>();
@@ -154,6 +166,7 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
         assertThat(rootMember.getName(), is(equalTo("root")));
     }
 
+    @Test
     public void testAddGroupAndMember() throws Exception
     {
         _groupFile = createTemporaryGroupFile(Collections.emptyMap());
@@ -178,6 +191,7 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
         assertThat(rootMember.getName(), is(equalTo("root")));
     }
 
+    @Test
     public void testRemoveGroupAndMember() throws Exception
     {
         Map<String, Set<String>> input = new HashMap<>();
@@ -209,6 +223,7 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
         assertThat(provider.getChildren(Group.class).size(), is(equalTo(1)));
     }
 
+    @Test
     public void testGroupAndMemberDurability() throws Exception
     {
         _groupFile = createTemporaryGroupFile(Collections.emptyMap());
@@ -264,6 +279,7 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testProvideDelete() throws Exception
     {
         _groupFile = createTemporaryGroupFile(Collections.emptyMap());
@@ -281,6 +297,7 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
         assertThat(_groupFile.exists(), is(equalTo(false)));
     }
 
+    @Test
     public void testSharingUnderlyingFileDisallowed() throws Exception
     {
         _groupFile = createTemporaryGroupFile(Collections.emptyMap());

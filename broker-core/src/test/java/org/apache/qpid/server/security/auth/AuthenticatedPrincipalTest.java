@@ -18,18 +18,28 @@
  */
 package org.apache.qpid.server.security.auth;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.security.Principal;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.junit.Test;
 
-public class AuthenticatedPrincipalTest extends QpidTestCase
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class AuthenticatedPrincipalTest extends UnitTestBase
 {
 
     private AuthenticatedPrincipal _authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("name",
                                                                                                               null));
 
+    @Test
     public void testGetAuthenticatedPrincipalFromSubject()
     {
         final Subject subject = createSubjectContainingAuthenticatedPrincipal();
@@ -37,6 +47,7 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
         assertSame(_authenticatedPrincipal, actual);
     }
 
+    @Test
     public void testAuthenticatedPrincipalNotInSubject()
     {
         try
@@ -50,13 +61,16 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
         }
     }
 
+    @Test
     public void testGetOptionalAuthenticatedPrincipalFromSubject()
     {
         final Subject subject = createSubjectContainingAuthenticatedPrincipal();
         final AuthenticatedPrincipal actual = AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subject);
+
         assertSame(_authenticatedPrincipal, actual);
     }
 
+    @Test
     public void testGetOptionalAuthenticatedPrincipalFromSubjectReturnsNullIfMissing()
     {
         Subject subjectWithNoPrincipals = new Subject();
@@ -65,9 +79,12 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
         Subject subjectWithoutAuthenticatedPrincipal = new Subject();
         subjectWithoutAuthenticatedPrincipal.getPrincipals().add(new UsernamePrincipal("name1", null));
         assertNull("Should return null for a subject containing a principal that isn't an AuthenticatedPrincipal",
-                AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subjectWithoutAuthenticatedPrincipal));
+
+                          AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subjectWithoutAuthenticatedPrincipal));
+
     }
 
+    @Test
     public void testTooManyAuthenticatedPrincipalsInSubject()
     {
         final Subject subject = new Subject();
@@ -102,6 +119,7 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
         return subject;
     }
 
+    @Test
     public void testEqualsAndHashcode()
     {
         AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
@@ -111,9 +129,10 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
         assertTrue(user1principal1.equals(user1principal2));
         assertTrue(user1principal2.equals(user1principal1));
 
-        assertEquals(user1principal1.hashCode(), user1principal2.hashCode());
+        assertEquals((long) user1principal1.hashCode(), (long) user1principal2.hashCode());
     }
 
+    @Test
     public void testEqualsAndHashcodeWithSameWrappedObject()
     {
         UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1", null);
@@ -124,9 +143,10 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
         assertTrue(user1principal1.equals(user1principal2));
         assertTrue(user1principal2.equals(user1principal1));
 
-        assertEquals(user1principal1.hashCode(), user1principal2.hashCode());
+        assertEquals((long) user1principal1.hashCode(), (long) user1principal2.hashCode());
     }
 
+    @Test
     public void testEqualsWithDifferentUsernames()
     {
         AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
@@ -136,6 +156,7 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
         assertFalse(user1principal2.equals(user1principal1));
     }
 
+    @Test
     public void testEqualsWithDissimilarObjects()
     {
         UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1", null);

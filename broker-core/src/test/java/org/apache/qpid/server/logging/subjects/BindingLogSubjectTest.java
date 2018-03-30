@@ -20,14 +20,16 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.After;
+import org.junit.Before;
+
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 /**
  * Validate BindingLogSubjects are logged as expected
@@ -40,12 +42,12 @@ public class BindingLogSubjectTest extends AbstractTestLogSubject
     private Exchange<?> _exchange;
     private QueueManagingVirtualHost _testVhost;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
         super.setUp();
 
-        _testVhost = BrokerTestHelper.createVirtualHost("test");
+        _testVhost = BrokerTestHelper.createVirtualHost("test", this);
         _routingKey = "RoutingKey";
         _exchange = (Exchange<?>) _testVhost.getChildByName(Exchange.class, "amq.direct");
         _queue = mock(Queue.class);
@@ -55,7 +57,7 @@ public class BindingLogSubjectTest extends AbstractTestLogSubject
         _subject = new BindingLogSubject(_routingKey, _exchange, _queue);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         if (_testVhost != null)

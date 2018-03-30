@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.configuration.startup;
 
-import static org.mockito.Matchers.eq;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,9 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -44,16 +49,15 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class VirtualHostCreationTest extends QpidTestCase
+public class VirtualHostCreationTest extends UnitTestBase
 {
     private VirtualHostNode _virtualHostNode;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
 
         EventLogger eventLogger = mock(EventLogger.class);
         TaskExecutor executor = CurrentThreadTaskExecutor.newStartedInstance();
@@ -83,10 +87,11 @@ public class VirtualHostCreationTest extends QpidTestCase
         when(_virtualHostNode.getChildExecutor()).thenReturn(executor);
     }
 
+    @Test
     public void testCreateVirtualHostFromStoreConfigAttributes()
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(VirtualHost.NAME, getName());
+        attributes.put(VirtualHost.NAME, getTestName());
         attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
         attributes.put(VirtualHost.ID, UUID.randomUUID());
 
@@ -94,14 +99,15 @@ public class VirtualHostCreationTest extends QpidTestCase
         host.open();
 
         assertNotNull("Null is returned", host);
-        assertEquals("Unexpected name", getName(), host.getName());
+        assertEquals("Unexpected name", getTestName(), host.getName());
         host.close();
     }
 
+    @Test
     public void testCreateWithoutMandatoryAttributesResultsInException()
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(VirtualHost.NAME, getName());
+        attributes.put(VirtualHost.NAME, getTestName());
         attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
         String[] mandatoryAttributes = {VirtualHost.NAME};
 

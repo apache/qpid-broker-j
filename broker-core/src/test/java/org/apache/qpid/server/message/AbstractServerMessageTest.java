@@ -20,17 +20,22 @@
  */
 package org.apache.qpid.server.message;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
+import org.junit.Test;
+
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AbstractServerMessageTest extends QpidTestCase
+public class AbstractServerMessageTest extends UnitTestBase
 {
     private static class TestMessage<T extends StorableMessageMetaData> extends AbstractServerMessageImpl<TestMessage<T>,T>
     {
@@ -92,12 +97,14 @@ public class AbstractServerMessageTest extends QpidTestCase
         return queue;
     }
 
+    @Test
     public void testReferences()
     {
         TransactionLogResource q1 = createQueue("1");
         TransactionLogResource q2 = createQueue("2");
 
         TestMessage<StorableMessageMetaData> msg = new TestMessage<StorableMessageMetaData>(mock(StoredMessage.class),this);
+
         assertFalse(msg.isReferenced());
         assertFalse(msg.isReferenced(q1));
 
