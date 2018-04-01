@@ -19,6 +19,7 @@ package org.apache.qpid.systests.jms_1_1.topic;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -283,8 +284,10 @@ public class DurableSubscribtionTest extends JmsTestBase
         }
     }
 
+    @Test
     public void testDurableSubscribeWithTemporaryTopic() throws Exception
     {
+        assumeThat("Not investigated - fails on AMQP 1.0", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
         Connection connection = getConnection();
         try
         {

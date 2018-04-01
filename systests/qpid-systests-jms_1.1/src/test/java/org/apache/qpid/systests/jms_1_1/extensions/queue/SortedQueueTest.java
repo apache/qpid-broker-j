@@ -304,6 +304,7 @@ public class SortedQueueTest extends JmsTestBase
         }
     }
 
+    @Test
     public void testGetNextWithAck() throws Exception
     {
         final String queueName = getTestName();
@@ -495,12 +496,6 @@ public class SortedQueueTest extends JmsTestBase
                 LOGGER.error("Exception in listener", e);
                 _exception = e;
             }
-        }
-
-        String[] getReceivedKeys()
-        {
-            List<String> keys = new ArrayList<>(_receivedKeys);
-            return keys.toArray(new String[keys.size()]);
         }
 
         public Exception getException()

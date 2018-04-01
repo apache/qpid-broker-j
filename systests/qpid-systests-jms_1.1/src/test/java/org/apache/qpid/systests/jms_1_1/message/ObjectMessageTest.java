@@ -349,6 +349,8 @@ public class ObjectMessageTest extends JmsTestBase
         }
     }
 
+
+    @Test
     public void testSetObjectPropertyForDouble() throws Exception
     {
         Queue queue = createQueue(getTestName());
