@@ -286,6 +286,10 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
         options.putAll(_options);
         if (_enableFailover)
         {
+            if (!options.containsKey("failover.useReconnectBackOff"))
+            {
+                options.put("failover.useReconnectBackOff", "false");
+            }
             if (!options.containsKey("failover.maxReconnectAttempts"))
             {
                 options.put("failover.maxReconnectAttempts", "2");
