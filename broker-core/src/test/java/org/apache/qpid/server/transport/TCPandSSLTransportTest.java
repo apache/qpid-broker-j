@@ -20,7 +20,12 @@
  */
 package org.apache.qpid.server.transport;
 
+import static org.apache.qpid.test.utils.JvmVendor.IBM;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -60,6 +65,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
     @Test
     public void testNoSSLv3SupportOnSSLOnlyPort() throws Exception
     {
+        assumeThat("The IBM JDK has different TLS defaults", getJvmVendor(), is(not(equalTo(IBM))));
         try
         {
             checkSSLExcluded("SSLv3", Transport.SSL);
@@ -105,6 +111,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
     @Test
     public void testNoSSLv3SupportOnSharedPort() throws Exception
     {
+        assumeThat("The IBM JDK has different TLS defaults", getJvmVendor(), is(not(equalTo(IBM))));
         try
         {
             checkSSLExcluded("SSLv3", Transport.TCP, Transport.SSL);
