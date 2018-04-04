@@ -88,45 +88,42 @@ public class ChartWriter
         }
 
         String htmlHeader = String.format(
-            "<html>\n" +
-            "    <head>\n" +
-            "        <title>%s</title>\n" +
-            "        <style type='text/css'>figure { float: left; display: table; width: 87px;}</style>\n" +
-            "    </head>\n" +
-            "    <body>\n" +
-            "        <h1>%s</h1>\n", summaryPageTitle, summaryPageTitle);
+            "<html>%n" +
+            "    <head>%n" +
+            "        <title>%s</title>%n" +
+            "        <style type='text/css'>figure { float: left; display: table; width: 87px;}</style>%n" +
+            "    </head>%n" +
+            "    <body>%n" +
+            "        <h1>%s</h1>%n", summaryPageTitle, summaryPageTitle);
 
         String htmlFooter =
-            "    </body>\n" +
-            "</html>";
+                String.format("    </body>%n" +
+                        "</html>");
 
-        BufferedWriter writer = null;
-        try
+        File summaryFile = new File(_chartDirectory, SUMMARY_FILE_NAME);
+        LOGGER.debug("About to produce HTML summary file " + summaryFile.getAbsolutePath() + " from charts " + _chartFilesToChartDef);
+        try(BufferedWriter writer = new BufferedWriter(new FileWriter(summaryFile)))
         {
-            File summaryFile = new File(_chartDirectory, SUMMARY_FILE_NAME);
-            LOGGER.debug("About to produce HTML summary file " + summaryFile.getAbsolutePath() + " from charts " + _chartFilesToChartDef);
-
-            writer = new BufferedWriter(new FileWriter(summaryFile));
             writer.write(htmlHeader);
 
-            writer.write("        <ul>\n");
+            writer.write(String.format("        <ul>%n"));
             for (File chartFile : _chartFilesToChartDef.keySet())
             {
-                writer.write("            <li><a href='#"+ chartFile.getName() +"'>" + chartFile.getName() + "</a></li>\n");
+                writer.write(String.format("            <li><a href='#" + chartFile.getName() + "'>" + chartFile.getName() + "</a></li>%n"));
             }
-            writer.write("        </ul>\n");
+            writer.write(String.format("        </ul>%n"));
 
             for (File chartFile : _chartFilesToChartDef.keySet())
             {
                 ChartingDefinition def = _chartFilesToChartDef.get(chartFile);
-                writer.write("        <figure>\n");
-                writer.write("          <a name='" + chartFile.getName() + "'/>\n");
-                writer.write("          <img src='" + chartFile.getName() + "'/>\n");
+                writer.write(String.format("        <figure>%n"));
+                writer.write(String.format("          <a name='" + chartFile.getName() + "'/>%n"));
+                writer.write(String.format("          <img src='" + chartFile.getName() + "'/>%n"));
                 if (def.getChartDescription() != null)
                 {
-                    writer.write("          <figcaption>" + def.getChartDescription() + "</figcaption>\n");
+                    writer.write(String.format("          <figcaption>%s</figcaption>%n", def.getChartDescription()));
                 }
-                writer.write("        </figure>\n");
+                writer.write(String.format("        </figure>%n"));
             }
             writer.write(htmlFooter);
             writer.close();
@@ -134,20 +131,6 @@ public class ChartWriter
         catch (Exception e)
         {
             throw new ChartingException("Failed to create HTML summary file", e);
-        }
-        finally
-        {
-            if(writer != null)
-            {
-                try
-                {
-                    writer.close();
-                }
-                catch(IOException e)
-                {
-                    throw new ChartingException("Failed to create HTML summary file", e);
-                }
-            }
         }
     }
 

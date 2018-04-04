@@ -20,9 +20,12 @@
  */
 package org.apache.qpid.server.store;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.inOrder;
@@ -113,7 +116,9 @@ public class JsonFileConfigStoreTest extends UnitTestBase
     @Test
     public void testInvalidStorePath() throws Exception
     {
-        when(_parent.getStorePath()).thenReturn(System.getProperty("file.separator"));
+        String unwritablePath = System.getProperty("file.separator");
+        assumeThat(new File(unwritablePath).canWrite(), is(equalTo(false)));
+        when(_parent.getStorePath()).thenReturn(unwritablePath);
         try
         {
             _store.init(_parent);

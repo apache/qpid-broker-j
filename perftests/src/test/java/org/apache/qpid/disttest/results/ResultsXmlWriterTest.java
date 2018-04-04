@@ -44,16 +44,7 @@ import org.apache.qpid.test.utils.TestFileUtils;
 import org.junit.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ResultsXmlWriterTest extends UnitTestBase
 {
@@ -72,8 +63,8 @@ public class ResultsXmlWriterTest extends UnitTestBase
     {
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
 
-        String expectedXmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                                    + "<testsuite tests=\"0\"/>\n";
+        String expectedXmlContent = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\"?>%n"
+                + "<testsuite tests=\"0\"/>%n");
 
         _resultsFileWriter.writeResults(resultsForAllTests, "config.json");
 
@@ -91,10 +82,10 @@ public class ResultsXmlWriterTest extends UnitTestBase
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
         when(resultsForAllTests.getTestResults()).thenReturn(Collections.singletonList(test));
 
-        String expectedXmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                                    + "<testsuite tests=\"1\">\n"
-                                    + "  <testcase classname=\"config.json\" name=\"mytest\"/>\n"
-                                    + "</testsuite>\n";
+        String expectedXmlContent = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\"?>%n"
+                + "<testsuite tests=\"1\">%n"
+                + "  <testcase classname=\"config.json\" name=\"mytest\"/>%n"
+                + "</testsuite>%n");
 
         _resultsFileWriter.writeResults(resultsForAllTests, "config.json");
 
@@ -118,12 +109,12 @@ public class ResultsXmlWriterTest extends UnitTestBase
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
         when(resultsForAllTests.getTestResults()).thenReturn(Collections.singletonList(test));
 
-        String expectedXmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                                     + "<testsuite tests=\"1\">\n"
-                                     + "  <testcase classname=\"config.json\" name=\"mytest\">\n"
-                                     + "    <error message=\"something went wrong\"/>\n"
-                                     + "  </testcase>\n"
-                                     + "</testsuite>\n";
+        String expectedXmlContent = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\"?>%n"
+                + "<testsuite tests=\"1\">%n"
+                + "  <testcase classname=\"config.json\" name=\"mytest\">%n"
+                + "    <error message=\"something went wrong\"/>%n"
+                + "  </testcase>%n"
+                + "</testsuite>%n");
 
         _resultsFileWriter.writeResults(resultsForAllTests, "config.json");
 
