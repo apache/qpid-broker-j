@@ -20,39 +20,28 @@
  */
 package org.apache.qpid.disttest.charting.writer;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.InputStream;
-import java.util.Scanner;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.List;
 
-import org.apache.qpid.disttest.charting.definition.ChartingDefinition;
-import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.server.util.FileUtils;
-
+import com.google.common.io.Resources;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.general.DefaultPieDataset;
-import org.junit.Assert;
-
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.After;
 import org.junit.Test;
 
+import org.apache.qpid.disttest.charting.definition.ChartingDefinition;
+import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ChartWriterTest extends UnitTestBase
 {
@@ -111,11 +100,10 @@ public class ChartWriterTest extends UnitTestBase
 
         _writer.writeHtmlSummaryToFileSystem("Performance Charts");
 
-        InputStream expectedSummaryFileInputStream = getClass().getResourceAsStream("expected-chart-summary.html");
-        String expectedSummaryContent = new Scanner(expectedSummaryFileInputStream).useDelimiter("\\A").next();
-        String actualSummaryContent = FileUtils.readFileAsString(summaryFile);
-
-        assertEquals("HTML summary file has unexpected content", expectedSummaryContent, actualSummaryContent);
+        List<String> expected = Resources.readLines(Resources.getResource(getClass(), "expected-chart-summary.html"),
+                                                   StandardCharsets.UTF_8);
+        List<String> actual = Files.readAllLines(summaryFile.toPath(), StandardCharsets.UTF_8);
+        assertEquals("HTML summary file has unexpected content", expected, actual);
     }
 
     @Test
@@ -137,19 +125,9 @@ public class ChartWriterTest extends UnitTestBase
 
     private void writeDummyContentToSummaryFileToEnsureItGetsOverwritten(File summaryFile) throws Exception
     {
-        FileWriter writer = null;
-        try
+        try(FileWriter writer = new FileWriter(summaryFile))
         {
-            writer = new FileWriter(summaryFile);
             writer.write("dummy content");
-            writer.close();
-        }
-        finally
-        {
-            if (writer != null)
-            {
-                writer.close();
-            }
         }
     }
 }
