@@ -2,6 +2,10 @@ version: '{build}'
 skip_tags: true
 clone_depth: 30
 
+branches:
+  only:
+    - master
+
 environment:
   JAVA_HOME: C:\Program Files\Java\jdk1.8.0
 
@@ -21,7 +25,8 @@ build_script:
   - mvn clean install -B -DskipTests
 
 test_script:
-  - mvn clean test -B -Dskip.systests=true --fail-at-end
+  - mvn test -B -Dskip.systests=true --fail-at-end
+  - mvn verify -pl systests/protocol-tests-amqp-1-0,systests/protocol-tests-amqp-0-8,systests/protocol-tests-amqp-0-10 -Dskip.unittests=true -B --fail-at-end
 
 on_failure:
   - ps: |

@@ -927,6 +927,7 @@
             <exclude>**/*.md</exclude>
             <exclude>DEPENDENCIES</exclude>
             <exclude>.travis.yml</exclude>
+            <exclude>appveyor.yml</exclude>
           </excludes>
         </configuration>
       </plugin>
