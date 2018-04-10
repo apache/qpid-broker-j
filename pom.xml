@@ -201,6 +201,7 @@
     <module>systests/protocol-tests-amqp-0-8</module>
     <module>systests/protocol-tests-amqp-0-10</module>
     <module>systests/protocol-tests-amqp-1-0</module>
+    <module>systests/qpid-systests-spawn-admin</module>
     <module>systests/end-to-end-conversion-tests</module>
     <module>perftests</module>
     <module>qpid-perftests-systests</module>
@@ -450,6 +451,12 @@
       <dependency>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-systests-jms_2.0</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-systests-spawn-admin</artifactId>
         <version>${project.version}</version>
       </dependency>
 

@@ -27,9 +27,12 @@ import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
+import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+
+import org.apache.qpid.server.model.Protocol;
 
 public class Utils
 {
@@ -107,6 +110,58 @@ public class Utils
         }
 
         return session.createTextMessage(payload);
+    }
+
+    public static Protocol getProtocol()
+    {
+        return Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1")
+                                                .replace('-', '_')
+                                                .replace('.', '_'));
+    }
+
+    public static JmsProvider getJmsProvider()
+    {
+        Protocol protocol = getProtocol();
+        JmsProvider jmsProvider;
+        if (protocol == Protocol.AMQP_1_0)
+        {
+            jmsProvider = new QpidJmsClientProvider(new AmqpManagementFacade(protocol));
+        }
+        else
+        {
+            jmsProvider = new QpidJmsClient0xProvider();
+        }
+        return jmsProvider;
+    }
+
+    public static AmqpManagementFacade getAmqpManagementFacade()
+    {
+        return new AmqpManagementFacade(getProtocol());
+    }
+
+    public static long getReceiveTimeout()
+    {
+        return Long.getLong("qpid.test_receive_timeout", 1000L);
+    }
+
+    public static boolean produceConsume(final Connection connection, final Destination destination) throws Exception
+    {
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        try
+        {
+            MessageConsumer consumer = session.createConsumer(destination);
+            sendMessages(session, destination, 1);
+            session.commit();
+            connection.start();
+            Message message = consumer.receive(getReceiveTimeout());
+            session.commit();
+            return  message != null;
+        }
+        finally
+        {
+
+            session.close();
+        }
     }
 
     private static String createString(final int stringSize)

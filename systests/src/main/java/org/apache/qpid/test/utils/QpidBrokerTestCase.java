@@ -17,6 +17,9 @@
  */
 package org.apache.qpid.test.utils;
 
+import static org.apache.qpid.systests.Utils.getAmqpManagementFacade;
+import static org.apache.qpid.systests.Utils.getProtocol;
+
 import java.io.File;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -60,8 +63,7 @@ import org.apache.qpid.server.store.MemoryConfigurationStore;
 import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.systests.JmsProvider;
-import org.apache.qpid.systests.QpidJmsClient0xProvider;
-import org.apache.qpid.systests.QpidJmsClientProvider;
+import org.apache.qpid.systests.Utils;
 
 /**
  * Qpid base class for system testing test cases.
@@ -90,8 +92,7 @@ public class QpidBrokerTestCase extends QpidTestCase
             System.getProperty("broker.type", BrokerHolder.BrokerType.INTERNAL.name()).toUpperCase());
     private static final Boolean BROKER_CLEAN_BETWEEN_TESTS = Boolean.getBoolean("broker.clean.between.tests");
     private static final Boolean BROKER_PERSISTENT = Boolean.getBoolean("broker.persistent");
-    private static final Protocol BROKER_PROTOCOL =
-            Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1").replace('-', '_').replace('.', '_'));
+    private static final Protocol BROKER_PROTOCOL = getProtocol();
     private static List<BrokerHolder> _brokerList = new ArrayList<>();
 
     private final Map<String, String> _propertiesSetForBroker = new HashMap<>();
@@ -107,8 +108,8 @@ public class QpidBrokerTestCase extends QpidTestCase
     {
         try
         {
-            _managementFacade = new AmqpManagementFacade(BROKER_PROTOCOL);
-            _jmsProvider = isBroker10() ? new QpidJmsClientProvider(_managementFacade) : new QpidJmsClient0xProvider();
+            _managementFacade = getAmqpManagementFacade();
+            _jmsProvider = Utils.getJmsProvider();
 
             _defaultBroker = new BrokerHolderFactory().create(DEFAULT_BROKER_TYPE, DEFAULT_PORT, this);
             super.runBare();

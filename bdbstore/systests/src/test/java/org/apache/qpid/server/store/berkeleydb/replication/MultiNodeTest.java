@@ -19,20 +19,33 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
+import static junit.framework.TestCase.assertEquals;
+import static org.apache.qpid.systests.Utils.INDEX;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
@@ -48,11 +61,11 @@ import com.sleepycat.je.Durability;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
 import com.sleepycat.je.rep.ReplicationConfig;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHARemoteReplicationNode;
@@ -60,120 +73,94 @@ import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.NodeRole;
 import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.systests.GenericConnectionListener;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.systests.Utils;
+import org.apache.qpid.test.utils.PortHelper;
 import org.apache.qpid.test.utils.TestUtils;
+import org.apache.qpid.tests.utils.ConfigItem;
+import org.apache.qpid.tests.utils.RunBrokerAdmin;
 
-public class MultiNodeTest extends QpidBrokerTestCase
+@RunBrokerAdmin(type = "BDB-HA")
+@GroupConfig(numberOfNodes = 3, groupName = "test")
+@ConfigItem(name = Broker.BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD, value = "false")
+public class MultiNodeTest extends GroupJmsTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeTest.class);
 
-    private static final String VIRTUAL_HOST = "test";
-    private static final int NUMBER_OF_NODES = 3;
+
+    private FailoverAwaitingListener _failoverListener = new FailoverAwaitingListener();
+
     private static final int FAILOVER_COMPLETION_TIMEOUT = 60000;
 
-    private GroupCreator _groupCreator;
-
-    private FailoverAwaitingListener _failoverListener;
-
-    /** Used when expectation is client will (re)-connect */
-    private ConnectionBuilder _positiveFailoverBuilder;
-
-    /** Used when expectation is client will not (re)-connect */
-    private ConnectionBuilder _negativeFailoverBuilder;
-
-    @Override
-    protected void setUp() throws Exception
-    {
-        assertTrue(isJavaBroker());
-        assertTrue(isBrokerStorePersistent());
-
-        _groupCreator = new GroupCreator(this, VIRTUAL_HOST, NUMBER_OF_NODES);
-        _groupCreator.configureClusterNodes();
-
-        _positiveFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes();
-        _negativeFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes(200, 2);
-
-        _groupCreator.startCluster();
-        _failoverListener = new FailoverAwaitingListener();
-
-        super.setUp();
-    }
-
-    @Override
-    public void startDefaultBroker() throws Exception
-    {
-        // Don't start default broker provided by QBTC.
-    }
-
+    @Test
     public void testLossOfMasterNodeCausesClientToFailover() throws Exception
     {
-        final Connection connection = _positiveFailoverBuilder.build();
-        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
-
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port {}", activeBrokerPort);
-
-        _groupCreator.stopNode(activeBrokerPort);
-        LOGGER.info("Node is stopped");
-        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
-        LOGGER.info("Listener has finished");
-        // any op to ensure connection remains
-        connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-    }
-
-    public void testLossOfReplicaNodeDoesNotCauseClientToFailover() throws Exception
-    {
-        final Connection connection = _positiveFailoverBuilder.build();
-        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
-
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port {}", activeBrokerPort);
-
-        final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
-        LOGGER.info("Stopping inactive broker on port {} ", inactiveBrokerPort);
-
-        _groupCreator.stopNode(inactiveBrokerPort);
-
-        _failoverListener.assertNoFailoverCompletionWithin(2000);
-
-        // any op to ensure connection remains
-        connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-    }
-
-    public void testLossOfQuorumCausesClientDisconnection() throws Exception
-    {
-        if (getBrokerProtocol().equals(Protocol.AMQP_1_0))
-        {
-            // TODO - QPIDJMS-366 - there seems to be a client defect when a JMS operation is interrupted
-            // by a graceful connection close from the client side.
-            return;
-        }
-
-        final Connection connection = _negativeFailoverBuilder.build();
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Destination destination = session.createQueue(getTestQueueName());
-        getJmsProvider().createQueue(session, getTestQueueName());
-
-        Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
-
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        ports.remove(activeBrokerPort);
-
-        // Stop all other nodes
-        for (Integer p : ports)
-        {
-            _groupCreator.stopNode(p);
-        }
-
+        final Connection connection = getConnectionBuilder().build();
         try
         {
+            getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
-            sendMessage(session, destination, 1);
-            fail("Exception not thrown - sending message within a transaction should fail without quorum");
+            final int masterPort = getJmsProvider().getConnectedURI(connection).getPort();
+            LOGGER.info("Active connection port {}", masterPort);
+
+            getBrokerAdmin().stopNode(masterPort);
+            LOGGER.info("Node is stopped");
+            _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
+            LOGGER.info("Listener has finished");
+            // any op to ensure connection remains
+            connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         }
-        catch(JMSException jms)
+        finally
         {
-            // PASS
+            connection.close();
+        }
+    }
+
+    @Test
+    public void testLossOfReplicaNodeDoesNotCauseClientToFailover() throws Exception
+    {
+        final Connection connection = getConnectionBuilder().build();
+        try
+        {
+            getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+
+            final int activeBrokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+            LOGGER.info("Active connection port {}", activeBrokerPort);
+
+            final int inactiveBrokerPort = getBrokerAdmin().getAmqpPort(activeBrokerPort);
+            LOGGER.info("Stopping inactive broker on port {} ", inactiveBrokerPort);
+
+            getBrokerAdmin().stopNode(inactiveBrokerPort);
+
+            _failoverListener.assertNoFailoverCompletionWithin(2000);
+
+            // any op to ensure connection remains
+            connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
+    public void testLossOfQuorumCausesClientDisconnection() throws Exception
+    {
+        final Connection connection = getConnectionBuilder().build();
+        try
+        {
+            getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+            Set<Integer> ports =
+                    Arrays.stream(getBrokerAdmin().getGroupAmqpPorts()).boxed().collect(Collectors.toSet());
+            final int activeBrokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+            ports.remove(activeBrokerPort);
+
+            // Stop all other nodes
+            for (Integer p : ports)
+            {
+                getBrokerAdmin().stopNode(p);
+            }
+
+            _failoverListener.awaitPreFailover(2000);
         }
         finally
         {
@@ -184,7 +171,10 @@ public class MultiNodeTest extends QpidBrokerTestCase
         // New connections should now fail as vhost will be unavailable
         try
         {
-            Connection unexpectedConnection = _negativeFailoverBuilder.build();
+            Connection unexpectedConnection = getConnectionBuilder()
+                    .setFailoverReconnectAttempts(SHORT_FAILOVER_CYCLECOUNT)
+                    .setFailoverReconnectDelay(SHORT_FAILOVER_CONNECTDELAY)
+                    .build();
             fail("Got unexpected connection to node in group without quorum " + unexpectedConnection);
         }
         catch (JMSException je)
@@ -198,442 +188,490 @@ public class MultiNodeTest extends QpidBrokerTestCase
      * test ensures that open messaging transactions are correctly rolled-back as quorum is lost,
      * and later the node rejoins the group in either master or replica role.
      */
+    @Test
     public void testQuorumLostAndRestored_OriginalMasterRejoinsTheGroup() throws Exception
     {
-        final Connection connection = _positiveFailoverBuilder.build();
-        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
-
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        Destination dest = session.createQueue(getTestQueueName());
-        session.close();
-
-        Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
-
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        ports.remove(activeBrokerPort);
-
-        Session session1 = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Session session2 = connection.createSession(true, Session.SESSION_TRANSACTED);
-
-        session1.createConsumer(dest).close();
-
-        MessageProducer producer1 = session1.createProducer(dest);
-        producer1.send(session1.createMessage());
-        MessageProducer producer2 = session2.createProducer(dest);
-        producer2.send(session2.createMessage());
-
-        // Leave transactions open, this will leave two store transactions open on the store
-
-        // Stop all other nodes
-        for (Integer p : ports)
+        final Connection connection = getConnectionBuilder().build();
+        try
         {
-            _groupCreator.stopNode(p);
+            getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+            Destination dest = createTestQueue(connection);
+
+            Set<Integer> ports =
+                    Arrays.stream(getBrokerAdmin().getGroupAmqpPorts()).boxed().collect(Collectors.toSet());
+
+            final int activeBrokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+            ports.remove(activeBrokerPort);
+
+            Session session1 = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Session session2 = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+            session1.createConsumer(dest).close();
+
+            MessageProducer producer1 = session1.createProducer(dest);
+            producer1.send(session1.createMessage());
+            MessageProducer producer2 = session2.createProducer(dest);
+            producer2.send(session2.createMessage());
+
+            // Leave transactions open, this will leave two store transactions open on the store
+
+            // Stop all other nodes
+            for (Integer p : ports)
+            {
+                getBrokerAdmin().stopNode(p);
+            }
+
+            // Await the old master discovering that it is all alone
+            getBrokerAdmin().awaitNodeRole(activeBrokerPort, "WAITING");
+
+            // Restart all other nodes
+            for (Integer p : ports)
+            {
+                getBrokerAdmin().startNode(p);
+            }
+
+            _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
+
+            getBrokerAdmin().awaitNodeRole(activeBrokerPort, "MASTER", "REPLICA");
         }
-
-        // Await the old master discovering that it is all alone
-        _groupCreator.awaitNodeToAttainRole(activeBrokerPort, "WAITING");
-
-        // Restart all other nodes
-        for (Integer p : ports)
+        finally
         {
-            _groupCreator.startNode(p);
+            connection.close();
         }
-
-        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
-
-        _groupCreator.awaitNodeToAttainRole(activeBrokerPort, "MASTER", "REPLICA");
     }
 
+    @Test
     public void testPersistentMessagesAvailableAfterFailover() throws Exception
     {
-        final Connection connection = _positiveFailoverBuilder.build();
-        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
-
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        Destination queue = session.createQueue(getTestQueueName());
-        session.close();
-
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-
-        Session producingSession = connection.createSession(true, Session.SESSION_TRANSACTED);
-        sendMessage(producingSession, queue, 10);
-
-        _groupCreator.stopNode(activeBrokerPort);
-        LOGGER.info("Old master (broker port {}) is stopped", activeBrokerPort);
-
-        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
-        LOGGER.info("Failover has finished");
-
-        final int activeBrokerPortAfterFailover = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("New master (broker port {}) after failover", activeBrokerPortAfterFailover);
-
-        Session consumingSession = connection.createSession(true, Session.SESSION_TRANSACTED);
-        MessageConsumer consumer = consumingSession.createConsumer(queue);
-
-        connection.start();
-        for(int i = 0; i < 10; i++)
+        final Connection connection = getConnectionBuilder().build();
+        try
         {
-            Message m = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message " + i + "  is not received", m);
-            assertEquals("Unexpected message received", i, m.getIntProperty(INDEX));
+            getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+            Destination queue = createTestQueue(connection);
+
+            final int activeBrokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+
+            Session producingSession = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Utils.sendMessages(producingSession, queue, 10);
+
+            getBrokerAdmin().stopNode(activeBrokerPort);
+            LOGGER.info("Old master (broker port {}) is stopped", activeBrokerPort);
+
+            _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
+            LOGGER.info("Failover has finished");
+
+            final int activeBrokerPortAfterFailover = getJmsProvider().getConnectedURI(connection).getPort();
+            LOGGER.info("New master (broker port {}) after failover", activeBrokerPortAfterFailover);
+
+            Session consumingSession = connection.createSession(true, Session.SESSION_TRANSACTED);
+            MessageConsumer consumer = consumingSession.createConsumer(queue);
+
+            connection.start();
+            for (int i = 0; i < 10; i++)
+            {
+                Message m = consumer.receive(getReceiveTimeout());
+                assertNotNull("Message " + i + "  is not received", m);
+                assertEquals("Unexpected message received", i, m.getIntProperty(INDEX));
+            }
+            consumingSession.commit();
         }
-        consumingSession.commit();
+        finally
+        {
+            connection.close();
+        }
     }
 
+    @Test
     public void testTransferMasterFromLocalNode() throws Exception
     {
-        final Connection connection = _positiveFailoverBuilder.build();
+        final Connection connection = getConnectionBuilder().build();
+        try
+        {
+            Destination queue = createTestQueue(connection);
 
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        session.close();
+            final int activeBrokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+            LOGGER.info("Active connection port {}", activeBrokerPort);
 
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port {}", activeBrokerPort);
+            final int inactiveBrokerPort = getBrokerAdmin().getAmqpPort(activeBrokerPort);
+            LOGGER.info("Update role attribute on inactive broker on port {}", inactiveBrokerPort);
 
-        final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
-        LOGGER.info("Update role attribute on inactive broker on port {}", inactiveBrokerPort);
-
-        // transfer mastership 3 times in order to verify
-        // that repeated mastership transfer to the same node works, See QPID-6996
-        transferMasterFromLocalNode(connection, inactiveBrokerPort, activeBrokerPort);
-        transferMasterFromLocalNode(connection, activeBrokerPort, inactiveBrokerPort);
-        transferMasterFromLocalNode(connection, inactiveBrokerPort, activeBrokerPort);
+            // transfer mastership 3 times in order to verify
+            // that repeated mastership transfer to the same node works, See QPID-6996
+            transferMasterFromLocalNode(connection, queue, inactiveBrokerPort, activeBrokerPort);
+            transferMasterFromLocalNode(connection, queue, activeBrokerPort, inactiveBrokerPort);
+            transferMasterFromLocalNode(connection, queue, inactiveBrokerPort, activeBrokerPort);
+        }
+        finally
+        {
+            connection.close();
+        }
     }
 
     private void transferMasterFromLocalNode(final Connection connection,
+                                             final Destination queue,
                                              final int inactiveBrokerPort,
                                              final int activeBrokerPort) throws Exception
     {
         _failoverListener = new FailoverAwaitingListener();
         getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
-        Map<String, Object> attributes = _groupCreator.getNodeAttributes(inactiveBrokerPort);
+        Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
         assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
-        _groupCreator.setNodeAttributes(inactiveBrokerPort, Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
+        getBrokerAdmin().setNodeAttributes(inactiveBrokerPort,
+                                           Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
 
         _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Listener has finished");
 
-        attributes = _groupCreator.getNodeAttributes(inactiveBrokerPort);
+        attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
         assertEquals("Inactive broker has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
 
-        assertProducingConsuming(connection);
+        assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
 
-        _groupCreator.awaitNodeToAttainRole(activeBrokerPort, "REPLICA");
+        getBrokerAdmin().awaitNodeRole(activeBrokerPort, "REPLICA");
     }
 
+    @Test
     public void testTransferMasterFromRemoteNode() throws Exception
     {
-        final Connection connection = _positiveFailoverBuilder.build();
+        final Connection connection = getConnectionBuilder().build();
+        try
+        {
+            Destination queue = createTestQueue(connection);
+            final int activeBrokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+            LOGGER.info("Active connection port {}", activeBrokerPort);
 
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        session.close();
+            final int inactiveBrokerPort = getBrokerAdmin().getAmqpPort(activeBrokerPort);
+            LOGGER.info("Update role attribute on inactive broker on port {}", inactiveBrokerPort);
 
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port {}", activeBrokerPort);
-
-        final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
-        LOGGER.info("Update role attribute on inactive broker on port {}", inactiveBrokerPort);
-
-        // transfer mastership 3 times in order to verify
-        // that repeated mastership transfer to the same node works, See QPID-6996
-        transferMasterFromRemoteNode(connection, activeBrokerPort, inactiveBrokerPort);
-        transferMasterFromRemoteNode(connection, inactiveBrokerPort, activeBrokerPort);
-        transferMasterFromRemoteNode(connection, activeBrokerPort, inactiveBrokerPort);
+            // transfer mastership 3 times in order to verify
+            // that repeated mastership transfer to the same node works, See QPID-6996
+            transferMasterFromRemoteNode(connection, queue, activeBrokerPort, inactiveBrokerPort);
+            transferMasterFromRemoteNode(connection, queue, inactiveBrokerPort, activeBrokerPort);
+            transferMasterFromRemoteNode(connection, queue, activeBrokerPort, inactiveBrokerPort);
+        }
+        finally
+        {
+            connection.close();
+        }
     }
 
     private void transferMasterFromRemoteNode(final Connection connection,
+                                              final Destination queue,
                                               final int activeBrokerPort,
                                               final int inactiveBrokerPort) throws Exception
     {
         _failoverListener = new FailoverAwaitingListener();
         getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
-        _groupCreator.awaitNodeToAttainRole(activeBrokerPort, inactiveBrokerPort, "REPLICA");
-        Map<String, Object> attributes = _groupCreator.getNodeAttributes(activeBrokerPort, inactiveBrokerPort);
+        getBrokerAdmin().awaitRemoteNodeRole(activeBrokerPort, inactiveBrokerPort, "REPLICA");
+        Map<String, Object> attributes = getBrokerAdmin().getRemoteNodeAttributes(activeBrokerPort, inactiveBrokerPort);
         assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
 
-        _groupCreator.setNodeAttributes(activeBrokerPort, inactiveBrokerPort, Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
+        getBrokerAdmin().setRemoteNodeAttributes(activeBrokerPort,
+                                                 inactiveBrokerPort,
+                                                 Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
 
         _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Listener has finished");
 
-        attributes = _groupCreator.getNodeAttributes(inactiveBrokerPort);
+        attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
         assertEquals("Inactive broker has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
 
-        assertProducingConsuming(connection);
+        assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
 
-        _groupCreator.awaitNodeToAttainRole(activeBrokerPort, "REPLICA");
+        getBrokerAdmin().awaitNodeRole(activeBrokerPort, "REPLICA");
     }
 
+
+    @Test
     public void testTransferMasterWhilstMessagesInFlight() throws Exception
     {
-        final Connection connection = _positiveFailoverBuilder.build();
-        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        final Destination destination = session.createQueue(getTestQueueName());
-
-        final AtomicBoolean masterTransferred = new AtomicBoolean(false);
-        final AtomicBoolean keepRunning = new AtomicBoolean(true);
-        final AtomicReference<Exception> workerException = new AtomicReference<>();
-        final CountDownLatch producedOneBefore = new CountDownLatch(1);
-        final CountDownLatch producedOneAfter = new CountDownLatch(1);
-        final CountDownLatch workerShutdown = new CountDownLatch(1);
-
-        Runnable producer = () -> {
-            try
-            {
-                int count = 0;
-                MessageProducer producer1 = session.createProducer(destination);
-
-                while (keepRunning.get())
-                {
-                    String messageText = "message" + count;
-                    try
-                    {
-                        Message message = session.createTextMessage(messageText);
-                        producer1.send(message);
-                        session.commit();
-                        LOGGER.debug("Sent message " + count);
-
-                        producedOneBefore.countDown();
-
-                        if (masterTransferred.get())
-                        {
-                            producedOneAfter.countDown();
-                        }
-                        count++;
-                    }
-                    catch (javax.jms.IllegalStateException ise)
-                    {
-                        throw ise;
-                    }
-                    catch (TransactionRolledBackException trbe)
-                    {
-                        // Pass - failover in prgoress
-                    }
-                    catch(JMSException je)
-                    {
-                        // Pass - failover in progress
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                workerException.set(e);
-            }
-            finally
-            {
-                workerShutdown.countDown();
-            }
-        };
-
-        Thread backgroundWorker = new Thread(producer);
-        backgroundWorker.start();
-
-        boolean workerRunning = producedOneBefore.await(5000, TimeUnit.MILLISECONDS);
-        assertTrue(workerRunning);
-
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port {}", activeBrokerPort);
-
-        final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
-        LOGGER.info("Update role attribute on inactive broker on port {}", inactiveBrokerPort);
-
-        _groupCreator.awaitNodeToAttainRole(activeBrokerPort, inactiveBrokerPort, "REPLICA");
-        Map<String, Object> attributes = _groupCreator.getNodeAttributes(activeBrokerPort, inactiveBrokerPort);
-        assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
-
-        _groupCreator.setNodeAttributes(activeBrokerPort, inactiveBrokerPort, Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
-
-        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
-        LOGGER.info("Failover has finished");
-
-        attributes = _groupCreator.getNodeAttributes(inactiveBrokerPort);
-        assertEquals("New master has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
-
-        _groupCreator.awaitNodeToAttainRole(activeBrokerPort, "REPLICA");
-
-        LOGGER.info("Master transfer known to have completed successfully.");
-        masterTransferred.set(true);
-
-        boolean producedMore = producedOneAfter.await(5000, TimeUnit.MILLISECONDS);
-        assertTrue("Should have successfully produced at least one message after transfer complete", producedMore);
-
-        keepRunning.set(false);
-        boolean shutdown = workerShutdown.await(5000, TimeUnit.MILLISECONDS);
-        assertTrue("Worker thread should have shutdown", shutdown);
-
-        backgroundWorker.join(5000);
-        assertNull(workerException.get());
-
-        assertNotNull(session.createTemporaryQueue());
-    }
-
-    public void testInFlightTransactionsWhilstMajorityIsLost() throws Exception
-    {
-        if (getBrokerProtocol().equals(Protocol.AMQP_1_0))
-        {
-            // TODO - QPIDJMS-366 - there seems to be a client defect when a JMS operation is interrupted
-            // by a graceful connection close from the client side.
-            return;
-        }
-
-        int connectionNumber = Integer.getInteger("MultiNodeTest.testInFlightTransactionsWhilstMajorityIsLost.numberOfConnections", 20);
-        ExecutorService executorService = Executors.newFixedThreadPool(connectionNumber + NUMBER_OF_NODES - 1);
+        final Connection connection = getConnectionBuilder().build();
         try
         {
-            final ConnectionBuilder consumerBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes(100, 100);
-            final Connection consumerConnection = consumerBuilder.build();
-            Session s = consumerConnection.createSession(true, Session.SESSION_TRANSACTED);
-            getJmsProvider().createQueue(s, getTestQueueName());
-            s.close();
+            getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
-            consumerConnection.start();
+            final Destination destination = createTestQueue(connection);
 
-            final Session consumerSession = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            final Destination destination = consumerSession.createQueue(getTestQueueName());
-            consumerSession.createConsumer(destination).setMessageListener(message -> {
+            final AtomicBoolean masterTransferred = new AtomicBoolean(false);
+            final AtomicBoolean keepRunning = new AtomicBoolean(true);
+            final AtomicReference<Exception> workerException = new AtomicReference<>();
+            final CountDownLatch producedOneBefore = new CountDownLatch(1);
+            final CountDownLatch producedOneAfter = new CountDownLatch(1);
+            final CountDownLatch workerShutdown = new CountDownLatch(1);
+
+            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Runnable producer = () -> {
                 try
                 {
-                    LOGGER.info("Message received: " + ((TextMessage) message).getText());
-                }
-                catch (JMSException e)
-                {
-                    LOGGER.error("Failure to get message text", e);
-                }
-            });
+                    int count = 0;
+                    MessageProducer producer1 = session.createProducer(destination);
 
-            final Connection[] connections = new Connection[connectionNumber];
-            final Session[] sessions = new Session[connectionNumber];
-            for (int i = 0; i < sessions.length; i++)
-            {
-                final ConnectionBuilder builder = _groupCreator.getConnectionBuilderForAllClusterNodes(100, 100);
-                connections[i] = builder.build();
-                sessions[i] = connections[i].createSession(true, Session.SESSION_TRANSACTED);
-                LOGGER.info("Session {} is created", i);
-            }
-
-            List<Integer> ports = new ArrayList<>(_groupCreator.getBrokerPortNumbersForNodes());
-
-            int maxMessageSize = 10;
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < maxMessageSize - 2; i++)
-            {
-                sb.append("X");
-            }
-            String messageText = sb.toString();
-            for (int n = 0; n < NUMBER_OF_NODES; n++)
-            {
-                LOGGER.info("Starting iteration {}", n);
-
-                FailoverAwaitingListener failoverListener = new FailoverAwaitingListener(connectionNumber);
-
-                for (int i = 0; i < sessions.length; i++)
-                {
-                    Connection connection = connections[i];
-                    getJmsProvider().addGenericConnectionListener(connection, failoverListener);
-
-                    MessageProducer producer = sessions[i].createProducer(destination);
-                    Message message = sessions[i].createTextMessage(messageText + "-" + i);
-                    producer.send(message);
-                }
-
-                LOGGER.info("All publishing sessions have uncommitted transactions");
-
-                final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connections[0]);
-                LOGGER.info("Active connection port {}", activeBrokerPort);
-
-                List<Integer> inactivePorts = new ArrayList<>(ports);
-                inactivePorts.remove(new Integer(activeBrokerPort));
-
-                final CountDownLatch latch = new CountDownLatch(inactivePorts.size());
-                for (int port : inactivePorts)
-                {
-                    final int inactiveBrokerPort = port;
-                    LOGGER.info("Stop node for inactive broker on port " + inactiveBrokerPort);
-
-                    executorService.submit(() -> {
+                    while (keepRunning.get())
+                    {
+                        String messageText = "message" + count;
                         try
                         {
-                            _groupCreator.setNodeAttributes(inactiveBrokerPort,
-                                                            inactiveBrokerPort,
-                                                            Collections.singletonMap(
-                                                                    BDBHAVirtualHostNode.DESIRED_STATE,
-                                                                    State.STOPPED.name()));
+                            Message message = session.createTextMessage(messageText);
+                            producer1.send(message);
+                            session.commit();
+                            LOGGER.debug("Sent message " + count);
+
+                            producedOneBefore.countDown();
+
+                            if (masterTransferred.get())
+                            {
+                                producedOneAfter.countDown();
+                            }
+                            count++;
                         }
-                        catch (Exception e)
+                        catch (javax.jms.IllegalStateException ise)
                         {
-                            LOGGER.error("Failed to stop node on broker with port {}", inactiveBrokerPort, e);
+                            throw ise;
+                        }
+                        catch (TransactionRolledBackException trbe)
+                        {
+                            // Pass - failover in prgoress
+                        }
+                        catch (JMSException je)
+                        {
+                            // Pass - failover in progress
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    workerException.set(e);
+                }
+                finally
+                {
+                    workerShutdown.countDown();
+                }
+            };
+
+            Thread backgroundWorker = new Thread(producer);
+            backgroundWorker.start();
+
+            boolean workerRunning = producedOneBefore.await(5000, TimeUnit.MILLISECONDS);
+            assertTrue(workerRunning);
+
+            final int activeBrokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+            LOGGER.info("Active connection port {}", activeBrokerPort);
+
+            final int inactiveBrokerPort = getBrokerAdmin().getAmqpPort(activeBrokerPort);
+            LOGGER.info("Update role attribute on inactive broker on port {}", inactiveBrokerPort);
+
+            getBrokerAdmin().awaitNodeRole(inactiveBrokerPort, "REPLICA");
+            Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
+            assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
+
+            getBrokerAdmin().setNodeAttributes(inactiveBrokerPort,
+                                               Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
+
+            _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
+            LOGGER.info("Failover has finished");
+
+            attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
+            assertEquals("New master has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
+
+            getBrokerAdmin().awaitNodeRole(activeBrokerPort, "REPLICA");
+
+            LOGGER.info("Master transfer known to have completed successfully.");
+            masterTransferred.set(true);
+
+            boolean producedMore = producedOneAfter.await(5000, TimeUnit.MILLISECONDS);
+            assertTrue("Should have successfully produced at least one message after transfer complete", producedMore);
+
+            keepRunning.set(false);
+            boolean shutdown = workerShutdown.await(5000, TimeUnit.MILLISECONDS);
+            assertTrue("Worker thread should have shutdown", shutdown);
+
+            backgroundWorker.join(5000);
+            assertThat(workerException.get(), is(nullValue()));
+
+            assertNotNull(session.createTemporaryQueue());
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
+    public void testInFlightTransactionsWhilstMajorityIsLost() throws Exception
+    {
+
+        int connectionNumber = Integer.getInteger(
+                "MultiNodeTest.testInFlightTransactionsWhilstMajorityIsLost.numberOfConnections",
+                20);
+        ExecutorService executorService = Executors.newFixedThreadPool(connectionNumber + 2);
+        try
+        {
+            final ConnectionBuilder connectionBuilder =
+                    getConnectionBuilder().setFailoverReconnectDelay(100).setFailoverReconnectAttempts(100);
+            final Connection consumerConnection = connectionBuilder.build();
+            try
+            {
+                Destination destination = createTestQueue(consumerConnection);
+                consumerConnection.start();
+
+                final Session consumerSession = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                consumerSession.createConsumer(destination).setMessageListener(message -> {
+                    try
+                    {
+                        LOGGER.info("Message received: " + ((TextMessage) message).getText());
+                    }
+                    catch (JMSException e)
+                    {
+                        LOGGER.error("Failure to get message text", e);
+                    }
+                });
+
+                final Connection[] connections = new Connection[connectionNumber];
+                final Session[] sessions = new Session[connectionNumber];
+                for (int i = 0; i < sessions.length; i++)
+                {
+                    connections[i] = connectionBuilder.setClientId("test-" + UUID.randomUUID()).build();
+                    sessions[i] = connections[i].createSession(true, Session.SESSION_TRANSACTED);
+                    LOGGER.info("Session {} is created", i);
+                }
+                try
+                {
+                    Set<Integer> ports =
+                            Arrays.stream(getBrokerAdmin().getGroupAmqpPorts()).boxed().collect(Collectors.toSet());
+
+                    int maxMessageSize = 10;
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < maxMessageSize - 2; i++)
+                    {
+                        sb.append("X");
+                    }
+                    String messageText = sb.toString();
+                    for (int n = 0; n < 3; n++)
+                    {
+                        LOGGER.info("Starting iteration {}", n);
+
+                        FailoverAwaitingListener failoverListener = new FailoverAwaitingListener(connectionNumber);
+
+                        for (int i = 0; i < sessions.length; i++)
+                        {
+                            Connection connection = connections[i];
+                            getJmsProvider().addGenericConnectionListener(connection, failoverListener);
+
+                            MessageProducer producer = sessions[i].createProducer(destination);
+                            Message message = sessions[i].createTextMessage(messageText + "-" + i);
+                            producer.send(message);
+                        }
+
+                        LOGGER.info("All publishing sessions have uncommitted transactions");
+
+                        final int activeBrokerPort = getJmsProvider().getConnectedURI(connections[0]).getPort();
+                        LOGGER.info("Active connection port {}", activeBrokerPort);
+
+                        List<Integer> inactivePorts = new ArrayList<>(ports);
+                        inactivePorts.remove(new Integer(activeBrokerPort));
+
+                        final CountDownLatch latch = new CountDownLatch(inactivePorts.size());
+                        for (int port : inactivePorts)
+                        {
+                            final int inactiveBrokerPort = port;
+                            LOGGER.info("Stop node for inactive broker on port " + inactiveBrokerPort);
+
+                            executorService.submit(() -> {
+                                try
+                                {
+                                    getBrokerAdmin().setNodeAttributes(inactiveBrokerPort,
+                                                                       Collections.singletonMap(
+                                                                               BDBHAVirtualHostNode.DESIRED_STATE,
+                                                                               State.STOPPED.name()));
+                                }
+                                catch (Exception e)
+                                {
+                                    LOGGER.error("Failed to stop node on broker with port {}", inactiveBrokerPort, e);
+                                }
+                                finally
+                                {
+                                    latch.countDown();
+                                }
+                            });
+                        }
+
+                        latch.await(500, TimeUnit.MILLISECONDS);
+
+                        LOGGER.info("Committing transactions in parallel to provoke a lot of syncing to disk");
+                        for (final Session session : sessions)
+                        {
+                            executorService.submit(() -> {
+                                try
+                                {
+                                    session.commit();
+                                }
+                                catch (JMSException e)
+                                {
+                                    // majority of commits might fail due to insufficient replicas
+                                }
+                            });
+                        }
+
+                        LOGGER.info("Verify that stopped nodes are in detached role");
+                        for (int port : inactivePorts)
+                        {
+                            getBrokerAdmin().awaitNodeRole(port, NodeRole.DETACHED.name());
+                        }
+
+                        LOGGER.info("Start stopped nodes");
+                        for (int port : inactivePorts)
+                        {
+                            LOGGER.info("Starting node for inactive broker on port " + port);
+                            try
+                            {
+                                getBrokerAdmin().setNodeAttributes(port,
+                                                                   Collections.singletonMap(
+                                                                           BDBHAVirtualHostNode.DESIRED_STATE,
+                                                                           State.ACTIVE.name()));
+                            }
+                            catch (Exception e)
+                            {
+                                LOGGER.error("Failed to start node on broker with port " + port, e);
+                            }
+                        }
+
+                        for (int port : ports)
+                        {
+                            getBrokerAdmin().awaitNodeRole(port, "REPLICA", "MASTER");
+                        }
+
+                        if (failoverListener.isFailoverStarted())
+                        {
+                            LOGGER.info("Waiting for failover completion");
+                            failoverListener.awaitFailoverCompletion(20000 * connectionNumber);
+                            LOGGER.info("Failover has finished");
+                        }
+                        else
+                        {
+                            LOGGER.info("Failover never started");
+                        }
+                    }
+                }
+                finally
+                {
+                    for (Connection c: connections)
+                    {
+                        try
+                        {
+                            c.close();
                         }
                         finally
                         {
-                            latch.countDown();
+                            LOGGER.error("Unexpected exception on connection close");
                         }
-                    });
-                }
-
-                latch.await(500, TimeUnit.MILLISECONDS);
-
-                LOGGER.info("Committing transactions in parallel to provoke a lot of syncing to disk");
-                for (final Session session : sessions)
-                {
-                    executorService.submit(() -> {
-                        try
-                        {
-                            session.commit();
-                        }
-                        catch (JMSException e)
-                        {
-                            // majority of commits might fail due to insufficient replicas
-                        }
-                    });
-                }
-
-                LOGGER.info("Verify that stopped nodes are in detached role");
-                for (int port : inactivePorts)
-                {
-                    _groupCreator.awaitNodeToAttainRole(port, NodeRole.DETACHED.name());
-                }
-
-                LOGGER.info("Start stopped nodes");
-                for (int port : inactivePorts)
-                {
-                    LOGGER.info("Starting node for inactive broker on port " + port);
-                    try
-                    {
-                        _groupCreator.setNodeAttributes(port,
-                                                        port,
-                                                        Collections.singletonMap(
-                                                                BDBHAVirtualHostNode.DESIRED_STATE,
-                                                                State.ACTIVE.name()));
-                    }
-                    catch (Exception e)
-                    {
-                        LOGGER.error("Failed to start node on broker with port " + port, e);
                     }
                 }
-
-                for (int port : ports)
-                {
-                    _groupCreator.awaitNodeToAttainRole(port, "REPLICA", "MASTER");
-                }
-
-                if (failoverListener.isFailoverStarted())
-                {
-                    LOGGER.info("Waiting for failover completion");
-                    failoverListener.awaitFailoverCompletion(20000 * connectionNumber);
-                    LOGGER.info("Failover has finished");
-                }
-                else
-                {
-                    LOGGER.info("Failover never started");
-                }
+            }
+            finally
+            {
+                consumerConnection.close();
             }
         }
         finally
@@ -646,127 +684,148 @@ public class MultiNodeTest extends QpidBrokerTestCase
      * Tests aims to demonstrate that in a disaster situation (where all nodes except the master is lost), that operation
      * can be continued from a single node using the QUORUM_OVERRIDE feature.
      */
+    @Test
     public void testQuorumOverride() throws Exception
     {
-        final Connection connection = _positiveFailoverBuilder.build();
-        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        session.close();
-
-        Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
-
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        ports.remove(activeBrokerPort);
-
-        // Stop all other nodes
-        for (Integer p : ports)
+        final Connection connection = getConnectionBuilder().build();
+        try
         {
-            _groupCreator.stopNode(p);
+            getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+            Destination queue = createTestQueue(connection);
+
+            Set<Integer> ports =
+                    Arrays.stream(getBrokerAdmin().getGroupAmqpPorts()).boxed().collect(Collectors.toSet());
+
+            final int activeBrokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+            ports.remove(activeBrokerPort);
+
+            // Stop all other nodes
+            for (Integer p : ports)
+            {
+                getBrokerAdmin().stopNode(p);
+            }
+
+            LOGGER.info("Awaiting failover to start");
+            _failoverListener.awaitPreFailover(FAILOVER_COMPLETION_TIMEOUT);
+            LOGGER.info("Failover has begun");
+
+            Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(activeBrokerPort);
+            assertEquals("Broker has unexpected quorum override",
+                         new Integer(0),
+                         attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
+            getBrokerAdmin().setNodeAttributes(activeBrokerPort,
+                                               Collections.singletonMap(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1));
+
+            attributes = getBrokerAdmin().getNodeAttributes(activeBrokerPort);
+            assertEquals("Broker has unexpected quorum override",
+                         new Integer(1),
+                         attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
+
+            _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
+            LOGGER.info("Failover has finished");
+
+            assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
         }
-
-        LOGGER.info("Awaiting failover to start");
-        _failoverListener.awaitPreFailover(FAILOVER_COMPLETION_TIMEOUT);
-        LOGGER.info("Failover has begun");
-
-        Map<String, Object> attributes = _groupCreator.getNodeAttributes(activeBrokerPort);
-        assertEquals("Broker has unexpected quorum override", new Integer(0), attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
-        _groupCreator.setNodeAttributes(activeBrokerPort, Collections.singletonMap(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1));
-
-        attributes = _groupCreator.getNodeAttributes(activeBrokerPort);
-        assertEquals("Broker has unexpected quorum override", new Integer(1), attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
-
-        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
-        LOGGER.info("Failover has finished");
-
-        assertProducingConsuming(connection);
+        finally
+        {
+            connection.close();
+        }
     }
 
+    @Test
     public void testPriority() throws Exception
     {
-        final Connection connection = _positiveFailoverBuilder.build();
-        getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        session.close();
-
-        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
-        LOGGER.info("Active connection port {}", activeBrokerPort);
-
-        int priority = 1;
-        Integer highestPriorityBrokerPort = null;
-        Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
-        for (Integer port : ports)
+        final Connection connection = getConnectionBuilder().build();
+        try
         {
-            if (activeBrokerPort != port)
+            getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+            Destination queue = createTestQueue(connection);
+
+            final int activeBrokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+            LOGGER.info("Active connection port {}", activeBrokerPort);
+
+            int priority = 1;
+            Integer highestPriorityBrokerPort = null;
+            Set<Integer> ports =
+                    Arrays.stream(getBrokerAdmin().getGroupAmqpPorts()).boxed().collect(Collectors.toSet());
+            for (Integer port : ports)
             {
-                priority = priority + 1;
-                highestPriorityBrokerPort = port;
-                _groupCreator.setNodeAttributes(port, port, Collections.singletonMap(BDBHAVirtualHostNode.PRIORITY, priority));
-                Map<String, Object> attributes = _groupCreator.getNodeAttributes(port, port);
-                assertEquals("Broker has unexpected priority", priority, attributes.get(BDBHAVirtualHostNode.PRIORITY));
+                if (activeBrokerPort != port)
+                {
+                    priority = priority + 1;
+                    highestPriorityBrokerPort = port;
+                    getBrokerAdmin().setNodeAttributes(port,
+                                                       Collections.singletonMap(BDBHAVirtualHostNode.PRIORITY,
+                                                                                priority));
+                    Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(port);
+                    assertEquals("Broker has unexpected priority",
+                                 priority,
+                                 attributes.get(BDBHAVirtualHostNode.PRIORITY));
+                }
             }
+
+            LOGGER.info("Broker on port {} has the highest priority of {}", highestPriorityBrokerPort, priority);
+
+            for (Integer port : ports)
+            {
+                if (activeBrokerPort != port)
+                {
+                    getBrokerAdmin().awaitNodeRole(port, BDBHARemoteReplicationNode.ROLE, "REPLICA");
+                }
+            }
+
+            // do work on master
+            assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
+
+            Map<String, Object> masterNodeAttributes = getBrokerAdmin().getNodeAttributes(activeBrokerPort);
+
+            Object lastTransactionId =
+                    masterNodeAttributes.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID);
+            assertTrue("Unexpected last transaction id: " + lastTransactionId, lastTransactionId instanceof Number);
+
+            // make sure all remote nodes have the same transaction id as master
+            for (Integer port : ports)
+            {
+                if (activeBrokerPort != port)
+                {
+                    getBrokerAdmin().awaitNodeToAttainAttributeValue(activeBrokerPort,
+                                                                     BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID,
+                                                                     lastTransactionId);
+                }
+            }
+
+            LOGGER.info("Shutting down the MASTER");
+            getBrokerAdmin().stopNode(activeBrokerPort);
+
+            _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
+            LOGGER.info("Listener has finished");
+
+            Map<String, Object> attributes =
+                    getBrokerAdmin().getNodeAttributes(highestPriorityBrokerPort);
+            assertEquals("Inactive broker has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
+
+            assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
         }
-
-        LOGGER.info("Broker on port {} has the highest priority of {}", highestPriorityBrokerPort, priority);
-
-        // make sure all remote nodes are materialized on the master
-        // in order to make sure that DBPing is not invoked
-        for (Integer port : ports)
+        finally
         {
-            if (activeBrokerPort != port)
-            {
-                _groupCreator.awaitNodeToAttainAttributeValue(activeBrokerPort, port, BDBHARemoteReplicationNode.ROLE, "REPLICA");
-            }
+            connection.close();
         }
-
-        // do work on master
-        assertProducingConsuming(connection);
-
-        Map<String, Object> masterNodeAttributes = _groupCreator.getNodeAttributes(activeBrokerPort);
-
-        Object lastTransactionId = masterNodeAttributes.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID);
-        assertTrue("Unexpected last transaction id: " + lastTransactionId, lastTransactionId instanceof Number);
-
-        // make sure all remote nodes have the same transaction id as master
-        for (Integer port : ports)
-        {
-            if (activeBrokerPort != port)
-            {
-                _groupCreator.awaitNodeToAttainAttributeValue(activeBrokerPort,
-                                                              port,
-                                                              BDBHARemoteReplicationNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID,
-                                                              String.valueOf(lastTransactionId));
-            }
-        }
-
-        LOGGER.info("Shutting down the MASTER");
-        _groupCreator.stopNode(activeBrokerPort);
-
-        _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
-        LOGGER.info("Listener has finished");
-
-        Map<String, Object> attributes = _groupCreator.getNodeAttributes(highestPriorityBrokerPort, highestPriorityBrokerPort);
-        assertEquals("Inactive broker has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
-
-        assertProducingConsuming(connection);
     }
 
+    @Test
     public void testClusterCannotStartWithIntruder() throws Exception
     {
-        //set property explicitly as test requires broker to start to enable check for ERRORED nodes
-        setSystemProperty(Broker.BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD, String.valueOf(Boolean.FALSE));
-
-        int intruderPort = getNextAvailable(Collections.max(_groupCreator.getBdbPortNumbers()) + 1);
+        int intruderPort =
+                new PortHelper().getNextAvailable(Arrays.stream(getBrokerAdmin().getBdbPorts()).max().getAsInt() + 1);
         String nodeName = "intruder";
-        String nodeHostPort = _groupCreator.getIpAddressOfBrokerHost() + ":" + intruderPort;
+        String nodeHostPort = getBrokerAdmin().getHost() + ":" + intruderPort;
         File environmentPathFile = Files.createTempDirectory("qpid-work-intruder").toFile();
         try
         {
             environmentPathFile.mkdirs();
             ReplicationConfig replicationConfig =
-                    new ReplicationConfig(_groupCreator.getGroupName(), nodeName, nodeHostPort);
-            replicationConfig.setHelperHosts(_groupCreator.getHelperHostPort());
+                    new ReplicationConfig("test", nodeName, nodeHostPort);
+            replicationConfig.setHelperHosts(getBrokerAdmin().getHelperHostPort());
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
             envConfig.setTransactional(true);
@@ -775,7 +834,9 @@ public class MultiNodeTest extends QpidBrokerTestCase
                                                    Durability.ReplicaAckPolicy.SIMPLE_MAJORITY));
 
             final String currentThreadName = Thread.currentThread().getName();
-            try(ReplicatedEnvironment intruder = new ReplicatedEnvironment(environmentPathFile, replicationConfig, envConfig))
+            try (ReplicatedEnvironment intruder = new ReplicatedEnvironment(environmentPathFile,
+                                                                            replicationConfig,
+                                                                            envConfig))
             {
                 LOGGER.debug("Intruder started");
             }
@@ -784,23 +845,24 @@ public class MultiNodeTest extends QpidBrokerTestCase
                 Thread.currentThread().setName(currentThreadName);
             }
 
-            for (int port : _groupCreator.getBrokerPortNumbersForNodes())
+            Set<Integer> ports =
+                    Arrays.stream(getBrokerAdmin().getGroupAmqpPorts()).boxed().collect(Collectors.toSet());
+            for (int port : ports)
             {
-                _groupCreator.awaitNodeToAttainAttributeValue(port,
-                                                              port,
-                                                              BDBHAVirtualHostNode.STATE,
-                                                              State.ERRORED.name());
+                getBrokerAdmin().awaitNodeToAttainAttributeValue(port,
+                                                                 BDBHAVirtualHostNode.STATE,
+                                                                 State.ERRORED.name());
             }
 
-            _groupCreator.stopCluster();
-            _groupCreator.startCluster();
+            getBrokerAdmin().stop();
+            getBrokerAdmin().start(false);
 
-            for (int port : _groupCreator.getBrokerPortNumbersForNodes())
+            for (int port : ports)
             {
-                _groupCreator.awaitNodeToAttainAttributeValue(port,
-                                                              port,
-                                                              BDBHAVirtualHostNode.STATE,
-                                                              State.ERRORED.name());
+                getBrokerAdmin().awaitNodeToAttainAttributeValue(port,
+
+                                                                 BDBHAVirtualHostNode.STATE,
+                                                                 State.ERRORED.name());
             }
         }
         finally
@@ -844,10 +906,10 @@ public class MultiNodeTest extends QpidBrokerTestCase
             if (!_failoverCompletionLatch.await(delay, TimeUnit.MILLISECONDS))
             {
                 LOGGER.warn("Failover did not occur, dumping threads:\n\n" + TestUtils.dumpThreads() + "\n");
-                Map<Integer,String> threadDumps = _groupCreator.groupThreadumps();
-                for (Map.Entry<Integer,String> entry : threadDumps.entrySet())
+                Map<Integer, String> threadDumps = getBrokerAdmin().groupThreadDumps();
+                for (Map.Entry<Integer, String> entry : threadDumps.entrySet())
                 {
-                    LOGGER.warn("Broker {} thread dump:\n\n {}" , entry.getKey(), entry.getValue());
+                    LOGGER.warn("Broker {} thread dump:\n\n {}", entry.getKey(), entry.getValue());
                 }
             }
             assertEquals("Failover did not occur", 0, _failoverCompletionLatch.getCount());
@@ -870,5 +932,4 @@ public class MultiNodeTest extends QpidBrokerTestCase
             return _failoverStarted;
         }
     }
-
 }

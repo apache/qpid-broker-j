@@ -492,10 +492,12 @@ public class AmqpManagementFacade
                     return new HashMap<>(bodyMap);
                 }
             }
-            throw new IllegalArgumentException("Management read failed : "
-                                               + response.getStringProperty("statusCode")
-                                               + " - "
-                                               + response.getStringProperty("statusDescription"));
+            throw new AmqpManagementFacade.OperationUnsuccessfulException("Management read failed : "
+                                                                          + response.getStringProperty("statusCode")
+                                                                          + " - "
+                                                                          + response.getStringProperty(
+                    "statusDescription"),
+                                                                          response.getIntProperty("statusCode"));
         }
         finally
         {

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.systests;
 
+import static org.apache.qpid.systests.Utils.getAmqpManagementFacade;
+import static org.apache.qpid.systests.Utils.getJmsProvider;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -60,16 +62,8 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     @BeforeClass
     public static void setUpTestBase()
     {
-        Protocol protocol = getProtocol();
-        _managementFacade = new AmqpManagementFacade(protocol);
-        if (protocol == Protocol.AMQP_1_0)
-        {
-            _jmsProvider = new QpidJmsClientProvider(_managementFacade);
-        }
-        else
-        {
-            _jmsProvider = new QpidJmsClient0xProvider();
-        }
+        _managementFacade = getAmqpManagementFacade();
+        _jmsProvider = getJmsProvider();
         LOGGER.debug("Test receive timeout is {} milliseconds", getReceiveTimeout());
     }
 
@@ -127,7 +121,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected static long getReceiveTimeout()
     {
-        return Long.getLong("qpid.test_receive_timeout", 1000L);
+        return Utils.getReceiveTimeout();
     }
 
     protected String getVirtualHostName()
@@ -332,9 +326,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected static Protocol getProtocol()
     {
-        return Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1")
-                                                .replace('-', '_')
-                                                .replace('.', '_'));
+        return Utils.getProtocol();
     }
 
     public QueueConnection getQueueConnection() throws JMSException, NamingException

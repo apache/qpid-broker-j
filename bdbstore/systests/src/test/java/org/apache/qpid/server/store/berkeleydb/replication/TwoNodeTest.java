@@ -19,157 +19,151 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
-import java.util.Collections;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
-import javax.jms.Session;
+import javax.jms.Queue;
 
-import org.apache.qpid.server.model.Protocol;
+import org.junit.Test;
+
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
-import org.apache.qpid.systests.ConnectionBuilder;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.systests.Utils;
+import org.apache.qpid.tests.utils.RunBrokerAdmin;
 
-public class TwoNodeTest extends QpidBrokerTestCase
+@RunBrokerAdmin(type = "BDB-HA")
+@GroupConfig(numberOfNodes = 2, groupName = "test")
+public class TwoNodeTest extends GroupJmsTestBase
 {
-    private static final String VIRTUAL_HOST = "test";
 
-    private static final int NUMBER_OF_NODES = 2;
-
-    private GroupCreator _groupCreator;
-
-    /** Used when expectation is client will not (re)-connect */
-    private ConnectionBuilder _positiveFailoverBuilder;
-
-    /** Used when expectation is client will not (re)-connect */
-    private ConnectionBuilder _negativeFailoverBuilder;
-
-    @Override
-    protected void setUp() throws Exception
-    {
-        assertTrue(isJavaBroker());
-        assertTrue(isBrokerStorePersistent());
-
-        super.setUp();
-
-        _groupCreator = new GroupCreator(this, VIRTUAL_HOST, NUMBER_OF_NODES);
-    }
-
-    @Override
-    public void startDefaultBroker() throws Exception
-    {
-        // Don't start default broker provided by QBTC.
-    }
-
-    private void startCluster(boolean designedPrimary) throws Exception
-    {
-        _groupCreator.configureClusterNodes();
-        _groupCreator.setDesignatedPrimaryOnFirstBroker(designedPrimary);
-        _positiveFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes();
-        _negativeFailoverBuilder = _groupCreator.getConnectionBuilderForAllClusterNodes(200, 2);
-        _groupCreator.startCluster();
-    }
-
+    @Test
     public void testMasterDesignatedPrimaryCanBeRestartedWithoutReplica() throws Exception
     {
-        startCluster(true);
+        final Connection initialConnection = getConnectionBuilder().build();
+        int masterPort;
+        Queue queue;
+        try
+        {
+            queue = createTestQueue(initialConnection);
+            masterPort = getJmsProvider().getConnectedURI(initialConnection).getPort();
+            getBrokerAdmin().setDesignatedPrimary(masterPort, true);
+        }
+        finally
+        {
+            initialConnection.close();
+        }
+        getBrokerAdmin().stop();
+        getBrokerAdmin().startNode(masterPort);
 
-        final Connection initialConnection = _positiveFailoverBuilder.build();
-        Session session = initialConnection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        session.close();
-
-        int masterPort = _groupCreator.getBrokerPortNumberFromConnection(initialConnection);
-        assertProducingConsuming(initialConnection);
-        initialConnection.close();
-        _groupCreator.stopCluster();
-        _groupCreator.startNode(masterPort);
-        final Connection secondConnection = _positiveFailoverBuilder.build();
-        assertProducingConsuming(secondConnection);
-        secondConnection.close();
+        assertProduceConsume(queue);
     }
 
+    @Test
     public void testClusterRestartWithoutDesignatedPrimary() throws Exception
     {
-        startCluster(false);
-
-        final Connection initialConnection = _positiveFailoverBuilder.build();
-        Session session = initialConnection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        session.close();
-
-        assertProducingConsuming(initialConnection);
-        initialConnection.close();
-        _groupCreator.stopCluster();
-        _groupCreator.startClusterParallel();
-        final Connection secondConnection = _positiveFailoverBuilder.build();
-        assertProducingConsuming(secondConnection);
-        secondConnection.close();
-    }
-
-    public void testDesignatedPrimaryContinuesAfterSecondaryStopped() throws Exception
-    {
-        startCluster(true);
-        _groupCreator.stopNode(_groupCreator.getBrokerPortNumberOfSecondaryNode());
-
-        final Connection connection = _positiveFailoverBuilder.build();
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        session.close();
-
-        assertNotNull("Expected to get a valid connection to primary", connection);
-        assertProducingConsuming(connection);
-    }
-
-    public void testPersistentOperationsFailOnNonDesignatedPrimaryAfterSecondaryStopped() throws Exception
-    {
-        if (getBrokerProtocol().equals(Protocol.AMQP_1_0))
+        Queue queue;
+        final Connection initialConnection = getConnectionBuilder().build();
+        try
         {
-            // TODO - there seems to be a client defect when a JMS operation is interrupted
-            // by a graceful connection close from the client side.
-            return;
+            queue = createTestQueue(initialConnection);
+            assertThat(Utils.produceConsume(initialConnection, queue), is(equalTo(true)));
+        }
+        finally
+        {
+            initialConnection.close();
         }
 
-        startCluster(false);
+        getBrokerAdmin().stop();
+        getBrokerAdmin().start();
 
-        final Connection initialConnection = _negativeFailoverBuilder.build();
-        Session session = initialConnection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        initialConnection.close();
+        assertProduceConsume(queue);
+    }
 
-        _groupCreator.stopNode(_groupCreator.getBrokerPortNumberOfSecondaryNode());
+    @Test
+    public void testDesignatedPrimaryContinuesAfterSecondaryStopped() throws Exception
+    {
+        int masterPort;
+        Queue queue;
+        final Connection initialConnection = getConnectionBuilder().build();
+        try
+        {
+            masterPort = getJmsProvider().getConnectedURI(initialConnection).getPort();
+            queue = createTestQueue(initialConnection);
+            getBrokerAdmin().setDesignatedPrimary(masterPort, true);
+        }
+        finally
+        {
+            initialConnection.close();
+        }
+
+        int replicaPort = getBrokerAdmin().getAmqpPort(masterPort);
+        getBrokerAdmin().stopNode(replicaPort);
+
+        assertProduceConsume(queue);
+    }
+
+    @Test
+    public void testPersistentOperationsFailOnNonDesignatedPrimaryAfterSecondaryStopped() throws Exception
+    {
+        int masterPort;
+        Queue queue ;
+        final Connection initialConnection = getConnectionBuilder().build();
+        try
+        {
+            masterPort = getJmsProvider().getConnectedURI(initialConnection).getPort();
+            queue = createTestQueue(initialConnection);
+        }
+        finally
+        {
+            initialConnection.close();
+        }
+
+        int replicaPort = getBrokerAdmin().getAmqpPort(masterPort);
+
+        getBrokerAdmin().stopNode(replicaPort);
 
         try
         {
-
-            Connection connection = _negativeFailoverBuilder.build();
-            assertProducingConsuming(connection);
+            Connection connection = getConnectionBuilder().setFailoverReconnectDelay(SHORT_FAILOVER_CONNECTDELAY)
+                                                          .setFailoverReconnectAttempts(SHORT_FAILOVER_CYCLECOUNT)
+                                                          .build();
+            Utils.produceConsume(connection, queue);
             fail("Exception not thrown");
         }
         catch(JMSException e)
         {
-            // JMSException should be thrown either on getConnection, or produce/consume
+            // JMSException should be thrown either on connection open, or produce/consume
             // depending on whether the relative timing of the node discovering that the
             // secondary has gone.
         }
     }
 
+    @Test
     public void testSecondaryDoesNotBecomePrimaryWhenDesignatedPrimaryStopped() throws Exception
     {
-        if (getBrokerProtocol().equals(Protocol.AMQP_1_0))
-        {
-            // TODO - there seems to be a client defect when a JMS operation is interrupted
-            // by a graceful connection close from the client side.
-            return;
-        }
-
-        startCluster(true);
-        _groupCreator.stopNode(_groupCreator.getBrokerPortNumberOfPrimary());
-
+        int masterPort;
+        final Connection initialConnection = getConnectionBuilder().build();
         try
         {
-            _negativeFailoverBuilder.build();
+            masterPort = getJmsProvider().getConnectedURI(initialConnection).getPort();
+            getBrokerAdmin().setDesignatedPrimary(masterPort, true);
+        }
+        finally
+        {
+            initialConnection.close();
+        }
+
+        getBrokerAdmin().stopNode(masterPort);
+        try
+        {
+            getConnectionBuilder().setFailoverReconnectDelay(SHORT_FAILOVER_CONNECTDELAY)
+                                  .setFailoverReconnectAttempts(SHORT_FAILOVER_CYCLECOUNT)
+                                  .build();
             fail("Connection not expected");
         }
         catch (JMSException e)
@@ -178,70 +172,92 @@ public class TwoNodeTest extends QpidBrokerTestCase
         }
     }
 
+    @Test
     public void testInitialDesignatedPrimaryStateOfNodes() throws Exception
     {
-        startCluster(true);
+        int masterPort;
+        final Connection initialConnection = getConnectionBuilder().build();
+        try
+        {
+            masterPort = getJmsProvider().getConnectedURI(initialConnection).getPort();
+            getBrokerAdmin().setDesignatedPrimary(masterPort, true);
+        }
+        finally
+        {
+            initialConnection.close();
+        }
 
-        Map<String, Object> primaryNodeAttributes = _groupCreator.getNodeAttributes(_groupCreator.getBrokerPortNumberOfPrimary());
-        assertTrue("Expected primary node to be set as designated primary",
-                   (Boolean) primaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY));
+        Map<String, Object>
+                primaryNodeAttributes = getBrokerAdmin().getNodeAttributes(masterPort);
+        assertThat("Expected primary node to be set as designated primary",
+                   primaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY), is(equalTo(true)));
 
-        Map<String, Object> secondaryNodeAttributes = _groupCreator.getNodeAttributes(_groupCreator.getBrokerPortNumberOfSecondaryNode());
-        assertFalse("Expected secondary node to NOT be set as designated primary",
-                    (Boolean) secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY));
+        int replicaPort = getBrokerAdmin().getAmqpPort(masterPort);
+
+        Map<String, Object> secondaryNodeAttributes = getBrokerAdmin().getNodeAttributes(replicaPort);
+        assertThat("Expected secondary node to NOT be set as designated primary",
+                   secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY), is(equalTo(false)));
     }
 
+    @Test
     public void testSecondaryDesignatedAsPrimaryAfterOriginalPrimaryStopped() throws Exception
     {
-        startCluster(true);
-
-        final Connection initialConnection = _positiveFailoverBuilder.build();
-        Session session = initialConnection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        initialConnection.close();
-
-
-        _groupCreator.stopNode(_groupCreator.getBrokerPortNumberOfPrimary());
-
-        Map<String, Object> secondaryNodeAttributes = _groupCreator.getNodeAttributes(_groupCreator.getBrokerPortNumberOfSecondaryNode());
-        assertFalse("Expected node to NOT be set as designated primary", (Boolean) secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY));
-
-        _groupCreator.setNodeAttributes(_groupCreator.getBrokerPortNumberOfSecondaryNode(), Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.DESIGNATED_PRIMARY, true));
-
-        int timeout = 5000;
-        long limit = System.currentTimeMillis() + timeout;
-        while( !((Boolean)secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY)) && System.currentTimeMillis() < limit)
+        int masterPort;
+        Queue queue;
+        final Connection initialConnection = getConnectionBuilder().build();
+        try
         {
-            Thread.sleep(100);
-            secondaryNodeAttributes = _groupCreator.getNodeAttributes(_groupCreator.getBrokerPortNumberOfSecondaryNode());
+            masterPort = getJmsProvider().getConnectedURI(initialConnection).getPort();
+            getBrokerAdmin().setDesignatedPrimary(masterPort, true);
+            queue = createTestQueue(initialConnection);
         }
-        assertTrue("Expected secondary to transition to primary within " + timeout, (Boolean) secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY));
+        finally
+        {
+            initialConnection.close();
+        }
 
-        final Connection connection = _positiveFailoverBuilder.build();
-        assertNotNull("Expected to get a valid connection to new primary", connection);
-        assertProducingConsuming(connection);
+
+        getBrokerAdmin().stopNode(masterPort);
+        int replicaPort = getBrokerAdmin().getAmqpPort(masterPort);
+
+        Map<String, Object> secondaryNodeAttributes = getBrokerAdmin().getNodeAttributes(replicaPort);
+        assertThat("Expected secondary node to NOT be set as designated primary",
+                   secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY), is(equalTo(false)));
+
+        getBrokerAdmin().setDesignatedPrimary(replicaPort, true);
+        getBrokerAdmin().awaitNodeRole(replicaPort, "MASTER");
+
+        assertProduceConsume(queue);
     }
 
+    @Test
     public void testSetDesignatedAfterReplicaBeingStopped() throws Exception
     {
-        startCluster(false);
+        final Connection initialConnection = getConnectionBuilder().build();
+        int masterPort;
+        Queue queue;
+        try
+        {
+            masterPort = getJmsProvider().getConnectedURI(initialConnection).getPort();
+            queue = createTestQueue(initialConnection);
+        }
+        finally
+        {
+            initialConnection.close();
+        }
 
-        final Connection initialConnection = _positiveFailoverBuilder.build();
-        Session session = initialConnection.createSession(true, Session.SESSION_TRANSACTED);
-        getJmsProvider().createQueue(session, getTestQueueName());
-        initialConnection.close();
+        int replicaPort = getBrokerAdmin().getAmqpPort(masterPort);
+        getBrokerAdmin().stopNode(replicaPort);
 
-        _groupCreator.stopNode(_groupCreator.getBrokerPortNumberOfSecondaryNode());
+        Map<String, Object>
+                primaryNodeAttributes = getBrokerAdmin().getNodeAttributes(masterPort);
+        assertThat("Expected node to NOT be set as designated primary",
+                   primaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY), is(equalTo(false)));
 
-        Map<String, Object> secondaryNodeAttributes = _groupCreator.getNodeAttributes(_groupCreator.getBrokerPortNumberOfPrimary());
-        assertFalse("Expected node to NOT be set as designated primary", (Boolean) secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY));
+        getBrokerAdmin().setDesignatedPrimary(masterPort, true);
+        getBrokerAdmin().awaitNodeRole(masterPort, "MASTER");
 
-        _groupCreator.setNodeAttributes(_groupCreator.getBrokerPortNumberOfPrimary(), Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.DESIGNATED_PRIMARY, true));
-        _groupCreator.awaitNodeToAttainRole(_groupCreator.getBrokerPortNumberOfPrimary(), "MASTER" );
-
-        final Connection connection = _positiveFailoverBuilder.build();
-        assertNotNull("Expected to get a valid connection to primary", connection);
-        assertProducingConsuming(connection);
+        assertProduceConsume(queue);
     }
 
 }

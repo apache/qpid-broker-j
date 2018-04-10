@@ -20,6 +20,8 @@
 
 package org.apache.qpid.tests.http;
 
+import static org.apache.qpid.systests.Utils.getJmsProvider;
+
 import java.net.InetSocketAddress;
 
 import javax.jms.Connection;
@@ -32,11 +34,9 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 
 import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.systests.JmsProvider;
-import org.apache.qpid.systests.QpidJmsClient0xProvider;
-import org.apache.qpid.systests.QpidJmsClientProvider;
+import org.apache.qpid.systests.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -59,17 +59,7 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
         _helper = new HttpTestHelper(getBrokerAdmin(),
                                      config != null && config.useVirtualHostAsHost() ? getVirtualHost() : null);
 
-        Protocol protocol = getProtocol();
-        AmqpManagementFacade managementFacade = new AmqpManagementFacade(protocol);
-        if (protocol == Protocol.AMQP_1_0)
-        {
-            _jmsProvider = new QpidJmsClientProvider(managementFacade);
-        }
-        else
-        {
-            _jmsProvider = new QpidJmsClient0xProvider();
-        }
-
+        _jmsProvider = getJmsProvider();
     }
 
     @After
@@ -121,14 +111,12 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
 
     protected static long getReceiveTimeout()
     {
-        return Long.getLong("qpid.test_receive_timeout", 1000L);
+        return Utils.getReceiveTimeout();
     }
 
     protected static Protocol getProtocol()
     {
-        return Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1")
-                                                .replace('-', '_')
-                                                .replace('.', '_'));
+        return Utils.getProtocol();
     }
 
     protected String getTestName()
