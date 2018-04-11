@@ -21,26 +21,34 @@ package org.apache.qpid.systest.disttest.endtoend;
 import static org.apache.qpid.disttest.AbstractRunner.JNDI_CONFIG_PROP;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMB;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD;
-import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_MINIMUM_DELTA;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_MAX_NUMBER_OF_RUNS;
+import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_MINIMUM_DELTA;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_START_TARGET_RATE;
 import static org.apache.qpid.disttest.ControllerRunner.OUTPUT_DIR_PROP;
 import static org.apache.qpid.disttest.ControllerRunner.TEST_CONFIG_PROP;
+import static org.apache.qpid.tests.http.HttpTestBase.DEFAULT_BROKER_CONFIG;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.apache.qpid.disttest.ControllerRunner;
 import org.apache.qpid.disttest.DistributedTestException;
@@ -49,60 +57,66 @@ import org.apache.qpid.disttest.jms.QpidQueueCreatorFactory;
 import org.apache.qpid.disttest.jms.QpidRestAPIQueueCreator;
 import org.apache.qpid.disttest.message.ParticipantAttribute;
 import org.apache.qpid.disttest.results.aggregation.TestResultAggregator;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.tests.http.HttpTestBase;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.ConfigItem;
 import org.apache.qpid.util.FileUtils;
 
-public class EndToEndTest extends QpidBrokerTestCase
+@ConfigItem(name = "qpid.initialConfigurationLocation", value = DEFAULT_BROKER_CONFIG )
+public class EndToEndTest extends HttpTestBase
 {
     private static final String TEST_CONFIG_ITERATIONS = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/iterations.json";
     private static final String TEST_CONFIG_MANYPARTICIPANTS = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/manyparticipants.json";
     private static final String TEST_CONFIG_HILLCLIMBING = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/hillclimbing.js";
     private static final String TEST_CONFIG_ERROR = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/error.json";
-    private static final String JNDI_CONFIG_FILE = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/perftests.systests.properties";
+
     private static final int NUMBER_OF_HEADERS = 1;
     private static final int NUMBER_OF_SUMMARIES = 3;
 
     private File _outputDir;
     private File _jndiConfigFile;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        getDefaultBrokerConfiguration().addHttpManagementConfiguration();
-        super.setUp();
-        setSystemProperty("perftests.manangement-url", String.format("http://localhost:%d", getDefaultBroker().getHttpPort()));
-        setSystemProperty("perftests.broker-virtualhostnode", "test");
-        setSystemProperty("perftests.broker-virtualhost", "test");
-        setSystemProperty(QpidQueueCreatorFactory.QUEUE_CREATOR_CLASS_NAME_SYSTEM_PROPERTY, QpidRestAPIQueueCreator.class.getName());
+        System.setProperty("perftests.manangement-url", String.format("http://localhost:%d", getBrokerAdmin().getBrokerAddress(
+                BrokerAdmin.PortType.HTTP).getPort()));
+        System.setProperty("perftests.broker-virtualhostnode", getVirtualHost());
+        System.setProperty("perftests.broker-virtualhost", getVirtualHost());
+        System.setProperty(QpidQueueCreatorFactory.QUEUE_CREATOR_CLASS_NAME_SYSTEM_PROPERTY, QpidRestAPIQueueCreator.class.getName());
         _outputDir = createTemporaryOutputDirectory();
-        assertTrue("Output dir must not exist", _outputDir.isDirectory());
+        assumeThat("Output dir must not exist", _outputDir.isDirectory(), is(equalTo(true)));
         _jndiConfigFile = getJNDIPropertiesFile();
         QpidRestAPIQueueCreator queueCreator = new QpidRestAPIQueueCreator();
         QueueConfig queueConfig = new QueueConfig("controllerqueue", true, Collections.<String, Object>emptyMap());
         queueCreator.createQueues(null, null, Collections.<QueueConfig>singletonList(queueConfig));
     }
 
-    @Override
-    public void tearDown() throws Exception
+    @After
+    public void tearDown()
     {
         try
         {
             if (_outputDir != null && _outputDir.exists())
             {
-               FileUtils.delete(_outputDir, true);
+                FileUtils.delete(_outputDir, true);
             }
-            if (_jndiConfigFile != null && !new File(JNDI_CONFIG_FILE).equals(_jndiConfigFile))
+            if (_jndiConfigFile != null)
             {
                 FileUtils.delete(_jndiConfigFile, true);
             }
         }
         finally
         {
-            super.tearDown();
+            System.clearProperty("perftests.manangement-url");
+            System.clearProperty("perftests.broker-virtualhostnode");
+            System.clearProperty("perftests.broker-virtualhost");
+            System.clearProperty(QpidQueueCreatorFactory.QUEUE_CREATOR_CLASS_NAME_SYSTEM_PROPERTY);
         }
     }
 
+    @Test
     public void testIterations() throws Exception
     {
         Map<String, String> arguments = new HashMap<>();
@@ -120,7 +134,7 @@ public class EndToEndTest extends QpidBrokerTestCase
         int dataRowsPerIteration = numberOfParticipants + NUMBER_OF_SUMMARIES;
 
         int numberOfExpectedRows = NUMBER_OF_HEADERS + dataRowsPerIteration * numberOfIterations;
-        assertEquals("Unexpected number of lines in CSV", numberOfExpectedRows, csvLines.length);
+        assertThat("Unexpected number of lines in CSV", csvLines.length, is(equalTo(numberOfExpectedRows)));
 
         final String testName = "Iterations";
         assertDataRowsForIterationArePresent(csvLines, testName, 0, dataRowsPerIteration);
@@ -129,6 +143,7 @@ public class EndToEndTest extends QpidBrokerTestCase
         assertDataRowHasCorrectTestAndClientName(testName, "", TestResultAggregator.ALL_PARTICIPANTS_NAME, csvLines[4 + dataRowsPerIteration]);
     }
 
+    @Test
     public void testManyParticipants() throws Exception
     {
         Map<String, String> arguments = new HashMap<>();
@@ -145,7 +160,7 @@ public class EndToEndTest extends QpidBrokerTestCase
         int dataRowsPerIteration = numberOfParticipants + NUMBER_OF_SUMMARIES;
 
         int numberOfExpectedRows = NUMBER_OF_HEADERS + dataRowsPerIteration;
-        assertEquals("Unexpected number of lines in CSV", numberOfExpectedRows, csvLines.length);
+        assertThat("Unexpected number of lines in CSV", csvLines.length, is(equalTo(numberOfExpectedRows)));
 
         int actualMessagesSent = 0;
         int reportedTotalMessagesSent = 0;
@@ -180,15 +195,14 @@ public class EndToEndTest extends QpidBrokerTestCase
             }
         }
 
-        assertEquals("Reported total messages sent does not match total sent by producers",
-                     reportedTotalMessagesSent,
-                     actualMessagesSent);
-        assertEquals("Reported total messages received does not match total received by consumers",
-                     reportedTotalMessagesReceived,
-                     actualMessagesReceived);
+        assertThat("Reported total messages sent does not match total sent by producers",
+                     actualMessagesSent, is(equalTo(reportedTotalMessagesSent)));
+        assertThat("Reported total messages received does not match total received by consumers",
+                     actualMessagesReceived, is(equalTo(reportedTotalMessagesReceived)));
 
     }
 
+    @Test
     public void testHillClimbing() throws Exception
     {
         Map<String, String> arguments = new HashMap<>();
@@ -212,7 +226,7 @@ public class EndToEndTest extends QpidBrokerTestCase
         int numberOfParticipants = 2;
 
         int numberOfExpectedRows = NUMBER_OF_HEADERS + numberOfParticipants + NUMBER_OF_SUMMARIES;
-        assertEquals("Unexpected number of lines in CSV", numberOfExpectedRows, csvLines.length);
+        assertThat("Unexpected number of lines in CSV", csvLines.length, is(equalTo(numberOfExpectedRows)));
 
         final String testName = "HillClimbing";
         assertDataRowHasCorrectTestAndClientName(testName, "producingClient", "Producer1", csvLines[1]);
@@ -229,6 +243,7 @@ public class EndToEndTest extends QpidBrokerTestCase
 
     }
 
+    @Test
     public void testTestScriptCausesError() throws Exception
     {
         Map<String, String> arguments = new HashMap<>();
@@ -267,7 +282,7 @@ public class EndToEndTest extends QpidBrokerTestCase
         String expectedCsvFilename = buildOutputFilename(testConfig, ".csv");
 
         File expectedCsvOutputFile = new File(_outputDir, expectedCsvFilename);
-        assertTrue("CSV output file must exist", expectedCsvOutputFile.exists());
+        assertThat("CSV output file must exist", expectedCsvOutputFile.exists(), is(equalTo(true)));
         final String csvContents = FileUtils.readFileAsString(expectedCsvOutputFile);
         return csvContents.split("\n");
     }
@@ -278,7 +293,7 @@ public class EndToEndTest extends QpidBrokerTestCase
         String expectedXmlFilename = buildOutputFilename(testConfig, ".xml");
 
         File expectedXmlOutputFile = new File(_outputDir, expectedXmlFilename);
-        assertTrue("XML output file must exist", expectedXmlOutputFile.exists());
+        assertThat("XML output file must exist", expectedXmlOutputFile.exists(), is(equalTo(true)));
     }
 
     private String buildOutputFilename(final String testConfig, final String extension)
@@ -303,7 +318,9 @@ public class EndToEndTest extends QpidBrokerTestCase
             }
         }
 
-        assertEquals("Unexpected number of data rows for test name " + testName + " iteration nunber " + iterationNumber, expectedCount, actualCount);
+        assertThat(String.format("Unexpected number of data rows for test name %s iteration number %d",
+                                 testName,
+                                 iterationNumber), actualCount, is(equalTo(expectedCount)));
     }
 
     private void assertDataRowHasThroughputValues(String csvLine)
@@ -312,21 +329,34 @@ public class EndToEndTest extends QpidBrokerTestCase
 
         double throughput = Double.valueOf(cells[ParticipantAttribute.THROUGHPUT.ordinal()]);
         int messageThroughput = Integer.valueOf(cells[ParticipantAttribute.MESSAGE_THROUGHPUT.ordinal()]);
-        assertTrue("Throughput in line " + csvLine + " is not greater than zero : " + throughput, throughput > 0);
-        assertTrue("Message throughput in line " + csvLine + " is not greater than zero : " + messageThroughput, messageThroughput > 0);
-
+        assertThat("Throughput in line " + csvLine + " is not greater than zero : " + throughput,
+                   throughput > 0,
+                   is(equalTo(true)));
+        assertThat("Message throughput in line " + csvLine + " is not greater than zero : " + messageThroughput,
+                   messageThroughput > 0,
+                   is(equalTo(true)));
     }
 
-    private void assertDataRowHasCorrectTestAndClientName(String testName, String clientName, String participantName, String csvLine)
+    private void assertDataRowHasCorrectTestAndClientName(String testName,
+                                                          String clientName,
+                                                          String participantName,
+                                                          String csvLine)
     {
         String[] cells = splitCsvCells(csvLine);
 
         // All attributes become cells in the CSV, so this will be true
-        assertEquals("Unexpected number of cells in CSV line " + csvLine, ParticipantAttribute.values().length, cells.length);
-        assertEquals("Unexpected test name in CSV line " + csvLine, testName, cells[ParticipantAttribute.TEST_NAME.ordinal()]);
-        assertEquals("Unexpected client name in CSV line " + csvLine, clientName, cells[ParticipantAttribute.CONFIGURED_CLIENT_NAME.ordinal()]);
-        assertEquals("Unexpected participant name in CSV line " + csvLine, participantName, cells[ParticipantAttribute.PARTICIPANT_NAME.ordinal()]);
-
+        assertThat("Unexpected number of cells in CSV line " + csvLine,
+                   cells.length,
+                   is(equalTo(ParticipantAttribute.values().length)));
+        assertThat("Unexpected test name in CSV line " + csvLine,
+                   cells[ParticipantAttribute.TEST_NAME.ordinal()],
+                   is(equalTo(testName)));
+        assertThat("Unexpected client name in CSV line " + csvLine,
+                   cells[ParticipantAttribute.CONFIGURED_CLIENT_NAME.ordinal()],
+                   is(equalTo(clientName)));
+        assertThat("Unexpected participant name in CSV line " + csvLine,
+                   cells[ParticipantAttribute.PARTICIPANT_NAME.ordinal()],
+                   is(equalTo(participantName)));
     }
 
     private String[] splitCsvCells(String csvLine)
@@ -346,56 +376,22 @@ public class EndToEndTest extends QpidBrokerTestCase
 
     private File getJNDIPropertiesFile() throws Exception
     {
-        if (isBroker10())
+        String connectionUrl = getConnectionBuilder().setClientId(null).buildConnectionURL();
+        String factoryClass = getProtocol() == Protocol.AMQP_1_0
+                ? "org.apache.qpid.jms.jndi.JmsInitialContextFactory"
+                : "org.apache.qpid.jndi.PropertiesFileInitialContextFactory";
+
+        Properties properties = new Properties();
+        properties.put("connectionfactory.connectionfactory", connectionUrl);
+        properties.put("java.naming.factory.initial", factoryClass);
+        properties.put("queue.controllerqueue", "controllerqueue");
+
+        File propertiesFile = Files.createTempFile("perftests", ".jndi.properties").toFile();
+        try (OutputStream os = new FileOutputStream(propertiesFile))
         {
-            Map<String,String> options = new LinkedHashMap<>();
-            options.put("amqp.vhost", "test");
-            options.put("jms.username", GUEST_USERNAME);
-            options.put("jms.password", GUEST_PASSWORD);
-
-            StringBuilder stem = new StringBuilder("amqp://localhost:").append(System.getProperty("test.port"));
-            appendOptions(options, stem);
-
-            Properties properties = new Properties();
-            properties.put("connectionfactory.connectionfactory", stem.toString());
-            properties.put("java.naming.factory.initial", "org.apache.qpid.jms.jndi.JmsInitialContextFactory");
-            properties.put("queue.controllerqueue", "controllerqueue");
-
-            File propertiesFile = TestFileUtils.createTempFile(this, ".jndi.properties");
-            try(OutputStream os = new FileOutputStream(propertiesFile))
-            {
-                properties.store(os, null);
-            }
-            return propertiesFile;
+            properties.store(os, null);
         }
-        else
-        {
-            return new File(JNDI_CONFIG_FILE);
-        }
+        return propertiesFile;
     }
 
-    private void appendOptions(final Map<String, String> actualOptions, final StringBuilder stem)
-    {
-        boolean first = true;
-        for(Map.Entry<String, String> option : actualOptions.entrySet())
-        {
-            if(first)
-            {
-                stem.append('?');
-                first = false;
-            }
-            else
-            {
-                stem.append('&');
-            }
-            try
-            {
-                stem.append(option.getKey()).append('=').append(URLEncoder.encode(option.getValue(), "UTF-8"));
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 }

@@ -23,11 +23,14 @@ package org.apache.qpid.server.store.berkeleydb.replication;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Session;
+
+import org.junit.BeforeClass;
 
 import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.systests.JmsProvider;
@@ -42,6 +45,12 @@ public class GroupJmsTestBase extends JmsTestBase
     private static final int FAILOVER_CONNECTDELAY = 1000;
     static final int SHORT_FAILOVER_CYCLECOUNT = 2;
     static final int SHORT_FAILOVER_CONNECTDELAY = 200;
+
+    @BeforeClass
+    public static void verify()
+    {
+        assumeThat(System.getProperty("virtualhostnode.type", "BDB"), is(equalTo("BDB")));
+    }
 
     @Override
     public GroupBrokerAdmin getBrokerAdmin()

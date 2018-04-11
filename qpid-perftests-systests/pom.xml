@@ -65,17 +65,15 @@
       <optional>true</optional>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-systests-http</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-          <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-          <directory>${test.resource.directory}/test-profiles/test_resources</directory>
-      </resource>
-    </resources>
     <testResources>
       <testResource>
         <directory>src/test/java</directory>
@@ -85,6 +83,12 @@
       </testResource>
       <testResource>
         <directory>src/test/resources</directory>
+      </testResource>
+      <testResource>
+        <directory>${basedir}/../test-profiles/test_resources/ssl</directory>
+        <includes>
+          <include>*.jks</include>
+        </includes>
       </testResource>
     </testResources>
 

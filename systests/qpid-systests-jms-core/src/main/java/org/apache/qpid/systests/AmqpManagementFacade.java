@@ -132,13 +132,20 @@ public class AmqpManagementFacade
         }
         producer.close();
 
+        return receiveManagementResponse(consumer, replyToDestination, 201);
+    }
+
+    private Map<String, Object> receiveManagementResponse(final MessageConsumer consumer,
+                                                          final Destination replyToDestination,
+                                                          final int responseStatus) throws JMSException
+    {
         Message response = consumer.receive(5000);
         try
         {
             if (response != null)
             {
                 int statusCode = response.getIntProperty("statusCode");
-                if (statusCode == 201)
+                if (statusCode == responseStatus)
                 {
                     if (response instanceof MapMessage)
                     {
@@ -163,6 +170,10 @@ public class AmqpManagementFacade
                             return new HashMap<>(bodyMap);
                         }
                     }
+                    else
+                    {
+                        return Collections.emptyMap();
+                    }
                 }
                 else
                 {
@@ -170,7 +181,7 @@ public class AmqpManagementFacade
                 }
             }
 
-            throw new IllegalArgumentException("Cannot parse the results from a management query");
+            throw new IllegalArgumentException("Cannot parse the results from a management response");
         }
         finally
         {
@@ -182,10 +193,48 @@ public class AmqpManagementFacade
         }
     }
 
+    public Map<String,Object> updateEntityUsingAmqpManagementAndReceiveResponse(final String name,
+                                                                  final String type,
+                                                                  Map<String, Object> attributes,
+                                                                  final Session session)
+            throws JMSException
+    {
+
+        Destination replyToDestination;
+        Destination replyConsumerDestination;
+        if (_protocol == Protocol.AMQP_1_0)
+        {
+            replyToDestination = session.createTemporaryQueue();
+            replyConsumerDestination = replyToDestination;
+        }
+        else
+        {
+            replyToDestination = session.createQueue(AMQP_0_X_REPLY_TO_DESTINATION);
+            replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
+        }
+
+        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
+
+        updateEntityUsingAmqpManagement(name, type, attributes, replyToDestination, session);
+
+        return receiveManagementResponse(consumer, replyToDestination, 200);
+    }
+
+
     public void updateEntityUsingAmqpManagement(final String name,
                                                 final Session session,
                                                 final String type,
                                                 Map<String, Object> attributes)
+            throws JMSException
+    {
+        updateEntityUsingAmqpManagement(name, type, attributes, null, session);
+    }
+
+    private void updateEntityUsingAmqpManagement(final String name,
+                                                 final String type,
+                                                 Map<String, Object> attributes,
+                                                 Destination replyToDestination,
+                                                 final Session session)
             throws JMSException
     {
         MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
@@ -195,6 +244,7 @@ public class AmqpManagementFacade
         createMessage.setStringProperty("operation", "UPDATE");
         createMessage.setStringProperty("index", "object-path");
         createMessage.setStringProperty("key", name);
+        createMessage.setJMSReplyTo(replyToDestination);
         for (Map.Entry<String, Object> entry : attributes.entrySet())
         {
             createMessage.setObject(entry.getKey(), entry.getValue());

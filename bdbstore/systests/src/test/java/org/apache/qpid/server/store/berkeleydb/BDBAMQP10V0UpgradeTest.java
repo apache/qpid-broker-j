@@ -19,10 +19,22 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.apache.qpid.systests.JmsTestBase.DEFAULT_BROKER_CONFIG;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
+
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.security.MessageDigest;
+import java.util.Collections;
+import java.util.Map;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -32,11 +44,16 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
+import org.apache.qpid.systests.JmsTestBase;
+import org.apache.qpid.tests.utils.ConfigItem;
+import org.apache.qpid.tests.utils.RunBrokerAdmin;
 
 /**
  *
@@ -51,71 +68,49 @@ import org.apache.qpid.server.util.FileUtils;
  * messageProducer.send(message);
  *
  */
-public class BDBAMQP10V0UpgradeTest extends QpidBrokerTestCase
+@ConfigItem(name = "qpid.initialConfigurationLocation", value = DEFAULT_BROKER_CONFIG )
+public class BDBAMQP10V0UpgradeTest extends UpgradeTestBase
 {
-    private static final int EXPECTED_MESSAGE_LENGTH = 256 * 1024;
+    private static final long EXPECTED_MESSAGE_LENGTH = 256 * 1024;
 
-    private String _storeLocation;
-
-    @Override
-    public void setUp() throws Exception
+    @BeforeClass
+    public static void verifyClient()
     {
-        _storeLocation = Files.createTempDirectory("qpid-work-" + getClassQualifiedTestName() + "-bdb-store").toString();
-        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
-        brokerConfiguration.setObjectAttribute(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, BDBVirtualHostNode.STORE_PATH, _storeLocation );
-
-        //Clear the two target directories if they exist.
-        File directory = new File(_storeLocation);
-        if (directory.exists() && directory.isDirectory())
-        {
-            FileUtils.delete(directory, true);
-        }
-        directory.mkdirs();
-
-        // copy store files
-        InputStream src = getClass().getClassLoader().getResourceAsStream("upgrade/bdbstore-v9-amqp10v0/test-store/00000000.jdb");
-        FileUtils.copy(src, new File(_storeLocation, "00000000.jdb"));
-
-        super.setUp();
+        assumeThat(System.getProperty("virtualhostnode.type", "BDB"), is(equalTo("BDB")));
+        assumeThat(getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
     }
 
-    @Override
-    public void tearDown() throws Exception
+    @Test
+    public void testRecoverAmqpV0Message() throws Exception
     {
+        Connection connection = getConnectionBuilder().setVirtualHost("test").build();
         try
         {
-            super.tearDown();
+            connection.start();
+            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Queue queue = session.createQueue("queue");
+            MessageConsumer consumer = session.createConsumer(queue);
+
+            Message message = consumer.receive(getReceiveTimeout());
+            assertThat("Recovered message not received", message, is(instanceOf(BytesMessage.class)));
+            BytesMessage bytesMessage = ((BytesMessage) message);
+
+            long length = bytesMessage.getBodyLength();
+            String expectedContentHash = message.getStringProperty("sha256hash");
+            byte[] content = new byte[(int) length];
+            bytesMessage.readBytes(content);
+
+            assertThat("Unexpected content length",  length, is(equalTo(EXPECTED_MESSAGE_LENGTH)));
+            assertThat("Message should carry expectedShaHash property", expectedContentHash, is(notNullValue()));
+
+            String contentHash = computeContentHash(content);
+            assertThat("Unexpected content hash", expectedContentHash, is(equalTo(contentHash)));
+            session.commit();
         }
         finally
         {
-            FileUtils.delete(new File(_storeLocation), true);
+            connection.close();
         }
-    }
-
-    public void testRecoverAmqpV0Message() throws Exception
-    {
-        Connection connection = getConnection();
-        connection.start();
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Queue queue = createTestQueue(session, "queue");
-        MessageConsumer consumer = session.createConsumer(queue);
-
-        Message message = consumer.receive(getReceiveTimeout());
-        assertNotNull("Recovered message not received", message);
-        assertTrue(message instanceof BytesMessage);
-        BytesMessage bytesMessage = ((BytesMessage) message);
-
-        long length = bytesMessage.getBodyLength();
-        String expectedContentHash = message.getStringProperty("sha256hash");
-        byte[] content = new byte[(int) length];
-        bytesMessage.readBytes(content);
-
-        assertEquals("Unexpected content length", EXPECTED_MESSAGE_LENGTH, length);
-        assertNotNull("Message should carry expectedShaHash property", expectedContentHash);
-
-        String contentHash = computeContentHash(content);
-        assertEquals("Unexpected content hash", expectedContentHash, contentHash);
-        session.commit();
     }
 
     private String computeContentHash(final byte[] content) throws Exception
@@ -123,5 +118,11 @@ public class BDBAMQP10V0UpgradeTest extends QpidBrokerTestCase
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(content);
         return DatatypeConverter.printHexBinary(hash);
+    }
+
+    @Override
+    String getOldStoreResourcePath()
+    {
+        return "upgrade/bdbstore-v9-amqp10v0/test-store/00000000.jdb";
     }
 }

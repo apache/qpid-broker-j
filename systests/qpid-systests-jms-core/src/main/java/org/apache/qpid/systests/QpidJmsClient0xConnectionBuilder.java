@@ -273,6 +273,27 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     @Override
     public ConnectionFactory buildConnectionFactory() throws NamingException
     {
+        String connectionUrl = buildConnectionURL();
+
+        final Hashtable<Object, Object> initialContextEnvironment = new Hashtable<>();
+        initialContextEnvironment.put(Context.INITIAL_CONTEXT_FACTORY,
+                                      "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
+        final String factoryName = "connectionFactory";
+        initialContextEnvironment.put("connectionfactory." + factoryName, connectionUrl);
+        InitialContext initialContext = new InitialContext(initialContextEnvironment);
+        try
+        {
+            return (ConnectionFactory) initialContext.lookup(factoryName);
+        }
+        finally
+        {
+            initialContext.close();
+        }
+    }
+
+    @Override
+    public String buildConnectionURL()
+    {
         StringBuilder cUrlBuilder = new StringBuilder("amqp://");
         if (_username != null)
         {
@@ -352,21 +373,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
         {
             cUrlBuilder.append("&").append(entry.getKey()).append("='").append(entry.getValue()).append("'");
         }
-
-        final Hashtable<Object, Object> initialContextEnvironment = new Hashtable<>();
-        initialContextEnvironment.put(Context.INITIAL_CONTEXT_FACTORY,
-                                      "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
-        final String factoryName = "connectionFactory";
-        initialContextEnvironment.put("connectionfactory." + factoryName, cUrlBuilder.toString());
-        InitialContext initialContext = new InitialContext(initialContextEnvironment);
-        try
-        {
-            return (ConnectionFactory) initialContext.lookup(factoryName);
-        }
-        finally
-        {
-            initialContext.close();
-        }
+        return cUrlBuilder.toString();
     }
 
     private String buildTransportQuery()

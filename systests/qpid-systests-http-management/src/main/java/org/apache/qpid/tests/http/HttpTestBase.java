@@ -42,6 +42,8 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public abstract class HttpTestBase extends BrokerAdminUsingTestBase
 {
+    public static final String DEFAULT_BROKER_CONFIG = "classpath:config-http-management-tests.json";
+
     @Rule
     public final TestName _testName = new TestName();
 

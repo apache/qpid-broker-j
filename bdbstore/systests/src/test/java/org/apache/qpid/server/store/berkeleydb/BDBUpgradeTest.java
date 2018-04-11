@@ -20,20 +20,29 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.apache.qpid.systests.JmsTestBase.DEFAULT_BROKER_CONFIG;
+import static org.apache.qpid.systests.Utils.INDEX;
+import static org.apache.qpid.systests.Utils.sendMessages;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
+
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
-import javax.jms.Destination;
-import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
@@ -46,83 +55,49 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
-import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
-import org.apache.qpid.systest.rest.RestTestHelper;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.systests.AmqpManagementFacade;
+import org.apache.qpid.systests.JmsTestBase;
+import org.apache.qpid.tests.utils.ConfigItem;
+import org.apache.qpid.tests.utils.EmbeddedBrokerPerClassAdminImpl;
+import org.apache.qpid.tests.utils.RunBrokerAdmin;
 
 /**
  * Tests upgrading a BDB store on broker startup.
  * The store will then be used to verify that the upgrade is completed
  * properly and that once upgraded it functions as expected.
- *
+ * <p>
  * Store prepared using old client/broker with BDBStoreUpgradeTestPreparer.
  */
-public class BDBUpgradeTest extends QpidBrokerTestCase
+@ConfigItem(name = "qpid.initialConfigurationLocation", value = DEFAULT_BROKER_CONFIG )
+public class BDBUpgradeTest extends UpgradeTestBase
 {
 
     private static final String STRING_1024 = generateString(1024);
-    private static final String STRING_1024_256 = generateString(1024*256);
+    private static final String STRING_1024_256 = generateString(1024 * 256);
 
-    private static final String TOPIC_NAME="myUpgradeTopic";
-    private static final String SUB_NAME="myDurSubName";
-    private static final String SELECTOR_SUB_NAME="mySelectorDurSubName";
-    private static final String SELECTOR_TOPIC_NAME="mySelectorUpgradeTopic";
-    private static final String QUEUE_NAME="myUpgradeQueue";
-    private static final String NON_DURABLE_QUEUE_NAME="queue-non-durable";
-    private static final String PRIORITY_QUEUE_NAME="myPriorityQueue";
-    private static final String QUEUE_WITH_DLQ_NAME="myQueueWithDLQ";
+    private static final String TOPIC_NAME = "myUpgradeTopic";
+    private static final String SUB_NAME = "myDurSubName";
+    private static final String SELECTOR_SUB_NAME = "mySelectorDurSubName";
+    private static final String SELECTOR_TOPIC_NAME = "mySelectorUpgradeTopic";
+    private static final String QUEUE_NAME = "myUpgradeQueue";
+    private static final String PRIORITY_QUEUE_NAME = "myPriorityQueue";
+    private static final String QUEUE_WITH_DLQ_NAME = "myQueueWithDLQ";
 
-    private String _storeLocation;
-    private RestTestHelper _restTestHelper;
-
-    @Override
-    public void setUp() throws Exception
+    @BeforeClass
+    public static void verifyClient()
     {
-        _storeLocation = Files.createTempDirectory("qpid-work-" + getClassQualifiedTestName() + "-bdb-store").toString();
-        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
-        brokerConfiguration.addHttpManagementConfiguration();
-        brokerConfiguration.setObjectAttribute(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, BDBVirtualHostNode.STORE_PATH, _storeLocation );
-
-        //Clear the two target directories if they exist.
-        File directory = new File(_storeLocation);
-        if (directory.exists() && directory.isDirectory())
-        {
-            FileUtils.delete(directory, true);
-        }
-        directory.mkdirs();
-
-        // copy store files
-        InputStream src = getClass().getClassLoader().getResourceAsStream("upgrade/bdbstore-v4/test-store/00000000.jdb");
-        FileUtils.copy(src, new File(_storeLocation, "00000000.jdb"));
-
-        super.setUp();
-        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
-    }
-
-    @Override
-    public void tearDown() throws Exception
-    {
-        try
-        {
-            _restTestHelper.tearDown();
-        }
-        finally
-        {
-            try
-            {
-                super.tearDown();
-            }
-            finally
-            {
-                FileUtils.delete(new File(_storeLocation), true);
-            }
-        }
+        assumeThat(System.getProperty("virtualhostnode.type", "BDB"), is(equalTo("BDB")));
+        assumeThat(getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
     }
 
     /**
@@ -131,93 +106,106 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
      * by monitoring message count while sending new messages to the topic and then
      * consuming them.
      */
+    @Test
     public void testSelectorDurability() throws Exception
     {
-        Connection con = getConnection();
-        Queue queue;
+        TopicConnection connection = getTopicConnection();
         try
         {
-            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            queue = session.createQueue("BURL:direct:////clientid" + ":" + SELECTOR_SUB_NAME);
+            connection.start();
+
+            TopicSession session = connection.createTopicSession(true, Session.SESSION_TRANSACTED);
+            Topic topic = session.createTopic(SELECTOR_TOPIC_NAME);
+            TopicPublisher publisher = session.createPublisher(topic);
+
+            int index = ThreadLocalRandom.current().nextInt();
+            Message messageA = session.createTextMessage("A");
+            messageA.setIntProperty("ID", index);
+            messageA.setStringProperty("testprop", "false");
+            publisher.publish(messageA);
+
+            Message messageB = session.createTextMessage("B");
+            messageB.setIntProperty("ID", index);
+            messageB.setStringProperty("testprop", "true");
+            publisher.publish(messageB);
+
+            session.commit();
+
+            TopicSubscriber subscriber =
+                    session.createDurableSubscriber(topic, SELECTOR_SUB_NAME, "testprop='true'", false);
+            Message migrated = subscriber.receive(getReceiveTimeout());
+            assertThat("Failed to receive migrated message", migrated, is(notNullValue()));
+
+            Message received = subscriber.receive(getReceiveTimeout());
+            session.commit();
+            assertThat("Failed to receive published message", received, is(notNullValue()));
+            assertThat("Message is not Text message", received, is(instanceOf(TextMessage.class)));
+            assertThat("Unexpected text", ((TextMessage) received).getText(), is(equalTo("B")));
+            assertThat("Unexpected index", received.getIntProperty("ID"), is(equalTo(index)));
+
+            session.close();
         }
         finally
         {
-            con.close();
+            connection.close();
         }
-
-        // Create a connection and start it
-        TopicConnection connection = (TopicConnection) getConnection();
-        connection.start();
-
-        // Send messages which don't match and do match the selector, checking message count
-        TopicSession pubSession = connection.createTopicSession(true, Session.SESSION_TRANSACTED);
-        assertEquals("DurableSubscription backing queue should have 1 message on it initially",
-                     1, getQueueDepth(queue.getQueueName()));
-
-        Topic topic = pubSession.createTopic(SELECTOR_TOPIC_NAME);
-        TopicPublisher publisher = pubSession.createPublisher(topic);
-
-        publishMessages(pubSession, publisher, topic, DeliveryMode.PERSISTENT, 1*1024, 1, "false");
-        pubSession.commit();
-        assertEquals("DurableSubscription backing queue should still have 1 message on it",
-                     1, getQueueDepth(queue.getQueueName()));
-
-        publishMessages(pubSession, publisher, topic, DeliveryMode.PERSISTENT, 1*1024, 1, "true");
-        pubSession.commit();
-        assertEquals("DurableSubscription backing queue should now have 2 messages on it",
-                     2, getQueueDepth(queue.getQueueName()));
-
-        TopicSubscriber durSub = pubSession.createDurableSubscriber(topic, SELECTOR_SUB_NAME,"testprop='true'", false);
-        Message m = durSub.receive(getReceiveTimeout());
-        assertNotNull("Failed to receive an expected message", m);
-        m = durSub.receive(getReceiveTimeout());
-        assertNotNull("Failed to receive an expected message", m);
-        pubSession.commit();
-
-        pubSession.close();
     }
 
     /**
      * Test that the DurableSubscription without selector was successfully
      * transfered to the new store, and functions as expected with continued use.
      */
+    @Test
     public void testDurableSubscriptionWithoutSelector() throws Exception
     {
-        Connection con = getConnection();
-        Queue queue;
+        TopicConnection connection = getTopicConnection();
         try
         {
-            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            queue = session.createQueue("BURL:direct:////clientid" + ":" + SUB_NAME);
+            connection.start();
+
+            TopicSession session = connection.createTopicSession(true, Session.SESSION_TRANSACTED);
+
+            Topic topic = session.createTopic(TOPIC_NAME);
+            TopicPublisher publisher = session.createPublisher(topic);
+
+            int index = ThreadLocalRandom.current().nextInt();
+            Message messageA = session.createTextMessage("A");
+            messageA.setIntProperty("ID", index);
+            messageA.setStringProperty("testprop", "false");
+            publisher.publish(messageA);
+
+            Message messageB = session.createTextMessage("B");
+            messageB.setIntProperty("ID", index);
+            messageB.setStringProperty("testprop", "true");
+            publisher.publish(messageB);
+
+            session.commit();
+
+            TopicSubscriber subscriber = session.createDurableSubscriber(topic, SUB_NAME);
+            Message migrated = subscriber.receive(getReceiveTimeout());
+            assertThat("Failed to receive migrated message", migrated, is(notNullValue()));
+
+            Message receivedA = subscriber.receive(getReceiveTimeout());
+            session.commit();
+            assertThat("Failed to receive published message A", receivedA, is(notNullValue()));
+            assertThat("Message A is not Text message", receivedA, is(instanceOf(TextMessage.class)));
+            assertThat("Unexpected text for A", ((TextMessage) receivedA).getText(), is(equalTo("A")));
+            assertThat("Unexpected index", receivedA.getIntProperty("ID"), is(equalTo(index)));
+
+            Message receivedB = subscriber.receive(getReceiveTimeout());
+            session.commit();
+            assertThat("Failed to receive published message B", receivedB, is(notNullValue()));
+            assertThat("Message B is not Text message", receivedB, is(instanceOf(TextMessage.class)));
+            assertThat("Unexpected text for B", ((TextMessage) receivedB).getText(), is(equalTo("B")));
+            assertThat("Unexpected index  for B", receivedB.getIntProperty("ID"), is(equalTo(index)));
+
+            session.commit();
+            session.close();
         }
         finally
         {
-            con.close();
+            connection.close();
         }
-        // Create a connection and start it
-        TopicConnection connection = (TopicConnection) getConnection();
-        connection.start();
-
-        // Send new message matching the topic, checking message count
-        TopicSession session = connection.createTopicSession(true, Session.SESSION_TRANSACTED);
-        assertEquals("DurableSubscription backing queue should have 1 message on it initially",
-                     1, getQueueDepth(queue.getQueueName()));
-        Topic topic = session.createTopic(TOPIC_NAME);
-        TopicPublisher publisher = session.createPublisher(topic);
-
-        publishMessages(session, publisher, topic, DeliveryMode.PERSISTENT, 1*1024, 1, "indifferent");
-        session.commit();
-        assertEquals("DurableSubscription backing queue should now have 2 messages on it",
-                     2, getQueueDepth(queue.getQueueName()));
-
-        TopicSubscriber durSub = session.createDurableSubscriber(topic, SUB_NAME);
-        Message m = durSub.receive(getReceiveTimeout());
-        assertNotNull("Failed to receive an expected message", m);
-        m = durSub.receive(getReceiveTimeout());
-        assertNotNull("Failed to receive an expected message", m);
-
-        session.commit();
-        session.close();
     }
 
     /**
@@ -225,51 +213,61 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
      * detected and set as being exclusive during the upgrade process, and that the
      * regular queue was not.
      */
+    @Test
     public void testQueueExclusivity() throws Exception
     {
         Map<String, Object> result = getQueueAttributes(QUEUE_NAME);
-        ExclusivityPolicy exclusivityPolicy =
-                ExclusivityPolicy.valueOf((String) result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE));
-        assertEquals("Queue should not have been marked as Exclusive during upgrade",
-                     ExclusivityPolicy.NONE, exclusivityPolicy);
+        assertThat("Exclusive policy attribute is not found",
+                   result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE),
+                   is(notNullValue()));
+        assertThat("Queue should not have been marked as Exclusive during upgrade",
+                   ExclusivityPolicy.valueOf(String.valueOf(result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE))),
+                   is(equalTo(ExclusivityPolicy.NONE)));
 
         result = getQueueAttributes("clientid" + ":" + SUB_NAME);
-        exclusivityPolicy =
-                ExclusivityPolicy.valueOf((String) result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE));
-        assertTrue("DurableSubscription backing queue should have been marked as Exclusive during upgrade",
-                   exclusivityPolicy != ExclusivityPolicy.NONE);
+        assertThat("Exclusive policy attribute is not found",
+                   result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE),
+                   is(notNullValue()));
+        assertThat("DurableSubscription backing queue should have been marked as Exclusive during upgrade",
+                   ExclusivityPolicy.valueOf(String.valueOf(result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE))),
+                   is(not(equalTo(ExclusivityPolicy.NONE))));
     }
 
     /**
      * Test that the upgraded queue continues to function properly when used
      * for persistent messaging and restarting the broker.
-     *
+     * <p>
      * Sends the new messages to the queue BEFORE consuming those which were
      * sent before the upgrade. In doing so, this also serves to test that
      * the queue bindings were successfully transitioned during the upgrade.
      */
-    public void testBindingAndMessageDurabability() throws Exception
+    @Test
+    public void testBindingAndMessageDurability() throws Exception
     {
-        // Create a connection and start it
-        TopicConnection connection = (TopicConnection) getConnection();
-        connection.start();
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
 
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = session.createQueue(QUEUE_NAME);
-        MessageProducer messageProducer = session.createProducer(queue);
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Queue queue = session.createQueue(QUEUE_NAME);
 
-        // Send a new message
-        sendMessages(session, messageProducer, queue, DeliveryMode.PERSISTENT, 256*1024, 1);
+            sendMessages(connection, queue, 1);
 
-        session.close();
+            session.close();
 
-        // Restart the broker
-        restartDefaultBroker();
+            // Restart
+            getBrokerAdmin().restart();
 
-        // Drain the queue of all messages
-        connection = (TopicConnection) getConnection();
-        connection.start();
-        consumeQueueMessages(connection, true);
+            // Drain the queue of all messages
+            connection = getConnection();
+            connection.start();
+            consumeQueueMessages(connection, true);
+        }
+        finally
+        {
+            connection.close();
+        }
     }
 
     /**
@@ -277,39 +275,22 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
      * the broker are properly received following update of the MetaData and
      * Content entries during the store upgrade process.
      */
+    @Test
     public void testConsumptionOfUpgradedMessages() throws Exception
     {
         // Create a connection and start it
         Connection connection = getConnection();
-        connection.start();
-
-        consumeDurableSubscriptionMessages(connection, true);
-        consumeDurableSubscriptionMessages(connection, false);
-        consumeQueueMessages(connection, false);
-    }
-
-    /**
-     * Tests store migration containing messages for non-existing queue.
-     *
-     * @throws Exception
-     */
-    public void testMigrationOfMessagesForNonDurableQueues() throws Exception
-    {
-        // Create a connection and start it
-        Connection connection = getConnection();
-        connection.start();
-
-        // consume a message for non-existing store
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = session.createQueue(NON_DURABLE_QUEUE_NAME);
-        MessageConsumer messageConsumer = session.createConsumer(queue);
-
-        for (int i = 1; i <= 3; i++)
+        try
         {
-            Message message = messageConsumer.receive(getReceiveTimeout());
-            assertNotNull("Message was not migrated!", message);
-            assertTrue("Unexpected message received!", message instanceof TextMessage);
-            assertEquals("ID property did not match", i, message.getIntProperty("ID"));
+            connection.start();
+
+            consumeDurableSubscriptionMessages(connection, true);
+            consumeDurableSubscriptionMessages(connection, false);
+            consumeQueueMessages(connection, false);
+        }
+        finally
+        {
+            connection.close();
         }
     }
 
@@ -318,78 +299,90 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
      * such that sending messages with priorities out-of-order and then consuming
      * them gets the messages back in priority order.
      */
+    @Test
     public void testPriorityQueue() throws Exception
     {
-        // Create a connection and start it
         Connection connection = getConnection();
-        connection.start();
+        try
+        {
+            connection.start();
 
-        // send some messages to the priority queue
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = session.createQueue(PRIORITY_QUEUE_NAME);
-        MessageProducer producer = session.createProducer(queue);
+            // send some messages to the priority queue
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Queue queue = session.createQueue(PRIORITY_QUEUE_NAME);
+            MessageProducer producer = session.createProducer(queue);
 
-        producer.setPriority(4);
-        producer.send(createMessage(1, false, session, producer));
-        producer.setPriority(1);
-        producer.send(createMessage(2, false, session, producer));
-        producer.setPriority(9);
-        producer.send(createMessage(3, false, session, producer));
-        session.close();
+            producer.send(session.createTextMessage("A"), DeliveryMode.PERSISTENT, 4, -1);
+            producer.send(session.createTextMessage("B"), DeliveryMode.PERSISTENT, 1, -1);
+            producer.send(session.createTextMessage("C"), DeliveryMode.PERSISTENT, 9, -1);
+            session.close();
 
-        //consume the messages, expected order: msg 3, msg 1, msg 2.
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        MessageConsumer consumer = session.createConsumer(queue);
+            //consume the messages, expected order: C, A, B.
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            MessageConsumer consumer = session.createConsumer(queue);
 
-        Message msg = consumer.receive(getReceiveTimeout());
-        assertNotNull("expected message was not received", msg);
-        assertEquals(3, msg.getIntProperty("msg"));
-        msg = consumer.receive(getReceiveTimeout());
-        assertNotNull("expected message was not received", msg);
-        assertEquals(1, msg.getIntProperty("msg"));
-        msg = consumer.receive(getReceiveTimeout());
-        assertNotNull("expected message was not received", msg);
-        assertEquals(2, msg.getIntProperty("msg"));
+            Message message1 = consumer.receive(getReceiveTimeout());
+            assertThat("expected message was not received", message1, is(instanceOf(TextMessage.class)));
+            assertThat(((TextMessage) message1).getText(), is(equalTo("C")));
+            Message message2 = consumer.receive(getReceiveTimeout());
+            assertThat("expected message was not received", message2, is(instanceOf(TextMessage.class)));
+            assertThat(((TextMessage) message2).getText(), is(equalTo("A")));
+            Message message3 = consumer.receive(getReceiveTimeout());
+            assertThat("expected message was not received", message3, is(instanceOf(TextMessage.class)));
+            assertThat(((TextMessage) message3).getText(), is(equalTo("B")));
+        }
+        finally
+        {
+            connection.close();
+        }
     }
 
     /**
      * Test that the queue configured to have a DLQ was recovered and has the alternate exchange
      * and max delivery count, the DLE exists, the DLQ exists with no max delivery count, the
      * DLQ is bound to the DLE, and that the DLQ does not itself have a DLQ.
-     *
+     * <p>
      * DLQs are NOT enabled at the virtualhost level, we are testing recovery of the arguments
      * that turned it on for this specific queue.
      */
+    @Test
     public void testRecoveryOfQueueWithDLQ() throws Exception
     {
         //verify the DLE exchange exists, has the expected type, and a single binding for the DLQ
         Map<String, Object> exchangeAttributes = getExchangeAttributes(QUEUE_WITH_DLQ_NAME + "_DLE");
-        assertEquals("Wrong exchange type", "fanout", (String) exchangeAttributes.get(Exchange.TYPE));
+        assertThat("Wrong exchange type",
+                   exchangeAttributes.get(Exchange.TYPE),
+                   is(equalTo("org.apache.qpid.FanoutExchange")));
+
+        @SuppressWarnings("unchecked")
         Collection<Map<String, Object>> bindings = (Collection<Map<String, Object>>) exchangeAttributes.get("bindings");
-        assertEquals(1, bindings.size());
-        for(Map<String, Object> binding : bindings)
+        assertThat(bindings.size(), is(equalTo(1)));
+        for (Map<String, Object> binding : bindings)
         {
             String bindingKey = (String) binding.get("bindingKey");
             String queueName = (String) binding.get("destination");
 
             //Because its a fanout exchange, we just return a single '*' key with all bound queues
-            assertEquals("unexpected binding key", "dlq", bindingKey);
-            assertEquals("unexpected queue name", QUEUE_WITH_DLQ_NAME + "_DLQ", queueName);
+            assertThat("unexpected binding key", bindingKey, is(equalTo("dlq")));
+            assertThat("unexpected queue name", queueName, is(equalTo(QUEUE_WITH_DLQ_NAME + "_DLQ")));
         }
 
         //verify the queue exists, has the expected alternate exchange and max delivery count
         Map<String, Object> queueAttributes = getQueueAttributes(QUEUE_WITH_DLQ_NAME);
-        assertEquals("Queue does not have the expected AlternateExchange",
-                     new HashMap<>(Collections.singletonMap(AlternateBinding.DESTINATION, QUEUE_WITH_DLQ_NAME + "_DLE")),
-                     new HashMap<>(((Map<String, Object>) queueAttributes.get(Exchange.ALTERNATE_BINDING))));
-        assertEquals("Unexpected maximum delivery count", 2,
-                     ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue());
+        assertThat("Queue does not have the expected AlternateExchange",
+                   queueAttributes.get(Exchange.ALTERNATE_BINDING),
+                   is(equalTo(Collections.singletonMap(AlternateBinding.DESTINATION, QUEUE_WITH_DLQ_NAME + "_DLE"))));
+
+        assertThat("Unexpected maximum delivery count",
+                   ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue(),
+                   is(equalTo(2)));
 
         Map<String, Object> dlQueueAttributes = getQueueAttributes(QUEUE_WITH_DLQ_NAME + "_DLQ");
-        assertNull("Queue should not have an AlternateExchange",
-                   dlQueueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING));
-        assertEquals("Unexpected maximum delivery count", 0,
-                     ((Number) dlQueueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue());
+        assertThat("Queue should not have an AlternateExchange",
+                   dlQueueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING), is(nullValue()));
+        assertThat("Unexpected maximum delivery count",
+                   ((Number) dlQueueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue(),
+                   is(equalTo(0)));
 
         try
         {
@@ -397,33 +390,26 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
             getQueueAttributes(queueName);
             fail("A DLQ should not exist for the DLQ itself");
         }
-        catch (FileNotFoundException e)
+        catch (AmqpManagementFacade.OperationUnsuccessfulException e)
         {
-            // pass
+            assertThat(e.getStatusCode(), is(equalTo(404)));
         }
     }
 
-    private Map<String, Object> getExchangeAttributes(final String exchangeName) throws IOException
+    @Override
+    String getOldStoreResourcePath()
     {
-        String exchangeUrl = String.format("exchange/%1$s/%1$s/%2$s",
-                                           TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST,
-                                           exchangeName);
-        return _restTestHelper.getJsonAsMap(exchangeUrl);
+        return "upgrade/bdbstore-v4/test-store/00000000.jdb";
     }
 
-    private Map<String, Object> getQueueAttributes(final String queueName) throws IOException
+    private Map<String, Object> getExchangeAttributes(final String exchangeName) throws Exception
     {
-        String queueUrl = String.format("queue/%1$s/%1$s/%2$s",
-                                        TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST,
-                                        queueName);
-        return _restTestHelper.getJsonAsMap(queueUrl);
+        return readEntityUsingAmqpManagement(exchangeName, "org.apache.qpid.Exchange", false);
     }
 
-    private long getQueueDepth(final String queueName) throws IOException
+    private Map<String, Object> getQueueAttributes(final String queueName) throws Exception
     {
-        Map<String, Object> queueAttributes = getQueueAttributes(queueName);
-        Map<String, Object> statistics = (Map<String, Object>) queueAttributes.get("statistics");
-        return ((Number) statistics.get("queueDepthMessages")).longValue();
+        return readEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", false);
     }
 
     private void consumeDurableSubscriptionMessages(Connection connection, boolean selector) throws Exception
@@ -432,10 +418,10 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         Topic topic = null;
         TopicSubscriber durSub = null;
 
-        if(selector)
+        if (selector)
         {
             topic = session.createTopic(SELECTOR_TOPIC_NAME);
-            durSub = session.createDurableSubscriber(topic, SELECTOR_SUB_NAME,"testprop='true'", false);
+            durSub = session.createDurableSubscriber(topic, SELECTOR_SUB_NAME, "testprop='true'", false);
         }
         else
         {
@@ -443,20 +429,21 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
             durSub = session.createDurableSubscriber(topic, SUB_NAME);
         }
 
-
         // Retrieve the matching message
         Message m = durSub.receive(getReceiveTimeout());
-        assertNotNull("Failed to receive an expected message", m);
-        if(selector)
+        assertThat("Failed to receive an expected message", m, is(notNullValue()));
+        if (selector)
         {
-            assertEquals("Selector property did not match", "true", m.getStringProperty("testprop"));
+            assertThat("Selector property did not match", m.getStringProperty("testprop"), is(equalTo("true")));
         }
-        assertEquals("ID property did not match", 1, m.getIntProperty("ID"));
-        assertEquals("Message content was not as expected", generateString(1024) , ((TextMessage)m).getText());
+        assertThat("ID property did not match", m.getIntProperty("ID"), is(equalTo(1)));
+        assertThat("Message content was not as expected",
+                   ((TextMessage) m).getText(),
+                   is(equalTo(generateString(1024))));
 
         // Verify that no more messages are received
-        m = durSub.receive(1000);
-        assertNull("No more messages should have been recieved", m);
+        m = durSub.receive(getReceiveTimeout());
+        assertThat("No more messages should have been recieved", m, is(nullValue()));
 
         durSub.close();
         session.close();
@@ -471,44 +458,39 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         Message m;
 
         // Retrieve the initial pre-upgrade messages
-        for (int i=1; i <= 5 ; i++)
+        for (int i = 1; i <= 5; i++)
         {
             m = consumer.receive(getReceiveTimeout());
-            assertNotNull("Failed to receive an expected message", m);
-            assertEquals("ID property did not match", i, m.getIntProperty("ID"));
-            assertEquals("Message content was not as expected", STRING_1024_256, ((TextMessage)m).getText());
+            assertThat("Failed to receive an expected message", m, is(notNullValue()));
+            assertThat("ID property did not match", m.getIntProperty("ID"), is(equalTo(i)));
+            assertThat("Message content was not as expected",
+                       ((TextMessage) m).getText(),
+                       is(equalTo(STRING_1024_256)));
         }
-        for (int i=1; i <= 5 ; i++)
+        for (int i = 1; i <= 5; i++)
         {
             m = consumer.receive(getReceiveTimeout());
-            assertNotNull("Failed to receive an expected message", m);
-            assertEquals("ID property did not match", i, m.getIntProperty("ID"));
-            assertEquals("Message content was not as expected", STRING_1024, ((TextMessage)m).getText());
+            assertThat("Failed to receive an expected message", m, is(notNullValue()));
+            assertThat("ID property did not match", m.getIntProperty("ID"), is(equalTo(i)));
+            assertThat("Message content was not as expected", ((TextMessage) m).getText(), is((equalTo(STRING_1024))));
         }
 
-        if(extraMessage)
+        if (extraMessage)
         {
             //verify that the extra message is received
             m = consumer.receive(getReceiveTimeout());
-            assertNotNull("Failed to receive an expected message", m);
-            assertEquals("ID property did not match", 1, m.getIntProperty("ID"));
-            assertEquals("Message content was not as expected", STRING_1024_256, ((TextMessage)m).getText());
+            assertThat("Failed to receive an expected message", m, is(notNullValue()));
+            assertThat("ID property did not match", m.getIntProperty(INDEX), is(equalTo(0)));
         }
-
-        // Verify that no more messages are received
-        m = consumer.receive(getReceiveTimeout());
-        assertNull("No more messages should have been recieved", m);
+        else
+        {
+            // Verify that no more messages are received
+            m = consumer.receive(getReceiveTimeout());
+            assertThat("No more messages should have been recieved", m, is(nullValue()));
+        }
 
         consumer.close();
         session.close();
-    }
-
-    private Message createMessage(int msgId, boolean first, Session producerSession, MessageProducer producer) throws JMSException
-    {
-        Message send = producerSession.createTextMessage("Message: " + msgId);
-        send.setIntProperty("msg", msgId);
-
-        return send;
     }
 
     /**
@@ -528,26 +510,4 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         return new String(chars);
     }
 
-    private static void sendMessages(Session session, MessageProducer messageProducer,
-            Destination dest, int deliveryMode, int length, int numMesages) throws JMSException
-    {
-        for (int i = 1; i <= numMesages; i++)
-        {
-            Message message = session.createTextMessage(generateString(length));
-            message.setIntProperty("ID", i);
-            messageProducer.send(message, deliveryMode, Message.DEFAULT_PRIORITY, Message.DEFAULT_TIME_TO_LIVE);
-        }
-    }
-
-    private static void publishMessages(Session session, TopicPublisher publisher,
-            Destination dest, int deliveryMode, int length, int numMesages, String selectorProperty) throws JMSException
-    {
-        for (int i = 1; i <= numMesages; i++)
-        {
-            Message message = session.createTextMessage(generateString(length));
-            message.setIntProperty("ID", i);
-            message.setStringProperty("testprop", selectorProperty);
-            publisher.publish(message, deliveryMode, Message.DEFAULT_PRIORITY, Message.DEFAULT_TIME_TO_LIVE);
-        }
-    }
 }

@@ -57,7 +57,12 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-systests-spawn-admin</artifactId>
-      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-systests-jms-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

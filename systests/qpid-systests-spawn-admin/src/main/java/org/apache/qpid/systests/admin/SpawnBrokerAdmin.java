@@ -339,10 +339,11 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
             throw new BrokerAdminException("Virtual host is not created");
         }
         invokeManagementOperation(true, (amqpManagementFacade, session) -> {
-            amqpManagementFacade.updateEntityUsingAmqpManagement(_virtualHostNodeName,
-                                                                 session,
-                                                                 AMQP_NODE_TYPE,
-                                                                 Collections.singletonMap("desiredState", "ACTIVE"));
+            amqpManagementFacade.updateEntityUsingAmqpManagementAndReceiveResponse(_virtualHostNodeName,
+                                                                                   AMQP_NODE_TYPE,
+                                                                                   Collections.singletonMap(
+                                                                                           "desiredState",
+                                                                                           "ACTIVE"), session);
             return null;
         });
     }
@@ -354,10 +355,12 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
             throw new BrokerAdminException("Virtual host is not created");
         }
         invokeManagementOperation(true, (amqpManagementFacade, session) -> {
-            amqpManagementFacade.updateEntityUsingAmqpManagement(_virtualHostNodeName,
-                                                                 session,
-                                                                 AMQP_NODE_TYPE,
-                                                                 Collections.singletonMap("desiredState", "STOPPED"));
+            amqpManagementFacade.updateEntityUsingAmqpManagementAndReceiveResponse(_virtualHostNodeName,
+                                                                                   AMQP_NODE_TYPE,
+                                                                                   Collections.singletonMap(
+                                                                                           "desiredState",
+                                                                                           "STOPPED"),
+                                                                                   session);
             return null;
         });
     }

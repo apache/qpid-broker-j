@@ -52,6 +52,8 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 {
+    public static final String DEFAULT_BROKER_CONFIG = "classpath:config-jms-tests.json";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(JmsTestBase.class);
     private static JmsProvider _jmsProvider;
     private static AmqpManagementFacade _managementFacade;
@@ -232,7 +234,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try
         {
-            _managementFacade.updateEntityUsingAmqpManagement(entityName, session, entityType, attributes);
+            _managementFacade.updateEntityUsingAmqpManagementAndReceiveResponse(entityName, entityType, attributes, session);
         }
         finally
         {

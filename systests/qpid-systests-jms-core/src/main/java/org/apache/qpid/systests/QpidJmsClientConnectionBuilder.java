@@ -280,6 +280,25 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
         initialContextEnvironment.put(Context.INITIAL_CONTEXT_FACTORY,
                                       "org.apache.qpid.jms.jndi.JmsInitialContextFactory");
 
+        final String connectionUrl = buildConnectionURL();
+
+        final String factoryName = "connection";
+        initialContextEnvironment.put("connectionfactory." + factoryName, connectionUrl);
+
+        InitialContext initialContext = new InitialContext(initialContextEnvironment);
+        try
+        {
+            return (ConnectionFactory) initialContext.lookup(factoryName);
+        }
+        finally
+        {
+            initialContext.close();
+        }
+    }
+
+    @Override
+    public String buildConnectionURL()
+    {
         final StringBuilder connectionUrlBuilder = new StringBuilder();
 
         final Map<String, Object> options = new TreeMap<>();
@@ -344,19 +363,7 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
             connectionUrlBuilder.append("amqps://").append(_host).append(":").append(_sslPort);
             appendOptions(options, connectionUrlBuilder);
         }
-
-        final String factoryName = "connection";
-        initialContextEnvironment.put("connectionfactory." + factoryName, connectionUrlBuilder.toString());
-
-        InitialContext initialContext = new InitialContext(initialContextEnvironment);
-        try
-        {
-            return (ConnectionFactory) initialContext.lookup(factoryName);
-        }
-        finally
-        {
-            initialContext.close();
-        }
+        return connectionUrlBuilder.toString();
     }
 
     private void appendOptions(final Map<String, Object> actualOptions, final StringBuilder stem)

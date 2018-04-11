@@ -67,4 +67,5 @@ public interface ConnectionBuilder
 
     Connection build() throws NamingException, JMSException;
     ConnectionFactory buildConnectionFactory() throws NamingException;
+    String buildConnectionURL();
 }
