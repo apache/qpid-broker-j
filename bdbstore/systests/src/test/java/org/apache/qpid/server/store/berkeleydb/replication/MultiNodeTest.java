@@ -855,14 +855,14 @@ public class MultiNodeTest extends GroupJmsTestBase
             }
 
             getBrokerAdmin().stop();
-            getBrokerAdmin().start(false);
-
-            for (int port : ports)
+            try
             {
-                getBrokerAdmin().awaitNodeToAttainAttributeValue(port,
-
-                                                                 BDBHAVirtualHostNode.STATE,
-                                                                 State.ERRORED.name());
+                getBrokerAdmin().start();
+                fail("Cluster cannot start with an intruder node");
+            }
+            catch (Exception e)
+            {
+                // pass
             }
         }
         finally
