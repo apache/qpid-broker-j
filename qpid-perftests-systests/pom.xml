@@ -39,11 +39,6 @@
       <artifactId>qpid-perftests</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-systests</artifactId>
-    </dependency>
-
     <!-- client deps -->
     <dependency>
       <groupId>org.apache.qpid</groupId>
