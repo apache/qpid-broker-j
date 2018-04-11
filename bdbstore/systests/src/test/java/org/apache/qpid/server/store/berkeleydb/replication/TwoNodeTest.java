@@ -34,9 +34,7 @@ import org.junit.Test;
 
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.systests.Utils;
-import org.apache.qpid.tests.utils.RunBrokerAdmin;
 
-@RunBrokerAdmin(type = "BDB-HA")
 @GroupConfig(numberOfNodes = 2, groupName = "test")
 public class TwoNodeTest extends GroupJmsTestBase
 {

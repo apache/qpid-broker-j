@@ -25,43 +25,97 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.systests.JmsProvider;
-import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
-import org.apache.qpid.tests.utils.RunBrokerAdmin;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-@RunBrokerAdmin(type = "BDB-HA")
-public class GroupJmsTestBase extends JmsTestBase
+public class GroupJmsTestBase extends UnitTestBase
 {
     private static final int FAILOVER_CYCLECOUNT = 40;
     private static final int FAILOVER_CONNECTDELAY = 1000;
     static final int SHORT_FAILOVER_CYCLECOUNT = 2;
     static final int SHORT_FAILOVER_CONNECTDELAY = 200;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(GroupJmsTestBase.class);
+    private static JmsProvider _jmsProvider;
+    private static GroupBrokerAdmin _groupBrokerAdmin;
+    private static AtomicReference<Class<?>> _testClass = new AtomicReference<>();
+
     @BeforeClass
-    public static void verify()
+    public static void setUpTestBase()
     {
         assumeThat(System.getProperty("virtualhostnode.type", "BDB"), is(equalTo("BDB")));
+
+        _jmsProvider = Utils.getJmsProvider();
     }
 
-    @Override
-    public GroupBrokerAdmin getBrokerAdmin()
+    @AfterClass
+    public static void tearDownTestBase()
     {
-        return (GroupBrokerAdmin) super.getBrokerAdmin();
+        Class<?> testClass = _testClass.get();
+        if (testClass != null && _testClass.compareAndSet(testClass, null))
+        {
+            _groupBrokerAdmin.afterTestClass(testClass);
+        }
     }
 
-    @Override
-    public ConnectionBuilder getConnectionBuilder()
+    @Rule
+    public final ExternalResource resource = new ExternalResource()
     {
-        final ConnectionBuilder connectionBuilder = getJmsProvider().getConnectionBuilder()
+        @Override
+        protected void before()
+        {
+            if (_testClass.compareAndSet(null, GroupJmsTestBase.this.getClass() ))
+            {
+                _groupBrokerAdmin = new GroupBrokerAdmin();
+                _groupBrokerAdmin.beforeTestClass(GroupJmsTestBase.this.getClass());
+            }
+        }
+
+        @Override
+        protected void after()
+        {
+
+        }
+    };
+
+    @Before
+    public void beforeTestMethod() throws Exception
+    {
+        _groupBrokerAdmin.beforeTestMethod(getClass(), getClass().getMethod(getTestName()));
+    }
+
+    @After
+    public void afterTestMethod() throws Exception
+    {
+        _groupBrokerAdmin.afterTestMethod(getClass(), getClass().getMethod(getTestName()));
+    }
+
+    GroupBrokerAdmin getBrokerAdmin()
+    {
+        return _groupBrokerAdmin;
+    }
+
+    ConnectionBuilder getConnectionBuilder()
+    {
+        final ConnectionBuilder connectionBuilder = _jmsProvider.getConnectionBuilder()
                                                                     .setClientId(getTestName())
                                                                     .setFailoverReconnectDelay(FAILOVER_CONNECTDELAY)
                                                                     .setFailoverReconnectAttempts(FAILOVER_CYCLECOUNT)
@@ -84,7 +138,7 @@ public class GroupJmsTestBase extends JmsTestBase
         return connectionBuilder;
     }
 
-    protected void assertProduceConsume(final Queue queue) throws Exception
+    void assertProduceConsume(final Queue queue) throws Exception
     {
         final Connection connection = getConnectionBuilder().build();
         try
@@ -97,13 +151,13 @@ public class GroupJmsTestBase extends JmsTestBase
         }
     }
 
-
-    protected JmsProvider getJmsProvider()
+    JmsProvider getJmsProvider()
     {
-        return Utils.getJmsProvider();
+        return _jmsProvider;
     }
 
-    protected Queue createTestQueue(final Connection connection) throws JMSException
+
+    Queue createTestQueue(final Connection connection) throws JMSException
     {
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try

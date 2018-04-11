@@ -21,6 +21,7 @@ package org.apache.qpid.server.store.berkeleydb.replication;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.apache.qpid.systests.Utils.INDEX;
+import static org.apache.qpid.systests.Utils.getReceiveTimeout;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -77,9 +78,7 @@ import org.apache.qpid.systests.Utils;
 import org.apache.qpid.test.utils.PortHelper;
 import org.apache.qpid.test.utils.TestUtils;
 import org.apache.qpid.tests.utils.ConfigItem;
-import org.apache.qpid.tests.utils.RunBrokerAdmin;
 
-@RunBrokerAdmin(type = "BDB-HA")
 @GroupConfig(numberOfNodes = 3, groupName = "test")
 @ConfigItem(name = Broker.BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD, value = "false")
 public class MultiNodeTest extends GroupJmsTestBase
