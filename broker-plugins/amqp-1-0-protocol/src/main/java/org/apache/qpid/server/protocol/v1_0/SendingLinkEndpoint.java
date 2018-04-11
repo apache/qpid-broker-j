@@ -252,6 +252,10 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             String msg = "Cannot add a consumer to the destination as the destination has been deleted";
             throw new AmqpErrorException(new Error(AmqpError.RESOURCE_DELETED, msg), e);
         }
+        catch (AccessControlException e)
+        {
+            throw new AmqpErrorException(new Error(AmqpError.UNAUTHORIZED_ACCESS, e.getMessage()));
+        }
     }
 
 
