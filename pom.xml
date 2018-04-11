@@ -120,7 +120,7 @@
     <derby-version>10.13.1.1</derby-version>
     <logback-version>1.2.2</logback-version>
     <guava-version>22.0</guava-version>
-    <fasterxml-jackson-version>2.9.4</fasterxml-jackson-version>
+    <fasterxml-jackson-version>2.9.5</fasterxml-jackson-version>
     <slf4j-version>1.7.25</slf4j-version>
     <jetty-version>9.4.3.v20170317</jetty-version>
 
