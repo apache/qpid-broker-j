@@ -80,6 +80,7 @@
     <minimum-java-version>1.8.0</minimum-java-version>
     <java.source>1.8</java.source>
     <java.target>1.8</java.target>
+    <skipTests>false</skipTests>
 
     <!-- enforcer plugin config properties -->
     <supported-test-profiles-regex>(java-mms.0-9|java-mms.0-9-1|java-mms.0-10|java-mms.1-0|java-bdb.0-9|java-bdb.0-9-1|java-bdb.0-10|java-bdb.1-0|java-dby.0-9|java-dby.0-9-1|java-dby.0-10|java-dby.1-0|java-dby-mem.0-9|java-dby-mem.0-9-1|java-dby-mem.0-10|cpp|java-json.0-9-1|java-json.0-10|java-json.1-0)</supported-test-profiles-regex>
@@ -87,27 +88,11 @@
     <!-- surefire forked jvm arguments -->
     <argLine>-Xmx512m</argLine>
 
-    <!-- test profile properties and defaults-->
-    <qpid.home>${basedir}</qpid.home> <!-- override for broker tests -->
     <!-- Directory used for per test log file output -->
     <test.output.dir>${basedir}${file.separator}target${file.separator}surefire-reports${file.separator}${profile}</test.output.dir>
 
     <profile>java-mms.1-0</profile>
-    <profile.broker.language>java</profile.broker.language>
-    <profile.broker.type>internal</profile.broker.type>
-    <profile.broker.stopped>Exception</profile.broker.stopped>
-    <profile.broker.ready>BRK-1004</profile.broker.ready>
-    <profile.broker.amqpTcpPortRegEx>BRK-1002 : Starting : Listening on TCP port (\d+)</profile.broker.amqpTcpPortRegEx>
-    <profile.broker.amqpTlsPortRegEx>BRK-1002 : Starting : Listening on SSL port (\d+)</profile.broker.amqpTlsPortRegEx>
-    <profile.broker.httpTcpPortRegEx>MNG-1002 : Starting : HTTP : Listening on TCP port (\d+)</profile.broker.httpTcpPortRegEx>
-    <profile.broker.httpTlsPortRegEx>MNG-1002 : Starting : HTTP : Listening on SSL port (\d+)</profile.broker.httpTlsPortRegEx>
-    <profile.broker.command>"${qpid.home}${file.separator}bin${file.separator}qpid-server" -sp "${at.sign}STORE_PATH" -st ${at.sign}STORE_TYPE -prop test.port=${at.sign}PORT -prop "qpid.work_dir=${at.sign}QPID_WORK"</profile.broker.command>
-    <profile.broker.command.windows>"${qpid.home}${file.separator}bin${file.separator}qpid-server.bat" -sp "${at.sign}STORE_PATH" -st ${at.sign}STORE_TYPE -prop test.port=${at.sign}PORT -prop "qpid.work_dir=${at.sign}QPID_WORK"</profile.broker.command.windows>
-    <profile.test.excludes>Excludes JavaExcludes ${profile}.excludes ${profile.specific.excludes}</profile.test.excludes>
-    <profile.specific.excludes>JavaTransientExcludes Java010Excludes</profile.specific.excludes>
     <profile.broker.version>1.0</profile.broker.version>
-    <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
-    <profile.broker.persistent>false</profile.broker.persistent>
     <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
     <profile.broker.clean.between.tests>true</profile.broker.clean.between.tests>
     <profile.test_receive_timeout>1000</profile.test_receive_timeout>
@@ -772,14 +757,7 @@
               <target>
                 <echo>Qpid Test Profile Properties</echo>
                 <echo>[profile] ${profile}</echo>
-                <echo>[profile.broker.language] ${profile.broker.language}</echo>
-                <echo>[profile.broker.type] ${profile.broker.type}</echo>
-                <echo>[profile.broker.command] ${profile.broker.command}</echo>
-                <echo>[profile.specific.excludes] ${profile.specific.excludes}</echo>
-                <echo>[profile.test.excludes] ${profile.test.excludes}</echo>
                 <echo>[profile.broker.version] ${profile.broker.version}</echo>
-                <echo>[profile.test.amqp_port_protocols] ${profile.test.amqp_port_protocols}</echo>
-                <echo>[profile.broker.persistent] ${profile.broker.persistent}</echo>
                 <echo>[profile.virtualhostnode.type] ${profile.virtualhostnode.type}</echo>
                 <echo>[profile.virtualhostnode.context.blueprint] ${profile.virtualhostnode.context.blueprint}</echo>
                 <echo>[profile.test_receive_timeout] ${profile.test_receive_timeout}</echo>
@@ -799,34 +777,17 @@
           <reportsDirectory>${test.output.dir}</reportsDirectory>
           <systemPropertyVariables>
             <!-- Defaults -->
-            <QPID_HOME>${qpid.home}</QPID_HOME>
-            <broker.config>${qpid.home}${file.separator}etc${file.separator}config-systests.json</broker.config>
             <qpid.dest_syntax>BURL</qpid.dest_syntax>
+
             <test.port>0</test.port>
             <test.hport>0</test.hport>
             <test.port.ssl>0</test.port.ssl>
             <test.port.alt>0</test.port.alt>
             <test.port.alt.ssl>0</test.port.alt.ssl>
-            <test.exclude>true</test.exclude>
-            <test.mem>512M</test.mem>
-            <profile.clustered>false</profile.clustered>
 
             <!-- Profile Based Values -->
             <profile>${profile}</profile>
-            <broker.language>${profile.broker.language}</broker.language>
-            <broker.type>${profile.broker.type}</broker.type>
-            <broker.stopped>${profile.broker.stopped}</broker.stopped>
-            <broker.ready>${profile.broker.ready}</broker.ready>
-            <broker.amqpTcpPortRegEx>${profile.broker.amqpTcpPortRegEx}</broker.amqpTcpPortRegEx>
-            <broker.httpTcpPortRegEx>${profile.broker.httpTcpPortRegEx}</broker.httpTcpPortRegEx>
-            <broker.amqpTlsPortRegEx>${profile.broker.amqpTlsPortRegEx}</broker.amqpTlsPortRegEx>
-            <broker.httpTlsPortRegEx>${profile.broker.httpTlsPortRegEx}</broker.httpTlsPortRegEx>
-            <broker.command>${profile.broker.command}</broker.command>
-            <broker.command.windows>${profile.broker.command.windows}</broker.command.windows>
-            <test.excludes>${profile.test.excludes}</test.excludes>
             <broker.version>${profile.broker.version}</broker.version>
-            <test.amqp_port_protocols>${profile.test.amqp_port_protocols}</test.amqp_port_protocols>
-            <broker.persistent>${profile.broker.persistent}</broker.persistent>
             <virtualhostnode.type>${profile.virtualhostnode.type}</virtualhostnode.type>
             <virtualhostnode.context.blueprint>${profile.virtualhostnode.context.blueprint}</virtualhostnode.context.blueprint>
             <broker.clean.between.tests>${profile.broker.clean.between.tests}</broker.clean.between.tests>
@@ -1030,10 +991,7 @@
       </activation>
       <properties>
         <profile>java-mms.0-10</profile>
-        <profile.specific.excludes>JavaTransientExcludes Java010Excludes</profile.specific.excludes>
         <profile.broker.version>0-10</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.qpid.tests.mms.messagestore.persistence>true</profile.qpid.tests.mms.messagestore.persistence>
@@ -1050,10 +1008,7 @@
       </activation>
       <properties>
         <profile>java-mms.0-9-1</profile>
-        <profile.specific.excludes>JavaTransientExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
         <profile.broker.version>0-9-1</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.qpid.tests.mms.messagestore.persistence>true</profile.qpid.tests.mms.messagestore.persistence>
@@ -1070,10 +1025,7 @@
       </activation>
       <properties>
         <profile>java-mms.0-9</profile>
-        <profile.specific.excludes>JavaTransientExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
         <profile.broker.version>0-9</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.qpid.tests.mms.messagestore.persistence>true</profile.qpid.tests.mms.messagestore.persistence>
@@ -1090,10 +1042,7 @@
       </activation>
       <properties>
         <profile>java-bdb.0-10</profile>
-        <profile.specific.excludes>JavaPersistentExcludes Java010Excludes JavaBDBExcludes</profile.specific.excludes>
         <profile.broker.version>0-10</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
@@ -1109,10 +1058,7 @@
       </activation>
       <properties>
         <profile>java-bdb.0-9-1</profile>
-        <profile.specific.excludes>JavaPersistentExcludes XAExcludes JavaPre010Excludes JavaBDBExcludes</profile.specific.excludes>
         <profile.broker.version>0-9-1</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
@@ -1128,10 +1074,7 @@
       </activation>
       <properties>
         <profile>java-bdb.0-9</profile>
-        <profile.specific.excludes>JavaPersistentExcludes XAExcludes JavaPre010Excludes JavaBDBExcludes</profile.specific.excludes>
         <profile.broker.version>0-9</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
@@ -1147,10 +1090,7 @@
       </activation>
       <properties>
         <profile>java-dby-mem.0-10</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes Java010Excludes</profile.specific.excludes>
         <profile.broker.version>0-10</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
@@ -1166,10 +1106,7 @@
       </activation>
       <properties>
         <profile>java-dby-mem.0-9-1</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
         <profile.broker.version>0-9-1</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
@@ -1185,10 +1122,7 @@
       </activation>
       <properties>
         <profile>java-dby-mem.0-9</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
         <profile.broker.version>0-9</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
@@ -1204,10 +1138,7 @@
       </activation>
       <properties>
         <profile>java-dby.0-10</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes Java010Excludes</profile.specific.excludes>
         <profile.broker.version>0-10</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.test_receive_timeout>2000</profile.test_receive_timeout>
@@ -1224,10 +1155,7 @@
       </activation>
       <properties>
         <profile>java-dby.0-9-1</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
         <profile.broker.version>0-9-1</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.test_receive_timeout>2000</profile.test_receive_timeout>
@@ -1244,11 +1172,8 @@
       </activation>
       <properties>
         <profile>java-dby.0-9</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
         <profile.broker.version>0-9</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
-        <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.test_receive_timeout>2000</profile.test_receive_timeout>
       </properties>
@@ -1265,10 +1190,7 @@
       </activation>
       <properties>
         <profile>java-mms.1-0</profile>
-        <profile.specific.excludes>JavaTransientExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
         <profile.broker.version>1.0</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10","AMQP_1_0"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.qpid.tests.mms.messagestore.persistence>true</profile.qpid.tests.mms.messagestore.persistence>
@@ -1285,10 +1207,7 @@
       </activation>
       <properties>
         <profile>java-bdb.1-0</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaBDBExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
         <profile.broker.version>1.0</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
@@ -1304,11 +1223,8 @@
       </activation>
       <properties>
         <profile>java-dby.1-0</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
         <profile.broker.version>1.0</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
-        <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
@@ -1328,10 +1244,7 @@
       </activation>
       <properties>
         <profile>java-json.1-0</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaJsonExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
         <profile.broker.version>1.0</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"BDB","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
@@ -1346,10 +1259,7 @@
       </activation>
       <properties>
         <profile>java-json.0-9-1</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaJsonExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
         <profile.broker.version>0-9-1</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"BDB","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
@@ -1365,65 +1275,10 @@
       </activation>
       <properties>
         <profile>java-json.0-10</profile>
-        <profile.specific.excludes>JavaPersistentExcludes JavaJsonExcludes XAExcludes Java010Excludes</profile.specific.excludes>
         <profile.broker.version>0-10</profile.broker.version>
-        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
-        <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"BDB","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
-    </profile>
-
-    <profile>
-      <id>cpp</id>
-      <activation>
-        <property>
-          <name>profile</name>
-          <value>cpp</value>
-        </property>
-      </activation>
-      <properties>
-        <profile>cpp</profile>
-        <profile.broker.language>cpp</profile.broker.language>
-        <profile.broker.type>spawned</profile.broker.type>
-        <profile.broker.stopped>Exception constructed</profile.broker.stopped>
-        <profile.broker.ready>Listening on TCP</profile.broker.ready>
-        <profile.broker.amqpTcpPortRegEx>Listening on TCP/TCP6 port (\d+)</profile.broker.amqpTcpPortRegEx>
-        <profile.broker.amqpTlsPortRegEx>Listening for SSL connections on TCP/TCP6 port (\d+)</profile.broker.amqpTlsPortRegEx>
-        <profile.broker.httpTcpPortRegEx>x^</profile.broker.httpTcpPortRegEx>
-        <profile.broker.httpTlsPortRegEx>x^</profile.broker.httpTlsPortRegEx>
-        <profile.broker.command>"${cpp-broker-dir}/qpidd" -p ${at.sign}PORT --data-dir "${at.sign}QPID_WORK" -t --auth no --no-module-dir</profile.broker.command>
-        <profile.broker.command.windows />
-        <profile.test.excludes>Excludes CPPExcludes ${profile}.excludes ${profile.specific.excludes} cpp.excludes</profile.test.excludes>
-        <profile.specific.excludes>CPPPrefetchExcludes CPPTransientExcludes</profile.specific.excludes>
-        <profile.broker.version>0-10</profile.broker.version>
-        <profile.broker.persistent>false</profile.broker.persistent>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>enforce-cpp-broker-dir-defined</id>
-                <goals>
-                  <goal>enforce</goal>
-                </goals>
-                <configuration>
-                  <rules>
-                    <requireProperty>
-                      <property>cpp-broker-dir</property>
-                      <message>You must set a the CPP broker directory property for this profile. (e.g. -Dcpp-broker-dir=/somedir/cpp/src)</message>
-                    </requireProperty>
-                  </rules>
-                  <fail>true</fail>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
 
     <!-- Profile to update the Apache parent pom profile of the same name to prevent source assembly at java build level.-->

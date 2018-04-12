@@ -31,13 +31,6 @@
   <description>Parent POM for Qpid system testing modules</description>
 
   <properties>
-    <broker.home.dir>target${file.separator}qpid-broker${file.separator}${project.version}</broker.home.dir>
-    <!-- test properties -->
-    <qpid.home>${basedir}${file.separator}${broker.home.dir}</qpid.home>
-
-    <test.working.directory>${basedir}/..</test.working.directory>
-    <test.resource.directory>${basedir}/..</test.resource.directory>
-    <test.systest.resource.directory>${basedir}</test.systest.resource.directory>
     <skip.systests>${skipTests}</skip.systests>
   </properties>
 
@@ -76,13 +69,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <!--version specified in parent pluginManagement -->
         <configuration>
-          <workingDirectory>${test.working.directory}</workingDirectory>
           <!-- Skip the default test phase, bind to the
                integration-test phase below instead -->
           <skip>true</skip>
-          <systemPropertyVariables>
-            <test.output.dir>${test.output.dir}</test.output.dir>
-          </systemPropertyVariables>
           <skipTests>${skip.systests}</skipTests>
         </configuration>
         <executions>

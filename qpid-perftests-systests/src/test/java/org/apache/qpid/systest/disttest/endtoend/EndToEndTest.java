@@ -30,6 +30,7 @@ import static org.apache.qpid.disttest.ControllerRunner.TEST_CONFIG_PROP;
 import static org.apache.qpid.tests.http.HttpTestBase.DEFAULT_BROKER_CONFIG;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
@@ -38,6 +39,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -66,10 +69,10 @@ import org.apache.qpid.util.FileUtils;
 @ConfigItem(name = "qpid.initialConfigurationLocation", value = DEFAULT_BROKER_CONFIG )
 public class EndToEndTest extends HttpTestBase
 {
-    private static final String TEST_CONFIG_ITERATIONS = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/iterations.json";
-    private static final String TEST_CONFIG_MANYPARTICIPANTS = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/manyparticipants.json";
-    private static final String TEST_CONFIG_HILLCLIMBING = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/hillclimbing.js";
-    private static final String TEST_CONFIG_ERROR = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/error.json";
+    private static final String TEST_CONFIG_ITERATIONS = "/org/apache/qpid/systest/disttest/endtoend/iterations.json";
+    private static final String TEST_CONFIG_MANYPARTICIPANTS = "/org/apache/qpid/systest/disttest/endtoend/manyparticipants.json";
+    private static final String TEST_CONFIG_HILLCLIMBING = "/org/apache/qpid/systest/disttest/endtoend/hillclimbing.js";
+    private static final String TEST_CONFIG_ERROR = "/org/apache/qpid/systest/disttest/endtoend/error.json";
 
     private static final int NUMBER_OF_HEADERS = 1;
     private static final int NUMBER_OF_SUMMARIES = 3;
@@ -120,7 +123,7 @@ public class EndToEndTest extends HttpTestBase
     public void testIterations() throws Exception
     {
         Map<String, String> arguments = new HashMap<>();
-        arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_ITERATIONS);
+        arguments.put(TEST_CONFIG_PROP, getTestConfigurationPath(TEST_CONFIG_ITERATIONS));
         arguments.put(JNDI_CONFIG_PROP, _jndiConfigFile.getAbsolutePath());
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "false");
@@ -147,7 +150,7 @@ public class EndToEndTest extends HttpTestBase
     public void testManyParticipants() throws Exception
     {
         Map<String, String> arguments = new HashMap<>();
-        arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_MANYPARTICIPANTS);
+        arguments.put(TEST_CONFIG_PROP, getTestConfigurationPath(TEST_CONFIG_MANYPARTICIPANTS));
         arguments.put(JNDI_CONFIG_PROP, _jndiConfigFile.getAbsolutePath());
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "false");
@@ -206,7 +209,7 @@ public class EndToEndTest extends HttpTestBase
     public void testHillClimbing() throws Exception
     {
         Map<String, String> arguments = new HashMap<>();
-        arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_HILLCLIMBING);
+        arguments.put(TEST_CONFIG_PROP, getTestConfigurationPath(TEST_CONFIG_HILLCLIMBING));
         arguments.put(JNDI_CONFIG_PROP, _jndiConfigFile.getAbsolutePath());
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "true");
@@ -247,7 +250,7 @@ public class EndToEndTest extends HttpTestBase
     public void testTestScriptCausesError() throws Exception
     {
         Map<String, String> arguments = new HashMap<>();
-        arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_ERROR);
+        arguments.put(TEST_CONFIG_PROP, getTestConfigurationPath(TEST_CONFIG_ERROR));
         arguments.put(JNDI_CONFIG_PROP, _jndiConfigFile.getAbsolutePath());
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
 
@@ -261,6 +264,14 @@ public class EndToEndTest extends HttpTestBase
             // PASS
         }
     }
+
+    public String getTestConfigurationPath(String resource) throws URISyntaxException
+    {
+        URL url = getClass().getResource(resource);
+        assertThat(String.format("Configuration at '%s' is not found", resource), url, is(notNullValue()));
+        return new File(url.toURI()).getAbsolutePath();
+    }
+
 
     private void runController(Map<String, String> args) throws Exception
     {

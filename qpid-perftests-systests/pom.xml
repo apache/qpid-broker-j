@@ -29,10 +29,6 @@
   <name>Apache Qpid Broker-J Performance Test System Tests</name>
   <description>System testing using the performance testing module</description>
 
-  <properties>
-    <test.systest.resource.directory>${basedir}/../systests</test.systest.resource.directory>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.qpid</groupId>
