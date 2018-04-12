@@ -101,6 +101,7 @@
                     <systemPropertyVariables>
                         <qpid.initialConfigurationLocation>classpath:config-protocol-tests-0-10.json</qpid.initialConfigurationLocation>
                     </systemPropertyVariables>
+                    <skipTests>${skipTests}</skipTests>
                 </configuration>
                 <executions>
                     <execution>
@@ -110,7 +111,7 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <skipTests>${skipTests}</skipTests>
+                            <skipTests>true</skipTests>
                         </configuration>
                     </execution>
                 </executions>
