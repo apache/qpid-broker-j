@@ -69,44 +69,47 @@ public class GroupBrokerAdmin
 
     private GroupMember[] _members;
     private ListeningExecutorService _executorService;
+    private SpawnBrokerAdmin[] _brokers;
+    private String _groupName;
 
     public void beforeTestClass(final Class testClass)
     {
         GroupConfig runBrokerAdmin = (GroupConfig) testClass.getAnnotation(GroupConfig.class);
         int numberOfNodes = runBrokerAdmin == null ? 2 : runBrokerAdmin.numberOfNodes();
-        String groupName = runBrokerAdmin == null ? "test-ha" : runBrokerAdmin.groupName();
+        _groupName = runBrokerAdmin == null ? "test-ha" : runBrokerAdmin.groupName();
         _executorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(numberOfNodes));
 
-        SpawnBrokerAdmin[] admins =
-                Stream.generate(SpawnBrokerAdmin::new).limit(numberOfNodes).toArray(SpawnBrokerAdmin[]::new);
+        _brokers = Stream.generate(SpawnBrokerAdmin::new).limit(numberOfNodes).toArray(SpawnBrokerAdmin[]::new);
 
         boolean started = false;
         try
         {
             int startupTimeout = Integer.getInteger(SYSTEST_PROPERTY_SPAWN_BROKER_STARTUP_TIME, 30000);
-            awaitFuture(startupTimeout, invokeParallel(Arrays.stream(admins).map(a -> (Callable<Void>) () -> {
+            awaitFuture(startupTimeout, invokeParallel(Arrays.stream(_brokers).map(a -> (Callable<Void>) () -> {
                 a.beforeTestClass(testClass);
                 return null;
             }).collect(Collectors.toList())));
 
-            _members = initializeGroupData(groupName, admins);
             started = true;
         }
         finally
         {
             if (!started)
             {
-                for (SpawnBrokerAdmin a : admins)
+                for (SpawnBrokerAdmin a : _brokers)
                 {
                     a.afterTestClass(testClass);
                 }
                 _executorService.shutdown();
+                _brokers = null;
+                _executorService = null;
             }
         }
     }
 
     public void beforeTestMethod(final Class testClass, final Method method)
     {
+        _members = initializeGroupData(_groupName, _brokers);
         GroupMember first = _members[0];
         first.getAdmin().beforeTestMethod(_members[0].getName(), NODE_TYPE, _members[0].getNodeAttributes());
         awaitNodeRoleReplicaOrMaster(first);
@@ -134,20 +137,28 @@ public class GroupBrokerAdmin
 
     public void afterTestMethod(final Class testClass, final Method method)
     {
-        awaitFuture(WAIT_LIMIT, invokeParallel(Arrays.stream(_members).map(m -> (Callable<Void>) () -> {
-            m.getAdmin().afterTestMethod(testClass, method);
-            return null;
-        }).collect(Collectors.toList())));
+        if (_members != null)
+        {
+            awaitFuture(WAIT_LIMIT, invokeParallel(Arrays.stream(_members).map(m -> (Callable<Void>) () -> {
+                m.getAdmin().afterTestMethod(testClass, method);
+                return null;
+            }).collect(Collectors.toList())));
+            _members = null;
+        }
     }
 
     public void afterTestClass(final Class testClass)
     {
         try
         {
-            awaitFuture(WAIT_LIMIT, invokeParallel(Arrays.stream(_members).map(m -> (Callable<Void>) () -> {
-                m.getAdmin().afterTestClass(testClass);
-                return null;
-            }).collect(Collectors.toList())));
+            if (_brokers != null)
+            {
+                awaitFuture(WAIT_LIMIT, invokeParallel(Arrays.stream(_brokers).map(m -> (Callable<Void>) () -> {
+                    m.afterTestClass(testClass);
+                    return null;
+                }).collect(Collectors.toList())));
+                _brokers = null;
+            }
         }
         finally
         {
