@@ -31,7 +31,7 @@
   <description>Parent POM for Qpid system testing modules</description>
 
   <properties>
-    <skip.systests>${skipTests}</skip.systests>
+    <skipITs>true</skipITs>
   </properties>
 
   <dependencies>
@@ -71,8 +71,7 @@
         <configuration>
           <!-- Skip the default test phase, bind to the
                integration-test phase below instead -->
-          <skip>true</skip>
-          <skipTests>${skip.systests}</skipTests>
+          <skipTests>true</skipTests>
         </configuration>
         <executions>
           <execution>
@@ -82,7 +81,7 @@
               <goal>test</goal>
             </goals>
             <configuration>
-              <skip>false</skip>
+              <skipTests>${skipITs}</skipTests>
             </configuration>
           </execution>
         </executions>

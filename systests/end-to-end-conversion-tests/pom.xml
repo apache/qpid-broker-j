@@ -82,7 +82,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <skipTests>${skipTests}</skipTests>
+                    <skipTests>${skipITs}</skipTests>
                     <workingDirectory>${project.basedir}</workingDirectory>
                     <systemPropertyVariables>
                         <qpid.initialConfigurationLocation>classpath:config-end-to-end-conversion-tests.json</qpid.initialConfigurationLocation>
@@ -94,7 +94,6 @@
                     <execution>
                         <id>0-9-1 -&gt; 1.0</id>
                         <configuration>
-                            <skip>false</skip>
                             <systemPropertyVariables>
                                 <qpid.systests.end_to_end_conversion.executionId>0-9-1_to_1.0</qpid.systests.end_to_end_conversion.executionId>
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
@@ -110,7 +109,6 @@
                     <execution>
                         <id>1.0 -&gt; 0-9-1</id>
                         <configuration>
-                            <skip>false</skip>
                             <systemPropertyVariables>
                                 <qpid.systests.end_to_end_conversion.executionId>1.0_to_0-9-1</qpid.systests.end_to_end_conversion.executionId>
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
@@ -126,7 +124,6 @@
                     <execution>
                         <id>0-10 -&gt; 1.0</id>
                         <configuration>
-                            <skip>false</skip>
                             <systemPropertyVariables>
                                 <qpid.systests.end_to_end_conversion.executionId>0-10_to_1.0</qpid.systests.end_to_end_conversion.executionId>
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
@@ -142,7 +139,6 @@
                     <execution>
                         <id>1.0 -&gt; 0-10</id>
                         <configuration>
-                            <skip>false</skip>
                             <systemPropertyVariables>
                                 <qpid.systests.end_to_end_conversion.executionId>1.0_to_0-10</qpid.systests.end_to_end_conversion.executionId>
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
@@ -158,7 +154,6 @@
                     <execution>
                         <id>0-9-1 -&gt; 0-10</id>
                         <configuration>
-                            <skip>false</skip>
                             <systemPropertyVariables>
                                 <qpid.systests.end_to_end_conversion.executionId>0-9-1_to_0-10</qpid.systests.end_to_end_conversion.executionId>
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
@@ -174,7 +169,6 @@
                     <execution>
                         <id>0-10 -&gt; 0-9-1</id>
                         <configuration>
-                            <skip>false</skip>
                             <systemPropertyVariables>
                                 <qpid.systests.end_to_end_conversion.executionId>0-10_to_0-9-1</qpid.systests.end_to_end_conversion.executionId>
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
