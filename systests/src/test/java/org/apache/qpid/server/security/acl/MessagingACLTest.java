@@ -161,6 +161,67 @@ public class MessagingACLTest extends AbstractACLTestCase
         }
     }
 
+    public void  setUpConsumeOwnQueueSuccess() throws Exception
+    {
+        List<String> rules = new ArrayList<>(Arrays.asList("ACL ALLOW-LOG guest ACCESS VIRTUALHOST",
+                                                           "ACL ALLOW-LOG OWNER CONSUME QUEUE",
+                                                           "ACL DENY-LOG ALL CONSUME QUEUE"));
+
+        if (isBroker10())
+        {
+            rules.add("ACL ALLOW-LOG client BIND EXCHANGE temporary=\"true\"");
+        }
+        else
+        {
+            rules.add("ACL ALLOW-LOG client BIND EXCHANGE name=\"amq.topic\"");
+        }
+        writeACLFileWithAdminSuperUser(rules.toArray(new String[rules.size()]));
+    }
+
+    public void testConsumeOwnQueueSuccess() throws Exception
+    {
+        final String queueName = "user1Queue";
+
+        createQueue(queueName);
+
+        final String queueAddress = String.format(isBroker10() ? "%s" :  "ADDR:%s; {create:never}", queueName);
+
+        Connection queueOwnerCon = getConnectionBuilder().setUsername("admin").setPassword("admin").build();
+        try
+        {
+            Session queueOwnerSession = queueOwnerCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Queue queue = queueOwnerSession.createQueue(queueAddress);
+            queueOwnerSession.createConsumer(queue).close();
+        }
+        finally
+        {
+            queueOwnerCon.close();
+        }
+
+        Connection otherUserCon = getConnectionBuilder().setUsername("guest").setPassword("guest").build();
+        try
+        {
+            Session otherUserSession = otherUserCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                otherUserSession.createConsumer(otherUserSession.createQueue(queueAddress)).close();
+                fail("Exception not thrown");
+            }
+            catch (JMSException e)
+            {
+                final String expectedMessage =
+                        isBroker10()
+                                ? "Permission CREATE is denied for : Consumer"
+                                : "403: access refused";
+                assertJMSExceptionMessageContains(e, expectedMessage);
+            }
+        }
+        finally
+        {
+            otherUserCon.close();
+        }
+    }
+
     public void setUpConsumeFromTempTopicSuccess() throws Exception
     {
         List<String> rules = new ArrayList<>(Arrays.asList("ACL ALLOW-LOG client ACCESS VIRTUALHOST",

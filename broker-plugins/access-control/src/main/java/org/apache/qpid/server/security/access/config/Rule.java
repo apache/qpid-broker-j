@@ -33,6 +33,9 @@ public class Rule
 	/** String indicating all identified. */
 	public static final String ALL = "all";
 
+	/** String indicating all identified. */
+	public static final String OWNER = "owner";
+
     private final String _identity;
     private final AclAction _action;
     private final RuleOutcome _ruleOutcome;

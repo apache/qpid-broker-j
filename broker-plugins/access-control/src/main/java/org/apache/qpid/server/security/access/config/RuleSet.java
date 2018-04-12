@@ -41,6 +41,7 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 
 /**
  * Models the rule configuration for the access control plugin.
@@ -108,7 +109,7 @@ public class RuleSet implements EventLoggerProvider
             }
 
             // Save the rules we selected
-            objects.put(objectType, filtered);
+            objects.put(objectType, filtered == null ? null : Collections.unmodifiableList(filtered));
 
             LOGGER.debug("Cached {} RulesList: {}", objectType, filtered);
         }
@@ -156,10 +157,33 @@ public class RuleSet implements EventLoggerProvider
             return getDefault();
         }
 
+        final boolean ownerRules = rules.stream()
+                                        .anyMatch(rule -> rule.getIdentity().equalsIgnoreCase(Rule.OWNER));
+
+        if (ownerRules)
+        {
+            rules = new LinkedList<>(rules);
+
+            if (operation == LegacyOperation.CREATE)
+            {
+                rules.removeIf(rule -> rule.getIdentity().equalsIgnoreCase(Rule.OWNER));
+            }
+            else
+            {
+                // Discard OWNER rules if the object wasn't created by the subject
+                final String objectCreator = properties.get(ObjectProperties.Property.CREATED_BY);
+                final Principal principal =
+                        AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subject);
+                if (principal == null || !principal.getName().equalsIgnoreCase(objectCreator))
+                {
+                    rules.removeIf(rule -> rule.getIdentity().equalsIgnoreCase(Rule.OWNER));
+                }
+            }
+        }
+
         // Iterate through a filtered set of rules dealing with this identity and operation
         for (Rule rule : rules)
         {
-
             LOGGER.debug("Checking against rule: {}", rule);
 
             if (action.matches(rule.getAclAction(), addressOfClient))
@@ -212,7 +236,8 @@ public class RuleSet implements EventLoggerProvider
 
     private boolean isRelevant(final Set<Principal> principals, final Rule rule)
     {
-        if (rule.getIdentity().equalsIgnoreCase(Rule.ALL))
+        if (rule.getIdentity().equalsIgnoreCase(Rule.ALL) ||
+            rule.getIdentity().equalsIgnoreCase(Rule.OWNER))
         {
             return true;
         }
