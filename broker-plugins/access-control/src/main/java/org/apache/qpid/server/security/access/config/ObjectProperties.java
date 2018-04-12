@@ -63,7 +63,8 @@ public class ObjectProperties
         FROM_HOSTNAME,
         VIRTUALHOST_NAME,
         METHOD_NAME,
-        ATTRIBUTES;
+        ATTRIBUTES,
+        CREATED_BY;
 
         private static final Map<String, Property> _canonicalNameToPropertyMap = new HashMap<String, ObjectProperties.Property>();
 

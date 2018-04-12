@@ -606,4 +606,55 @@ public class RuleSetTest extends UnitTestBase
                             ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
     }
 
+    @Test
+    public void testExistingObjectOwner()
+    {
+        _ruleSetCreator.addRule(1,
+                                Rule.OWNER,
+                                RuleOutcome.ALLOW,
+                                LegacyOperation.CONSUME,
+                                ObjectType.QUEUE,
+                                ObjectProperties.EMPTY);
+        RuleSet ruleSet = createRuleSet();
+        assertEquals((long) 1, (long) ruleSet.getRuleCount());
+
+        assertEquals(Result.ALLOWED,
+                     ruleSet.check(_testSubject,
+                                   LegacyOperation.CONSUME,
+                                   ObjectType.QUEUE,
+                                   new ObjectProperties(Property.CREATED_BY, TEST_USER)));
+
+        assertEquals(Result.DEFER,
+                     ruleSet.check(_testSubject,
+                                   LegacyOperation.CONSUME,
+                                   ObjectType.QUEUE,
+                                   new ObjectProperties(Property.CREATED_BY, "anotherUser")));
+    }
+
+    @Test
+    public void testCreateIgnoresOwnerRule()
+    {
+        _ruleSetCreator.addRule(1,
+                                Rule.OWNER,
+                                RuleOutcome.ALLOW,
+                                LegacyOperation.ALL,
+                                ObjectType.QUEUE,
+                                ObjectProperties.EMPTY);
+        RuleSet ruleSet = createRuleSet();
+        assertEquals((long) 1, (long) ruleSet.getRuleCount());
+
+        assertEquals(Result.ALLOWED,
+                     ruleSet.check(_testSubject,
+                                   LegacyOperation.UPDATE,
+                                   ObjectType.QUEUE,
+                                   new ObjectProperties(Property.CREATED_BY, TEST_USER)));
+
+        assertEquals(Result.DEFER,
+                     ruleSet.check(_testSubject,
+                                   LegacyOperation.CREATE,
+                                   ObjectType.QUEUE,
+                                   new ObjectProperties(Property.CREATED_BY, "anotherUser")));
+
+    }
+
 }

@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
@@ -52,10 +53,12 @@ import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.Protocol;
@@ -225,6 +228,59 @@ public class MessagingACLTest extends JmsTestBase
         finally
         {
             connection.close();
+        }
+    }
+
+    @Test
+    public void testConsumeOwnQueueSuccess() throws Exception
+    {
+        final String queueName = "user1Queue";
+        assumeThat(getBrokerAdmin().getValidUsername(), is(equalTo(USER1)));
+
+        createQueue(queueName);
+
+        Map<String, Object> queueAttributes = readEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", true);
+        assertThat("Test prerequiste not met, queue belongs to unexpected user", queueAttributes.get(ConfiguredObject.CREATED_BY), is(equalTo(USER1)));
+
+        configureACL("ACL ALLOW-LOG ALL ACCESS VIRTUALHOST",
+                     "ACL ALLOW-LOG OWNER CONSUME QUEUE",
+                     "ACL DENY-LOG ALL CONSUME QUEUE");
+
+        final String queueAddress = String.format(isLegacyClient() ? "ADDR:%s; {create:never}" : "%s", queueName);
+
+        Connection queueOwnerCon = getConnectionBuilder().setUsername(USER1).setPassword(USER1_PASSWORD).build();
+        try
+        {
+            Session queueOwnerSession = queueOwnerCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Queue queue = queueOwnerSession.createQueue(queueAddress);
+            queueOwnerSession.createConsumer(queue).close();
+        }
+        finally
+        {
+            queueOwnerCon.close();
+        }
+
+        Connection otherUserCon = getConnectionBuilder().setUsername(USER2).setPassword(USER2_PASSWORD).build();
+        try
+        {
+            Session otherUserSession = otherUserCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                otherUserSession.createConsumer(otherUserSession.createQueue(queueAddress)).close();
+                fail("Exception not thrown");
+            }
+            catch (JMSException e)
+            {
+                final String expectedMessage =
+                        Sets.newHashSet(Protocol.AMQP_1_0, Protocol.AMQP_0_10).contains(getProtocol())
+                                ? "Permission CREATE is denied for : Consumer"
+                                : "403(access refused)";
+                assertJMSExceptionMessageContains(e, expectedMessage);
+            }
+        }
+        finally
+        {
+            otherUserCon.close();
         }
     }
 
