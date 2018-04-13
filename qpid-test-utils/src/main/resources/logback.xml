@@ -29,7 +29,7 @@
         </discriminator>
         <sift>
             <appender name="FILE-${classQualifiedTestName}" class="ch.qos.logback.core.FileAppender">
-                <File>${test.output.dir}${file.separator}TEST-${classQualifiedTestName}.txt</File>
+                <File>${test.output.dir:-target${file.separator}surefire-reports}${file.separator}TEST-${classQualifiedTestName}.txt</File>
                 <Append>False</Append>
                 <encoder>
                     <pattern>%date %-5level [%thread] %logger{10} %msg%n</pattern>

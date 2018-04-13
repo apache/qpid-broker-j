@@ -20,8 +20,11 @@
  */
 package org.apache.qpid.systests.admin;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.APPEND;
 import static org.apache.qpid.systests.Utils.getJmsProvider;
 import static org.apache.qpid.systests.Utils.getReceiveTimeout;
+import static org.apache.qpid.systests.admin.SpawnBrokerAdmin.SYSTEST_PROPERTY_BUILD_CLASSPATH_FILE;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -30,7 +33,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.util.Arrays;
 
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
@@ -42,6 +49,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.apache.qpid.systests.AmqpManagementFacade;
@@ -50,6 +58,20 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class SpawnBrokerAdminTest extends UnitTestBase
 {
+
+    @BeforeClass
+    public static void appendLocalClassPath() throws Exception
+    {
+        String file = System.getProperty(SYSTEST_PROPERTY_BUILD_CLASSPATH_FILE);
+
+        // append test classpath in order to locate logback configuration for spawn broker
+        final String appendedClasspath = System.getProperty("path.separator")
+                                         + System.getProperty("java.class.path");
+        Files.write(new File(file).toPath(),
+                    appendedClasspath.getBytes(UTF_8),
+                    APPEND);
+    }
+
 
     @Test
     public void beforeTestClass() throws Exception

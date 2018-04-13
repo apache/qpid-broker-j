@@ -85,7 +85,7 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
     private static final String SYSTEST_PROPERTY_VIRTUALHOSTNODE_TYPE = "virtualhostnode.type";
     private static final String SYSTEST_PROPERTY_VIRTUALHOST_BLUEPRINT = "virtualhostnode.context.blueprint";
     private static final String SYSTEST_PROPERTY_INITIAL_CONFIGURATION_LOCATION = "qpid.initialConfigurationLocation";
-    private static final String SYSTEST_PROPERTY_BUILD_CLASSPATH_FILE = "qpid.systests.build.classpath.file";
+    static final String SYSTEST_PROPERTY_BUILD_CLASSPATH_FILE = "qpid.systests.build.classpath.file";
     private static final String AMQP_QUEUE_TYPE = "org.apache.qpid.Queue";
     private static final String AMQP_NODE_TYPE = "org.apache.qpid.VirtualHostNode";
     private static final String AMQP_VIRTUAL_HOST_TYPE = "org.apache.qpid.VirtualHost";
@@ -735,6 +735,7 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
         jvmArguments.add("-cp");
         jvmArguments.add(classpath);
         jvmArguments.add("-Djava.io.tmpdir=" + escape(System.getProperty("java.io.tmpdir")));
+        jvmArguments.add("-Dlogback.configurationFile=default-broker-logback.xml");
         jvmArguments.add("-Dqpid.tests.mms.messagestore.persistence=true");
         jvmArguments.add("org.apache.qpid.server.Main");
         jvmArguments.add("--store-type");
