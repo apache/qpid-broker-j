@@ -333,22 +333,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
 
         if (_enableFailover)
         {
-            if (_failoverPorts.isEmpty())
-            {
-                Integer testPortAlt;
-                if ((testPortAlt = Integer.getInteger("test.port.alt")) != null)
-                {
-                    copy.add(testPortAlt);
-                }
-                else if (_enableTls && (testPortAlt = Integer.getInteger("test.port.alt.ssl")) != null)
-                {
-                    copy.add(testPortAlt);
-                }
-            }
-            else
-            {
-                copy.addAll(_failoverPorts);
-            }
+            copy.addAll(_failoverPorts);
         }
 
         final String transportQuery = buildTransportQuery();

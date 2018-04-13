@@ -75,6 +75,11 @@ Perform a subset of tests on the packaged release artifacts without installing:
 
     mvn verify -Dtest=TestNamePattern* -DfailIfNoTests=false
 
+Integration tests except for protocol tests are disabled by default.
+In order to run all integration tests, they need to be enabled with a flag -DskipITs=false, for example
+
+    mvn verify -DskipITs=false
+
 Execute the tests and produce code coverage report:
 
     mvn clean test jacoco:report

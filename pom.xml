@@ -779,12 +779,6 @@
             <!-- Defaults -->
             <qpid.dest_syntax>BURL</qpid.dest_syntax>
 
-            <test.port>0</test.port>
-            <test.hport>0</test.hport>
-            <test.port.ssl>0</test.port.ssl>
-            <test.port.alt>0</test.port.alt>
-            <test.port.alt.ssl>0</test.port.alt.ssl>
-
             <!-- Profile Based Values -->
             <profile>${profile}</profile>
             <broker.version>${profile.broker.version}</broker.version>

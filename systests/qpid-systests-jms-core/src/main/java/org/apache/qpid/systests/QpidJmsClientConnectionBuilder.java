@@ -331,19 +331,6 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
 
             final List<Integer> copy = new ArrayList<>(_failoverPorts.size() + 1);
             copy.add(_enableTls ? _sslPort : _port);
-
-            if (_failoverPorts.isEmpty())
-            {
-                Integer testPortAlt;
-                if ((testPortAlt = Integer.getInteger("test.port.alt")) != null)
-                {
-                    copy.add(testPortAlt);
-                }
-                else if (_enableTls && (testPortAlt = Integer.getInteger("test.port.alt.ssl")) != null)
-                {
-                    copy.add(testPortAlt);
-                }
-            }
             copy.addAll(_failoverPorts);
 
             final String failover = copy.stream()
