@@ -31,7 +31,7 @@
   <description>Parent POM for Qpid system testing modules</description>
 
   <properties>
-    <skipITs>${skipTests}</skipITs>
+    <skipITs>true</skipITs>
   </properties>
 
   <dependencies>
