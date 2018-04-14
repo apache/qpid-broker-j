@@ -22,9 +22,13 @@
   "name": "${broker.name}",
   "modelVersion": "7.0",
   "authenticationproviders" : [ {
-    "name" : "passwordFile",
-    "type" : "PlainPasswordFile",
-    "path" : "${qpid.home_dir}${file.separator}etc${file.separator}passwd"
+    "name" : "plain",
+    "type" : "Plain",
+    "users" : [ {
+      "name" : "guest",
+      "type" : "managed",
+      "password" : "guest"
+    } ]
   } ],
     "brokerloggers" : [ {
     "name" : "logfile",
@@ -79,7 +83,7 @@
   "ports" : [  {
     "name" : "AMQP",
     "port" : "${qpid.amqp_port}",
-    "authenticationProvider" : "passwordFile",
+    "authenticationProvider" : "plain",
     "virtualhostaliases" : [ {
        "name" : "nameAlias",
        "type" : "nameAlias"
@@ -93,7 +97,7 @@
   }, {
     "name" : "HTTP",
     "port" : "${qpid.http_port}",
-    "authenticationProvider" : "passwordFile",
+    "authenticationProvider" : "plain",
     "protocols" : [ "HTTP" ]
   }],
   "virtualhostnodes" : [ {
