@@ -33,9 +33,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -55,7 +52,6 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -63,13 +59,8 @@ import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.server.util.FileUtils;
-import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
 import org.apache.qpid.systests.AmqpManagementFacade;
-import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.tests.utils.ConfigItem;
-import org.apache.qpid.tests.utils.EmbeddedBrokerPerClassAdminImpl;
-import org.apache.qpid.tests.utils.RunBrokerAdmin;
 
 /**
  * Tests upgrading a BDB store on broker startup.
