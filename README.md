@@ -84,14 +84,56 @@ Execute the tests and produce code coverage report:
 
     mvn clean test jacoco:report
 
+## Distribution assemblies
+
+To produce broker assemblies, use:
+
+    mvn clean package -DskipTests
+
+The broker distribution assemblies will then be found beneath:
+
+   apache-qpid-broker-j/target
+
+## Running the Broker
+
+For full details, see the Getting Started documentation in the docbook documentation mentioned below.  For convenience brief instructions are repeated here.
+
+
+### Start the Broker
+
+#### From an assembly on the command line
+
+Expand the assembly produced by the Maven package lifecycle stage, and the execute the qpid-server script or batch file.
+
+On UNIX:
+
+    tar xvfz apache-qpid-broker-j/target/apache-qpid-broker-j-x.x.x-SNAPSHOT-bin.tar.gz
+    ./java-broker/x.x.x/qpid-server
+
+On Windows:
+
+    Expand zip apache-qpid-broker-j/target/apache-qpid-broker-j-x.x.x-SNAPSHOT-bin.zip
+    .\java-broker\x.x.x\qpid-server.bat
+
+#### From an IDE
+
+These instructions assume Intellij.
+
+1. Within the IDE import the top level pom.xml file as a project.
+2. Create a new Application run configuration called "Qpid Broker"
+ * Classname org.apache.qpid.server.Main
+ * Classpath of module: qpid-broker
+ * Save the new run configuration.
+3. Go into the module settings of qpid-broker and add an additional classpath entry pointing to the dojo-x.x.x-distribution.zip. It is easiest to point to a location in the local maven repo e.g. ~/.m2/repository/org/dojotoolkit/dojo/x.x.x/dojo-x.x.x-distribution.zip.  (This manual step is required to workaround https://issues.apache.org/jira/browse/MNG-5567).
+
+### Connecting to the Broker
+
+By default, the Broker listens on port 5672 for AMQP and 8080 for http management.  The default
+username 'guest' and password 'guest'.
+
+To get to the management console, point a browser to http://localhost:8080
+
 ## Documentation
 
 Documentation (in docbook format) is found beneath the *doc* module.
 
-## Distribution assemblies
-
-After packaging, the broker distribution assemblies can be found at:
-
-    broker/target
-
-To continue, see the Getting Started documentation in the docbook documentation mentioned above.
