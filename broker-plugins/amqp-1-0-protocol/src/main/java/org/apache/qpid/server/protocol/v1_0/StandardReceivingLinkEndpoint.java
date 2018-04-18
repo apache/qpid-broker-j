@@ -439,6 +439,10 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             {
                 targetCapabilities.add(Symbol.valueOf("temporary-topic"));
             }
+            if (desiredCapabilities.contains(Symbol.valueOf("temporary-queue")))
+            {
+                targetCapabilities.add(Symbol.valueOf("temporary-queue"));
+            }
             if (desiredCapabilities.contains(Symbol.valueOf("topic")))
             {
                 targetCapabilities.add(Symbol.valueOf("topic"));

@@ -28,6 +28,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -64,6 +65,7 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.delivery.DeliveryRegistry;
@@ -715,7 +717,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
         if (Boolean.TRUE.equals(source.getDynamic()))
         {
-            MessageSource tempSource = createDynamicSource(link, source.getDynamicNodeProperties());
+            final Set<Symbol> sourceCapabilities = source.getCapabilities() == null
+                    ? Collections.emptySet()
+                    : new HashSet<>(Arrays.asList(source.getCapabilities()));
+            MessageSource tempSource = createDynamicSource(link, source.getDynamicNodeProperties(), sourceCapabilities);
             if(tempSource != null)
             {
                 source.setAddress(_primaryDomain + tempSource.getName());
@@ -789,13 +794,21 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return exchangeDestination;
     }
 
-    private MessageSource createDynamicSource(final Link_1_0<?, ?> link, Map properties) throws AmqpErrorException
+    private MessageSource createDynamicSource(final Link_1_0<?, ?> link,
+                                              Map properties,
+                                              final Set<Symbol> capabilities) throws AmqpErrorException
     {
         // TODO temporary topics?
         final String queueName = "TempQueue" + UUID.randomUUID().toString();
         try
         {
             Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(link, properties, queueName);
+
+            if (capabilities.contains(Symbol.valueOf("temporary-queue"))
+                || capabilities.contains(Symbol.valueOf("temporary-topic")))
+            {
+                attributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONNECTION);
+            }
 
             return Subject.doAs(getSubjectWithAddedSystemRights(),
                                 (PrivilegedAction<MessageSource>) () -> getAddressSpace().createMessageSource(MessageSource.class, attributes));
@@ -828,6 +841,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             if (isTopic)
             {
                 attributes.put(Exchange.TYPE, ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
+            }
+            else if (capabilitySet.contains(Symbol.valueOf("temporary-queue")))
+            {
+                attributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONNECTION);
             }
 
             return Subject.doAs(getSubjectWithAddedSystemRights(),
