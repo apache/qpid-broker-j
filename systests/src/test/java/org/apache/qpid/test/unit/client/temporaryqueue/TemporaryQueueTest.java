@@ -79,6 +79,40 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
         }
     }
 
+    public void testConsumeFromAnotherConnectionUsingTemporaryQueueName() throws Exception
+    {
+        final Connection connection = getConnection();
+        try
+        {
+            final Connection connection2 = getConnection();
+            try
+            {
+                final Session session1 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                final Session session2 = connection2.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                final TemporaryQueue queue = session1.createTemporaryQueue();
+                assertNotNull("Temporary queue cannot be null", queue);
+
+                try
+                {
+                    session2.createConsumer(session2.createQueue(queue.getQueueName()));
+                    fail("Expected a JMSException when subscribing to a temporary queue created on a different session");
+                }
+                catch (JMSException je)
+                {
+                    //pass
+                }
+            }
+            finally
+            {
+                connection2.close();
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
     /**
      * Tests that a temporary queue can be used by a MessageProducer on another Connection.
      */
