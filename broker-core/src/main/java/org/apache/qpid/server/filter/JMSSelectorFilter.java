@@ -39,9 +39,16 @@ public class JMSSelectorFilter implements MessageFilter
 
     public JMSSelectorFilter(String selector) throws ParseException, TokenMgrError, SelectorParsingException
     {
+        this(selector, JMSMessagePropertyExpression.FACTORY);
+    }
+
+    public JMSSelectorFilter(String selector,
+                             PropertyExpressionFactory<? extends FilterableMessage> propertyExpressionFactory)
+            throws ParseException, TokenMgrError, SelectorParsingException
+    {
         _selector = selector;
-        SelectorParser<FilterableMessage> selectorParser = new SelectorParser<>();
-        selectorParser.setPropertyExpressionFactory(JMSMessagePropertyExpression.FACTORY);
+        SelectorParser selectorParser = new SelectorParser<>();
+        selectorParser.setPropertyExpressionFactory(propertyExpressionFactory);
         _matcher = selectorParser.parse(selector);
     }
 
