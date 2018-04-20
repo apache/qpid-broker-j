@@ -62,10 +62,11 @@ public class MessageInfoImpl implements MessageInfo
         _arrivalTime = message.getArrivalTime() == 0L ? null : new Date(message.getArrivalTime());
         _messageType = message.getMessageType();
         _persistent = message.isPersistent();
-        _messageId = messageHeader.getMessageId();
+        _messageId = messageHeader.getMessageId() == null ? null : String.valueOf(messageHeader.getMessageId());
         _expirationTime = messageHeader.getExpiration() == 0L ? null : new Date(messageHeader.getExpiration());
         _applicationId = messageHeader.getAppId();
-        _correlationId = messageHeader.getCorrelationId();
+        _correlationId =
+                messageHeader.getCorrelationId() == null ? null : String.valueOf(messageHeader.getCorrelationId());
         _encoding = messageHeader.getEncoding();
         _mimeType = messageHeader.getMimeType();
         _priority = messageHeader.getPriority();

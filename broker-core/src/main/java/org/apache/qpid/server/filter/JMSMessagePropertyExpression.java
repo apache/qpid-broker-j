@@ -213,9 +213,9 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
         public Object evaluate(FilterableMessage message)
         {
 
-            String messageId = message.getMessageId();
+            Object messageId = message.getMessageId();
 
-            return messageId;
+            return messageId == null ? null : String.valueOf(messageId);
 
         }
     }
@@ -236,9 +236,9 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
         public Object evaluate(FilterableMessage message)
         {
 
-            String correlationId = message.getCorrelationId();
+            Object correlationId = message.getCorrelationId();
 
-            return correlationId;
+            return correlationId == null ? null : String.valueOf(correlationId);
         }
     }
 

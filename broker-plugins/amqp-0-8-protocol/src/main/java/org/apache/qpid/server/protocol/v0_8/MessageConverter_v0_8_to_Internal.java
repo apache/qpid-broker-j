@@ -203,7 +203,7 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
         }
 
         @Override
-        public String getCorrelationId()
+        public Object getCorrelationId()
         {
             return _delegate.getCorrelationId();
         }
@@ -233,7 +233,7 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
         }
 
         @Override
-        public String getMessageId()
+        public Object getMessageId()
         {
             return _delegate.getMessageId();
         }

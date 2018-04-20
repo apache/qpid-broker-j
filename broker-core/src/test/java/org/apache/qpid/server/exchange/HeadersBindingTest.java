@@ -56,7 +56,7 @@ public class HeadersBindingTest extends UnitTestBase
         private final Map<String, Object> _headers = new HashMap<String, Object>();
 
         @Override
-        public String getCorrelationId()
+        public Object getCorrelationId()
         {
             return null;
         }
@@ -86,7 +86,7 @@ public class HeadersBindingTest extends UnitTestBase
         }
 
         @Override
-        public String getMessageId()
+        public Object getMessageId()
         {
             return null;
         }

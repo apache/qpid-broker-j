@@ -49,11 +49,11 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
     private long _arrivalTime;
 
     public InternalMessageHeader(final Map<String, Object> headers,
-                                 final String correlationId,
+                                 final Object correlationId,
                                  final long expiration,
                                  final String userId,
                                  final String appId,
-                                 final String messageId,
+                                 final Object messageId,
                                  final String mimeType,
                                  final String encoding,
                                  final byte priority,
@@ -65,11 +65,11 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
     {
         _headers = headers == null ? new LinkedHashMap<>() : new LinkedHashMap<>(headers);
 
-        _correlationId = correlationId;
+        _correlationId = correlationId == null ? null : String.valueOf(correlationId);
         _expiration = expiration;
         _userId = userId;
         _appId = appId;
-        _messageId = messageId;
+        _messageId = messageId == null ? null : String.valueOf(messageId);
         _mimeType = mimeType;
         _encoding = encoding;
         _priority = priority;

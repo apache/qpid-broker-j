@@ -157,7 +157,7 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         }
 
         @Override
-        public String getCorrelationId()
+        public Object getCorrelationId()
         {
             return _delegate.getCorrelationId();
         }
@@ -187,7 +187,7 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         }
 
         @Override
-        public String getMessageId()
+        public Object getMessageId()
         {
             return _delegate.getMessageId();
         }
