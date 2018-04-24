@@ -171,7 +171,7 @@ REM Use QPID_JAVA_GC if set
 if "%QPID_JAVA_GC%" == "" goto noQpidJavaGC
 set JAVA_GC=%QPID_JAVA_GC%
 echo Using QPID_JAVA_GC setting: %QPID_JAVA_GC%
-goto afteQpidJavaGC
+goto afterQpidJavaGC
 
 :noQPidJavaGC
 echo Info: QPID_JAVA_GC not set. Defaulting to JAVA_GC %JAVA_GC%
