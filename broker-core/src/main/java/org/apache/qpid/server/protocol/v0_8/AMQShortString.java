@@ -24,7 +24,10 @@ package org.apache.qpid.server.protocol.v0_8;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,14 +48,20 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQShortString.class);
 
+    // Unfortunately CacheBuilder does not yet support keyEquivalence, so we have to wrap the keys in ByteBuffers
+    // rather than using the byte arrays as keys.
+    private static ThreadLocal<Cache<ByteBuffer, AMQShortString>> CACHE =
+            ThreadLocal.withInitial(() -> CacheBuilder.newBuilder()
+                                                      .maximumSize(100)
+                                                      .expireAfterAccess(300, TimeUnit.SECONDS)
+                                                      .build());
+
     private final byte[] _data;
-    private final int _offset;
     private int _hashCode;
     private String _asString = null;
 
-    private final int _length;
-
     public static final AMQShortString EMPTY_STRING = createAMQShortString((String)null);
+
 
     private AMQShortString(byte[] data)
     {
@@ -64,48 +73,6 @@ public final class AMQShortString implements Comparable<AMQShortString>
         {
             throw new IllegalArgumentException("Cannot create AMQShortString with number of octets over 255!");
         }
-        _data = data.clone();
-        _length = data.length;
-        _offset = 0;
-    }
-
-    private AMQShortString(String string)
-    {
-        final byte[] data = EncodingUtils.asUTF8Bytes(string);
-        final int length = data.length;
-        if (data.length> MAX_LENGTH)
-        {
-            throw new IllegalArgumentException("Cannot create AMQShortString with number of octets over 255!");
-        }
-
-        int hash = 0;
-        for (int i = 0; i < length; i++)
-        {
-            data[i] = (byte) (0xFF & data[i]);
-            hash = (31 * hash) + data[i];
-        }
-        _hashCode = hash;
-        _data = data;
-
-        _length = length;
-        _offset = 0;
-
-        _asString = string == null ? "" : string;
-    }
-
-    private AMQShortString(byte[] data, final int offset, final int length)
-    {
-        if (length > MAX_LENGTH)
-        {
-            throw new IllegalArgumentException("Cannot create AMQShortString with number of octets over 255!");
-        }
-        if (data == null)
-        {
-            throw new NullPointerException("Cannot create AMQShortString with null data[]");
-        }
-
-        _offset = offset;
-        _length = length;
         _data = data;
     }
 
@@ -132,18 +99,46 @@ public final class AMQShortString implements Comparable<AMQShortString>
             }
             byte[] data = new byte[length];
             buffer.get(data);
-            return new AMQShortString(data, 0, length);
+
+            final AMQShortString cached = CACHE.get().getIfPresent(ByteBuffer.wrap(data));
+            return cached != null ? cached : new AMQShortString(data);
         }
     }
 
     public static AMQShortString createAMQShortString(byte[] data)
     {
-        return new AMQShortString(data);
+        if (data == null)
+        {
+            throw new NullPointerException("Cannot create AMQShortString with null data[]");
+        }
+
+        final AMQShortString cached = CACHE.get().getIfPresent(ByteBuffer.wrap(data));
+        return cached != null ? cached : new AMQShortString(data);
     }
 
     public static AMQShortString createAMQShortString(String string)
     {
-        return new AMQShortString(string);
+        final byte[] data = EncodingUtils.asUTF8Bytes(string);
+
+        final AMQShortString cached = CACHE.get().getIfPresent(ByteBuffer.wrap(data));
+        if (cached != null)
+        {
+            return cached;
+        }
+        else
+        {
+            final AMQShortString shortString = new AMQShortString(data);
+
+            int hash = 0;
+            for (int i = 0; i < data.length; i++)
+            {
+                data[i] = (byte) (0xFF & data[i]);
+                hash = (31 * hash) + data[i];
+            }
+            shortString._hashCode = hash;
+            shortString._asString = string;
+            return  shortString;
+        }
     }
 
     /**
@@ -152,35 +147,25 @@ public final class AMQShortString implements Comparable<AMQShortString>
      */
     public int length()
     {
-        return _length;
+        return _data.length;
     }
 
     public char charAt(int index)
     {
-
-        return (char) _data[_offset + index];
+        return (char) _data[index];
 
     }
 
     public byte[] getBytes()
     {
-        if(_offset == 0 && _length == _data.length)
-        {
-            return _data.clone();
-        }
-        else
-        {
-            byte[] data = new byte[_length];
-            System.arraycopy(_data,_offset,data,0,_length);
-            return data;
-        }
+        return _data.clone();
     }
 
     public void writeToBuffer(QpidByteBuffer buffer)
     {
-        final int size = length();
-        buffer.put((byte)size);
-        buffer.put(_data, _offset, size);
+        final short size = (short) length();
+        buffer.putUnsignedByte(size);
+        buffer.put(_data, 0, size);
     }
 
 
@@ -223,40 +208,14 @@ public final class AMQShortString implements Comparable<AMQShortString>
             return false;
         }
 
-        final int length = _length;
+        final int length = _data.length;
 
-        if(length != otherString._length)
+        if(length != otherString._data.length)
         {
             return false;
         }
 
-
-        final byte[] data = _data;
-
-        final byte[] otherData = otherString._data;
-
-        final int offset = _offset;
-
-        final int otherOffset = otherString._offset;
-
-        if(offset == 0 && otherOffset == 0 && length == data.length && length == otherData.length)
-        {
-            return Arrays.equals(data, otherData);
-        }
-        else
-        {
-            int thisIdx = offset;
-            int otherIdx = otherOffset;
-            for(int i = length;  i-- != 0; )
-            {
-                if(!(data[thisIdx++] == otherData[otherIdx++]))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
+        return Arrays.equals(_data, otherString._data);
 
     }
 
@@ -270,7 +229,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
             for (int i = 0; i < size; i++)
             {
-                hash = (31 * hash) + _data[i+_offset];
+                hash = (31 * hash) + _data[i];
             }
 
             _hashCode = hash;
@@ -284,7 +243,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
     {
         if (_asString == null)
         {
-            _asString = new String(_data, _offset, _length, StandardCharsets.UTF_8);
+            _asString = new String(_data, StandardCharsets.UTF_8);
         }
         return _asString;
     }
@@ -310,8 +269,8 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
             for (int i = 0; i < length(); i++)
             {
-                final byte d = _data[i+_offset];
-                final byte n = name._data[i+name._offset];
+                final byte d = _data[i];
+                final byte n = name._data[i];
                 if (d < n)
                 {
                     return -1;
@@ -329,8 +288,8 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
     public boolean contains(final byte b)
     {
-        final int end = _length + _offset;
-        for(int i = _offset; i < end; i++)
+        final int end = _data.length;
+        for(int i = 0; i < end; i++)
         {
             if(_data[i] == b)
             {
@@ -338,6 +297,11 @@ public final class AMQShortString implements Comparable<AMQShortString>
             }
         }
         return false;
+    }
+
+    public void intern()
+    {
+        CACHE.get().put(ByteBuffer.wrap(_data), this);
     }
 
     public static AMQShortString validValueOf(Object obj)

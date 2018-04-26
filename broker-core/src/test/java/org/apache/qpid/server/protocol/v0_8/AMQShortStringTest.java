@@ -27,12 +27,7 @@ import java.nio.charset.StandardCharsets;
 public class AMQShortStringTest extends QpidTestCase
 {
 
-    public static final AMQShortString HELLO = AMQShortString.createAMQShortString("Hello");
-    public static final AMQShortString HELL = AMQShortString.createAMQShortString("Hell");
-    public static final AMQShortString GOODBYE = AMQShortString.createAMQShortString("Goodbye");
-    public static final AMQShortString GOOD = AMQShortString.createAMQShortString("Good");
-    public static final AMQShortString BYE = AMQShortString.createAMQShortString("BYE");
-
+    private static final AMQShortString GOODBYE = AMQShortString.createAMQShortString("Goodbye");
 
     public void testEquals()
     {
@@ -57,9 +52,6 @@ public class AMQShortStringTest extends QpidTestCase
     }
 
     /**
-     * Test method for
-     * {@link AMQShortString#AMQShortString(java.lang.String)}
-     * <p>
      * Tests short string construction from string with length less than 255.
      */
     public void testCreateAMQShortStringString()
@@ -94,9 +86,6 @@ public class AMQShortStringTest extends QpidTestCase
     }
 
     /**
-     * Test method for
-     * {@link AMQShortString#AMQShortString(java.lang.String)}
-     * <p>
      * Tests an attempt to create an AMQP short string from string with length over 255
      */
     public void testCreateAMQShortStringStringOver255()
@@ -139,6 +128,19 @@ public class AMQShortStringTest extends QpidTestCase
     {
         AMQShortString shortString = AMQShortString.valueOf(null, true, false);
         assertEquals("Unexpected null string from valueOf", null, shortString);
+    }
+
+    public void testInterning()
+    {
+        AMQShortString str1 = AMQShortString.createAMQShortString("hello");
+        str1.intern();
+        AMQShortString str2 = AMQShortString.createAMQShortString("hello");
+        AMQShortString str3 = AMQShortString.createAMQShortString("hello".getBytes(StandardCharsets.UTF_8));
+
+        assertEquals(str1, str2);
+        assertEquals(str1, str3);
+        assertSame(str1, str2);
+        assertSame(str1, str3);
     }
 
     /**

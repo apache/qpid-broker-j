@@ -322,144 +322,6 @@ public class BasicContentHeaderProperties
         }
     }
 
-    public int read(QpidByteBuffer input)
-    {
-
-        _propertyFlags = input.getUnsignedShort();
-        int length = 2;
-        if ((_propertyFlags & (CONTENT_TYPE_MASK)) != 0)
-        {
-            length++;
-            _contentType = AMQShortString.readAMQShortString(input);
-            if(_contentType != null)
-            {
-                length += _contentType.length();
-            }
-        }
-
-        if ((_propertyFlags & ENCODING_MASK) != 0)
-        {
-            length++;
-            _encoding = AMQShortString.readAMQShortString(input);
-            if(_encoding != null)
-            {
-                length += _encoding.length();
-            }
-        }
-
-        if ((_propertyFlags & HEADERS_MASK) != 0)
-        {
-            int fieldTableLength = input.getInt();
-
-            _headers = new FieldTable(input, fieldTableLength);
-
-            length += 4;
-            length += fieldTableLength;
-        }
-
-        if ((_propertyFlags & DELIVERY_MODE_MASK) != 0)
-        {
-            _deliveryMode = input.get();
-            length++;
-        }
-
-        if ((_propertyFlags & PRIORITY_MASK) != 0)
-        {
-            _priority = input.get();
-            length++;
-        }
-
-        if ((_propertyFlags & CORRELATION_ID_MASK) != 0)
-        {
-            length++;
-            _correlationId = AMQShortString.readAMQShortString(input);
-            if(_correlationId != null)
-            {
-                length += _correlationId.length();
-            }
-        }
-
-        if ((_propertyFlags & REPLY_TO_MASK) != 0)
-        {
-            length++;
-            _replyTo = AMQShortString.readAMQShortString(input);
-            if(_replyTo != null)
-            {
-                length += _replyTo.length();
-            }
-        }
-
-        if ((_propertyFlags & EXPIRATION_MASK) != 0)
-        {
-            length++;
-            AMQShortString expiration = AMQShortString.readAMQShortString(input);
-            if(expiration != null)
-            {
-                length += expiration.length();
-                _expiration = Long.parseLong(expiration.toString());
-            }
-        }
-
-        if ((_propertyFlags & MESSAGE_ID_MASK) != 0)
-        {
-            length++;
-            _messageId = AMQShortString.readAMQShortString(input);
-            if(_messageId != null)
-            {
-                length += _messageId.length();
-            }
-        }
-
-        if ((_propertyFlags & TIMESTAMP_MASK) != 0)
-        {
-            _timestamp = input.getLong();
-            length += 8;
-        }
-
-        if ((_propertyFlags & TYPE_MASK) != 0)
-        {
-            length++;
-            _type = AMQShortString.readAMQShortString(input);
-            if(_type != null)
-            {
-                length += _type.length();
-            }
-        }
-
-        if ((_propertyFlags & USER_ID_MASK) != 0)
-        {
-            length++;
-            _userId = AMQShortString.readAMQShortString(input);
-            if(_userId != null)
-            {
-                length += _userId.length();
-            }
-        }
-
-        if ((_propertyFlags & APPLICATION_ID_MASK) != 0)
-        {
-            length++;
-            _appId = AMQShortString.readAMQShortString(input);
-            if(_appId != null)
-            {
-                length += _appId.length();
-            }
-        }
-
-        if ((_propertyFlags & CLUSTER_ID_MASK) != 0)
-        {
-            length++;
-            _clusterId = AMQShortString.readAMQShortString(input);
-            if(_clusterId != null)
-            {
-                length += _clusterId.length();
-            }
-        }
-
-        return length;
-    }
-
-
     public synchronized long writePropertyListPayload(final ByteBufferSender sender)
     {
         if(useEncodedForm())
@@ -512,11 +374,19 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & (CONTENT_TYPE_MASK)) != 0)
         {
             _contentType = AMQShortString.readAMQShortString(buffer);
+            if (_contentType != null)
+            {
+                _contentType.intern();
+            }
         }
 
         if ((_propertyFlags & ENCODING_MASK) != 0)
         {
             _encoding = AMQShortString.readAMQShortString(buffer);
+            if (_encoding != null)
+            {
+                _encoding.intern();
+            }
         }
 
         if ((_propertyFlags & HEADERS_MASK) != 0)
@@ -548,6 +418,10 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & REPLY_TO_MASK) != 0)
         {
             _replyTo = AMQShortString.readAMQShortString(buffer);
+            if (_replyTo != null)
+            {
+                _replyTo.intern();
+            }
         }
 
         if ((_propertyFlags & EXPIRATION_MASK) != 0)
@@ -573,16 +447,28 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & USER_ID_MASK) != 0)
         {
             _userId = AMQShortString.readAMQShortString(buffer);
+            if (_userId != null)
+            {
+                _userId.intern();
+            }
         }
 
         if ((_propertyFlags & APPLICATION_ID_MASK) != 0)
         {
             _appId = AMQShortString.readAMQShortString(buffer);
+            if (_appId != null)
+            {
+                _appId.intern();
+            }
         }
 
         if ((_propertyFlags & CLUSTER_ID_MASK) != 0)
         {
             _clusterId = AMQShortString.readAMQShortString(buffer);
+            if (_clusterId != null)
+            {
+                _clusterId.intern();
+            }
         }
 
     }
