@@ -22,6 +22,8 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -34,12 +36,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class AMQShortStringTest extends UnitTestBase
 {
 
-    public static final AMQShortString HELLO = AMQShortString.createAMQShortString("Hello");
-    public static final AMQShortString HELL = AMQShortString.createAMQShortString("Hell");
-    public static final AMQShortString GOODBYE = AMQShortString.createAMQShortString("Goodbye");
-    public static final AMQShortString GOOD = AMQShortString.createAMQShortString("Good");
-    public static final AMQShortString BYE = AMQShortString.createAMQShortString("BYE");
-
+    private static final AMQShortString GOODBYE = AMQShortString.createAMQShortString("Goodbye");
 
     @Test
     public void testEquals()
@@ -67,9 +64,6 @@ public class AMQShortStringTest extends UnitTestBase
     }
 
     /**
-     * Test method for
-     * {@link AMQShortString#AMQShortString(java.lang.String)}
-     * <p>
      * Tests short string construction from string with length less than 255.
      */
     @Test
@@ -108,9 +102,6 @@ public class AMQShortStringTest extends UnitTestBase
     }
 
     /**
-     * Test method for
-     * {@link AMQShortString#AMQShortString(java.lang.String)}
-     * <p>
      * Tests an attempt to create an AMQP short string from string with length over 255
      */
     @Test
@@ -160,6 +151,20 @@ public class AMQShortStringTest extends UnitTestBase
     {
         AMQShortString shortString = AMQShortString.valueOf(null, true, false);
         assertEquals("Unexpected null string from valueOf", null, shortString);
+    }
+
+    @Test
+    public void testInterning()
+    {
+        AMQShortString str1 = AMQShortString.createAMQShortString("hello");
+        str1.intern();
+        AMQShortString str2 = AMQShortString.createAMQShortString("hello");
+        AMQShortString str3 = AMQShortString.createAMQShortString("hello".getBytes(StandardCharsets.UTF_8));
+
+        assertEquals(str1, str2);
+        assertEquals(str1, str3);
+        assertSame(str1, str2);
+        assertSame(str1, str3);
     }
 
     /**

@@ -152,7 +152,15 @@ public class BasicPublishBody extends AMQMethodBodyImpl implements EncodableAMQD
 
         int ticket = buffer.getUnsignedShort();
         AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
+        if (exchange != null)
+        {
+            exchange.intern();
+        }
         AMQShortString routingKey = AMQShortString.readAMQShortString(buffer);
+        if (routingKey != null)
+        {
+            routingKey.intern();
+        }
         byte bitfield = buffer.get();
 
         boolean mandatory = (bitfield & 0x01) != 0;
