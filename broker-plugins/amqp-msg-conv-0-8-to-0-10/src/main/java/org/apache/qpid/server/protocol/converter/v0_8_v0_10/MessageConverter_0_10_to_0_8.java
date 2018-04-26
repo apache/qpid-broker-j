@@ -99,7 +99,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             {
                 try
                 {
-                    props.setAppId(new AMQShortString(messageProps.getAppId()));
+                    props.setAppId(AMQShortString.createAMQShortString(messageProps.getAppId()));
                 }
                 catch (IllegalArgumentException e)
                 {
@@ -114,7 +114,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             {
                 try
                 {
-                    props.setCorrelationId(new AMQShortString(messageProps.getCorrelationId()));
+                    props.setCorrelationId(AMQShortString.createAMQShortString(messageProps.getCorrelationId()));
                 }
                 catch (IllegalArgumentException e)
                 {
@@ -165,7 +165,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             {
                 try
                 {
-                    props.setUserId(new AMQShortString(messageProps.getUserId()));
+                    props.setUserId(AMQShortString.createAMQShortString(messageProps.getUserId()));
                 }
                 catch (IllegalArgumentException e)
                 {
@@ -319,10 +319,10 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
         DeliveryProperties delvProps = message.getHeader().getDeliveryProperties();
         final AMQShortString exchangeName = (delvProps == null || delvProps.getExchange() == null)
                                             ? null
-                                            : new AMQShortString(delvProps.getExchange());
+                                            : AMQShortString.createAMQShortString(delvProps.getExchange());
         final AMQShortString routingKey = (delvProps == null || delvProps.getRoutingKey() == null)
                                           ? null
-                                          : new AMQShortString(delvProps.getRoutingKey());
+                                          : AMQShortString.createAMQShortString(delvProps.getRoutingKey());
         final boolean immediate = delvProps != null && delvProps.getImmediate();
         final boolean mandatory = delvProps != null && !delvProps.getDiscardUnroutable();
 

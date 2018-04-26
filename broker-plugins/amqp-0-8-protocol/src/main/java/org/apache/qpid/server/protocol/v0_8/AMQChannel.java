@@ -175,7 +175,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private List<MessageConsumerAssociation> _resendList = new ArrayList<>();
     private static final
-    AMQShortString IMMEDIATE_DELIVERY_REPLY_TEXT = new AMQShortString("Immediate delivery is not possible.");
+    AMQShortString IMMEDIATE_DELIVERY_REPLY_TEXT =
+            AMQShortString.createAMQShortString("Immediate delivery is not possible.");
 
     private final ClientDeliveryMethod _clientDeliveryMethod;
 
@@ -564,7 +565,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     {
         if (tag == null)
         {
-            tag = new AMQShortString("sgen_" + getNextConsumerTag());
+            tag = AMQShortString.createAMQShortString("sgen_" + getNextConsumerTag());
         }
 
         if (_tag2SubscriptionTargetMap.containsKey(tag))
@@ -2538,7 +2539,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         if (isDefaultExchange(exchangeName))
         {
-            if (!new AMQShortString(ExchangeDefaults.DIRECT_EXCHANGE_CLASS).equals(type))
+            if (!AMQShortString.createAMQShortString(ExchangeDefaults.DIRECT_EXCHANGE_CLASS).equals(type))
             {
                 _connection.sendConnectionClose(ErrorCodes.NOT_ALLOWED, "Attempt to redeclare default exchange: "
                                                                         + " of type "
@@ -2886,7 +2887,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         // if we aren't given a queue name, we create one which we return to the client
         if ((queueStr == null) || (queueStr.length() == 0))
         {
-            queueName = new AMQShortString("tmp_" + UUID.randomUUID());
+            queueName = AMQShortString.createAMQShortString("tmp_" + UUID.randomUUID());
         }
         else
         {

@@ -61,7 +61,7 @@ public class AMQShortStringEncodingTest extends QpidTestCase
 
     public void testWriteReadShortStringWithLengthLess127()
     {
-        AMQShortString value = new AMQShortString("test");
+        AMQShortString value = AMQShortString.createAMQShortString("test");
 
         // write into tuple output
         TupleOutput tupleOutput = new TupleOutput();
@@ -81,7 +81,7 @@ public class AMQShortStringEncodingTest extends QpidTestCase
         {
             sb.append(ch);
         }
-        return new AMQShortString(sb.toString());
+        return AMQShortString.createAMQShortString(sb.toString());
     }
 
 }

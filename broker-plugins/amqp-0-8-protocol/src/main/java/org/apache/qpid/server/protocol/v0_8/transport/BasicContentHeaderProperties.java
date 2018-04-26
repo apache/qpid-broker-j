@@ -790,7 +790,7 @@ public class BasicContentHeaderProperties
 
     public void setMessageId(String messageId)
     {
-        setMessageId(messageId == null ? null : new AMQShortString(messageId));
+        setMessageId(messageId == null ? null : AMQShortString.createAMQShortString(messageId));
     }
 
     public synchronized void setMessageId(AMQShortString messageId)

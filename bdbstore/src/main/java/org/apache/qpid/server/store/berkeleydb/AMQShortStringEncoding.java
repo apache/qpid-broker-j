@@ -42,7 +42,7 @@ public class AMQShortStringEncoding
         {
             byte[] stringBytes = new byte[length];
             tupleInput.readFast(stringBytes);
-            return new AMQShortString(stringBytes);
+            return AMQShortString.createAMQShortString(stringBytes);
         }
 
     }

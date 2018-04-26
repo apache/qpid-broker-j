@@ -296,7 +296,7 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
         {
             try
             {
-                return new AMQShortString(userId.getArray());
+                return AMQShortString.createAMQShortString(userId.getArray());
             }
             catch (IllegalArgumentException e)
             {
@@ -313,11 +313,11 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
         {
             if (messageId instanceof Binary)
             {
-                return new AMQShortString(((Binary) messageId).getArray());
+                return AMQShortString.createAMQShortString(((Binary) messageId).getArray());
             }
             else if (messageId instanceof byte[])
             {
-                return new AMQShortString(((byte[]) messageId));
+                return AMQShortString.createAMQShortString(((byte[]) messageId));
             }
             else
             {
@@ -388,11 +388,11 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
         {
             if (correlationIdObject instanceof Binary)
             {
-                correlationId = new AMQShortString(((Binary) correlationIdObject).getArray());
+                correlationId = AMQShortString.createAMQShortString(((Binary) correlationIdObject).getArray());
             }
             else if (correlationIdObject instanceof byte[])
             {
-                correlationId = new AMQShortString(((byte[]) correlationIdObject));
+                correlationId = AMQShortString.createAMQShortString(((byte[]) correlationIdObject));
             }
             else
             {
