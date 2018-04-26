@@ -81,8 +81,8 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
 
     private MessagePublishInfo createPublishInfoBody_0_8()
     {
-        return new MessagePublishInfo(new AMQShortString("exchange12345"), false, true,
-                                      new AMQShortString("routingKey12345"));
+        return new MessagePublishInfo(AMQShortString.createAMQShortString("exchange12345"), false, true,
+                                      AMQShortString.createAMQShortString("routingKey12345"));
 
     }
 

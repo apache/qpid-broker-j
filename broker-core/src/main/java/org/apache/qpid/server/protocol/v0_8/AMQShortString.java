@@ -42,8 +42,6 @@ public final class AMQShortString implements Comparable<AMQShortString>
      * The maximum number of octets in AMQ short string as defined in AMQP specification
      */
     public static final int MAX_LENGTH = 255;
-    private static final byte MINUS = (byte)'-';
-    private static final byte ZERO = (byte) '0';
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQShortString.class);
 
@@ -53,11 +51,10 @@ public final class AMQShortString implements Comparable<AMQShortString>
     private String _asString = null;
 
     private final int _length;
-    private static final char[] EMPTY_CHAR_ARRAY = new char[0];
 
-    public static final AMQShortString EMPTY_STRING = new AMQShortString((String)null);
+    public static final AMQShortString EMPTY_STRING = createAMQShortString((String)null);
 
-    public AMQShortString(byte[] data)
+    private AMQShortString(byte[] data)
     {
         if (data == null)
         {
@@ -72,7 +69,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
         _offset = 0;
     }
 
-    public AMQShortString(String string)
+    private AMQShortString(String string)
     {
         final byte[] data = EncodingUtils.asUTF8Bytes(string);
         final int length = data.length;
@@ -96,31 +93,20 @@ public final class AMQShortString implements Comparable<AMQShortString>
         _asString = string == null ? "" : string;
     }
 
-    public static AMQShortString readAMQShortString(ByteBuffer buffer)
+    private AMQShortString(byte[] data, final int offset, final int length)
     {
-        int length = ((int) buffer.get()) & 0xff;
-        if(length == 0)
+        if (length > MAX_LENGTH)
         {
-            return null;
+            throw new IllegalArgumentException("Cannot create AMQShortString with number of octets over 255!");
         }
-        else
+        if (data == null)
         {
-            if (length > MAX_LENGTH)
-            {
-                throw new IllegalArgumentException("Cannot create AMQShortString with number of octets over 255!");
-            }
-            if(length > buffer.remaining())
-            {
-                throw new IllegalArgumentException("Cannot create AMQShortString with length "
-                                                   + length + " from a ByteBuffer with only "
-                                                   + buffer.remaining()
-                                                   + " bytes.");
+            throw new NullPointerException("Cannot create AMQShortString with null data[]");
+        }
 
-            }
-            byte[] data = new byte[length];
-            buffer.get(data);
-            return new AMQShortString(data, 0, length);
-        }
+        _offset = offset;
+        _length = length;
+        _data = data;
     }
 
     public static AMQShortString readAMQShortString(QpidByteBuffer buffer)
@@ -150,21 +136,14 @@ public final class AMQShortString implements Comparable<AMQShortString>
         }
     }
 
-
-    public AMQShortString(byte[] data, final int offset, final int length)
+    public static AMQShortString createAMQShortString(byte[] data)
     {
-        if (length > MAX_LENGTH)
-        {
-            throw new IllegalArgumentException("Cannot create AMQShortString with number of octets over 255!");
-        }
-        if (data == null)
-        {
-            throw new NullPointerException("Cannot create AMQShortString with null data[]");
-        }
+        return new AMQShortString(data);
+    }
 
-        _offset = offset;
-        _length = length;
-        _data = data;
+    public static AMQShortString createAMQShortString(String string)
+    {
+        return new AMQShortString(string);
     }
 
     /**
@@ -348,37 +327,6 @@ public final class AMQShortString implements Comparable<AMQShortString>
         }
     }
 
-    public int toIntValue()
-    {
-        int pos = _offset;
-        int val = 0;
-
-
-        boolean isNegative = (_data[pos] == MINUS);
-        if(isNegative)
-        {
-            pos++;
-        }
-
-        final int end = _length + _offset;
-
-        while(pos < end)
-        {
-            int digit = (int) (_data[pos++] - ZERO);
-            if((digit < 0) || (digit > 9))
-            {
-                throw new NumberFormatException("\""+toString()+"\" is not a valid number");
-            }
-            val = val * 10;
-            val += digit;
-        }
-        if(isNegative)
-        {
-            val = val * -1;
-        }
-        return val;
-    }
-
     public boolean contains(final byte b)
     {
         final int end = _length + _offset;
@@ -422,7 +370,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
                 }
 
             }
-            return new AMQShortString(bytes);
+            return createAMQShortString(bytes);
         }
     }
 
@@ -439,7 +387,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
         }
         else
         {
-            return new AMQShortString(obj);
+            return createAMQShortString(obj);
         }
 
     }

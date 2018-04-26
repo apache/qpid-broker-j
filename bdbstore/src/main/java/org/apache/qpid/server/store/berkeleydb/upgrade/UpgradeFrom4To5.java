@@ -307,7 +307,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             @Override
             public void run(Database newQueueDatabase, Database newBindingsDatabase, Transaction transaction)
             {
-                AMQShortString queueNameAMQ = new AMQShortString(queueName);
+                AMQShortString queueNameAMQ = AMQShortString.createAMQShortString(queueName);
                 QueueRecord record = new QueueRecord(queueNameAMQ, null, false, null);
 
                 DatabaseEntry key = new DatabaseEntry();

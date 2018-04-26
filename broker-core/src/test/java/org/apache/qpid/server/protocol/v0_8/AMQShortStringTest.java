@@ -34,19 +34,19 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class AMQShortStringTest extends UnitTestBase
 {
 
-    public static final AMQShortString HELLO = new AMQShortString("Hello");
-    public static final AMQShortString HELL = new AMQShortString("Hell");
-    public static final AMQShortString GOODBYE = new AMQShortString("Goodbye");
-    public static final AMQShortString GOOD = new AMQShortString("Good");
-    public static final AMQShortString BYE = new AMQShortString("BYE");
+    public static final AMQShortString HELLO = AMQShortString.createAMQShortString("Hello");
+    public static final AMQShortString HELL = AMQShortString.createAMQShortString("Hell");
+    public static final AMQShortString GOODBYE = AMQShortString.createAMQShortString("Goodbye");
+    public static final AMQShortString GOOD = AMQShortString.createAMQShortString("Good");
+    public static final AMQShortString BYE = AMQShortString.createAMQShortString("BYE");
 
 
     @Test
     public void testEquals()
     {
-        assertEquals(GOODBYE, new AMQShortString("Goodbye"));
-        assertEquals(new AMQShortString("A"), new AMQShortString("A"));
-        assertFalse(new AMQShortString("A").equals(new AMQShortString("a")));
+        assertEquals(GOODBYE, AMQShortString.createAMQShortString("Goodbye"));
+        assertEquals(AMQShortString.createAMQShortString("A"), AMQShortString.createAMQShortString("A"));
+        assertFalse(AMQShortString.createAMQShortString("A").equals(AMQShortString.createAMQShortString("a")));
     }
 
     /**
@@ -57,7 +57,7 @@ public class AMQShortStringTest extends UnitTestBase
     public void testCreateAMQShortStringByteArray()
     {
         byte[] bytes = "test".getBytes(StandardCharsets.UTF_8);
-        AMQShortString string = new AMQShortString(bytes);
+        AMQShortString string = AMQShortString.createAMQShortString(bytes);
         assertEquals("constructed amq short string length differs from expected",
                             (long) 4,
                             (long) string.length());
@@ -75,7 +75,7 @@ public class AMQShortStringTest extends UnitTestBase
     @Test
     public void testCreateAMQShortStringString()
     {
-        AMQShortString string = new AMQShortString("test");
+        AMQShortString string = AMQShortString.createAMQShortString("test");
         assertEquals("constructed amq short string length differs from expected", (long) 4, (long) string.length
                 ());
 
@@ -95,7 +95,7 @@ public class AMQShortStringTest extends UnitTestBase
         byte[] bytes = test.getBytes(StandardCharsets.UTF_8);
         try
         {
-            new AMQShortString(bytes);
+            AMQShortString.createAMQShortString(bytes);
             fail("It should not be possible to create AMQShortString with length over 255");
         }
         catch (IllegalArgumentException e)
@@ -119,7 +119,7 @@ public class AMQShortStringTest extends UnitTestBase
         String test = buildString('a', 256);
         try
         {
-            new AMQShortString(test);
+            AMQShortString.createAMQShortString(test);
             fail("It should not be possible to create AMQShortString with length over 255");
         }
         catch (IllegalArgumentException e)

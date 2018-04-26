@@ -942,7 +942,7 @@ public class FieldTableTest extends UnitTestBase
     @Test
     public void testAddingAllFromFieldTableCreatedUsingEncodedBytes() throws Exception
     {
-        AMQShortString myBooleanTestProperty = new AMQShortString("myBooleanTestProperty");
+        AMQShortString myBooleanTestProperty = AMQShortString.createAMQShortString("myBooleanTestProperty");
 
         //Create a new FieldTable and use it to encode data into a byte array.
         FieldTable encodeTable = new FieldTable();

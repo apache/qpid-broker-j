@@ -33,8 +33,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class MessagePublishInfoImplTest extends UnitTestBase
 {
     private MessagePublishInfo _mpi;
-    private final AMQShortString _exchange = new AMQShortString("exchange");
-    private final AMQShortString _routingKey = new AMQShortString("routingKey");
+    private final AMQShortString _exchange = AMQShortString.createAMQShortString("exchange");
+    private final AMQShortString _routingKey = AMQShortString.createAMQShortString("routingKey");
 
     @Before
     public void setUp() throws Exception
@@ -47,7 +47,7 @@ public class MessagePublishInfoImplTest extends UnitTestBase
     public void testExchange()
     {
         assertEquals(_exchange, _mpi.getExchange());
-        AMQShortString newExchange = new AMQShortString("newExchange");
+        AMQShortString newExchange = AMQShortString.createAMQShortString("newExchange");
         //Check we can update the exchange
         _mpi.setExchange(newExchange);
         assertEquals(newExchange, _mpi.getExchange());
@@ -97,7 +97,7 @@ public class MessagePublishInfoImplTest extends UnitTestBase
     public void testRoutingKey()
     {
         assertEquals(_routingKey, _mpi.getRoutingKey());
-        AMQShortString newRoutingKey = new AMQShortString("newRoutingKey");
+        AMQShortString newRoutingKey = AMQShortString.createAMQShortString("newRoutingKey");
 
         //Check we can update the routingKey
         _mpi.setRoutingKey(newRoutingKey);

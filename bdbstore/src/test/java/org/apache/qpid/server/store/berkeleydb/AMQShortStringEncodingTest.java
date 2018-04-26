@@ -69,7 +69,7 @@ public class AMQShortStringEncodingTest extends UnitTestBase
     @Test
     public void testWriteReadShortStringWithLengthLess127()
     {
-        AMQShortString value = new AMQShortString("test");
+        AMQShortString value = AMQShortString.createAMQShortString("test");
 
         // write into tuple output
         TupleOutput tupleOutput = new TupleOutput();
@@ -89,7 +89,7 @@ public class AMQShortStringEncodingTest extends UnitTestBase
         {
             sb.append(ch);
         }
-        return new AMQShortString(sb.toString());
+        return AMQShortString.createAMQShortString(sb.toString());
     }
 
 }

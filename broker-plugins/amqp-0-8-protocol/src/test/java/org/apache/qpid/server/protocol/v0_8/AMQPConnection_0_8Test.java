@@ -76,8 +76,8 @@ public class AMQPConnection_0_8Test extends UnitTestBase
 {
     private static final String VIRTUAL_HOST_NAME = "vhost";
     private static final byte[] SASL_RESPONSE = "response".getBytes();
-    private static final AMQShortString LOCALE = new AMQShortString("en_US");
-    private static final AMQShortString SASL_MECH = new AMQShortString("MECH");
+    private static final AMQShortString LOCALE = AMQShortString.createAMQShortString("en_US");
+    private static final AMQShortString SASL_MECH = AMQShortString.createAMQShortString("MECH");
 
     private TaskExecutorImpl _taskExecutor;
     private Broker _broker;
@@ -223,7 +223,7 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         conn.receiveConnectionStartOk(new FieldTable(), SASL_MECH, SASL_RESPONSE, LOCALE);
         int maxChannels = 10;
         conn.receiveConnectionTuneOk(maxChannels, 65535, 0);
-        conn.receiveConnectionOpen(new AMQShortString(VIRTUAL_HOST_NAME), AMQShortString.EMPTY_STRING, false);
+        conn.receiveConnectionOpen(AMQShortString.createAMQShortString(VIRTUAL_HOST_NAME), AMQShortString.EMPTY_STRING, false);
 
         // check the channel count is correct
         int channelCount = conn.getSessionModels().size();
