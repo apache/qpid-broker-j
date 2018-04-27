@@ -21,11 +21,49 @@ package org.apache.qpid.server.security;
 
 import java.io.Serializable;
 import java.security.Principal;
+import java.util.Set;
+
+import javax.security.auth.Subject;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 
 
 public interface QpidPrincipal extends Principal, Serializable
 {
+    static <P extends Principal> P getSingletonPrincipal(final Subject authSubject,
+                                                         final boolean isPrincipalOptional,
+                                                         final Class<P> principalClazz)
+    {
+        if (authSubject == null)
+        {
+            throw new IllegalArgumentException("No authenticated subject.");
+        }
+
+        final Set<P> principals = authSubject.getPrincipals(principalClazz);
+        int numberOfAuthenticatedPrincipals = principals.size();
+
+        if(numberOfAuthenticatedPrincipals == 0 && isPrincipalOptional)
+        {
+            return null;
+        }
+        else
+        {
+            if (numberOfAuthenticatedPrincipals != 1)
+            {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Can't find single %s in the authenticated subject. There were %d "
+                                + "%s principals out of a total number of principals of: %s",
+                                principalClazz.getSimpleName(),
+                                principalClazz.getSimpleName(),
+                                numberOfAuthenticatedPrincipals,
+                                authSubject.getPrincipals()));
+            }
+            return principals.iterator().next();
+        }
+    }
+
     ConfiguredObject<?> getOrigin();
+
+
 }
