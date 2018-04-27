@@ -29,6 +29,7 @@ import static org.junit.Assert.fail;
 
 import java.nio.charset.StandardCharsets;
 
+import com.google.common.cache.CacheBuilder;
 import org.junit.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -156,15 +157,24 @@ public class AMQShortStringTest extends UnitTestBase
     @Test
     public void testInterning()
     {
-        AMQShortString str1 = AMQShortString.createAMQShortString("hello");
-        str1.intern();
-        AMQShortString str2 = AMQShortString.createAMQShortString("hello");
-        AMQShortString str3 = AMQShortString.createAMQShortString("hello".getBytes(StandardCharsets.UTF_8));
+        AMQShortString.setCache(CacheBuilder.newBuilder().maximumSize(1).build());
 
-        assertEquals(str1, str2);
-        assertEquals(str1, str3);
-        assertSame(str1, str2);
-        assertSame(str1, str3);
+        try
+        {
+            AMQShortString str1 = AMQShortString.createAMQShortString("hello");
+            str1.intern();
+            AMQShortString str2 = AMQShortString.createAMQShortString("hello");
+            AMQShortString str3 = AMQShortString.createAMQShortString("hello".getBytes(StandardCharsets.UTF_8));
+
+            assertEquals(str1, str2);
+            assertEquals(str1, str3);
+            assertSame(str1, str2);
+            assertSame(str1, str3);
+        }
+        finally
+        {
+            AMQShortString.setCache(null);
+        }
     }
 
     /**

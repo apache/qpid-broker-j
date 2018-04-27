@@ -126,29 +126,7 @@ public final class AuthenticatedPrincipal implements QpidPrincipal
 
     private static AuthenticatedPrincipal getAuthenticatedPrincipalFromSubject(final Subject authSubject, boolean isPrincipalOptional)
     {
-        if (authSubject == null)
-        {
-            throw new IllegalArgumentException("No authenticated subject.");
-        }
-
-        final Set<AuthenticatedPrincipal> principals = authSubject.getPrincipals(AuthenticatedPrincipal.class);
-        int numberOfAuthenticatedPrincipals = principals.size();
-
-        if(numberOfAuthenticatedPrincipals == 0 && isPrincipalOptional)
-        {
-            return null;
-        }
-        else
-        {
-            if (numberOfAuthenticatedPrincipals != 1)
-            {
-                throw new IllegalArgumentException(
-                        "Can't find single AuthenticatedPrincipal in authenticated subject. There were "
-                                + numberOfAuthenticatedPrincipals
-                                + " authenticated principals out of a total number of principals of: " + authSubject.getPrincipals());
-            }
-            return principals.iterator().next();
-        }
+        return QpidPrincipal.getSingletonPrincipal(authSubject, isPrincipalOptional, AuthenticatedPrincipal.class);
     }
 
     @Override

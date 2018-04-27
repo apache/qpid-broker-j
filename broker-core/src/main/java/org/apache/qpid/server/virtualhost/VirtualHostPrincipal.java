@@ -44,6 +44,11 @@ public class VirtualHostPrincipal implements Principal, Serializable
         return _name;
     }
 
+    public VirtualHost<?> getVirtualHost()
+    {
+        return _virtualHost;
+    }
+
     @Override
     public boolean equals(Object o)
     {

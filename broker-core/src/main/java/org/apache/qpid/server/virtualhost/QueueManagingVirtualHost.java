@@ -57,7 +57,8 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
                                                                                          EventListener,
                                                                                          StatisticsGatherer,
                                                                                          UserPreferencesCreator,
-                                                                                         EventLoggerProvider
+                                                                                         EventLoggerProvider,
+                                                                                         CacheProvider
 {
     String HOUSEKEEPING_CHECK_PERIOD            = "housekeepingCheckPeriod";
     String STORE_TRANSACTION_IDLE_TIMEOUT_CLOSE = "storeTransactionIdleTimeoutClose";
@@ -162,6 +163,18 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = VIRTUALHOST_CONNECTION_THREAD_POOL_NUMBER_OF_SELECTORS)
     long DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_NUMBER_OF_SELECTORS = Math.max(DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE/8, 1);
+
+    String NAMED_CACHE_MAXIMUM_SIZE = "virtualhost.namedCache.maximumSize";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = NAMED_CACHE_MAXIMUM_SIZE, description = "Maximum number of entries within the named cached")
+    int DEFAULT_NAMED_CACHE_SIZE = 100;
+    String NAMED_CACHE_MAXIMUM_SIZE_FORMAT = "virtualhost.namedCache.%s.maximumSize";
+
+    String NAMED_CACHE_EXPIRATION = "virtualhost.namedCache.expiration";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = NAMED_CACHE_EXPIRATION, description = "Expiration time (in millis) applied to cached values within the named cache")
+    long DEFAULT_NAMED_CACHE_EXPIRATION = 300 * 1000;
+    String NAMED_CACHE_EXPIRATION_FORMAT = "virtualhost.namedCache.%s.expiration";
 
     @ManagedAttribute( defaultValue = "${" + QueueManagingVirtualHost.VIRTUALHOST_CONNECTION_THREAD_POOL_NUMBER_OF_SELECTORS + "}")
     int getNumberOfSelectors();

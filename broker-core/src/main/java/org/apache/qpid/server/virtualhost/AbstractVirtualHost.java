@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
@@ -65,6 +66,8 @@ import java.util.regex.PatternSyntaxException;
 
 import javax.security.auth.Subject;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
@@ -156,6 +159,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AtomicBoolean _acceptsConnections = new AtomicBoolean(false);
     private volatile TaskExecutor _preferenceTaskExecutor;
     private volatile boolean _deleteRequested;
+    private final ConcurrentMap<String, Cache> _caches = new ConcurrentHashMap<>();
 
     private enum BlockingType { STORE, FILESYSTEM };
 
@@ -3017,6 +3021,21 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                      linkNamePatternString);
             }
         }));
+    }
+
+    @Override
+    public <K, V> Cache<K, V> getNamedCache(final String cacheName)
+    {
+        final String maxSizeContextVarName = String.format(NAMED_CACHE_MAXIMUM_SIZE_FORMAT, cacheName);
+        final String expirationContextVarName = String.format(NAMED_CACHE_EXPIRATION_FORMAT, cacheName);
+        Set<String> contextKeys = getContextKeys(false);
+        int maxSize = contextKeys.contains(maxSizeContextVarName) ? getContextValue(Integer.class, maxSizeContextVarName) : getContextValue(Integer.class, NAMED_CACHE_MAXIMUM_SIZE);
+        long expiration = contextKeys.contains(expirationContextVarName) ? getContextValue(Long.class, expirationContextVarName) : getContextValue(Long.class, NAMED_CACHE_EXPIRATION);
+
+        return _caches.computeIfAbsent(cacheName, (k) -> CacheBuilder.<K, V>newBuilder()
+                .maximumSize(maxSize)
+                .expireAfterAccess(expiration, TimeUnit.MILLISECONDS)
+                .build());
     }
 
     private boolean hasDifferentBindings(final Exchange<?> exchange,
