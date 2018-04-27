@@ -337,7 +337,8 @@ define(["dojo/parser",
                         + " All messaging operations will be interrupted until applications reconnect."
                         + " Are you certain you wish to proceed?"))
             {
-                this.management.post({url: this.management.objectToURL(this.modelObj) + "/restart"}, {})
+                var brokerUrl = this.management.objectToURL(this.modelObj);
+                this.management.post({url: brokerUrl + "/restart"}, {})
                     .then(lang.hitch(this, function ()
                     {
                         updater.cancel();
@@ -345,14 +346,24 @@ define(["dojo/parser",
                         document.body.appendChild(standby.domNode);
                         standby.startup();
                         standby.show();
-                        var pollUrl = this.management.getFullUrl("/");
                         var logout = function ()
                         {
                             window.location = "logout";
                         };
                         var ping = function ()
                         {
-                            xhr(pollUrl, {method: "GET"}).then(logout, ping);
+                            xhr(brokerUrl, {method: "GET"})
+                                .then(logout,
+                                    function (error) {
+                                        if (error.response.status === 401 || error.response.status === 403)
+                                        {
+                                            logout();
+                                        }
+                                        else
+                                        {
+                                            ping();
+                                        }
+                                    });
                         };
                         var timer = setInterval(lang.hitch(this, ping), 5000);
                     }));
