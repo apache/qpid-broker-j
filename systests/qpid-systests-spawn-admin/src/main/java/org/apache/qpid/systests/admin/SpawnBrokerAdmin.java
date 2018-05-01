@@ -407,7 +407,7 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
                 }
                 catch (InterruptedException e)
                 {
-                    Thread.interrupted();
+                    Thread.currentThread().interrupt();
                     break;
                 }
             }
@@ -661,7 +661,7 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
         }
         catch (InterruptedException e)
         {
-            Thread.interrupted();
+            Thread.currentThread().interrupt();
         }
         catch (Exception e)
         {
