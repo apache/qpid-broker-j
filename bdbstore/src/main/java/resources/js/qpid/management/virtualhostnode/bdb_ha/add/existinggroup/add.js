@@ -36,7 +36,7 @@ define(["dojo/_base/xhr",
                 .then(function (instances)
                 {
                     registry.byId("addVirtualHostNode.groupName")
-                        .set("regExpGen", util.nameOrContextVarRegexp);
+                        .set("regExpGen", util.virtualHostNameOrContextVarRegexp);
                     registry.byId("addVirtualHostNode.helperNodeName")
                         .set("regExpGen", util.nameOrContextVarRegexp);
                     registry.byId("addVirtualHostNode.helperAddress")

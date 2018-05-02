@@ -813,13 +813,18 @@ define(["dojo/_base/xhr",
 
         util.nameOrContextVarRegexp = function (constraints)
         {
-            return "^(\\w+)|" + singleContextVarRegexp + "$";
+            return "^([0-9a-zA-Z\\-_.:]+)|" + singleContextVarRegexp + "$";
+        };
+
+        util.virtualHostNameOrContextVarRegexp = function (constraints)
+        {
+            return "^([0-9a-zA-Z\\-_]+)|" + singleContextVarRegexp + "$";
         };
 
         util.jdbcUrlOrContextVarRegexp = function (constraints)
         {
             return "^(jdbc:.*:.*)|" + singleContextVarRegexp + "$";
-        }
+        };
 
         util.nodeAddressOrContextVarRegexp = function (constraints)
         {

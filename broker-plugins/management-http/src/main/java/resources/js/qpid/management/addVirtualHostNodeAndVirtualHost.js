@@ -81,7 +81,7 @@ define(["dojo/_base/event",
             {
                 var that = this;
                 var virtualHostNodeName = registry.byId("addVirtualHostNode.nodeName");
-                virtualHostNodeName.set("regExpGen", util.nameOrContextVarRegexp);
+                virtualHostNodeName.set("regExpGen", util.virtualHostNameOrContextVarRegexp);
 
                 // Readers are HTML5
                 this.reader = window.FileReader ? new FileReader() : undefined;
