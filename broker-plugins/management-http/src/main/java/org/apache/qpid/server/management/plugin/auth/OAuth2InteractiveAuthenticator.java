@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.AccessControlException;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -33,7 +34,6 @@ import javax.security.auth.Subject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.xml.bind.DatatypeConverter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -353,7 +353,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
         byte[] nonceBytes = new byte[STATE_NONCE_BIT_SIZE / 8];
         _random.nextBytes(nonceBytes);
 
-        String nonce = DatatypeConverter.printBase64Binary(nonceBytes);
+        String nonce = Base64.getUrlEncoder().encodeToString(nonceBytes);
         request.getSession().setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(STATE_NAME, request), nonce);
         return nonce;
     }

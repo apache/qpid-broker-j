@@ -72,7 +72,7 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     @ManagedAttribute( description = "Client ID to identify qpid to the OAuth endpoints", mandatory = true )
     String getClientId();
 
-    @ManagedAttribute( description = "Client secret to identify qpid to the OAuth endpoints", mandatory = true, secure = true )
+    @ManagedAttribute( description = "Client secret to identify qpid to the OAuth endpoints", secure = true )
     String getClientSecret();
 
     @ManagedAttribute( description = "The OAuth2 access token scope passed to the authorization endpoint", defaultValue = "${this:defaultScope}")
