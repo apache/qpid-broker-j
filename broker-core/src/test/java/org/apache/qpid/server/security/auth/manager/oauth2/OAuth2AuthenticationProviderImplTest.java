@@ -280,7 +280,6 @@ public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
         tokenEndpoint.putExpectedParameter("code", TEST_VALID_AUTHORIZATION_CODE);
         tokenEndpoint.putExpectedParameter("redirect_uri", TEST_REDIRECT_URI);
         tokenEndpoint.putExpectedParameter("client_id", TEST_CLIENT_ID);
-        tokenEndpoint.putExpectedParameter("client_secret", TEST_CLIENT_SECRET);
         tokenEndpoint.setExpectedMethod("POST");
         tokenEndpoint.setNeedsAuth(true);
         tokenEndpoint.setResponse(200, String.format("{\"access_token\":\"%s\","
