@@ -62,6 +62,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -291,7 +292,7 @@ public class ManagementModeStoreHandlerTest extends UnitTestBase
         ConfiguredObjectRecord portEntry = getEntry(records, _portEntryId);
         assertEquals("Unexpected entry id", _portEntryId, portEntry.getId());
         assertTrue("Unexpected children", getChildrenIds(records, portEntry).isEmpty());
-        assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.STATE));
+        assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.DESIRED_STATE));
     }
 
     @Test
@@ -321,7 +322,7 @@ public class ManagementModeStoreHandlerTest extends UnitTestBase
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
         ConfiguredObjectRecord portEntry = getEntry(records, _portEntryId);
-        assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.STATE));
+        assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.DESIRED_STATE));
     }
 
     @Test
@@ -338,11 +339,11 @@ public class ManagementModeStoreHandlerTest extends UnitTestBase
 
     private void virtualHostEntryQuiescedStatusTestImpl(boolean mmQuiesceVhosts)
     {
-        UUID virtualHostId = UUID.randomUUID();
+        UUID virtualHostNodeId = UUID.randomUUID();
         Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(VirtualHost.TYPE, "STANDARD");
+        attributes.put(VirtualHostNode.TYPE, "JSON");
 
-        final ConfiguredObjectRecord virtualHost = new ConfiguredObjectRecordImpl(virtualHostId, VirtualHost.class.getSimpleName(), attributes, Collections.singletonMap(Broker.class.getSimpleName(), _root.getId()));
+        final ConfiguredObjectRecord virtualHostNodeRecord = new ConfiguredObjectRecordImpl(virtualHostNodeId, VirtualHostNode.class.getSimpleName(), attributes, Collections.singletonMap(Broker.class.getSimpleName(), _root.getId()));
         final ArgumentCaptor<ConfiguredObjectRecordHandler> recovererArgumentCaptor = ArgumentCaptor.forClass(ConfiguredObjectRecordHandler.class);
         doAnswer(
                 new Answer()
@@ -353,7 +354,7 @@ public class ManagementModeStoreHandlerTest extends UnitTestBase
                         ConfiguredObjectRecordHandler recoverer = recovererArgumentCaptor.getValue();
                         recoverer.handle(_root);
                         recoverer.handle(_portEntry);
-                        recoverer.handle(virtualHost);
+                        recoverer.handle(virtualHostNodeRecord);
                         return false;
                     }
                 }
@@ -369,11 +370,11 @@ public class ManagementModeStoreHandlerTest extends UnitTestBase
         _handler.init(_systemConfig);
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
-        ConfiguredObjectRecord hostEntry = getEntry(records, virtualHostId);
-        Map<String, Object> hostAttributes = new HashMap<String, Object>(hostEntry.getAttributes());
-        assertEquals("Unexpected state", expectedState, hostAttributes.get(VirtualHost.STATE));
-        hostAttributes.remove(VirtualHost.STATE);
-        assertEquals("Unexpected attributes", attributes, hostAttributes);
+        ConfiguredObjectRecord nodeEntry = getEntry(records, virtualHostNodeId);
+        Map<String, Object> nodeAttributes = new HashMap<String, Object>(nodeEntry.getAttributes());
+        assertEquals("Unexpected state", expectedState, nodeAttributes.get(VirtualHostNode.DESIRED_STATE));
+        nodeAttributes.remove(VirtualHostNode.DESIRED_STATE);
+        assertEquals("Unexpected attributes", attributes, nodeAttributes);
     }
 
     @SuppressWarnings("unchecked")

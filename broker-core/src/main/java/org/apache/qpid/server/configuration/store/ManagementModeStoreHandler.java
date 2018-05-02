@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerImpl;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
@@ -44,7 +45,7 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.BrokerImpl;
+import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -57,8 +58,8 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
 
     private static final String MANAGEMENT_MODE_PORT_PREFIX = "MANAGEMENT-MODE-PORT-";
     private static final String PORT_TYPE = Port.class.getSimpleName();
-    private static final String VIRTUAL_HOST_TYPE = VirtualHost.class.getSimpleName();
-    private static final String ATTRIBUTE_STATE = VirtualHost.STATE;
+    private static final String VIRTUAL_HOST_NODE_TYPE = VirtualHostNode.class.getSimpleName();
+    private static final String ATTRIBUTE_DESIRED_STATE = ConfiguredObject.DESIRED_STATE;
     private static final Object MANAGEMENT_MODE_AUTH_PROVIDER = "mm-auth";
 
     private enum StoreState { CLOSED, CONFIGURED, OPEN };
@@ -282,7 +283,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
             String entryType = entry.getType();
             Map<String, Object> attributes = entry.getAttributes();
             boolean quiesce = false;
-            if (VIRTUAL_HOST_TYPE.equals(entryType) && options.isManagementModeQuiesceVirtualHosts())
+            if (VIRTUAL_HOST_NODE_TYPE.equals(entryType) && options.isManagementModeQuiesceVirtualHosts())
             {
                 quiesce = true;
             }
@@ -317,7 +318,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
                 LOGGER.debug("Management mode quiescing entry {}", entry);
 
                 // save original state
-                quiescedEntries.put(entry.getId(), attributes.get(ATTRIBUTE_STATE));
+                quiescedEntries.put(entry.getId(), attributes.get(ATTRIBUTE_DESIRED_STATE));
             }
         }
 
@@ -347,11 +348,11 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
         Map<String, Object> attributes = new HashMap<String, Object>(entry.getAttributes());
         if (state == null)
         {
-            attributes.remove(ATTRIBUTE_STATE);
+            attributes.remove(ATTRIBUTE_DESIRED_STATE);
         }
         else
         {
-            attributes.put(ATTRIBUTE_STATE, state);
+            attributes.put(ATTRIBUTE_DESIRED_STATE, state);
         }
         return new ConfiguredObjectRecordImpl(entry.getId(), entry.getType(), attributes, entry.getParents());
     }
@@ -382,7 +383,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
             String entryType = object.getType();
             Map<String, Object> attributes = object.getAttributes();
             boolean quiesce = false;
-            if (VIRTUAL_HOST_TYPE.equals(entryType) && _systemConfig.isManagementModeQuiesceVirtualHosts())
+            if (VIRTUAL_HOST_NODE_TYPE.equals(entryType) && _systemConfig.isManagementModeQuiesceVirtualHosts())
             {
                 quiesce = true;
             }
@@ -417,9 +418,9 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
                 LOGGER.debug("Management mode quiescing entry {}", object);
 
                 // save original state
-                _quiescedEntriesOriginalState.put(object.getId(), attributes.get(ATTRIBUTE_STATE));
+                _quiescedEntriesOriginalState.put(object.getId(), attributes.get(ATTRIBUTE_DESIRED_STATE));
                 Map<String, Object> modifiedAttributes = new HashMap<String, Object>(attributes);
-                modifiedAttributes.put(ATTRIBUTE_STATE, State.QUIESCED);
+                modifiedAttributes.put(ATTRIBUTE_DESIRED_STATE, State.QUIESCED);
                 ConfiguredObjectRecord record = new ConfiguredObjectRecordImpl(object.getId(),
                                                                                object.getType(),
                                                                                modifiedAttributes,

@@ -152,6 +152,13 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         super.onCreate();
     }
 
+    @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
+    protected ListenableFuture<Void> startQuiesced()
+    {
+        setState(State.QUIESCED);
+        return Futures.immediateFuture(null);
+    }
+
     @StateTransition( currentState = {State.UNINITIALIZED, State.STOPPED, State.ERRORED }, desiredState = State.ACTIVE )
     protected ListenableFuture<Void> doActivate()
     {
