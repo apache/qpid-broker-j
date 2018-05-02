@@ -38,7 +38,7 @@ define(["dojo/dom",
                 .then(function (instances)
                 {
                     var virtualHostNodeNameWidget = registry.byId("addVirtualHostAlias.virtualHostNodeName");
-                    virtualHostNodeNameWidget.set("regExpGen", util.nameOrContextVarRegexp);
+                    virtualHostNodeNameWidget.set("regExpGen", util.virtualHostNameOrContextVarRegexp);
                 });
         }
     };

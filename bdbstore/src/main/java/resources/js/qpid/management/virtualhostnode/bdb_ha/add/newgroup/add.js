@@ -96,7 +96,7 @@ define(["dojo/_base/xhr",
             this.addVirtualHostNodePermittedNodes = registry.byId("addVirtualHostNode.permittedNodes");
 
             registry.byId("addVirtualHostNode.groupName")
-                .set("regExpGen", util.nameOrContextVarRegexp);
+                .set("regExpGen", util.virtualHostNameOrContextVarRegexp);
 
             dom.byId("addVirtualHostNode.uploadFields").style.display = "block";
 
