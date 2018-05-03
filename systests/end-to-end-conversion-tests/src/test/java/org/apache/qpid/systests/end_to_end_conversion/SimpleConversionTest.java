@@ -270,9 +270,6 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
 
     private void performReplyToTest(final String replyToJndiName, final String consumeReplyToJndiName) throws Exception
     {
-        assumeTrue("This test is known to fail for pre 0-10 subscribers (QPID-7898)",
-                   EnumSet.of(Protocol.AMQP_0_10, Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
-
         final String correlationId = "testCorrelationId";
         final String destinationJndiName = QUEUE_JNDI_NAME;
 
