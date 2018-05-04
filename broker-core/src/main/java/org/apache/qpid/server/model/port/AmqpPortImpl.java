@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
@@ -92,6 +93,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
 
     private final AtomicInteger _connectionCount = new AtomicInteger();
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
+    private final AtomicLong _totalConnectionCount = new AtomicLong();
 
     private final Container<?> _container;
     private final AtomicBoolean _closingOrDeleting = new AtomicBoolean();
@@ -531,6 +533,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public int incrementConnectionCount()
     {
         int openConnections = _connectionCount.incrementAndGet();
+        _totalConnectionCount.incrementAndGet();
         int maxOpenConnections = getMaxOpenConnections();
         if(maxOpenConnections > 0
            && openConnections > (maxOpenConnections * _connectionWarnCount) / 100
@@ -592,6 +595,12 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public int getConnectionCount()
     {
         return _connectionCount.get();
+    }
+
+    @Override
+    public long getTotalConnectionCount()
+    {
+        return _totalConnectionCount.get();
     }
 
     @Override
