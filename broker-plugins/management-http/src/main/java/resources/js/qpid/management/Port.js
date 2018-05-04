@@ -151,7 +151,6 @@ define(["dojo/dom",
                         "needClientAuthValue",
                         "wantClientAuthValue",
                         "trustStoresValue",
-                        "connectionCountValue",
                         "maxOpenConnectionsValue",
                         "authenticationProvider",
                         "bindingAddress",
@@ -200,8 +199,6 @@ define(["dojo/dom",
             this.transportsValue.innerHTML = printArray("transports", this.portData);
             this.bindingAddressValue.innerHTML =
                 this.portData["bindingAddress"] ? entities.encode(String(this.portData["bindingAddress"])) : "";
-            this.connectionCountValue.innerHTML =
-                this.portData["connectionCount"] ? entities.encode(String(this.portData["connectionCount"])) : "0";
             this.maxOpenConnectionsValue.innerHTML =
                 (this.portData["maxOpenConnections"] && this.portData["maxOpenConnections"] >= 0) ? entities.encode(
                     String(this.portData["maxOpenConnections"])) : "(no limit)";

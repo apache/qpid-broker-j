@@ -25,7 +25,8 @@ define(["dojo/query",
         "qpid/common/util",
         "qpid/common/UpdatableStore",
         "qpid/management/addVirtualHostAlias",
-        "dojo/domReady!"], function (query, template, EnhancedGrid, registry, util, UpdatableStore, addVirtualHostAlias)
+        "qpid/common/StatisticsWidget",
+        "dojo/domReady!"], function (query, template, EnhancedGrid, registry, util, UpdatableStore, addVirtualHostAlias, StatisticsWidget)
 {
     function AmqpPort(params)
     {
@@ -41,6 +42,7 @@ define(["dojo/query",
 
     AmqpPort.prototype.postParse = function (params)
     {
+        this.portStatisticsNode=query(".portStatistics", params.typeSpecificDetailsNode)[0]
         var that = this;
         var gridProperties = {
             height: 400,
@@ -121,6 +123,21 @@ define(["dojo/query",
         {
             this.virtualHostAliasesGrid.update(restData.virtualhostaliases);
         }
+
+        if (!this.portStatistics)
+        {
+            this.portStatistics = new StatisticsWidget({
+                category: "Port",
+                type: restData.type,
+                management: this.management,
+                defaultStatistics: ["connectionCount", "totalConnectionCount"]
+            });
+            this.portStatistics.placeAt(this.portStatisticsNode);
+            this.portStatistics.allStatsToggle.domNode.style.display = 'none';
+            this.portStatistics.startup();
+        }
+
+        this.portStatistics.update(restData.statistics);
     };
 
     return AmqpPort;

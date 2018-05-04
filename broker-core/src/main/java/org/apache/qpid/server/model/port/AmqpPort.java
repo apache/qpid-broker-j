@@ -166,9 +166,13 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     @ManagedAttribute( defaultValue = "${" + PORT_MAX_OPEN_CONNECTIONS + "}" )
     int getMaxOpenConnections();
 
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Connections",
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Open Connections",
                       description = "Current number of connections made through this port")
     int getConnectionCount();
+
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Total Connections",
+            description = "Total number of connections made through this port")
+    long getTotalConnectionCount();
 
     @DerivedAttribute(description = "Maximum time allowed for a new connection to send a protocol header."
                                     + " If the connection does not send a protocol header within this time,"
