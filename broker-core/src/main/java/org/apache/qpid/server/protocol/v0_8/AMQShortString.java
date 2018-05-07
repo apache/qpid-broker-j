@@ -23,20 +23,15 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessController;
 import java.util.Arrays;
-
-import javax.security.auth.Subject;
 
 import com.google.common.cache.Cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.security.QpidPrincipal;
-import org.apache.qpid.server.virtualhost.CacheProvider;
+import org.apache.qpid.server.virtualhost.CacheFactory;
 import org.apache.qpid.server.virtualhost.NullCache;
-import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 
 /**
  * A short string is a representation of an AMQ Short String
@@ -56,7 +51,8 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
     // Unfortunately CacheBuilder does not yet support keyEquivalence, so we have to wrap the keys in ByteBuffers
     // rather than using the byte arrays as keys.
-    private static ThreadLocal<Cache<ByteBuffer, AMQShortString>> CACHE = new ThreadLocal<>();
+    private static final ThreadLocal<Cache<ByteBuffer, AMQShortString>> CACHE =
+            ThreadLocal.withInitial(() -> CacheFactory.getCache("amqShortStringCache", NULL_CACHE));
 
     private final byte[] _data;
     private int _hashCode;
@@ -365,24 +361,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
     private static Cache<ByteBuffer, AMQShortString> getShortStringCache()
     {
-        Cache<ByteBuffer, AMQShortString> cache = CACHE.get();
-        if (cache == null)
-        {
-            cache = NULL_CACHE;
-            Subject subject = Subject.getSubject(AccessController.getContext());
-            if (subject != null)
-            {
-                VirtualHostPrincipal principal = QpidPrincipal.getSingletonPrincipal(subject, true, VirtualHostPrincipal.class);
-
-                if (principal != null && principal.getVirtualHost() instanceof CacheProvider)
-                {
-                    CacheProvider cacheProvider = (CacheProvider) principal.getVirtualHost();
-                    cache = cacheProvider.getNamedCache("amqShortStringCache");
-                }
-            }
-            CACHE.set(cache);
-        }
-        return cache;
+        return CACHE.get();
     }
 
     /** Unit testing only */

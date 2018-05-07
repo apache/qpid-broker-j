@@ -30,6 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.cache.Cache;
+
+import org.apache.qpid.server.virtualhost.CacheFactory;
+import org.apache.qpid.server.virtualhost.NullCache;
+
 
 /**
  * AbstractDecoder
@@ -39,14 +44,9 @@ import java.util.UUID;
 
 public abstract class AbstractDecoder implements Decoder
 {
-
-    private final Map<Binary,String> str8cache = new LinkedHashMap<Binary,String>()
-    {
-        @Override protected boolean removeEldestEntry(Map.Entry<Binary,String> me)
-        {
-            return size() > 4*1024;
-        }
-    };
+    private static final NullCache<Binary, String> NULL_CACHE = new NullCache<>();
+    private static final ThreadLocal<Cache<Binary, String>> CACHE =
+            ThreadLocal.withInitial(() -> CacheFactory.getCache("str8Cache", NULL_CACHE));
 
     protected abstract byte doGet();
 
@@ -126,19 +126,16 @@ public abstract class AbstractDecoder implements Decoder
     {
         short size = readUint8();
         Binary bin = get(size);
-        String str = str8cache.get(bin);
+        String str = getStringCache().getIfPresent(bin);
 
         if (str == null)
         {
             str = new String(bin.array(), bin.offset(), bin.size(), StandardCharsets.UTF_8);
             if(bin.hasExcessCapacity())
             {
-                str8cache.put(bin.copy(), str);
+                bin = bin.copy();
             }
-            else
-            {
-                str8cache.put(bin, str);
-            }
+            getStringCache().put(bin, str);
         }
         return str;
     }
@@ -478,4 +475,14 @@ public abstract class AbstractDecoder implements Decoder
         }
     }
 
+    private static Cache<Binary, String> getStringCache()
+    {
+        return CACHE.get();
+    }
+
+    /** Unit testing only */
+    static void setStringCache(final Cache<Binary, String> cache)
+    {
+        CACHE.set(cache);
+    }
 }
