@@ -26,10 +26,14 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import com.google.common.cache.Cache;
+
+import org.apache.qpid.server.virtualhost.CacheFactory;
+import org.apache.qpid.server.virtualhost.NullCache;
 
 
 /**
@@ -41,14 +45,9 @@ import java.util.UUID;
 public abstract class AbstractEncoder implements Encoder
 {
 
-
-    private final Map<String,byte[]> str8cache = new LinkedHashMap<String,byte[]>()
-    {
-        @Override protected boolean removeEldestEntry(Map.Entry<String,byte[]> me)
-        {
-            return size() > 4*1024;
-        }
-    };
+    private static final NullCache<String, byte[]> NULL_CACHE = new NullCache<>();
+    private static final ThreadLocal<Cache<String, byte[]>> CACHE =
+            ThreadLocal.withInitial(() -> CacheFactory.getCache("encodedStr8BytesCache", NULL_CACHE));
 
     protected abstract void doPut(byte b);
 
@@ -136,7 +135,7 @@ public abstract class AbstractEncoder implements Encoder
             s = "";
         }
 
-        byte[] bytes = str8cache.get(s);
+        byte[] bytes = getEncodedStringCache().getIfPresent(s);
         if (bytes == null)
         {
             bytes = s.getBytes(StandardCharsets.UTF_8);
@@ -144,7 +143,7 @@ public abstract class AbstractEncoder implements Encoder
             {
                 throw new IllegalArgumentException(String.format("String too long (%d) for str8", bytes.length));
             }
-            str8cache.put(s, bytes);
+            getEncodedStringCache().put(s, bytes);
         }
         writeUint8((short) bytes.length);
         put(bytes);
@@ -570,4 +569,14 @@ public abstract class AbstractEncoder implements Encoder
         }
     }
 
+    private static Cache<String, byte[]> getEncodedStringCache()
+    {
+        return CACHE.get();
+    }
+
+    /** Unit testing only */
+    static void setEncodedStringCache(final Cache<String, byte[]> cache)
+    {
+        CACHE.set(cache);
+    }
 }

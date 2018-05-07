@@ -22,7 +22,10 @@
 package org.apache.qpid.server.protocol.v0_10.transport;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -30,6 +33,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -106,5 +112,24 @@ public class BBEncoderTest extends QpidTestCase
         assertArrayEquals("Unexpected user id", messageProperties.getUserId(), decoded.getUserId());
         assertArrayEquals("Unexpected application id", messageProperties.getAppId(), decoded.getAppId());
         assertEquals("Unexpected application headers", messageProperties.getApplicationHeaders(), decoded.getApplicationHeaders());
+    }
+
+    public void testEncodedStr8Caching()
+    {
+        String testString = "Test";
+        Cache< String, byte[]> cache = CacheBuilder.newBuilder().maximumSize(2).build();
+        try
+        {
+            BBEncoder encoder = new BBEncoder(64);
+            BBEncoder.setEncodedStringCache(cache);
+            encoder.writeStr8(testString);
+            encoder.writeStr8(testString);
+
+            assertThat(cache.size(), is(equalTo(1L)));
+        }
+        finally
+        {
+            cache.cleanUp();
+        }
     }
 }
