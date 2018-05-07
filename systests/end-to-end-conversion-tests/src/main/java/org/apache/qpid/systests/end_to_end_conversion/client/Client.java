@@ -26,6 +26,7 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
@@ -83,6 +84,7 @@ public class Client
                 }
                 System.out.println(String.format("Received instructions : %s", instructions.toString()));
 
+                List<ClientMessage> clientMessages = new ArrayList<>();
                 if (!instructions.isEmpty())
                 {
                     String connectionUrl = null;
@@ -111,7 +113,12 @@ public class Client
                             try
                             {
                                 connection.start();
-                                handleInstructions(context, connection, instructions.subList(i, instructions.size()));
+                                List<ClientMessage> messages = handleInstructions(context,
+                                                                                  connection,
+                                                                                  instructions.subList(i,
+                                                                                                       instructions
+                                                                                                               .size()));
+                                clientMessages.addAll(messages);
                             }
                             finally
                             {
@@ -122,7 +129,7 @@ public class Client
                     }
                 }
                 System.out.println("Finished successfully");
-                objectOutputStream.writeObject(new ClientResult());
+                objectOutputStream.writeObject(new ClientResult(clientMessages));
             }
             catch (VerificationException e)
             {
@@ -153,21 +160,23 @@ public class Client
         return sw.toString();
     }
 
-    private void handleInstructions(final Context context,
-                                    final Connection connection,
-                                    final List<ClientInstruction> instructions) throws Exception
+    private List<ClientMessage> handleInstructions(final Context context,
+                                                   final Connection connection,
+                                                   final List<ClientInstruction> instructions) throws Exception
     {
+        List<ClientMessage> clientMessages = new ArrayList<>(instructions.size());
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try
         {
             for (ClientInstruction instruction : instructions)
             {
                 System.out.println(String.format("Process instruction: %s", instruction));
+                final ClientMessage clientMessage;
                 if (instruction instanceof MessagingInstruction.PublishMessage)
                 {
                     final MessagingInstruction.PublishMessage publishInstruction =
                             (MessagingInstruction.PublishMessage) instruction;
-                    publishMessage(context, session, publishInstruction);
+                    clientMessage = publishMessage(context, session, publishInstruction);
                 }
                 else if (instruction instanceof MessagingInstruction.ReceiveMessage)
                 {
@@ -176,24 +185,26 @@ public class Client
                     final Destination destination =
                             (Destination) context.lookup(receiveInstruction.getDestinationJndiName());
                     final MessageDescription messageDescription = receiveInstruction.getMessageDescription();
-                    receiveMessage(session, destination, messageDescription);
+                    clientMessage = receiveMessage(session, destination, messageDescription);
                 }
                 else
                 {
                     throw new RuntimeException(String.format("Unknown jmsInstruction class: '%s'",
                                                              instruction.getClass().getName()));
                 }
+                clientMessages.add(clientMessage);
             }
         }
         finally
         {
             session.close();
         }
+        return clientMessages;
     }
 
-    private void receiveMessage(final Session session,
-                                final Destination queue,
-                                final MessageDescription messageDescription) throws Exception
+    private ClientMessage receiveMessage(final Session session,
+                                         final Destination queue,
+                                         final MessageDescription messageDescription) throws Exception
     {
         final Message message;
         MessageConsumer consumer = session.createConsumer(queue);
@@ -215,11 +226,14 @@ public class Client
                       message.getJMSReplyTo(),
                       messageDescription.getHeader(MessageDescription.MessageHeader.CORRELATION_ID));
         }
+
+        return buildClientMessage(message);
     }
 
-    private void publishMessage(final Context context,
-                                final Session session,
-                                final MessagingInstruction.PublishMessage publishMessageInstruction) throws Exception
+    private ClientMessage publishMessage(final Context context,
+                                         final Session session,
+                                         final MessagingInstruction.PublishMessage publishMessageInstruction)
+            throws Exception
     {
         final MessageDescription messageDescription = publishMessageInstruction.getMessageDescription();
 
@@ -286,6 +300,9 @@ public class Client
                 replyToConsumer.close();
             }
         }
+
+        return buildClientMessage(message);
+
     }
 
     private void receiveReply(final MessageConsumer consumer, final Serializable expectedCorrelationId)
@@ -336,6 +353,123 @@ public class Client
         finally
         {
             producer.close();
+        }
+    }
+
+    private ClientMessage buildClientMessage(final Message message) throws JMSException
+    {
+        String jmsMessageID = message.getJMSMessageID();
+        String jmsCorrelationID = message.getJMSCorrelationID();
+        byte[] jmsCorrelationIDAsBytes;
+        try
+        {
+            jmsCorrelationIDAsBytes = message.getJMSCorrelationIDAsBytes();
+        }
+        catch (JMSException e)
+        {
+            jmsCorrelationIDAsBytes = null;
+        }
+        long jmsTimestamp = message.getJMSTimestamp();
+        int jmsDeliveryMode = message.getJMSDeliveryMode();
+        boolean jmsRedelivered = message.getJMSRedelivered();
+        String jmsType = message.getJMSType();
+        long jmsExpiration = message.getJMSExpiration();
+        int jmsPriority = message.getJMSPriority();
+
+        return new JMSMessageAdaptor(jmsMessageID,
+                                     jmsTimestamp,
+                                     jmsCorrelationID,
+                                     jmsCorrelationIDAsBytes,
+                                     jmsDeliveryMode,
+                                     jmsRedelivered,
+                                     jmsType,
+                                     jmsExpiration,
+                                     jmsPriority);
+    }
+
+    private static class JMSMessageAdaptor implements ClientMessage
+    {
+        private final String _jmsMessageID;
+        private final long _jmsTimestamp;
+        private final String _jmsCorrelationID;
+        private final byte[] _jmsCorrelationIDAsBytes;
+        private final int _jmsDeliveryMode;
+        private final boolean _jmsRedelivered;
+        private final String _jmsType;
+        private final long _jmsExpiration;
+        private final int _jmsPriority;
+
+        JMSMessageAdaptor(final String jmsMessageID,
+                          final long jmsTimestamp,
+                          final String jmsCorrelationID,
+                          final byte[] jmsCorrelationIDAsBytes,
+                          final int jmsDeliveryMode,
+                          final boolean jmsRedelivered,
+                          final String jmsType, final long jmsExpiration, final int jmsPriority)
+        {
+            _jmsMessageID = jmsMessageID;
+            _jmsTimestamp = jmsTimestamp;
+            _jmsCorrelationID = jmsCorrelationID;
+            _jmsCorrelationIDAsBytes = jmsCorrelationIDAsBytes;
+            _jmsDeliveryMode = jmsDeliveryMode;
+            _jmsRedelivered = jmsRedelivered;
+            _jmsType = jmsType;
+            _jmsExpiration = jmsExpiration;
+            _jmsPriority = jmsPriority;
+        }
+
+        @Override
+        public String getJMSMessageID()
+        {
+            return _jmsMessageID;
+        }
+
+        @Override
+        public long getJMSTimestamp()
+        {
+            return _jmsTimestamp;
+        }
+
+        @Override
+        public String getJMSCorrelationID()
+        {
+            return _jmsCorrelationID;
+        }
+
+        @Override
+        public byte[] getJMSCorrelationIDAsBytes()
+        {
+            return _jmsCorrelationIDAsBytes;
+        }
+
+        @Override
+        public int getJMSDeliveryMode()
+        {
+            return _jmsDeliveryMode;
+        }
+
+        @Override
+        public boolean getJMSRedelivered()
+        {
+            return _jmsRedelivered;
+        }
+
+        @Override
+        public String getJMSType()
+        {
+            return _jmsType;
+        }
+
+        @Override
+        public long getJMSExpiration()
+        {
+            return _jmsExpiration;
+        }
+
+        @Override
+        public int getJMSPriority()
+        {
+            return _jmsPriority;
         }
     }
 }

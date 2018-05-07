@@ -20,34 +20,23 @@
 
 package org.apache.qpid.systests.end_to_end_conversion.client;
 
-import java.io.Serializable;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public class ClientResult implements Serializable
+public class AugumentConnectionUrl implements ClientInstruction
 {
-    private final Exception _exception;
-    private final List<ClientMessage> _clientMessages;
+    private Map<String, String> _connectionUrlConfig;
 
-    public ClientResult(final Exception exception)
+    public AugumentConnectionUrl(final Map<String, String> connectionUrlConfig)
     {
-        _exception = exception;
-        _clientMessages = Collections.emptyList();
+
+        _connectionUrlConfig = new HashMap<>(connectionUrlConfig);
     }
 
-    public ClientResult(final List<ClientMessage> clientMessages)
-    {
-        _exception = null;
-        _clientMessages = clientMessages;
-    }
 
-    public Exception getException()
+    public Map<String, String> getConnectionUrlConfig()
     {
-        return _exception;
-    }
-
-    public List<ClientMessage> getClientMessages()
-    {
-        return Collections.unmodifiableList(_clientMessages);
+        return Collections.unmodifiableMap(_connectionUrlConfig);
     }
 }

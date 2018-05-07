@@ -20,13 +20,20 @@
 
 package org.apache.qpid.systests.end_to_end_conversion;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -34,12 +41,15 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.end_to_end_conversion.client.ClientInstruction;
+import org.apache.qpid.systests.end_to_end_conversion.client.ClientMessage;
+import org.apache.qpid.systests.end_to_end_conversion.client.ClientResult;
 import org.apache.qpid.systests.end_to_end_conversion.client.MessageDescription;
 import org.apache.qpid.systests.end_to_end_conversion.client.SerializableTestClass;
 import org.apache.qpid.systests.end_to_end_conversion.client.VerificationException;
@@ -48,6 +58,9 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
 {
     private static final long TEST_TIMEOUT = 30000L;
     private static final String QUEUE_JNDI_NAME = "queue";
+    private static final EnumSet<Protocol> AMQP_PRE010_PROTOCOLS =
+            EnumSet.of(Protocol.AMQP_0_9, Protocol.AMQP_0_9_1, Protocol.AMQP_0_8);
+    private static final String JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE = "jms.messageIDPolicy.messageIDType";
 
     private HashMap<String, String> _defaultDestinations;
     @Rule
@@ -173,6 +186,240 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     }
 
     @Test
+    public void providerAssignedMessageId09_010() throws Exception
+    {
+        assumeTrue(AMQP_PRE010_PROTOCOLS.contains(getPublisherProtocolVersion())
+                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // Subscriber receives 0-10 UUID message-id.  Qpid JMS 0-x library synthesizes the ID: prefix
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(publishedMessage.getJMSMessageID()));
+    }
+
+    @Test
+    public void providerAssignedMessageId09_10() throws Exception
+    {
+        assumeTrue(AMQP_PRE010_PROTOCOLS.contains(getPublisherProtocolVersion())
+                   && EnumSet.of(Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // TODO: On the wire the AMQP 1.0 client receives a string containing a message with
+        // message-id-string contain a ID: prefixed UUID. Would be better if the conversion layer sent a message-id-uuid
+        // as this would offer most compatibility and miminise the exposure of the ID prefix.
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(publishedMessage.getJMSMessageID()));
+    }
+
+    @Test
+    public void providerAssignedMessageId010_09() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion())
+                   && AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // Subscriber receives AMQShortString message-id with a ID: prefix.  The conversion layer already synthesizes
+        // this. See MessageConverter_0_10_to_0_8.java:130
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(publishedMessage.getJMSMessageID()));
+    }
+
+    @Test
+    public void providerAssignedMessageId010_10() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion())
+                   && EnumSet.of(Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // Publisher sends a 0-10 UUID message-id. This is converted into message-id-uuid.  The Qpid JMS
+        // Client returns a ID:AMQP_UUID:
+        final String publishedJmsMessageID = publishedMessage.getJMSMessageID();
+        assertThat(publishedJmsMessageID, startsWith("ID:"));
+        String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:".length());
+        String expectedSubscriberJmsMessageID = String.format("ID:AMQP_UUID:%s", barePublishedJmsMessageID);
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
+    }
+
+    @Test
+    public void providerAssignedMessageId_DefaultMode_10_09() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
+                   && AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+
+        // On the wire the "message-id-string comprises an identity of the publisher + a message sequence number
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(publishedMessage.getJMSMessageID()));
+    }
+
+    @Test
+    @Ignore("Currently subscriber receives the correct message id but without the ID prefix")
+    public void providerAssignedMessageId_UuidMode_10_09() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
+                   && AMQP_PRE010_PROTOCOLS
+                           .contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+                JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID"));
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // On the wire the message id is a AMQP 1.0 UUID
+        final String publishedJmsMessageID = publishedMessage.getJMSMessageID();
+        assertThat(publishedJmsMessageID, startsWith("ID:AMQP_UUID:"));
+        String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:AMQP_UUID:".length());
+        String expectedSubscriberJmsMessageID = String.format("ID:%s", barePublishedJmsMessageID);
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
+
+
+        // TODO: On the wire the AMQP 0-x client receives a message id containing the a stringified UUID without prefix.
+        // This is inconsistent - in all other cases the client receives message ids prefixed.  Would be
+        // better if the conversion layer sent a synthesized the ID prefix.
+    }
+
+    @Test
+    @Ignore("Currently subscriber receives the correct message id but without the ID prefix")
+    public void providerAssignedMessageId_UuidStringMode_10_09() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
+                   && AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+                JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID_STRING"));
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // On the wire the message-id is a string containing a UUID with no prefix
+        final String publishedJmsMessageID = publishedMessage.getJMSMessageID();
+        assertThat(publishedJmsMessageID, startsWith("ID:AMQP_NO_PREFIX:"));
+        String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:AMQP_NO_PREFIX:".length());
+        String expectedSubscriberJmsMessageID = String.format("ID:%s", barePublishedJmsMessageID);
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
+
+        // TODO ditto above
+    }
+
+    @Test
+    public void providerAssignedMessageId_PrefixedUuidStringMode_10_09() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
+                   && AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+                JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "PREFIXED_UUID_STRING"));
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // On the wire the message-id is a message-id-string containing a UUID with ID: prefix
+        final String publishedJmsMessageID = publishedMessage.getJMSMessageID();
+        assertThat(publishedJmsMessageID, startsWith("ID:"));
+        String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:".length());
+        String expectedSubscriberJmsMessageID = String.format("ID:%s", barePublishedJmsMessageID);
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
+    }
+
+    @Test
+    public void providerAssignedMessageId_DefaultMode_10_010() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
+                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+
+        // On the wire the message-id is a message-id-string comprising an identity of the pubisher + a message
+        // sequence number
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // Conversion layer manufactures an UUID.  This will be unpredictable to the client.
+        assertThat(subscriberMessage.getJMSMessageID(), is(notNullValue()));
+    }
+
+    @Test
+    public void providerAssignedMessageId_UuidMode_10_010() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
+                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+                JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID"));
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // On the wire the message-id is a message-id-uuid
+        final String publishedJmsMessageID = publishedMessage.getJMSMessageID();
+        assertThat(publishedJmsMessageID, startsWith("ID:AMQP_UUID:"));
+        String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:AMQP_UUID:".length());
+        String expectedSubscriberJmsMessageID = String.format("ID:%s", barePublishedJmsMessageID);
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
+    }
+
+    @Test
+    public void providerAssignedMessageId_UuidStringMode_10_010() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
+                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+                JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID_STRING"));
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // On the wire the message-id is a message-id-string containing a UUID without prefix
+        final String publishedJmsMessageID = publishedMessage.getJMSMessageID();
+        assertThat(publishedJmsMessageID, startsWith("ID:AMQP_NO_PREFIX:"));
+        String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:AMQP_NO_PREFIX:".length());
+        String expectedSubscriberJmsMessageID = String.format("ID:%s", barePublishedJmsMessageID);
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
+    }
+
+    @Test
+    @Ignore("Currently subscriber receives a UUID that differs from the one sent")
+    public void providerAssignedMessageId_PrefixedUuidStringMode_10_010() throws Exception
+    {
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
+                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+                JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "PREFIXED_UUID_STRING"));
+
+        ClientMessage publishedMessage = clientResults.get(0);
+        ClientMessage subscriberMessage = clientResults.get(1);
+
+        // On the wire the message-id is a message-id-string containing a UUID with ID: prefix
+        final String publishedJmsMessageID = publishedMessage.getJMSMessageID();
+        assertThat(publishedJmsMessageID, startsWith("ID:"));
+        String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:".length());
+        String expectedSubscriberJmsMessageID = String.format("ID:%s", barePublishedJmsMessageID);
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
+
+        // TODO correct conversion layer so that a string that contains a ID prefixed UUID is converted
+        // as a UUID.
+    }
+
+    @Test
     public void property() throws Exception
     {
         final MessageDescription messageDescription = new MessageDescription();
@@ -289,7 +536,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         performTest(publisherInstructions, subscriberInstructions);
     }
 
-    private void performSimpleTest(final MessageDescription messageDescription) throws Exception
+    private List<ClientResult> performSimpleTest(final MessageDescription messageDescription) throws Exception
     {
         final String destinationJndiName = QUEUE_JNDI_NAME;
         final List<ClientInstruction> publisherInstructions =
@@ -300,17 +547,17 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
                 new ClientInstructionBuilder().configureDestinations(_defaultDestinations)
                                               .receiveMessage(destinationJndiName, messageDescription)
                                               .build();
-        performTest(publisherInstructions,subscriberInstructions);
+        return performTest(publisherInstructions,subscriberInstructions);
     }
 
-    private void performTest(final List<ClientInstruction> publisherInstructions,
-                            final List<ClientInstruction> subscriberInstructions) throws Exception
+    private List<ClientResult> performTest(final List<ClientInstruction> publisherInstructions,
+                                           final List<ClientInstruction> subscriberInstructions) throws Exception
     {
-        final ListenableFuture<?> publisherFuture = runPublisher(publisherInstructions);
-        final ListenableFuture<?> subscriberFuture = runSubscriber(subscriberInstructions);
+        final ListenableFuture<ClientResult> publisherFuture = runPublisher(publisherInstructions);
+        final ListenableFuture<ClientResult> subscriberFuture = runSubscriber(subscriberInstructions);
         try
         {
-            Futures.allAsList(publisherFuture, subscriberFuture).get(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
+            return Futures.allAsList(publisherFuture, subscriberFuture).get(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
         }
         catch (ExecutionException e)
         {
@@ -328,5 +575,33 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
                 throw e;
             }
         }
+    }
+
+    private List<ClientMessage> performProviderAssignedMessageIdTest(final Map<String, String> publisherConnectionUrlConfig) throws Exception
+    {
+        final MessageDescription messageDescription = new MessageDescription();
+
+        final String destinationJndiName = QUEUE_JNDI_NAME;
+        final List<ClientInstruction> publisherInstructions =
+                new ClientInstructionBuilder().configureConnectionUrl(publisherConnectionUrlConfig)
+                                              .configureDestinations(_defaultDestinations)
+                                              .publishMessage(destinationJndiName, messageDescription)
+                                              .build();
+        final List<ClientInstruction> subscriberInstructions =
+                new ClientInstructionBuilder().configureDestinations(_defaultDestinations)
+                                              .receiveMessage(destinationJndiName, messageDescription)
+                                              .build();
+        List<ClientResult> clientResults = performTest(publisherInstructions, subscriberInstructions);
+        assertThat("Unexpected number of client results", clientResults.size(), equalTo(2));
+
+        ClientResult publishedClientResult = clientResults.get(0);
+        assertThat("Unexpected number of published client messages", publishedClientResult.getClientMessages().size(), equalTo(1));
+        ClientMessage publishedMessage = publishedClientResult.getClientMessages().get(0);
+
+        ClientResult subscriberClientResults = clientResults.get(1);
+        assertThat("Unexpected number of published client messages", subscriberClientResults.getClientMessages().size(), equalTo(1));
+        ClientMessage subscriberMessage = subscriberClientResults.getClientMessages().get(0);
+
+        return Arrays.asList(publishedMessage, subscriberMessage);
     }
 }
