@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,33 +22,16 @@
 package org.apache.qpid.systests.end_to_end_conversion.client;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.List;
 
-public class ClientResult implements Serializable
+public interface ClientMessage extends Serializable
 {
-    private final Exception _exception;
-    private final List<ClientMessage> _clientMessages;
-
-    public ClientResult(final Exception exception)
-    {
-        _exception = exception;
-        _clientMessages = Collections.emptyList();
-    }
-
-    public ClientResult(final List<ClientMessage> clientMessages)
-    {
-        _exception = null;
-        _clientMessages = clientMessages;
-    }
-
-    public Exception getException()
-    {
-        return _exception;
-    }
-
-    public List<ClientMessage> getClientMessages()
-    {
-        return Collections.unmodifiableList(_clientMessages);
-    }
+    String getJMSMessageID();
+    long getJMSTimestamp();
+    String getJMSCorrelationID();
+    byte[] getJMSCorrelationIDAsBytes();
+    int getJMSDeliveryMode();
+    boolean getJMSRedelivered();
+    String getJMSType();
+    long getJMSExpiration();
+    int getJMSPriority();
 }

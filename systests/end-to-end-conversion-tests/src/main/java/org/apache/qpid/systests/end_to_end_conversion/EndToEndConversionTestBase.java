@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.systests.end_to_end_conversion.client.AugumentConnectionUrl;
 import org.apache.qpid.systests.end_to_end_conversion.client.Client;
 import org.apache.qpid.systests.end_to_end_conversion.client.ClientInstruction;
 import org.apache.qpid.systests.end_to_end_conversion.client.ClientResult;
@@ -94,7 +95,7 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
         System.out.println("LQDEBUG: " + ClasspathQuery.getCacheStats());
     }
 
-    protected ListenableFuture<?> runPublisher(final List<ClientInstruction> clientInstructions)
+    protected ListenableFuture<ClientResult> runPublisher(final List<ClientInstruction> clientInstructions)
     {
         List<String> gavs = Arrays.asList(System.getProperty("qpid.systests.end_to_end_conversion.publisherGavs",
                                                              "org.apache.qpid:qpid-jms-client:LATEST")
@@ -105,11 +106,11 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
 
         return _executorService.submit(() -> {
             Thread.currentThread().setName("Publisher");
-            runClient(gavs, additionalJavaArgs, clientInstructions);
+            return runClient(gavs, additionalJavaArgs, clientInstructions);
         });
     }
 
-    protected ListenableFuture<?> runSubscriber(final List<ClientInstruction> clientInstructions)
+    protected ListenableFuture<ClientResult> runSubscriber(final List<ClientInstruction> clientInstructions)
     {
         List<String> gavs = Arrays.asList(System.getProperty("qpid.systests.end_to_end_conversion.subscriberGavs",
                                                              "org.apache.qpid:qpid-client:LATEST,org.apache.geronimo.specs:geronimo-jms_1.1_spec:1.1.1")
@@ -121,11 +122,11 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
 
         return _executorService.submit(() -> {
             Thread.currentThread().setName("Subscriber");
-            runClient(gavs, additionalJavaArgs, clientInstructions);
+            return runClient(gavs, additionalJavaArgs, clientInstructions);
         });
     }
 
-    private List<ClientInstruction> amendClientInstructions(final List<ClientInstruction> clientInstructions,
+    private List<ClientInstruction> amendClientInstructions(List<ClientInstruction> clientInstructions,
                                                             final boolean amqp0xClient)
     {
         if (clientInstructions.isEmpty())
@@ -146,18 +147,27 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
             }
         }
 
+        List<AugumentConnectionUrl> configUrls = clientInstructions.stream()
+                                                                   .filter(AugumentConnectionUrl.class::isInstance)
+                                                                   .map(AugumentConnectionUrl.class::cast)
+                                                                   .collect(Collectors.toList());
+
         final String contextFactory;
         final String connectionUrl;
         if (amqp0xClient)
         {
             contextFactory = getAmqp0xContextFactory();
-            connectionUrl = getAmqp0xConnectionUrl();
+            connectionUrl = getAmqp0xConnectionUrl(configUrls);
         }
         else
         {
             contextFactory = getAmqp10ContextFactory();
-            connectionUrl = getAmqp10ConnectionUrl();
+            connectionUrl = getAmqp10ConnectionUrl(configUrls);
         }
+
+        clientInstructions = new ArrayList<>(clientInstructions);
+        clientInstructions.removeAll(configUrls);
+
         ConfigureJndiContext jndiContext = new ConfigureJndiContext(contextFactory, connectionUrl);
         List<ClientInstruction> instructions = new ArrayList<>();
         instructions.add(jndiContext);
@@ -209,12 +219,13 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
                 return Protocol.AMQP_0_8;
             }
         }
-        throw new RuntimeException("Unable to determine client protocol version");
+        throw new RuntimeException(String.format("Unable to determine client protocol version. Addition args are : "
+                                                 + "[%s]", additionalArgs));
     }
 
-    private void runClient(final Collection<String> clientGavs,
-                           final List<String> additionalJavaArguments,
-                           final List<ClientInstruction> jmsInstructions)
+    private ClientResult runClient(final Collection<String> clientGavs,
+                                   final List<String> additionalJavaArguments,
+                                   final List<ClientInstruction> jmsInstructions)
     {
         final List<ClientInstruction> clientInstructions = amendClientInstructions(jmsInstructions,
                                                                                    isAmqp0xClient(clientGavs));
@@ -252,11 +263,12 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
                     final Object result = inputStream.readObject();
                     if (result instanceof ClientResult)
                     {
-                        final ClientResult publisherResult = (ClientResult) result;
-                        if (publisherResult.getException() != null)
+                        final ClientResult clientResult = (ClientResult) result;
+                        if (clientResult.getException() != null)
                         {
-                            throw publisherResult.getException();
+                            throw clientResult.getException();
                         }
+                        return clientResult;
                     }
                     else
                     {
@@ -269,10 +281,9 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
                     p.waitFor();
                     loggingThread.flush();
                     loggingThread.stop();
+                    LOGGER.debug("client process finished exit value: {}", p.exitValue());
                 }
             }
-
-            LOGGER.debug("client process finished exit value: {}", p.exitValue());
         }
         catch (RuntimeException e)
         {
@@ -295,11 +306,22 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
         return "org.apache.qpid.jndi.PropertiesFileInitialContextFactory";
     }
 
-    private String getAmqp0xConnectionUrl()
+    private String getAmqp0xConnectionUrl(final List<AugumentConnectionUrl> configUrls)
     {
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         int port = brokerAddress.getPort();
         String hostString = "localhost";
+
+        if (!configUrls.isEmpty())
+        {
+            for (final AugumentConnectionUrl configUrl : configUrls)
+            {
+                if (!configUrl.getConnectionUrlConfig().isEmpty())
+                {
+                    throw new UnsupportedOperationException("Not implemented");
+                }
+            }
+        }
         return String.format("amqp://clientid/?brokerlist='tcp://%s:%d'", hostString, port);
     }
 
@@ -308,13 +330,20 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
         return "org.apache.qpid.jms.jndi.JmsInitialContextFactory";
     }
 
-    private String getAmqp10ConnectionUrl()
+    private String getAmqp10ConnectionUrl(final List<AugumentConnectionUrl> configUrls)
     {
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         int port = brokerAddress.getPort();
         String hostString = "localhost";
         int connectTimeout = 30000;
-        return String.format("amqp://%s:%d?jms.connectTimeout=%d", hostString, port, connectTimeout);
+
+        String additional = configUrls.stream()
+                                      .map(i -> i.getConnectionUrlConfig().entrySet())
+                                      .flatMap(Collection::stream)
+                                      .map(e -> String.format("%s=%s", e.getKey(), e.getValue()))
+                                      .collect(Collectors.joining("&", "&", ""));
+
+        return String.format("amqp://%s:%d?jms.connectTimeout=%d%s", hostString, port, connectTimeout, additional);
     }
 
     private boolean isAmqp0xClient(final Collection<String> gavs)

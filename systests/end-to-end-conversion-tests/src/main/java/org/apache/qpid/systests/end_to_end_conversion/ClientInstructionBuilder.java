@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.systests.end_to_end_conversion.client.AugumentConnectionUrl;
 import org.apache.qpid.systests.end_to_end_conversion.client.ClientInstruction;
 import org.apache.qpid.systests.end_to_end_conversion.client.ConfigureDestination;
 import org.apache.qpid.systests.end_to_end_conversion.client.MessageDescription;
@@ -34,6 +35,12 @@ public class ClientInstructionBuilder
 {
     private List<ClientInstruction> _clientInstructions = new ArrayList<>();
     private MessageDescription _latestMessageDescription;
+
+    public ClientInstructionBuilder configureConnectionUrl(final Map<String, String> connectionUrlConfig)
+    {
+        _clientInstructions.add(new AugumentConnectionUrl(connectionUrlConfig));
+        return this;
+    }
 
     public ClientInstructionBuilder publishMessage(final String destinationJndiName)
     {
