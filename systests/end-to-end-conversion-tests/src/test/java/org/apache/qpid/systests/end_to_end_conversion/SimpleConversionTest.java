@@ -41,7 +41,6 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -211,10 +210,11 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         ClientMessage publishedMessage = clientResults.get(0);
         ClientMessage subscriberMessage = clientResults.get(1);
 
-        // TODO: On the wire the AMQP 1.0 client receives a string containing a message with
-        // message-id-string contain a ID: prefixed UUID. Would be better if the conversion layer sent a message-id-uuid
-        // as this would offer most compatibility and miminise the exposure of the ID prefix.
-        assertThat(subscriberMessage.getJMSMessageID(), equalTo(publishedMessage.getJMSMessageID()));
+        String publishedJmsMessageID = publishedMessage.getJMSMessageID();
+        assertThat(publishedJmsMessageID, startsWith("ID:"));
+        String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:".length());
+        String expectedSubscriberJmsMessageID = String.format("ID:AMQP_UUID:%s", barePublishedJmsMessageID);
+        assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
     }
 
     @Test
@@ -269,7 +269,6 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     }
 
     @Test
-    @Ignore("Currently subscriber receives the correct message id but without the ID prefix")
     public void providerAssignedMessageId_UuidMode_10_09() throws Exception
     {
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
@@ -286,17 +285,11 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         final String publishedJmsMessageID = publishedMessage.getJMSMessageID();
         assertThat(publishedJmsMessageID, startsWith("ID:AMQP_UUID:"));
         String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:AMQP_UUID:".length());
-        String expectedSubscriberJmsMessageID = String.format("ID:%s", barePublishedJmsMessageID);
+        String expectedSubscriberJmsMessageID = String.format("%s", barePublishedJmsMessageID);
         assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
-
-
-        // TODO: On the wire the AMQP 0-x client receives a message id containing the a stringified UUID without prefix.
-        // This is inconsistent - in all other cases the client receives message ids prefixed.  Would be
-        // better if the conversion layer sent a synthesized the ID prefix.
     }
 
     @Test
-    @Ignore("Currently subscriber receives the correct message id but without the ID prefix")
     public void providerAssignedMessageId_UuidStringMode_10_09() throws Exception
     {
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
@@ -312,10 +305,9 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         final String publishedJmsMessageID = publishedMessage.getJMSMessageID();
         assertThat(publishedJmsMessageID, startsWith("ID:AMQP_NO_PREFIX:"));
         String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:AMQP_NO_PREFIX:".length());
-        String expectedSubscriberJmsMessageID = String.format("ID:%s", barePublishedJmsMessageID);
+        String expectedSubscriberJmsMessageID = String.format("%s", barePublishedJmsMessageID);
         assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
 
-        // TODO ditto above
     }
 
     @Test
@@ -396,7 +388,6 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     }
 
     @Test
-    @Ignore("Currently subscriber receives a UUID that differs from the one sent")
     public void providerAssignedMessageId_PrefixedUuidStringMode_10_010() throws Exception
     {
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
@@ -414,9 +405,6 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         String barePublishedJmsMessageID = publishedJmsMessageID.substring("ID:".length());
         String expectedSubscriberJmsMessageID = String.format("ID:%s", barePublishedJmsMessageID);
         assertThat(subscriberMessage.getJMSMessageID(), equalTo(expectedSubscriberJmsMessageID));
-
-        // TODO correct conversion layer so that a string that contains a ID prefixed UUID is converted
-        // as a UUID.
     }
 
     @Test
