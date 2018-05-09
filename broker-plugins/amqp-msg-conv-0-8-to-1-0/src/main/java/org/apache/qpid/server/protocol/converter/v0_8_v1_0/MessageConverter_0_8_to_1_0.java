@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
@@ -94,7 +95,7 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             final String correlationIdAsString = contentHeader.getCorrelationIdAsString();
             if (Arrays.equals(correlationIdAsBytes, correlationIdAsString.getBytes(StandardCharsets.UTF_8)))
             {
-                props.setCorrelationId(correlationIdAsString);
+                props.setCorrelationId(convertMessageId(correlationId));
             }
             else
             {
@@ -105,7 +106,7 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         final AMQShortString messageId = contentHeader.getMessageId();
         if(messageId != null)
         {
-            props.setMessageId(messageId.toString());
+            props.setMessageId(convertMessageId(messageId));
         }
 
         if (contentHeader.getReplyTo() != null)
@@ -194,6 +195,23 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
                                        null,
                                        serverMessage.getArrivalTime(),
                                        bodySection.getEncodedSize());
+    }
+
+    private Object convertMessageId(final AMQShortString messageId)
+    {
+        try
+        {
+            String messageIdAsString = messageId.toString();
+            if(messageIdAsString.startsWith("ID:"))
+            {
+                messageIdAsString = messageIdAsString.substring(3);
+            }
+            return UUID.fromString(messageIdAsString);
+        }
+        catch (IllegalArgumentException e)
+        {
+            return messageId.toString();
+        }
     }
 
     private String convertReplyTo(final AMQShortString replyTo)

@@ -366,13 +366,18 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
         }
         else if (messageId instanceof String)
         {
+            String messageIdString = (String) messageId;
             try
             {
-                return UUID.fromString(((String) messageId));
+                if (messageIdString.startsWith("ID:"))
+                {
+                    messageIdString = messageIdString.substring(3);
+                }
+                return UUID.fromString(messageIdString);
             }
             catch (IllegalArgumentException e)
             {
-                return UUID.nameUUIDFromBytes(((String) messageId).getBytes(UTF_8));
+                return UUID.nameUUIDFromBytes(messageIdString.getBytes(UTF_8));
             }
         }
         else if (messageId instanceof Binary)
@@ -413,6 +418,7 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
         {
             UUID uuid = (UUID)correlationIdObject;
             correlationId = longToBytes(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
+            // KW: perhaps this would be more useful as the bytes of the UUID expressed as a string?
         }
         else if (correlationIdObject instanceof UnsignedLong)
         {

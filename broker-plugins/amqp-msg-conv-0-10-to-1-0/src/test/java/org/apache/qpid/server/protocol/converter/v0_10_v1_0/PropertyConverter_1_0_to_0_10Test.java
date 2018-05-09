@@ -565,6 +565,34 @@ public class PropertyConverter_1_0_to_0_10Test extends QpidTestCase
         assertEquals("Unexpected messageId", messageId, messageProperties.getMessageId());
     }
 
+    public void testMessageIdStringifiedUUIDConversion()
+    {
+        final UUID messageId = UUID.randomUUID();
+        Properties properties = new Properties();
+        properties.setMessageId(messageId.toString());
+        Message_1_0 message = createTestMessage(properties);
+
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        final MessageProperties messageProperties =
+                convertedMessage.getStoredMessage().getMetaData().getMessageProperties();
+        assertEquals("Unexpected messageId", messageId, messageProperties.getMessageId());
+    }
+
+    public void testMessageIdPrefixedStringifiedUUIDConversion()
+    {
+        final UUID messageId = UUID.randomUUID();
+        Properties properties = new Properties();
+        properties.setMessageId("ID:" + messageId.toString());
+        Message_1_0 message = createTestMessage(properties);
+
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        final MessageProperties messageProperties =
+                convertedMessage.getStoredMessage().getMetaData().getMessageProperties();
+        assertEquals("Unexpected messageId", messageId, messageProperties.getMessageId());
+    }
+
     public void testMessageIdUnsignedLongConversion()
     {
         final UnsignedLong messageId = UnsignedLong.valueOf(-1);

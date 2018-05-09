@@ -308,28 +308,38 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
 
     private AMQShortString getMessageIdAsShortString(final Message_1_0 serverMsg)
     {
-        Object messageId = getMessageId(serverMsg);
         try
         {
-            if (messageId instanceof Binary)
-            {
-                return AMQShortString.createAMQShortString(((Binary) messageId).getArray());
-            }
-            else if (messageId instanceof byte[])
-            {
-                return AMQShortString.createAMQShortString(((byte[]) messageId));
-            }
-            else
-            {
-                return AMQShortString.valueOf(messageId);
-            }
+            Object messageId = getMessageId(serverMsg);
+            return covertMessageIdTo08MessageId(messageId);
         }
         catch (IllegalArgumentException e)
         {
-            // pass
+            return null;
         }
-        return null;
+    }
 
+    private AMQShortString covertMessageIdTo08MessageId(final Object messageId)
+    {
+        if (messageId == null)
+        {
+            return null;
+        }
+
+        final AMQShortString result;
+        if (messageId instanceof Binary)
+        {
+            result =  AMQShortString.createAMQShortString(((Binary) messageId).getArray());
+        }
+        else if (messageId instanceof byte[])
+        {
+            result = AMQShortString.createAMQShortString((byte[]) messageId);
+        }
+        else
+        {
+            result = AMQShortString.createAMQShortString(String.valueOf(messageId));
+        }
+        return result;
     }
 
     private AMQShortString getReplyTo(final Message_1_0 serverMsg, final NamedAddressSpace addressSpace)
@@ -382,28 +392,17 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
 
     private AMQShortString getCorrelationIdAsShortString(final Message_1_0 serverMsg)
     {
-        Object correlationIdObject = getCorrelationId(serverMsg);
-        final AMQShortString correlationId;
         try
         {
-            if (correlationIdObject instanceof Binary)
-            {
-                correlationId = AMQShortString.createAMQShortString(((Binary) correlationIdObject).getArray());
-            }
-            else if (correlationIdObject instanceof byte[])
-            {
-                correlationId = AMQShortString.createAMQShortString(((byte[]) correlationIdObject));
-            }
-            else
-            {
-                correlationId = AMQShortString.valueOf(correlationIdObject);
-            }
+            Object correlationIdObject = getCorrelationId(serverMsg);
+            return covertMessageIdTo08MessageId(correlationIdObject);
         }
         catch (IllegalArgumentException e)
         {
-            throw new MessageConversionException("Could not convert message from 1.0 to 0-8 because conversion of 'correlation-id' failed.", e);
+            throw new MessageConversionException(
+                    "Could not convert message from 1.0 to 0-8 because conversion of 'correlation-id' failed.",
+                    e);
         }
-        return correlationId;
     }
 
     private AMQShortString convertToShortStringForProperty(String propertyName, String s)

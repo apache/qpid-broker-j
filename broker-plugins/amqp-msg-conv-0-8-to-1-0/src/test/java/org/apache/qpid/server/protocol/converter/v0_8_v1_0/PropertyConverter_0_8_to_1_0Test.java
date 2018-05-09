@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -180,6 +181,19 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected correlationId", correlationId, properties.getCorrelationId());
     }
 
+    public void testCorrelationUuidIdConversion()
+    {
+        BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
+        UUID correlationId = UUID.randomUUID();
+        basicContentHeaderProperties.setCorrelationId(AMQShortString.valueOf("ID:" + correlationId.toString()));
+        AMQMessage message = createTestMessage(basicContentHeaderProperties);
+
+        final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        assertEquals("Unexpected correlationId", correlationId, properties.getCorrelationId());
+    }
+
     public void testReplyToConversionWhenBindingURLFormatIsUsed()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
@@ -274,6 +288,19 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
         final String messageId = "testMessageId";
         basicContentHeaderProperties.setMessageId(messageId);
+        AMQMessage message = createTestMessage(basicContentHeaderProperties);
+
+        final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        assertEquals("Unexpected messageId", messageId, properties.getMessageId());
+    }
+
+    public void testMessageUUiddConversion()
+    {
+        BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
+        final UUID messageId = UUID.randomUUID();
+        basicContentHeaderProperties.setMessageId("ID:" + messageId.toString());
         AMQMessage message = createTestMessage(basicContentHeaderProperties);
 
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
