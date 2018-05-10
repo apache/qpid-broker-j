@@ -475,7 +475,7 @@ public abstract class AbstractDecoder implements Decoder
         }
     }
 
-    private static Cache<Binary, String> getStringCache()
+    static Cache<Binary, String> getStringCache()
     {
         return CACHE.get();
     }

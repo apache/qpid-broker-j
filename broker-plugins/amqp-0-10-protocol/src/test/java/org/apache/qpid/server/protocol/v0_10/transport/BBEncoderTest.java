@@ -117,6 +117,7 @@ public class BBEncoderTest extends QpidTestCase
     public void testEncodedStr8Caching()
     {
         String testString = "Test";
+        Cache< String, byte[]> original = BBEncoder.getEncodedStringCache();
         Cache< String, byte[]> cache = CacheBuilder.newBuilder().maximumSize(2).build();
         try
         {
@@ -130,6 +131,7 @@ public class BBEncoderTest extends QpidTestCase
         finally
         {
             cache.cleanUp();
+            BBEncoder.setEncodedStringCache(original);
         }
     }
 }

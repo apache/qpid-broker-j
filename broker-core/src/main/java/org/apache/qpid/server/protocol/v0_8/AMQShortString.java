@@ -359,7 +359,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
         return amqShortString == null ? null : amqShortString.toString();
     }
 
-    private static Cache<ByteBuffer, AMQShortString> getShortStringCache()
+    static Cache<ByteBuffer, AMQShortString> getShortStringCache()
     {
         return CACHE.get();
     }

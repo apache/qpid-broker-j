@@ -20,8 +20,11 @@
 
 package org.apache.qpid.server.protocol.v0_8;
 
+import java.nio.ByteBuffer;
+
 import java.nio.charset.StandardCharsets;
 
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -134,7 +137,9 @@ public class AMQShortStringTest extends QpidTestCase
 
     public void testInterning()
     {
-        AMQShortString.setCache(CacheBuilder.newBuilder().maximumSize(1).build());
+        Cache<ByteBuffer, AMQShortString> original = AMQShortString.getShortStringCache();
+        Cache<ByteBuffer, AMQShortString> cache = CacheBuilder.newBuilder().maximumSize(1).build();
+        AMQShortString.setCache(cache);
 
         try
         {
@@ -150,7 +155,8 @@ public class AMQShortStringTest extends QpidTestCase
         }
         finally
         {
-            AMQShortString.setCache(null);
+            cache.cleanUp();
+            AMQShortString.setCache(original);
         }
     }
 
