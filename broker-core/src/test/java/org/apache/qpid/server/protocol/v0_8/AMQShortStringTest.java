@@ -27,8 +27,10 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.junit.Test;
 
@@ -157,7 +159,9 @@ public class AMQShortStringTest extends UnitTestBase
     @Test
     public void testInterning()
     {
-        AMQShortString.setCache(CacheBuilder.newBuilder().maximumSize(1).build());
+        Cache<ByteBuffer, AMQShortString> original = AMQShortString.getShortStringCache();
+        Cache<ByteBuffer, AMQShortString> cache = CacheBuilder.newBuilder().maximumSize(1).build();
+        AMQShortString.setCache(cache);
 
         try
         {
@@ -173,7 +177,8 @@ public class AMQShortStringTest extends UnitTestBase
         }
         finally
         {
-            AMQShortString.setCache(null);
+            cache.cleanUp();
+            AMQShortString.setCache(original);
         }
     }
 

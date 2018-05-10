@@ -569,7 +569,7 @@ public abstract class AbstractEncoder implements Encoder
         }
     }
 
-    private static Cache<String, byte[]> getEncodedStringCache()
+    static Cache<String, byte[]> getEncodedStringCache()
     {
         return CACHE.get();
     }

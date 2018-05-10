@@ -46,7 +46,8 @@ public class BBDecoderTest extends UnitTestBase
 
         BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
-        Cache<Binary, String> cache = CacheBuilder.newBuilder().maximumSize(1).build();
+        Cache<Binary, String> original  = BBDecoder.getStringCache();
+        Cache<Binary, String> cache = CacheBuilder.newBuilder().maximumSize(2).build();
         try
         {
             BBDecoder.setStringCache(cache);
@@ -61,6 +62,7 @@ public class BBDecoderTest extends UnitTestBase
         finally
         {
             cache.cleanUp();
+            BBDecoder.setStringCache(original);
         }
     }
 }
