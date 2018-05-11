@@ -324,7 +324,7 @@ public class PropertyConverter_0_8_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testMessageUUiddConversion()
+    public void testMessageUuidConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
         final UUID messageId = UUID.randomUUID();
