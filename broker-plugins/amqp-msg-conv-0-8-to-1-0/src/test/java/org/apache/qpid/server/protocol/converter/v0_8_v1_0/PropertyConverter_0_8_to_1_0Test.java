@@ -296,7 +296,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected messageId", messageId, properties.getMessageId());
     }
 
-    public void testMessageUUiddConversion()
+    public void testMessageUuidConversion()
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
         final UUID messageId = UUID.randomUUID();
