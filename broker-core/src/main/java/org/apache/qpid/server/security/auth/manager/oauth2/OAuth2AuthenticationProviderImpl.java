@@ -272,20 +272,23 @@ public class OAuth2AuthenticationProviderImpl
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF_8.name());
             connection.setRequestProperty("Accept", "application/json");
 
+            Map<String, String> requestBody = new HashMap<>();
             String clientSecret = getClientSecret() == null ? "" : getClientSecret();
             if (getTokenEndpointNeedsAuth())
             {
                 String encoded = DatatypeConverter.printBase64Binary((getClientId() + ":" + clientSecret).getBytes(UTF_8));
                 connection.setRequestProperty("Authorization", "Basic " + encoded);
             }
-
-            Map<String, String> requestBody = new HashMap<>();
-            requestBody.put("code", authorizationCode);
-            requestBody.put("client_id", getClientId());
-            if (!getTokenEndpointNeedsAuth() && !"".equals(clientSecret))
+            else
             {
-                requestBody.put("client_secret", clientSecret);
+                requestBody.put("client_id", getClientId());
+                if (!"".equals(clientSecret))
+                {
+                    requestBody.put("client_secret", clientSecret);
+                }
             }
+
+            requestBody.put("code", authorizationCode);
             requestBody.put("redirect_uri", redirectUri);
             requestBody.put("grant_type", "authorization_code");
             requestBody.put("response_type", "token");
