@@ -133,8 +133,8 @@ public class Main
                                                                .build();
 
     private static final Option OPTION_MM_QUIESCE_VHOST = Option.builder("mmqv")
-                                                                .desc("make virtualhosts stay in the quiesced state during management mode.")
-                                                                .longOpt("management-mode-quiesce-virtualhosts")
+                                                                .desc("make virtual host nodes stay in the quiesced state during management mode")
+                                                                .longOpt("management-mode-quiesce-virtualhostnodes")
                                                                 .build();
 
     private static final Option OPTION_MM_HTTP_PORT = Option.builder("mmhttp")
@@ -147,7 +147,7 @@ public class Main
     private static final Option OPTION_MM_PASSWORD = Option.builder("mmpass")
                                                            .argName("password")
                                                            .hasArg()
-                                                           .desc("Set the password for the management mode user "
+                                                           .desc("set the password for the management mode user "
                                                                  + SystemConfig.MANAGEMENT_MODE_USER_NAME)
                                                            .longOpt("management-mode-password")
                                                            .build();
