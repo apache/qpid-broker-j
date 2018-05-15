@@ -20,12 +20,14 @@
 */
 package org.apache.qpid.server.filter;
 
+import org.apache.qpid.server.filter.FilterableMessage;
+import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
 
 public interface Filterable extends FilterableMessage
 {
-    ServerMessage<?> getServerMessage();
+    AMQMessageHeader getMessageHeader();
 
     @Override
     boolean isPersistent();
@@ -48,9 +50,9 @@ public interface Filterable extends FilterableMessage
             {
 
                 @Override
-                public ServerMessage<?> getServerMessage()
+                public AMQMessageHeader getMessageHeader()
                 {
-                    return message;
+                    return message.getMessageHeader();
                 }
 
                 @Override

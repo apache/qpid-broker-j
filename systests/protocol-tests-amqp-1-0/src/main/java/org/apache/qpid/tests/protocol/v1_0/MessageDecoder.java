@@ -45,7 +45,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSect
 import org.apache.qpid.server.protocol.v1_0.type.messaging.FooterSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
@@ -213,15 +212,5 @@ public class MessageDecoder
             return _applicationPropertiesSection.getValue();
         }
         return Collections.emptyMap();
-    }
-
-    public Properties getProperties() throws AmqpErrorException
-    {
-        parse();
-        if (_propertiesSection != null)
-        {
-            return _propertiesSection.getValue();
-        }
-        return null;
     }
 }

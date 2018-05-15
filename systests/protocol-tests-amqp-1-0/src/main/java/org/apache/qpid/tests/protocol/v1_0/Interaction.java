@@ -58,7 +58,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
@@ -114,7 +113,6 @@ public class Interaction extends AbstractInteraction<Interaction>
     private Object _decodedLatestDelivery;
     private UnsignedInteger _latestDeliveryId;
     private Map<String, Object> _latestDeliveryApplicationProperties;
-    private Properties _latestDeliveryProperties;
 
     Interaction(final FrameTransport frameTransport)
     {
@@ -1085,7 +1083,6 @@ public class Interaction extends AbstractInteraction<Interaction>
                                 });
         _decodedLatestDelivery = messageDecoder.getData();
         _latestDeliveryApplicationProperties = messageDecoder.getApplicationProperties();
-        _latestDeliveryProperties = messageDecoder.getProperties();
         _latestDelivery = null;
         return this;
     }
@@ -1103,11 +1100,6 @@ public class Interaction extends AbstractInteraction<Interaction>
     public Map<String, Object> getLatestDeliveryApplicationProperties()
     {
         return _latestDeliveryApplicationProperties;
-    }
-
-    public Properties getLatestDeliveryProperties()
-    {
-        return _latestDeliveryProperties;
     }
 
     private List<Transfer> receiveAllTransfers(final Class<?>... ignore) throws Exception

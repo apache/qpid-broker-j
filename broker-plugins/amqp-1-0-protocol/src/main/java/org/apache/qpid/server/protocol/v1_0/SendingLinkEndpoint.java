@@ -51,7 +51,6 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.LinkModel;
-import org.apache.qpid.server.protocol.v1_0.selector.JMSMessagePropertyExpression;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
@@ -171,8 +170,8 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                         org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter selectorFilter = (org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter) entry.getValue();
                         try
                         {
-                            messageFilter = new JMSSelectorFilter(selectorFilter.getValue(),
-                                                                  JMSMessagePropertyExpression.FACTORY);
+                            messageFilter = new JMSSelectorFilter(selectorFilter.getValue());
+
                             actualFilters.put(entry.getKey(), entry.getValue());
                         }
                         catch (ParseException | SelectorParsingException | TokenMgrError e)

@@ -138,7 +138,7 @@ class HeadersBinding
 
     public boolean matches(Filterable message)
     {
-        return matches(message.getServerMessage().getMessageHeader()) && (_filter == null || _filter.allAllow(message));
+        return matches(message.getMessageHeader()) && (_filter == null || _filter.allAllow(message));
     }
 
     private boolean and(AMQMessageHeader headers)
