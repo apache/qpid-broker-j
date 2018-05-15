@@ -126,7 +126,7 @@
  -mmpass,--management-mode-password &lt;password&gt;        Set the password for
                                                       the management mode
                                                       user mm_admin
- -mmqv,--management-mode-quiesce-virtualhosts         make virtualhosts
+ -mmqv,--management-mode-quiesce-virtualhostnodes     make virtualhost nodes
                                                       stay in the quiesced
                                                       state during
                                                       management mode.

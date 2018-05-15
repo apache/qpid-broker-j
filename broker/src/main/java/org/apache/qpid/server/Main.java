@@ -132,10 +132,11 @@ public class Main
                                                                .longOpt("management-mode")
                                                                .build();
 
-    private static final Option OPTION_MM_QUIESCE_VHOST = Option.builder("mmqv")
-                                                                .desc("make virtual host nodes stay in the quiesced state during management mode")
-                                                                .longOpt("management-mode-quiesce-virtualhostnodes")
-                                                                .build();
+    private static final Option OPTION_MM_QUIESCE_VHOST_NODE = Option.builder("mmqv")
+                                                                     .desc("make virtual host nodes stay in the "
+                                                                           + "quiesced state during management mode")
+                                                                     .longOpt("management-mode-quiesce-virtualhostnodes")
+                                                                     .build();
 
     private static final Option OPTION_MM_HTTP_PORT = Option.builder("mmhttp")
                                                             .argName("port")
@@ -170,7 +171,7 @@ public class Main
         OPTIONS.addOption(OPTION_CREATE_INITIAL_CONFIG);
         OPTIONS.addOption(OPTION_INITIAL_CONFIGURATION_PATH);
         OPTIONS.addOption(OPTION_MANAGEMENT_MODE);
-        OPTIONS.addOption(OPTION_MM_QUIESCE_VHOST);
+        OPTIONS.addOption(OPTION_MM_QUIESCE_VHOST_NODE);
         OPTIONS.addOption(OPTION_MM_HTTP_PORT);
         OPTIONS.addOption(OPTION_MM_PASSWORD);
         OPTIONS.addOption(OPTION_CONFIGURATION_PROPERTY);
@@ -276,7 +277,7 @@ public class Main
                     attributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE, httpPort);
                 }
 
-                boolean quiesceVhosts = _commandLine.hasOption(OPTION_MM_QUIESCE_VHOST.getOpt());
+                boolean quiesceVhosts = _commandLine.hasOption(OPTION_MM_QUIESCE_VHOST_NODE.getOpt());
                 attributes.put(SystemConfig.MANAGEMENT_MODE_QUIESCE_VIRTUAL_HOSTS, quiesceVhosts);
 
                 String password = _commandLine.getOptionValue(OPTION_MM_PASSWORD.getOpt());
