@@ -57,4 +57,13 @@ public class AmqpErrorException extends Exception
     {
         return _error;
     }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder("AmqpErrorException{");
+        sb.append("error=").append(_error);
+        sb.append('}');
+        return sb.toString();
+    }
 }
