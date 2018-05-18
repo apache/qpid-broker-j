@@ -27,6 +27,8 @@ define(["qpid/common/util", "dijit/registry", "dojo/domReady!"], function (util,
                     .set("regExpGen", util.numericOrContextVarRegexp);
                 registry.byId("editVirtualHost.storeOverfullSize")
                     .set("regExpGen", util.numericOrContextVarRegexp);
+
+                util.applyToWidgets(data.containerNode, "VirtualHost", data.data.type, data.data, data.metadata);
             });
         }
     };

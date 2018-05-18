@@ -33,10 +33,19 @@ define(["qpid/common/util", "dojo/query", "dojo/domReady!"], function (util, que
                 query("." + localTransactionSynchronizationPolicy, data.containerNode)[0];
             that[remoteTransactionSynchronizationPolicy] =
                 query("." + remoteTransactionSynchronizationPolicy, data.containerNode)[0];
+            that._initialized = true;
         });
     }
 
     BDB.prototype.update = function (data)
+    {
+        if (this._initialized)
+        {
+            this._update(data);
+        }
+    };
+
+    BDB.prototype._update = function (data)
     {
         util.updateUI(data, fields, this);
 

@@ -125,6 +125,8 @@ define(["qpid/common/util",
                 // add new option to list
                 this.permittedNodesList.containerNode.appendChild(newOption);
             }
+
+            util.applyToWidgets(data.containerNode, "VirtualHostNode", node.type, node, data.metadata);
         },
         _clickAddPermittedNodeButton: function (e)
         {

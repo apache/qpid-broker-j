@@ -40,6 +40,7 @@ define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "d
                             {
                                 var fieldName = fieldNames[i];
                                 that[fieldName] = query("." + fieldName, containerNode)[0];
+                                that._initialized = true;
                             }
                         });
                 }
@@ -47,6 +48,14 @@ define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "d
         }
 
         BoneCP.prototype.update = function (data)
+        {
+            if (this._initialized)
+            {
+                this._update(data);
+            }
+        };
+
+        BoneCP.prototype._update = function (data)
         {
             this.parent.management.load(this.parent.modelObj,
                 {

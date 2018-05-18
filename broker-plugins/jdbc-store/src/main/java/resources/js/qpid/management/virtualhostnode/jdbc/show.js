@@ -38,10 +38,19 @@ define(["qpid/common/util", "dojo/query", "dojo/_base/array", "dojo/dom-construc
                     that.usernameAttributeContainer = query(".usernameAttributeContainer", data.containerNode)[0];
                     that.connectionPoolTypeAttributeContainer =
                         query(".connectionPoolTypeAttributeContainer", data.containerNode)[0];
+                    this._initialized = true;
                 });
         }
 
         Jdbc.prototype.update = function (data)
+        {
+            if (this._initialized)
+            {
+                this._update(data);
+            }
+        };
+
+        Jdbc.prototype._update = function (data)
         {
             var previousConnectionPoolType = this.connectionPoolType ? this.connectionPoolType.innerHTML : null;
             this.parent.editNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));

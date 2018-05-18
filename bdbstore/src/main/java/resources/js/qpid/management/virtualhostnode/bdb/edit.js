@@ -25,6 +25,8 @@ define(["qpid/common/util", "dijit/registry", "dojo/domReady!"], function (util,
             {
                 registry.byId("editVirtualHostNode.storePath")
                     .set("disabled", !(data.data.state == "STOPPED" || data.data.state == "ERRORED"));
+
+                util.applyToWidgets(data.containerNode, "VirtualHostNode", data.data.type, data.data, data.metadata);
             });
         }
     };

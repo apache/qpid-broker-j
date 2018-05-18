@@ -81,21 +81,14 @@ define(["dojox/html/entities",
               TrackableStore,
               keys)
     {
-        var fields = ["name",
-                      "connectionThreadPoolSize",
-                      "storeTransactionIdleTimeoutWarn",
-                      "storeTransactionIdleTimeoutClose",
-                      "storeTransactionOpenTimeoutWarn",
-                      "storeTransactionOpenTimeoutClose",
-                      "housekeepingCheckPeriod",
-                      "housekeepingThreadCount"];
         var numericFieldNames = ["storeTransactionIdleTimeoutWarn",
                                  "storeTransactionIdleTimeoutClose",
                                  "storeTransactionOpenTimeoutWarn",
                                  "storeTransactionOpenTimeoutClose",
                                  "housekeepingCheckPeriod",
                                  "housekeepingThreadCount",
-                                 "connectionThreadPoolSize"];
+                                 "connectionThreadPoolSize",
+                                 "statisticsReportingPeriod"];
 
         var virtualHostEditor = {
             init: function ()
@@ -124,10 +117,10 @@ define(["dojox/html/entities",
                 {
                     that._save(e);
                 });
-                for (var i = 0; i < fields.length; i++)
+                // Add regexp to the numeric fields
+                for (var i = 0; i < numericFieldNames.length; i++)
                 {
-                    var fieldName = fields[i];
-                    this[fieldName] = registry.byId("editVirtualHost." + fieldName);
+                    registry.byId("editVirtualHost." + numericFieldNames[i]).set("regExpGen", util.numericOrContextVarRegexp);
                 }
                 this.form = registry.byId("editVirtualHostForm");
                 this.form.on("submit", function ()
@@ -181,7 +174,13 @@ define(["dojox/html/entities",
                     {
                         data["context"] = context;
                     }
-                    data.nodeAutoCreationPolicies = this._getNodeAutoCreationPolicies();
+                    var nodeAutoCreationPolicies = this._getNodeAutoCreationPolicies();
+
+                    if (!util.equals(nodeAutoCreationPolicies, this.initialData.nodeAutoCreationPolicies))
+                    {
+                        data.nodeAutoCreationPolicies = nodeAutoCreationPolicies;
+                    }
+
                     var that = this;
                     this.management.update(that.modelObj, data)
                         .then(function (x)
@@ -197,30 +196,8 @@ define(["dojox/html/entities",
             _show: function (data)
             {
                 this.initialData = data.actual;
-                for (var i = 0; i < fields.length; i++)
-                {
-                    var fieldName = fields[i];
-                    var widget = this[fieldName];
-                    widget.reset();
-
-                    if (widget instanceof dijit.form.CheckBox)
-                    {
-                        widget.set("checked", data.actual[fieldName]);
-                    }
-                    else
-                    {
-                        widget.set("value", data.actual[fieldName]);
-                    }
-                }
-
+                this.form.reset();
                 this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
-
-                // Add regexp to the numeric fields
-                for (var i = 0; i < numericFieldNames.length; i++)
-                {
-                    this[numericFieldNames[i]].set("regExpGen", util.numericOrContextVarRegexp);
-                }
-
                 var that = this;
 
                 var widgets = registry.findWidgets(this.typeFieldsContainer);
@@ -241,13 +218,6 @@ define(["dojox/html/entities",
                             data: data.actual,
                             metadata: metadata
                         });
-                        that.form.connectChildren();
-
-                        util.applyToWidgets(that.allFieldsContainer,
-                            "VirtualHost",
-                            data.actual.type,
-                            data.actual,
-                            metadata);
                     }
                     catch (e)
                     {
@@ -257,7 +227,12 @@ define(["dojox/html/entities",
                         }
                     }
                 });
-
+                util.applyToWidgets(this.allFieldsContainer,
+                    "VirtualHost",
+                    data.actual.type,
+                    data.actual,
+                    this.management.metadata,
+                    data.effective);
                 this._initNodeAutoCreationPolicies(data.actual && data.actual.nodeAutoCreationPolicies ? data.actual.nodeAutoCreationPolicies : []);
                 this.dialog.startup();
                 this.dialog.show();
@@ -441,14 +416,21 @@ define(["dojox/html/entities",
                 return policies;
             },
             _toNodeAutoCreationPolicyObject: function (policy) {
-                return {
+                var obj =  {
                     pattern: policy.pattern,
                     nodeType: policy.type,
-                    attributes: policy.attributes,
-                    createdOnPublish: policy.createdOnPublish,
-                    createdOnConsume: policy.createdOnConsume
+                    attributes: policy.attributes
                 };
-            },
+                if (policy.createdOnPublish === true)
+                {
+                    obj.createdOnPublish = policy.createdOnPublish;
+                }
+                if (policy.createdOnConsume === true)
+                {
+                    obj.createdOnConsume = policy.createdOnConsume;
+                }
+                return obj;
+            }
         };
 
         virtualHostEditor.init();

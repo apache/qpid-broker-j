@@ -37,10 +37,19 @@ define(["qpid/common/util", "dojo/query", "dojo/_base/array", "dojo/dom-construc
                     that.usernameAttributeContainer = query(".usernameAttributeContainer", data.containerNode)[0];
                     that.connectionPoolTypeAttributeContainer =
                         query(".connectionPoolTypeAttributeContainer", data.containerNode)[0];
+                    that._initialized = true;
                 });
         }
 
         JDBC.prototype.update = function (data)
+        {
+            if (this._initialized)
+            {
+                this._update(data);
+            }
+        };
+
+        JDBC.prototype._update = function (data)
         {
             var previousConnectionPoolType = this.connectionPoolType ? this.connectionPoolType.innerHTML : null;
             util.updateUI(data, fieldNames, this);

@@ -94,6 +94,8 @@ define(["qpid/common/util",
                     });
                 }
             });
+
+            util.applyToWidgets(data.containerNode, "VirtualHostNode", data.data.type, data.data, data.metadata);
         }
     };
 });
