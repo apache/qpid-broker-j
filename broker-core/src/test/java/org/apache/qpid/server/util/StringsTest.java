@@ -20,8 +20,12 @@
  */
 package org.apache.qpid.server.util;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -72,5 +76,28 @@ public class StringsTest extends UnitTestBase
 
         assertEquals("{ \"path\" : \"C:\\\\TEMP\\\\\\\"Hello World\\\"\\foo\" }",
                             Strings.expand("{ \"path\" : \"${json:nestedTest}\\foo\" }", Strings.chain(jsonResolver, mapResolver)));
+    }
+
+    @Test
+    public void hexDumpSingleByte()
+    {
+        // Known good created with echo -n A | od -Ax -tx1 -v
+        String expected = String.format("0000000    41%n" +
+                                        "0000001%n");
+
+        String actual = Strings.hexDump(ByteBuffer.wrap("A".getBytes()));
+        assertThat(actual, is(equalTo(expected)));
+    }
+
+    @Test
+    public void hexDumpManyBytes()
+    {
+        // Known good created with echo -n 12345678123456789 | od -Ax -tx1 -v
+        String expected = String.format("0000000    31  32  33  34  35  36  37  38  31  32  33  34  35  36  37  38%n" +
+                                        "0000010    39%n" +
+                                        "0000011%n");
+
+        String actual = Strings.hexDump(ByteBuffer.wrap("12345678123456789".getBytes()));
+        assertThat(actual, is(equalTo(expected)));
     }
 }

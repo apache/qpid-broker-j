@@ -21,8 +21,11 @@
 package org.apache.qpid.server.util;
 
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Formatter;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -364,6 +367,37 @@ public final class Strings
     public static Resolver createSubstitutionResolver(String prefix, LinkedHashMap<String,String> substitutions)
     {
         return new StringSubstitutionResolver(prefix, substitutions);
+    }
+
+    /**
+     * Dumps bytes in the textual format used by UNIX od(1) in hex (x4) mode i.e. {@code od -Ax -tx1 -v}.
+     *
+     * This format is understood by Wireshark "Import from HexDump" feature so is useful for dumping buffers
+     * containing AMQP 1.0 byte-streams for diagnostic purposes.
+     *
+     * @param buf - buffer to be dumped.  Buffer will be unchanged.
+     */
+    public static String hexDump(ByteBuffer buf)
+    {
+        StringBuilder builder = new StringBuilder();
+        int count = 0;
+        for(int p = buf.position(); p < buf.position() + buf.remaining(); p++)
+        {
+            if (count % 16 == 0)
+            {
+                if (count > 0)
+                {
+                    builder.append(String.format("%n"));
+                }
+                builder.append(String.format("%07x  ", count));
+            }
+            builder.append(String.format("  %02x", buf.get(p)));
+
+            count++;
+        }
+        builder.append(String.format("%n"));
+        builder.append(String.format("%07x%n", count));
+        return builder.toString();
     }
 
     private static class StringSubstitutionResolver implements Resolver
