@@ -70,12 +70,6 @@ public class InputHandler extends ChannelInboundHandlerAdapter
 
         LOGGER.debug("After parsing, {} byte(s) remained", _inputBuffer.remaining());
 
-        if (_inputBuffer.hasRemaining())
-        {
-            _inputBuffer.compact();
-            _inputBuffer.flip();
-        }
-
         ReferenceCountUtil.release(msg);
     }
 }

@@ -982,8 +982,6 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveMultipleDeliveries() throws Exception
     {
-        assumeFalse("QPID-8194: Tests fail whilst decoding message (uninvestigated)", SystemUtils.isWindows());
-
         int numberOfMessages = 4;
         for (int i = 0; i < numberOfMessages; i++)
         {
@@ -1046,7 +1044,6 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveMixtureOfTransactionalAndNonTransactionalDeliveries() throws Exception
     {
-        assumeFalse("QPID-8194: Tests fail whilst decoding message (uninvestigated)", SystemUtils.isWindows());
         int numberOfMessages = 4;
         for (int i = 0; i < numberOfMessages; i++)
         {
