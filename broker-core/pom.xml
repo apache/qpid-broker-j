@@ -30,10 +30,7 @@
 
   <properties>
     <generated-logmessages-dir>${basedir}/src/main/java</generated-logmessages-dir>
-    <qpid.name>qpid</qpid.name>
     <qpid.version>${project.version}</qpid.version>
-    <qpid.version.suffix />
-    <buildNumber>Unversioned directory</buildNumber>
   </properties>
 
   <dependencies>
@@ -109,6 +106,7 @@
         <filtering>true</filtering>
         <includes>
           <include>**/*.properties</include>
+          <include>**/fallback-version.txt</include>
         </includes>
       </resource>
       <resource>
@@ -142,23 +140,6 @@
 
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>buildnumber-maven-plugin</artifactId>
-        <version>1.3</version>
-        <executions>
-          <execution>
-            <phase>validate</phase>
-            <goals>
-              <goal>create</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <doCheck>false</doCheck>
-          <doUpdate>false</doUpdate>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <!--version specified in parent pluginManagement -->
@@ -186,6 +167,7 @@
         <configuration>
           <excludes>
             <exclude>src/test/resources/ssl/**</exclude>
+            <exclude>src/main/resources/org/apache/qpid/server/configuration/fallback-version.txt</exclude>
           </excludes>
         </configuration>
       </plugin>

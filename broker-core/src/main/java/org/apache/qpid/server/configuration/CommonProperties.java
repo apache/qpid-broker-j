@@ -20,16 +20,19 @@
  */
 package org.apache.qpid.server.configuration;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,20 +64,10 @@ public class CommonProperties
     public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "qpid.security.tls.cipherSuiteBlackList";
     public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT = "";
 
-    /** The name of the version properties file to load from the class path. */
-    public static final String VERSION_RESOURCE = "qpidbrokerversion.properties";
-
-    /** Defines the name of the product property. */
-    public static final String PRODUCT_NAME_PROPERTY = "qpid.name";
-
-    /** Defines the name of the version property. */
-    public static final String RELEASE_VERSION_PROPERTY = "qpid.version";
+    private static final String MANIFEST_HEADER_IMPLEMENTATION_BUILD = "Implementation-Build";
 
     /** Defines the name of the version suffix property. */
-    public static final String RELEASE_VERSION_SUFFIX = "qpid.version.suffix";
-
-    /** Defines the name of the source code revision property. */
-    public static final String BUILD_VERSION_PROPERTY = "qpid.svnversion";
+    private static final String RELEASE_VERSION_SUFFIX = "qpid.version.suffix";
 
     /** Defines the default value for all properties that cannot be loaded. */
     private static final String DEFAULT = "unknown";
@@ -85,40 +78,22 @@ public class CommonProperties
     /** Holds the product version. */
     private static final String releaseVersion;
 
-    /** Holds the product major version - derived from the releaseVersion */
-    private static final int releaseVersionMajor;
-
-    /** Holds the product minor version - derived from the releaseVersion */
-    private static final int releaseVersionMinor;
-
     /** Holds the source code revision. */
     private static final String buildVersion;
 
     private static final Properties properties = new Properties();
 
-    // Loads the values from the version properties file and common properties file.
     static
     {
+        Manifest jarManifest = getJarManifestFor(CommonProperties.class);
+        Attributes mainAttributes = jarManifest.getMainAttributes();
 
-        loadProperties(properties, VERSION_RESOURCE, false);
+        Package p = CommonProperties.class.getPackage();
 
-        buildVersion =  properties.getProperty(BUILD_VERSION_PROPERTY, DEFAULT);
-        productName = properties.getProperty(PRODUCT_NAME_PROPERTY, DEFAULT);
+        buildVersion = mainAttributes.getValue(MANIFEST_HEADER_IMPLEMENTATION_BUILD) != null ? mainAttributes.getValue(MANIFEST_HEADER_IMPLEMENTATION_BUILD) : DEFAULT;
+        productName = p.getImplementationTitle() != null ? p.getImplementationTitle() : DEFAULT;
 
-        String version = properties.getProperty(RELEASE_VERSION_PROPERTY, DEFAULT);
-        Pattern pattern = Pattern.compile("(\\d+)\\.(\\d+).*");
-        Matcher m = pattern.matcher(version);
-        if (m.matches())
-        {
-            releaseVersionMajor = Integer.parseInt(m.group(1));
-            releaseVersionMinor = Integer.parseInt(m.group(2));
-        }
-        else
-        {
-            LOGGER.warn("Failed to parse major and minor release number from '{}')", version);
-            releaseVersionMajor = -1;
-            releaseVersionMinor = -1;
-        }
+        String version = getImplementationVersion(p);
 
         boolean loadFromFile = true;
         String initialProperties = System.getProperty("qpid.common_properties_file");
@@ -170,26 +145,6 @@ public class CommonProperties
     public static String getReleaseVersion()
     {
         return releaseVersion;
-    }
-
-    /**
-     * Gets the product major version.
-     *
-     * @return The product major version.
-     */
-    public static int getReleaseVersionMajor()
-    {
-        return releaseVersionMajor;
-    }
-
-    /**
-     * Gets the product minor version.
-     *
-     * @return The product version.
-     */
-    public static int getReleaseVersionMinor()
-    {
-        return releaseVersionMinor;
     }
 
     /**
@@ -252,5 +207,50 @@ public class CommonProperties
         }
     }
 
+    private static String getImplementationVersion(final Package p)
+    {
+        String version = p.getImplementationVersion();
+        if (version == null)
+        {
+            version = DEFAULT;
+            final String path = CommonProperties.class.getPackage().getName().replace(".", "/");
+            final String fallbackPath = "/" + path + "/fallback-version.txt";
+            final InputStream in = CommonProperties.class.getResourceAsStream(fallbackPath);
+            if (in != null)
+            {
+                try(BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.US_ASCII)))
+                {
+                    version = reader.readLine();
+                }
+                catch (Exception e)
+                {
+                    LOGGER.trace("Problem reading version from fallback resource : {} ", fallbackPath, e);
+                }
+            }
+        }
+        return version;
+    }
 
+    private static Manifest getJarManifestFor(final Class<?> clazz)
+    {
+        final Manifest emptyManifest = new Manifest();
+        String className = clazz.getSimpleName() + ".class";
+        String classPath = clazz.getResource(className).toString();
+        if (!classPath.startsWith("jar"))
+        {
+            return emptyManifest;
+        }
+
+        String manifestPath = classPath.substring(0, classPath.lastIndexOf("!") + 1) +
+                              "/META-INF/MANIFEST.MF";
+        try (InputStream is = new URL(manifestPath).openStream())
+        {
+            return new Manifest(is);
+        }
+        catch (IOException e)
+        {
+            // Ignore
+        }
+        return emptyManifest;
+    }
 }
