@@ -100,14 +100,16 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     long getMessagesIn();
 
 
-    @ManagedOperation(changesConfiguredObjectState = true)
+    @ManagedOperation(changesConfiguredObjectState = true,
+                      description = "Bind a given destination to exchange using a given bindingKey and arguments."
+                                    + " Existing binding arguments are replaced when replaceExistingArguments=true")
     boolean bind(@Param(name = "destination", mandatory = true) String destination,
                  @Param(name = "bindingKey") String bindingKey,
                  @Param(name = "arguments", defaultValue = "{}") Map<String, Object> arguments,
                  @Param(name = "replaceExistingArguments", defaultValue = "false") boolean replaceExistingArguments);
 
     @ManagedOperation(changesConfiguredObjectState = true,
-                      description = "Deletes all the bindings matching the given destination and bindingKey")
+                      description = "Deletes the binding for a given destination with a given bindingKey")
     boolean unbind(@Param(name="destination", mandatory = true) String destination,
                    @Param(name="bindingKey") String bindingKey);
 
