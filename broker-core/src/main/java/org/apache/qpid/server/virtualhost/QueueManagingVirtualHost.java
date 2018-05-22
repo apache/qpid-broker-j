@@ -223,6 +223,11 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
                       description = "Current number of messaging connections made to this virtualhost.")
     long getConnectionCount();
 
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Total Connections",
+            description = "Total number of messaging connections made to this virtualhost since broker startup")
+    long getTotalConnectionCount();
+
+
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
                       description = "Total size of all messages received by this virtualhost.")

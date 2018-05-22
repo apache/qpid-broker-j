@@ -185,6 +185,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AtomicLong _transactedMessagesOut = new AtomicLong();
     private final AtomicLong _bytesIn = new AtomicLong();
     private final AtomicLong _bytesOut = new AtomicLong();
+    private final AtomicLong _totalConnectionCount = new AtomicLong();
 
     private volatile LinkRegistryModel _linkRegistry;
     private AtomicBoolean _blocked = new AtomicBoolean();
@@ -2240,6 +2241,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public long getTotalConnectionCount()
+    {
+        return _totalConnectionCount.get();
+    }
+
+    @Override
     public int getHousekeepingThreadCount()
     {
         return _housekeepingThreadCount;
@@ -2449,6 +2456,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     if (connectionEstablishmentPolicy.mayEstablishNewConnection(_connections, connection))
                     {
                         _connections.add(connection);
+                        _totalConnectionCount.incrementAndGet();
 
                         if (_blocked.get())
                         {

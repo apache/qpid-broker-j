@@ -171,7 +171,7 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     int getConnectionCount();
 
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Total Connections",
-            description = "Total number of connections made through this port")
+            description = "Total number of connections made through this port since broker startup")
     long getTotalConnectionCount();
 
     @DerivedAttribute(description = "Maximum time allowed for a new connection to send a protocol header."
