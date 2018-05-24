@@ -648,6 +648,36 @@ public class QueueTest extends BrokerAdminUsingTestBase
     }
 
     @Test
+    @SpecificationTest(section = "1.7.2.3",
+            description = "If the queue name is provided but the routing key is empty,"
+                          + " the server does the binding with that empty routing key.")
+    public void queueBindWithoutRoutingKey() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            String testExchange = "testExchange";
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .exchange().declareName(testExchange).declare()
+                       .consumeResponse(ExchangeDeclareOkBody.class)
+                       .queue().bindName(testExchange).bindQueueName(BrokerAdmin.TEST_QUEUE_NAME).bind()
+                       .consumeResponse(QueueBindOkBody.class);
+
+            ExchangeBoundOkBody response = interaction.exchange()
+                                                      .boundExchangeName(testExchange)
+                                                      .boundQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                                                      .boundRoutingKey("")
+                                                      .bound()
+                                                      .consumeResponse()
+                                                      .getLatestResponse(ExchangeBoundOkBody.class);
+            assertThat(response.getReplyCode(), is(equalTo(ExchangeBoundOkBody.OK)));
+        }
+    }
+
+    @Test
     @SpecificationTest(section = "1.7.2.5", description = "unbind a queue from an exchange")
     public void queueUnbind() throws Exception
     {
@@ -784,6 +814,27 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                                    .consumeResponse()
                                                    .getLatestResponse(ChannelCloseBody.class);
             assertThat(response.getReplyCode(), is(equalTo(ErrorCodes.NOT_FOUND)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.7.2.5", description = "unbind a queue from an exchange")
+    public void queueUnbindWithoutRoutingKey() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            String testExchange = "testExchange";
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .exchange().declareName(testExchange).declare()
+                       .consumeResponse(ExchangeDeclareOkBody.class)
+                       .queue().bindName(testExchange).bindQueueName(BrokerAdmin.TEST_QUEUE_NAME).bind()
+                       .consumeResponse(QueueBindOkBody.class)
+                       .queue().unbindName(testExchange).unbindQueueName(BrokerAdmin.TEST_QUEUE_NAME).unbind()
+                       .consumeResponse(QueueUnbindOkBody.class);
         }
     }
 

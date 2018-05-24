@@ -671,10 +671,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             throw new IllegalArgumentException(String.format("Destination '%s' is not found.", destination));
         }
 
-        if(bindingKey == null)
-        {
-            bindingKey = "";
-        }
         if(arguments == null)
         {
             arguments = Collections.emptyMap();
@@ -796,11 +792,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         if (messageDestination != null)
         {
             Iterator<Binding> bindingIterator = _bindings.iterator();
-            if (bindingKey == null)
-            {
-                bindingKey = "";
-            }
-
             while (bindingIterator.hasNext())
             {
                 Binding binding = bindingIterator.next();

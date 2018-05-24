@@ -2844,7 +2844,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 {
 
                     Map<String, Object> arguments = FieldTable.convertToMap(argumentsTable);
-                    String bindingKeyStr = AMQShortString.toString(bindingKey);
+                    String bindingKeyStr = bindingKey == null ? "" : AMQShortString.toString(bindingKey);
 
                     if (!exch.isBound(bindingKeyStr, arguments, queue))
                     {
@@ -3263,12 +3263,13 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         else
         {
             final Exchange<?> exch = getExchange(exchange.toString());
+            final String bindingKeyStr = bindingKey == null ? "" : AMQShortString.toString(bindingKey);
 
             if (exch == null)
             {
                 closeChannel(ErrorCodes.NOT_FOUND, "Exchange '" + exchange + "' does not exist.");
             }
-            else if (!exch.hasBinding(AMQShortString.toString(bindingKey), queue))
+            else if (!exch.hasBinding(bindingKeyStr, queue))
             {
                 closeChannel(ErrorCodes.NOT_FOUND, "No such binding");
             }
@@ -3276,7 +3277,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             {
                 try
                 {
-                    exch.deleteBinding(AMQShortString.toString(bindingKey), queue);
+                    exch.deleteBinding(bindingKeyStr, queue);
 
                     final AMQMethodBody responseBody = _connection.getMethodRegistry().createQueueUnbindOkBody();
                     sync();
