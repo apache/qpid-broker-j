@@ -20,9 +20,39 @@
  */
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import com.google.common.cache.Cache;
+
 import org.apache.qpid.server.protocol.v1_0.type.Section;
+import org.apache.qpid.server.virtualhost.CacheFactory;
+import org.apache.qpid.server.virtualhost.NullCache;
 
 public interface NonEncodingRetainingSection<T> extends Section<T>
 {
+    NullCache<String, String> NULL_CACHE = new NullCache<>();
+    ThreadLocal<Cache<String, String>> CACHE =
+            ThreadLocal.withInitial(() -> CacheFactory.getCache("stringCache", NULL_CACHE));
+
+    static Cache<String, String> getStringCache()
+    {
+        return CACHE.get();
+    }
+
+    /** Unit testing only */
+    static void setCache(final Cache<String, String> cache)
+    {
+        CACHE.set(cache);
+    }
+
+    static String getCached(final String value)
+    {
+        String cached = getStringCache().getIfPresent(value);
+        if (cached == null)
+        {
+            cached = value;
+            getStringCache().put(cached, cached);
+        }
+        return cached;
+    }
+
     EncodingRetainingSection<T> createEncodingRetainingSection();
 }

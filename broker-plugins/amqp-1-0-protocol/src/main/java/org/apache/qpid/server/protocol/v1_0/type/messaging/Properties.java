@@ -98,7 +98,7 @@ public class Properties implements NonEncodingRetainingSection<Properties>
 
     public void setTo(String to)
     {
-        _to = to;
+        _to = NonEncodingRetainingSection.getCached(to);
     }
 
     public String getSubject()
@@ -108,7 +108,7 @@ public class Properties implements NonEncodingRetainingSection<Properties>
 
     public void setSubject(String subject)
     {
-        _subject = subject;
+        _subject = NonEncodingRetainingSection.getCached(subject);
     }
 
     public String getReplyTo()

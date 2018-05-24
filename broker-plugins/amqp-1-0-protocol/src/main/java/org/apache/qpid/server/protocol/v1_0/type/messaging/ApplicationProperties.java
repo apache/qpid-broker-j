@@ -24,6 +24,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,6 +42,7 @@ public class ApplicationProperties implements NonEncodingRetainingSection<Map<St
         {
             throw new IllegalArgumentException("Value must not be null");
         }
+        LinkedHashMap<String,Object> copy = new LinkedHashMap<>();
         for(Map.Entry<String,Object> entry: value.entrySet())
         {
             if (entry.getKey() == null)
@@ -51,8 +53,10 @@ public class ApplicationProperties implements NonEncodingRetainingSection<Map<St
             {
                 throw new IllegalArgumentException("Application properties do not allow non-primitive values");
             }
+
+            copy.put(NonEncodingRetainingSection.getCached(entry.getKey()), entry.getValue());
         }
-        _value = value;
+        _value = copy;
     }
 
     @Override
