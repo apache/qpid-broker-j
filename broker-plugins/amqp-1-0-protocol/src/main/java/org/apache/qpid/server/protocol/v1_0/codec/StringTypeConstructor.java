@@ -22,13 +22,22 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.nio.ByteBuffer;
+
+import com.google.common.cache.Cache;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.virtualhost.CacheFactory;
+import org.apache.qpid.server.virtualhost.NullCache;
 
 public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
 {
+    private static final NullCache<ByteBuffer, String> NULL_CACHE = new NullCache<>();
 
+    private static final ThreadLocal<Cache<ByteBuffer, String>> CACHE =
+            ThreadLocal.withInitial(() -> CacheFactory.getCache("stringCache", NULL_CACHE));
 
     public static StringTypeConstructor getInstance(int i)
     {
@@ -67,6 +76,24 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
 
         byte[] data = new byte[size];
         in.get(data);
-        return new String(data, UTF_8);
+
+        ByteBuffer buffer = ByteBuffer.wrap(data);
+        String cached = getCache().getIfPresent(buffer);
+        if (cached == null)
+        {
+            cached = new String(data, UTF_8);
+            getCache().put(buffer, cached);
+        }
+        return cached;
+    }
+
+    static Cache<ByteBuffer, String> getCache()
+    {
+        return CACHE.get();
+    }
+
+    static void setCache(final Cache<ByteBuffer, String> cache)
+    {
+        CACHE.set(cache);
     }
 }

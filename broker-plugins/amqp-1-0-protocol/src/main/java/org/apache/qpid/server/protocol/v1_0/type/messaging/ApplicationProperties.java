@@ -42,7 +42,6 @@ public class ApplicationProperties implements NonEncodingRetainingSection<Map<St
         {
             throw new IllegalArgumentException("Value must not be null");
         }
-        LinkedHashMap<String,Object> copy = new LinkedHashMap<>();
         for(Map.Entry<String,Object> entry: value.entrySet())
         {
             if (entry.getKey() == null)
@@ -53,10 +52,8 @@ public class ApplicationProperties implements NonEncodingRetainingSection<Map<St
             {
                 throw new IllegalArgumentException("Application properties do not allow non-primitive values");
             }
-
-            copy.put(NonEncodingRetainingSection.getCached(entry.getKey()), entry.getValue());
         }
-        _value = copy;
+        _value = value;
     }
 
     @Override

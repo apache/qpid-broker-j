@@ -34,6 +34,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.junit.Test;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AMQShortStringTest extends UnitTestBase
@@ -157,28 +158,30 @@ public class AMQShortStringTest extends UnitTestBase
     }
 
     @Test
-    public void testInterning()
+    public void testCaching()
     {
         Cache<ByteBuffer, AMQShortString> original = AMQShortString.getShortStringCache();
         Cache<ByteBuffer, AMQShortString> cache = CacheBuilder.newBuilder().maximumSize(1).build();
-        AMQShortString.setCache(cache);
-
+        AMQShortString.setShortStringCache(cache);
         try
         {
-            AMQShortString str1 = AMQShortString.createAMQShortString("hello");
-            str1.intern();
-            AMQShortString str2 = AMQShortString.createAMQShortString("hello");
-            AMQShortString str3 = AMQShortString.createAMQShortString("hello".getBytes(StandardCharsets.UTF_8));
+            AMQShortString string = AMQShortString.createAMQShortString("hello");
+            QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocate(2 * (string.length() + 1));
+            string.writeToBuffer(qpidByteBuffer);
+            string.writeToBuffer(qpidByteBuffer);
+
+            qpidByteBuffer.flip();
+
+            AMQShortString str1 = AMQShortString.readAMQShortString(qpidByteBuffer);
+            AMQShortString str2 = AMQShortString.readAMQShortString(qpidByteBuffer);
 
             assertEquals(str1, str2);
-            assertEquals(str1, str3);
             assertSame(str1, str2);
-            assertSame(str1, str3);
         }
         finally
         {
             cache.cleanUp();
-            AMQShortString.setCache(original);
+            AMQShortString.setShortStringCache(original);
         }
     }
 
