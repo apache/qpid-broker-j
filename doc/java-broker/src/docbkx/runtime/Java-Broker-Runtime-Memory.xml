@@ -227,7 +227,7 @@
       <para>
         <informalequation>
           <mathphrase>
-            memory<subscript>heap</subscript> = 15 MB + 20 kB * N<subscript>sessions</subscript> + 1.5 kB * N<subscript>messages</subscript> + 100 kB * N<subscript>connections</subscript>
+            memory<subscript>heap</subscript> = 15 MB + 20 kB * N<subscript>sessions</subscript> + (1.7 kB + (120 + averageSize<subscript>headerNameAndValue</subscript> ) * averageNumber<subscript>headers</subscript>)* N<subscript>messages</subscript> + 100 kB * N<subscript>connections</subscript>
           </mathphrase>
         </informalequation>
       </para>
