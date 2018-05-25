@@ -18,33 +18,36 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol.v1_0.type.messaging;
+package org.apache.qpid.server.protocol.v1_0.codec;
+
+import java.nio.ByteBuffer;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.QpidTestCase;
 
-public class NonEncodingRetainingSectionTest extends QpidTestCase
+public class StringTypeConstructorTest extends QpidTestCase
 {
-    public void testGetCached()
-    {
-        Cache<String, String> original = NonEncodingRetainingSection.getStringCache();
-        Cache<String, String> cache = CacheBuilder.newBuilder().maximumSize(1).build();
-        NonEncodingRetainingSection.setCache(cache);
 
+    public void testCachingInConstruct() throws Exception
+    {
+        StringTypeConstructor constructor = StringTypeConstructor.getInstance(1);
+        Cache<ByteBuffer, String> original = StringTypeConstructor.getCache();
+        Cache<ByteBuffer, String> cache = CacheBuilder.newBuilder().maximumSize(2).build();
+        StringTypeConstructor.setCache(cache);
         try
         {
-            String string1 = NonEncodingRetainingSection.getCached(new String(new char[]{'t', 'e', 's', 't'}));
-            String string2 = NonEncodingRetainingSection.getCached(new String(new char[]{'t', 'e', 's', 't'}));
-
+            String string1 = constructor.construct(QpidByteBuffer.wrap(new byte[]{4, 't', 'e', 's', 't'}), null);
+            String string2 = constructor.construct(QpidByteBuffer.wrap(new byte[]{4, 't', 'e', 's', 't'}), null);
             assertEquals(string1, string2);
             assertSame(string1, string2);
         }
         finally
         {
             cache.cleanUp();
-            NonEncodingRetainingSection.setCache(original);
+            StringTypeConstructor.setCache(original);
         }
     }
 }

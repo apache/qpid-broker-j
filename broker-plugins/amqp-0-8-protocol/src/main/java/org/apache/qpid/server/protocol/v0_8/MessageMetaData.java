@@ -164,16 +164,7 @@ public class MessageMetaData implements StorableMessageMetaData
 
                 ContentHeaderBody chb = ContentHeaderBody.createFromBuffer(buf, size);
                 final AMQShortString exchange = AMQShortString.readAMQShortString(buf);
-                if (exchange != null)
-                {
-                    exchange.intern();
-                }
                 final AMQShortString routingKey = AMQShortString.readAMQShortString(buf);
-                if (routingKey != null)
-                {
-                    routingKey.intern();
-                }
-
                 final byte flags = buf.get();
                 long arrivalTime = buf.getLong();
 

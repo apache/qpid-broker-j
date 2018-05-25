@@ -374,19 +374,11 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & (CONTENT_TYPE_MASK)) != 0)
         {
             _contentType = AMQShortString.readAMQShortString(buffer);
-            if (_contentType != null)
-            {
-                _contentType.intern();
-            }
         }
 
         if ((_propertyFlags & ENCODING_MASK) != 0)
         {
             _encoding = AMQShortString.readAMQShortString(buffer);
-            if (_encoding != null)
-            {
-                _encoding.intern();
-            }
         }
 
         if ((_propertyFlags & HEADERS_MASK) != 0)
@@ -418,10 +410,6 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & REPLY_TO_MASK) != 0)
         {
             _replyTo = AMQShortString.readAMQShortString(buffer);
-            if (_replyTo != null)
-            {
-                _replyTo.intern();
-            }
         }
 
         if ((_propertyFlags & EXPIRATION_MASK) != 0)
@@ -447,28 +435,16 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & USER_ID_MASK) != 0)
         {
             _userId = AMQShortString.readAMQShortString(buffer);
-            if (_userId != null)
-            {
-                _userId.intern();
-            }
         }
 
         if ((_propertyFlags & APPLICATION_ID_MASK) != 0)
         {
             _appId = AMQShortString.readAMQShortString(buffer);
-            if (_appId != null)
-            {
-                _appId.intern();
-            }
         }
 
         if ((_propertyFlags & CLUSTER_ID_MASK) != 0)
         {
             _clusterId = AMQShortString.readAMQShortString(buffer);
-            if (_clusterId != null)
-            {
-                _clusterId.intern();
-            }
         }
 
     }

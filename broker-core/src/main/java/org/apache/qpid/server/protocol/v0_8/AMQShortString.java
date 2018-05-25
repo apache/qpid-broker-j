@@ -98,8 +98,14 @@ public final class AMQShortString implements Comparable<AMQShortString>
             byte[] data = new byte[length];
             buffer.get(data);
 
-            final AMQShortString cached = getShortStringCache().getIfPresent(ByteBuffer.wrap(data));
-            return cached != null ? cached : new AMQShortString(data);
+            ByteBuffer stringBuffer = ByteBuffer.wrap(data);
+            AMQShortString cached = getShortStringCache().getIfPresent(stringBuffer);
+            if (cached == null)
+            {
+                cached = new AMQShortString(data);
+                getShortStringCache().put(stringBuffer, cached);
+            }
+            return cached;
         }
     }
 
@@ -297,11 +303,6 @@ public final class AMQShortString implements Comparable<AMQShortString>
         return false;
     }
 
-    public void intern()
-    {
-        getShortStringCache().put(ByteBuffer.wrap(_data), this);
-    }
-
     public static AMQShortString validValueOf(Object obj)
     {
         return valueOf(obj,true,true);
@@ -365,7 +366,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
     }
 
     /** Unit testing only */
-    static void setCache(final Cache<ByteBuffer, AMQShortString> cache)
+    static void setShortStringCache(final Cache<ByteBuffer, AMQShortString> cache)
     {
         CACHE.set(cache);
     }
