@@ -110,7 +110,7 @@ class MessageTransferHeader implements AMQMessageHeader
     {
         UUID id = _messageProps == null ? null : _messageProps.getMessageId();
 
-        return id == null ? null : "ID:" + String.valueOf(id);
+        return id == null ? null : "ID:"+String.valueOf(id);
     }
 
     @Override

@@ -31,11 +31,11 @@ public interface FilterableMessage
 
     byte getPriority();
 
-    Object getMessageId();
+    String getMessageId();
 
     long getTimestamp();
 
-    Object getCorrelationId();
+    String getCorrelationId();
 
     long getExpiration();
 }

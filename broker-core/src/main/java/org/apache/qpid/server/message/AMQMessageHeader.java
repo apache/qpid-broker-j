@@ -25,7 +25,7 @@ import java.util.Set;
 
 public interface AMQMessageHeader
 {
-    Object getCorrelationId();
+    String getCorrelationId();
 
     long getExpiration();
 
@@ -35,7 +35,7 @@ public interface AMQMessageHeader
 
     String getGroupId();
 
-    Object getMessageId();
+    String getMessageId();
 
     String getMimeType();
 

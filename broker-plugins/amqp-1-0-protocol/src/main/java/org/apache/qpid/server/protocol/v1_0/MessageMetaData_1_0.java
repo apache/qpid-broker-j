@@ -485,7 +485,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         private final AtomicReference<String> _decodedUserId = new AtomicReference<>();
 
         @Override
-        public Object getCorrelationId()
+        public String getCorrelationId()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getCorrelationId() == null)
             {
@@ -493,7 +493,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
             else
             {
-                return _propertiesSection.getValue().getCorrelationId();
+                return _propertiesSection.getValue().getCorrelationId().toString();
             }
         }
 
@@ -505,7 +505,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         }
 
         @Override
-        public Object getMessageId()
+        public String getMessageId()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getMessageId() == null)
             {
@@ -513,7 +513,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
             else
             {
-                return _propertiesSection.getValue().getMessageId();
+                return _propertiesSection.getValue().getMessageId().toString();
             }
         }
 

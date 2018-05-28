@@ -20,6 +20,7 @@
 */
 package org.apache.qpid.server.filter;
 
+import org.apache.qpid.server.filter.FilterableMessage;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
@@ -103,7 +104,7 @@ public interface Filterable extends FilterableMessage
                 }
 
                 @Override
-                public Object getMessageId()
+                public String getMessageId()
                 {
                     return message.getMessageHeader().getMessageId();
                 }
@@ -115,7 +116,7 @@ public interface Filterable extends FilterableMessage
                 }
 
                 @Override
-                public Object getCorrelationId()
+                public String getCorrelationId()
                 {
                     return message.getMessageHeader().getCorrelationId();
                 }

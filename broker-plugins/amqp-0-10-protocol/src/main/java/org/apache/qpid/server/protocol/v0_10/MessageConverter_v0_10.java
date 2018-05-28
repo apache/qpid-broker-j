@@ -139,10 +139,9 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
         messageProps.setContentEncoding(serverMsg.getMessageHeader().getEncoding());
         messageProps.setContentLength(size);
         messageProps.setContentType(serverMsg.getMessageHeader().getMimeType());
-        if (serverMsg.getMessageHeader().getCorrelationId() != null)
+        if(serverMsg.getMessageHeader().getCorrelationId() != null)
         {
-            messageProps.setCorrelationId(String.valueOf(serverMsg.getMessageHeader().getCorrelationId())
-                                                .getBytes(UTF_8));
+            messageProps.setCorrelationId(serverMsg.getMessageHeader().getCorrelationId().getBytes(UTF_8));
         }
 
         Header header = new Header(deliveryProps, messageProps, null);

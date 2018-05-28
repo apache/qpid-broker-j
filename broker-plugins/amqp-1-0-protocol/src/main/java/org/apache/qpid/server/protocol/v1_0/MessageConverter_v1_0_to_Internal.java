@@ -33,6 +33,8 @@ import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 @PluggableService
 public class MessageConverter_v1_0_to_Internal implements MessageConverter<Message_1_0, InternalMessage>
