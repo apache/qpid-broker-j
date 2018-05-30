@@ -73,17 +73,22 @@ public class Utils
     {
         List<Message> messages = new ArrayList<>(count);
         MessageProducer producer = session.createProducer(destination);
-
-        for (int i = 0; i < (count); i++)
+        try
         {
-            Message next = createNextMessage(session, i);
-            producer.send(next);
-            messages.add(next);
+            for (int i = 0; i < (count); i++)
+            {
+                Message next = createNextMessage(session, i);
+                producer.send(next);
+                messages.add(next);
+            }
+            if (session.getTransacted())
+            {
+                session.commit();
+            }
         }
-
-        if (session.getTransacted())
+        finally
         {
-            session.commit();
+            producer.close();
         }
 
         return messages;

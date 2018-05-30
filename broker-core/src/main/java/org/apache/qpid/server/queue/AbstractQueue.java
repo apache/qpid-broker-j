@@ -20,6 +20,7 @@ package org.apache.qpid.server.queue;
 
 import static org.apache.qpid.server.util.GZIPUtils.GZIP_CONTENT_ENCODING;
 import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
+import static org.apache.qpid.server.virtualhost.QueueManagingVirtualHost.RESOURCE_DELETE_ONLY_NO_LINK_ATTACHED;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -3104,6 +3105,22 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if(hasReferrers())
             {
                 throw new MessageDestinationIsAlternateException(getName());
+            }
+
+            if (Boolean.TRUE.equals(getContextValue(Boolean.class, RESOURCE_DELETE_ONLY_NO_LINK_ATTACHED)))
+            {
+                final Collection<QueueConsumer<?, ?>> consumers = getConsumers();
+                boolean hasReceiverLinkAttached = consumers.stream()
+                                                           .anyMatch(c -> c.getSession()
+                                                                           .getAMQPConnection()
+                                                                           .getProtocol() == Protocol.AMQP_1_0);
+
+                final Collection<PublishingLink> publishingLinks = getPublishingLinks();
+                boolean hasSenderLinkAttached = publishingLinks.stream().anyMatch(l -> "link".equals(l.getType()));
+                if (hasReceiverLinkAttached || hasSenderLinkAttached)
+                {
+                    throw new IntegrityViolationException("Queue with active links attached cannot be deleted");
+                }
             }
         }
     }

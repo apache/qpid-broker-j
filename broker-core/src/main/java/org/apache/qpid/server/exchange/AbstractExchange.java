@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.exchange;
 
+import static org.apache.qpid.server.virtualhost.QueueManagingVirtualHost.RESOURCE_DELETE_ONLY_NO_LINK_ATTACHED;
+
 import java.security.AccessControlException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -63,6 +65,7 @@ import org.apache.qpid.server.model.ConfiguredDerivedMethodAttribute;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.DoOnConfigThread;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -101,7 +104,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             new FixedKeyMapCreator("bindingKey", "destination");
 
     private static final Operation PUBLISH_ACTION = Operation.PERFORM_ACTION("publish");
-    private final AtomicBoolean _closed = new AtomicBoolean();
+    private final AtomicBoolean _deleted = new AtomicBoolean();
 
     @ManagedAttributeField(beforeSet = "preSetAlternateBinding", afterSet = "postSetAlternateBinding" )
     private AlternateBinding _alternateBinding;
@@ -172,6 +175,18 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
         {
             doChecks();
+            if (Boolean.TRUE.equals(getContextValue(Boolean.class, RESOURCE_DELETE_ONLY_NO_LINK_ATTACHED)))
+            {
+                boolean hasSenderLinkAttached = _linkedSenders.keySet()
+                                                              .stream()
+                                                              .anyMatch(s -> s.getPublishingLinks(this)
+                                                                              .stream()
+                                                                              .anyMatch(l -> "link".equals(l.getType())));
+                if  (hasSenderLinkAttached)
+                {
+                    throw new IntegrityViolationException("Exchange with active sender links attached cannot be deleted");
+                }
+            }
         }
 
     }
@@ -299,7 +314,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private void performDelete()
     {
-        if(_closed.compareAndSet(false,true))
+        if(_deleted.compareAndSet(false, true))
         {
             performDeleteTasks();
 

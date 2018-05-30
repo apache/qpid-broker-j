@@ -59,6 +59,7 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
+import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NoFactoryForTypeException;
@@ -1138,6 +1139,10 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 {
                     exception(session, method, ExecutionErrorCode.UNAUTHORIZED_ACCESS, e.getMessage());
                 }
+                catch (IntegrityViolationException e)
+                {
+                    exception(session, method, ExecutionErrorCode.PRECONDITION_FAILED, e.getMessage());
+                }
             }
         }
     }
@@ -1669,6 +1674,10 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     catch (AccessControlException e)
                     {
                         exception(session, method, ExecutionErrorCode.UNAUTHORIZED_ACCESS, e.getMessage());
+                    }
+                    catch (IntegrityViolationException e)
+                    {
+                        exception(session, method, ExecutionErrorCode.PRECONDITION_FAILED, e.getMessage());
                     }
                 }
             }
