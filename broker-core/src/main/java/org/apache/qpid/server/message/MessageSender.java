@@ -22,11 +22,13 @@ package org.apache.qpid.server.message;
 
 import java.util.Collection;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.model.PublishingLink;
 
 public interface MessageSender
 {
-    void destinationRemoved(MessageDestination destination);
+    ListenableFuture<Void> destinationRemoved(MessageDestination destination);
 
     Collection<? extends PublishingLink> getPublishingLinks(MessageDestination destination);
 }

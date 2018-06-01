@@ -40,6 +40,7 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -367,4 +368,12 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     {
         _scheduled.set(false);
     }
+
+    @Override
+    public ListenableFuture<Void> queueDeleted(final Queue queue, final MessageInstanceConsumer sub)
+    {
+        consumerRemoved(sub);
+        return Futures.immediateFuture(null);
+    }
+
 }

@@ -24,6 +24,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +61,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
+import org.apache.qpid.server.txn.ServerLocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -72,6 +76,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
     private Binary _transactionId;
     private final SendingLinkEndpoint _linkEndpoint;
+    private final TransactionDestinationRegistry _transactionRegistry = new TransactionDestinationRegistry();
 
     private final StateChangeListener<MessageInstance, MessageInstance.EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, MessageInstance.EntryState>()
     {
@@ -279,6 +284,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                                 _linkEndpoint.updateDisposition(tag, null, true);
                             }
                         });
+                        registerTransactionDestination(txn, entry.getOwningResource());
                     }
                     catch (UnknownTransactionException e)
                     {
@@ -313,23 +319,17 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         // TODO
     }
 
-    /*
-        QPID-7541
-        Currently if a queue is deleted the consumer sits there withiout being closed, but
-        obviously not receiving any new messages
-
-    public void queueDeleted()
+    @Override
+    public ListenableFuture<Void> queueDeleted(final Queue queue, final MessageInstanceConsumer sub)
     {
-        //TODO
-        getEndpoint().setSource(null);
-        getEndpoint().close();
+        ListenableFuture<Void> result = _transactionRegistry.destinationRemoved(queue, getEndpoint());
+        if (getConsumers().contains(sub))
+        {
+            result.addListener(() -> consumerRemoved(sub), MoreExecutors.directExecutor());
 
-        final LinkRegistryModel linkReg = getSession().getConnection()
-                .getAddressSpace()
-                .getLinkRegistry(getEndpoint().getSession().getConnection().getRemoteContainerId());
-        linkReg.unregisterSendingLink(getEndpoint().getName());
+        }
+        return result;
     }
-      */
 
     @Override
     public boolean allocateCredit(final ServerMessage msg)
@@ -378,6 +378,14 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     public Session_1_0 getSession()
     {
         return _linkEndpoint.getSession();
+    }
+
+    private void registerTransactionDestination(final ServerTransaction txn, final TransactionLogResource resource)
+    {
+        if (txn instanceof ServerLocalTransaction && resource instanceof Queue)
+        {
+            _transactionRegistry.register((ServerLocalTransaction) txn, (Queue) resource);
+        }
     }
 
     private class DispositionAction implements UnsettledAction
@@ -456,6 +464,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
                                     }
                                 });
+
+                    registerTransactionDestination(txn, _queueEntry.getOwningResource());
                 }
                 txn.addPostTransactionAction(new ServerTransaction.Action()
                     {

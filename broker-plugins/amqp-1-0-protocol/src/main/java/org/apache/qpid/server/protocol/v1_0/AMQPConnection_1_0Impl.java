@@ -117,6 +117,7 @@ import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManag
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.session.AMQPSession;
+import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
@@ -127,6 +128,8 @@ import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.transport.util.Functions;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.txn.SyncLocalTransaction;
+import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -1941,7 +1944,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         }
 
-        final LocalTransaction serverTransaction = createLocalTransaction();
+        final ServerTransaction serverTransaction = createLocalTransaction();
 
         _openTransactions[id] = serverTransaction;
         return new IdentifiedTransaction(id, serverTransaction);
@@ -1992,5 +1995,13 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             default:
                 throw new IllegalStateException("Unsupported state " + _connectionState);
         }
+    }
+
+    @Override
+    protected ServerTransaction createLocalTransaction(final MessageStore messageStore,
+                                                       final LocalTransaction.ActivityTimeAccessor getLastReadTime,
+                                                       final TransactionObserver transactionObserver)
+    {
+        return new SyncLocalTransaction(messageStore, getLastReadTime, transactionObserver);
     }
 }

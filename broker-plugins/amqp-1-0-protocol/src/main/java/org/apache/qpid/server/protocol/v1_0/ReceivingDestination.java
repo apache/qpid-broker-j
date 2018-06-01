@@ -20,9 +20,12 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.Collection;
+
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -33,9 +36,9 @@ public interface ReceivingDestination
 
     Symbol[] getCapabilities();
 
-    void send(final ServerMessage<?> message,
-              final ServerTransaction txn,
-              final SecurityToken securityToken) throws UnroutableMessageException;
+    Collection<BaseQueue> send(final ServerMessage<?> message,
+                               final ServerTransaction txn,
+                               final SecurityToken securityToken) throws UnroutableMessageException;
 
     int getCredit();
 

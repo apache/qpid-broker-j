@@ -20,14 +20,10 @@
 */
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,9 +45,10 @@ import javax.jms.Session;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.OverflowPolicy;
-import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
+import org.apache.qpid.tests.utils.ConfigItem;
 
+@ConfigItem(name = "qpid.resource.deleteOnlyWithNoLinkAttached", value = "false")
 public class ProducerFlowControlTest extends JmsTestBase
 {
 
@@ -279,9 +276,6 @@ public class ProducerFlowControlTest extends JmsTestBase
     @Test
     public void testQueueDeleteWithBlockedFlow() throws Exception
     {
-        assumeThat("QPID-7541: Queues with attached links cannot be deleted",
-                   getProtocol(),
-                   is(not(equalTo(Protocol.AMQP_1_0))));
         final String queueName = getTestName();
         final int messageSize = evaluateMessageSize();
         final int capacity = messageSize * 3 + messageSize / 2;

@@ -71,6 +71,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.stats.StatisticsGatherer;
+import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.network.NetworkConnection;
 import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.txn.FlowToDiskTransactionObserver;
@@ -875,13 +876,19 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     }
 
     @Override
-    public LocalTransaction createLocalTransaction()
+    public ServerTransaction createLocalTransaction()
     {
         _localTransactionBegins.incrementAndGet();
         _localTransactionOpens.incrementAndGet();
-        return new LocalTransaction(getAddressSpace().getMessageStore(),
-                                    () -> getLastReadTime(),
-                                    _transactionObserver);
+
+        return createLocalTransaction(getAddressSpace().getMessageStore(), this::getLastReadTime, _transactionObserver);
+    }
+
+    protected ServerTransaction createLocalTransaction(final MessageStore messageStore,
+                                                       final LocalTransaction.ActivityTimeAccessor getLastReadTime,
+                                                       final TransactionObserver transactionObserver)
+    {
+        return new LocalTransaction(messageStore, getLastReadTime, transactionObserver);
     }
 
     @Override

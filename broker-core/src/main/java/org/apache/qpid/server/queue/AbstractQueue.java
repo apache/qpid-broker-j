@@ -57,8 +57,10 @@ import javax.security.auth.Subject;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1802,11 +1804,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 return _deleteQueueDepthFuture;
             }
 
+            Set<ListenableFuture<Void>> destinationRemovalFutures = new HashSet<>();
             final int queueDepthMessages = getQueueDepthMessages();
 
             for(MessageSender sender : _linkedSenders.keySet())
             {
-                sender.destinationRemoved(this);
+                destinationRemovalFutures.add(sender.destinationRemoved(this));
             }
 
             try
@@ -1819,25 +1822,27 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                     if (consumer != null)
                     {
-                        consumer.queueDeleted();
+                        destinationRemovalFutures.add(consumer.queueDeleted());
                     }
                 }
 
-                final List<QueueEntry> entries = getMessagesOnTheQueue(new AcquireAllQueueEntryFilter());
+                ListenableFuture<Void> result =
+                        Futures.transform(Futures.allAsList(destinationRemovalFutures), input -> null, getTaskExecutor());
 
-                routeToAlternate(entries);
+                Futures.addCallback(result, new FutureCallback<Void>()
+                {
+                    @Override
+                    public void onSuccess(final Void result)
+                    {
+                        finishDeletion(queueDepthMessages);
+                    }
 
-                preSetAlternateBinding();
-                _alternateBinding = null;
-
-                _stopped.set(true);
-                _queueHouseKeepingTask.cancel();
-
-                performQueueDeleteTasks();
-
-                //Log Queue Deletion
-                getEventLogger().message(_logSubject, QueueMessages.DELETED(getId().toString()));
-                _deleteQueueDepthFuture.set(queueDepthMessages);
+                    @Override
+                    public void onFailure(final Throwable t)
+                    {
+                        _deleteQueueDepthFuture.setException(t);
+                    }
+                }, MoreExecutors.directExecutor());
             }
             catch(Throwable e)
             {
@@ -1845,6 +1850,32 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
         return _deleteQueueDepthFuture;
+    }
+
+    private void finishDeletion(final int queueDepthMessages)
+    {
+        try
+        {
+            final List<QueueEntry> entries = getMessagesOnTheQueue(new AcquireAllQueueEntryFilter());
+
+            routeToAlternate(entries);
+
+            preSetAlternateBinding();
+            _alternateBinding = null;
+
+            _stopped.set(true);
+            _queueHouseKeepingTask.cancel();
+
+            performQueueDeleteTasks();
+
+            //Log Queue Deletion
+            getEventLogger().message(_logSubject, QueueMessages.DELETED(getId().toString()));
+            _deleteQueueDepthFuture.set(queueDepthMessages);
+        }
+        catch(Throwable e)
+        {
+            _deleteQueueDepthFuture.setException(e);
+        }
     }
 
     private void routeToAlternate(List<QueueEntry> entries)

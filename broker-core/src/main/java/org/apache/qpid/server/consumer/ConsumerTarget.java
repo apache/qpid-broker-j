@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.session.AMQPSession;
 
 public interface ConsumerTarget<T extends ConsumerTarget<T>>
@@ -75,4 +76,6 @@ public interface ConsumerTarget<T extends ConsumerTarget<T>>
     boolean isSuspended();
 
     boolean close();
+
+    ListenableFuture<Void> queueDeleted(Queue queue, MessageInstanceConsumer sub);
 }

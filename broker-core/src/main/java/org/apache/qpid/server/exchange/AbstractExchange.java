@@ -355,7 +355,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     @Override
     @DoOnConfigThread
-    public void destinationRemoved(@Param(name="destination") final MessageDestination destination)
+    public ListenableFuture<Void> destinationRemoved(@Param(name="destination") final MessageDestination destination)
     {
         Iterator<Binding> bindingIterator = _bindings.iterator();
         while(bindingIterator.hasNext())
@@ -378,6 +378,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 attributeSet(DURABLE_BINDINGS, durableBindings, durableBindings);
             }
         }
+        return Futures.immediateFuture(null);
     }
 
     @Override

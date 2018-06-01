@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -67,10 +68,11 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.AsyncCommand;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
-import org.apache.qpid.server.txn.LocalTransaction;
+import org.apache.qpid.server.txn.ServerLocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint<Target>
@@ -87,6 +89,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
     private volatile ReceivingDestination _receivingDestination;
     private volatile boolean _rejectedOutcomeSupportedBySource;
+    private final TransactionDestinationRegistry _transactionRegistry = new TransactionDestinationRegistry();
 
     private final PublishingLink _publishingLink = new PublishingLink()
     {
@@ -113,9 +116,9 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     private final MessageSender _messageSender = new MessageSender()
     {
         @Override
-        public void destinationRemoved(final MessageDestination destination)
+        public ListenableFuture<Void> destinationRemoved(final MessageDestination destination)
         {
-            // TODO - we should probably schedule a link closure here! (QPID-7541)
+            return _transactionRegistry.destinationRemoved(destination, StandardReceivingLinkEndpoint.this);
         }
 
         @Override
@@ -269,9 +272,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     {
                         try
                         {
-                            getReceivingDestination().send(serverMessage,
-                                                           transaction,
-                                                           session.getSecurityToken());
+                            send(serverMessage, transaction);
                             outcome = ACCEPTED;
                         }
                         catch (UnroutableMessageException e)
@@ -285,15 +286,15 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                                 error.setInfo(Collections.singletonMap(DELIVERY_TAG, delivery.getDeliveryTag()));
                             }
                             if (!_rejectedOutcomeSupportedBySource ||
-                                (delivery.isSettled() && !(transaction instanceof LocalTransaction)))
+                                (delivery.isSettled() && !(transaction instanceof ServerLocalTransaction)))
                             {
                                 return error;
                             }
                             else
                             {
-                                if (delivery.isSettled() && transaction instanceof LocalTransaction)
+                                if (delivery.isSettled() && transaction instanceof ServerLocalTransaction)
                                 {
-                                    ((LocalTransaction) transaction).setRollbackOnly();
+                                    ((ServerLocalTransaction) transaction).setRollbackOnly();
                                 }
 
                                 Rejected rejected = new Rejected();
@@ -350,9 +351,9 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 }
                 finally
                 {
-                    if (setRollbackOnly && transaction instanceof LocalTransaction)
+                    if (setRollbackOnly && transaction instanceof ServerLocalTransaction)
                     {
-                        ((LocalTransaction) transaction).setRollbackOnly();
+                        ((ServerLocalTransaction) transaction).setRollbackOnly();
                     }
                 }
             }
@@ -362,6 +363,28 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             }
         }
         return null;
+    }
+
+    private void send(final ServerMessage<?> serverMessage,
+                      final ServerTransaction transaction) throws UnroutableMessageException
+    {
+        ReceivingDestination receivingDestination = getReceivingDestination();
+        final Collection<BaseQueue> routes =
+                receivingDestination.send(serverMessage, transaction, getSession().getSecurityToken());
+        if (transaction instanceof ServerLocalTransaction)
+        {
+            ServerLocalTransaction t = (ServerLocalTransaction) transaction;
+            Set<MessageDestination> destinations = routes.stream()
+                                                         .filter(MessageDestination.class::isInstance)
+                                                         .map(MessageDestination.class::cast)
+                                                         .collect(Collectors.toSet());
+            if (!destinations.contains(receivingDestination.getMessageDestination()))
+            {
+                destinations = new HashSet<>(destinations);
+                destinations.add(receivingDestination.getMessageDestination());
+            }
+            _transactionRegistry.register(t, destinations);
+        }
     }
 
     private boolean shouldReceiverSettleFirst(ReceiverSettleMode transferReceiverSettleMode)
@@ -508,6 +531,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             _receivingDestination.getMessageDestination().linkRemoved(_messageSender, _publishingLink);
             _receivingDestination = null;
         }
+        _transactionRegistry.clear();
     }
 
     @Override

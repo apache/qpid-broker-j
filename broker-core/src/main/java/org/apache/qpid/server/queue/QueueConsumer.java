@@ -20,11 +20,12 @@
  */
 package org.apache.qpid.server.queue;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.session.AMQPSession;
 
 public interface QueueConsumer<X extends QueueConsumer<X,T>, T extends ConsumerTarget> extends Consumer<X, T>
@@ -43,7 +44,7 @@ public interface QueueConsumer<X extends QueueConsumer<X,T>, T extends ConsumerT
 
     QueueConsumerNode getQueueConsumerNode();
 
-    void queueDeleted();
+    ListenableFuture<Void> queueDeleted();
 
     Queue<?> getQueue();
 
