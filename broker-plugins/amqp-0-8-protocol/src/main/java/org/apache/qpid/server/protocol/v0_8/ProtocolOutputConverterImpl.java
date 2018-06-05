@@ -183,20 +183,23 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
             int writtenSize = capacity;
 
-            AMQBody firstContentBody = new MessageContentSourceBody(content, 0, capacity);
-
-            CompositeAMQBodyBlock
-                    compositeBlock =
-                    new CompositeAMQBodyBlock(channelId, deliverBody, contentHeaderBody, firstContentBody);
-            writeFrame(compositeBlock);
-
-            while (writtenSize < bodySize)
+            try (QpidByteBuffer contentByteBuffer = content.getContent())
             {
-                capacity = bodySize - writtenSize > maxBodySize ? maxBodySize : bodySize - writtenSize;
-                AMQBody body = new MessageContentSourceBody(content, writtenSize, capacity);
-                writtenSize += capacity;
+                AMQBody firstContentBody = new MessageContentSourceBody(contentByteBuffer, 0, capacity);
 
-                writeFrame(new AMQFrame(channelId, body));
+                CompositeAMQBodyBlock
+                        compositeBlock =
+                        new CompositeAMQBodyBlock(channelId, deliverBody, contentHeaderBody, firstContentBody);
+                writeFrame(compositeBlock);
+
+                while (writtenSize < bodySize)
+                {
+                    capacity = bodySize - writtenSize > maxBodySize ? maxBodySize : bodySize - writtenSize;
+                    AMQBody body = new MessageContentSourceBody(contentByteBuffer, writtenSize, capacity);
+                    writtenSize += capacity;
+
+                    writeFrame(new AMQFrame(channelId, body));
+                }
             }
         }
     }
@@ -210,10 +213,10 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
     {
         public static final byte TYPE = 3;
         private final int _length;
-        private final MessageContentSource _content;
+        private final QpidByteBuffer _content;
         private final int _offset;
 
-        public MessageContentSourceBody(MessageContentSource content, int offset, int length)
+        public MessageContentSourceBody(QpidByteBuffer content, int offset, int length)
         {
             _content = content;
             _offset = offset;
@@ -236,7 +239,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         public long writePayload(final ByteBufferSender sender)
         {
             long size;
-            try (final QpidByteBuffer content = _content.getContent(_offset, _length))
+            try (final QpidByteBuffer content = _content.view(_offset, _length))
             {
                 size = content.remaining();
                 sender.send(content);
