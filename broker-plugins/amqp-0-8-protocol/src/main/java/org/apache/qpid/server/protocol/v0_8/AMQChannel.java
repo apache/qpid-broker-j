@@ -2217,7 +2217,10 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 closeChannel(ErrorCodes.MESSAGE_TOO_LARGE,
                              "Message size of " + bodySize + " greater than allowed maximum of " + _connection.getMaxMessageSize());
             }
-            publishContentHeader(new ContentHeaderBody(properties, bodySize));
+            else
+            {
+                publishContentHeader(new ContentHeaderBody(properties, bodySize));
+            }
         }
         else
         {
