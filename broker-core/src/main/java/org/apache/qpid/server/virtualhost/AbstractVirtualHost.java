@@ -186,6 +186,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AtomicLong _bytesIn = new AtomicLong();
     private final AtomicLong _bytesOut = new AtomicLong();
     private final AtomicLong _totalConnectionCount = new AtomicLong();
+    private final AtomicLong _maximumMessageSize = new AtomicLong();
 
     private volatile LinkRegistryModel _linkRegistry;
     private AtomicBoolean _blocked = new AtomicBoolean();
@@ -215,6 +216,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AccessControl _accessControl;
 
     private volatile boolean _createDefaultExchanges;
+    private volatile boolean _maximumMessageSizeStatisticsEnabled;
 
     private final AccessControl _systemUserAllowed = new SubjectFixedResultAccessControl(new ResultCalculator()
     {
@@ -603,6 +605,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _fileSystemMaxUsagePercent = getContextValue(Integer.class, Broker.STORE_FILESYSTEM_MAX_USAGE_PERCENT);
         _flowToDiskCheckPeriod = getContextValue(Long.class, FLOW_TO_DISK_CHECK_PERIOD);
         _isDiscardGlobalSharedSubscriptionLinksOnDetach = getContextValue(Boolean.class, DISCARD_GLOBAL_SHARED_SUBSCRIPTION_LINKS_ON_DETACH);
+        _maximumMessageSizeStatisticsEnabled = getContextValue(Boolean.class, Broker.MAX_MESSAGE_SIZE__STATISTICS_ENABLED);
 
         QpidServiceLoader serviceLoader = new QpidServiceLoader();
         for(ConnectionValidator validator : serviceLoader.instancesOf(ConnectionValidator.class))
@@ -1504,6 +1507,16 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public long getMaximumMessageSizeIn()
+    {
+        if (_maximumMessageSizeStatisticsEnabled)
+        {
+            return _maximumMessageSize.get();
+        }
+        return 0;
+    }
+
+    @Override
     public MessageDestination getDefaultDestination()
     {
         return _defaultDestination;
@@ -1688,6 +1701,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _messagesIn.incrementAndGet();
         _bytesIn.addAndGet(messageSize);
         _broker.registerMessageReceived(messageSize);
+        if (_maximumMessageSizeStatisticsEnabled)
+        {
+            _maximumMessageSize.getAndUpdate(current ->  messageSize > current ? messageSize : current);
+        }
     }
 
     @Override
