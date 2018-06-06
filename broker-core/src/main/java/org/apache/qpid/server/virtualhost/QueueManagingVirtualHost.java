@@ -284,6 +284,15 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
                       description = "Total Number of Bytes Evacuated from Memory Due to Flow to Disk.")
     long getBytesEvacuatedFromMemory();
 
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
+            units = StatisticUnit.BYTES,
+            label = "Maximum inbound message size",
+            description = "Maximum size of message published into the Virtual Host since start-up."
+                          + " The statistics is only evaluated when context variable"
+                          + " 'qpid.broker.maxMessageSizeStatisticsEnabled' is set to 'true'.")
+    long getMaximumMessageSizeIn();
+
     @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<? extends Connection<?>> getConnections();
