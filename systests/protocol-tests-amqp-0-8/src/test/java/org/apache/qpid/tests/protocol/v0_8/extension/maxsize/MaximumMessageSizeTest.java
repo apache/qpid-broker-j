@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseOkBody;
@@ -45,7 +46,7 @@ import org.apache.qpid.tests.utils.ConfigItem;
 
 @BrokerSpecific(kind = KIND_BROKER_J)
 @ConfigItem(name = "qpid.max_message_size", value = "1000")
-public class MaximumMessageSize extends BrokerAdminUsingTestBase
+public class MaximumMessageSizeTest extends BrokerAdminUsingTestBase
 {
     private InetSocketAddress _brokerAddress;
 
@@ -66,14 +67,18 @@ public class MaximumMessageSize extends BrokerAdminUsingTestBase
             interaction.openAnonymousConnection()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .basic().contentHeaderPropertiesContentType("text/plain")
-                       .contentHeaderPropertiesDeliveryMode((byte)1)
-                       .contentHeaderPropertiesPriority((byte)1)
+                       .contentHeaderPropertiesDeliveryMode((byte) 1)
+                       .contentHeaderPropertiesPriority((byte) 1)
                        .publishExchange("")
                        .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
                        .content(content)
-                       .publishMessage()
-                       .consumeResponse(ChannelCloseBody.class)
-                       .channel().closeOk()
+                       .publishMessage();
+
+            ChannelCloseBody channelClose = interaction.consumeResponse()
+                                                       .getLatestResponse(ChannelCloseBody.class);
+            assertThat(channelClose.getReplyCode(), is(equalTo(ErrorCodes.MESSAGE_TOO_LARGE)));
+
+            interaction.channel().closeOk()
                        .connection().close()
                        .consumeResponse(ConnectionCloseOkBody.class, ChannelClosedResponse.class);
 
