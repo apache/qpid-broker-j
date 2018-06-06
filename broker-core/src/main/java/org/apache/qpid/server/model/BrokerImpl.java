@@ -121,7 +121,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private final AtomicLong _transactedMessagesOut = new AtomicLong();
     private final AtomicLong _bytesIn = new AtomicLong();
     private final AtomicLong _bytesOut = new AtomicLong();
-    private final AtomicLong _maximumMessageSizeIn = new AtomicLong();
+    private final AtomicLong _maximumMessageSize = new AtomicLong();
 
     @ManagedAttributeField
     private int _statisticsReportingPeriod;
@@ -146,7 +146,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private ScheduledFuture<?> _assignTargetSizeSchedulingFuture;
     private volatile ScheduledFuture<?> _statisticsReportingFuture;
     private long _housekeepingCheckPeriod;
-    private volatile boolean _maximumMessageSizeStatisticsEnabled;
 
     @ManagedObjectFactoryConstructor
     public BrokerImpl(Map<String, Object> attributes,
@@ -630,7 +629,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         _compactMemoryThreshold = getContextValue(Long.class, Broker.COMPACT_MEMORY_THRESHOLD);
         _compactMemoryInterval = getContextValue(Long.class, Broker.COMPACT_MEMORY_INTERVAL);
         _housekeepingCheckPeriod = getContextValue(Long.class, Broker.QPID_BROKER_HOUSEKEEPING_CHECK_PERIOD);
-        _maximumMessageSizeStatisticsEnabled = getContextValue(Boolean.class, Broker.MAX_MESSAGE_SIZE__STATISTICS_ENABLED);
 
         if (SystemUtils.getProcessPid() != null)
         {
@@ -873,9 +871,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         _messagesIn.incrementAndGet();
         _bytesIn.addAndGet(messageSize);
-        if (_maximumMessageSizeStatisticsEnabled)
+        long hwm;
+        while((hwm = _maximumMessageSize.get()) < messageSize)
         {
-           _maximumMessageSizeIn.getAndUpdate(current -> messageSize > current ? messageSize : current);
+            _maximumMessageSize.compareAndSet(hwm, messageSize);
         }
     }
 
@@ -900,13 +899,9 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     }
 
     @Override
-    public long getMaximumMessageSize()
+    public long getInboundMessageSizeHighWatermark()
     {
-        if (_maximumMessageSizeStatisticsEnabled)
-        {
-            return _maximumMessageSizeIn.get();
-        }
-        return 0;
+        return _maximumMessageSize.get();
     }
 
     @Override

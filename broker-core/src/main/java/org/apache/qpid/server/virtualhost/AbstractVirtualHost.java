@@ -216,7 +216,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AccessControl _accessControl;
 
     private volatile boolean _createDefaultExchanges;
-    private volatile boolean _maximumMessageSizeStatisticsEnabled;
 
     private final AccessControl _systemUserAllowed = new SubjectFixedResultAccessControl(new ResultCalculator()
     {
@@ -605,7 +604,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _fileSystemMaxUsagePercent = getContextValue(Integer.class, Broker.STORE_FILESYSTEM_MAX_USAGE_PERCENT);
         _flowToDiskCheckPeriod = getContextValue(Long.class, FLOW_TO_DISK_CHECK_PERIOD);
         _isDiscardGlobalSharedSubscriptionLinksOnDetach = getContextValue(Boolean.class, DISCARD_GLOBAL_SHARED_SUBSCRIPTION_LINKS_ON_DETACH);
-        _maximumMessageSizeStatisticsEnabled = getContextValue(Boolean.class, Broker.MAX_MESSAGE_SIZE__STATISTICS_ENABLED);
 
         QpidServiceLoader serviceLoader = new QpidServiceLoader();
         for(ConnectionValidator validator : serviceLoader.instancesOf(ConnectionValidator.class))
@@ -1507,13 +1505,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public long getMaximumMessageSize()
+    public long getInboundMessageSizeHighWatermark()
     {
-        if (_maximumMessageSizeStatisticsEnabled)
-        {
-            return _maximumMessageSize.get();
-        }
-        return 0;
+        return _maximumMessageSize.get();
     }
 
     @Override
@@ -1678,9 +1672,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _messagesIn.incrementAndGet();
         _bytesIn.addAndGet(messageSize);
         _broker.registerMessageReceived(messageSize);
-        if (_maximumMessageSizeStatisticsEnabled)
+        long hwm;
+        while((hwm = _maximumMessageSize.get()) < messageSize)
         {
-            _maximumMessageSize.getAndUpdate(current ->  messageSize > current ? messageSize : current);
+            _maximumMessageSize.compareAndSet(hwm, messageSize);
         }
     }
 
