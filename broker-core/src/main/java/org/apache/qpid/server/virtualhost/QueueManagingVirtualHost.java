@@ -291,7 +291,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
             description = "Maximum size of message published into the Virtual Host since start-up."
                           + " The statistics is only evaluated when context variable"
                           + " 'qpid.broker.maxMessageSizeStatisticsEnabled' is set to 'true'.")
-    long getMaximumMessageSizeIn();
+    long getMaximumMessageSize();
 
     @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
