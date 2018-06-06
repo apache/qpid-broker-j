@@ -1507,7 +1507,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public long getMaximumMessageSizeIn()
+    public long getMaximumMessageSize()
     {
         if (_maximumMessageSizeStatisticsEnabled)
         {
