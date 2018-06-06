@@ -126,12 +126,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     String PROPERTY_DISABLED_FEATURES = "qpid.broker_disabled_features";
 
-    String MAX_MESSAGE_SIZE__STATISTICS_ENABLED = "qpid.broker.maxMessageSizeStatisticsEnabled";
-    @ManagedContextDefault(name = MAX_MESSAGE_SIZE__STATISTICS_ENABLED,
-                            description = "Flag to enable collection of maximum message size statistics.")
-    @SuppressWarnings("unused")
-    boolean DEFAULT_MAX_MESSAGE_SIZE_STATISTICS_ENABLED = false;
-
     @DerivedAttribute
     String getBuildVersion();
 
@@ -303,11 +297,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.BYTES,
-            label = "Maximum inbound message size",
-            description = "Maximum size of messages published into the Broker since start-up."
-                          + " The statistics is only evaluated when context variable"
-                          + " 'qpid.broker.maxMessageSizeStatisticsEnabled' is set to 'true'.")
-    long getMaximumMessageSize();
+            label = "Maximum recorded size of inbound messages",
+            description = "Maximum size of messages published into the Broker since start-up.")
+    long getInboundMessageSizeHighWatermark();
 
     @ManagedOperation(nonModifying = true,
             description = "Restart the broker within the same JVM",
