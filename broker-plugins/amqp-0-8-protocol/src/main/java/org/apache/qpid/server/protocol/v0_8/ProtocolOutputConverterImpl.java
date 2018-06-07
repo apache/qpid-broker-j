@@ -176,29 +176,28 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         }
         else
         {
-            int maxBodySize = (int) _connection.getMaxFrameSize() - AMQFrame.getFrameOverhead();
-
-
-            int capacity = bodySize > maxBodySize ? maxBodySize : bodySize;
-
-            int writtenSize = capacity;
-
+            int maxFrameBodySize = (int) _connection.getMaxFrameSize() - AMQFrame.getFrameOverhead();
             try (QpidByteBuffer contentByteBuffer = content.getContent())
             {
-                AMQBody firstContentBody = new MessageContentSourceBody(contentByteBuffer, 0, capacity);
+                int contentChunkSize = bodySize > maxFrameBodySize ? maxFrameBodySize : bodySize;
+                try (QpidByteBuffer chunk = contentByteBuffer.view(0, contentChunkSize))
+                {
+                    writeFrame(new CompositeAMQBodyBlock(channelId,
+                                                         deliverBody,
+                                                         contentHeaderBody,
+                                                         new MessageContentSourceBody(chunk)));
+                }
 
-                CompositeAMQBodyBlock
-                        compositeBlock =
-                        new CompositeAMQBodyBlock(channelId, deliverBody, contentHeaderBody, firstContentBody);
-                writeFrame(compositeBlock);
-
+                int writtenSize = contentChunkSize;
                 while (writtenSize < bodySize)
                 {
-                    capacity = bodySize - writtenSize > maxBodySize ? maxBodySize : bodySize - writtenSize;
-                    AMQBody body = new MessageContentSourceBody(contentByteBuffer, writtenSize, capacity);
-                    writtenSize += capacity;
-
-                    writeFrame(new AMQFrame(channelId, body));
+                    contentChunkSize =
+                            (bodySize - writtenSize) > maxFrameBodySize ? maxFrameBodySize : bodySize - writtenSize;
+                    try (QpidByteBuffer chunk = contentByteBuffer.view(writtenSize, contentChunkSize))
+                    {
+                        writtenSize += contentChunkSize;
+                        writeFrame(new AMQFrame(channelId, new MessageContentSourceBody(chunk)));
+                    }
                 }
             }
         }
@@ -214,13 +213,11 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         public static final byte TYPE = 3;
         private final int _length;
         private final QpidByteBuffer _content;
-        private final int _offset;
 
-        public MessageContentSourceBody(QpidByteBuffer content, int offset, int length)
+        private MessageContentSourceBody(QpidByteBuffer content)
         {
             _content = content;
-            _offset = offset;
-            _length = length;
+            _length = content.remaining();
         }
 
         @Override
@@ -238,13 +235,8 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         @Override
         public long writePayload(final ByteBufferSender sender)
         {
-            long size;
-            try (final QpidByteBuffer content = _content.view(_offset, _length))
-            {
-                size = content.remaining();
-                sender.send(content);
-            }
-            return size;
+            sender.send(_content);
+            return _length;
         }
 
         @Override
@@ -256,7 +248,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         @Override
         public String toString()
         {
-            return "[" + getClass().getSimpleName() + " offset: " + _offset + ", length: " + _length + "]";
+            return "[" + getClass().getSimpleName() + ", length: " + _length + "]";
         }
 
     }
