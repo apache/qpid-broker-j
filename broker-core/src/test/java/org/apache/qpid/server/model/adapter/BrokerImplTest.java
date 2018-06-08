@@ -139,6 +139,13 @@ public class BrokerImplTest extends UnitTestBase
     }
 
     @Test
+    public void testAssignTargetSizesWithHighQueueDepthAndMemoryLimit() throws Exception
+    {
+        long flowToDiskThreshold = 3L * 1024 * 1024 * 1024;
+        doAssignTargetSizeTest(new long[] {4L * 1024 * 1024 * 1024, 0, 0 , 0}, flowToDiskThreshold);
+    }
+
+    @Test
     public void testNetworkBufferSize()
     {
         Map<String, Object> attributes = new HashMap<>();
