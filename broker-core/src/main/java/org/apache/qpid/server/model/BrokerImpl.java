@@ -590,8 +590,9 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             }
             else
             {
-                long queueSizeBasedShare = (_flowToDiskThreshold * virtualHostTotalQueueSize) / (2 * totalSize);
-                size = queueSizeBasedShare + (proportionalShare / 2);
+                double fraction = ((double)virtualHostTotalQueueSize)/((double)totalSize);
+                double queueSizeBasedShare = ((double)_flowToDiskThreshold)/ 2.0 * fraction;
+                size = (long)(queueSizeBasedShare + ((double)proportionalShare) / 2.0);
             }
 
             if (LOGGER.isDebugEnabled())

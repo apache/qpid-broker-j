@@ -130,6 +130,12 @@ public class BrokerImplTest extends QpidTestCase
                                flowToDiskThreshold);
     }
 
+    public void testAssignTargetSizesWithHighQueueDepthAndMemoryLimit() throws Exception
+    {
+        long flowToDiskThreshold = 3L * 1024 * 1024 * 1024;
+        doAssignTargetSizeTest(new long[] {4L * 1024 * 1024 * 1024, 0, 0 , 0}, flowToDiskThreshold);
+    }
+
     public void testNetworkBufferSize()
     {
         Map<String, Object> attributes = new HashMap<>();
