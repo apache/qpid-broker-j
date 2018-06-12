@@ -317,11 +317,6 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
             LOGGER.warn("Retrieving LDAP name for user '{}' resulted in error.", userId, e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
-        catch (Exception e)
-        {
-            LOGGER.warn("Unexpected exception on retrieving LDAP name for user '{}' ", userId, e);
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-        }
 
         if(name == null)
         {
@@ -364,11 +359,6 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         {
             //Some other failure
             LOGGER.warn("LDAP authentication attempt for username '{}' resulted in error.", name, e);
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-        }
-        catch (Exception e)
-        {
-            LOGGER.warn("Unexpected exception on authentication attempt for username '{}' ", userId, e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
         finally
