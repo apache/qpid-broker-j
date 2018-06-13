@@ -23,9 +23,12 @@ package org.apache.qpid.tests.protocol.v0_10;
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
@@ -40,6 +43,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.ConnectionSecure;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTune;
 import org.apache.qpid.tests.protocol.ChannelClosedResponse;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -262,7 +266,13 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
 
             interaction.consumeResponse().getLatestResponse(ConnectionHeartbeat.class);
 
-            transport.assertNoMoreResponsesAndChannelClosed();
+            // the server might be able to send two heartbeats
+            Response latestResponse = interaction.consumeResponse().getLatestResponse();
+            if (latestResponse !=null && latestResponse.getBody() instanceof  ConnectionHeartbeat)
+            {
+                latestResponse = interaction.consumeResponse().getLatestResponse();
+            }
+            assertThat(latestResponse, instanceOf(ChannelClosedResponse.class));
         }
     }
 }
