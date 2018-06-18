@@ -528,7 +528,7 @@ public class LocalTransaction implements ServerTransaction
         _txnUpdateTime = currentTime;
     }
 
-    private void resetDetails()
+    void resetDetails()
     {
         _outstandingWork = false;
         _transactionObserver.onDischarge(this);
@@ -551,9 +551,10 @@ public class LocalTransaction implements ServerTransaction
         long getActivityTime();
     }
 
-    public void setRollbackOnly()
+    public boolean setRollbackOnly()
     {
         _isRollbackOnly = true;
+        return true;
     }
 
     public boolean isRollbackOnly()

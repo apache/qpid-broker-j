@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -38,6 +39,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -80,9 +82,9 @@ public class NodeReceivingDestination implements ReceivingDestination
     }
 
     @Override
-    public void send(final ServerMessage<?> message,
-                     final ServerTransaction txn,
-                     final SecurityToken securityToken) throws UnroutableMessageException
+    public Collection<BaseQueue> send(final ServerMessage<?> message,
+                                      final ServerTransaction txn,
+                                      final SecurityToken securityToken) throws UnroutableMessageException
     {
         final String routingAddress = "".equals(_routingAddress) ? getRoutingAddress(message) : _routingAddress;
         _destination.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
@@ -145,7 +147,12 @@ public class NodeReceivingDestination implements ReceivingDestination
             else
             {
                 _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
+                return  Collections.emptySet();
             }
+        }
+        else
+        {
+            return result.getRoutes();
         }
     }
 

@@ -714,7 +714,7 @@ public class LocalTransactionTest extends UnitTestBase
     {
         final TransactionObserver
                 transactionObserver = mock(TransactionObserver.class);
-        _transaction = new LocalTransaction(_transactionLog, transactionObserver);
+        _transaction = new LocalTransaction(_transactionLog, null, transactionObserver);
 
         _message = createTestMessage(true);
         _queues = createTestBaseQueues(new boolean[] {false, true, false, true});

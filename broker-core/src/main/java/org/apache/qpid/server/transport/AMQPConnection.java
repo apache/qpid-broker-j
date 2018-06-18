@@ -35,7 +35,6 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.session.AMQPSession;
-import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.Deletable;
@@ -93,7 +92,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
 
     AggregateTicker getAggregateTicker();
 
-    LocalTransaction createLocalTransaction();
+    ServerTransaction createLocalTransaction();
 
     void incrementTransactionRollbackCounter();
 

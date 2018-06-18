@@ -104,6 +104,10 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
                                          + " link detaches. This is to avoid leaking links with the Qpid JMS client.")
     boolean DEFAULT_DISCARD_GLOBAL_SHARED_SUBSCRIPTION_LINKS_ON_DETACH = true;
 
+    String RESOURCE_DELETE_ONLY_NO_LINK_ATTACHED = "qpid.resource.deleteOnlyWithNoLinkAttached";
+    @ManagedContextDefault( name = RESOURCE_DELETE_ONLY_NO_LINK_ATTACHED)
+    boolean DEFAULT_RESOURCE_DELETE_UNUSED_ONLY = true;
+
     @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_STATISTICS_REPORING_PERIOD + "}", description = "Period (in seconds) of the statistic report.")
     int getStatisticsReportingPeriod();
 

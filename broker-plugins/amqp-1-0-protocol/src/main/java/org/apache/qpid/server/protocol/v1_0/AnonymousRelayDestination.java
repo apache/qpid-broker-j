@@ -22,6 +22,8 @@ package org.apache.qpid.server.protocol.v1_0;/*
 import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
@@ -32,6 +34,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -60,9 +63,9 @@ public class AnonymousRelayDestination implements ReceivingDestination
     }
 
     @Override
-    public void send(final ServerMessage<?> message,
-                     final ServerTransaction txn,
-                     final SecurityToken securityToken) throws UnroutableMessageException
+    public Collection<BaseQueue> send(final ServerMessage<?> message,
+                                      final ServerTransaction txn,
+                                      final SecurityToken securityToken) throws UnroutableMessageException
     {
         final ReceivingDestination destination;
         final String routingAddress = message.getTo();
@@ -86,6 +89,7 @@ public class AnonymousRelayDestination implements ReceivingDestination
             if (_discardUnroutable)
             {
                 _eventLogger.message(ExchangeMessages.DISCARDMSG("", routingAddress));
+                return Collections.emptySet();
             }
             else
             {
@@ -95,9 +99,7 @@ public class AnonymousRelayDestination implements ReceivingDestination
         }
         else
         {
-            destination.send(message,
-                             txn,
-                             securityToken);
+            return destination.send(message, txn, securityToken);
         }
     }
 

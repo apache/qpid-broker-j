@@ -66,6 +66,12 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return true;
     }
 
+    @Override
+    public ListenableFuture<Void> queueDeleted(final Queue queue, final MessageInstanceConsumer sub)
+    {
+        return consumerRemoved(sub);
+    }
+
     public String getName()
     {
         return tag;

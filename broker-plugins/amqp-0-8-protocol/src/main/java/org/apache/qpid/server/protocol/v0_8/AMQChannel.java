@@ -79,6 +79,7 @@ import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
+import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NoFactoryForTypeException;
@@ -2776,6 +2777,10 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     {
                         _connection.sendConnectionClose(ErrorCodes.ACCESS_REFUSED, e.getMessage(), getChannelId());
                     }
+                    catch (IntegrityViolationException e)
+                    {
+                        _connection.sendConnectionClose(ErrorCodes.IN_USE, e.getMessage(), getChannelId());
+                    }
                 }
             }
         }
@@ -3173,6 +3178,10 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     {
                         _connection.sendConnectionClose(ErrorCodes.ACCESS_REFUSED, e.getMessage(), getChannelId());
 
+                    }
+                    catch (IntegrityViolationException e)
+                    {
+                        _connection.sendConnectionClose(ErrorCodes.IN_USE, e.getMessage(), getChannelId());
                     }
                 }
             }

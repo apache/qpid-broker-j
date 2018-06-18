@@ -45,7 +45,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
-import org.apache.qpid.server.txn.LocalTransaction;
+import org.apache.qpid.server.txn.ServerLocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
@@ -182,17 +182,20 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                 txn.rollback();
                 connection.incrementTransactionRollbackCounter();
             }
-            else if(!(txn instanceof LocalTransaction && ((LocalTransaction)txn).isRollbackOnly()))
+            else if(!(txn instanceof ServerLocalTransaction && ((ServerLocalTransaction)txn).isRollbackOnly()))
             {
-                txn.commit();
+                try
+                {
+                    txn.commit();
+                }
+                catch (IllegalStateException e)
+                {
+                    error = rollbackMarkedAsRollbackOnly(txn, connection);
+                }
             }
             else
             {
-                txn.rollback();
-                connection.incrementTransactionRollbackCounter();
-                error = new Error();
-                error.setCondition(TransactionError.TRANSACTION_ROLLBACK);
-                error.setDescription("The transaction was marked as rollback only due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
+                error = rollbackMarkedAsRollbackOnly(txn, connection);
             }
             _createdTransactions.remove(transactionId);
             connection.unregisterTransactionTickers(txn);
@@ -205,6 +208,16 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
             error.setCondition(TransactionError.UNKNOWN_ID);
             error.setDescription("Unknown transactionId " + transactionIdAsBinary.toString());
         }
+        return error;
+    }
+
+    private Error rollbackMarkedAsRollbackOnly(final ServerTransaction txn, final AMQPConnection_1_0<?> connection)
+    {
+        txn.rollback();
+        connection.incrementTransactionRollbackCounter();
+        final Error error = new Error();
+        error.setCondition(TransactionError.TRANSACTION_ROLLBACK);
+        error.setDescription("The transaction was marked as rollback only due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
         return error;
     }
 

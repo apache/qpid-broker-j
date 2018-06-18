@@ -46,7 +46,9 @@ import org.junit.Test;
 
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.systests.JmsTestBase;
+import org.apache.qpid.tests.utils.ConfigItem;
 
+@ConfigItem(name = "qpid.resource.deleteOnlyWithNoLinkAttached", value = "false")
 public class ProducerFlowControlTest extends JmsTestBase
 {
 
