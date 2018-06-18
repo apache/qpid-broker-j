@@ -74,9 +74,8 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
     public void addConsumer(final QueueConsumer<?,?> consumer)
     {
         QueueConsumerNode node = new QueueConsumerNode(this, consumer);
-        addToAll(node);
-
         consumer.setQueueConsumerNode(node);
+        addToAll(node);
         if (consumer.isNotifyWorkDesired())
         {
             if (consumer.acquires())
