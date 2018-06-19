@@ -101,7 +101,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
 
     private final String _linkName;
 
-    private QueueConsumerNode _queueConsumerNode;
+    private volatile QueueConsumerNode _queueConsumerNode;
 
     QueueConsumerImpl(final AbstractQueue<?> queue,
                       T target,
