@@ -88,6 +88,7 @@ public class JDBCDetailsTest extends UnitTestBase{
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_VARBINARYTYPE, "myvarbin");
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_BIGINTTYPE, "mybigint");
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_BLOBTYPE, "myblob");
+        contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_TIMESTAMPTYPE, "mytimestamp");
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_USEBYTESFORBLOB, "true");
 
         JDBCDetails details = JDBCDetails.getJdbcDetails("sybase", contextMap);
@@ -95,6 +96,7 @@ public class JDBCDetailsTest extends UnitTestBase{
         assertEquals("myvarbin", details.getVarBinaryType());
         assertEquals("mybigint", details.getBigintType());
         assertEquals("myblob", details.getBlobType());
+        assertEquals("mytimestamp", details.getTimestampType());
         assertEquals(true, details.isUseBytesMethodsForBlob());
         assertTrue(details.isKnownVendor());
         assertTrue(details.isOverridden());
