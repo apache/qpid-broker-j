@@ -73,6 +73,7 @@ public class JDBCLinkStore extends AbstractLinkStore
     private final JDBCContainer _jdbcContainer;
     private final String _tableNamePrefix;
     private final String _sqlBlobType;
+    private final String _sqlTimestampType;
     private final boolean _isUseBytesMethodsForBlob;
     private final Action<Connection> _cleanUpAction;
 
@@ -82,6 +83,7 @@ public class JDBCLinkStore extends AbstractLinkStore
         _tableNamePrefix = jdbcContainer.getTableNamePrefix();
         JDBCDetails jdbcDetails = jdbcContainer.getJDBCDetails();
         _sqlBlobType = jdbcDetails.getBlobType();
+        _sqlTimestampType = jdbcDetails.getTimestampType();
         _isUseBytesMethodsForBlob = jdbcDetails.isUseBytesMethodsForBlob();
         _cleanUpAction = this::cleanUp;
         jdbcContainer.addDeleteAction(_cleanUpAction);
@@ -256,7 +258,7 @@ public class JDBCLinkStore extends AbstractLinkStore
             {
                 stmt.execute(String.format("CREATE TABLE %s"
                                            + " (version varchar(10) PRIMARY KEY ,"
-                                           + " version_time TIMESTAMP)", versionTableName));
+                                           + " version_time %s)", versionTableName, _sqlTimestampType));
             }
             updateVersion(conn, ModelVersion.fromString(BrokerModel.MODEL_VERSION));
         }

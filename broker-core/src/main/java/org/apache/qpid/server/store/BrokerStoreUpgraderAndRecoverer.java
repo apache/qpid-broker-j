@@ -735,6 +735,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                         addAttributeTransformer("jdbcBytesForBlob", addContextVar("qpid.jdbcstore.useBytesForBlob")).
                         addAttributeTransformer("jdbcBlobType", addContextVar("qpid.jdbcstore.blobType")).
                         addAttributeTransformer("jdbcVarbinaryType", addContextVar("qpid.jdbcstore.varBinaryType")).
+                        addAttributeTransformer("jdbcTimestampType", addContextVar("qpid.jdbcstore.timestampType")).
                         addAttributeTransformer("partitionCount", addContextVar("qpid.jdbcstore.bonecp.partitionCount")).
                         addAttributeTransformer("maxConnectionsPerPartition", addContextVar("qpid.jdbcstore.bonecp.maxConnectionsPerPartition")).
                         addAttributeTransformer("minConnectionsPerPartition", addContextVar("qpid.jdbcstore.bonecp.minConnectionsPerPartition")));

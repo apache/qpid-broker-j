@@ -40,6 +40,7 @@ public class JDBCLinkStoreTest extends LinkStoreTestCase
     {
         final JDBCDetails details = mock(JDBCDetails.class);
         when(details.getBlobType()).thenReturn("blob");
+        when(details.getTimestampType()).thenReturn("timestamp");
         when(details.isUseBytesMethodsForBlob()).thenReturn(false);
 
         JDBCContainer jdbcContainer = mock(JDBCContainer.class);
