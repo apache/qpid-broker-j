@@ -106,6 +106,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
         hostAttributes.put("jdbcBigIntType", "mybigint");
         hostAttributes.put("jdbcBlobType", "myblob");
         hostAttributes.put("jdbcVarbinaryType", "myvarbinary");
+        hostAttributes.put("jdbcTimestampType", "mytimestamp");
         hostAttributes.put("jdbcBytesForBlob", true);
 
 
@@ -131,6 +132,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
         context.put("qpid.jdbcstore.bigIntType", "mybigint");
         context.put("qpid.jdbcstore.varBinaryType", "myvarbinary");
         context.put("qpid.jdbcstore.blobType", "myblob");
+        context.put("qpid.jdbcstore.timestampType", "mytimestamp");
         context.put("qpid.jdbcstore.useBytesForBlob", true);
 
         context.put("qpid.jdbcstore.bonecp.maxConnectionsPerPartition", 7);
@@ -165,6 +167,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
         hostAttributes.put("jdbcBigIntType", "mybigint");
         hostAttributes.put("jdbcBlobType", "myblob");
         hostAttributes.put("jdbcVarbinaryType", "myvarbinary");
+        hostAttributes.put("jdbcTimestampType", "mytimestamp");
         hostAttributes.put("jdbcBytesForBlob", true);
 
 
@@ -191,6 +194,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
         context.put("qpid.jdbcstore.bigIntType", "mybigint");
         context.put("qpid.jdbcstore.varBinaryType", "myvarbinary");
         context.put("qpid.jdbcstore.blobType", "myblob");
+        context.put("qpid.jdbcstore.timestampType", "mytimestamp");
         context.put("qpid.jdbcstore.useBytesForBlob", true);
 
         expectedAttributes.put("context", context);
