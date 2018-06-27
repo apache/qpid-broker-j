@@ -446,7 +446,7 @@ public class SSLUtil
     {
         try (InputStream is = certFile.openStream())
         {
-            return readCertificates(certFile.openStream());
+            return readCertificates(is);
         }
     }
 

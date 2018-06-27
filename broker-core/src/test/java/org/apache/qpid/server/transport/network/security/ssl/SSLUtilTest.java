@@ -21,14 +21,23 @@
 package org.apache.qpid.server.transport.network.security.ssl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -41,6 +50,8 @@ import javax.xml.bind.DatatypeConverter;
 import org.junit.Test;
 
 import org.apache.qpid.server.transport.TransportException;
+import org.apache.qpid.server.util.DataUrlUtils;
+import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class SSLUtilTest extends UnitTestBase
@@ -211,6 +222,40 @@ public class SSLUtilTest extends UnitTestBase
         doNameMatchingTest(KEYSTORE_13,
                            Collections.<String>emptyList(),
                            Arrays.asList("example.org", "a.mqp.example.org", "org"));
+    }
+
+    @Test
+    public void testReadCertificates() throws Exception
+    {
+        Certificate certificate = getTestCertificate();
+
+        assertNotNull("Certificate is not found", certificate);
+
+        URL certificateURL = new URL(null, DataUrlUtils.getDataUrlForBytes(certificate.getEncoded()), new Handler());
+        X509Certificate[] certificates = SSLUtil.readCertificates(certificateURL);
+
+        assertEquals("Unexpected number of certificates", 1, certificates.length);
+        assertEquals("Unexpected certificate", certificate, certificates[0]);
+    }
+
+    private Certificate getTestCertificate()
+            throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException
+    {
+        KeyStore trustStore = KeyStore.getInstance("JKS");
+        trustStore.load(new ByteArrayInputStream(TRUSTSTORE), "password".toCharArray());
+
+        Enumeration<String> aliases = trustStore.aliases();
+        Certificate certificate = null;
+        while (aliases.hasMoreElements())
+        {
+            String alias = aliases.nextElement();
+            if (trustStore.isCertificateEntry(alias))
+            {
+                certificate = trustStore.getCertificate(alias);
+                break;
+            }
+        }
+        return certificate;
     }
 
     private void doNameMatchingTest(byte[] keystoreBytes, List<String> validAddresses, List<String> invalidAddresses) throws Exception
