@@ -25,6 +25,7 @@ import static org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore.S
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -58,8 +59,12 @@ import org.apache.qpid.server.util.Action;
 public abstract class AbstractJDBCConfigurationStore implements MessageStoreProvider, DurableConfigurationStore
 {
     private final static String CONFIGURATION_VERSION_TABLE_NAME_SUFFIX = "QPID_CONFIG_VERSION";
-    private final static String CONFIGURED_OBJECTS_TABLE_NAME_SUFFIX = "QPID_CONFIGURED_OBJECTS";
-    private final static String CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX = "QPID_CONFIGURED_OBJECT_HIERARCHY";
+    private final static String VERSION_1_CONFIGURED_OBJECTS_TABLE_NAME_SUFFIX = "QPID_CONFIGURED_OBJECTS";
+    private final static String VERSION_1_CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX = "QPID_CONFIGURED_OBJECT_HIERARCHY";
+    private final static String CONFIGURATION_STRUCTURE_VERSION_TABLE_NAME_SUFFIX = "QPID_CFG_VERSION";
+    private final static String CONFIGURED_OBJECTS_TABLE_NAME_SUFFIX = "QPID_CFG_OBJECTS";
+    private final static String CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX = "QPID_CFG_HIERARCHY";
+    private static final int CONFIG_DB_VERSION = 2;
 
     private static final int DEFAULT_CONFIG_VERSION = 0;
     private final Set<Action<Connection>> _deleteActions = Collections.newSetFromMap(new ConcurrentHashMap<>());;
@@ -151,6 +156,21 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     String getConfiguredObjectHierarchyTableName()
     {
         return _tableNamePrefix + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX;
+    }
+
+    private String getConfigStructureVersionTableName()
+    {
+        return _tableNamePrefix + CONFIGURATION_STRUCTURE_VERSION_TABLE_NAME_SUFFIX;
+    }
+
+    private String getVersion1ConfiguredObjectsTableName()
+    {
+        return _tableNamePrefix + VERSION_1_CONFIGURED_OBJECTS_TABLE_NAME_SUFFIX;
+    }
+
+    private String getVersion1ConfiguredObjectHierarchyTableName()
+    {
+        return _tableNamePrefix + VERSION_1_CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX;
     }
 
     private Collection<ConfiguredObjectRecordImpl> doVisitAllConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws SQLException
@@ -246,6 +266,31 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                                                                 + configVersion);
                 }
             }
+            else
+            {
+                try (PreparedStatement statement = connection.prepareStatement(String.format("SELECT version FROM %s",
+                                                                                             getConfigStructureVersionTableName())))
+                {
+                    try (ResultSet rs = statement.executeQuery())
+                    {
+                        if (!rs.next())
+                        {
+                            throw new StoreException(getConfigStructureVersionTableName()
+                                                     + " does not contain the configuration database version");
+                        }
+                        int version = rs.getInt(1);
+                        switch (version)
+                        {
+                            case 1:
+                                upgradeFromConfigVersion1();
+                            case CONFIG_DB_VERSION:
+                                return;
+                            default:
+                                throw new StoreException("Unknown configuration database version: " + version);
+                        }
+                    }
+                }
+            }
         }
         catch (SQLException se)
         {
@@ -256,6 +301,117 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             JdbcUtils.closeConnection(connection, getLogger());
         }
 
+    }
+
+    private void upgradeFromConfigVersion1() throws SQLException
+    {
+        Connection connection = newConnection();
+        try
+        {
+            try (PreparedStatement stmt = connection.prepareStatement(String.format(
+                    "SELECT id, object_type, attributes FROM %s",
+                    getVersion1ConfiguredObjectsTableName())))
+            {
+                try (ResultSet rs = stmt.executeQuery())
+                {
+                    while (rs.next())
+                    {
+                        String id = rs.getString(1);
+                        String objectType = rs.getString(2);
+                        String attributes = getBlobAsString(rs, 3);
+
+                        try (PreparedStatement insertStmt = connection.prepareStatement(String.format(
+                                "INSERT INTO %s ( id, object_type, attributes) VALUES (?,?,?)",
+                                getConfiguredObjectsTableName())))
+                        {
+                            insertStmt.setString(1, id);
+                            insertStmt.setString(2, objectType);
+                            if (attributes == null)
+                            {
+                                insertStmt.setNull(3, Types.BLOB);
+                            }
+                            else
+                            {
+                                byte[] attributesAsBytes = attributes.getBytes(StandardCharsets.UTF_8);
+
+                                try(ByteArrayInputStream bis = new ByteArrayInputStream(attributesAsBytes))
+                                {
+                                    insertStmt.setBinaryStream(3, bis, attributesAsBytes.length);
+                                }
+                                catch (IOException e)
+                                {
+                                    throw new StoreException("Unexpected exception: " + e.getMessage(), e);
+                                }
+                            }
+                            insertStmt.execute();
+                        }
+                    }
+                }
+            }
+
+            try (PreparedStatement stmt = connection.prepareStatement(String.format(
+                    "SELECT child_id, parent_type, parent_id FROM %s",
+                    getVersion1ConfiguredObjectHierarchyTableName())))
+            {
+                try (ResultSet rs = stmt.executeQuery())
+                {
+                    while (rs.next())
+                    {
+                        String childId = rs.getString(1);
+                        String parentType = rs.getString(2);
+                        String parentId = rs.getString(3);
+
+                        try (PreparedStatement insertStmt = connection.prepareStatement(String.format(
+                                "INSERT INTO %s ( child_id, parent_type, parent_id) VALUES (?,?,?)",
+                                getConfiguredObjectHierarchyTableName())))
+                        {
+                            insertStmt.setString(1, childId);
+                            insertStmt.setString(2, parentType);
+                            insertStmt.setString(3, parentId);
+
+                            insertStmt.execute();
+                        }
+                    }
+                }
+            }
+
+            updateConfigStructureVersionTableName(connection, 2);
+            connection.commit();
+
+        }
+        catch(SQLException | RuntimeException e)
+        {
+            try
+            {
+                connection.rollback();
+            }
+            catch(SQLException re)
+            {
+            }
+            throw e;
+        }
+        finally
+        {
+            connection.close();
+        }
+
+        try(Connection c = newAutoCommitConnection())
+        {
+            JdbcUtils.dropTables(c,
+                                 getLogger(),
+                                 Arrays.asList(getVersion1ConfiguredObjectHierarchyTableName(),
+                                               getVersion1ConfiguredObjectsTableName()));
+        }
+    }
+
+    private void updateConfigStructureVersionTableName(Connection conn, int newVersion) throws SQLException
+    {
+        try (PreparedStatement statement = conn.prepareStatement("UPDATE " + getConfigStructureVersionTableName()
+                                                                 + " SET version = ?"))
+        {
+            statement.setInt(1, newVersion);
+            statement.execute();
+        }
     }
 
     private void upgradeFromV7(ConfiguredObject<?> parent) throws SQLException
@@ -446,6 +602,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
             createConfiguredObjectsTable(conn);
             createConfiguredObjectHierarchyTable(conn);
+            createConfigurationStructureVersionTable(conn);
         }
         catch (SQLException e)
         {
@@ -457,18 +614,38 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         }
     }
 
+    private void createConfigurationStructureVersionTable(final Connection conn) throws SQLException
+    {
+        if (!tableExists(getConfigStructureVersionTableName(), conn))
+        {
+            try (Statement stmt = conn.createStatement())
+            {
+                stmt.execute(String.format("CREATE TABLE %s ( version int not null )",
+                                           getConfigStructureVersionTableName()));
+            }
+
+            int version = tableExists(getVersion1ConfiguredObjectsTableName(), conn) ? 1 : CONFIG_DB_VERSION;
+            try (PreparedStatement pstmt = conn.prepareStatement(String.format("INSERT INTO %s ( version ) VALUES ( ? )",
+                                                                               getConfigStructureVersionTableName())))
+            {
+                pstmt.setInt(1, version);
+                pstmt.execute();
+            }
+        }
+    }
+
     private void dropConfigVersionTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(getConfigurationVersionTableName(), conn))
+        dropTable(conn, getConfigurationVersionTableName());
+    }
+
+    private void dropTable(final Connection conn, final String tableName) throws SQLException
+    {
+        if(!tableExists(tableName, conn))
         {
-            Statement stmt = conn.createStatement();
-            try
+            try (Statement stmt = conn.createStatement())
             {
-                stmt.execute("DROP TABLE " + getConfigurationVersionTableName());
-            }
-            finally
-            {
-                stmt.close();
+                stmt.execute(String.format("DROP TABLE %s", tableName));
             }
         }
     }
@@ -848,7 +1025,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             JdbcUtils.dropTables(conn,
                                  getLogger(),
                                  Arrays.asList(getConfiguredObjectsTableName(),
-                                               getConfiguredObjectHierarchyTableName()));
+                                               getConfiguredObjectHierarchyTableName(),
+                                               getConfigStructureVersionTableName()));
         }
     }
 
