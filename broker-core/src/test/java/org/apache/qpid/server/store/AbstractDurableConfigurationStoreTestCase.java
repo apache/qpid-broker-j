@@ -173,7 +173,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
                         org.apache.qpid.server.model.Exchange.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS.name())));
     }
 
-    private Map<String,Object> map(Object... vals)
+    protected Map<String,Object> map(Object... vals)
     {
         Map<String,Object> map = new HashMap<>();
         boolean isValue = false;
@@ -205,9 +205,14 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
         verify(_handler, never()).handle(any(ConfiguredObjectRecord.class));
     }
 
-    private ConfiguredObjectRecord matchesRecord(UUID id, String type, Map<String, Object> attributes)
+    protected ConfiguredObjectRecord matchesRecord(UUID id, String type, Map<String, Object> attributes)
     {
         return argThat(new ConfiguredObjectMatcher(id, type, attributes, ANY_MAP));
+    }
+
+    protected ConfiguredObjectRecord matchesRecord(UUID id, String type, Map<String, Object> attributes, Map<String,UUID> parents)
+    {
+        return argThat(new ConfiguredObjectMatcher(id, type, attributes, parents));
     }
 
     private static class ConfiguredObjectMatcher extends ArgumentMatcher<ConfiguredObjectRecord>
