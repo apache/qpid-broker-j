@@ -27,26 +27,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
-import java.security.Principal;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.message.MessageInstance.StealableConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageInstance.UnstealableConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -336,5 +332,28 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         assertEquals("expected fifth entry", entries[4], next);
         next = next.getNextValidEntry();
         assertNull("The next entry after the last should be null", next);
+    }
+
+    public void testRouteToAlternateInvokesAction()
+    {
+        String dlqName = "dlq";
+        Map<String, Object> dlqAttributes = new HashMap<>();
+        dlqAttributes.put(Queue.ID, UUID.randomUUID());
+        dlqAttributes.put(Queue.NAME, dlqName);
+        Queue<?> dlq = (Queue<?>) _queueEntry.getQueue().getVirtualHost().createChild(Queue.class, dlqAttributes);
+
+        final AlternateBinding alternateBinding = mock(AlternateBinding.class);
+        when(alternateBinding.getDestination()).thenReturn(dlqName);
+        _queueEntry.getQueue().setAttributes(Collections.singletonMap(Queue.ALTERNATE_BINDING, alternateBinding));
+
+        final Action<? super MessageInstance> action = mock(Action.class);
+        when(_queueEntry.getMessage().isResourceAcceptable(dlq)).thenReturn(true);
+        _queueEntry.acquire();
+        int enqueues = _queueEntry.routeToAlternate(action, null);
+
+        assertEquals("Unexpected number of enqueues", 1, enqueues);
+        verify(action).performAction(any());
+
+        assertEquals("Unexpected number of messages on DLQ", 1, dlq.getQueueDepthMessages());
     }
 }
