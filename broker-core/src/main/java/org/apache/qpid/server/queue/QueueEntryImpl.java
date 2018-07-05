@@ -615,7 +615,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
             }
         });
-        int enqueues = result.send(txn, null);
+        int enqueues = result.send(txn, action);
 
         if(autocommit)
         {
