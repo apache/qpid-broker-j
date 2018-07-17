@@ -108,8 +108,27 @@ public class AuthenticationResultCacherTest extends QpidTestCase
         });
     }
 
+    public void testCacheMissDifferentRemoteAddressHosts() throws Exception
+    {
+        final String credentials = "credentials";
+        assertGetOrLoad(credentials, _successfulAuthenticationResult, 1);
+        when(_connection.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("example2.com", 8888));
+        assertGetOrLoad(credentials, _successfulAuthenticationResult, 2);
+    }
 
-    public void testCacheMissDifferentAddress() throws Exception
+    public void testCacheHitDifferentRemoteAddressPorts() throws Exception
+    {
+        final int expectedHitCount = 1;
+        final AuthenticationResult expectedResult = _successfulAuthenticationResult;
+        final String credentials = "credentials";
+        assertGetOrLoad(credentials, expectedResult, expectedHitCount);
+        when(_connection.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("example.com", 8888));
+        assertGetOrLoad(credentials, expectedResult, expectedHitCount);
+    }
+
+    private void assertGetOrLoad(final String credentials,
+                                 final AuthenticationResult expectedResult,
+                                 final int expectedHitCount)
     {
         Subject.doAs(_subject, new PrivilegedAction<Void>()
         {
@@ -117,23 +136,9 @@ public class AuthenticationResultCacherTest extends QpidTestCase
             public Void run()
             {
                 AuthenticationResult result;
-                result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
-                assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", 1, _loadCallCount);
-                return null;
-            }
-        });
-
-        when(_connection.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("example.com", 8888));
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
-        {
-            @Override
-            public Void run()
-            {
-                AuthenticationResult result;
-                result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
-                assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", 2, _loadCallCount);
+                result = _authenticationResultCacher.getOrLoad(new String[]{credentials}, _loader);
+                assertEquals("Unexpected AuthenticationResult", expectedResult, result);
+                assertEquals("Unexpected number of loads before cache hit", (long)expectedHitCount, (long) _loadCallCount);
                 return null;
             }
         });

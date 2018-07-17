@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
@@ -117,7 +119,20 @@ public class AuthenticationResultCacher
             if (connectionPrincipals != null && !connectionPrincipals.isEmpty())
             {
                 SocketConnectionPrincipal connectionPrincipal = connectionPrincipals.iterator().next();
-                md.update(connectionPrincipal.getRemoteAddress().toString().getBytes(UTF8));
+                SocketAddress remoteAddress = connectionPrincipal.getRemoteAddress();
+                String address;
+                if (remoteAddress instanceof InetSocketAddress)
+                {
+                    address = ((InetSocketAddress) remoteAddress).getHostString();
+                }
+                else
+                {
+                    address = remoteAddress.toString();
+                }
+                if (address != null)
+                {
+                    md.update(address.getBytes(UTF8));
+                }
             }
 
             for (String part : content)
