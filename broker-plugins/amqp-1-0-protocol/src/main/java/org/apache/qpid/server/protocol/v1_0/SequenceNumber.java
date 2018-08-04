@@ -49,6 +49,11 @@ public class SequenceNumber implements Comparable<SequenceNumber>
         _seqNo+=i;
         return this;
     }
+    public SequenceNumber subtract(final int value)
+    {
+        _seqNo-=value;
+        return this;
+    }
 
     @Override
     public boolean equals(Object o)

@@ -488,14 +488,15 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         else
         {
             // 2.6.7 Flow Control : link_credit_snd := delivery_count_rcv + link_credit_rcv - delivery_count_snd
-            UnsignedInteger limit = receiverDeliveryCount.add(receiverLinkCredit);
-            if(limit.compareTo(getDeliveryCount().unsignedIntegerValue())<=0)
+            SequenceNumber limit =
+                    new SequenceNumber(receiverDeliveryCount.intValue()).add(receiverLinkCredit.intValue());
+            if (limit.compareTo(getDeliveryCount()) <= 0)
             {
                 setLinkCredit(UnsignedInteger.valueOf(0));
             }
             else
             {
-                setLinkCredit(limit.subtract(getDeliveryCount().unsignedIntegerValue()));
+                setLinkCredit(limit.subtract(getDeliveryCount().intValue()).unsignedIntegerValue());
             }
         }
 
