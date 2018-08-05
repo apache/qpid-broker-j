@@ -40,7 +40,7 @@
                 <div class="formLabel-labelCell">Exchange Type:</div>
                 <div class="formLabel-controlCell">
                     <select id="formAddExchange.type"
-                            dojoType="dijit.form.FilteringSelect"
+                            data-dojo-type="dijit.form.FilteringSelect"
                             data-dojo-props="
                               name: 'type',
                               promptMessage: 'Type of exchange - responsible for routing messages to queues'">
@@ -75,7 +75,21 @@
                                       title: 'Select an alternate binding to redirect messages to'"/>
                 </div>
             </div>
-
+            <div class="clear">
+                <div class="formLabel-labelCell">AMQP 1.0 Unroutable Message Behaviour:</div>
+                <div class="formLabel-controlCell">
+                    <select id="formAddExchange.unroutableMessageBehaviour"
+                            data-dojo-type="dijit.form.FilteringSelect"
+                            data-dojo-props="
+                              name: 'unroutableMessageBehaviour',
+                              required: false,
+                              value: null,
+                              promptMessage: 'Default behaviour to apply when a message is not routed to any queues'">
+                        <option value="DISCARD">DISCARD</option>
+                        <option value="REJECT">REJECT</option>
+                    </select>
+                </div>
+            </div>
             <div class="editorPanel clear"
                  data-dojo-type="dijit/TitlePane"
                  data-dojo-props="title: 'Context variables',  open: false">
