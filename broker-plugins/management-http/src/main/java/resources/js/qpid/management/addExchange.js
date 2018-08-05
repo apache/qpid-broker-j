@@ -66,6 +66,7 @@ define(["dojo/dom",
             this.exchangeName.set("regExpGen", util.nameOrContextVarRegexp);
             this.exchangeType = registry.byId("formAddExchange.type");
             this.context = registry.byId("formAddExchange.context");
+            this.unroutableMessageBehaviour = registry.byId("formAddExchange.unroutableMessageBehaviour");
 
             registry.byId("formAddExchange.cancelButton")
                 .on("click", function (e)
@@ -116,6 +117,9 @@ define(["dojo/dom",
                 this.alternateBinding.loadData(management, effectiveData ? modelObj.parent : modelObj);
             this.form.reset();
 
+            var validUnroutableMessageBehaviourValues = this.management.metadata.getMetaData("Exchange","direct").attributes.unroutableMessageBehaviour.validValues;
+            var validUnroutableMessageBehaviourStore = util.makeTypeStore(validUnroutableMessageBehaviourValues);
+            this.unroutableMessageBehaviour.set("store", validUnroutableMessageBehaviourStore);
             if (effectiveData)
             {
                 this.effectiveData = effectiveData;
@@ -167,6 +171,15 @@ define(["dojo/dom",
                     this.alternateBinding.set("value", alternate.destination);
                 }
 
+                if (this.initialData && this.initialData.unroutableMessageBehaviour)
+                {
+                    this.unroutableMessageBehaviour.set("value", this.initialData.unroutableMessageBehaviour);
+                }
+                else
+                {
+                    this.unroutableMessageBehaviour.set("value", null);
+                }
+                this.unroutableMessageBehaviour.set("required", false);
                 registry.byId("addExchange").show();
             }));
         },

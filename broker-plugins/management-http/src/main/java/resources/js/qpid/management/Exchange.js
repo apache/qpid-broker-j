@@ -211,7 +211,8 @@ define(["dojo/_base/xhr",
                         "state",
                         "durable",
                         "lifetimePolicy",
-                        "alternateBinding"]);
+                        "alternateBinding",
+                        "unroutableMessageBehaviour"]);
 
             that.exchangeData = {};
 
@@ -257,6 +258,7 @@ define(["dojo/_base/xhr",
             this.state.innerHTML = entities.encode(String(this.exchangeData["state"]));
             this.durable.innerHTML = entities.encode(String(this.exchangeData["durable"]));
             this.lifetimePolicy.innerHTML = entities.encode(String(this.exchangeData["lifetimePolicy"]));
+            this.unroutableMessageBehaviour.innerHTML = entities.encode(String(this.exchangeData["unroutableMessageBehaviour"]));
             this.alternateBinding.innerHTML =
                 this.exchangeData["alternateBinding"] && this.exchangeData["alternateBinding"]["destination"]
                     ? entities.encode(String(this.exchangeData["alternateBinding"]["destination"])) : "";
