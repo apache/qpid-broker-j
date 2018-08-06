@@ -24,6 +24,8 @@ import org.apache.qpid.server.flow.FlowCreditManager;
 
 public interface FlowCreditManager_0_10 extends FlowCreditManager
 {
+    long INFINITE_CREDIT = 0xFFFFFFFFL;
+
     void addCredit(long count, long bytes);
 
     void clearCredit();

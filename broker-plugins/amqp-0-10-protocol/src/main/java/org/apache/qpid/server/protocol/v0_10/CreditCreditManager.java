@@ -21,8 +21,12 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CreditCreditManager implements FlowCreditManager_0_10
 {
+    private static final Logger LOG = LoggerFactory.getLogger(CreditCreditManager.class);
     private volatile long _bytesCredit;
     private volatile long _messageCredit;
 
@@ -41,22 +45,51 @@ public class CreditCreditManager implements FlowCreditManager_0_10
     @Override
     public synchronized void addCredit(final long messageCredit, final long bytesCredit)
     {
-        if(_messageCredit >= 0L && messageCredit > 0L)
+
+        if(_messageCredit >= 0L)
         {
-            _messageCredit += messageCredit;
+            if(messageCredit == INFINITE_CREDIT)
+            {
+                _messageCredit = -1L;
+            }
+            else
+            {
+                _messageCredit += messageCredit;
+                if (_messageCredit < 0L)
+                {
+                    LOG.warn("Message credit wraparound: attempt to add {} message credit to existing total of {}",
+                             messageCredit,
+                             _messageCredit - messageCredit);
+                    _messageCredit = Long.MAX_VALUE;
+                }
+            }
         }
 
-        if(_bytesCredit >= 0L && bytesCredit > 0L)
+        if(_bytesCredit >= 0L)
         {
-            _bytesCredit += bytesCredit;
+            if(bytesCredit == INFINITE_CREDIT)
+            {
+                _bytesCredit = -1L;
+            }
+            else
+            {
+                _bytesCredit += bytesCredit;
+                if (_bytesCredit < 0L)
+                {
+                    LOG.warn("Bytes credit wraparound: attempt to add {} bytes credit to existing total of {}",
+                             bytesCredit,
+                             _bytesCredit - bytesCredit);
+                    _bytesCredit = Long.MAX_VALUE;
+                }
+            }
         }
     }
 
     @Override
     public synchronized void clearCredit()
     {
-        _bytesCredit = 0l;
-        _messageCredit = 0l;
+        _bytesCredit = 0L;
+        _messageCredit = 0L;
     }
 
 
