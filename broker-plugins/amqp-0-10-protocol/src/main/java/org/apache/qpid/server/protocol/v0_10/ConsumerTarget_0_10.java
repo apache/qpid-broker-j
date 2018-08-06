@@ -513,11 +513,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         switch (unit)
         {
             case MESSAGE:
-
                 creditManager.addCredit(value, 0L);
                 break;
             case BYTE:
-                creditManager.addCredit(0l, value);
+                creditManager.addCredit(0L, value);
                 break;
         }
         updateNotifyWorkDesired();

@@ -140,30 +140,43 @@ public class WindowCreditManager implements FlowCreditManager_0_10
     @Override
     public synchronized void addCredit(long count, long bytes)
     {
-        if(bytes > 0)
+        if(bytes == INFINITE_CREDIT)
+        {
+            _bytesCreditLimit = -1L;
+        }
+        else if(_bytesCreditLimit >= 0L)
         {
             _bytesCreditLimit += bytes;
+            if (_bytesCreditLimit < 0L)
+            {
+                LOGGER.warn("Bytes credit wraparound: attempt to add {} bytes credit to existing total of {}",
+                         bytes,
+                         _bytesCreditLimit - bytes);
+                _bytesCreditLimit = Long.MAX_VALUE;
+            }
         }
-        else if(bytes == -1)
+
+        if(count == INFINITE_CREDIT)
         {
-            _bytesCreditLimit = -1;
+            _messageCreditLimit = -1L;
         }
-
-
-        if(count > 0)
+        else if(_messageCreditLimit >= 0L)
         {
             _messageCreditLimit += count;
-        }
-        else if(count == -1)
-        {
-            _messageCreditLimit = -1;
+            if (_messageCreditLimit < 0L)
+            {
+                LOGGER.warn("Message credit wraparound: attempt to add {} message credit to existing total of {}",
+                         count,
+                         _messageCreditLimit - count);
+                _messageCreditLimit = Long.MAX_VALUE;
+            }
         }
     }
 
     @Override
     public synchronized void clearCredit()
     {
-        _bytesCreditLimit = 0l;
-        _messageCreditLimit = 0l;
+        _bytesCreditLimit = 0L;
+        _messageCreditLimit = 0L;
     }
 }
