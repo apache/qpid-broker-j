@@ -147,7 +147,7 @@ public class AbstractConsumerTargetTest extends UnitTestBase
                                             e.getCause().getClass().getSimpleName()), condition);
         }
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
-        verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));
+        verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
     @Test
@@ -167,7 +167,7 @@ public class AbstractConsumerTargetTest extends UnitTestBase
                                             e.getCause().getClass().getSimpleName()), condition);
         }
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
-        verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));
+        verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
     @Test
@@ -177,7 +177,7 @@ public class AbstractConsumerTargetTest extends UnitTestBase
 
         _consumerTarget.sendNextMessage();
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
-        verify(_messageInstance).routeToAlternate(any(Action.class), any(ServerTransaction.class));
+        verify(_messageInstance).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
     @Test
@@ -187,7 +187,7 @@ public class AbstractConsumerTargetTest extends UnitTestBase
 
         _consumerTarget.sendNextMessage();
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
-        verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));
+        verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
     @Test
@@ -231,7 +231,7 @@ public class AbstractConsumerTargetTest extends UnitTestBase
                                             e.getCause().getClass().getSimpleName()), condition);
         }
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
-        verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));
+        verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
     private void configureBehaviour(final boolean acquires,

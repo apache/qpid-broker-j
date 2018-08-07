@@ -49,6 +49,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -247,6 +248,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private long _maximumQueueDepthBytes;
     @ManagedAttributeField
     private CreatingLinkInfo _creatingLinkInfo;
+
+    @ManagedAttributeField
+    private ExpiryPolicy _expiryPolicy;
 
     private static final int RECOVERING = 1;
     private static final int COMPLETING_RECOVERY = 2;
@@ -752,6 +756,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public long getMaximumQueueDepthBytes()
     {
         return _maximumQueueDepthBytes;
+    }
+
+    @Override
+    public ExpiryPolicy getExpiryPolicy()
+    {
+        return _expiryPolicy;
     }
 
     @Override
@@ -1284,36 +1294,51 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private void updateExpiration(final QueueEntry entry)
     {
-        long expiration = entry.getMessage().getExpiration();
-        long arrivalTime = entry.getMessage().getArrivalTime();
-        if(_minimumMessageTtl != 0l)
+        long expiration = calculateExpiration(entry.getMessage());
+        if (expiration > 0)
         {
-            if(arrivalTime == 0)
+            entry.setExpiration(expiration);
+        }
+    }
+
+    private long calculateExpiration(final ServerMessage message)
+    {
+        long expiration = message.getExpiration();
+        long arrivalTime = message.getArrivalTime();
+        if (_minimumMessageTtl != 0L)
+        {
+            if (expiration != 0L)
             {
-                arrivalTime = System.currentTimeMillis();
-            }
-            if(expiration != 0L)
-            {
-                long calculatedExpiration = arrivalTime+_minimumMessageTtl;
-                if(calculatedExpiration > expiration)
+                long calculatedExpiration = calculateExpiration(arrivalTime, _minimumMessageTtl);
+                if (calculatedExpiration > expiration)
                 {
-                    entry.setExpiration(calculatedExpiration);
                     expiration = calculatedExpiration;
                 }
             }
         }
-        if(_maximumMessageTtl != 0L)
+        if (_maximumMessageTtl != 0L)
         {
-            if(arrivalTime == 0)
+            long calculatedExpiration = calculateExpiration(arrivalTime, _maximumMessageTtl);
+            if (expiration == 0L || expiration > calculatedExpiration)
             {
-                arrivalTime = System.currentTimeMillis();
-            }
-            long calculatedExpiration = arrivalTime+_maximumMessageTtl;
-            if(expiration == 0L || expiration > calculatedExpiration)
-            {
-                entry.setExpiration(calculatedExpiration);
+                expiration = calculatedExpiration;
             }
         }
+        return expiration;
+    }
+
+    private long calculateExpiration(final long arrivalTime, final long ttl)
+    {
+        long sum;
+        try
+        {
+            sum = Math.addExact(arrivalTime == 0 ? System.currentTimeMillis() : arrivalTime, ttl);
+        }
+        catch (ArithmeticException e)
+        {
+            sum = Long.MAX_VALUE;
+        }
+        return sum;
     }
 
     private boolean assign(final QueueConsumer<?,?> sub, final QueueEntry entry)
@@ -1531,6 +1556,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public boolean isDeleted()
     {
         return _deleted.get();
+    }
+
+    boolean wouldExpire(final ServerMessage message)
+    {
+        long expiration = calculateExpiration(message);
+        return expiration != 0 && expiration <= System.currentTimeMillis();
     }
 
     @Override
@@ -1766,6 +1797,32 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    private void routeToAlternate(QueueEntry entry,
+                                  Runnable postRouteTask,
+                                  Predicate<BaseQueue> predicate)
+    {
+        boolean acquiredForDequeueing = entry.acquireOrSteal(() ->
+                                                             {
+                                                                 LOGGER.debug("routing stolen node {} to alternate", entry);
+                                                                 entry.routeToAlternate(null, null, predicate);
+                                                                 if (postRouteTask != null)
+                                                                 {
+                                                                     postRouteTask.run();
+                                                                 }
+                                                             });
+
+        if (acquiredForDequeueing)
+        {
+            LOGGER.debug("routing node {} to alternate", entry);
+            entry.routeToAlternate(null, null, predicate);
+            if (postRouteTask != null)
+            {
+                postRouteTask.run();
+            }
+        }
+    }
+
+
     @Override
     public void addDeleteTask(final Action<? super X> task)
     {
@@ -1853,7 +1910,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         for(final QueueEntry entry : entries)
         {
             // TODO log requeues with a post enqueue action
-            int requeues = entry.routeToAlternate(null, txn);
+            int requeues = entry.routeToAlternate(null, txn, null);
 
             if(requeues == 0)
             {
@@ -2089,11 +2146,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 if (expired)
                 {
                     expired = false;
-                    if (node.acquire())
-                    {
-                        dequeueEntry(node);
-                        _queueStatistics.addToExpired(node.getSizeWithHeader());
-                    }
+                    expireEntry(node);
                 }
 
                 if(QueueContext._lastSeenUpdater.compareAndSet(context, lastSeen, node))
@@ -2103,8 +2156,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 lastSeen = context.getLastSeenEntry();
                 releasedNode = context.getReleasedEntry();
-                node = (releasedNode != null && lastSeen.compareTo(releasedNode)>=0) ? releasedNode : getEntries().next(
-                        lastSeen);
+                node = (releasedNode != null && lastSeen.compareTo(releasedNode)>=0)
+                        ? releasedNode
+                        : getEntries().next(lastSeen);
             }
             return node;
         }
@@ -2162,7 +2216,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 // If the node has expired then acquire it
                 if (node.expired())
                 {
-                    deleteEntry(node, () -> _queueStatistics.addToExpired(node.getSizeWithHeader()));
+                    expireEntry(node);
                 }
                 else
                 {
@@ -2194,7 +2248,26 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             checkForNotification(null, listener, currentTime, thresholdTime, check);
         }
+    }
 
+    private void expireEntry(final QueueEntry node)
+    {
+        ExpiryPolicy expiryPolicy = getExpiryPolicy();
+        long sizeWithHeader = node.getSizeWithHeader();
+        switch (expiryPolicy)
+        {
+            case DELETE:
+                deleteEntry(node, () -> _queueStatistics.addToExpired(sizeWithHeader) );
+                break;
+            case ROUTE_TO_ALTERNATE:
+                routeToAlternate(node, () -> _queueStatistics.addToExpired(sizeWithHeader),
+                                 q -> !((q instanceof AbstractQueue) && ((AbstractQueue) q).wouldExpire(node.getMessage())));
+                break;
+            default:
+                throw new ServerScopedRuntimeException("Unknown expiry policy: "
+                                                       + expiryPolicy
+                                                       + " this is a coding error inside Qpid");
+        }
     }
 
     @Override

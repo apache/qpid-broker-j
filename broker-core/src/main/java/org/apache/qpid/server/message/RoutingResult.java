@@ -25,8 +25,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,6 +94,20 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
             if (!e.getKey().isDeleted())
             {
                 _rejectingRoutableQueues.put(e.getKey(), e.getValue());
+            }
+        }
+    }
+
+    public void filter(Predicate<BaseQueue> predicate)
+    {
+        Iterator<BaseQueue> iter = _queues.iterator();
+        while(iter.hasNext())
+        {
+            BaseQueue queue = iter.next();
+            if(!predicate.test(queue))
+            {
+                iter.remove();
+                _rejectingRoutableQueues.remove(queue);
             }
         }
     }

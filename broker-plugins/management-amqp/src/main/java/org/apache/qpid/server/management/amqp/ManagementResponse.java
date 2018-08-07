@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.management.amqp;
 
+import java.util.function.Predicate;
+
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
@@ -27,6 +29,7 @@ import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -174,7 +177,8 @@ class ManagementResponse implements MessageInstance
 
     @Override
     public int routeToAlternate(final Action<? super MessageInstance> action,
-                                final ServerTransaction txn)
+                                final ServerTransaction txn,
+                                final Predicate<BaseQueue> predicate)
     {
         return 0;
     }
