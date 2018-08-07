@@ -406,7 +406,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     {
         if (entry.makeAcquisitionUnstealable(consumer))
         {
-            entry.routeToAlternate(null, null);
+            entry.routeToAlternate(null, null, null);
         }
     }
 
@@ -438,7 +438,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
                                                                            requeueEntry.getOwningResource()
                                                                                    .getName()));
                 }
-            }, null);
+            }, null, null);
         }
         if (requeues == 0)
         {

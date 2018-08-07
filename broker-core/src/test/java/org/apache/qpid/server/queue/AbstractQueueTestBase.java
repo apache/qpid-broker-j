@@ -1120,6 +1120,36 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         doMoveOrCopyMessageTest(false);
     }
 
+    @Test
+    public void testExpiryPolicyRouteToAlternate()
+    {
+        Map<String, Object> dlqAttributes = new HashMap<>();
+        dlqAttributes.put(Queue.NAME, getTestName() + "_dlq");
+        dlqAttributes.put(Queue.MINIMUM_MESSAGE_TTL, Long.MAX_VALUE);
+        Queue<?> dlq = _virtualHost.createChild(Queue.class, dlqAttributes);
+
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap("destination", dlq.getName()));
+        attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
+
+        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
+
+        ServerMessage message = createMessage(1L);
+        long arrivalTime = 50000L;
+        when(message.getArrivalTime()).thenReturn(arrivalTime);
+        when(message.getExpiration()).thenReturn(arrivalTime + 5000L);
+        when(message.isResourceAcceptable(any())).thenReturn(true);
+        queue.enqueue(message,null, null);
+
+        assertEquals("Unexpected queue depth", 1, queue.getQueueDepthMessages());
+
+        queue.checkMessageStatus();
+
+        assertEquals("Unexpected queue depth after checking message status", 0, queue.getQueueDepthMessages());
+        assertEquals("Unexpected DLQ depth", 1, dlq.getQueueDepthMessages());
+    }
+
     private void doMoveOrCopyMessageTest(final boolean move)
     {
         Queue target = _virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_target"));

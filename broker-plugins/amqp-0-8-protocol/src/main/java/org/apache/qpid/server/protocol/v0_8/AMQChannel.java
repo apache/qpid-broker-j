@@ -1573,7 +1573,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                                          requeueEntry.getOwningResource()
                                                                                .getName()));
                     }
-                }, null);
+                }, null, null);
             }
 
             if(requeues == 0)

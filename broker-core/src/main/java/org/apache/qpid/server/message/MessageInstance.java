@@ -21,7 +21,10 @@
 package org.apache.qpid.server.message;
 
 
+import java.util.function.Predicate;
+
 import org.apache.qpid.server.filter.Filterable;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -73,7 +76,9 @@ public interface MessageInstance
 
     int getMaximumDeliveryCount();
 
-    int routeToAlternate(Action<? super MessageInstance> action, ServerTransaction txn);
+    int routeToAlternate(Action<? super MessageInstance> action,
+                         ServerTransaction txn,
+                         Predicate<BaseQueue> predicate);
 
     Filterable asFilterable();
 

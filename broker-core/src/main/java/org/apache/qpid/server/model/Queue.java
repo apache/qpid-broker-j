@@ -87,6 +87,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String OVERFLOW_POLICY = "overflowPolicy";
     String MAXIMUM_QUEUE_DEPTH_MESSAGES = "maximumQueueDepthMessages";
     String MAXIMUM_QUEUE_DEPTH_BYTES = "maximumQueueDepthBytes";
+    String EXPIRY_POLICY = "expiryPolicy";
 
     String QUEUE_SCAVANGE_COUNT = "qpid.queue.scavenge_count";
     @SuppressWarnings("unused")
@@ -319,6 +320,21 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                           + " None - queue capacity is unbounded.",
             mandatory = true)
     OverflowPolicy getOverflowPolicy();
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = "queue.defaultExpiryPolicy",
+            description = "Specifies the default value for queue expiry policy. ")
+    ExpiryPolicy DEFAULT_EXPIRY_POLICY = ExpiryPolicy.DELETE;
+
+    @ManagedAttribute(defaultValue = "${queue.defaultExpiryPolicy}",
+            description = "Queue expiry policy."
+                          + " Options are Delete, and RouteToAlternate."
+                          + " The policy comes into effect where a message on the queue has exceeded its time to live."
+                          + " Delete - the expired message is deleted from the queue."
+                          + " RouteToAlternate - new expired message is routed to the alternate destination for the"
+                          + " queue, if present, or deleted if there is no alternate destination.",
+            mandatory = true)
+    ExpiryPolicy getExpiryPolicy();
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false, skipAclCheck = true)
     Collection<PublishingLink> getPublishingLinks();
@@ -553,4 +569,10 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     QueueEntry getLeastSignificantOldestEntry();
 
     QueueEntryIterator queueEntryIterator();
+
+    enum ExpiryPolicy
+    {
+        DELETE,
+        ROUTE_TO_ALTERNATE
+    }
 }

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Predicate;
 
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -452,7 +453,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
         else if(acquire())
         {
-            routeToAlternate(null, null);
+            routeToAlternate(null, null, null);
         }
     }
 
@@ -574,7 +575,9 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public int routeToAlternate(final Action<? super MessageInstance> action, ServerTransaction txn)
+    public int routeToAlternate(final Action<? super MessageInstance> action,
+                                ServerTransaction txn,
+                                final Predicate<BaseQueue> predicate)
     {
         if (!isAcquired())
         {
@@ -590,15 +593,22 @@ public abstract class QueueEntryImpl implements QueueEntry
             txn = new LocalTransaction(getQueue().getVirtualHost().getMessageStore());
         }
 
-        RoutingResult result;
+        RoutingResult<?> result;
+        ServerMessage<?> message = getMessage();
         if (alternateBindingDestination != null)
         {
-            result = alternateBindingDestination.route(getMessage(), getMessage().getInitialRoutingAddress(),
-                                                           getInstanceProperties());
+            result = alternateBindingDestination.route(message,
+                                                       message.getInitialRoutingAddress(),
+                                                       getInstanceProperties());
         }
         else
         {
-            result = new RoutingResult<>(getMessage());
+            result = new RoutingResult<>(message);
+        }
+
+        if(predicate != null)
+        {
+            result.filter(predicate);
         }
 
         txn.dequeue(getEnqueueRecord(), new ServerTransaction.Action()
