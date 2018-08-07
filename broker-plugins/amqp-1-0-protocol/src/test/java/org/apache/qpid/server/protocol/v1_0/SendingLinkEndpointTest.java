@@ -42,8 +42,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SendingLinkEndpointTest
+public class SendingLinkEndpointTest extends UnitTestBase
 {
     private static final String ADDRESS = "test";
 
