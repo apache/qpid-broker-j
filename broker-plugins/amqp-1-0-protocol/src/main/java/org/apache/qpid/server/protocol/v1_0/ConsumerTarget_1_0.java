@@ -608,7 +608,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                                             ChannelMessages.DEADLETTERMSG(message.getMessageNumber(),
                                                                           requeueEntry.getOwningResource().getName()));
                     }
-                }, null);
+                }, null, null);
             }
 
             if (requeues == 0)

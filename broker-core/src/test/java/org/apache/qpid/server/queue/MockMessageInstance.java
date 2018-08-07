@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.util.function.Predicate;
+
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -51,7 +53,8 @@ public class MockMessageInstance implements MessageInstance
 
     @Override
     public int routeToAlternate(final Action<? super MessageInstance> action,
-                                final ServerTransaction txn)
+                                final ServerTransaction txn,
+                                final Predicate<BaseQueue> predicate)
     {
         return 0;
     }

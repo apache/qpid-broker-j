@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
@@ -1722,7 +1723,8 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 
         @Override
         public int routeToAlternate(final Action<? super MessageInstance> action,
-                                    final ServerTransaction txn)
+                                    final ServerTransaction txn,
+                                    final Predicate<BaseQueue> predicate)
         {
             return 0;
         }

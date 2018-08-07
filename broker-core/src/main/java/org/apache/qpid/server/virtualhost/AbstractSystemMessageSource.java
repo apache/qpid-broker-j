@@ -28,6 +28,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -42,6 +43,7 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -365,7 +367,8 @@ public abstract class AbstractSystemMessageSource implements MessageSource
 
         @Override
         public int routeToAlternate(final Action<? super MessageInstance> action,
-                                    final ServerTransaction txn)
+                                    final ServerTransaction txn,
+                                    final Predicate<BaseQueue> predicate)
         {
             return 0;
         }

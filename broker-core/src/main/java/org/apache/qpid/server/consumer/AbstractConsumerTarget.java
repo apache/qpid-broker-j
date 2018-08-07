@@ -280,7 +280,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
                         case ROUTE_TO_ALTERNATE:
                             if (consumer.acquires())
                             {
-                                int enqueues = entry.routeToAlternate(null, null);
+                                int enqueues = entry.routeToAlternate(null, null, null);
                                 if (enqueues == 0)
                                 {
                                     LOGGER.info("Failed to convert message {} for this consumer because '{}'."

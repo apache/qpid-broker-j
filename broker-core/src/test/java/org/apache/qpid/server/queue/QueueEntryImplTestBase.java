@@ -378,7 +378,7 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
         final Action<? super MessageInstance> action = mock(Action.class);
         when(_queueEntry.getMessage().isResourceAcceptable(dlq)).thenReturn(true);
         _queueEntry.acquire();
-        int enqueues = _queueEntry.routeToAlternate(action, null);
+        int enqueues = _queueEntry.routeToAlternate(action, null, null);
 
         assertEquals("Unexpected number of enqueues", 1, enqueues);
         verify(action).performAction(any());
