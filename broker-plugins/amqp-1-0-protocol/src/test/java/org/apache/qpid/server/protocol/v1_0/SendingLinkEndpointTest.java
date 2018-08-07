@@ -27,9 +27,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -42,16 +39,18 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class SendingLinkEndpointTest
+public class SendingLinkEndpointTest extends QpidTestCase
 {
     private static final String ADDRESS = "test";
 
     private SendingLinkEndpoint _sendingLinkEndpoint;
 
-    @Before
+    @Override
     public void setUp() throws Exception
     {
+        super.setUp();
         NamedAddressSpace addressSpace = mock(NamedAddressSpace.class);
 
         final LinkImpl<Source, Target> link = mock(LinkImpl.class);
@@ -72,8 +71,7 @@ public class SendingLinkEndpointTest
         _sendingLinkEndpoint = new SendingLinkEndpoint(session, link);
     }
 
-    @Test
-    public void receiveFlow() throws Exception
+    public void testReceiveFlow() throws Exception
     {
         receiveAttach(_sendingLinkEndpoint);
 
