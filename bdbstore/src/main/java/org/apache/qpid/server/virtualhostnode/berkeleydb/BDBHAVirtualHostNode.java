@@ -45,11 +45,15 @@ public interface BDBHAVirtualHostNode<X extends BDBHAVirtualHostNode<X>> extends
     public static final String PERMITTED_NODES = "permittedNodes";
 
     @Override
-    @ManagedAttribute(mandatory=true)
+    @ManagedAttribute(mandatory=true, immutable = true)
+    String getName();
+
+    @Override
+    @ManagedAttribute(mandatory=true, immutable = true)
     String getGroupName();
 
     @Override
-    @ManagedAttribute(mandatory=true)
+    @ManagedAttribute(mandatory=true, immutable = true)
     String getAddress();
 
     @Override
