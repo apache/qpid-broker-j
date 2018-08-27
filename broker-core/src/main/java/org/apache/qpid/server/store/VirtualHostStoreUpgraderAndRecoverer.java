@@ -591,11 +591,22 @@ public class VirtualHostStoreUpgraderAndRecoverer
         upgraderHandler.upgrade(records);
 
         List<ConfiguredObjectRecord> upgradedRecords = upgraderHandler.getRecords();
-        recover(durableConfigurationStore, upgradedRecords, isNew);
+        recover(_virtualHostNode, durableConfigurationStore, upgradedRecords, isNew);
         return isNew;
     }
 
     public void reloadAndRecover(final DurableConfigurationStore durableConfigurationStore)
+    {
+        reloadAndRecoverInternal(_virtualHostNode, durableConfigurationStore);
+    }
+
+    public void reloadAndRecoverVirtualHost(final DurableConfigurationStore durableConfigurationStore)
+    {
+        reloadAndRecoverInternal(_virtualHostNode.getVirtualHost(), durableConfigurationStore);
+    }
+
+    private void reloadAndRecoverInternal(final ConfiguredObject<?> recoveryRoot,
+                                          final DurableConfigurationStore durableConfigurationStore)
     {
         final List<ConfiguredObjectRecord> records = new ArrayList<>();
         durableConfigurationStore.reload(new ConfiguredObjectRecordHandler()
@@ -606,13 +617,15 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 records.add(record);
             }
         });
-        recover(durableConfigurationStore, records, false);
+        recover(recoveryRoot, durableConfigurationStore, records, false);
     }
 
-    private void recover(final DurableConfigurationStore durableConfigurationStore,
-                         final List<ConfiguredObjectRecord> records, final boolean isNew)
+    private void recover(final ConfiguredObject<?> recoveryRoot,
+                         final DurableConfigurationStore durableConfigurationStore,
+                         final List<ConfiguredObjectRecord> records,
+                         final boolean isNew)
     {
-        new GenericRecoverer(_virtualHostNode).recover(records, isNew);
+        new GenericRecoverer(recoveryRoot).recover(records, isNew);
 
         final StoreConfigurationChangeListener
                 configChangeListener = new StoreConfigurationChangeListener(durableConfigurationStore);
@@ -627,70 +640,74 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 }
             });
         }
-        _virtualHostNode.addChangeListener(new ConfigurationChangeListener()
+
+        if (recoveryRoot instanceof VirtualHostNode)
         {
-            @Override
-            public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+            _virtualHostNode.addChangeListener(new ConfigurationChangeListener()
             {
-
-            }
-
-            @Override
-            public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-            {
-                if(child instanceof VirtualHost)
+                @Override
+                public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
                 {
-                    applyRecursively(child, new Action<ConfiguredObject<?>>()
+
+                }
+
+                @Override
+                public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+                {
+                    if (child instanceof VirtualHost)
                     {
-                        @Override
-                        public void performAction(final ConfiguredObject<?> object)
+                        applyRecursively(child, new Action<ConfiguredObject<?>>()
                         {
-                            if(object.isDurable())
+                            @Override
+                            public void performAction(final ConfiguredObject<?> object)
                             {
-                                durableConfigurationStore.update(true, object.asObjectRecord());
-                                object.addChangeListener(configChangeListener);
+                                if (object.isDurable())
+                                {
+                                    durableConfigurationStore.update(true, object.asObjectRecord());
+                                    object.addChangeListener(configChangeListener);
+                                }
                             }
-                        }
-                    });
+                        });
 
+                    }
                 }
-            }
 
-            @Override
-            public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-            {
-                if(child instanceof VirtualHost)
+                @Override
+                public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
                 {
-                    child.removeChangeListener(configChangeListener);
+                    if (child instanceof VirtualHost)
+                    {
+                        child.removeChangeListener(configChangeListener);
+                    }
                 }
-            }
 
-            @Override
-            public void attributeSet(final ConfiguredObject<?> object,
-                                     final String attributeName,
-                                     final Object oldAttributeValue,
-                                     final Object newAttributeValue)
+                @Override
+                public void attributeSet(final ConfiguredObject<?> object,
+                                         final String attributeName,
+                                         final Object oldAttributeValue,
+                                         final Object newAttributeValue)
+                {
+
+                }
+
+                @Override
+                public void bulkChangeStart(final ConfiguredObject<?> object)
+                {
+
+                }
+
+                @Override
+                public void bulkChangeEnd(final ConfiguredObject<?> object)
+                {
+
+                }
+            });
+            if (isNew)
             {
-
-            }
-
-            @Override
-            public void bulkChangeStart(final ConfiguredObject<?> object)
-            {
-
-            }
-
-            @Override
-            public void bulkChangeEnd(final ConfiguredObject<?> object)
-            {
-
-            }
-        });
-        if(isNew)
-        {
-            if(_virtualHostNode instanceof AbstractConfiguredObject)
-            {
-                ((AbstractConfiguredObject)_virtualHostNode).forceUpdateAllSecureAttributes();
+                if (_virtualHostNode instanceof AbstractConfiguredObject)
+                {
+                    ((AbstractConfiguredObject) _virtualHostNode).forceUpdateAllSecureAttributes();
+                }
             }
         }
     }

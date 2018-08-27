@@ -122,6 +122,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.store.VirtualHostStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
@@ -2619,24 +2620,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         resetStatistics();
 
-
-        final List<ConfiguredObjectRecord> records = new ArrayList<>();
-
-        // Transitioning to STOPPED will have closed all our children.  Now we are transition
-        // back to ACTIVE, we need to recover and re-open them.
-
-        getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
-        {
-
-            @Override
-            public void handle(final ConfiguredObjectRecord record)
-            {
-                records.add(record);
-            }
-
-        });
-
-        new GenericRecoverer(this).recover(records, false);
+        final VirtualHostStoreUpgraderAndRecoverer virtualHostStoreUpgraderAndRecoverer =
+                new VirtualHostStoreUpgraderAndRecoverer(_virtualHostNode);
+        virtualHostStoreUpgraderAndRecoverer.reloadAndRecoverVirtualHost(getDurableConfigurationStore());
 
         final List<ListenableFuture<Void>> childOpenFutures = new ArrayList<>();
 
