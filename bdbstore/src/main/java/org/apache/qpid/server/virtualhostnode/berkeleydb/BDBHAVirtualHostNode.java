@@ -44,10 +44,13 @@ public interface BDBHAVirtualHostNode<X extends BDBHAVirtualHostNode<X>> extends
     public static final String HELPER_NODE_NAME = "helperNodeName";
     public static final String PERMITTED_NODES = "permittedNodes";
 
-    @ManagedAttribute(mandatory=true)
+    @ManagedAttribute(mandatory=true, immutable = true)
+    String getName();
+
+    @ManagedAttribute(mandatory=true, immutable = true)
     String getGroupName();
 
-    @ManagedAttribute(mandatory=true)
+    @ManagedAttribute(mandatory=true, immutable = true)
     String getAddress();
 
     @ManagedAttribute(mandatory=true)
