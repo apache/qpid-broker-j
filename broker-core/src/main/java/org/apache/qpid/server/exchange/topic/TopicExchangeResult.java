@@ -20,8 +20,11 @@
  */
 package org.apache.qpid.server.exchange.topic;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -133,10 +136,11 @@ public final class TopicExchangeResult implements TopicMatcherResult
         _filteredDestinations.put(queue, newFilters);
     }
 
+    @Deprecated
     public Map<MessageDestination, String> processMessage(Filterable msg)
     {
         Map<MessageDestination, String> result = new HashMap<>();
-        for(MessageDestination unfilteredDestination: _unfilteredDestinations.keySet())
+        for (MessageDestination unfilteredDestination : _unfilteredDestinations.keySet())
         {
             result.put(unfilteredDestination, _replacementKeys.get(unfilteredDestination));
         }
@@ -159,6 +163,59 @@ public final class TopicExchangeResult implements TopicMatcherResult
             }
         }
         return result;
+    }
+
+    public void processMessage(final Filterable msg,
+                               final Map<MessageDestination, Set<String>> result,
+                               final String routingKey)
+    {
+        if (!_unfilteredDestinations.isEmpty())
+        {
+            for (MessageDestination unfilteredDestination : _unfilteredDestinations.keySet())
+            {
+                addMatch(unfilteredDestination, result, routingKey);
+            }
+        }
+
+        if (!_filteredDestinations.isEmpty())
+        {
+            for (Map.Entry<MessageDestination, Map<FilterManager, Integer>> entry : _filteredDestinations.entrySet())
+            {
+                MessageDestination destination = entry.getKey();
+                if (!_unfilteredDestinations.containsKey(destination))
+                {
+                    for (FilterManager filter : entry.getValue().keySet())
+                    {
+                        if (filter.allAllow(msg))
+                        {
+                            addMatch(destination, result, routingKey);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void addMatch(MessageDestination destination,
+                          Map<MessageDestination, Set<String>> result,
+                          String routingKey)
+    {
+        String replacementKey = _replacementKeys.getOrDefault(destination, routingKey);
+        Set<String> currentKeys = result.get(destination);
+        if (currentKeys == null)
+        {
+            result.put(destination, Collections.singleton(replacementKey));
+        }
+        else if (!currentKeys.contains(replacementKey))
+        {
+            if (currentKeys.size() == 1)
+            {
+                currentKeys = new HashSet<>(currentKeys);
+                result.put(destination, currentKeys);
+            }
+            currentKeys.add(replacementKey);
+        }
     }
 
 }
