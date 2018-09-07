@@ -147,7 +147,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedAttribute(description = "Specifies the name of the message header that provides the value for message "
                                     + "grouping purposes. If not set, for AMQP 1.0 the value of the group-id field "
                                     + "within the message properties is used. For AMQP 0-8..0-10, the value of the "
-                                    + "message header JMSXGroupId is used.")
+                                    + "message header JMSXGroupId is used.",
+                      validValuePattern = "^(?!\\s*$).+")
     String getMessageGroupKeyOverride();
 
     @SuppressWarnings("unused")
@@ -155,7 +156,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String DEFAULT_SHARED_MESSAGE_GROUP = "qpid.no-group";
 
     @ManagedAttribute( defaultValue = "${qpid.broker_default-shared-message-group}",
-                       description = "Fallback group used for messages without a group identifier. Used by SHARED_GROUPS only.")
+                       description = "Fallback group used for messages without a group identifier. Used by SHARED_GROUPS only.",
+                       validValuePattern = "^(?!\\s*$).+")
     String getMessageGroupDefaultGroup();
 
     @SuppressWarnings("unused")
