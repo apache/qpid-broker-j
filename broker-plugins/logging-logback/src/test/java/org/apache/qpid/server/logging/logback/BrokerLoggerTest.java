@@ -232,13 +232,45 @@ public class BrokerLoggerTest extends QpidTestCase
         errorFilter.delete();
     }
 
+    public void testTurningLoggingOff()
+    {
+        Map<String, Object> fooRuleAttributes =
+                createBrokerNameAndLevelLogInclusionRuleAttributes("fooRule",
+                                                                   "org.apache.qpid.foo.*",
+                                                                   LogLevel.INFO);
+        Map<String, Object> barRuleAttributes =
+                createBrokerNameAndLevelLogInclusionRuleAttributes("barRule",
+                                                                   "org.apache.qpid.foo.bar",
+                                                                   LogLevel.OFF);
+
+        _brokerLogger.createChild(BrokerLogInclusionRule.class, fooRuleAttributes);
+        _brokerLogger.createChild(BrokerLogInclusionRule.class, barRuleAttributes);
+
+        Logger barLogger = LoggerFactory.getLogger("org.apache.qpid.foo.bar");
+        barLogger.warn("bar message");
+
+        Logger fooLogger = LoggerFactory.getLogger("org.apache.qpid.foo.foo");
+        fooLogger.warn("foo message");
+
+        assertLoggedEvent(_loggerAppender, false, "bar message", barLogger.getName(), Level.WARN);
+        assertLoggedEvent(_loggerAppender, false, "bar message", fooLogger.getName(), Level.WARN);
+        assertLoggedEvent(_loggerAppender, true, "foo message", fooLogger.getName(), Level.WARN);
+    }
+
     private Map<String, Object> createBrokerNameAndLevelLogInclusionRuleAttributes(final String loggerName,
+                                                                                   final LogLevel logLevel)
+    {
+        return createBrokerNameAndLevelLogInclusionRuleAttributes("test", loggerName, logLevel);
+    }
+
+    private Map<String, Object> createBrokerNameAndLevelLogInclusionRuleAttributes(final String ruleName,
+                                                                                   final String loggerName,
                                                                                    final LogLevel logLevel)
     {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, loggerName);
         attributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, logLevel);
-        attributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "test");
+        attributes.put(BrokerNameAndLevelLogInclusionRule.NAME, ruleName);
         attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
         return attributes;
     }

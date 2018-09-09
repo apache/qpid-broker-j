@@ -67,10 +67,15 @@ public class CompositeFilter extends Filter<ILoggingEvent>
         FilterReply reply = DENY;
         for(Filter<ILoggingEvent> filter : _filterList)
         {
-            reply = filter.decide(event);
-            if (reply == DENY || reply == ACCEPT)
+            FilterReply filterReply = filter.decide(event);
+            if (filterReply == DENY)
             {
+                reply = filterReply;
                 break;
+            }
+            if (filterReply == ACCEPT)
+            {
+                reply = filterReply;
             }
         }
         if(reply == ACCEPT)
