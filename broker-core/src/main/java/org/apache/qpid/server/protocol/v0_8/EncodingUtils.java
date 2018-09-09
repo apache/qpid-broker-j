@@ -147,6 +147,18 @@ public class EncodingUtils
         }
     }
 
+    public static void writeShortStringBytes(QpidByteBuffer buffer, String s)
+    {
+        if (s != null)
+        {
+            AMQShortString.writeShortString(buffer, s);
+        }
+        else
+        {
+            buffer.put((byte) 0);
+        }
+    }
+
     public static void writeLongStringBytes(QpidByteBuffer buffer, String s)
     {
         if (s != null)

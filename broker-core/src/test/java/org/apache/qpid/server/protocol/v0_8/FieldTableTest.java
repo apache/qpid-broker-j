@@ -404,8 +404,6 @@ public class FieldTableTest extends UnitTestBase
         assertEquals(0, table.getEncodedSize());
         assertTrue(table.isEmpty());
         assertEquals(0, table.size());
-
-        assertEquals(0, table.keySet().size());
     }
 
     /**
@@ -942,11 +940,11 @@ public class FieldTableTest extends UnitTestBase
     @Test
     public void testAddingAllFromFieldTableCreatedUsingEncodedBytes() throws Exception
     {
-        AMQShortString myBooleanTestProperty = AMQShortString.createAMQShortString("myBooleanTestProperty");
+        String myBooleanTestProperty = "myBooleanTestProperty";
 
         //Create a new FieldTable and use it to encode data into a byte array.
         FieldTable encodeTable = new FieldTable();
-        encodeTable.put(myBooleanTestProperty, true);
+        encodeTable.setObject(myBooleanTestProperty, true);
         byte[] data = encodeTable.getDataAsBytes();
         int length = data.length;
 

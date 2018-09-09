@@ -547,7 +547,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             LOGGER.info("Non-exclusive owner " + owner + " for queue " + queueName + " moved to " + QueueArgumentsConverter.X_QPID_DESCRIPTION);
 
             attributesMap.put(Queue.OWNER, null);
-            argumentsCopy.put(AMQShortString.valueOf(QueueArgumentsConverter.X_QPID_DESCRIPTION), owner);
+            argumentsCopy.setObject(QueueArgumentsConverter.X_QPID_DESCRIPTION, owner);
         }
         else
         {

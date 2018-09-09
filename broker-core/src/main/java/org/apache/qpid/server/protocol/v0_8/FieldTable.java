@@ -32,6 +32,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class FieldTable
     private static final boolean STRICT_AMQP = Boolean.valueOf(System.getProperty(STRICT_AMQP_NAME, "false"));
 
     private QpidByteBuffer _encodedForm;
-    private Map<AMQShortString, AMQTypedValue> _properties = null;
+    private Map<String, AMQTypedValue> _properties = null;
     private long _encodedSize;
     private static final int INITIAL_HASHMAP_CAPACITY = 16;
     private final boolean _strictAMQP;
@@ -93,7 +94,13 @@ public class FieldTable
         return _encodedForm != null;
     }
 
+    @Deprecated
     public AMQTypedValue getProperty(AMQShortString string)
+    {
+        return getProperty(AMQShortString.toString(string));
+    }
+
+    private AMQTypedValue getProperty(String string)
     {
         checkPropertyName(string);
 
@@ -124,18 +131,29 @@ public class FieldTable
 
     private void populateFromBuffer()
     {
-        try
+        if (_encodedSize > 0)
         {
-            setFromBuffer();
-        }
-        catch (AMQFrameDecodingException e)
-        {
-            LOGGER.error("Error decoding FieldTable in deferred decoding mode ", e);
-            throw new IllegalArgumentException(e);
+            _properties = new LinkedHashMap<>(INITIAL_HASHMAP_CAPACITY);
+
+            _encodedForm.mark();
+            try
+            {
+                do
+                {
+                    final String key = AMQShortString.readAMQShortStringAsString(_encodedForm);
+                    AMQTypedValue value = AMQTypedValue.readFromBuffer(_encodedForm);
+                    _properties.put(key, value);
+                }
+                while (_encodedForm.hasRemaining());
+            }
+            finally
+            {
+                _encodedForm.reset();
+            }
         }
     }
 
-    private AMQTypedValue setProperty(AMQShortString key, AMQTypedValue val)
+    private AMQTypedValue setProperty(String key, AMQTypedValue val)
     {
         checkPropertyName(key);
 
@@ -187,7 +205,7 @@ public class FieldTable
             {
                 if ((_encodedForm == null) || (_encodedSize == 0))
                 {
-                    _properties = new LinkedHashMap<AMQShortString, AMQTypedValue>();
+                    _properties = new LinkedHashMap<>();
                 }
                 else
                 {
@@ -198,12 +216,13 @@ public class FieldTable
         }
     }
 
-    public Boolean getBoolean(String string)
+    @Deprecated
+    public Boolean getBoolean(AMQShortString string)
     {
-        return getBoolean(AMQShortString.valueOf(string));
+        return getBoolean(AMQShortString.toString(string));
     }
 
-    public Boolean getBoolean(AMQShortString string)
+    public Boolean getBoolean(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && (value.getType() == AMQType.BOOLEAN))
@@ -216,12 +235,13 @@ public class FieldTable
         }
     }
 
-    public Byte getByte(String string)
+    @Deprecated
+    public Byte getByte(AMQShortString string)
     {
-        return getByte(AMQShortString.valueOf(string));
+        return getByte(AMQShortString.toString(string));
     }
 
-    public Byte getByte(AMQShortString string)
+    public Byte getByte(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && (value.getType() == AMQType.BYTE))
@@ -234,12 +254,13 @@ public class FieldTable
         }
     }
 
-    public Short getShort(String string)
+    @Deprecated
+    public Short getShort(AMQShortString string)
     {
-        return getShort(AMQShortString.valueOf(string));
+        return getShort(AMQShortString.toString(string));
     }
 
-    public Short getShort(AMQShortString string)
+    public Short getShort(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && (value.getType() == AMQType.SHORT))
@@ -252,12 +273,13 @@ public class FieldTable
         }
     }
 
-    public Integer getInteger(String string)
+    @Deprecated
+    public Integer getInteger(AMQShortString string)
     {
-        return getInteger(AMQShortString.valueOf(string));
+        return getInteger(AMQShortString.toString(string));
     }
 
-    public Integer getInteger(AMQShortString string)
+    public Integer getInteger(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && (value.getType() == AMQType.INT))
@@ -270,12 +292,13 @@ public class FieldTable
         }
     }
 
-    public Long getLong(String string)
+    @Deprecated
+    public Long getLong(AMQShortString string)
     {
-        return getLong(AMQShortString.valueOf(string));
+        return getLong(AMQShortString.toString(string));
     }
 
-    public Long getLong(AMQShortString string)
+    public Long getLong(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && (value.getType() == AMQType.LONG))
@@ -288,12 +311,13 @@ public class FieldTable
         }
     }
 
-    public Float getFloat(String string)
+    @Deprecated
+    public Float getFloat(AMQShortString string)
     {
-        return getFloat(AMQShortString.valueOf(string));
+        return getFloat(AMQShortString.toString(string));
     }
 
-    public Float getFloat(AMQShortString string)
+    public Float getFloat(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && (value.getType() == AMQType.FLOAT))
@@ -306,12 +330,13 @@ public class FieldTable
         }
     }
 
-    public Double getDouble(String string)
+    @Deprecated
+    public Double getDouble(AMQShortString string)
     {
-        return getDouble(AMQShortString.valueOf(string));
+        return getDouble(AMQShortString.toString(string));
     }
 
-    public Double getDouble(AMQShortString string)
+    public Double getDouble(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && (value.getType() == AMQType.DOUBLE))
@@ -324,12 +349,13 @@ public class FieldTable
         }
     }
 
-    public String getString(String string)
+    @Deprecated
+    public String getString(AMQShortString string)
     {
-        return getString(AMQShortString.valueOf(string));
+        return getString(AMQShortString.toString(string));
     }
 
-    public String getString(AMQShortString string)
+    public String getString(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && ((value.getType() == AMQType.WIDE_STRING) || (value.getType() == AMQType.ASCII_STRING)))
@@ -347,12 +373,13 @@ public class FieldTable
 
     }
 
-    public Character getCharacter(String string)
+    @Deprecated
+    public Character getCharacter(AMQShortString string)
     {
-        return getCharacter(AMQShortString.valueOf(string));
+        return getCharacter(AMQShortString.toString(string));
     }
 
-    public Character getCharacter(AMQShortString string)
+    public Character getCharacter(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && (value.getType() == AMQType.ASCII_CHARACTER))
@@ -365,12 +392,13 @@ public class FieldTable
         }
     }
 
-    public byte[] getBytes(String string)
+    @Deprecated
+    public byte[] getBytes(AMQShortString string)
     {
-        return getBytes(AMQShortString.valueOf(string));
+        return getBytes(AMQShortString.toString(string));
     }
 
-    public byte[] getBytes(AMQShortString string)
+    public byte[] getBytes(String string)
     {
         AMQTypedValue value = getProperty(string);
         if ((value != null) && (value.getType() == AMQType.BINARY))
@@ -391,9 +419,10 @@ public class FieldTable
      * @return The associated FieldTable value, or <tt>null</tt> if the associated value is not of FieldTable type or
      *         not present in the field table at all.
      */
-    public FieldTable getFieldTable(String string)
+    @Deprecated
+    public FieldTable getFieldTable(AMQShortString string)
     {
-        return getFieldTable(AMQShortString.valueOf(string));
+        return getFieldTable(AMQShortString.toString(string));
     }
 
     /**
@@ -404,7 +433,7 @@ public class FieldTable
      * @return The associated FieldTable value, or <tt>null</tt> if the associated value is not of FieldTable type or
      *         not present in the field table at all.
      */
-    public FieldTable getFieldTable(AMQShortString string)
+    public FieldTable getFieldTable(String string)
     {
         AMQTypedValue value = getProperty(string);
 
@@ -418,12 +447,13 @@ public class FieldTable
         }
     }
 
-    public Object getObject(String string)
+    @Deprecated
+    public Object getObject(AMQShortString string)
     {
-        return getObject(AMQShortString.valueOf(string));
+        return getObject(AMQShortString.toString(string));
     }
 
-    public Object getObject(AMQShortString string)
+    public Object getObject(String string)
     {
         AMQTypedValue value = getProperty(string);
         if (value != null)
@@ -432,12 +462,18 @@ public class FieldTable
         }
         else
         {
-            return value;
+            return null;
         }
 
     }
 
+    @Deprecated
     public Long getTimestamp(AMQShortString name)
+    {
+        return getTimestamp(AMQShortString.toString(name));
+    }
+
+    public Long getTimestamp(String name)
     {
         AMQTypedValue value = getProperty(name);
         if ((value != null) && (value.getType() == AMQType.TIMESTAMP))
@@ -450,7 +486,13 @@ public class FieldTable
         }
     }
 
+    @Deprecated
     public BigDecimal getDecimal(AMQShortString propertyName)
+    {
+        return getDecimal(AMQShortString.toString(propertyName));
+    }
+
+    public BigDecimal getDecimal(String propertyName)
     {
         AMQTypedValue value = getProperty(propertyName);
         if ((value != null) && (value.getType() == AMQType.DECIMAL))
@@ -464,94 +506,91 @@ public class FieldTable
     }
 
     // ************  Setters
-    public Object setBoolean(String string, Boolean b)
+
+    @Deprecated
+    public Object setBoolean(AMQShortString string, Boolean b)
     {
-        return setBoolean(AMQShortString.valueOf(string), b);
+        return setBoolean(AMQShortString.toString(string), b);
     }
 
-    public Object setBoolean(AMQShortString string, Boolean b)
+    public Object setBoolean(String string, Boolean b)
     {
         return setProperty(string, AMQType.BOOLEAN.asTypedValue(b));
     }
 
-    public Object setByte(String string, Byte b)
+    @Deprecated
+    public Object setByte(AMQShortString string, Byte b)
     {
-        return setByte(AMQShortString.valueOf(string), b);
+        return setByte(AMQShortString.toString(string), b);
     }
 
-    public Object setByte(AMQShortString string, Byte b)
+    public Object setByte(String string, Byte b)
     {
         return setProperty(string, AMQType.BYTE.asTypedValue(b));
     }
 
-    public Object setShort(String string, Short i)
+    @Deprecated
+    public Object setShort(AMQShortString string, Short i)
     {
-        return setShort(AMQShortString.valueOf(string), i);
+        return setShort(AMQShortString.toString(string), i);
     }
 
-    public Object setShort(AMQShortString string, Short i)
+    public Object setShort(String string, Short i)
     {
         return setProperty(string, AMQType.SHORT.asTypedValue(i));
     }
 
-    public Object setInteger(String string, int i)
+    @Deprecated
+    public Object setInteger(AMQShortString string, int i)
     {
-        return setInteger(AMQShortString.valueOf(string), i);
+        return setInteger(AMQShortString.toString(string), i);
     }
 
-    public Object setInteger(AMQShortString string, int i)
+    public Object setInteger(String string, int i)
     {
         return setProperty(string, AMQTypedValue.createAMQTypedValue(i));
     }
 
-    public Object setLong(String string, long l)
+    @Deprecated
+    public Object setLong(AMQShortString string, long l)
     {
-        return setLong(AMQShortString.valueOf(string), l);
+        return setLong(AMQShortString.toString(string), l);
     }
 
-    public Object setLong(AMQShortString string, long l)
+    public Object setLong(String string, long l)
     {
         return setProperty(string, AMQTypedValue.createAMQTypedValue(l));
     }
 
-    public Object setFloat(String string, Float f)
-    {
-        return setFloat(AMQShortString.valueOf(string), f);
-    }
-
+    @Deprecated
     public Object setFloat(AMQShortString string, Float v)
     {
-        return setProperty(string, AMQType.FLOAT.asTypedValue(v));
+        return setFloat(AMQShortString.toString(string), v);
     }
 
-    public Object setDouble(String string, Double d)
+    public Object setFloat(String string, Float f)
     {
-        return setDouble(AMQShortString.valueOf(string), d);
+        return setProperty(string, AMQType.FLOAT.asTypedValue(f));
     }
 
-    public Object setDouble(AMQShortString string, Double v)
+    @Deprecated
+    public Object setDouble(AMQShortString string, Double d)
+    {
+        return setDouble(AMQShortString.toString(string), d);
+    }
+
+    public Object setDouble(String string, Double v)
     {
         return setProperty(string, AMQType.DOUBLE.asTypedValue(v));
     }
 
-    public Object setString(String string, String s)
-    {
-        return setString(AMQShortString.valueOf(string), s);
-    }
-
-    public Object setAsciiString(AMQShortString string, String value)
-    {
-        if (value == null)
-        {
-            return setProperty(string, AMQType.VOID.asTypedValue(null));
-        }
-        else
-        {
-            return setProperty(string, AMQType.ASCII_STRING.asTypedValue(value));
-        }
-    }
-
+    @Deprecated
     public Object setString(AMQShortString string, String value)
+    {
+        return setString(AMQShortString.toString(string), value);
+    }
+
+    public Object setString(String string, String value)
     {
         if (value == null)
         {
@@ -563,59 +602,89 @@ public class FieldTable
         }
     }
 
-    public Object setChar(String string, char c)
+    @Deprecated
+    public Object setAsciiString(AMQShortString string, String value)
     {
-        return setChar(AMQShortString.valueOf(string), c);
+        return setAsciiString(AMQShortString.toString(string), value);
     }
 
+    public Object setAsciiString(String string, String value)
+    {
+        if (value == null)
+        {
+            return setProperty(string, AMQType.VOID.asTypedValue(null));
+        }
+        else
+        {
+            return setProperty(string, AMQType.ASCII_STRING.asTypedValue(value));
+        }
+    }
+
+    @Deprecated
     public Object setChar(AMQShortString string, char c)
+    {
+        return setChar(AMQShortString.toString(string), c);
+    }
+
+    public Object setChar(String string, char c)
     {
         return setProperty(string, AMQType.ASCII_CHARACTER.asTypedValue(c));
     }
 
-    public Object setFieldArray(String string, Collection<?> collection)
-    {
-        return setFieldArray(AMQShortString.valueOf(string), collection);
-    }
+    @Deprecated
     public Object setFieldArray(AMQShortString string, Collection<?> collection)
+    {
+        return setFieldArray(AMQShortString.toString(string), collection);
+    }
+
+    public Object setFieldArray(String string, Collection<?> collection)
     {
         return setProperty(string, AMQType.FIELD_ARRAY.asTypedValue(collection));
     }
 
-    public Object setBytes(String string, byte[] b)
+    @Deprecated
+    public Object setBytes(AMQShortString string, byte[] bytes)
     {
-        return setBytes(AMQShortString.valueOf(string), b);
+        return setBytes(AMQShortString.toString(string), bytes);
     }
 
-    public Object setBytes(AMQShortString string, byte[] bytes)
+    public Object setBytes(String string, byte[] bytes)
     {
         return setProperty(string, AMQType.BINARY.asTypedValue(bytes));
     }
 
-    public Object setBytes(String string, byte[] bytes, int start, int length)
+    @Deprecated
+    public Object setBytes(AMQShortString string, byte[] bytes, int start, int length)
     {
-        return setBytes(AMQShortString.valueOf(string), bytes, start, length);
+        return setBytes(AMQShortString.toString(string), bytes, start, length);
     }
 
-    public Object setBytes(AMQShortString string, byte[] bytes, int start, int length)
+    public Object setBytes(String string, byte[] bytes, int start, int length)
     {
         byte[] newBytes = new byte[length];
         System.arraycopy(bytes, start, newBytes, 0, length);
 
-        return setBytes(string, bytes);
+        return setBytes(string, newBytes);
     }
 
-    public Object setObject(String string, Object o)
-    {
-        return setObject(AMQShortString.valueOf(string), o);
-    }
-
+    @Deprecated
     public Object setTimestamp(AMQShortString string, long datetime)
+    {
+        return setTimestamp(AMQShortString.toString(string), datetime);
+    }
+
+    public Object setTimestamp(String string, long datetime)
     {
         return setProperty(string, AMQType.TIMESTAMP.asTypedValue(datetime));
     }
 
+    @Deprecated
     public Object setDecimal(AMQShortString string, BigDecimal decimal)
+    {
+        return setDecimal(AMQShortString.toString(string), decimal);
+    }
+
+    public Object setDecimal(String string, BigDecimal decimal)
     {
         if (decimal.longValue() > Integer.MAX_VALUE)
         {
@@ -630,7 +699,13 @@ public class FieldTable
         return setProperty(string, AMQType.DECIMAL.asTypedValue(decimal));
     }
 
+    @Deprecated
     public Object setVoid(AMQShortString string)
+    {
+        return setVoid(AMQShortString.toString(string));
+    }
+
+    public Object setVoid(String string)
     {
         return setProperty(string, AMQType.VOID.asTypedValue(null));
     }
@@ -643,9 +718,10 @@ public class FieldTable
      *
      * @return The stored value.
      */
-    public Object setFieldTable(String string, FieldTable ftValue)
+    @Deprecated
+    public Object setFieldTable(AMQShortString string, FieldTable ftValue)
     {
-        return setFieldTable(AMQShortString.valueOf(string), ftValue);
+        return setFieldTable(AMQShortString.toString(string), ftValue);
     }
 
     /**
@@ -656,12 +732,18 @@ public class FieldTable
      *
      * @return The stored value.
      */
-    public Object setFieldTable(AMQShortString string, FieldTable ftValue)
+    public Object setFieldTable(String string, FieldTable ftValue)
     {
         return setProperty(string, AMQType.FIELD_TABLE.asTypedValue(ftValue));
     }
 
+    @Deprecated
     public Object setObject(AMQShortString string, Object object)
+    {
+        return setObject(AMQShortString.toString(string), object);
+    }
+
+    public Object setObject(String string, Object object)
     {
         if (object instanceof Boolean)
         {
@@ -733,21 +815,22 @@ public class FieldTable
 
     public boolean isNullStringValue(String name)
     {
-        AMQTypedValue value = getProperty(AMQShortString.valueOf(name));
+        AMQTypedValue value = getProperty(name);
 
         return (value != null) && (value.getType() == AMQType.VOID);
     }
 
     // ***** Methods
 
-    public Enumeration getPropertyNames()
+    private Enumeration getPropertyNames()
     {
         return Collections.enumeration(keys());
     }
 
+    @Deprecated
     public boolean propertyExists(AMQShortString propertyName)
     {
-        return itemExists(propertyName);
+        return itemExists(AMQShortString.toString(propertyName));
     }
 
     public boolean propertyExists(String propertyName)
@@ -755,17 +838,18 @@ public class FieldTable
         return itemExists(propertyName);
     }
 
+    @Deprecated
     public boolean itemExists(AMQShortString propertyName)
+    {
+        return itemExists(AMQShortString.toString(propertyName));
+    }
+
+    private boolean itemExists(String propertyName)
     {
         checkPropertyName(propertyName);
         initMapIfNecessary();
 
         return _properties.containsKey(propertyName);
-    }
-
-    public boolean itemExists(String string)
-    {
-        return itemExists(AMQShortString.valueOf(string));
     }
 
     @Override
@@ -776,7 +860,7 @@ public class FieldTable
         return _properties.toString();
     }
 
-    private void checkPropertyName(AMQShortString propertyName)
+    private void checkPropertyName(String propertyName)
     {
         if (propertyName == null)
         {
@@ -793,7 +877,13 @@ public class FieldTable
         }
     }
 
+    @Deprecated
     protected static void checkIdentiferFormat(AMQShortString propertyName)
+    {
+        checkIdentiferFormat(AMQShortString.toString(propertyName));
+    }
+
+    private static void checkIdentiferFormat(String propertyName)
     {
         // AMQP Spec: 4.2.5.5 Field Tables
         // Guidelines for implementers:
@@ -870,7 +960,7 @@ public class FieldTable
         int encodedSize = 0;
         if (_properties != null)
         {
-            for (Map.Entry<AMQShortString, AMQTypedValue> e : _properties.entrySet())
+            for (Map.Entry<String, AMQTypedValue> e : _properties.entrySet())
             {
                 encodedSize += EncodingUtils.encodedShortStringLength(e.getKey());
                 encodedSize++; // the byte for the encoding Type
@@ -896,7 +986,7 @@ public class FieldTable
 
     public static Map<String, Object> convertToMap(final FieldTable fieldTable)
     {
-        final Map<String, Object> map = new HashMap<String, Object>();
+        final Map<String, Object> map = new HashMap<>();
 
         if(fieldTable != null)
         {
@@ -983,14 +1073,15 @@ public class FieldTable
         public Object getResult();
     }
 
+    @Deprecated // make it private
     public Object processOverElements(FieldTableElementProcessor processor)
     {
         initMapIfNecessary();
         if (_properties != null)
         {
-            for (Map.Entry<AMQShortString, AMQTypedValue> e : _properties.entrySet())
+            for (Map.Entry<String, AMQTypedValue> e : _properties.entrySet())
             {
-                boolean result = processor.processElement(e.getKey().toString(), e.getValue());
+                boolean result = processor.processElement(e.getKey(), e.getValue());
                 if (!result)
                 {
                     break;
@@ -1015,59 +1106,48 @@ public class FieldTable
         return size() == 0;
     }
 
+    @Deprecated
     public boolean containsKey(AMQShortString key)
+    {
+        return containsKey(AMQShortString.toString(key));
+    }
+
+    public boolean containsKey(String key)
     {
         initMapIfNecessary();
 
         return _properties.containsKey(key);
     }
 
-    public boolean containsKey(String key)
-    {
-        return containsKey(AMQShortString.valueOf(key));
-    }
-
     public Set<String> keys()
     {
         initMapIfNecessary();
-        Set<String> keys = new LinkedHashSet<String>();
-        for (AMQShortString key : _properties.keySet())
-        {
-            keys.add(key.toString());
-        }
-
-        return keys;
+        return new LinkedHashSet<>(_properties.keySet());
     }
 
+    @Deprecated
     public Iterator<Map.Entry<AMQShortString, AMQTypedValue>> iterator()
     {
         initMapIfNecessary();
-        return _properties.entrySet().iterator();
+        return _properties.entrySet()
+                          .stream()
+                          .collect(Collectors.toMap(e-> AMQShortString.valueOf(e.getKey()), Map.Entry::getValue))
+                          .entrySet()
+                          .iterator();
     }
 
     public Object get(String key)
     {
-        return get(AMQShortString.valueOf(key));
-    }
-
-    public Object get(AMQShortString key)
-    {
         return getObject(key);
     }
 
+    @Deprecated
     public Object put(AMQShortString key, Object value)
     {
-        return setObject(key, value);
+        return setObject(AMQShortString.toString(key), value);
     }
 
     public Object remove(String key)
-    {
-
-        return remove(AMQShortString.valueOf(key));
-
-    }
-
-    public Object remove(AMQShortString key)
     {
         AMQTypedValue val = removeKey(key);
 
@@ -1075,7 +1155,19 @@ public class FieldTable
 
     }
 
+    @Deprecated
+    public Object remove(AMQShortString key)
+    {
+        return remove(AMQShortString.toString(key));
+    }
+
+    @Deprecated
     public AMQTypedValue removeKey(AMQShortString key)
+    {
+        return removeKey(AMQShortString.toString(key));
+    }
+
+    private AMQTypedValue removeKey(String key)
     {
         synchronized (this)
         {
@@ -1111,12 +1203,12 @@ public class FieldTable
     }
 
 
-
+    @Deprecated
     public Set<AMQShortString> keySet()
     {
         initMapIfNecessary();
 
-        return _properties.keySet();
+        return _properties.keySet().stream().map(k->AMQShortString.valueOf(k)).collect(Collectors.toSet());
     }
 
     private synchronized void putDataInBuffer(QpidByteBuffer buffer)
@@ -1130,14 +1222,14 @@ public class FieldTable
         }
         else if (_properties != null)
         {
-            final Iterator<Map.Entry<AMQShortString, AMQTypedValue>> it = _properties.entrySet().iterator();
+            final Iterator<Map.Entry<String, AMQTypedValue>> it = _properties.entrySet().iterator();
 
             // If there are values then write out the encoded Size... could check _encodedSize != 0
             // write out the total length, which we have kept up to date as data is added
 
             while (it.hasNext())
             {
-                final Map.Entry<AMQShortString, AMQTypedValue> me = it.next();
+                final Map.Entry<String, AMQTypedValue> me = it.next();
                 try
                 {
                     // Write the actual parameter name
@@ -1152,25 +1244,6 @@ public class FieldTable
         }
     }
 
-
-    private void setFromBuffer() throws AMQFrameDecodingException
-    {
-        if (_encodedSize > 0)
-        {
-            try(QpidByteBuffer slice = _encodedForm.slice())
-            {
-                _properties = new LinkedHashMap<>(INITIAL_HASHMAP_CAPACITY);
-
-                do
-                {
-                    final AMQShortString key = AMQShortString.readAMQShortString(slice);
-                    AMQTypedValue value = AMQTypedValue.readFromBuffer(slice);
-                    _properties.put(key, value);
-                }
-                while (slice.hasRemaining());
-            }
-        }
-    }
 
     @Override
     public int hashCode()
@@ -1209,8 +1282,7 @@ public class FieldTable
             FieldTable table = new FieldTable();
             for(Map.Entry<String,Object> entry : map.entrySet())
             {
-                final AMQShortString propertyNameAsShotString = AMQShortString.valueOf(entry.getKey());
-                table.put(propertyNameAsShotString, entry.getValue());
+                table.setObject(entry.getKey(), entry.getValue());
             }
 
             return table;
