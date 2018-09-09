@@ -145,4 +145,22 @@ public class LoggerNameAndLevelFilterTest extends UnitTestBase
                             FilterReply.NEUTRAL,
                             filter.decide(event));
     }
+
+    @Test
+    public void testDecideForTurnedOffLogger() throws Exception
+    {
+        LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter("org.apache.qpid", Level.OFF);
+
+        ILoggingEvent event = mock(ILoggingEvent.class);
+        when(event.getLevel()).thenReturn(Level.WARN);
+        when(event.getLoggerName()).thenReturn("org.apache.qpid");
+        assertEquals("Unexpected reply for matching log level and same logger name",
+                     FilterReply.DENY,
+                     filter.decide(event));
+
+        when(event.getLoggerName()).thenReturn("org.apache.qpid.foo");
+        assertEquals("Unexpected reply for matching log level and not same logger name",
+                     FilterReply.NEUTRAL,
+                     filter.decide(event));
+    }
 }

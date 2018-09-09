@@ -70,7 +70,7 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
                 @Override
                 public FilterReply decide(final ILoggingEvent event)
                 {
-                    return event.getLevel().isGreaterOrEqual(_level) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
+                    return getFilterReply(event.getLevel());
                 }
             };
         }
@@ -82,7 +82,11 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
                 @Override
                 public FilterReply decide(final ILoggingEvent event)
                 {
-                    return event.getLevel().isGreaterOrEqual(_level) && event.getLoggerName().startsWith(prefixName) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
+                    if (event.getLoggerName().startsWith(prefixName))
+                    {
+                        return getFilterReply(event.getLevel());
+                    }
+                    return FilterReply.NEUTRAL;
                 }
             };
         }
@@ -93,9 +97,29 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
                 @Override
                 public FilterReply decide(final ILoggingEvent event)
                 {
-                    return event.getLevel().isGreaterOrEqual(_level) && event.getLoggerName().equals(loggerName) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
+                    if (event.getLoggerName().equals(loggerName))
+                    {
+                        return getFilterReply(event.getLevel());
+                    }
+                    return FilterReply.NEUTRAL;
                 }
             };
+        }
+    }
+
+    private FilterReply getFilterReply(final Level eventLevel)
+    {
+        if (_level == Level.OFF)
+        {
+            return FilterReply.DENY;
+        }
+        else if (eventLevel.isGreaterOrEqual(_level))
+        {
+            return FilterReply.ACCEPT;
+        }
+        else
+        {
+            return FilterReply.NEUTRAL;
         }
     }
 

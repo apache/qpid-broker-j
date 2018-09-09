@@ -80,18 +80,18 @@ public class CompositeFilterTest extends UnitTestBase
         LogBackLogInclusionRule neutral = createRule(FilterReply.NEUTRAL);
         compositeFilter.addLogInclusionRule(neutral);
 
-        LogBackLogInclusionRule deny = createRule(FilterReply.DENY);
-        compositeFilter.addLogInclusionRule(deny);
-
         LogBackLogInclusionRule accept = createRule(FilterReply.ACCEPT);
         compositeFilter.addLogInclusionRule(accept);
+
+        LogBackLogInclusionRule deny = createRule(FilterReply.DENY);
+        compositeFilter.addLogInclusionRule(deny);
 
         FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
         assertEquals("Unexpected reply", FilterReply.DENY, reply);
 
         verify(neutral.asFilter()).decide(any(ILoggingEvent.class));
         verify(deny.asFilter()).decide(any(ILoggingEvent.class));
-        verify(accept.asFilter(), never()).decide(any(ILoggingEvent.class));
+        verify(accept.asFilter()).decide(any(ILoggingEvent.class));
     }
 
     @Test
