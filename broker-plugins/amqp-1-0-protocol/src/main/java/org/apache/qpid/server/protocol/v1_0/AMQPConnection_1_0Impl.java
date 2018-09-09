@@ -912,7 +912,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         if (!addressSpace.isActive())
         {
             final Error err = new Error();
-            err.setCondition(AmqpError.NOT_FOUND);
             populateConnectionRedirect(addressSpace, err);
             closeConnection(err);
         }
@@ -1023,10 +1022,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         if(redirectHost == null)
         {
+            err.setCondition(ConnectionError.CONNECTION_FORCED);
             err.setDescription("Virtual host '" + _localHostname + "' is not active");
         }
         else
         {
+            err.setCondition(ConnectionError.REDIRECT);
             String networkHost;
             int port;
             if(redirectHost.matches("\\[[0-9a-f:]+\\](:[0-9]+)?"))
