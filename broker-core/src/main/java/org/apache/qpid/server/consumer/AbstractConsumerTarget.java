@@ -208,7 +208,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     public final void send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
     {
         doSend(consumer, entry, batch);
-
+        getSession().getAMQPConnection().updateLastMessageOutboundTime();
         if (consumer.acquires())
         {
             entry.makeAcquisitionStealable();

@@ -24,7 +24,6 @@ import static com.google.common.util.concurrent.Futures.allAsList;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_ENFORCEMENT_POLICY;
 
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -117,7 +116,6 @@ import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManag
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.session.AMQPSession;
-import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
@@ -133,8 +131,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
 public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnection_1_0Impl, ConnectionHandler>
-        implements FrameOutputHandler,
-                   DescribedTypeConstructorRegistry.Source,
+        implements DescribedTypeConstructorRegistry.Source,
                    ValueWriter.Registry.Source,
                    SASLEndpoint,
                    AMQPConnection_1_0<AMQPConnection_1_0Impl>
@@ -357,7 +354,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 {
                     outcome.setAdditionalData(new Binary(challenge));
                 }
-                send(new SASLFrame(outcome), null);
+                send(new SASLFrame(outcome));
                 _saslComplete = true;
                 _connectionState = ConnectionState.AWAIT_AMQP_HEADER;
                 disposeSaslNegotiator();
@@ -377,7 +374,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         SaslChallenge challengeBody = new SaslChallenge();
         challengeBody.setChallenge(new Binary(challenge));
-        send(new SASLFrame(challengeBody), null);
+        send(new SASLFrame(challengeBody));
 
         _connectionState = ConnectionState.AWAIT_SASL_RESPONSE;
     }
@@ -386,7 +383,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         SaslOutcome outcome = new SaslOutcome();
         outcome.setCode(SaslCode.AUTH);
-        send(new SASLFrame(outcome), null);
+        send(new SASLFrame(outcome));
         _saslComplete = true;
         closeSaslWithFailure();
     }
@@ -1210,7 +1207,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             ValueWriter<FrameBody> writer = _describedTypeRegistry.getValueWriter(body);
             if (payload == null)
             {
-                send(AMQFrame.createAMQFrame(channel, body));
+                send(new TransportFrame(channel, body));
                 return 0;
             }
             else
@@ -1220,7 +1217,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 long payloadLength = (long) payload.remaining();
                 if (payloadLength <= maxPayloadSize)
                 {
-                    send(AMQFrame.createAMQFrame(channel, body, payload));
+                    send(new TransportFrame(channel, body, payload));
                     return (int)payloadLength;
                 }
                 else
@@ -1234,7 +1231,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     try (QpidByteBuffer payloadDup = payload.view(0, maxPayloadSize))
                     {
                         payload.position(payload.position() + maxPayloadSize);
-                        send(AMQFrame.createAMQFrame(channel, body, payloadDup));
+                        send(new TransportFrame(channel, body, payloadDup));
                     }
 
                     return maxPayloadSize;
@@ -1261,7 +1258,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void writerIdle()
     {
-        send(TransportFrame.createAMQFrame((short)0,null));
+        send(TransportFrame.HEARTBEAT);
     }
 
     @Override
@@ -1285,74 +1282,54 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         return getNetwork().getRemoteAddress().toString();
     }
 
-
-
     @Override
-    public void received(final QpidByteBuffer msg)
+    protected void onReceive(final QpidByteBuffer msg)
     {
-
-        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
+        try
         {
-            updateLastReadTime();
+            int remaining;
+
             try
             {
-                int remaining;
-
-                try
+                do
                 {
-                    do
+                    remaining = msg.remaining();
+
+                    switch (_connectionState)
                     {
-                        remaining = msg.remaining();
-
-                        switch (_connectionState)
-                        {
-                            case AWAIT_AMQP_OR_SASL_HEADER:
-                            case AWAIT_AMQP_HEADER:
-                                if (remaining >= 8)
-                                {
-                                    processProtocolHeader(msg);
-                                }
-                                break;
-                            case AWAIT_SASL_INIT:
-                            case AWAIT_SASL_RESPONSE:
-                            case AWAIT_OPEN:
-                            case OPENED:
-                            case CLOSE_SENT:
-                                _frameHandler.parse(msg);
-                                break;
-                            case CLOSE_RECEIVED:
-                            case CLOSED:
-                                // ignore;
-                                break;
-                        }
-
-
+                        case AWAIT_AMQP_OR_SASL_HEADER:
+                        case AWAIT_AMQP_HEADER:
+                            if (remaining >= 8)
+                            {
+                                processProtocolHeader(msg);
+                            }
+                            break;
+                        case AWAIT_SASL_INIT:
+                        case AWAIT_SASL_RESPONSE:
+                        case AWAIT_OPEN:
+                        case OPENED:
+                        case CLOSE_SENT:
+                            _frameHandler.parse(msg);
+                            break;
+                        case CLOSE_RECEIVED:
+                        case CLOSED:
+                            // ignore;
+                            break;
                     }
-                    while (msg.remaining() != remaining);
-                }
-                finally
-                {
-                    receivedComplete();
-                }
-            }
-            catch (IllegalArgumentException | IllegalStateException e)
-            {
-                throw new ConnectionScopedRuntimeException(e);
-            }
-            catch (StoreException e)
-            {
-                if (getAddressSpace().isActive())
-                {
-                    throw new ServerScopedRuntimeException(e);
-                }
-                else
-                {
-                    throw new ConnectionScopedRuntimeException(e);
-                }
-            }
-            return null;
-        }, getAccessControllerContext());
 
+
+                }
+                while (msg.remaining() != remaining);
+            }
+            finally
+            {
+                receivedComplete();
+            }
+        }
+        catch (IllegalArgumentException | IllegalStateException e)
+        {
+            throw new ConnectionScopedRuntimeException(e);
+        }
     }
 
     @Override
@@ -1402,7 +1379,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     mechanismsList.add(Symbol.valueOf(name));
                 }
                 mechanisms.setSaslServerMechanisms(mechanismsList.toArray(new Symbol[mechanismsList.size()]));
-                send(new SASLFrame(mechanisms), null);
+                send(new SASLFrame(mechanisms));
 
                 _connectionState = ConnectionState.AWAIT_SASL_INIT;
                 _frameHandler = getFrameHandler(true);
@@ -1478,15 +1455,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
-    @Override
-    public void send(final AMQFrame amqFrame)
-    {
-        send(amqFrame, null);
-    }
-
-
-    @Override
-    public void send(final AMQFrame amqFrame, ByteBuffer buf)
+    private void send(final AMQFrame amqFrame)
     {
         updateLastWriteTime();
         FRAME_LOGGER.debug("SEND[{}|{}] : {}",
@@ -1499,13 +1468,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             throw new OversizeFrameException(amqFrame, size);
         }
-    }
-
-    public void send(short channel, FrameBody body)
-    {
-        AMQFrame frame = AMQFrame.createAMQFrame(channel, body);
-        send(frame);
-
     }
 
     private void addCloseTicker()

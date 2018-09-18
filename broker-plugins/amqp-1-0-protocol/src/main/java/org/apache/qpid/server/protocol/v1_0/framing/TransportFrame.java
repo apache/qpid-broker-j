@@ -23,6 +23,7 @@ import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 
 public final class TransportFrame extends AMQFrame<FrameBody>
 {
+    public static final TransportFrame HEARTBEAT = new TransportFrame(0, null);
 
     private final int _channel;
 

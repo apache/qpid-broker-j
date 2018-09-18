@@ -85,6 +85,10 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
 
     void unblock();
 
+    void updateLastMessageInboundTime();
+
+    void updateLastMessageOutboundTime();
+
     void pushScheduler(NetworkConnectionScheduler networkConnectionScheduler);
 
     NetworkConnectionScheduler popScheduler();

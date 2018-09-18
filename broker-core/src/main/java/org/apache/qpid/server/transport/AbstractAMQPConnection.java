@@ -48,6 +48,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
@@ -71,6 +72,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.stats.StatisticsGatherer;
+import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.network.NetworkConnection;
 import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.txn.FlowToDiskTransactionObserver;
@@ -78,7 +80,9 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,T>, T>
@@ -127,6 +131,11 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private volatile NamedAddressSpace _addressSpace;
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
+    private volatile long _lastMessageInboundTime;
+    private volatile long _lastMessageOutboundTime;
+    private volatile boolean _messagesWritten;
+
+
     private volatile AccessControlContext _accessControllerContext;
     private volatile Thread _ioThread;
     private volatile StatisticsGatherer _statisticsGatherer;
@@ -187,18 +196,13 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     {
         final AccessControlContext acc = AccessController.getContext();
         return AccessController.doPrivileged(
-                new PrivilegedAction<AccessControlContext>()
-                {
-                    @Override
-                    public AccessControlContext run()
-                    {
-                        if (subject == null)
-                            return new AccessControlContext(acc, null);
-                        else
-                            return new AccessControlContext
-                                    (acc,
-                                     new SubjectDomainCombiner(subject));
-                    }
+                (PrivilegedAction<AccessControlContext>) () -> {
+                    if (subject == null)
+                        return new AccessControlContext(acc, null);
+                    else
+                        return new AccessControlContext
+                                (acc,
+                                 new SubjectDomainCombiner(subject));
                 });
     }
 
@@ -209,7 +213,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         long maxAuthDelay = _port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY);
         SlowConnectionOpenTicker slowConnectionOpenTicker = new SlowConnectionOpenTicker(maxAuthDelay);
         _aggregateTicker.addTicker(slowConnectionOpenTicker);
-        _lastReadTime = _lastWriteTime = getCreatedTime().getTime();
+        _lastReadTime = _lastWriteTime = _lastMessageInboundTime = _lastMessageOutboundTime = getCreatedTime().getTime();
         _maxUncommittedInMemorySize = getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         _transactionObserver = _maxUncommittedInMemorySize < 0 ? FlowToDiskTransactionObserver.NOOP_TRANSACTION_OBSERVER : new FlowToDiskTransactionObserver(_maxUncommittedInMemorySize, _logSubject, _eventLoggerProvider.getEventLogger());
         logConnectionOpen();
@@ -268,7 +272,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return _lastReadTime;
     }
 
-    public final void updateLastReadTime()
+    private void updateLastReadTime()
     {
         _lastReadTime = System.currentTimeMillis();
     }
@@ -281,7 +285,43 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     public final void updateLastWriteTime()
     {
-        _lastWriteTime = System.currentTimeMillis();
+        final long currentTime = System.currentTimeMillis();
+        _lastWriteTime = currentTime;
+        if(_messagesWritten)
+        {
+            _messagesWritten = false;
+            _lastMessageOutboundTime = currentTime;
+        }
+    }
+
+    @Override
+    public void updateLastMessageInboundTime()
+    {
+        _lastMessageInboundTime = _lastReadTime;
+    }
+
+    @Override
+    public void updateLastMessageOutboundTime()
+    {
+        _messagesWritten = true;
+    }
+
+    @Override
+    public Date getLastInboundMessageTime()
+    {
+        return new Date(_lastMessageInboundTime);
+    }
+
+    @Override
+    public Date getLastOutboundMessageTime()
+    {
+        return new Date(_lastMessageOutboundTime);
+    }
+
+    @Override
+    public Date getLastMessageTime()
+    {
+        return new Date(Math.max(_lastMessageInboundTime, _lastMessageOutboundTime));
     }
 
     @Override
@@ -438,6 +478,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public void registerMessageReceived(long messageSize)
     {
+        updateLastMessageInboundTime();
         _messagesIn.incrementAndGet();
         _bytesIn.addAndGet(messageSize);
         _statisticsGatherer.registerMessageReceived(messageSize);
@@ -521,6 +562,33 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             return future;
         }
     }
+
+    @Override
+    public final void received(final QpidByteBuffer buf)
+    {
+        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
+        {
+            updateLastReadTime();
+            try
+            {
+                onReceive(buf);
+            }
+            catch (StoreException e)
+            {
+                if (getAddressSpace().isActive())
+                {
+                    throw new ServerScopedRuntimeException(e);
+                }
+                else
+                {
+                    throw new ConnectionScopedRuntimeException(e);
+                }
+            }
+            return null;
+        }, getAccessControllerContext());
+    }
+
+    protected abstract void onReceive(final QpidByteBuffer msg);
 
     protected abstract void addAsyncTask(final Action<? super T> action);
 

@@ -60,8 +60,8 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
-import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.server.protocol.v1_0.framing.SASLFrame;
+import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
@@ -199,7 +199,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
 
         Open open = new Open();
         open.setContainerId("testContainerId");
-        _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
+        _frameWriter.send(new TransportFrame((int) (short) 0, open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
@@ -221,7 +221,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
 
         Open open = new Open();
         open.setContainerId("testContainerId");
-        _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
+        _frameWriter.send(new TransportFrame((int) (short) 0, open));
 
         verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         verify(_networkConnection).close();
@@ -241,7 +241,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
 
         Open open = new Open();
         open.setContainerId("testContainerId");
-        _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
+        _frameWriter.send(new TransportFrame((int) (short) 0, open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
@@ -274,7 +274,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
 
         Open open = new Open();
         open.setContainerId("testContainerId");
-        _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
+        _frameWriter.send(new TransportFrame((int) (short) 0, open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();

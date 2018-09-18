@@ -120,7 +120,7 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
                       description = "Total size of all messages received by this connection.")
     long getBytesIn();
 
-    // currently this reports outbound  message content size without header.
+    // currently this reports outbound message content size without header.
     // See also QPID-7689: https://issues.apache.org/jira/browse/QPID-7689?focusedCommentId=16022923#comment-16022923
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound",
@@ -141,6 +141,24 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last I/O time",
                       description = "Time of last I/O operation performed by this connection.")
     Date getLastIoTime();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last Inbound Message",
+            description = "Time of last message received by the broker on this connection. "
+                          + "If no message has been received the connection creation time will be used.")
+    Date getLastInboundMessageTime();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last Outbound Message",
+            description = "Time of last message sent by the broker on this connection. "
+                          + "If no message has been snt the connection creation time will be used.")
+    Date getLastOutboundMessageTime();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last Message",
+            description = "Time of last message sent or received by the broker on this connection. "
+                          + "If no message has been sent or received the connection creation time will be used.")
+    Date getLastMessageTime();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Sessions",

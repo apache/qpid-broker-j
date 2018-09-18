@@ -243,40 +243,18 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
-    public void received(final QpidByteBuffer msg)
+    protected void onReceive(final QpidByteBuffer msg)
     {
-        AccessController.doPrivileged(new PrivilegedAction<Void>()
+        try
         {
-            @Override
-            public Void run()
-            {
-                updateLastReadTime();
-
-                try
-                {
-                    _decoder.decodeBuffer(msg);
-                    receivedCompleteAllChannels();
-                }
-                catch (AMQFrameDecodingException | IOException e)
-                {
-                    LOGGER.error("Unexpected exception", e);
-                    throw new ConnectionScopedRuntimeException(e);
-                }
-                catch (StoreException e)
-                {
-                    if (getAddressSpace().isActive())
-                    {
-                        throw new ServerScopedRuntimeException(e);
-                    }
-                    else
-                    {
-                        throw new ConnectionScopedRuntimeException(e);
-                    }
-                }
-                return null;
-            }
-        }, getAccessControllerContext());
-
+            _decoder.decodeBuffer(msg);
+            receivedCompleteAllChannels();
+        }
+        catch (AMQFrameDecodingException | IOException e)
+        {
+            LOGGER.error("Unexpected exception", e);
+            throw new ConnectionScopedRuntimeException(e);
+        }
     }
 
     private void receivedCompleteAllChannels()

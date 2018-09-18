@@ -3433,7 +3433,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         {
             if(allStats || statistics.contains(stat.getName()))
             {
-                map.put(stat.getName(), stat.getValue(this));
+                Object value = stat.getValue(this);
+                if(value != null)
+                {
+                    map.put(stat.getName(), value);
+                }
             }
         }
         return map;

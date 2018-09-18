@@ -45,16 +45,6 @@ public abstract class AMQFrame<T>
         return _payload;
     }
 
-    public static TransportFrame createAMQFrame(int channel, FrameBody frameBody)
-    {
-        return createAMQFrame(channel, frameBody, null);
-    }
-
-    public static TransportFrame createAMQFrame(int channel, FrameBody frameBody, QpidByteBuffer payload)
-    {
-        return new TransportFrame(channel, frameBody, payload);
-    }
-
     abstract public int getChannel();
 
     abstract public byte getFrameType();

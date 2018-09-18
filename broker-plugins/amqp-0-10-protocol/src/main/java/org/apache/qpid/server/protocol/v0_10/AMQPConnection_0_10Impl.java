@@ -135,33 +135,17 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     }
 
     @Override
-    public void received(final QpidByteBuffer buf)
+    protected void onReceive(final QpidByteBuffer buf)
     {
-        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
+        try
         {
-            updateLastReadTime();
-            try
-            {
-                _inputHandler.received(buf);
-                _connection.receivedComplete();
-            }
-            catch (IllegalArgumentException | IllegalStateException e)
-            {
-                throw new ConnectionScopedRuntimeException(e);
-            }
-            catch (StoreException e)
-            {
-                if (getAddressSpace().isActive())
-                {
-                    throw new ServerScopedRuntimeException(e);
-                }
-                else
-                {
-                    throw new ConnectionScopedRuntimeException(e);
-                }
-            }
-            return null;
-        }, getAccessControllerContext());
+            _inputHandler.received(buf);
+            _connection.receivedComplete();
+        }
+        catch (IllegalArgumentException | IllegalStateException e)
+        {
+            throw new ConnectionScopedRuntimeException(e);
+        }
     }
 
     @Override
