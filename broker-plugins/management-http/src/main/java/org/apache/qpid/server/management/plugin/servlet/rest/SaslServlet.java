@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.xml.bind.DatatypeConverter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -254,7 +254,7 @@ public class SaslServlet extends AbstractServlet
                 HttpManagementUtil.saveAuthorisedSubject(request, subject);
                 if(challenge != null && challenge.length != 0)
                 {
-                    outputObject.put("additionalData", DatatypeConverter.printBase64Binary(challenge));
+                    outputObject.put("additionalData", Base64.getEncoder().encodeToString(challenge));
                 }
                 responseStatus = HttpServletResponse.SC_OK;
             }
@@ -279,7 +279,7 @@ public class SaslServlet extends AbstractServlet
                                                    session, request);
 
             outputObject.put("id", id);
-            outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
+            outputObject.put("challenge", Base64.getEncoder().encodeToString(challenge));
             responseStatus = HttpServletResponse.SC_OK;
         }
         else

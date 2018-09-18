@@ -20,6 +20,18 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.query;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.chrono.IsoChronology;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
@@ -31,7 +43,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
-import javax.xml.bind.DatatypeConverter;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.Duration;
@@ -47,6 +58,22 @@ public class ConfiguredObjectExpressionFactory
     private static Set<String> SPECIAL_ATTRIBUTES = new HashSet<>(Arrays.asList(PARENT_ATTR));
     private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
     private static final DatatypeFactory DATATYPE_FACTORY;
+
+    private static final DateTimeFormatter ISO_DATE_TIME_FORMAT =  new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .append(DateTimeFormatter.ISO_LOCAL_DATE)
+            .optionalStart()
+            .appendLiteral('T')
+            .append(DateTimeFormatter.ISO_LOCAL_TIME)
+            .optionalStart()
+            .appendOffsetId()
+            .optionalStart()
+            .appendLiteral('[')
+            .parseCaseSensitive()
+            .appendZoneRegionId()
+            .appendLiteral(']')
+            .toFormatter()
+            .withChronology(IsoChronology.INSTANCE);
 
     static
     {
@@ -122,13 +149,28 @@ public class ConfiguredObjectExpressionFactory
                         }
                         try
                         {
-                            final Calendar calendar = DatatypeConverter.parseDateTime((String) dateTime);
-                            return calendar.getTime();
+
+                            return DateTimeFormatter.ISO_ZONED_DATE_TIME.parse((String)dateTime)
+                                    .query(this::convertToDate);
                         }
-                        catch (IllegalArgumentException e)
+                        catch (DateTimeParseException e1)
                         {
-                            throw new IllegalArgumentException(TO_DATE + " requires an ISO-8601 format date or date/time.", e);
+                            throw new IllegalArgumentException(TO_DATE
+                                                               + " requires an ISO-8601 format date or date/time.",
+                                                               e1);
                         }
+
+                    }
+
+                    private Date convertToDate(TemporalAccessor t)
+                    {
+                        if(!t.isSupported(ChronoField.INSTANT_SECONDS))
+                        {
+                            t = LocalDateTime.of(LocalDate.from(t), LocalTime.MIN).atOffset(ZoneOffset.UTC);
+                        }
+                        return new Date((t.getLong(ChronoField.INSTANT_SECONDS) * 1000L)
+                                        + t.getLong(ChronoField.MILLI_OF_SECOND));
+                        
                     }
                 };
             }
@@ -199,7 +241,7 @@ public class ConfiguredObjectExpressionFactory
                             cal.setTime((Date) obj);
                             if (format == null)
                             {
-                                return DatatypeConverter.printDateTime(cal);
+                                return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(cal.toInstant().atZone(ZoneId.of(timezoneName == null ? "UTC" : (String)timezoneName)));
                             }
                             else
                             {

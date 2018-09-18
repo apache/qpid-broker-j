@@ -28,13 +28,13 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.util.Strings;
 
@@ -74,7 +74,7 @@ class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
             byte[] output = new byte[AES_INITIALIZATION_VECTOR_LENGTH + encryptedBytes.length];
             System.arraycopy(ivbytes, 0, output, 0, AES_INITIALIZATION_VECTOR_LENGTH);
             System.arraycopy(encryptedBytes, 0, output, AES_INITIALIZATION_VECTOR_LENGTH, encryptedBytes.length);
-            return DatatypeConverter.printBase64Binary(output);
+            return Base64.getEncoder().encodeToString(output);
         }
         catch (IOException | InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e)
         {

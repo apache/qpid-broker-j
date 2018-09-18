@@ -39,7 +39,8 @@ import javax.jms.MessageEOFException;
 import javax.jms.ObjectMessage;
 import javax.jms.StreamMessage;
 import javax.jms.TextMessage;
-import javax.xml.bind.DatatypeConverter;
+
+import org.apache.qpid.server.util.StringUtil;
 
 public class MessageVerifier
 {
@@ -257,12 +258,12 @@ public class MessageVerifier
             {
                 final byte[] expectedValueAsBytes = (byte[]) expectedValue;
                 final byte[] actualValueAsBytes = (byte[]) actualValue;
-                String expectedValueAsString = DatatypeConverter.printHexBinary(expectedValueAsBytes);
+                String expectedValueAsString = StringUtil.toHex(expectedValueAsBytes);
                 if (expectedValueAsString.length() > 20)
                 {
                     expectedValueAsString = expectedValueAsString.substring(0, 20) + "...";
                 }
-                String actualValueAsString = DatatypeConverter.printHexBinary(actualValueAsBytes);
+                String actualValueAsString = StringUtil.toHex(actualValueAsBytes);
                 if (actualValueAsString.length() > 20)
                 {
                     actualValueAsString = actualValueAsString.substring(0, 20) + "...";

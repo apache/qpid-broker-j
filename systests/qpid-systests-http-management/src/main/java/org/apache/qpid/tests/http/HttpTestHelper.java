@@ -34,6 +34,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,7 +47,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -170,7 +170,7 @@ public class HttpTestHelper
 
         if(_username != null)
         {
-            String encoded = DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes(UTF_8));
+            String encoded = Base64.getEncoder().encodeToString((_username + ":" + _password).getBytes(UTF_8));
             httpCon.setRequestProperty("Authorization", "Basic " + encoded);
         }
 

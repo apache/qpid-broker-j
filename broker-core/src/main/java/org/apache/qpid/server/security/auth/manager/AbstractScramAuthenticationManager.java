@@ -26,6 +26,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,6 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.SaslException;
-import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -171,8 +171,8 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
 
                 String password = passwordFields[PasswordField.SALT.ordinal()] + ","
                                   + "," // remove previously insecure salted password field
-                                  + DatatypeConverter.printBase64Binary(storedKey) + ","
-                                  + DatatypeConverter.printBase64Binary(serverKey) + ","
+                                  + Base64.getEncoder().encodeToString(storedKey) + ","
+                                  + Base64.getEncoder().encodeToString(serverKey) + ","
                                   + oldDefaultIterationCount;
                 upgradeUserPassword(user, password);
             }
@@ -272,10 +272,10 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
             byte[] storedKey = MessageDigest.getInstance(getDigestName()).digest(clientKey);
             byte[] serverKey = computeHmac(saltedPassword, "Server Key");
 
-            return DatatypeConverter.printBase64Binary(salt) + ","
+            return Base64.getEncoder().encodeToString(salt) + ","
                    + "," // leave insecure salted password field blank
-                   + DatatypeConverter.printBase64Binary(storedKey) + ","
-                   + DatatypeConverter.printBase64Binary(serverKey) + ","
+                   + Base64.getEncoder().encodeToString(storedKey) + ","
+                   + Base64.getEncoder().encodeToString(serverKey) + ","
                    + iterationCount;
         }
         catch (NoSuchAlgorithmException e)

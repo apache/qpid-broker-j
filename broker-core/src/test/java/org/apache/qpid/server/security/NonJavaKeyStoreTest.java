@@ -41,6 +41,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +50,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManager;
-import javax.xml.bind.DatatypeConverter;
 
 import org.junit.After;
 import org.junit.Before;
@@ -130,7 +130,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
             if (pem)
             {
                 kos.write("-----BEGIN PRIVATE KEY-----\n".getBytes());
-                String base64encoded = DatatypeConverter.printBase64Binary(pvt.getEncoded());
+                String base64encoded = Base64.getEncoder().encodeToString(pvt.getEncoded());
                 while(base64encoded.length() > 76)
                 {
                     kos.write(base64encoded.substring(0,76).getBytes());
@@ -156,7 +156,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
             if (pem)
             {
                 cos.write("-----BEGIN CERTIFICATE-----\n".getBytes());
-                String base64encoded = DatatypeConverter.printBase64Binary(pub.getEncoded());
+                String base64encoded = Base64.getEncoder().encodeToString(pub.getEncoded());
                 while(base64encoded.length() > 76)
                 {
                     cos.write(base64encoded.substring(0,76).getBytes());

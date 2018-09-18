@@ -33,11 +33,10 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -116,7 +115,7 @@ public class SaslTest extends HttpTestBase
     public void plainSASLAuthenticationWithMalformedInitialResponse() throws Exception
     {
         byte[] responseBytes = "null".getBytes();
-        String responseData = DatatypeConverter.printBase64Binary(responseBytes);
+        String responseData = Base64.getEncoder().encodeToString(responseBytes);
         String parameters = String.format("mechanism=%s&response=%s", PlainNegotiator.MECHANISM, responseData);
 
         HttpURLConnection connection = getHelper().openManagementConnection(SASL_SERVICE, "POST");
@@ -221,7 +220,7 @@ public class SaslTest extends HttpTestBase
 
             List<String> cookies = connection.getHeaderFields().get(SET_COOKIE_HEADER);
 
-            String responseData = DatatypeConverter.printBase64Binary("null".getBytes());
+            String responseData = Base64.getEncoder().encodeToString("null".getBytes());
             String requestParameters = String.format("id=%s&response=%s", response.get("id"), responseData);
 
             postResponse(cookies, requestParameters, SC_UNAUTHORIZED);
@@ -246,10 +245,10 @@ public class SaslTest extends HttpTestBase
 
             List<String> cookies = connection.getHeaderFields().get(SET_COOKIE_HEADER);
 
-            byte[] challengeBytes = DatatypeConverter.parseBase64Binary(challenge);
+            byte[] challengeBytes = Base64.getDecoder().decode(challenge);
             byte[] responseBytes =
                     generateClientResponse(CramMd5Negotiator.MECHANISM, _userName, _userPassword, challengeBytes);
-            String responseData = DatatypeConverter.printBase64Binary(responseBytes);
+            String responseData = Base64.getEncoder().encodeToString(responseBytes);
             String requestParameters = (String.format("id=%s&response=%s", UUID.randomUUID().toString(), responseData));
 
             postResponse(cookies, requestParameters, SC_EXPECTATION_FAILED);
@@ -267,7 +266,7 @@ public class SaslTest extends HttpTestBase
                                                                     final int expectedResponseCode) throws Exception
     {
         byte[] responseBytes = generatePlainClientResponse(userName, userPassword);
-        String responseData = DatatypeConverter.printBase64Binary(responseBytes);
+        String responseData = Base64.getEncoder().encodeToString(responseBytes);
         String parameters = String.format("mechanism=%s&response=%s", PlainNegotiator.MECHANISM, responseData);
 
         HttpURLConnection connection = getHelper().openManagementConnection(SASL_SERVICE, "POST");
@@ -318,9 +317,9 @@ public class SaslTest extends HttpTestBase
         String challenge = (String) response.get("challenge");
         assertNotNull("Challenge is not found", challenge);
 
-        byte[] challengeBytes = DatatypeConverter.parseBase64Binary(challenge);
+        byte[] challengeBytes = Base64.getDecoder().decode(challenge);
         byte[] responseBytes = generateClientResponse(mechanism, userName, userPassword, challengeBytes);
-        String responseData = DatatypeConverter.printBase64Binary(responseBytes);
+        String responseData = Base64.getEncoder().encodeToString(responseBytes);
         String requestParameters = (String.format("id=%s&response=%s", response.get("id"), responseData));
 
         postResponse(requestChallengeConnection.getHeaderFields().get(SET_COOKIE_HEADER),

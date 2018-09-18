@@ -32,14 +32,13 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -276,7 +275,7 @@ public class OAuth2AuthenticationProviderImpl
             String clientSecret = getClientSecret() == null ? "" : getClientSecret();
             if (getTokenEndpointNeedsAuth())
             {
-                String encoded = DatatypeConverter.printBase64Binary((getClientId() + ":" + clientSecret).getBytes(UTF_8));
+                String encoded = Base64.getEncoder().encodeToString((getClientId() + ":" + clientSecret).getBytes(UTF_8));
                 connection.setRequestProperty("Authorization", "Basic " + encoded);
             }
             else

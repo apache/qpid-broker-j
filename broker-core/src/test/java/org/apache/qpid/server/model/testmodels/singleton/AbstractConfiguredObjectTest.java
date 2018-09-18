@@ -301,7 +301,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     public void testDateAttributeFromIso8601()
     {
         final String objectName = "myName";
-        String date = "1970-01-01Z";
+        String date = "1970-01-01";
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(TestSingleton.NAME, objectName);

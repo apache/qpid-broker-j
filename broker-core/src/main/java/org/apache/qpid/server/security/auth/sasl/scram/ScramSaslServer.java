@@ -26,13 +26,13 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.UUID;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.util.Strings;
 
@@ -128,7 +128,7 @@ class ScramSaslServer implements SaslServer
         _nonce = parts[3].substring(2) + UUID.randomUUID().toString();
 
         _saltAndPassword = _authManager.getSaltAndPasswordKeys(_username);
-        _serverFirstMessage = "r="+_nonce+",s="+ DatatypeConverter.printBase64Binary(_saltAndPassword.getSalt())+",i=" + _saltAndPassword.getIterationCount();
+        _serverFirstMessage = "r=" + _nonce + ",s=" + Base64.getEncoder().encodeToString(_saltAndPassword.getSalt()) + ",i=" + _saltAndPassword.getIterationCount();
         return _serverFirstMessage.getBytes(ASCII);
     }
 
@@ -202,7 +202,7 @@ class ScramSaslServer implements SaslServer
             }
 
             byte[] serverKey = _saltAndPassword.getServerKey();
-            String finalResponse = "v=" + DatatypeConverter.printBase64Binary(computeHmac(serverKey, authMessage));
+            String finalResponse = "v=" + Base64.getEncoder().encodeToString(computeHmac(serverKey, authMessage));
 
             return finalResponse.getBytes(ASCII);
         }

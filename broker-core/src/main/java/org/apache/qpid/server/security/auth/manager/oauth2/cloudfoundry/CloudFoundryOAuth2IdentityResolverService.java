@@ -30,10 +30,9 @@ import java.net.URI;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
-
-import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -108,7 +107,7 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
         connection.setRequestProperty("Accept-Charset", UTF_8.name());
         connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF_8.name());
         connection.setRequestProperty("Accept", "application/json");
-        String encoded = DatatypeConverter.printBase64Binary((clientId + ":" + clientSecret).getBytes(UTF_8));
+        String encoded = Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes(UTF_8));
         connection.setRequestProperty("Authorization", "Basic " + encoded);
 
         final Map<String,String> requestParameters = Collections.singletonMap("token", accessToken);

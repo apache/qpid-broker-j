@@ -32,6 +32,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -43,7 +44,6 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -136,7 +136,7 @@ public class SiteSpecificTrustStoreImpl
         {
             try
             {
-                return DatatypeConverter.printBase64Binary(_x509Certificate.getEncoded());
+                return Base64.getEncoder().encodeToString(_x509Certificate.getEncoded());
             }
             catch (CertificateEncodingException e)
             {

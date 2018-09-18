@@ -19,14 +19,14 @@
 
 package org.apache.qpid.server.util;
 
-import javax.xml.bind.DatatypeConverter;
+import java.util.Base64;
 
 public class DataUrlUtils
 {
     public static String getDataUrlForBytes(final byte[] bytes)
     {
         StringBuilder inlineURL = new StringBuilder("data:;base64,");
-        inlineURL.append(DatatypeConverter.printBase64Binary(bytes));
+        inlineURL.append(Base64.getEncoder().encodeToString(bytes));
         return inlineURL.toString();
     }
 }

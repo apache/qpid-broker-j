@@ -24,8 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import javax.xml.bind.DatatypeConverter;
+import java.util.Base64;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -179,7 +178,7 @@ public class HashedUser implements PasswordPrincipal
         {
             byteArray[index++] = (byte) c;
         }
-        _encodedPassword = DatatypeConverter.printBase64Binary(byteArray).getBytes(StandardCharsets.UTF_8);
+        _encodedPassword = Base64.getEncoder().encodeToString(byteArray).getBytes(StandardCharsets.UTF_8);
     }
 
     @Override

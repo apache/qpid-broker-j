@@ -42,7 +42,6 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
-import javax.xml.bind.DatatypeConverter;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -50,6 +49,7 @@ import org.junit.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.tests.utils.ConfigItem;
@@ -117,7 +117,7 @@ public class BDBAMQP10V0UpgradeTest extends UpgradeTestBase
     {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(content);
-        return DatatypeConverter.printHexBinary(hash);
+        return StringUtil.toHex(hash);
     }
 
     @Override

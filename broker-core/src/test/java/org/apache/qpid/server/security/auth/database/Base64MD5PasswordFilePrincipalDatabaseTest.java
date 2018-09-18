@@ -34,12 +34,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.AccountNotFoundException;
-import javax.xml.bind.DatatypeConverter;
 
 import org.junit.After;
 import org.junit.Before;
@@ -59,7 +59,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPassword
 
     static
     {
-        byte[] decoded = DatatypeConverter.parseBase64Binary(PASSWORD_B64MD5HASHED);
+        byte[] decoded = Base64.getDecoder().decode(PASSWORD_B64MD5HASHED);
         PASSWORD_MD5_CHARS = new char[decoded.length];
         for(int i = 0; i < decoded.length; i++)
         {

@@ -21,12 +21,12 @@
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.bind.DatatypeConverter;
 
 class OAuth2MockEndpoint
 {
@@ -44,7 +44,7 @@ class OAuth2MockEndpoint
         response.setContentType("application/json");
         if (_needsAuth)
         {
-            String expected = "Basic " + DatatypeConverter.printBase64Binary((OAuth2AuthenticationProviderImplTest.TEST_CLIENT_ID + ":" + OAuth2AuthenticationProviderImplTest.TEST_CLIENT_SECRET).getBytes(
+            String expected = "Basic " + Base64.getEncoder().encodeToString((OAuth2AuthenticationProviderImplTest.TEST_CLIENT_ID + ":" + OAuth2AuthenticationProviderImplTest.TEST_CLIENT_SECRET).getBytes(
                     OAuth2AuthenticationProviderImplTest.UTF8));
             doAssertEquals("Authorization required",
                            expected,

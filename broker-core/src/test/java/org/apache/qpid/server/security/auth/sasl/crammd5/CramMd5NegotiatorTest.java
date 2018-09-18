@@ -31,8 +31,7 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import javax.xml.bind.DatatypeConverter;
+import java.util.Base64;
 
 import org.junit.After;
 import org.junit.Before;
@@ -309,7 +308,7 @@ public class CramMd5NegotiatorTest extends UnitTestBase
         byte[] data = new String(VALID_USERPASSWORD).getBytes(StandardCharsets.UTF_8);
         MessageDigest md = MessageDigest.getInstance("MD5");
         md.update(data);
-        char[] password = DatatypeConverter.printBase64Binary(md.digest()).toCharArray();
+        char[] password = Base64.getEncoder().encodeToString(md.digest()).toCharArray();
         when(_passwordSource.getPassword(eq(VALID_USERNAME))).thenReturn(password);
     }
 

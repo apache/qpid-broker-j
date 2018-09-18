@@ -131,7 +131,7 @@ public class AttributeValueConverterTest extends UnitTestBase
                             new Date(1000),
                             converter.convert(iso8601DateTime, object));
 
-        final String iso8601Date = "1970-01-02Z";
+        final String iso8601Date = "1970-01-02";
         assertEquals("Cannot convert date expressed as ISO8601 date",
                             new Date(TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)),
                             converter.convert(iso8601Date, object));

@@ -34,6 +34,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,7 +50,6 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -282,7 +282,7 @@ public class RestStressTestClient
 
             if (saslMechanism == null)
             {
-                _authorizationHeader = "Basic " + DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes(UTF_8));
+                _authorizationHeader = "Basic " + Base64.getEncoder().encodeToString((_username + ":" + _password).getBytes(UTF_8));
             }
             else
             {
@@ -530,7 +530,7 @@ public class RestStressTestClient
                 final byte[] messageAuthenticationCode = mac.doFinal(challengeBytes);
                 String responseAsString = username + " " + toHex(messageAuthenticationCode);
                 byte[] responseBytes = responseAsString.getBytes(UTF_8);
-                return DatatypeConverter.printBase64Binary(responseBytes);
+                return Base64.getEncoder().encodeToString(responseBytes);
             }
             catch (Exception e)
             {
@@ -546,7 +546,7 @@ public class RestStressTestClient
                 throw new IllegalArgumentException("Cannot convert string '"+ base64String+ "'to a byte[] - it does not appear to be base64 data");
             }
 
-            return DatatypeConverter.parseBase64Binary(base64String);
+            return Base64.getDecoder().decode(base64String);
         }
 
         private String toHex(byte[] data)

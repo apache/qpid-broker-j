@@ -26,10 +26,10 @@ import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.Port;
@@ -66,7 +66,7 @@ public class ServletConnectionPrincipal implements ManagementConnectionPrincipal
                 throw new RuntimeException("Cannot create SHA-256 hash", e);
             }
             byte[] digest = md.digest();
-            _sessionId = DatatypeConverter.printBase64Binary(digest).substring(0, HASH_TRUNCATION_LENGTH);
+            _sessionId = Base64.getEncoder().encodeToString(digest).substring(0, HASH_TRUNCATION_LENGTH);
         }
         else
         {

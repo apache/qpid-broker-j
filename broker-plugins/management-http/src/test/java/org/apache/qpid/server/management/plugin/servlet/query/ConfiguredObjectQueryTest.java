@@ -25,8 +25,13 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -35,8 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -316,9 +319,9 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     public void testQuery_DateEquality()
     {
         final long now = System.currentTimeMillis();
-        final Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(now);
-        String nowIso8601Str = DatatypeConverter.printDateTime(calendar);
+
+        final ZonedDateTime zonedDateTime = Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault());
+        String nowIso8601Str = DateTimeFormatter.ISO_ZONED_DATE_TIME.format(zonedDateTime);
 
         final UUID objectUuid = UUID.randomUUID();
 

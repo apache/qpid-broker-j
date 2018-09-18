@@ -32,7 +32,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.Subject;
-import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -42,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
+import org.apache.qpid.server.util.StringUtil;
 
 public class AuthenticationResultCacher
 {
@@ -147,7 +147,7 @@ public class AuthenticationResultCacher
                 credentialDigest = md.digest(credentialDigest);
             }
 
-            return DatatypeConverter.printHexBinary(credentialDigest);
+            return StringUtil.toHex(credentialDigest);
         }
         catch (NoSuchAlgorithmException e)
         {

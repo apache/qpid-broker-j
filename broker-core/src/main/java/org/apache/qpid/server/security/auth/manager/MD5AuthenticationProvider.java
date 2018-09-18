@@ -24,11 +24,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedObject;
@@ -75,7 +74,7 @@ public class MD5AuthenticationProvider
         }
 
         md.update(data);
-        return DatatypeConverter.printBase64Binary(md.digest());
+        return Base64.getEncoder().encodeToString(md.digest());
     }
 
     @Override

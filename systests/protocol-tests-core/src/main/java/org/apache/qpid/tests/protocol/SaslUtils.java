@@ -23,10 +23,20 @@ import java.nio.charset.StandardCharsets;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 
 public class SaslUtils
 {
+    private static final char[] HEX = "0123456789abcdef".toCharArray();
+
+    private static String toHex(byte[] bin)
+    {
+        StringBuilder result = new StringBuilder(2 * bin.length);
+        for (byte b : bin) {
+            result.append(HEX[(b >> 4) & 0xF]);
+            result.append(HEX[(b & 0xF)]);
+        }
+        return result.toString();
+    }
     public static byte[] generateCramMD5ClientResponse(String userName, String userPassword, byte[] challengeBytes)
             throws Exception
     {
@@ -34,8 +44,7 @@ public class SaslUtils
         Mac mac = Mac.getInstance(macAlgorithm);
         mac.init(new SecretKeySpec(userPassword.getBytes(StandardCharsets.UTF_8), macAlgorithm));
         final byte[] messageAuthenticationCode = mac.doFinal(challengeBytes);
-        String responseAsString = userName + " " + DatatypeConverter.printHexBinary(messageAuthenticationCode)
-                                                                    .toLowerCase();
+        String responseAsString = userName + " " + toHex(messageAuthenticationCode);
         return responseAsString.getBytes();
     }
 }

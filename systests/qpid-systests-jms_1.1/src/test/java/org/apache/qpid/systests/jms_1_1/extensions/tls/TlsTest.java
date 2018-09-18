@@ -43,6 +43,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.Key;
 import java.security.cert.Certificate;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +52,6 @@ import java.util.Map;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Session;
-import javax.xml.bind.DatatypeConverter;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -685,7 +685,7 @@ public class TlsTest extends JmsTestBase
         {
             Key pvt = ks.getKey(TestSSLConstants.CERT_ALIAS_APP1, KEYSTORE_PASSWORD.toCharArray());
             kos.write("-----BEGIN PRIVATE KEY-----\n".getBytes());
-            String base64encoded = DatatypeConverter.printBase64Binary(pvt.getEncoded());
+            String base64encoded = Base64.getEncoder().encodeToString(pvt.getEncoded());
             while (base64encoded.length() > 76)
             {
                 kos.write(base64encoded.substring(0, 76).getBytes());
@@ -705,7 +705,7 @@ public class TlsTest extends JmsTestBase
             for (Certificate pub : chain)
             {
                 cos.write("-----BEGIN CERTIFICATE-----\n".getBytes());
-                String base64encoded = DatatypeConverter.printBase64Binary(pub.getEncoded());
+                String base64encoded = Base64.getEncoder().encodeToString(pub.getEncoded());
                 while (base64encoded.length() > 76)
                 {
                     cos.write(base64encoded.substring(0, 76).getBytes());
@@ -739,7 +739,7 @@ public class TlsTest extends JmsTestBase
             {
                 Certificate pub = ks.getCertificate(alias);
                 cos.write("-----BEGIN CERTIFICATE-----\n".getBytes());
-                String base64encoded = DatatypeConverter.printBase64Binary(pub.getEncoded());
+                String base64encoded = Base64.getEncoder().encodeToString(pub.getEncoded());
                 while (base64encoded.length() > 76)
                 {
                     cos.write(base64encoded.substring(0, 76).getBytes());

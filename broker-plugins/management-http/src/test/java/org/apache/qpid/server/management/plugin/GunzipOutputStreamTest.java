@@ -25,8 +25,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-
-import javax.xml.bind.DatatypeConverter;
+import java.util.Base64;
 
 import org.junit.Test;
 
@@ -64,7 +63,7 @@ public class GunzipOutputStreamTest extends UnitTestBase
     @Test
     public void testDecompressingWithEmbeddedFileName() throws Exception
     {
-        byte[] data = DatatypeConverter.parseBase64Binary(GZIP_CONTENT_WITH_EMBEDDED_FILE_NAME);
+        byte[] data = Base64.getDecoder().decode(GZIP_CONTENT_WITH_EMBEDDED_FILE_NAME);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         GunzipOutputStream guos = new GunzipOutputStream(outputStream);
@@ -77,7 +76,7 @@ public class GunzipOutputStreamTest extends UnitTestBase
     @Test
     public void testDecompressingMultipleMembers() throws Exception
     {
-        byte[] data = DatatypeConverter.parseBase64Binary(GZIP_CONTENT_WITH_MULTIPLE_MEMBERS);
+        byte[] data = Base64.getDecoder().decode(GZIP_CONTENT_WITH_MULTIPLE_MEMBERS);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         GunzipOutputStream guos = new GunzipOutputStream(outputStream);

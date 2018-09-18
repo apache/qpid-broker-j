@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +41,6 @@ import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.SaslException;
-import javax.xml.bind.DatatypeConverter;
 
 import org.junit.After;
 import org.junit.Before;
@@ -369,7 +369,7 @@ public class ScramNegotiatorTest extends UnitTestBase
         byte[] saltedPassword = generateSaltedPassword(passwordBytes, hmacName, _iterationCount, salt);
 
         String clientFinalMessageWithoutProof =
-                "c=" + DatatypeConverter.printBase64Binary(GS2_HEADER.getBytes(ASCII))
+                "c=" + Base64.getEncoder().encodeToString(GS2_HEADER.getBytes(ASCII))
                 + ",r=" + nonce;
 
         String authMessage = _clientFirstMessageBare + "," + serverFirstMessage + "," + clientFinalMessageWithoutProof;
@@ -384,7 +384,7 @@ public class ScramNegotiatorTest extends UnitTestBase
         byte[] serverKey = computeHmac(saltedPassword, "Server Key", hmacName);
         _serverSignature = computeHmac(serverKey, authMessage, hmacName);
         String finalMessageWithProof = clientFinalMessageWithoutProof
-                                       + ",p=" + DatatypeConverter.printBase64Binary(clientProof);
+                                       + ",p=" + Base64.getEncoder().encodeToString(clientProof);
         return finalMessageWithProof.getBytes();
     }
 

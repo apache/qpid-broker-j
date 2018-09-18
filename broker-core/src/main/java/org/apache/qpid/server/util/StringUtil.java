@@ -25,21 +25,29 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
-import javax.xml.bind.DatatypeConverter;
-
-
 public class StringUtil
 {
     private static final String NUMBERS = "0123456789";
     private static final String LETTERS = "abcdefghijklmnopqrstuvwxwy";
     private static final String OTHERS = "_-";
     private static final char[] CHARACTERS = (NUMBERS + LETTERS + LETTERS.toUpperCase() + OTHERS).toCharArray();
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
     private Random _random = new Random();
 
     public static String elideDataUrl(final String path)
     {
         return String.valueOf(path).toLowerCase().startsWith("data:") ? "data:..." : path;
+    }
+
+    public static String toHex(byte[] bin)
+    {
+        StringBuilder result = new StringBuilder(2 * bin.length);
+        for (byte b : bin) {
+            result.append(HEX[(b >> 4) & 0xF]);
+            result.append(HEX[(b & 0xF)]);
+        }
+        return result.toString();
     }
 
     public String randomAlphaNumericString(int maxLength)
@@ -80,7 +88,7 @@ public class StringUtil
         try
         {
             byte[] digest = MessageDigest.getInstance("MD5").digest(managerName.getBytes(StandardCharsets.UTF_8));
-            builder.append(DatatypeConverter.printHexBinary(digest).toLowerCase());
+            builder.append(toHex(digest).toLowerCase());
         }
         catch (NoSuchAlgorithmException e)
         {

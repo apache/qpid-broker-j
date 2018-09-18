@@ -35,6 +35,7 @@ import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.security.KeyStore;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 
@@ -43,7 +44,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
-import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -143,7 +143,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
     private void checkSSLExcluded(String clientProtocol, final Transport... transports) throws Exception
     {
         KeyStore keyStore = KeyStore.getInstance("JKS");
-        keyStore.load(new ByteArrayInputStream(DatatypeConverter.parseBase64Binary(keystoreString)), "password".toCharArray());
+        keyStore.load(new ByteArrayInputStream(Base64.getDecoder().decode(keystoreString)), "password".toCharArray());
 
 
         final SSLContext sslContext = SSLContext.getInstance("TLS");
