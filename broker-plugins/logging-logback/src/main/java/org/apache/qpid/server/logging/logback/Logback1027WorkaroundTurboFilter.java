@@ -43,7 +43,11 @@ public class Logback1027WorkaroundTurboFilter extends TurboFilter
                               final Object[] params,
                               final Throwable t)
     {
-        if (t != null && hasRecursiveThrowableReference(t, null))
+
+        Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>());
+
+
+        if (t != null && hasRecursiveThrowableReference(t, seen))
         {
             final int locationAwareLoggerInteger = Level.toLocationAwareLoggerInteger(level);
             logger.log(marker, logger.getName(), locationAwareLoggerInteger, format, params, new StringifiedException(t));
@@ -59,12 +63,6 @@ public class Logback1027WorkaroundTurboFilter extends TurboFilter
         {
             return false;
         }
-
-        if (seen == null)
-        {
-            seen = Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>());
-        }
-
         if (!seen.add(t))
         {
             return true;
