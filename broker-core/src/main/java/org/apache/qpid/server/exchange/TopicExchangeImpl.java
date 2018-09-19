@@ -140,18 +140,19 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
                                                                                      InstanceProperties instanceProperties,
                                                                                      RoutingResult<M> result)
     {
-        final String routingKey = routingAddress == null ? "" : routingAddress;
+        final String routingKey = routingAddress == null
+                ? ""
+                : routingAddress;
 
         final Map<MessageDestination, Set<String>> matchedDestinations =
                 getMatchedDestinations(Filterable.Factory.newInstance(payload, instanceProperties), routingKey);
 
-        if (!matchedDestinations.isEmpty())
+        for(Map.Entry<MessageDestination, Set<String>> entry : matchedDestinations.entrySet())
         {
-            for (Map.Entry<MessageDestination, Set<String>> entry : matchedDestinations.entrySet())
-            {
-                MessageDestination destination = entry.getKey();
-                entry.getValue().forEach(key -> result.add(destination.route(payload, key, instanceProperties)));
-            }
+            MessageDestination destination = entry.getKey();
+            Set<String> replacementKeys = entry.getValue();
+            replacementKeys.forEach(replacementKey -> result.add(destination.route(payload, replacementKey == null ? routingAddress : replacementKey, instanceProperties)));
+
         }
     }
 
@@ -196,18 +197,32 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
         }
     }
 
-    private Map<MessageDestination, Set<String>> getMatchedDestinations(final Filterable message,
-                                                                        final String routingKey)
+    private Map<MessageDestination, Set<String>> getMatchedDestinations(Filterable message, String routingKey)
     {
-        final Collection<TopicMatcherResult> results = _parser.parse(routingKey);
+        Collection<TopicMatcherResult> results = _parser.parse(routingKey);
         if (!results.isEmpty())
         {
-            final Map<MessageDestination, Set<String>> matchedDestinations = new HashMap<>();
+            Map<MessageDestination, Set<String>> matchedDestinations = new HashMap<>();
             for (TopicMatcherResult result : results)
             {
-                if (result instanceof TopicExchangeResult)
+                TopicExchangeResult topicExchangeResult = (TopicExchangeResult) result;
+                Map<MessageDestination, String> destinations = topicExchangeResult.processMessage(message);
+                if (!destinations.isEmpty())
                 {
-                    ((TopicExchangeResult) result).processMessage(message, matchedDestinations, routingKey);
+                    destinations.forEach((destination, replacementKey) ->
+                                 {
+                                     Set<String> currentKeys = matchedDestinations.get(destination);
+                                     if (currentKeys == null)
+                                     {
+                                         matchedDestinations.put(destination, Collections.singleton(replacementKey));
+                                     }
+                                     else if (!currentKeys.contains(replacementKey))
+                                     {
+                                         Set<String> newKeys = new HashSet<>(currentKeys);
+                                         newKeys.add(replacementKey);
+                                         matchedDestinations.put(destination, newKeys);
+                                     }
+                                 });
                 }
             }
             return matchedDestinations;
