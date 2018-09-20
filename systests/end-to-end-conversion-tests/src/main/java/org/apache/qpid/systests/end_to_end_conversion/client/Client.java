@@ -150,6 +150,12 @@ public class Client
             e.printStackTrace();
             e.printStackTrace(System.out);
         }
+        catch (Error e)
+        {
+            e.printStackTrace();
+            e.printStackTrace(System.out);
+            throw e;
+        }
     }
 
     private String stringifyStacktrace(final Throwable e)

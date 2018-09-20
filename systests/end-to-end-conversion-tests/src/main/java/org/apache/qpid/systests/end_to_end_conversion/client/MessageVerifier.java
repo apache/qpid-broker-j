@@ -40,8 +40,6 @@ import javax.jms.ObjectMessage;
 import javax.jms.StreamMessage;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.server.util.StringUtil;
-
 public class MessageVerifier
 {
     public static void verifyMessage(final MessageDescription messageDescription, final Message message)
@@ -258,16 +256,6 @@ public class MessageVerifier
             {
                 final byte[] expectedValueAsBytes = (byte[]) expectedValue;
                 final byte[] actualValueAsBytes = (byte[]) actualValue;
-                String expectedValueAsString = StringUtil.toHex(expectedValueAsBytes);
-                if (expectedValueAsString.length() > 20)
-                {
-                    expectedValueAsString = expectedValueAsString.substring(0, 20) + "...";
-                }
-                String actualValueAsString = StringUtil.toHex(actualValueAsBytes);
-                if (actualValueAsString.length() > 20)
-                {
-                    actualValueAsString = actualValueAsString.substring(0, 20) + "...";
-                }
                 if (expectedValueAsBytes.length != actualValueAsBytes.length)
                 {
                     throw new VerificationException(String.format(
@@ -275,15 +263,15 @@ public class MessageVerifier
                             failureMessage,
                             expectedValueAsBytes.length,
                             actualValueAsBytes.length,
-                            expectedValueAsString,
-                            actualValueAsString));
+                            encode(expectedValueAsBytes),
+                            encode(actualValueAsBytes)));
                 }
                 if (!Arrays.equals(expectedValueAsBytes, actualValueAsBytes))
                 {
                     throw new VerificationException(String.format("%s: arrays do not match ('%s' vs '%s')",
                                                                   failureMessage,
-                                                                  expectedValueAsString,
-                                                                  actualValueAsString));
+                                                                  encode(expectedValueAsBytes),
+                                                                  encode(actualValueAsBytes)));
                 }
             }
             else if (expectedValue instanceof Map)
@@ -351,5 +339,27 @@ public class MessageVerifier
                 }
             }
         }
+    }
+
+    private static String encode(final byte[] expectedValueAsBytes)
+    {
+        String expectedValueAsString = toHex(expectedValueAsBytes);
+        if (expectedValueAsString.length() > 20)
+        {
+            expectedValueAsString = expectedValueAsString.substring(0, 20) + "...";
+        }
+        return expectedValueAsString;
+    }
+
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
+
+    private static String toHex(byte[] bin)
+    {
+        StringBuilder result = new StringBuilder(2 * bin.length);
+        for (byte b : bin) {
+            result.append(HEX[(b >> 4) & 0xF]);
+            result.append(HEX[(b & 0xF)]);
+        }
+        return result.toString();
     }
 }
