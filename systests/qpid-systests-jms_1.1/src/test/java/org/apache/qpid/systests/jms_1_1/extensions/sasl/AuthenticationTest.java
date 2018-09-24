@@ -56,6 +56,8 @@ import javax.jms.TemporaryQueue;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -69,11 +71,13 @@ import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManage
 import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5HashedNegotiator;
+import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class AuthenticationTest extends JmsTestBase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationTest.class);
     private static final String USER = "user";
     private static final String USER_PASSWORD = "user";
 
@@ -409,11 +413,24 @@ public class AuthenticationTest extends JmsTestBase
             for (Map<String, Object> connection : connections)
             {
                 String name = String.valueOf(connection.get(ConfiguredObject.NAME));
-                Map<String, Object> attributes = readEntityUsingAmqpManagement(
-                        getPortName() + "/" + name,
-                        "org.apache.qpid.Connection",
-                        false,
-                        brokerConnection);
+                Map<String, Object> attributes;
+                try
+                {
+                    attributes = readEntityUsingAmqpManagement(
+                            getPortName() + "/" + name,
+                            "org.apache.qpid.Connection",
+                            false,
+                            brokerConnection);
+                }
+                catch (AmqpManagementFacade.OperationUnsuccessfulException e)
+                {
+                    LOGGER.error("Read operation failed for an existing object '{}' having attributes '{}': {}",
+                                 getPortName() + "/" + name,
+                                 connection,
+                                 e.getMessage(),
+                                 e);
+                    throw e;
+                }
                 if (attributes.get(org.apache.qpid.server.model.Connection.CLIENT_ID).equals(clientId))
                 {
                     principal = String.valueOf(attributes.get(org.apache.qpid.server.model.Connection.PRINCIPAL));
