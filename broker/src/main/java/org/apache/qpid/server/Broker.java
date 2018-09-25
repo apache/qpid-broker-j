@@ -145,8 +145,9 @@ public class Broker
             public Object run() throws Exception
             {
                 StartupAppender startupAppender = null;
+                ch.qos.logback.classic.Logger logger = null;
                 if (LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) instanceof ch.qos.logback.classic.Logger){
-                    ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+                    logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
                     if (!logger.iteratorForAppenders().hasNext())
                     {
                         logger.setLevel(Level.ALL);
@@ -173,8 +174,10 @@ public class Broker
                 }
                 finally
                 {
-                    if (startupAppender != null){
-                        logger.detachAppender(startupAppender);
+                    if (startupAppender != null) {
+                        if (logger != null ) {
+                            logger.detachAppender(startupAppender);
+                        }
                         startupAppender.stop();
                     }
                 }
