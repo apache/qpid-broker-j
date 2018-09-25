@@ -144,18 +144,20 @@ public class Broker
             @Override
             public Object run() throws Exception
             {
-                ch.qos.logback.classic.Logger logger =
+                if (LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) instanceof ch.qos.logback.classic.Logger){
+                    ch.qos.logback.classic.Logger logger =
                         (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-                if (!logger.iteratorForAppenders().hasNext())
-                {
-                    logger.setLevel(Level.ALL);
-                    logger.setAdditive(true);
-                }
+                    if (!logger.iteratorForAppenders().hasNext())
+                    {
+                        logger.setLevel(Level.ALL);
+                        logger.setAdditive(true);
+                    }
 
-                StartupAppender startupAppender = new StartupAppender();
-                startupAppender.setContext(logger.getLoggerContext());
-                startupAppender.start();
-                logger.addAppender(startupAppender);
+                    StartupAppender startupAppender = new StartupAppender();
+                    startupAppender.setContext(logger.getLoggerContext());
+                    startupAppender.start();
+                    logger.addAppender(startupAppender);
+                }
 
                 try
                 {
