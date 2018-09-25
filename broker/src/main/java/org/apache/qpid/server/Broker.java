@@ -212,15 +212,16 @@ public class Broker
             @Override
             public void run()
             {
-
-                ch.qos.logback.classic.Logger rootLogger =
+                if (LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) instanceof ch.qos.logback.classic.Logger){
+                    ch.qos.logback.classic.Logger rootLogger =
                         (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
-                StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
-                if (startupAppender != null)
-                {
-                    rootLogger.detachAppender(startupAppender);
-                    startupAppender.stop();
+                    StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
+                    if (startupAppender != null)
+                    {
+                        rootLogger.detachAppender(startupAppender);
+                        startupAppender.stop();
+                    }
                 }
 
             }
