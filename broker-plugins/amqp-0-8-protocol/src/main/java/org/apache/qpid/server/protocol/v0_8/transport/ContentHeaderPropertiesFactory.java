@@ -43,13 +43,12 @@ public class ContentHeaderPropertiesFactory
         BasicContentHeaderProperties properties;
         if (classId == BasicConsumeBody.CLASS_ID)
         {
-        	properties = new BasicContentHeaderProperties();
+            properties = new BasicContentHeaderProperties(buffer, propertyFlags, size);
         }
         else
         {
-        	throw new AMQFrameDecodingException("Unsupported content header class id: " + classId, null);
+            throw new AMQFrameDecodingException("Unsupported content header class id: " + classId, null);
         }
-        properties.populatePropertiesFromBuffer(buffer, propertyFlags, size);
         return properties;
     }
 }

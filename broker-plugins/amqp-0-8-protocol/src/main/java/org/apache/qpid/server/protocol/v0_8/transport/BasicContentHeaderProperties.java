@@ -346,8 +346,7 @@ public class BasicContentHeaderProperties
 
     }
 
-    public synchronized void populatePropertiesFromBuffer(QpidByteBuffer buffer, int propertyFlags, int size) throws
-                                                                                                              AMQFrameDecodingException
+    public BasicContentHeaderProperties(QpidByteBuffer buffer, int propertyFlags, int size) throws AMQFrameDecodingException
     {
         _propertyFlags = propertyFlags;
 

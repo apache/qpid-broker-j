@@ -349,15 +349,11 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 }
 
                 long bodySize = _currentMessage.getSize();
-                long timestamp = contentHeader.getProperties().getTimestamp();
-
                 try
                 {
 
-                    final MessagePublishInfo messagePublishInfo = _currentMessage.getMessagePublishInfo();
-
                     final MessageMetaData messageMetaData =
-                            new MessageMetaData(messagePublishInfo,
+                            new MessageMetaData(info,
                                                 contentHeader,
                                                 getConnection().getLastReadTime());
 
@@ -381,8 +377,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         _currentMessage = null;
 
 
-                        final boolean immediate = messagePublishInfo.isImmediate();
-
                         final InstanceProperties instanceProperties =
                                 new InstanceProperties()
                                 {
@@ -394,11 +388,11 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                             case EXPIRATION:
                                                 return amqMessage.getExpiration();
                                             case IMMEDIATE:
-                                                return immediate;
+                                                return amqMessage.isImmediate();
                                             case PERSISTENT:
                                                 return amqMessage.isPersistent();
                                             case MANDATORY:
-                                                return messagePublishInfo.isMandatory();
+                                                return amqMessage.isMandatory();
                                             case REDELIVERED:
                                                 return false;
                                         }
@@ -411,7 +405,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                   amqMessage.getInitialRoutingAddress(),
                                                   instanceProperties);
 
-                        int enqueues = result.send(_transaction, immediate ? _immediateAction : null);
+                        int enqueues = result.send(_transaction, amqMessage.isImmediate() ? _immediateAction : null);
                         if (enqueues == 0)
                         {
                             boolean mandatory = amqMessage.isMandatory();

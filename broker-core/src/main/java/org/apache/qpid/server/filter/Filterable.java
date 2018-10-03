@@ -49,10 +49,12 @@ public interface Filterable extends FilterableMessage
             return new Filterable()
             {
 
+                private final AMQMessageHeader _messageHeader = message.getMessageHeader();
+
                 @Override
                 public AMQMessageHeader getMessageHeader()
                 {
-                    return message.getMessageHeader();
+                    return _messageHeader;
                 }
 
                 @Override
@@ -88,49 +90,49 @@ public interface Filterable extends FilterableMessage
                 @Override
                 public String getReplyTo()
                 {
-                    return message.getMessageHeader().getReplyTo();
+                    return _messageHeader.getReplyTo();
                 }
 
                 @Override
                 public String getType()
                 {
-                    return message.getMessageHeader().getType();
+                    return _messageHeader.getType();
                 }
 
                 @Override
                 public byte getPriority()
                 {
-                    return message.getMessageHeader().getPriority();
+                    return _messageHeader.getPriority();
                 }
 
                 @Override
                 public String getMessageId()
                 {
-                    return message.getMessageHeader().getMessageId();
+                    return _messageHeader.getMessageId();
                 }
 
                 @Override
                 public long getTimestamp()
                 {
-                    return message.getMessageHeader().getTimestamp();
+                    return _messageHeader.getTimestamp();
                 }
 
                 @Override
                 public String getCorrelationId()
                 {
-                    return message.getMessageHeader().getCorrelationId();
+                    return _messageHeader.getCorrelationId();
                 }
 
                 @Override
                 public long getExpiration()
                 {
-                    return message.getMessageHeader().getExpiration();
+                    return _messageHeader.getExpiration();
                 }
 
                 @Override
                 public Object getHeader(String name)
                 {
-                    return message.getMessageHeader().getHeader(name);
+                    return _messageHeader.getHeader(name);
                 }
 
                 @Override

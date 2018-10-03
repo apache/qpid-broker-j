@@ -44,7 +44,7 @@ public class MessageMetaData implements StorableMessageMetaData
     private final ContentHeaderBody _contentHeaderBody;
 
 
-    private long _arrivalTime;
+    private final long _arrivalTime;
     private static final byte MANDATORY_FLAG = 1;
     private static final byte IMMEDIATE_FLAG = 2;
     public static final MessageMetaDataType.Factory<MessageMetaData> FACTORY = new MetaDataFactory();
@@ -65,7 +65,7 @@ public class MessageMetaData implements StorableMessageMetaData
     }
 
 
-    public synchronized ContentHeaderBody getContentHeaderBody()
+    public ContentHeaderBody getContentHeaderBody()
     {
         return _contentHeaderBody;
     }

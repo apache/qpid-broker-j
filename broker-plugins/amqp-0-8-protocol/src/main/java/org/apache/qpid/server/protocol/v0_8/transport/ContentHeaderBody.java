@@ -179,8 +179,7 @@ public class ContentHeaderBody implements AMQBody
         {
             throw new AMQFrameDecodingException("Unsupported content header class id: " + classId, null);
         }
-        properties = new BasicContentHeaderProperties();
-        properties.populatePropertiesFromBuffer(buffer, propertyFlags, (int)(size-14));
+        properties = new BasicContentHeaderProperties(buffer, propertyFlags, (int)(size-14));
 
         if(!methodProcessor.ignoreAllButCloseOk())
         {

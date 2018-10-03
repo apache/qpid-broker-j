@@ -62,13 +62,10 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
     public String getInitialRoutingAddress()
     {
         MessageMetaData messageMetaData = getMessageMetaData();
-        if (messageMetaData != null)
+        AMQShortString routingKey = messageMetaData.getMessagePublishInfo().getRoutingKey();
+        if (routingKey != null)
         {
-            AMQShortString routingKey = messageMetaData.getMessagePublishInfo().getRoutingKey();
-            if (routingKey != null)
-            {
-                return routingKey.toString();
-            }
+            return routingKey.toString();
         }
         return "";
     }
@@ -115,7 +112,7 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
     @Override
     public long getExpiration()
     {
-        return getMessageHeader().getExpiration();
+        return getMessageMetaData().getContentHeaderBody().getProperties().getExpiration();
     }
 
     @Override

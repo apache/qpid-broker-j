@@ -21,6 +21,9 @@
 package org.apache.qpid.server.protocol.v0_8.transport;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -88,7 +91,8 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
     public void testPopulatePropertiesFromBuffer() throws Exception
     {
         QpidByteBuffer buf = QpidByteBuffer.wrap(new byte[300]);
-        _testProperties.populatePropertiesFromBuffer(buf, 99, 99);
+        _testProperties.dispose();
+        _testProperties = new BasicContentHeaderProperties(buf, 99, 99);
     }
 
     @Test
@@ -205,4 +209,57 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
         assertEquals(clusterId, _testProperties.getClusterIdAsString());
     }
 
+    private static final int BUFFER_SIZE = 1024 * 10;
+    private static final int POOL_SIZE = 20;
+    private static final double SPARSITY_FRACTION = 0.5;
+
+    @Test
+    public void testRellocate() throws Exception
+    {
+        try
+        {
+            QpidByteBuffer.deinitialisePool();
+            QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
+            try (QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(BUFFER_SIZE))
+            {
+                // set some test fields
+                _testProperties.setContentType("text/plain");
+                _testProperties.setUserId("test");
+                final Map<String, Object> headers = FieldTable.convertToMap(_testProperties.getHeaders());
+                final int propertyListSize = _testProperties.getPropertyListSize();
+                final int flags = _testProperties.getPropertyFlags();
+
+                // write at the buffer end
+                final int pos = BUFFER_SIZE - propertyListSize * 2;
+                buffer.position(pos);
+
+                try (QpidByteBuffer propertiesBuffer = buffer.view(0, propertyListSize))
+                {
+                    _testProperties.writePropertyListPayload(propertiesBuffer);
+                    propertiesBuffer.flip();
+
+                    BasicContentHeaderProperties testProperties = new BasicContentHeaderProperties(propertiesBuffer, flags, propertyListSize);
+                    FieldTable headersBeforeReallocation = testProperties.getHeaders();
+                    assertEquals("Unexpected headers",
+                                 headers,
+                                 FieldTable.convertToMap(headersBeforeReallocation));
+
+                    buffer.dispose();
+
+                    assertTrue("Properties buffer should be sparse", propertiesBuffer.isSparse());
+                    testProperties.reallocate();
+
+                    FieldTable headersAfterReallocation = testProperties.getHeaders();
+
+                    assertEquals("Unexpected headers after re-allocation",
+                                 headers,
+                                 FieldTable.convertToMap(headersAfterReallocation));
+                }
+            }
+        }
+        finally
+        {
+            QpidByteBuffer.deinitialisePool();
+        }
+    }
 }

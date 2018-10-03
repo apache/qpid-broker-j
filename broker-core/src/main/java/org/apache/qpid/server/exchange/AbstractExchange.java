@@ -618,7 +618,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             }
 
             _receivedMessageCount.incrementAndGet();
-            _receivedMessageSize.addAndGet(message.getSizeIncludingHeader());
+            long sizeIncludingHeader = message.getSizeIncludingHeader();
+            _receivedMessageSize.addAndGet(sizeIncludingHeader);
 
             doRoute(message, routingAddress, instanceProperties, routingResult);
 
@@ -634,12 +635,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             if (routingResult.hasRoutes())
             {
                 _routedMessageCount.incrementAndGet();
-                _routedMessageSize.addAndGet(message.getSizeIncludingHeader());
+                _routedMessageSize.addAndGet(sizeIncludingHeader);
             }
             else
             {
                 _droppedMessageCount.incrementAndGet();
-                _droppedMessageSize.addAndGet(message.getSizeIncludingHeader());
+                _droppedMessageSize.addAndGet(sizeIncludingHeader);
             }
 
             return routingResult;
