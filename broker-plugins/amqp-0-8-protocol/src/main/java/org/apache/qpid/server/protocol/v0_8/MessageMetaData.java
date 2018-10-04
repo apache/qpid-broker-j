@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -211,8 +212,7 @@ public class MessageMetaData implements StorableMessageMetaData
         @Override
         public String getGroupId()
         {
-            String jmsXGroupId = getProperties().getHeaders().getString("JMSXGroupID");
-            return jmsXGroupId == null ? null : jmsXGroupId;
+            return Objects.toString(getHeader("JMSXGroupID"), null);
         }
 
         @Override

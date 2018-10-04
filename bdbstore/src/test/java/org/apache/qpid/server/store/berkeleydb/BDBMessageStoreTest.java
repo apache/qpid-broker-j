@@ -30,12 +30,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.util.Collections;
 
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
+import org.apache.qpid.server.protocol.v0_8.FieldTableFactory;
 import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
@@ -96,7 +98,7 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
         BasicContentHeaderProperties props = new BasicContentHeaderProperties();
         props.setDeliveryMode(Integer.valueOf(BasicContentHeaderProperties.PERSISTENT).byteValue());
         props.setContentType("text/html");
-        props.getHeaders().setString("Test", "MST");
+        props.setHeaders(FieldTableFactory.createFieldTable(Collections.singletonMap("Test", "MST")));
         return props;
     }
 

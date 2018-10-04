@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v0_8.transport;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.junit.Before;
@@ -31,6 +32,7 @@ import org.junit.Test;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.FieldTableFactory;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class BasicContentHeaderPropertiesTest extends UnitTestBase
@@ -52,9 +54,11 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
     @Before
     public void setUp() throws Exception
     {
-        _testTable = new FieldTable();
-        _testTable.setString("TestString", _testString);
-        _testTable.setInteger("Testint", _testint);
+        Map<String, Object> headers = new LinkedHashMap<>();
+        headers.put("TestString", _testString);
+        headers.put("Testint", _testint);
+        _testTable = FieldTableFactory.createFieldTable(headers);
+
         _testProperties = new BasicContentHeaderProperties();
         _testProperties.setHeaders(_testTable);
     }

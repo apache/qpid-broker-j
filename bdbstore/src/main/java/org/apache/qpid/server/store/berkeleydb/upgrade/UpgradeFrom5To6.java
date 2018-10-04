@@ -60,6 +60,7 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.UUIDGenerator;
+import org.apache.qpid.server.protocol.v0_8.FieldTableFactory;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.AMQShortStringEncoding;
@@ -536,10 +537,10 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
         attributesMap.put(Queue.NAME, queueName);
         attributesMap.put(Queue.EXCLUSIVE, exclusive);
 
-        FieldTable argumentsCopy = new FieldTable();
+        HashMap<String, Object> argumentsCopy = new HashMap<>();
         if (arguments != null)
         {
-            argumentsCopy.addAll(arguments);
+            argumentsCopy.putAll(FieldTable.convertToMap(arguments));
         }
 
         if (moveNonExclusiveOwnerToDescription(owner, exclusive))
@@ -547,7 +548,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             LOGGER.info("Non-exclusive owner " + owner + " for queue " + queueName + " moved to " + QueueArgumentsConverter.X_QPID_DESCRIPTION);
 
             attributesMap.put(Queue.OWNER, null);
-            argumentsCopy.setObject(QueueArgumentsConverter.X_QPID_DESCRIPTION, owner);
+            argumentsCopy.put(QueueArgumentsConverter.X_QPID_DESCRIPTION, owner);
         }
         else
         {
@@ -555,7 +556,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
         }
         if (!argumentsCopy.isEmpty())
         {
-            attributesMap.put(ARGUMENTS, FieldTable.convertToMap(argumentsCopy));
+            attributesMap.put(ARGUMENTS, argumentsCopy);
         }
         return attributesMap;
     }

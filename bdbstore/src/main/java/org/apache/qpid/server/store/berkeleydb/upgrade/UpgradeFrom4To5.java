@@ -23,8 +23,11 @@ package org.apache.qpid.server.store.berkeleydb.upgrade;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.sleepycat.bind.tuple.ByteBinding;
@@ -44,6 +47,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.FieldTableFactory;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQProtocolVersionException;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
@@ -130,21 +134,23 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
                     if (potentialDurableSubs.contains(queueName)
                             && exchangeName.equals(AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME)))
                     {
-                        if (arguments == null)
+                        Map<String, Object> argumentsMap = new HashMap<>();
+                        if (arguments != null)
                         {
-                            arguments = new FieldTable();
+                            argumentsMap.putAll(FieldTable.convertToMap(arguments));
                         }
 
                         String selectorFilterKey = AMQPFilterTypes.JMS_SELECTOR.getValue();
-                        if (!arguments.containsKey(selectorFilterKey))
+                        if (!argumentsMap.containsKey(selectorFilterKey))
                         {
                             if (LOGGER.isDebugEnabled())
                             {
                                 LOGGER.info("adding the empty string (i.e. 'no selector') value for " + queueName
                                         + " and exchange " + exchangeName);
                             }
-                            arguments.setObject(selectorFilterKey, "");
+                            argumentsMap.put(selectorFilterKey, "");
                         }
+                        arguments = FieldTable.convertToFieldTable(argumentsMap);
                     }
                     addBindingToDatabase(bindingTuple, targetDatabase, transaction, queueName, exchangeName, routingKey,
                             arguments);
@@ -320,7 +326,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
                 binding.objectToEntry(record, newValue);
                 newQueueDatabase.put(transaction, key, newValue);
 
-                FieldTable emptyArguments = new FieldTable();
+                FieldTable emptyArguments = FieldTableFactory.createFieldTable(Collections.emptyMap());
                 addBindingToDatabase(bindingTuple, newBindingsDatabase, transaction, queueNameAMQ,
                         AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_NAME), queueNameAMQ, emptyArguments);
 

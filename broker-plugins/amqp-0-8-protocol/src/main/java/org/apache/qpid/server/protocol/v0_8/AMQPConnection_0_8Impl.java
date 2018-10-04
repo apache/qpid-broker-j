@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -560,23 +561,23 @@ public class AMQPConnection_0_8Impl
     {
         if (clientProperties != null)
         {
-            String closeWhenNoRoute = clientProperties.getString(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE);
+            Object closeWhenNoRoute = clientProperties.get(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE);
             if (closeWhenNoRoute != null)
             {
-                _closeWhenNoRoute = Boolean.parseBoolean(closeWhenNoRoute);
+                _closeWhenNoRoute = Boolean.parseBoolean(String.valueOf(closeWhenNoRoute));
                 LOGGER.debug("Client set closeWhenNoRoute={} for connection {}", _closeWhenNoRoute, this);
             }
-            String compressionSupported = clientProperties.getString(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED);
+            Object compressionSupported = clientProperties.get(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED);
             if (compressionSupported != null)
             {
-                _compressionSupported = Boolean.parseBoolean(compressionSupported);
+                _compressionSupported = Boolean.parseBoolean(String.valueOf(compressionSupported));
                 LOGGER.debug("Client set compressionSupported={} for connection {}", _compressionSupported, this);
             }
 
-            String clientId = clientProperties.getString(ConnectionStartProperties.CLIENT_ID_0_8);
-            String clientVersion = clientProperties.getString(ConnectionStartProperties.VERSION_0_8);
-            String clientProduct = clientProperties.getString(ConnectionStartProperties.PRODUCT);
-            String remoteProcessPid = clientProperties.getString(ConnectionStartProperties.PID);
+            String clientId = Objects.toString(clientProperties.get(ConnectionStartProperties.CLIENT_ID_0_8), null);
+            String clientVersion = Objects.toString(clientProperties.get(ConnectionStartProperties.VERSION_0_8), null);
+            String clientProduct = Objects.toString(clientProperties.get(ConnectionStartProperties.PRODUCT), null);
+            String remoteProcessPid = Objects.toString(clientProperties.get(ConnectionStartProperties.PID), null);
 
             boolean mightBeQpidClient = clientProduct != null &&
                                         (clientProduct.toLowerCase().contains("qpid") || clientProduct.toLowerCase() .equals("unknown"));

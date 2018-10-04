@@ -30,7 +30,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.junit.Before;
@@ -96,9 +98,10 @@ public class AMQDecoderTest extends UnitTestBase
     public void testContentHeaderPropertiesFrame() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
     {
         final BasicContentHeaderProperties props = new BasicContentHeaderProperties();
-        final FieldTable table = new FieldTable();
-        table.setString("hello","world");
-        table.setInteger("1+1=",2);
+        Map<String, Object> headersMap = new LinkedHashMap<>();
+        headersMap.put("hello","world");
+        headersMap.put("1+1=",2);
+        final FieldTable table = FieldTableFactory.createFieldTable(headersMap);
         props.setHeaders(table);
         final AMQBody body = new ContentHeaderBody(props);
         AMQFrame frame = new AMQFrame(1, body);
@@ -115,7 +118,7 @@ public class AMQDecoderTest extends UnitTestBase
                                 (long) ((AMQFrame) firstFrame).getBodyFrame().getFrameType());
             BasicContentHeaderProperties decodedProps = ((ContentHeaderBody)((AMQFrame)firstFrame).getBodyFrame()).getProperties();
             final FieldTable headers = decodedProps.getHeaders();
-            assertEquals("world", headers.getString("hello"));
+            assertEquals("world", headers.get("hello"));
         }
         else
         {

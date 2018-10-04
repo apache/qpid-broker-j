@@ -74,7 +74,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
         _data = data;
     }
 
-    private static byte[] readAMQShortStringAsBytes(QpidByteBuffer buffer)
+    static byte[] readAMQShortStringAsBytes(QpidByteBuffer buffer)
     {
         int length = buffer.getUnsignedByte();
         if(length == 0)

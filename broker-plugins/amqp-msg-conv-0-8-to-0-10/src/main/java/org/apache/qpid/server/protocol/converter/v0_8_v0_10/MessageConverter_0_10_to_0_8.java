@@ -41,6 +41,7 @@ import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQPInvalidClassException;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.FieldTableFactory;
 import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
@@ -189,23 +190,16 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
                     }
                 }
 
-                FieldTable ft = new FieldTable();
-                for (Map.Entry<String, Object> entry : appHeaders.entrySet())
+                FieldTable ft;
+                try
                 {
-                    String headerName = entry.getKey();
-                    try
-                    {
-                        ft.setObject(headerName, entry.getValue());
-                    }
-                    catch (AMQPInvalidClassException e)
-                    {
-                        throw new MessageConversionException(String.format(
-                                "Could not convert message from 0-10 to 0-8 because conversion of application header '%s' failed.",
-                                headerName), e);
-                    }
+                    ft = FieldTableFactory.createFieldTable(appHeaders);
+                }
+                catch (IllegalArgumentException | AMQPInvalidClassException e)
+                {
+                    throw new MessageConversionException("Could not convert message from 0-10 to 0-8 because conversion of application headers failed.", e);
                 }
                 props.setHeaders(ft);
-
             }
         }
 

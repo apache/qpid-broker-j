@@ -127,4 +127,14 @@ public class FieldArray<T> extends AbstractCollection<T>
         }
         return new FieldArray<>(result);
     }
+
+    public static void skipFieldArray(final QpidByteBuffer buffer)
+    {
+        int size = buffer.getInt();
+        if (size > 0)
+        {
+            buffer.position(buffer.position() + size);
+        }
+    }
+
 }

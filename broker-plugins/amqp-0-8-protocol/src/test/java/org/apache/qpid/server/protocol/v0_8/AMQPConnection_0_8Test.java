@@ -220,7 +220,7 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         conn.create();
 
         conn.receiveProtocolHeader(new ProtocolInitiation(ProtocolVersion.v0_8));
-        conn.receiveConnectionStartOk(new FieldTable(), SASL_MECH, SASL_RESPONSE, LOCALE);
+        conn.receiveConnectionStartOk(FieldTableFactory.createFieldTable(Collections.emptyMap()), SASL_MECH, SASL_RESPONSE, LOCALE);
         int maxChannels = 10;
         conn.receiveConnectionTuneOk(maxChannels, 65535, 0);
         conn.receiveConnectionOpen(AMQShortString.createAMQShortString(VIRTUAL_HOST_NAME), AMQShortString.EMPTY_STRING, false);

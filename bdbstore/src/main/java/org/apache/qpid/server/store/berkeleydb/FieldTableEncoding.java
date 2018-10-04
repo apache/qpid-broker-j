@@ -26,6 +26,7 @@ import com.sleepycat.je.DatabaseException;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.FieldTableFactory;
 import org.apache.qpid.server.store.berkeleydb.tuple.ByteBufferBinding;
 
 import java.nio.ByteBuffer;
@@ -49,7 +50,7 @@ public class FieldTableEncoding
 
             ByteBuffer buf = ByteBufferBinding.getInstance().readByteBuffer(tupleInput, (int) length);
 
-            return new FieldTable(QpidByteBuffer.wrap(buf));
+            return FieldTableFactory.createFieldTable(QpidByteBuffer.wrap(buf));
 
         }
 

@@ -282,6 +282,10 @@ public abstract class AMQTypedValue
         {
             return AMQType.ASCII_CHARACTER.asTypedValue(val);
         }
+        else if (klass == Short.class)
+        {
+            return AMQType.SHORT.asTypedValue(val);
+        }
         else if(klass == Integer.class)
         {
             return AMQType.INT.asTypedValue(val);
@@ -322,7 +326,7 @@ public abstract class AMQTypedValue
         {
             return AMQType.FIELD_TABLE.asTypedValue(FieldTable.convertToFieldTable((Map<String,Object>)val));
         }
-        else if(klass == FieldTable.class)
+        else if(val instanceof FieldTable)
         {
             return AMQType.FIELD_TABLE.asTypedValue(val);
         }

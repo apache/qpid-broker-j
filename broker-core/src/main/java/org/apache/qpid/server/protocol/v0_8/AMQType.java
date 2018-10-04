@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Date;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
@@ -63,6 +64,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return EncodingUtils.readLongString(buffer);
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            EncodingUtils.skipLongString(buffer);
         }
     },
 
@@ -115,6 +122,12 @@ public enum AMQType
         {
             return buffer.getUnsignedInt();
         }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Integer.BYTES);
+        }
     },
 
     DECIMAL('D')
@@ -165,6 +178,12 @@ public enum AMQType
 
             return bd.setScale(places);
         }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Integer.BYTES + Byte.BYTES);
+        }
     },
 
     TIMESTAMP('T')
@@ -180,7 +199,11 @@ public enum AMQType
         {
             if (value instanceof Long)
             {
-                return (Long) value;
+                return value;
+            }
+            else if (value instanceof Date)
+            {
+                return ((Date) value).getTime();
             }
             else
             {
@@ -199,6 +222,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getLong();
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Long.BYTES);
         }
     },
 
@@ -285,6 +314,12 @@ public enum AMQType
                 throw new IllegalArgumentException("Unable to read field table from buffer.", e);
             }
         }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            EncodingUtils.skipFieldTable(buffer);
+        }
     },
     /**
      * Implements the field table type. The native value of a field table type will be an instance of
@@ -346,6 +381,12 @@ public enum AMQType
                     return FieldArray.readFromBuffer(buffer);
 
                 }
+
+                @Override
+                void skip(final QpidByteBuffer buffer)
+                {
+                    FieldArray.skipFieldArray(buffer);
+                }
             },
     VOID('V')
     {
@@ -377,6 +418,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return null;
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            // no-op
         }
     },
 
@@ -413,6 +460,12 @@ public enum AMQType
         {
             return EncodingUtils.readLongstr(buffer);
         }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            EncodingUtils.skipLongString(buffer);
+        }
     },
 
     ASCII_STRING('c')
@@ -446,6 +499,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return EncodingUtils.readLongString(buffer);
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            EncodingUtils.skipLongString(buffer);
         }
     },
 
@@ -481,6 +540,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return EncodingUtils.readLongString(buffer);
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            EncodingUtils.skipLongString(buffer);
         }
     },
 
@@ -520,6 +585,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.get() == 1;
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Byte.BYTES);
         }
     },
 
@@ -561,6 +632,12 @@ public enum AMQType
         {
             return (char) buffer.get();
         }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Byte.BYTES);
+        }
     },
 
     BYTE('b')
@@ -599,6 +676,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.get();
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Byte.BYTES);
         }
     },
 
@@ -647,6 +730,12 @@ public enum AMQType
                 {
                     return buffer.getUnsignedByte();
                 }
+
+                @Override
+                void skip(final QpidByteBuffer buffer)
+                {
+                    buffer.position(buffer.position() + Byte.BYTES);
+                }
     },
 
     SHORT('s')
@@ -689,6 +778,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getShort();
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Short.BYTES);
         }
     },
 
@@ -737,6 +832,12 @@ public enum AMQType
         {
             return buffer.getUnsignedShort();
         }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Short.BYTES);
+        }
     },
 
     INT('I')
@@ -781,6 +882,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getInt();
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Integer.BYTES);
         }
     },
 
@@ -833,6 +940,12 @@ public enum AMQType
         {
             return buffer.getLong();
         }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Long.BYTES);
+        }
     },
 
     FLOAT('f')
@@ -871,6 +984,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getFloat();
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Float.BYTES);
         }
     },
 
@@ -914,6 +1033,12 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getDouble();
+        }
+
+        @Override
+        void skip(final QpidByteBuffer buffer)
+        {
+            buffer.position(buffer.position() + Double.BYTES);
         }
     };
 
@@ -987,4 +1112,6 @@ public enum AMQType
      * @return An instance of the type.
      */
     abstract Object readValueFromBuffer(QpidByteBuffer buffer);
+
+    abstract void skip(QpidByteBuffer buffer);
 }

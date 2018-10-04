@@ -213,7 +213,16 @@ public class EncodingUtils
         }
         else
         {
-            return new FieldTable(input, (int) length);
+            return FieldTableFactory.createFieldTable(input, (int) length);
+        }
+    }
+
+    public static void skipFieldTable(QpidByteBuffer buffer)
+    {
+        long length = buffer.getUnsignedInt();
+        if (length > 0)
+        {
+            buffer.position(buffer.position() + (int)length);
         }
     }
 
@@ -231,6 +240,16 @@ public class EncodingUtils
             buffer.get(stringBytes, 0, (int) length);
 
             return new String(stringBytes, StandardCharsets.UTF_8);
+        }
+    }
+
+
+    public static void skipLongString(final QpidByteBuffer buffer)
+    {
+        long length = buffer.getUnsignedInt();
+        if (length > 0)
+        {
+            buffer.position(buffer.position() + (int)length);
         }
     }
 

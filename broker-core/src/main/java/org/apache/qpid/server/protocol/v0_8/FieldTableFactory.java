@@ -20,16 +20,28 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import java.util.Map;
+
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+
 public class FieldTableFactory
 {
     private FieldTableFactory()
     {
     }
 
-    public static FieldTable newFieldTable()
+    public static FieldTable createFieldTable(QpidByteBuffer fieldTableBuffer)
     {
-        return new FieldTable();
+        return new FieldTable(fieldTableBuffer);
     }
 
+    public static FieldTable createFieldTable(QpidByteBuffer qpidByteBuffer, int length)
+    {
+        return new FieldTable(qpidByteBuffer, length);
+    }
 
+    public static FieldTable createFieldTable(final Map<String, Object> map)
+    {
+        return new FieldTable(map);
+    }
 }

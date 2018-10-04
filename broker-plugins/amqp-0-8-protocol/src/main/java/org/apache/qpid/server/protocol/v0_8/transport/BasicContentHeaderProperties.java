@@ -45,7 +45,7 @@ public class BasicContentHeaderProperties
 
     private AMQShortString _encoding;
 
-    private FieldTable _headers;
+    private FieldTable _headers = FieldTable.EMPTY;
 
     private byte _deliveryMode;
 
@@ -90,10 +90,7 @@ public class BasicContentHeaderProperties
 
     public BasicContentHeaderProperties(BasicContentHeaderProperties other)
     {
-        if(other._headers != null)
-        {
-            _headers = new FieldTable(other._headers);
-        }
+        _headers = FieldTableFactory.createFieldTable(FieldTable.convertToMap(other.getHeaders()));
 
         _contentType = other._contentType;
 
@@ -386,7 +383,7 @@ public class BasicContentHeaderProperties
 
             try (QpidByteBuffer buf = buffer.view(0, (int) length))
             {
-                _headers = new FieldTable(buf);
+                _headers = FieldTableFactory.createFieldTable(buf);
             }
             buffer.position(buffer.position()+(int)length);
         }
@@ -511,11 +508,6 @@ public class BasicContentHeaderProperties
 
     public FieldTable getHeaders()
     {
-        if (_headers == null)
-        {
-            setHeaders(FieldTableFactory.newFieldTable());
-        }
-
         return _headers;
     }
 
@@ -529,7 +521,7 @@ public class BasicContentHeaderProperties
         {
             _propertyFlags |= HEADERS_MASK;
         }
-        _headers = headers;
+        _headers = headers == null ? FieldTable.EMPTY : headers;
         nullEncodedForm();
     }
 
@@ -814,27 +806,20 @@ public class BasicContentHeaderProperties
 
     private synchronized boolean useEncodedForm()
     {
-        return _encodedForm != null && (_headers == null || _headers.isClean());
+        return _encodedForm != null;
     }
 
 
     public synchronized void dispose()
     {
         nullEncodedForm();
-        if(_headers != null)
-        {
-            _headers.dispose();
-            _headers = null;
-        }
+        _headers.dispose();
     }
 
     public synchronized void clearEncodedForm()
     {
         nullEncodedForm();
-        if(_headers != null)
-        {
-            _headers.clearEncodedForm();
-        }
+        _headers.clearEncodedForm();
     }
 
     private synchronized void nullEncodedForm()
@@ -848,10 +833,11 @@ public class BasicContentHeaderProperties
 
     synchronized void reallocate()
     {
-        _encodedForm = QpidByteBuffer.reallocateIfNecessary(_encodedForm);
-        if (_headers != null)
+        _headers.clearEncodedForm();
+        if (_encodedForm != null)
         {
-            _headers.reallocate();
+            _encodedForm = QpidByteBuffer.reallocateIfNecessary(_encodedForm);
         }
     }
+
 }

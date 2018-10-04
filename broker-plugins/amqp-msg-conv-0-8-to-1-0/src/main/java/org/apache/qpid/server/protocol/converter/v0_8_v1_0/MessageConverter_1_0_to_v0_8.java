@@ -47,6 +47,7 @@ import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
+import org.apache.qpid.server.protocol.v0_8.AMQPInvalidClassException;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
@@ -233,7 +234,7 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
         {
             headers = FieldTable.convertToFieldTable(headerProps);
         }
-        catch (IllegalArgumentException e)
+        catch (IllegalArgumentException  | AMQPInvalidClassException e)
         {
             throw new MessageConversionException(
                     "Could not convert message from 1.0 to 0-8 because conversion of 'application-properties' failed.",
