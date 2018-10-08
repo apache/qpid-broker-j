@@ -20,10 +20,12 @@
  */
 package org.apache.qpid.server.security.auth.manager.ldap;
 
-import static org.apache.bcel.Constants.ACC_PRIVATE;
-import static org.apache.bcel.Constants.ACC_PUBLIC;
-import static org.apache.bcel.Constants.ACC_STATIC;
-import static org.apache.bcel.Constants.ACC_SUPER;
+import static org.apache.bcel.Const.ACC_PRIVATE;
+import static org.apache.bcel.Const.ACC_PROTECTED;
+import static org.apache.bcel.Const.ACC_PUBLIC;
+import static org.apache.bcel.Const.ACC_STATIC;
+import static org.apache.bcel.Const.ACC_SUPER;
+import static org.apache.bcel.Const.INVOKESPECIAL;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,12 +34,11 @@ import java.lang.reflect.Field;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.FieldGen;
-import org.apache.bcel.generic.InstructionConstants;
+import org.apache.bcel.generic.InstructionConst;
 import org.apache.bcel.generic.InstructionFactory;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
@@ -107,7 +108,7 @@ public class LDAPSSLSocketFactoryGenerator
         createSslContextStaticField(classGen, constantPoolGen);
         createGetDefaultStaticMethod(classGen, constantPoolGen, factory);
 
-        classGen.addEmptyConstructor(Constants.ACC_PROTECTED);
+        classGen.addEmptyConstructor(ACC_PROTECTED);
 
         JavaClass javaClass = classGen.getJavaClass();
         ByteArrayOutputStream out = null;
@@ -167,13 +168,13 @@ public class LDAPSSLSocketFactoryGenerator
                             constantPoolGen);
 
         il.append(instructionFactory.createNew(classGen.getClassName()));
-        il.append(InstructionConstants.DUP);
+        il.append(InstructionConst.DUP);
 
         il.append(instructionFactory.createInvoke(classGen.getClassName(), "<init>", Type.VOID,
                                        new Type[] {},
-                                       Constants.INVOKESPECIAL));
+                                       INVOKESPECIAL));
 
-        il.append(InstructionConstants.ARETURN);
+        il.append(InstructionConst.ARETURN);
 
         mg.setMaxStack();
         classGen.addMethod(mg.getMethod());

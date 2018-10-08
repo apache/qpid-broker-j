@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.model;
 
-import static org.apache.bcel.Constants.ACC_INTERFACE;
-import static org.apache.bcel.Constants.ACC_PUBLIC;
-import static org.apache.bcel.Constants.ACC_SUPER;
+import static org.apache.bcel.Const.ACC_INTERFACE;
+import static org.apache.bcel.Const.ACC_PUBLIC;
+import static org.apache.bcel.Const.ACC_SUPER;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
