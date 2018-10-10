@@ -21,9 +21,9 @@ package org.apache.qpid.disttest.controller;
 
 import static org.apache.qpid.disttest.PerfTestConstants.COMMAND_RESPONSE_TIMEOUT;
 import static org.apache.qpid.disttest.PerfTestConstants.REGISTRATION_TIMEOUT;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isA;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

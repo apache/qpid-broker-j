@@ -24,9 +24,9 @@ import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCE
 import static org.apache.qpid.server.security.access.config.ObjectType.BROKER;
 import static org.apache.qpid.server.security.access.config.ObjectType.VIRTUALHOST;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;

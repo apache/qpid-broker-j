@@ -19,7 +19,7 @@
 package org.apache.qpid.server.model.preferences;
 
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
