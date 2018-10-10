@@ -38,6 +38,7 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
@@ -196,10 +197,9 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends UnitTestBase
                            Collections.EMPTY_SET);
     }
 
-    public static class LogMessageMatcher extends BaseMatcher<LogMessage>
+    public static class LogMessageMatcher implements ArgumentMatcher<LogMessage>
     {
         private final LogMessage _expected;
-        private Object _actual;
 
         LogMessageMatcher(final LogMessage expected)
         {
@@ -207,20 +207,9 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends UnitTestBase
         }
 
         @Override
-        public void describeTo(final Description description)
+        public boolean matches(final LogMessage argument)
         {
-            description.appendText("Expected '");
-            description.appendText(_expected.toString());
-            description.appendText("' but got '");
-            description.appendText(String.valueOf(_actual));
-            description.appendText("'");
-        }
-
-        @Override
-        public boolean matches(final Object argument)
-        {
-            _actual = argument;
-            return argument instanceof LogMessage && _expected.toString().equals((argument).toString());
+            return _expected.toString().equals((argument).toString());
         }
     }
 }

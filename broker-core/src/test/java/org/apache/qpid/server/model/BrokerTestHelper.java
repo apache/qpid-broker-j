@@ -20,16 +20,14 @@
  */
 package org.apache.qpid.server.model;
 
-import static org.apache.bcel.Const.ACC_INTERFACE;
-import static org.apache.bcel.Const.ACC_PUBLIC;
-import static org.apache.bcel.Const.ACC_SUPER;
+import static org.mockito.ArgumentMatchers.isNotNull;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -39,12 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
-
-import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.generic.ClassGen;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -80,11 +74,6 @@ public class BrokerTestHelper
                                                               Collections.singleton(SYSTEM_PRINCIPAL),
                                                               Collections.emptySet(),
                                                               Collections.emptySet());
-    private static final Map<Class<? extends ConfiguredObject>, Class<? extends ConfiguredObject>>
-            SYSTEM_PRINCIPAL_SOURCE_MOCKS = new HashMap<>();
-    private static final Map<Class<? extends ConfiguredObject>, Class<? extends ConfiguredObject>>
-            SYSTEM_PRINCIPAL_AND_ACCESS_CONTROL_SOURCE_MOCKS = new HashMap<>();
-    private static final AtomicInteger GENERATED_INTERFACE_COUNTER = new AtomicInteger();
 
 
     private static List<VirtualHost> _createdVirtualHosts = new ArrayList<>();
@@ -116,9 +105,12 @@ public class BrokerTestHelper
     public static AccessControl createAccessControlMock()
     {
         AccessControl mock = mock(AccessControl.class);
-        when(mock.authorise(any(SecurityToken.class), any(Operation.class), any(ConfiguredObject.class))).thenReturn(
+        when(mock.authorise(any(SecurityToken.class), any(Operation.class), any(PermissionedObject.class))).thenReturn(
                 Result.DEFER);
-        when(mock.authorise(any(SecurityToken.class), any(Operation.class), any(ConfiguredObject.class), any(Map.class))).thenReturn(Result.DEFER);
+        when(mock.authorise(isNull(), any(Operation.class), any(PermissionedObject.class))).thenReturn(
+                Result.DEFER);
+        when(mock.authorise(any(SecurityToken.class), any(Operation.class), any(PermissionedObject.class), any(Map.class))).thenReturn(Result.DEFER);
+        when(mock.authorise(isNull(), any(Operation.class), any(PermissionedObject.class), any(Map.class))).thenReturn(Result.DEFER);
         when(mock.getDefault()).thenReturn(Result.ALLOWED);
         return mock;
     }
@@ -318,110 +310,22 @@ public class BrokerTestHelper
 
     public static <X extends ConfiguredObject> X mockWithSystemPrincipal(Class<X> clazz, Principal principal)
     {
-        synchronized (SYSTEM_PRINCIPAL_SOURCE_MOCKS)
-        {
-            Class<?> mockedClass = SYSTEM_PRINCIPAL_SOURCE_MOCKS.get(clazz);
-            if(mockedClass == null)
-            {
-                mockedClass = generateTestableInterface(clazz, TestableSystemPrincipalSource.class);
-                SYSTEM_PRINCIPAL_SOURCE_MOCKS.put(clazz, (Class<? extends X>) mockedClass);
-            }
-            X mock = mock((Class<? extends X>)mockedClass);
-            when(((SystemPrincipalSource)mock).getSystemPrincipal()).thenReturn(principal);
-
-            return mock;
-        }
+        X mock = mock(clazz, withSettings().extraInterfaces(TestableSystemPrincipalSource.class));
+        when(((SystemPrincipalSource)mock).getSystemPrincipal()).thenReturn(principal);
+        return mock;
     }
 
     public static <X extends ConfiguredObject> X mockWithSystemPrincipalAndAccessControl(Class<X> clazz,
                                                                                          Principal principal,
                                                                                          AccessControl accessControl)
     {
-        synchronized (SYSTEM_PRINCIPAL_AND_ACCESS_CONTROL_SOURCE_MOCKS)
-        {
-            Class<?> mockedClass = SYSTEM_PRINCIPAL_AND_ACCESS_CONTROL_SOURCE_MOCKS.get(clazz);
-            if(mockedClass == null)
-            {
-                mockedClass = generateTestableInterface(clazz, TestableSystemPrincipalSource.class, TestableAccessControlSource.class);
-                SYSTEM_PRINCIPAL_AND_ACCESS_CONTROL_SOURCE_MOCKS.put(clazz, (Class<? extends X>) mockedClass);
-            }
-            X mock = mock((Class<? extends X>)mockedClass);
-            when(((SystemPrincipalSource)mock).getSystemPrincipal()).thenReturn(principal);
-            when(((AccessControlSource)mock).getAccessControl()).thenReturn(accessControl);
+        X mock = mock(clazz,
+                      withSettings().extraInterfaces(TestableSystemPrincipalSource.class,
+                                                     TestableAccessControlSource.class));
+        when(((SystemPrincipalSource) mock).getSystemPrincipal()).thenReturn(principal);
+        when(((AccessControlSource) mock).getAccessControl()).thenReturn(accessControl);
 
-            return mock;
-        }
-    }
-
-
-    private static Class<?> generateTestableInterface(final Class<?>... interfaces)
-    {
-        final String fqcn = BrokerTestHelper.class.getPackage().getName() + ".Testable" + interfaces[0].getSimpleName() + "_" + GENERATED_INTERFACE_COUNTER.incrementAndGet();
-        final byte[] classBytes = createSubClassByteCode(fqcn, interfaces);
-
-        try
-        {
-            final ClassLoader classLoader = new TestableMockDelegatingClassloader(fqcn, classBytes);
-            Class<?> clazz = classLoader.loadClass(fqcn);
-            return clazz;
-        }
-        catch (ClassNotFoundException cnfe)
-        {
-            throw new IllegalArgumentException("Could not resolve dynamically generated class " + fqcn, cnfe);
-        }
-    }
-
-    private static byte[] createSubClassByteCode(final String className, final Class<?>[] interfaces)
-    {
-        String[] ifnames = new String[interfaces.length];
-        for(int i = 0; i<interfaces.length; i++)
-        {
-            ifnames[i] = interfaces[i].getName();
-        }
-        ClassGen classGen = new ClassGen(className,
-                                         "java.lang.Object",
-                                         "<generated>",
-                                         ACC_PUBLIC | ACC_SUPER | ACC_INTERFACE,
-                                         ifnames);
-
-
-        JavaClass javaClass = classGen.getJavaClass();
-
-        try(ByteArrayOutputStream out = new ByteArrayOutputStream())
-        {
-            javaClass.dump(out);
-            return out.toByteArray();
-        }
-        catch (IOException ioex)
-        {
-            throw new IllegalStateException("Could not write to a ByteArrayOutputStream - should not happen", ioex);
-        }
-    }
-
-    private static final class TestableMockDelegatingClassloader extends ClassLoader
-    {
-        private final String _className;
-        private final Class<? extends ConfiguredObject> _clazz;
-
-        private TestableMockDelegatingClassloader(String className, byte[] classBytes)
-        {
-            super(ConfiguredObject.class.getClassLoader());
-            _className = className;
-            _clazz = (Class<? extends ConfiguredObject>) defineClass(className, classBytes, 0, classBytes.length);
-        }
-
-        @Override
-        protected Class<?> findClass(String fqcn) throws ClassNotFoundException
-        {
-            if (fqcn.equals(_className))
-            {
-                return _clazz;
-            }
-            else
-            {
-                return getParent().loadClass(fqcn);
-            }
-        }
+        return mock;
     }
 
 }

@@ -479,37 +479,29 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         return enqueueableMessage1;
     }
 
-    private class MessageMetaDataMatcher extends ArgumentMatcher<StoredMessage<?>>
+    private class MessageMetaDataMatcher implements ArgumentMatcher<StoredMessage<?>>
     {
         private long _messageNumber;
 
-        public MessageMetaDataMatcher(long messageNumber)
+        MessageMetaDataMatcher(long messageNumber)
         {
             super();
             _messageNumber = messageNumber;
         }
 
         @Override
-        public boolean matches(Object obj)
+        public boolean matches(StoredMessage<?> obj)
         {
-            return obj instanceof StoredMessage && ((StoredMessage<?>)obj).getMessageNumber() == _messageNumber;
+            return obj.getMessageNumber() == _messageNumber;
         }
-
-        @Override
-        public void describeTo(final Description description)
-        {
-            description.appendText("Expected messageNumber:");
-            description.appendValue(_messageNumber);
-        }
-
     }
 
     private class QueueFilteringMessageInstanceHandler implements MessageInstanceHandler
     {
         private final UUID _queueId;
-        private final Set<Long> _enqueuedIds = new HashSet<Long>();
+        private final Set<Long> _enqueuedIds = new HashSet<>();
 
-        public QueueFilteringMessageInstanceHandler(UUID queueId)
+        QueueFilteringMessageInstanceHandler(UUID queueId)
         {
             _queueId = queueId;
         }
@@ -529,109 +521,93 @@ public abstract class MessageStoreTestCase extends UnitTestBase
             return true;
         }
 
-        public Set<Long> getEnqueuedIds()
+        Set<Long> getEnqueuedIds()
         {
             return _enqueuedIds;
         }
     }
 
-    private class EnqueueRecordMatcher extends ArgumentMatcher<MessageEnqueueRecord>
+    private class EnqueueRecordMatcher implements ArgumentMatcher<MessageEnqueueRecord>
     {
         private final UUID _queueId;
         private final long _messageId;
 
-        public EnqueueRecordMatcher(final UUID queueId, final long messageId)
+        EnqueueRecordMatcher(final UUID queueId, final long messageId)
         {
             _queueId = queueId;
             _messageId = messageId;
         }
 
         @Override
-        public boolean matches(final Object argument)
+        public boolean matches(final MessageEnqueueRecord record)
         {
-            if(argument instanceof MessageEnqueueRecord)
-            {
-                MessageEnqueueRecord record = (MessageEnqueueRecord)argument;
-                return record.getQueueId().equals(_queueId) && record.getMessageNumber() == _messageId;
-            }
-            return false;
+            return record.getQueueId().equals(_queueId) && record.getMessageNumber() == _messageId;
         }
     }
 
 
-    private class RecordMatcher extends ArgumentMatcher<Transaction.EnqueueRecord[]>
+    private class RecordMatcher implements ArgumentMatcher<Transaction.EnqueueRecord[]>
     {
 
         private final EnqueueRecord[] _expect;
 
-        public RecordMatcher(Transaction.EnqueueRecord[] expect)
+        RecordMatcher(Transaction.EnqueueRecord[] expect)
         {
             _expect = expect;
         }
 
         @Override
-        public boolean matches(final Object argument)
+        public boolean matches(final Transaction.EnqueueRecord[] actual)
         {
-            if(argument.getClass().isArray() && Transaction.EnqueueRecord.class.isAssignableFrom(argument.getClass().getComponentType()))
+            if(actual.length == _expect.length)
             {
-                Transaction.EnqueueRecord[] actual = (Transaction.EnqueueRecord[]) argument;
-                if(actual.length == _expect.length)
+                for(int i = 0; i < actual.length; i++)
                 {
-                    for(int i = 0; i < actual.length; i++)
+                    if(!actual[i].getResource().getId().equals(_expect[i].getResource().getId())
+                       || actual[i].getMessage().getMessageNumber() != _expect[i].getMessage().getMessageNumber())
                     {
-                        if(!actual[i].getResource().getId().equals(_expect[i].getResource().getId())
-                                || actual[i].getMessage().getMessageNumber() != _expect[i].getMessage().getMessageNumber())
-                        {
-                            return false;
-                        }
+                        return false;
                     }
-                    return true;
                 }
-                else
-                {
-                    return false;
-                }
-
+                return true;
             }
-            return false;
+            else
+            {
+                return false;
+            }
+
         }
     }
 
-    private class DequeueRecordMatcher extends ArgumentMatcher<Transaction.DequeueRecord[]>
+    private class DequeueRecordMatcher implements ArgumentMatcher<Transaction.DequeueRecord[]>
     {
 
         private final Transaction.DequeueRecord[] _expect;
 
-        public DequeueRecordMatcher(Transaction.DequeueRecord[] expect)
+        DequeueRecordMatcher(Transaction.DequeueRecord[] expect)
         {
             _expect = expect;
         }
 
         @Override
-        public boolean matches(final Object argument)
+        public boolean matches(final Transaction.DequeueRecord[] actual)
         {
-            if(argument.getClass().isArray() && Transaction.DequeueRecord.class.isAssignableFrom(argument.getClass().getComponentType()))
+            if(actual.length == _expect.length)
             {
-                Transaction.DequeueRecord[] actual = (Transaction.DequeueRecord[]) argument;
-                if(actual.length == _expect.length)
+                for(int i = 0; i < actual.length; i++)
                 {
-                    for(int i = 0; i < actual.length; i++)
+                    if(!actual[i].getEnqueueRecord().getQueueId().equals(_expect[i].getEnqueueRecord().getQueueId())
+                       || actual[i].getEnqueueRecord().getMessageNumber() != _expect[i].getEnqueueRecord().getMessageNumber())
                     {
-                        if(!actual[i].getEnqueueRecord().getQueueId().equals(_expect[i].getEnqueueRecord().getQueueId())
-                           || actual[i].getEnqueueRecord().getMessageNumber() != _expect[i].getEnqueueRecord().getMessageNumber())
-                        {
-                            return false;
-                        }
+                        return false;
                     }
-                    return true;
                 }
-                else
-                {
-                    return false;
-                }
-
+                return true;
             }
-            return false;
+            else
+            {
+                return false;
+            }
         }
     }
 }

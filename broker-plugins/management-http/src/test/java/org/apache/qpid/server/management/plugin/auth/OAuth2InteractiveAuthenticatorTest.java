@@ -399,6 +399,7 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
         when(mockRequest.getRequestURL()).thenReturn(url);
         when(mockRequest.getRemoteHost()).thenReturn(TEST_REMOTE_HOST);
         when(mockRequest.getRemotePort()).thenReturn(TEST_REMOTE_PORT);
+        when(mockRequest.getServerName()).thenReturn(TEST_REMOTE_HOST);
 
 
         return mockRequest;

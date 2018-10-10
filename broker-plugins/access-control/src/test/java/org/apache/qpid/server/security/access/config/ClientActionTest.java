@@ -45,6 +45,7 @@ public class ClientActionTest extends UnitTestBase
     {
         when(_action.matches(any(Action.class))).thenReturn(true);
         when(_ruleAction.getFirewallRule()).thenReturn(null);
+        when(_ruleAction.getAction()).thenReturn(mock(Action.class));
 
         assertTrue(_clientAction.matches(_ruleAction, _addressOfClient));
     }
@@ -57,6 +58,7 @@ public class ClientActionTest extends UnitTestBase
 
         when(_action.matches(any(Action.class))).thenReturn(false);
         when(_ruleAction.getFirewallRule()).thenReturn(firewallRule);
+        when(_ruleAction.getAction()).thenReturn(mock(Action.class));
 
         assertFalse(_clientAction.matches(_ruleAction, _addressOfClient));
     }
@@ -69,6 +71,7 @@ public class ClientActionTest extends UnitTestBase
 
         when(_action.matches(any(Action.class))).thenReturn(true);
         when(_ruleAction.getFirewallRule()).thenReturn(firewallRule);
+        when(_ruleAction.getAction()).thenReturn(mock(Action.class));
 
         assertTrue(_clientAction.matches(_ruleAction, _addressOfClient));
     }
@@ -80,6 +83,7 @@ public class ClientActionTest extends UnitTestBase
 
         when(_action.matches(any(Action.class))).thenReturn(true);
         when(_ruleAction.getFirewallRule()).thenReturn(firewallRule);
+        when(_ruleAction.getAction()).thenReturn(mock(Action.class));
 
         assertTrue(_clientAction.matches(_ruleAction, null));
 

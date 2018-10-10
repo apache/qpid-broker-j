@@ -215,7 +215,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
         return argThat(new ConfiguredObjectMatcher(id, type, attributes, parents));
     }
 
-    private static class ConfiguredObjectMatcher extends ArgumentMatcher<ConfiguredObjectRecord>
+    private static class ConfiguredObjectMatcher implements ArgumentMatcher<ConfiguredObjectRecord>
     {
         private final Map<String,Object> _matchingMap;
         private final UUID _id;
@@ -231,23 +231,17 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
         }
 
         @Override
-        public boolean matches(final Object argument)
+        public boolean matches(final ConfiguredObjectRecord binding)
         {
-            if(argument instanceof ConfiguredObjectRecord)
-            {
-                ConfiguredObjectRecord binding = (ConfiguredObjectRecord) argument;
-
-                Map<String,Object> arg = new HashMap<>(binding.getAttributes());
-                arg.remove("createdBy");
-                arg.remove("createdTime");
-                arg.remove("lastUpdatedTime");
-                arg.remove("lastUpdatedBy");
-                return (_id == ANY_UUID || _id.equals(binding.getId()))
-                       && _name.equals(binding.getType())
-                       && (_matchingMap == ANY_MAP || arg.equals(_matchingMap))
-                       && (_parents == ANY_MAP || matchesParents(binding));
-            }
-            return false;
+            Map<String,Object> arg = new HashMap<>(binding.getAttributes());
+            arg.remove("createdBy");
+            arg.remove("createdTime");
+            arg.remove("lastUpdatedTime");
+            arg.remove("lastUpdatedBy");
+            return (_id == ANY_UUID || _id.equals(binding.getId()))
+                   && _name.equals(binding.getType())
+                   && (_matchingMap == ANY_MAP || arg.equals(_matchingMap))
+                   && (_parents == ANY_MAP || matchesParents(binding));
         }
 
         private boolean matchesParents(ConfiguredObjectRecord binding)

@@ -83,8 +83,10 @@ public class StoreConfigurationChangeListenerTest extends UnitTestBase
         when(model.getParentType(eq(VirtualHost.class))).thenReturn((Class)Broker.class);
         when(child.getModel()).thenReturn(model);
         when(child.isDurable()).thenReturn(true);
+        final ConfiguredObjectRecord childRecord = mock(ConfiguredObjectRecord.class);
+        when(child.asObjectRecord()).thenReturn(childRecord);
         _listener.childAdded(broker, child);
-        verify(_store).update(eq(true), any(ConfiguredObjectRecord.class));
+        verify(_store).update(eq(true), eq(childRecord));
     }
 
     @Test
@@ -94,8 +96,10 @@ public class StoreConfigurationChangeListenerTest extends UnitTestBase
         Broker broker = mock(Broker.class);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.isDurable()).thenReturn(true);
+        final ConfiguredObjectRecord record = mock(ConfiguredObjectRecord.class);
+        when(broker.asObjectRecord()).thenReturn(record);
         _listener.attributeSet(broker, Broker.DESCRIPTION, null, "test description");
-        verify(_store).update(eq(false), any(ConfiguredObjectRecord.class));
+        verify(_store).update(eq(false), eq(record));
     }
 
     @Test

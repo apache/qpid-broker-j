@@ -468,7 +468,7 @@ public class JsonFileConfigStoreTest extends UnitTestBase
     }
 
 
-    private static class ConfiguredObjectMatcher extends ArgumentMatcher<ConfiguredObjectRecord>
+    private static class ConfiguredObjectMatcher implements ArgumentMatcher<ConfiguredObjectRecord>
     {
         private final Map<String,Object> _expectedAttributes;
         private final UUID _expectedId;
@@ -482,21 +482,14 @@ public class JsonFileConfigStoreTest extends UnitTestBase
         }
 
         @Override
-        public boolean matches(final Object argument)
+        public boolean matches(final ConfiguredObjectRecord binding)
         {
-            if(argument instanceof ConfiguredObjectRecord)
-            {
-                ConfiguredObjectRecord binding = (ConfiguredObjectRecord) argument;
-
-                Map<String,Object> arg = new HashMap<String, Object>(binding.getAttributes());
-                arg.remove("createdBy");
-                arg.remove("createdTime");
-                return (_expectedId == ANY_UUID || _expectedId.equals(binding.getId()))
-                       && _expectedType.equals(binding.getType())
-                       && (_expectedAttributes == ANY_MAP || arg.equals(_expectedAttributes));
-
-            }
-            return false;
+            Map<String,Object> arg = new HashMap<>(binding.getAttributes());
+            arg.remove("createdBy");
+            arg.remove("createdTime");
+            return (_expectedId == ANY_UUID || _expectedId.equals(binding.getId()))
+                   && _expectedType.equals(binding.getType())
+                   && (_expectedAttributes == ANY_MAP || arg.equals(_expectedAttributes));
         }
     }
 

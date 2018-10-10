@@ -392,7 +392,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         return eventLogger;
     }
 
-    class LogMessageMatcher extends ArgumentMatcher<LogMessage>
+    class LogMessageMatcher implements ArgumentMatcher<LogMessage>
     {
         private String _expectedMessage;
         private String _expectedMessageFailureDescription = null;
@@ -406,10 +406,8 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         }
 
         @Override
-        public boolean matches(Object argument)
+        public boolean matches(LogMessage logMessage)
         {
-            LogMessage logMessage = (LogMessage)argument;
-
             boolean expectedMessageMatches = _expectedMessage.equals(logMessage.toString());
             if (!expectedMessageMatches)
             {
@@ -423,22 +421,9 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
             return expectedMessageMatches && expectedHierarchyMatches;
         }
-
-        @Override
-        public void describeTo(Description description)
-        {
-            if (_expectedMessageFailureDescription != null)
-            {
-                description.appendText(_expectedMessageFailureDescription);
-            }
-            if (_expectedHierarchyFailureDescription != null)
-            {
-                description.appendText(_expectedHierarchyFailureDescription);
-            }
-        }
     }
 
-    class LogSubjectMatcher extends ArgumentMatcher<LogSubject>
+    class LogSubjectMatcher implements ArgumentMatcher<LogSubject>
     {
         private LogSubject _logSubject;
         private String _failureDescription = null;
@@ -449,24 +434,14 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         }
 
         @Override
-        public boolean matches(Object argument)
+        public boolean matches(LogSubject logSubject)
         {
-            final LogSubject logSubject = (LogSubject)argument;
             final boolean foundAMatch = _logSubject.toLogString().equals(logSubject.toLogString());
             if (!foundAMatch)
             {
                 _failureDescription = "LogSubject does not match. Expected: " + _logSubject.toLogString() + ", actual : " + logSubject.toLogString();
             }
             return foundAMatch;
-        }
-
-        @Override
-        public void describeTo(Description description)
-        {
-            if (_failureDescription != null)
-            {
-                description.appendText(_failureDescription);
-            }
         }
     }
 }

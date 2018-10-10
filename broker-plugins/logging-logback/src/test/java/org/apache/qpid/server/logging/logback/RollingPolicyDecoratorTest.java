@@ -48,6 +48,7 @@ import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
@@ -144,7 +145,7 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
         _policy.rollover();
         verify(_delegate).rollover();
 
-        Matcher<String[]> matcher = getMatcher(new String[]{_testFile.getName()});
+        ArgumentMatcher<String[]> matcher = getMatcher(new String[]{_testFile.getName()});
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher));
     }
 
@@ -153,7 +154,7 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
     {
         _policy.rollover();
         verify(_delegate).rollover();
-        Matcher<String[]> matcher = getMatcher(new String[]{_testFile.getName()});
+        ArgumentMatcher<String[]> matcher = getMatcher(new String[]{_testFile.getName()});
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher));
         _policy.rollover();
         verify(_delegate, times(2)).rollover();
@@ -166,32 +167,20 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
         _policy.rollover();
         verify(_delegate).rollover();
 
-        Matcher<String[]> matcher = getMatcher(new String[]{ _testFile.getName() });
+        ArgumentMatcher<String[]> matcher = getMatcher(new String[]{ _testFile.getName() });
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher));
 
         File secondFile = createTestFile("test.2015-06-25.1.gz");
         _policy.rollover();
         verify(_delegate, times(2)).rollover();
-        Matcher<String[]> matcher2 = getMatcher(new String[]{_testFile.getName(), secondFile.getName()});
+        ArgumentMatcher<String[]> matcher2 = getMatcher(new String[]{_testFile.getName(), secondFile.getName()});
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher2));
     }
 
 
-    private Matcher<String[]> getMatcher(final String[] expected)
+    private ArgumentMatcher<String[]> getMatcher(final String[] expected)
     {
-        return new BaseMatcher<String[]>()
-        {
-            @Override
-            public boolean matches(Object item)
-            {
-                return Arrays.equals(expected, (String[]) item);
-            }
-            @Override
-            public void describeTo(Description description)
-            {
-                description.appendValueList("[", ",", "]", expected);
-            }
-        };
+        return item -> Arrays.equals(expected, item);
     }
 
     @Test

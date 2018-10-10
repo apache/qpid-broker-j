@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Matchers.same;
@@ -48,6 +51,8 @@ public class DatabaseTemplateTest extends UnitTestBase
         _environment = mock(Environment.class);
         _sourceDatabase = mock(Database.class);
         when(_environment.openDatabase(any(Transaction.class), same(SOURCE_DATABASE), isA(DatabaseConfig.class)))
+                .thenReturn(_sourceDatabase);
+        when(_environment.openDatabase(isNull(), same(SOURCE_DATABASE), isA(DatabaseConfig.class)))
                 .thenReturn(_sourceDatabase);
     }
 
@@ -80,7 +85,7 @@ public class DatabaseTemplateTest extends UnitTestBase
         DatabaseRunnable databaseOperation = mock(DatabaseRunnable.class);
         databaseTemplate.run(databaseOperation);
 
-        verify(databaseOperation).run(_sourceDatabase, (Database)null, (Transaction)null);
+        verify(databaseOperation).run(eq(_sourceDatabase), isNull(), isNull());
         verify(_sourceDatabase).close();
     }
 

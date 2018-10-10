@@ -839,7 +839,7 @@ public class VirtualHostTest extends UnitTestBase
         return argThat(new MinimalConfiguredObjectRecordMatcher(id, type));
     }
 
-    private static class MinimalConfiguredObjectRecordMatcher extends ArgumentMatcher<ConfiguredObjectRecord>
+    private static class MinimalConfiguredObjectRecordMatcher implements ArgumentMatcher<ConfiguredObjectRecord>
     {
         private final UUID _id;
         private final String _type;
@@ -851,9 +851,8 @@ public class VirtualHostTest extends UnitTestBase
         }
 
         @Override
-        public boolean matches(Object argument)
+        public boolean matches(ConfiguredObjectRecord rhs)
         {
-            ConfiguredObjectRecord rhs = (ConfiguredObjectRecord) argument;
             return (_id.equals(rhs.getId()) || _type.equals(rhs.getType()));
         }
     }

@@ -69,16 +69,10 @@ public class ServerSessionDelegateTest extends UnitTestBase
         final ExchangeDelete method = new ExchangeDelete(getTestName(), Option.IF_UNUSED);
         _delegate.exchangeDelete(_session, method);
 
-        verify(_session).invoke(argThat(new ArgumentMatcher<ExecutionException>()
-        {
-            @Override
-            public boolean matches(Object object)
-            {
-                ExecutionException exception = (ExecutionException)object;
-                return exception.getErrorCode() == ExecutionErrorCode.PRECONDITION_FAILED
-                        && "Exchange has bindings".equals(exception.getDescription());
-            }
-        }));
+        verify(_session).invoke(argThat((ArgumentMatcher<ExecutionException>) exception -> exception.getErrorCode()
+                                                                                           == ExecutionErrorCode.PRECONDITION_FAILED
+                                                                                           && "Exchange has bindings".equals(
+                exception.getDescription())));
     }
 
     @Test

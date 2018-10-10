@@ -95,6 +95,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
     {
         _networkConnection = mock(ServerNetworkConnection.class);
         when(_networkConnection.getLocalAddress()).thenReturn(new InetSocketAddress(0));
+        when(_networkConnection.getSelectedHost()).thenReturn("localhost");
         _broker = mock(Broker.class);
         when(_broker.getModel()).thenReturn(BrokerModel.getInstance());
         when(_broker.getNetworkBufferSize()).thenReturn(256*1026);

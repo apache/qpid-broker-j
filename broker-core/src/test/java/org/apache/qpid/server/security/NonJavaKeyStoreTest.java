@@ -304,12 +304,11 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
 
-    private static class LogMessageArgumentMatcher extends ArgumentMatcher<LogMessage>
+    private static class LogMessageArgumentMatcher implements ArgumentMatcher<LogMessage>
     {
         @Override
-        public boolean matches(final Object argument)
+        public boolean matches(final LogMessage arg)
         {
-            LogMessage arg = (LogMessage)argument;
             return arg.getLogHierarchy().equals(KeyStoreMessages.EXPIRING_LOG_HIERARCHY);
         }
     }

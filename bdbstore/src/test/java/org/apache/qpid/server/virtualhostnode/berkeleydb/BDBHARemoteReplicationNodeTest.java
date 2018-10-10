@@ -24,6 +24,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+import static org.mockito.ArgumentMatchers.isNotNull;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMap;
@@ -169,8 +171,14 @@ public class BDBHARemoteReplicationNodeTest extends UnitTestBase
     {
         String remoteReplicationName = getTestName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
-        when(_mockAccessControl.authorise(any(SecurityToken.class), eq(Operation.UPDATE), eq(remoteReplicationNode), anyMap())).thenReturn(Result.DENIED);
-
+        when(_mockAccessControl.authorise(any(SecurityToken.class),
+                                          eq(Operation.UPDATE),
+                                          eq(remoteReplicationNode),
+                                          anyMap())).thenReturn(Result.DENIED);
+        when(_mockAccessControl.authorise(isNull(),
+                                          eq(Operation.UPDATE),
+                                          eq(remoteReplicationNode),
+                                          anyMap())).thenReturn(Result.DENIED);
 
         assertNull(remoteReplicationNode.getDescription());
 
@@ -191,7 +199,14 @@ public class BDBHARemoteReplicationNodeTest extends UnitTestBase
         String remoteReplicationName = getTestName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
 
-        when(_mockAccessControl.authorise(any(SecurityToken.class), eq(Operation.DELETE), eq(remoteReplicationNode), anyMap())).thenReturn(Result.DENIED);
+        when(_mockAccessControl.authorise(any(SecurityToken.class),
+                                          eq(Operation.DELETE),
+                                          eq(remoteReplicationNode),
+                                          anyMap())).thenReturn(Result.DENIED);
+        when(_mockAccessControl.authorise(isNull(),
+                                          eq(Operation.DELETE),
+                                          eq(remoteReplicationNode),
+                                          anyMap())).thenReturn(Result.DENIED);
         assertNull(remoteReplicationNode.getDescription());
 
         try

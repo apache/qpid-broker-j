@@ -222,7 +222,7 @@ public class UserPreferencesTest extends UnitTestBase
         return queryPreference;
     }
 
-    private class UUIDCollectionMatcher extends ArgumentMatcher<Collection<UUID>>
+    private class UUIDCollectionMatcher implements ArgumentMatcher<Collection<UUID>>
     {
         private Collection<UUID> _expected;
         private String _failureDescription;
@@ -233,32 +233,16 @@ public class UserPreferencesTest extends UnitTestBase
         }
 
         @Override
-        public boolean matches(final Object o)
+        public boolean matches(final Collection<UUID> o)
         {
-            if (!(o instanceof Collection))
-            {
-                _failureDescription = "Not a collection";
-                return false;
-            }
-
             _failureDescription = "Items do not match: expected " + _expected + " actual: " + o;
-            return new TreeSet<>(_expected).equals(new TreeSet<>((Collection<UUID>) o));
-        }
-
-        @Override
-        public void describeTo(Description description)
-        {
-            if (_failureDescription != null)
-            {
-                description.appendText(_failureDescription);
-            }
+            return new TreeSet<>(_expected).equals(new TreeSet<>(o));
         }
     }
 
-    private class PreferenceRecordMatcher extends ArgumentMatcher<Collection<PreferenceRecord>>
+    private class PreferenceRecordMatcher implements ArgumentMatcher<Collection<PreferenceRecord>>
     {
         private final Preference _preference;
-        private String _failureDescription;
 
         public PreferenceRecordMatcher(final Preference preference)
         {
@@ -266,31 +250,25 @@ public class UserPreferencesTest extends UnitTestBase
         }
 
         @Override
-        public boolean matches(final Object records)
+        public boolean matches(final Collection<PreferenceRecord> preferenceRecords)
         {
-            _failureDescription = "Unexpected arguments type";
-            Collection<PreferenceRecord> preferenceRecords = (Collection<PreferenceRecord>) records;
             if (preferenceRecords.size() != 1)
             {
                 return false;
             }
 
-            _failureDescription = "Unexpected preference id";
             PreferenceRecord record = preferenceRecords.iterator().next();
             if (!record.getId().equals(_preference.getId()))
             {
                 return false;
             }
 
-            _failureDescription = "Attributes is null";
             Map<String, Object> recordAttributes = record.getAttributes();
             if (recordAttributes == null)
             {
                 return false;
             }
-            ;
 
-            _failureDescription = "Expected attributes are not found: " + recordAttributes;
             for (Map.Entry entry : _preference.getAttributes().entrySet())
             {
                 if (!Objects.equals(entry.getValue(), recordAttributes.get(entry.getKey())))
@@ -302,13 +280,5 @@ public class UserPreferencesTest extends UnitTestBase
             return true;
         }
 
-        @Override
-        public void describeTo(Description description)
-        {
-            if (_failureDescription != null)
-            {
-                description.appendText(_failureDescription);
-            }
-        }
     }
 }

@@ -74,14 +74,6 @@ public class LoginLogoutReporterTest extends UnitTestBase
 
     private LogMessage isLogMessageWithMessage(final String expectedMessage)
     {
-        return argThat( new ArgumentMatcher<LogMessage>()
-        {
-            @Override
-            public boolean matches(Object argument)
-            {
-                LogMessage actual = (LogMessage) argument;
-                return actual.toString().equals(expectedMessage);
-            }
-        });
+        return argThat(actual -> actual.toString().equals(expectedMessage));
     }
 }

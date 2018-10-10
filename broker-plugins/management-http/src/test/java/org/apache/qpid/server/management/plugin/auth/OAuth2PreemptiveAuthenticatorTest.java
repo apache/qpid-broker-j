@@ -75,6 +75,7 @@ public class OAuth2PreemptiveAuthenticatorTest extends UnitTestBase
     public void testAttemptAuthenticationSuccessful() throws Exception
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getServerName()).thenReturn("localhost");
         when(mockRequest.getHeader("Authorization")).thenReturn("Bearer " + TEST_VALID_ACCESS_TOKEN);
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
         assertNotNull("Authenticator failed unexpectedly", subject);
@@ -89,6 +90,7 @@ public class OAuth2PreemptiveAuthenticatorTest extends UnitTestBase
     public void testAttemptAuthenticationUnauthorizedUser() throws Exception
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getServerName()).thenReturn("localhost");
         when(mockRequest.getHeader("Authorization")).thenReturn("Bearer " + TEST_UNAUTHORIZED_ACCESS_TOKEN);
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
         assertNotNull("Authenticator failed unexpectedly", subject);
@@ -102,6 +104,7 @@ public class OAuth2PreemptiveAuthenticatorTest extends UnitTestBase
     public void testAttemptAuthenticationInvalidToken() throws Exception
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getServerName()).thenReturn("localhost");
         when(mockRequest.getHeader("Authorization")).thenReturn("Bearer " + TEST_INVALID_ACCESS_TOKEN);
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
         assertNull("Authenticator did not fail with invalid access token", subject);

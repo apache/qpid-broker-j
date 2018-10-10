@@ -300,7 +300,7 @@ public class SynchronousMessageStoreRecovererTest extends UnitTestBase
         branch.commit();
 
         ServerMessage<?> message = storedMessage.getMetaData().getType().createMessage(storedMessage);
-        verify(queue, times(1)).enqueue(eq(message), (Action<? super MessageInstance>)isNull(), any(MessageEnqueueRecord.class));
+        verify(queue, times(1)).enqueue(eq(message), isNull(), isNull());
         verify(transaction).commitTran();
     }
 
@@ -450,7 +450,7 @@ public class SynchronousMessageStoreRecovererTest extends UnitTestBase
     }
 
 
-    private final class MessageEnqueueRecordMatcher extends ArgumentMatcher<MessageEnqueueRecord>
+    private final class MessageEnqueueRecordMatcher implements ArgumentMatcher<MessageEnqueueRecord>
     {
         private final long _messageId;
         private final UUID _queueId;
@@ -462,11 +462,10 @@ public class SynchronousMessageStoreRecovererTest extends UnitTestBase
         }
 
         @Override
-        public boolean matches(Object argument)
+        public boolean matches(MessageEnqueueRecord argument)
         {
-            return argument instanceof MessageEnqueueRecord
-                    && ((MessageEnqueueRecord)argument).getMessageNumber() == _messageId
-                    && ((MessageEnqueueRecord)argument).getQueueId().equals(_queueId);
+            return argument.getMessageNumber() == _messageId
+                    && argument.getQueueId().equals(_queueId);
         }
     }
 
@@ -475,7 +474,7 @@ public class SynchronousMessageStoreRecovererTest extends UnitTestBase
         private final UUID _queueId;
         private final long _messageId;
 
-        public TestMessageEnqueueRecord(final UUID queueId, final long messageId)
+        TestMessageEnqueueRecord(final UUID queueId, final long messageId)
         {
             _queueId = queueId;
             _messageId = messageId;

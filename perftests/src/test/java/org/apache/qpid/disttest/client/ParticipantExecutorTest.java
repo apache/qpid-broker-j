@@ -102,12 +102,11 @@ public class ParticipantExecutorTest extends UnitTestBase
         }
     }
 
-    private static class ResultHasError extends ArgumentMatcher<ParticipantResult>
+    private static class ResultHasError implements ArgumentMatcher<ParticipantResult>
     {
         @Override
-        public boolean matches(Object argument)
+        public boolean matches(ParticipantResult result)
         {
-            ParticipantResult result = (ParticipantResult) argument;
             return result.hasError();
         }
     }

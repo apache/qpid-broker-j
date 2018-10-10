@@ -145,19 +145,9 @@ public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
 
         verify(orphanedMessage, times(1)).remove();
         verify(newMessage, times(0)).remove();
-        verify(queue).recover(argThat(new ArgumentMatcher<ServerMessage>()
-        {
-            @Override
-            public boolean matches(final Object argument)
-            {
-                if (argument instanceof ServerMessage)
-                {
-                    ServerMessage serverMessage = (ServerMessage)argument;
-                    return serverMessage.getMessageNumber() == storedMessage.getMessageNumber();
-                }
-                return false;
-            }
-        }), same(messageEnqueueRecord));
+        verify(queue).recover(argThat((ArgumentMatcher<ServerMessage>) serverMessage -> serverMessage.getMessageNumber()
+                                                                                        == storedMessage.getMessageNumber()),
+                              same(messageEnqueueRecord));
     }
 
     private StoredMessage<?> createTestMessage(final long messageNumber)

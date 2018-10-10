@@ -73,7 +73,7 @@ public class TlsOrPlainConnectionFactoryTest extends UnitTestBase
         when(sslEngine.getSession()).thenReturn(sslSession);
         when(sslSession.getPacketBufferSize()).thenReturn(Integer.MAX_VALUE);
 
-        _factory = new TlsOrPlainConnectionFactory(_sslContextFactory, null);
+        _factory = new TlsOrPlainConnectionFactory(_sslContextFactory, "test");
 
         _actualConnection = mock(AbstractConnection.class);
 

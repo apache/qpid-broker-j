@@ -177,7 +177,7 @@ public class AbstractConsumerTargetTest extends UnitTestBase
 
         _consumerTarget.sendNextMessage();
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
-        verify(_messageInstance).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
+        verify(_messageInstance).routeToAlternate(null, null, null);
     }
 
     @Test

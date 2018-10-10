@@ -87,12 +87,11 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
     @Before
     public void setUp() throws Exception
     {
-
+        _taskExecutor = new CurrentThreadTaskExecutor();
         _broker = BrokerTestHelper.createBrokerMock();
         SystemConfig<?> systemConfig = (SystemConfig<?>) _broker.getParent();
         when(systemConfig.getObjectFactory()).thenReturn(new ConfiguredObjectFactoryImpl(mock(Model.class)));
 
-        _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);

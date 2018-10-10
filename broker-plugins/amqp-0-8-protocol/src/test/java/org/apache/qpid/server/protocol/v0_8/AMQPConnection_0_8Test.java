@@ -163,6 +163,7 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         _network = mock(ServerNetworkConnection.class);
         when(_network.getSender()).thenReturn(_sender);
         when(_network.getLocalAddress()).thenReturn(new InetSocketAddress("localhost", 12345));
+        when(_network.getSelectedHost()).thenReturn("localhost");
 
         _transport = Transport.TCP;
         _protocol = Protocol.AMQP_0_8;
