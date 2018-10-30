@@ -362,7 +362,14 @@
         <dependency>
           <groupId>org.apache.qpid</groupId>
           <artifactId>qpid-client</artifactId>
-          <scope>compile</scope>
+        </dependency>
+        <dependency>
+          <groupId>javax.xml.bind</groupId>
+          <artifactId>jaxb-api</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.glassfish.jaxb</groupId>
+          <artifactId>jaxb-runtime</artifactId>
         </dependency>
       </dependencies>
     </profile>
@@ -384,7 +391,14 @@
         <dependency>
           <groupId>org.apache.qpid</groupId>
           <artifactId>qpid-client</artifactId>
-          <scope>compile</scope>
+        </dependency>
+        <dependency>
+          <groupId>javax.xml.bind</groupId>
+          <artifactId>jaxb-api</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.glassfish.jaxb</groupId>
+          <artifactId>jaxb-runtime</artifactId>
         </dependency>
       </dependencies>
     </profile>

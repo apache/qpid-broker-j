@@ -34,7 +34,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <amqp10ClientGavs>org.apache.qpid:qpid-jms-client:${qpid-jms-client-version},org.slf4j:slf4j-simple:${slf4j-version}</amqp10ClientGavs>
-        <amqp0xClientGavs>org.apache.qpid:qpid-client:${qpid-jms-client-amqp-0-x-version},org.apache.geronimo.specs:geronimo-jms_1.1_spec:${geronimo-jms-1-1-version},org.slf4j:slf4j-simple:${slf4j-version}</amqp0xClientGavs>
+        <amqp0xClientGavs>org.apache.qpid:qpid-client:${qpid-jms-client-amqp-0-x-version},org.apache.geronimo.specs:geronimo-jms_1.1_spec:${geronimo-jms-1-1-version},org.slf4j:slf4j-simple:${slf4j-version},javax.xml.bind:jaxb-api:${jaxb-api-version},org.glassfish.jaxb:jaxb-runtime:${jaxb-api-version}</amqp0xClientGavs>
     </properties>
 
     <dependencies>
