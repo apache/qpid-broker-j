@@ -484,6 +484,10 @@ public class TlsTest extends JmsTestBase
                    getProtocol(),
                    is(not(equalTo(Protocol.AMQP_1_0))));
 
+        assumeThat("QPID-8255: certificate can only be loaded using jks keystore ",
+                   java.security.KeyStore.getDefaultType(),
+                   is(equalTo("jks")));
+
         //Start the broker (NEEDing client certificate authentication)
         int port = configureTlsPort(getTestPortName(), true, false, false);
 

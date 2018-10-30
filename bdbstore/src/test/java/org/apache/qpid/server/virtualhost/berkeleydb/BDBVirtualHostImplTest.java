@@ -25,8 +25,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.util.HashMap;
@@ -38,13 +36,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -60,22 +53,12 @@ public class BDBVirtualHostImplTest extends UnitTestBase
     {
         assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
 
-        Broker broker = BrokerTestHelper.createBrokerMock();
-
-        TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        when(broker.getTaskExecutor()).thenReturn(taskExecutor);
-        when(broker.getChildExecutor()).thenReturn(taskExecutor);
-
-
         _storePath = TestFileUtils.createTestDirectory();
 
-        _node = mock(VirtualHostNode.class);
-        when(_node.getParent()).thenReturn(broker);
-        when(_node.getModel()).thenReturn(BrokerModel.getInstance());
-        when(_node.getTaskExecutor()).thenReturn(taskExecutor);
-        when(_node.getChildExecutor()).thenReturn(taskExecutor);
-        when(_node.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
-        when(_node.getId()).thenReturn(UUID.randomUUID());
+        _node = BrokerTestHelper.createVirtualHostNodeMock("testNode",
+                                                           true,
+                                                           BrokerTestHelper.createAccessControlMock(),
+                                                           BrokerTestHelper.createBrokerMock());
     }
 
     @After

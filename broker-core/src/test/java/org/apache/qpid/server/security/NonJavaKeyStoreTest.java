@@ -57,26 +57,21 @@ import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.logging.messages.KeyStoreMessages;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.KeyStore;
-import org.apache.qpid.server.model.Model;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class NonJavaKeyStoreTest extends UnitTestBase
 {
-    private final Broker<?> _broker = mock(Broker.class);
-    private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-    private final Model _model = BrokerModel.getInstance();
-    private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
+    private Broker<?> _broker;
+    private ConfiguredObjectFactory _factory;
     private List<File> _testResources;
     private MessageLogger _messageLogger;
 
@@ -84,11 +79,9 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     public void setUp() throws Exception
     {
         _messageLogger = mock(MessageLogger.class);
-        when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getModel()).thenReturn(_model);
+        _broker = BrokerTestHelper.createBrokerMock();
         when(_broker.getEventLogger()).thenReturn(new EventLogger(_messageLogger));
-        when(((Broker) _broker).getCategoryClass()).thenReturn(Broker.class);
+        _factory = _broker.getObjectFactory();
         _testResources = new ArrayList<>();
     }
 

@@ -20,10 +20,9 @@
  */
 package org.apache.qpid.server.model;
 
-import static org.mockito.ArgumentMatchers.isNotNull;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
@@ -171,9 +170,28 @@ public class BrokerTestHelper
                                                                  final UnitTestBase testBase)
     {
         ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
+        String virtualHostNodeName = String.format("%s_%s", attributes.get(VirtualHostNode.NAME), "_node");
+        VirtualHostNode virtualHostNode =
+                createVirtualHostNodeMock(virtualHostNodeName, defaultVHN, accessControl, broker);
+
+        AbstractVirtualHost
+                host = (AbstractVirtualHost) objectFactory.create(VirtualHost.class, attributes, virtualHostNode );
+        host.start();
+        when(virtualHostNode.getVirtualHost()).thenReturn(host);
+        _createdVirtualHosts.add(host);
+
+        testBase.registerTearDown(_closeVirtualHosts);
+        return host;
+    }
+
+    public static VirtualHostNode createVirtualHostNodeMock(final String virtualHostNodeName,
+                                                            final boolean defaultVHN,
+                                                            final AccessControl accessControl,
+                                                            final Broker<?> broker)
+    {
+        ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
 
         VirtualHostNode virtualHostNode = mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, SYSTEM_PRINCIPAL, accessControl);
-        String virtualHostNodeName = String.format("%s_%s", attributes.get(VirtualHostNode.NAME), "_node");
         when(virtualHostNode.getName()).thenReturn( virtualHostNodeName);
         when(virtualHostNode.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
         when(virtualHostNode.getChildExecutor()).thenReturn(TASK_EXECUTOR);
@@ -194,15 +212,7 @@ public class BrokerTestHelper
         when(virtualHostNode.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
         when(virtualHostNode.getChildExecutor()).thenReturn(TASK_EXECUTOR);
         when(virtualHostNode.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
-
-        AbstractVirtualHost
-                host = (AbstractVirtualHost) objectFactory.create(VirtualHost.class, attributes, virtualHostNode );
-        host.start();
-        when(virtualHostNode.getVirtualHost()).thenReturn(host);
-        _createdVirtualHosts.add(host);
-
-        testBase.registerTearDown(_closeVirtualHosts);
-        return host;
+        return virtualHostNode;
     }
 
     public static QueueManagingVirtualHost<?> createVirtualHost(String name,

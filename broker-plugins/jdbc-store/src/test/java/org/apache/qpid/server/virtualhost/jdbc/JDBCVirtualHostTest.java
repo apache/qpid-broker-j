@@ -22,7 +22,6 @@ package org.apache.qpid.server.virtualhost.jdbc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,13 +36,9 @@ import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
-import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.jdbc.JDBCContainer;
@@ -75,19 +70,10 @@ public class JDBCVirtualHostTest extends UnitTestBase
     @Test
     public void testInvalidTableNamePrefix() throws Exception
     {
-        final VirtualHostNode vhn = mock(VirtualHostNode.class);
-        when(vhn.getCategoryClass()).thenReturn(VirtualHostNode.class);
-        when(vhn.getChildExecutor()).thenReturn(_taskExecutor);
-        final ConfiguredObjectFactoryImpl factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
-        when(vhn.getObjectFactory()).thenReturn(factory);
-        when(vhn.getModel()).thenReturn(factory.getModel());
-
-        EventLogger eventLogger = mock(EventLogger.class);
-        SystemConfig systemConfig = mock(SystemConfig.class);
-        when(systemConfig.getEventLogger()).thenReturn(eventLogger);
-        Broker broker = mock(Broker.class);
-        when(broker.getParent()).thenReturn(systemConfig);
-        when(vhn.getParent()).thenReturn(broker);
+        final VirtualHostNode vhn = BrokerTestHelper.createVirtualHostNodeMock("testNode",
+                                                                               true,
+                                                                               BrokerTestHelper.createAccessControlMock(),
+                                                                               BrokerTestHelper.createBrokerMock());
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, getTestName());
