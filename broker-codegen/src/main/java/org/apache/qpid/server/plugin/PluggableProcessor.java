@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.file.NoSuchFileException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -146,21 +148,20 @@ public class PluggableProcessor extends AbstractProcessor
             try
             {
                 FileObject serviceFile = filer.createResource(StandardLocation.CLASS_OUTPUT, "", relativeName);
-                PrintWriter pw = new PrintWriter(new OutputStreamWriter(serviceFile.openOutputStream(), "UTF-8"));
-
-                for (String headerLine : License.LICENSE)
+                try(PrintWriter pw = new PrintWriter(new OutputStreamWriter(serviceFile.openOutputStream(), "UTF-8")))
                 {
-                    pw.println("#" + headerLine);
+                    for (String headerLine : License.LICENSE)
+                    {
+                        pw.println("#" + headerLine);
+                    }
+                    pw.println("#");
+                    pw.println("# Note: Parts of this file are auto-generated from annotations.");
+                    pw.println("#");
+                    for (String implementation : factoryImplementations.get(serviceName))
+                    {
+                        pw.println(implementation);
+                    }
                 }
-                pw.println("#");
-                pw.println("# Note: Parts of this file are auto-generated from annotations.");
-                pw.println("#");
-                for (String implementation : factoryImplementations.get(serviceName))
-                {
-                    pw.println(implementation);
-                }
-
-                pw.close();
             }
             catch (IOException e)
             {
@@ -180,28 +181,38 @@ public class PluggableProcessor extends AbstractProcessor
         String relativeName = "META-INF/services/" + serviceName;
         try
         {
-
             FileObject existingFile = filer.getResource(StandardLocation.CLASS_OUTPUT, "", relativeName);
-            BufferedReader r = new BufferedReader(new InputStreamReader(existingFile.openInputStream(), "UTF-8"));
-            String line;
-            while((line=r.readLine())!=null)
+            try(BufferedReader r = new BufferedReader(new InputStreamReader(existingFile.openInputStream(), "UTF-8")))
             {
-                if(!line.matches(" *#"))
+                String line;
+                while ((line = r.readLine()) != null)
                 {
-                    factoryImplementations.get(serviceName).add(line);
+                    if (!line.matches(" *#"))
+                    {
+                        factoryImplementations.get(serviceName).add(line);
+                    }
                 }
             }
-            r.close();
         }
-        catch (FileNotFoundException e)
+        catch (NoSuchFileException | FileNotFoundException e)
         {
             // no existing file (ignore)
         }
         catch (IOException e)
         {
+            String errorMessage;
+            try(StringWriter sw = new StringWriter(); PrintWriter pw = new PrintWriter(sw))
+            {
+                e.printStackTrace(pw);
+                errorMessage = sw.toString();
+            }
+            catch (IOException ioe)
+            {
+                errorMessage = e.getLocalizedMessage();
+            }
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                                                      "Error loading existing services file: " + relativeName
-                                                     + " - " + e.getLocalizedMessage());
+                                                     + " - " + errorMessage);
         }
         return relativeName;
     }
