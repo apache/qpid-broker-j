@@ -120,7 +120,7 @@ public class QpidBestFitX509KeyManager extends X509ExtendedKeyManager
     {
         Date currentDate = new Date();
         final List<SNIServerName> serverNames = engine.getSSLParameters().getServerNames();
-        if(serverNames.isEmpty())
+        if(serverNames == null || serverNames.isEmpty())
         {
             return getDefaultServerAlias(keyType, issuers, engine);
         }
