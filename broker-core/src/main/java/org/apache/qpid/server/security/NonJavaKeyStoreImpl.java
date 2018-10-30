@@ -228,7 +228,7 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
                 java.security.KeyStore inMemoryKeyStore = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
 
                 byte[] bytes = new byte[64];
-                char[] chars = new char[64];
+                char[] chars = "".toCharArray();
                 RANDOM.nextBytes(bytes);
                 StandardCharsets.US_ASCII.decode(ByteBuffer.wrap(bytes)).get(chars);
                 inMemoryKeyStore.load(null, chars);
