@@ -64,7 +64,8 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.tests.http.HttpTestBase;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.ConfigItem;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.test.utils.TestFileUtils;
+
 
 @ConfigItem(name = "qpid.initialConfigurationLocation", value = DEFAULT_BROKER_CONFIG )
 public class EndToEndTest extends HttpTestBase
@@ -103,11 +104,11 @@ public class EndToEndTest extends HttpTestBase
         {
             if (_outputDir != null && _outputDir.exists())
             {
-                FileUtils.delete(_outputDir, true);
+                TestFileUtils.delete(_outputDir, true);
             }
             if (_jndiConfigFile != null)
             {
-                FileUtils.delete(_jndiConfigFile, true);
+                TestFileUtils.delete(_jndiConfigFile, true);
             }
         }
         finally
@@ -287,14 +288,14 @@ public class EndToEndTest extends HttpTestBase
         runner.runController();
     }
 
-    private String[] getCsvResults(final Map<String, String> args)
+    private String[] getCsvResults(final Map<String, String> args) throws IOException
     {
         String testConfig = args.get(TEST_CONFIG_PROP);
         String expectedCsvFilename = buildOutputFilename(testConfig, ".csv");
 
         File expectedCsvOutputFile = new File(_outputDir, expectedCsvFilename);
         assertThat("CSV output file must exist", expectedCsvOutputFile.exists(), is(equalTo(true)));
-        final String csvContents = FileUtils.readFileAsString(expectedCsvOutputFile);
+        final String csvContents = new String(Files.readAllBytes(expectedCsvOutputFile.toPath()));
         return csvContents.split("\n");
     }
 
