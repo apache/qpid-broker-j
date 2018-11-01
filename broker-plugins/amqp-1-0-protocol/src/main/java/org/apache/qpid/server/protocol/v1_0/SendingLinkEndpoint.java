@@ -824,11 +824,15 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             || ((expiryPolicy == null || TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy)) && getSession().isClosing())
             || (TerminusExpiryPolicy.CONNECTION_CLOSE.equals(expiryPolicy) && getSession().getConnection().isClosing()))
         {
+            cleanUpUnsettledDeliveries();
+        }
+
+        if (close)
+        {
             Error closingError = null;
             if (getDestination() instanceof ExchangeSendingDestination
-                && addressSpace instanceof QueueManagingVirtualHost)
+                && addressSpace instanceof QueueManagingVirtualHost && TerminusExpiryPolicy.NEVER.equals(expiryPolicy))
             {
-                cleanUpUnsettledDeliveries();
                 try
                 {
                     ((QueueManagingVirtualHost) addressSpace).removeSubscriptionQueue(
