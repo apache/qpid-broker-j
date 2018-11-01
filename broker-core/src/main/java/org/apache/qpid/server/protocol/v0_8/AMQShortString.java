@@ -74,7 +74,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
         _data = data;
     }
 
-    public static AMQShortString readAMQShortString(QpidByteBuffer buffer)
+    private static byte[] readAMQShortStringAsBytes(QpidByteBuffer buffer)
     {
         int length = buffer.getUnsignedByte();
         if(length == 0)
@@ -96,8 +96,34 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
             }
             byte[] data = new byte[length];
-            buffer.get(data);
+            buffer.get(data,0, length);
 
+            return data;
+        }
+    }
+
+    public static String readAMQShortStringAsString(QpidByteBuffer buffer)
+    {
+        byte[] data = readAMQShortStringAsBytes(buffer);
+        if (data == null)
+        {
+            return null;
+        }
+        else
+        {
+            return new String(data, StandardCharsets.UTF_8);
+        }
+    }
+
+    public static AMQShortString readAMQShortString(QpidByteBuffer buffer)
+    {
+        byte[] data = readAMQShortStringAsBytes(buffer);
+        if (data == null)
+        {
+            return null;
+        }
+        else
+        {
             ByteBuffer stringBuffer = ByteBuffer.wrap(data);
             AMQShortString cached = getShortStringCache().getIfPresent(stringBuffer);
             if (cached == null)
@@ -167,11 +193,20 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
     public void writeToBuffer(QpidByteBuffer buffer)
     {
-        final short size = (short) length();
-        buffer.putUnsignedByte(size);
-        buffer.put(_data, 0, size);
+        writeShortStringBytes(buffer, _data);
     }
 
+    public static void writeShortString(final QpidByteBuffer buffer, final String data)
+    {
+        writeShortStringBytes(buffer, data.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void writeShortStringBytes(final QpidByteBuffer buffer, final byte[] data)
+    {
+        final short size = (short) data.length;
+        buffer.putUnsignedByte(size);
+        buffer.put(data, 0, size);
+    }
 
     @Override
     public boolean equals(Object o)

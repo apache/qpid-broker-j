@@ -384,11 +384,9 @@ public class FieldTableTest extends QpidTestCase
      */
     private void checkEmpty(FieldTable table)
     {
-        Assert.assertEquals(0, table.getEncodedSize());
-        Assert.assertTrue(table.isEmpty());
-        Assert.assertEquals(0, table.size());
-
-        Assert.assertEquals(0, table.keySet().size());
+        assertEquals(0, table.getEncodedSize());
+        assertTrue(table.isEmpty());
+        assertEquals(0, table.size());
     }
 
     /**
@@ -906,11 +904,11 @@ public class FieldTableTest extends QpidTestCase
      */
     public void testAddingAllFromFieldTableCreatedUsingEncodedBytes() throws Exception
     {
-        AMQShortString myBooleanTestProperty = AMQShortString.createAMQShortString("myBooleanTestProperty");
+        String myBooleanTestProperty = "myBooleanTestProperty";
 
         //Create a new FieldTable and use it to encode data into a byte array.
         FieldTable encodeTable = new FieldTable();
-        encodeTable.put(myBooleanTestProperty, true);
+        encodeTable.setObject(myBooleanTestProperty, true);
         byte[] data = encodeTable.getDataAsBytes();
         int length = data.length;
 

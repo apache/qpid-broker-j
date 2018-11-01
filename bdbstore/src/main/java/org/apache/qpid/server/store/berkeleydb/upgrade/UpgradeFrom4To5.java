@@ -135,7 +135,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
                             arguments = new FieldTable();
                         }
 
-                        AMQShortString selectorFilterKey = AMQShortString.valueOf(AMQPFilterTypes.JMS_SELECTOR.getValue());
+                        String selectorFilterKey = AMQPFilterTypes.JMS_SELECTOR.getValue();
                         if (!arguments.containsKey(selectorFilterKey))
                         {
                             if (LOGGER.isDebugEnabled())
@@ -143,7 +143,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
                                 LOGGER.info("adding the empty string (i.e. 'no selector') value for " + queueName
                                         + " and exchange " + exchangeName);
                             }
-                            arguments.put(selectorFilterKey, "");
+                            arguments.setObject(selectorFilterKey, "");
                         }
                     }
                     addBindingToDatabase(bindingTuple, targetDatabase, transaction, queueName, exchangeName, routingKey,
