@@ -121,7 +121,7 @@
     <bdb-version>7.4.5</bdb-version>
     <derby-version>10.13.1.1</derby-version>
     <logback-version>1.2.2</logback-version>
-    <guava-version>22.0</guava-version>
+    <guava-version>27.0-jre</guava-version>
     <fasterxml-jackson-version>2.8.11</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>2.8.11.1</fasterxml-jackson-databind-version>
     <slf4j-version>1.7.25</slf4j-version>
@@ -467,6 +467,18 @@
           <exclusion>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>failureaccess</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>listenablefuture</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
