@@ -59,7 +59,7 @@ public abstract class JDBCDetails
                 false, false);
         private static final JDBCDetails ORACLE = new KnownJDBCDetails("oracle", "blob", "raw(%d)", "number", "timestamp",
                 false, true);
-        private static final JDBCDetails SYBASE = new KnownJDBCDetails("sybase", "image", "varbinary(%d)", "bigint", "datetime",
+        private static final JDBCDetails SYBASE = new KnownJDBCDetails("sybase", "image null", "varbinary(%d)", "bigint", "datetime",
                 false, true);
         private static final JDBCDetails POSTGRES = new KnownJDBCDetails("postgresql", "bytea", "bytea", "bigint", "timestamp",
                 true, true);
