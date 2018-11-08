@@ -27,27 +27,30 @@ define(["qpid/common/util",
 {
     function VirtualHostFileLogger(params)
     {
-        this.fileBrowser = new FileBrowser({
-            containerNode: params.typeSpecificDetailsNode,
-            management: params.management,
-            data: params.data,
-            modelObj: params.modelObj
-        });
-        TypeTabExtension.call(this,
-            params.containerNode,
-            template,
-            "VirtualHostLogger",
-            "File",
-            params.metadata,
-            params.data);
-        this.containerNode = params.containerNode;
+        var that = this;
+        if (template)
+        {
+            util.parse(params.containerNode, template, function () {
+                if (params.metadata)
+                {
+                    that.attributeContainers =
+                        util.collectAttributeNodes(params.containerNode, params.metadata, "VirtualHostLogger", "File");
+                    that.fileBrowser = new FileBrowser({
+                        containerNode: params.typeSpecificDetailsNode,
+                        management: params.management,
+                        data: params.data,
+                        modelObj: params.modelObj
+                    });
+                    that.update(params.data);
+                }
+                that.containerNode = params.containerNode;
+            });
+        }
     }
-
-    util.extend(VirtualHostFileLogger, TypeTabExtension);
 
     VirtualHostFileLogger.prototype.update = function (restData)
     {
-        TypeTabExtension.prototype.update.call(this, restData);
+        util.updateAttributeNodes(this.attributeContainers, restData);
         this.fileBrowser.update(restData);
         query(".maxHistoryLabel", this.containerNode)[0].style.display =
             restData && restData['rollDaily'] ? 'none' : '';
