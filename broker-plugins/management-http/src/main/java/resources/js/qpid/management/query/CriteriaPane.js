@@ -629,6 +629,18 @@ define(["dojo/_base/declare",
                         this._getConditionValue(),
                         this.typeName);
                 },
+                getCondition: function () {
+                    if (this._removed)
+                    {
+                        return undefined;
+                    }
+                    return {
+                        name: this.criteriaName,
+                        value: this._getConditionValue(),
+                        operator: this.criteriaCondition.value,
+                        type: this.typeName
+                    };
+                },
                 _getConditionValue: function ()
                 {
                     return this.valueEditor.expression || this.valueEditor.value;

@@ -88,8 +88,13 @@ define(["dojo/_base/declare",
         },
         _notifyChanged: function ()
         {
-            this.whereExpression = this._getWhereExpression();
-            this.emit("change", this.whereExpression);
+            var expression = this._getWhereExpression();
+            this.whereExpression = expression;
+            this.emit("change",
+                {
+                    expression: expression,
+                    conditions: this._getConditions()
+                });
         },
         _whereCriteriaChanged: function (whereCriteria)
         {
@@ -130,6 +135,22 @@ define(["dojo/_base/declare",
             }
             this.whereFieldsSelector.set("data", {selected: selected});
             return whereExpression;
+        },
+        _getConditions: function () {
+            var conditions = [];
+            var children = this.getChildren();
+            for (var i = 0; i < children.length; i++)
+            {
+                if (!children[i].get("deleted"))
+                {
+                    var childConditions = children[i].getConditions();
+                    conditions.push(childConditions);
+                }
+            }
+            return {
+                operator: "and",
+                conditions: conditions
+            };
         },
         clearWhereCriteria: function ()
         {

@@ -1058,5 +1058,48 @@ define(["dojo/_base/xhr",
             }
         };
 
+        util.collectAttributeNodes = function (containerNode, metadata, category, type) {
+            var containerObject = {};
+            if (metadata && category && type)
+            {
+                var attributes = metadata.getMetaData(category, type).attributes;
+                for (var attrName in attributes)
+                {
+                    if (attributes.hasOwnProperty(attrName))
+                    {
+                        var queryResult = query("." + attrName, containerNode);
+                        if (queryResult && queryResult[0])
+                        {
+                            var attr = attributes[attrName];
+                            containerObject[attrName] = {
+                                containerNode: queryResult[0],
+                                attributeType: attr.type
+                            };
+                        }
+                    }
+                }
+            }
+            return containerObject;
+        };
+
+        util.updateAttributeNodes = function (containerObject, restData) {
+            for (var attrName in containerObject)
+            {
+                if (containerObject.hasOwnProperty(attrName) && attrName in restData)
+                {
+                    var content = "";
+                    if (containerObject[attrName].attributeType === "Boolean")
+                    {
+                        content = util.buildCheckboxMarkup(restData[attrName]);
+                    }
+                    else
+                    {
+                        content = entities.encode(String(restData[attrName]));
+                    }
+                    containerObject[attrName].containerNode.innerHTML = content;
+                }
+            }
+        };
+
         return util;
     });

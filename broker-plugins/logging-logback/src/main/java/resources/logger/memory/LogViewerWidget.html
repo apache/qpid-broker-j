@@ -1,0 +1,89 @@
+<!--
+ -
+ - Licensed to the Apache Software Foundation (ASF) under one
+ - or more contributor license agreements.  See the NOTICE file
+ - distributed with this work for additional information
+ - regarding copyright ownership.  The ASF licenses this file
+ - to you under the Apache License, Version 2.0 (the
+ - "License"); you may not use this file except in compliance
+ - with the License.  You may obtain a copy of the License at
+ -
+ -   http://www.apache.org/licenses/LICENSE-2.0
+ -
+ - Unless required by applicable law or agreed to in writing,
+ - software distributed under the License is distributed on an
+ - "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ - KIND, either express or implied.  See the License for the
+ - specific language governing permissions and limitations
+ - under the License.
+ -
+ -->
+<div class="logViewer">
+    <div data-dojo-type="dijit/TitlePane" data-dojo-props="title: 'Log Viewer'">
+        <div data-dojo-attach-point="logsToolbar">
+            <div data-dojo-attach-point="lastUpdateTime">
+                <span class="info-cell left-cell label-cell">Update time:</span>
+                <span class="info-cell" data-dojo-attach-point="updateTimeNode"></span>
+                <span class="info-cell">Browser time:</span>
+                <span class="info-cell" data-dojo-attach-point="browserTimeNode"></span>
+            </div>
+            <div data-dojo-type="dijit/Toolbar">
+                <div id="logViewer_refreshButton_${id}"
+                     data-dojo-type="dijit/form/Button"
+                     data-dojo-attach-point="refreshButton"
+                     data-dojo-props="iconClass: 'gridRefreshIcon',title: 'Manual Refresh'">Refresh
+                </div>
+                <div id="logViewer_autoRefreshButton_${id}"
+                     data-dojo-type="dijit/form/ToggleButton"
+                     data-dojo-attach-point="autoRefreshButton"
+                     data-dojo-props="iconClass: 'gridAutoRefreshIcon',title: 'Auto Refresh'">Auto Refresh
+                </div>
+
+                <div id="logViewer_limitButton_${id}"
+                     data-dojo-type="dijit/form/Button"
+                     data-dojo-attach-point="limitButton"
+                     data-dojo-props="iconClass: 'rowNumberLimitIcon', title: 'Set Row Limit'">Set Row Limit
+                </div>
+
+                <span data-dojo-type="qpid/management/query/DropDownSelect"
+                      data-dojo-attach-point="columnChooser"
+                      data-dojo-props="iconClass: 'columnDefDialogButtonIcon',
+                                       title: 'Select fields to display',
+                                       label:'Display Columns'">
+                </span>
+                <span data-dojo-type="qpid/management/query/DropDownSelect"
+                      data-dojo-attach-point="filterChooser"
+                      data-dojo-props="iconClass: 'dojoxGridFBarDefFilterBtnIcon',
+                                       title: 'Specify Filtering Conditions',
+                                       label:'Set Filter'">
+                </span>
+                <div id="logViewer_clearFilterButton_${id}"
+                     data-dojo-type="dijit/form/Button"
+                     data-dojo-attach-point="clearFilterButton"
+                     data-dojo-props="iconClass: 'dijitIconDelete',
+                                      title: 'Clear filter',
+                                      disabled: true">Clear Filter
+                </div>
+                <div data-dojo-attach-point="filterBuilder"
+                     data-dojo-type="qpid/management/query/WhereExpression" style="display:none"
+                     class="dijitToolbar"></div>
+            </div>
+        </div>
+        <div data-dojo-attach-point="logEntries"></div>
+
+        <div data-dojo-type="dijit/ConfirmDialog" data-dojo-attach-point="rowLimitDialog"
+             title="Set maximum number of logs to display">
+            <div>
+                <label class="formLabel-labelCell tableContainer-labelCell"
+                       for="logViewer_limit_${id}">Maximum number of logs to display:</label>
+                <input class="formLabel-controlCell tableContainer-valueCell"
+                       data-dojo-type="dijit/form/NumberTextBox"
+                       data-dojo-props="required: true"
+                       data-dojo-attach-point="limit"
+                       name="limit"
+                       id="logViewer_limit_${id}">
+                <div class="clear"></div>
+            </div>
+        </div>
+    </div>
+</div>

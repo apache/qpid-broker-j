@@ -22,23 +22,37 @@ define(["qpid/common/util",
         "dojo/query",
         "dojox/html/entities",
         "dojo/text!logger/memory/show.html",
-        "qpid/common/TypeTabExtension",
-        "qpid/management/logger/LogViewer",
-        "dojo/domReady!"], function (util, query, entities, template, TypeTabExtension, LogViewer)
-{
+        "qpid/management/logger/LogViewerWidget",
+        "dojo/domReady!"], function (util, query, entities, template, LogViewerWidget) {
     function BrokerMemoryLogger(params)
     {
-        this.logViewer = new LogViewer(params.modelObj, params.management, params.typeSpecificDetailsNode, params.contentPane);
-        TypeTabExtension.call(this,
-            params.containerNode,
-            template,
-            "BrokerLogger",
-            "Memory",
-            params.metadata,
-            params.data);
+        var that = this;
+        if (template)
+        {
+            util.parse(params.containerNode, template, function () {
+                if (params.metadata)
+                {
+                    that.attributeContainers =
+                        util.collectAttributeNodes(params.containerNode, params.metadata, "BrokerLogger", "Memory");
+                    var options = {
+                        controller: params.controller,
+                        management: params.management,
+                        userPreferences: params.management.userPreferences,
+                        modelObj: params.modelObj,
+                        maxRecords: params.data.maxRecords
+                    };
+                    that.logViewerWidget = new LogViewerWidget(options, params.typeSpecificDetailsNode);
+                    that.update(params.data);
+                }
+            });
+        }
     }
 
-    util.extend(BrokerMemoryLogger, TypeTabExtension);
+    BrokerMemoryLogger.prototype.update = function (restData) {
+        util.updateAttributeNodes(this.attributeContainers, restData);
+        this.logViewerWidget.maxRecords = restData.maxRecords;
+        this.logViewerWidget.updateLogs();
+    };
 
     return BrokerMemoryLogger;
 });

@@ -59,7 +59,8 @@ define(["dojo/_base/declare",
                 this._optionsDialog = new dijit.TooltipDialog({content: this._optionsPanel}, this._createDomNode());
                 this._selectButton = new dijit.form.DropDownButton({
                     label: this.label || "Select",
-                    dropDown: this._optionsDialog
+                    dropDown: this._optionsDialog,
+                    iconClass: this.iconClass
                 }, this._createDomNode());
                 this._optionsPanel.doneButton.on("click", lang.hitch(this, this._onSelectionDone));
                 this._optionsPanel.cancelButton.on("click", lang.hitch(this, this._hideAndResetSearch));

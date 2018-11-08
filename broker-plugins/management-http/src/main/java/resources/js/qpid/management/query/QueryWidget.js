@@ -515,7 +515,7 @@ define(["dojo/_base/declare",
                 },
                 _standardModeWhereChanged: function (result)
                 {
-                    this._setWhereClause(result);
+                    this._setWhereClause(result.expression);
                     this.search();
                     this._queryChanged();
                 },

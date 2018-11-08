@@ -826,3 +826,14 @@ td.advancedSearchField, col.autoWidth {
 .accessControlRules .field-operation { width: 10%; }
 .accessControlRules .field-outcome { width: 10%; }
 .accessControlRules .field-attributes { width: auto; }
+
+.info-cell {padding-right: 5px;}
+.left-cell {padding-left: 5px;}
+.label-cell {font-weight: bold;}
+
+.logViewer .field-id { width: 4em; }
+.logViewer .field-timestamp { width: 20%;}
+.logViewer .field-level {width: 5em;}
+.logViewer .field-logger { width: 20%;}
+.logViewer .field-threadName { width: 10%;}
+.logViewer .field-message { width: auto;}

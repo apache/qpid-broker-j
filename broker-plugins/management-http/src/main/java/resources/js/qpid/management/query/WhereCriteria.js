@@ -244,6 +244,28 @@ define(["dojo/_base/declare",
                 }
                 return expression;
             },
+            getConditions: function () {
+                if (this._deleted)
+                {
+                    return undefined;
+                }
+
+                var conditions = [];
+                var criteriaArray = this.criteriaContainer.getChildren();
+                for (var i = 0; i < criteriaArray.length; i++)
+                {
+                    var condition = criteriaArray[i].getCondition();
+                    if (condition)
+                    {
+                        conditions.push(condition);
+                    }
+                }
+
+                return {
+                    operator: this.criteriaMatchCondition.value,
+                    conditions: conditions
+                };
+            },
             _destroy: function ()
             {
                 this._deleted = true;
