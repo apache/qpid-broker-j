@@ -25,7 +25,7 @@ Apache Qpid Broker-J Bundles
 
 
 From: 'an unknown organization'
-  - Guava: Google Core Libraries for Java (https://github.com/google/guava/guava) com.google.guava:guava:bundle:22.0
+  - Guava: Google Core Libraries for Java (https://github.com/google/guava/guava) com.google.guava:guava:bundle:27.0-jre
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - bcel  org.apache.bcel:bcel:jar:5.2
 
