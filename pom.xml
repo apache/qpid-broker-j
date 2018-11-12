@@ -134,7 +134,7 @@
     <maven-core-version>3.5.4</maven-core-version>
     <maven-resolver-version>1.1.1</maven-resolver-version>
     <httpclient-version>4.5.3</httpclient-version>
-    <qpid-jms-client-version>0.36.0</qpid-jms-client-version>
+    <qpid-jms-client-version>0.37.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.3.3</qpid-jms-client-amqp-0-x-version>
     <jaxb-api-version>2.3.1</jaxb-api-version>
 
