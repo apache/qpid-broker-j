@@ -112,9 +112,9 @@ From: 'The Apache Software Foundation' (https://www.apache.org/)
   - Apache Qpid Broker-J WebSocket Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-websocket) org.apache.qpid:qpid-broker-plugins-websocket:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-From: 'The Dojo Foundation' (http://dojotoolkit.org/foundation)
-  - Dojo Toolkit :: Bundles (http://dojotoolkit.org/dojo) org.dojotoolkit:dojo:pom:1.12.2
-    License: Academic Free License v2.1  (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE)    License: BSD License  (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE)
+From: 'The CometD Project' (https://cometd.org)
+  - Dojo Toolkit :: Bundles (http://dojotoolkit.org/dojo) org.dojotoolkit:dojo:pom:1.14.0
+    License: Academic Free License v2.1  (https://github.com/dojo/dojo/blob/master/LICENSE)    License: BSD License  (https://github.com/dojo/dojo/blob/master/LICENSE)
 
 From: 'Webtide' (https://webtide.com)
   - Jetty :: Continuation (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-continuation:jar:9.4.3.v20170317
