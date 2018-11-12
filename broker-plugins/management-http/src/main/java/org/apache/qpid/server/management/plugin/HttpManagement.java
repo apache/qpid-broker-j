@@ -35,9 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -184,7 +184,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private volatile boolean _serveUncompressedDojo;
     private volatile Long _saslExchangeExpiry;
-    private volatile ExecutorService _jettyServerExecutor;
+    private volatile ThreadPoolExecutor _jettyServerExecutor;
 
     @ManagedObjectFactoryConstructor
     public HttpManagement(Map<String, Object> attributes, Broker broker)
@@ -296,7 +296,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     {
         LOGGER.debug("Starting up web server on {}", ports);
 
-        _jettyServerExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("Jetty-Server-Thread"));
+        _jettyServerExecutor = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("Jetty-Server-Thread"));
         Server server = new Server(new ExecutorThreadPool(_jettyServerExecutor));
         int lastPort = -1;
         for (HttpPort<?> port : ports)

@@ -107,7 +107,7 @@
     <guava-version>27.0-jre</guava-version>
     <fasterxml-jackson-version>2.9.5</fasterxml-jackson-version>
     <slf4j-version>1.7.25</slf4j-version>
-    <jetty-version>9.4.3.v20170317</jetty-version>
+    <jetty-version>9.4.12.v20180830</jetty-version>
 
     <!-- dependency version numbers -->
     <bonecp-version>0.7.1.RELEASE</bonecp-version>
