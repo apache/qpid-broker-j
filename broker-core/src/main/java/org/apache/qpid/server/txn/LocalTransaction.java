@@ -25,7 +25,10 @@ import static org.apache.qpid.server.txn.TransactionObserver.NOOP_TRANSACTION_OB
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -33,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.model.TransactionMonitor;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -48,6 +52,14 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
  */
 public class LocalTransaction implements ServerTransaction
 {
+    enum LocalTransactionState
+    {
+        ACTIVE,
+        ROLLBACK_ONLY,
+        DISCHARGING,
+        DISCHARGED
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalTransaction.class);
 
     private final List<Action> _postTransactionActions = new ArrayList<>();
@@ -59,8 +71,10 @@ public class LocalTransaction implements ServerTransaction
     private volatile long _txnStartTime = 0L;
     private volatile long _txnUpdateTime = 0l;
     private ListenableFuture<Runnable> _asyncTran;
-    private volatile boolean _isRollbackOnly;
     private volatile boolean _outstandingWork;
+    private final LocalTransactionState _finalState;
+    private final Set<TransactionMonitor> _transactionMonitors = ConcurrentHashMap.newKeySet();
+    private final AtomicReference<LocalTransactionState> _state = new AtomicReference<>(LocalTransactionState.ACTIVE);
 
     public LocalTransaction(MessageStore transactionLog)
     {
@@ -69,16 +83,18 @@ public class LocalTransaction implements ServerTransaction
 
     public LocalTransaction(MessageStore transactionLog, TransactionObserver transactionObserver)
     {
-        this(transactionLog, null, transactionObserver);
+        this(transactionLog, null, transactionObserver, false);
     }
 
     public LocalTransaction(MessageStore transactionLog,
                             ActivityTimeAccessor activityTime,
-                            TransactionObserver transactionObserver)
+                            TransactionObserver transactionObserver,
+                            boolean resetable)
     {
         _transactionLog = transactionLog;
         _activityTime = activityTime == null ? () -> System.currentTimeMillis() : activityTime;
         _transactionObserver = transactionObserver == null ? NOOP_TRANSACTION_OBSERVER : transactionObserver;
+        _finalState = resetable ? LocalTransactionState.ACTIVE : LocalTransactionState.DISCHARGED;
     }
 
     @Override
@@ -357,9 +373,13 @@ public class LocalTransaction implements ServerTransaction
     @Override
     public void commit(Runnable immediateAction)
     {
-        if(_isRollbackOnly)
+        if(!_state.compareAndSet(LocalTransactionState.ACTIVE, LocalTransactionState.DISCHARGING))
         {
-            throw new IllegalStateException("Transaction has been marked as rollback only");
+            LocalTransactionState state = _state.get();
+            String message = state == LocalTransactionState.ROLLBACK_ONLY
+                    ? "Transaction has been marked as rollback only"
+                    : String.format("Cannot commit transaction in state %s", state);
+            throw new IllegalStateException(message);
         }
 
 
@@ -381,6 +401,11 @@ public class LocalTransaction implements ServerTransaction
         finally
         {
             resetDetails();
+            if (!_transactionMonitors.isEmpty())
+            {
+                _transactionMonitors.forEach(t -> t.dischargeTransaction(this, false));
+                _transactionMonitors.clear();
+            }
         }
     }
 
@@ -394,9 +419,13 @@ public class LocalTransaction implements ServerTransaction
 
     public void commitAsync(final Runnable deferred)
     {
-        if(_isRollbackOnly)
+        if(!_state.compareAndSet(LocalTransactionState.ACTIVE, LocalTransactionState.DISCHARGING))
         {
-            throw new IllegalStateException("Transaction has been marked as rollback only");
+            LocalTransactionState state = _state.get();
+            String message = state == LocalTransactionState.ROLLBACK_ONLY
+                    ? "Transaction has been marked as rollback only"
+                    : String.format("Cannot commit transaction with state '%s'", state);
+            throw new IllegalStateException(message);
         }
         sync();
         if(_transaction != null)
@@ -452,6 +481,14 @@ public class LocalTransaction implements ServerTransaction
     @Override
     public void rollback()
     {
+        if (!_state.compareAndSet(LocalTransactionState.ACTIVE, LocalTransactionState.DISCHARGING)
+            && !_state.compareAndSet(LocalTransactionState.ROLLBACK_ONLY, LocalTransactionState.DISCHARGING)
+            && _state.get() != LocalTransactionState.DISCHARGING)
+        {
+            throw new IllegalStateException(String.format("Cannot roll back transaction with state '%s'",
+                                                          _state.get()));
+        }
+
         sync();
         try
         {
@@ -469,6 +506,11 @@ public class LocalTransaction implements ServerTransaction
             finally
             {
                 resetDetails();
+                if (!_transactionMonitors.isEmpty())
+                {
+                    _transactionMonitors.forEach(t -> t.dischargeTransaction(this, true));
+                    _transactionMonitors.clear();
+                }
             }
         }
     }
@@ -537,7 +579,7 @@ public class LocalTransaction implements ServerTransaction
         _postTransactionActions.clear();
         _txnStartTime = 0L;
         _txnUpdateTime = 0;
-        _isRollbackOnly = false;
+        _state.set(_finalState);
     }
 
     @Override
@@ -551,19 +593,36 @@ public class LocalTransaction implements ServerTransaction
         long getActivityTime();
     }
 
-    public void setRollbackOnly()
+    public boolean setRollbackOnly()
     {
-        _isRollbackOnly = true;
+        return _state.compareAndSet(LocalTransactionState.ACTIVE, LocalTransactionState.ROLLBACK_ONLY);
     }
 
     public boolean isRollbackOnly()
     {
-        return _isRollbackOnly;
+        return _state.get() == LocalTransactionState.ROLLBACK_ONLY;
     }
 
 
     public boolean hasOutstandingWork()
     {
         return _outstandingWork;
+    }
+
+    public boolean isDischarged()
+    {
+        return _state.get() == LocalTransactionState.DISCHARGED;
+    }
+
+    public void addTransactionMonitor(TransactionMonitor tm)
+    {
+        _transactionMonitors.add(tm);
+        tm.registerTransaction(this);
+    }
+
+    public void removeTransactionMonitor(TransactionMonitor tm)
+    {
+        _transactionMonitors.remove(tm);
+        tm.unregisterTransaction(this);
     }
 }

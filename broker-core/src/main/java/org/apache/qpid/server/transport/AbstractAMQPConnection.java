@@ -949,7 +949,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         _localTransactionOpens.incrementAndGet();
         return new LocalTransaction(getAddressSpace().getMessageStore(),
                                     () -> getLastReadTime(),
-                                    _transactionObserver);
+                                    _transactionObserver,
+                                    getProtocol() != Protocol.AMQP_1_0);
     }
 
     @Override

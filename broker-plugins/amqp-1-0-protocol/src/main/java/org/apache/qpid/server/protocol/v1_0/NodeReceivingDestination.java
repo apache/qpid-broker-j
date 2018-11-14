@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -34,11 +35,14 @@ import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.TransactionMonitor;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class NodeReceivingDestination implements ReceivingDestination
@@ -145,6 +149,28 @@ public class NodeReceivingDestination implements ReceivingDestination
             else
             {
                 _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
+            }
+        }
+        else
+        {
+            if (txn instanceof LocalTransaction)
+            {
+                LocalTransaction t = (LocalTransaction)txn;
+                Collection<BaseQueue> routes = result.getRoutes();
+                routes.stream()
+                      .filter(q -> q instanceof TransactionMonitor)
+                      .map(TransactionMonitor.class::cast)
+                      .forEach(tm -> {
+                          if (!t.isRollbackOnly() && !((BaseQueue)tm).isDeleted())
+                          {
+                              t.addTransactionMonitor(tm);
+                              if (((BaseQueue)tm).isDeleted())
+                              {
+                                  t.removeTransactionMonitor(tm);
+                                  t.setRollbackOnly();
+                              }
+                          }
+                      });
             }
         }
     }

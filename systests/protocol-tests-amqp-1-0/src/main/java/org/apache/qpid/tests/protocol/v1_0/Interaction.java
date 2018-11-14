@@ -953,7 +953,7 @@ public class Interaction extends AbstractInteraction<Interaction>
         return this;
     }
 
-    public Interaction txnDischarge(final InteractionTransactionalState txnState, boolean failed) throws Exception
+    public Interaction discharge(final InteractionTransactionalState txnState, final boolean failed) throws Exception
     {
         final Discharge discharge = new Discharge();
         discharge.setTxnId(txnState.getCurrentTransactionId());
@@ -962,6 +962,12 @@ public class Interaction extends AbstractInteraction<Interaction>
         Transfer transfer = createTransactionTransfer(txnState.getHandle());
         transferPayload(transfer, discharge);
         sendPerformativeAndChainFuture(transfer, _sessionChannel);
+        return this;
+    }
+
+    public Interaction txnDischarge(final InteractionTransactionalState txnState, boolean failed) throws Exception
+    {
+        discharge(txnState, failed);
 
         Disposition declareTransactionDisposition = null;
         Flow coordinatorFlow = null;

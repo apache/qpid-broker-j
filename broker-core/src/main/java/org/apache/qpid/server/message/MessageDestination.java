@@ -24,7 +24,9 @@ import java.security.AccessControlException;
 import java.util.Map;
 
 import org.apache.qpid.server.exchange.DestinationReferrer;
+import org.apache.qpid.server.model.DoOnConfigThread;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -53,8 +55,11 @@ public interface MessageDestination extends MessageNode
 
     boolean isDurable();
 
-    void linkAdded(MessageSender sender, PublishingLink link);
-    void linkRemoved(MessageSender sender, PublishingLink link);
+    @DoOnConfigThread
+    void linkAdded(@Param(name = "sender") MessageSender sender, @Param(name = "link") PublishingLink link);
+
+    @DoOnConfigThread
+    void linkRemoved(@Param(name = "sender") MessageSender sender, @Param(name = "link") PublishingLink link);
 
     MessageDestination getAlternateBindingDestination();
 

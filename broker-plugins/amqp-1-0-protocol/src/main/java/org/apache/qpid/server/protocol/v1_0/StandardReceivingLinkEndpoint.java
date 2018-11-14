@@ -115,7 +115,10 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         @Override
         public void destinationRemoved(final MessageDestination destination)
         {
-            // TODO - we should probably schedule a link closure here! (QPID-7541)
+            getSession().getConnection()
+                        .doOnIOThreadAsync(() -> close(new Error(AmqpError.RESOURCE_DELETED,
+                                                                 String.format("Destination '%s' has been removed.",
+                                                                               destination.getName()))));
         }
 
         @Override
