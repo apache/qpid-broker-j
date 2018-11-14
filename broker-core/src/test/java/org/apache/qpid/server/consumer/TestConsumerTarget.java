@@ -66,6 +66,12 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return true;
     }
 
+    @Override
+    public void queueDeleted(final Queue queue, final MessageInstanceConsumer sub)
+    {
+        consumerRemoved(sub);
+    }
+
     public String getName()
     {
         return tag;

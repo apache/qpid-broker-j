@@ -39,7 +39,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.txn.TransactionMonitor;
 
 public class NodeReceivingDestination implements ReceivingDestination
 {
@@ -110,7 +112,8 @@ public class NodeReceivingDestination implements ReceivingDestination
                     return null;
                 }};
 
-        RoutingResult result = _destination.route(message, routingAddress, instanceProperties);
+        final RoutingResult<? extends ServerMessage<? extends StorableMessageMetaData>> result =
+                _destination.route(message, routingAddress, instanceProperties);
         final int enqueues = result.send(txn, null);
 
         if (enqueues == 0)
@@ -146,6 +149,14 @@ public class NodeReceivingDestination implements ReceivingDestination
             {
                 _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
             }
+        }
+        else
+        {
+            result.getRoutes()
+                  .stream()
+                  .filter(q -> q instanceof TransactionMonitor)
+                  .map(TransactionMonitor.class::cast)
+                  .forEach(tm -> tm.registerTransaction(txn));
         }
     }
 

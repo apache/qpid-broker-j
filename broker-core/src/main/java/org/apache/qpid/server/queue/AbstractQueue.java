@@ -50,6 +50,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -57,8 +58,10 @@ import javax.security.auth.Subject;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,6 +116,7 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.txn.TransactionMonitor;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.Deletable;
@@ -127,7 +131,8 @@ import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 public abstract class AbstractQueue<X extends AbstractQueue<X>>
         extends AbstractConfiguredObject<X>
         implements Queue<X>,
-                   MessageGroupManager.ConsumerResetHelper
+                   MessageGroupManager.ConsumerResetHelper,
+                   TransactionMonitor
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQueue.class);
@@ -262,6 +267,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
     private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<DestinationReferrer,Boolean>());
+    private final Set<LocalTransaction> _transactions = ConcurrentHashMap.newKeySet();
+    private final LocalTransaction.LocalTransactionListener _localTransactionListener = _transactions::remove;
 
     private boolean _closing;
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
@@ -1855,9 +1862,26 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 preSetAlternateBinding();
                 _deleteQueueDepthFuture.set(0);
-                return _deleteQueueDepthFuture;
             }
+            else
+            {
+                if (_transactions.isEmpty())
+                {
+                    doDelete();
+                }
+                else
+                {
+                    deleteAfterCompletionOfDischargingTransactions();
+                }
+            }
+        }
+        return _deleteQueueDepthFuture;
+    }
 
+    private void doDelete()
+    {
+        try
+        {
             final int queueDepthMessages = getQueueDepthMessages();
 
             for(MessageSender sender : _linkedSenders.keySet())
@@ -1865,8 +1889,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 sender.destinationRemoved(this);
             }
 
-            try
-            {
                 Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
 
                 while (consumerIterator.hasNext())
@@ -1894,13 +1916,58 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 //Log Queue Deletion
                 getEventLogger().message(_logSubject, QueueMessages.DELETED(getId().toString()));
                 _deleteQueueDepthFuture.set(queueDepthMessages);
+
+            _transactions.clear();
             }
             catch(Throwable e)
             {
                 _deleteQueueDepthFuture.setException(e);
             }
+    }
+
+    private void deleteAfterCompletionOfDischargingTransactions()
+    {
+        final List<SettableFuture<Void>> dischargingTxs =
+                _transactions.stream()
+                             .filter(t -> !t.isDischarged() && !t.isRollbackOnly() && !t.setRollbackOnly())
+                             .map(t -> {
+                                 final SettableFuture<Void> future = SettableFuture.create();
+                                 LocalTransaction.LocalTransactionListener listener = tx -> future.set(null);
+                                 t.addTransactionListener(listener);
+                                 if (t.isRollbackOnly() || t.isDischarged())
+                                 {
+                                     future.set(null);
+                                     t.removeTransactionListener(listener);
+                                 }
+                                 return future;
+                             })
+                             .collect(Collectors.toList());
+
+        if (dischargingTxs.isEmpty())
+        {
+            doDelete();
         }
-        return _deleteQueueDepthFuture;
+        else
+        {
+            ListenableFuture<Void> dischargingFuture = Futures.transform(Futures.allAsList(dischargingTxs),
+                                                                         input -> null,
+                                                                         MoreExecutors.directExecutor());
+
+            Futures.addCallback(dischargingFuture, new FutureCallback<Void>()
+            {
+                @Override
+                public void onSuccess(final Void result)
+                {
+                    doDelete();
+                }
+
+                @Override
+                public void onFailure(final Throwable t)
+                {
+                    _deleteQueueDepthFuture.setException(t);
+                }
+            }, MoreExecutors.directExecutor());
+        }
     }
 
     private void routeToAlternate(List<QueueEntry> entries)
@@ -3616,4 +3683,39 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
+    public void registerTransaction(final ServerTransaction tx)
+    {
+        if (tx instanceof LocalTransaction)
+        {
+            LocalTransaction localTransaction = (LocalTransaction) tx;
+            if (!isDeleted())
+            {
+                if (_transactions.add(localTransaction))
+                {
+                    localTransaction.addTransactionListener(_localTransactionListener);
+                    if (isDeleted())
+                    {
+                        localTransaction.setRollbackOnly();
+                        unregisterTransaction(localTransaction);
+                    }
+                }
+            }
+            else
+            {
+                localTransaction.setRollbackOnly();
+            }
+        }
+    }
+
+    @Override
+    public void unregisterTransaction(final ServerTransaction tx)
+    {
+        if (tx instanceof LocalTransaction)
+        {
+            LocalTransaction localTransaction = (LocalTransaction) tx;
+            localTransaction.removeTransactionListener(_localTransactionListener);
+            _transactions.remove(localTransaction);
+        }
+    }
 }

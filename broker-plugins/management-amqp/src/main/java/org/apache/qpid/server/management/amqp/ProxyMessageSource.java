@@ -53,6 +53,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
@@ -358,7 +359,11 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
             return _underlying.close();
         }
 
-
+        @Override
+        public void queueDeleted(final Queue queue, final MessageInstanceConsumer sub)
+        {
+            _underlying.queueDeleted(queue, _consumer);
+        }
     }
     private static class UnwrappingWrappingConsumer<T extends ConsumerTarget<T>> implements MessageInstanceConsumer<T>
     {

@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -48,9 +51,11 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint<Coordinator>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TxnCoordinatorReceivingLinkEndpoint.class);
     private final Map<Integer, ServerTransaction> _createdTransactions = new ConcurrentHashMap<>();
 
     public TxnCoordinatorReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0<Source, Coordinator> link)
@@ -184,15 +189,30 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
             }
             else if(!(txn instanceof LocalTransaction && ((LocalTransaction)txn).isRollbackOnly()))
             {
-                txn.commit();
+                try
+                {
+                    txn.commit();
+                }
+                catch (ServerScopedRuntimeException e)
+                {
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    if (LOGGER.isDebugEnabled())
+                    {
+                        LOGGER.debug("Transaction {} commit failed", transactionId, e);
+                    }
+                    else
+                    {
+                        LOGGER.info("Transaction {} commit failed: {}", transactionId, e.getMessage());
+                    }
+                    error = forceRollback(txn, connection);
+                }
             }
             else
             {
-                txn.rollback();
-                connection.incrementTransactionRollbackCounter();
-                error = new Error();
-                error.setCondition(TransactionError.TRANSACTION_ROLLBACK);
-                error.setDescription("The transaction was marked as rollback only due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
+                error = forceRollback(txn, connection);
             }
             _createdTransactions.remove(transactionId);
             connection.unregisterTransactionTickers(txn);
@@ -205,6 +225,16 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
             error.setCondition(TransactionError.UNKNOWN_ID);
             error.setDescription("Unknown transactionId " + transactionIdAsBinary.toString());
         }
+        return error;
+    }
+
+    private Error forceRollback(final ServerTransaction txn, final AMQPConnection_1_0<?> connection)
+    {
+        txn.rollback();
+        connection.incrementTransactionRollbackCounter();
+        final Error error = new Error();
+        error.setCondition(TransactionError.TRANSACTION_ROLLBACK);
+        error.setDescription("The transaction was rolled back due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
         return error;
     }
 

@@ -52,6 +52,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
@@ -59,6 +60,7 @@ import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.txn.TransactionMonitor;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -279,6 +281,11 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                                 _linkEndpoint.updateDisposition(tag, null, true);
                             }
                         });
+                        final TransactionLogResource owningResource = entry.getOwningResource();
+                        if (owningResource instanceof TransactionMonitor)
+                        {
+                            ((TransactionMonitor) owningResource).registerTransaction(txn);
+                        }
                     }
                     catch (UnknownTransactionException e)
                     {
@@ -313,23 +320,15 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         // TODO
     }
 
-    /*
-        QPID-7541
-        Currently if a queue is deleted the consumer sits there withiout being closed, but
-        obviously not receiving any new messages
-
-    public void queueDeleted()
+    @Override
+    public void queueDeleted(final Queue queue, final MessageInstanceConsumer sub)
     {
-        //TODO
-        getEndpoint().setSource(null);
-        getEndpoint().close();
-
-        final LinkRegistryModel linkReg = getSession().getConnection()
-                .getAddressSpace()
-                .getLinkRegistry(getEndpoint().getSession().getConnection().getRemoteContainerId());
-        linkReg.unregisterSendingLink(getEndpoint().getName());
+        getSession().getConnection().doOnIOThreadAsync(() -> {
+            getEndpoint().close(new Error(AmqpError.RESOURCE_DELETED,
+                                          String.format("Destination '%s' has been removed.", queue.getName())));
+            consumerRemoved(sub);
+        });
     }
-      */
 
     @Override
     public boolean allocateCredit(final ServerMessage msg)
@@ -415,6 +414,11 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 {
                     txn = _linkEndpoint.getTransaction(transactionId);
                     getSession().getConnection().registerTransactedMessageDelivered();
+                    TransactionLogResource owningResource = _queueEntry.getOwningResource();
+                    if (owningResource instanceof TransactionMonitor)
+                    {
+                        ((TransactionMonitor) owningResource).registerTransaction(txn);
+                    }
                 }
                 catch (UnknownTransactionException e)
                 {

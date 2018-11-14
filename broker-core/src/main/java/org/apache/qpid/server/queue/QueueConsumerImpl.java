@@ -285,7 +285,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
     @Override
     public void queueDeleted()
     {
-        _target.consumerRemoved(this);
+        _target.queueDeleted(getQueue(), this);
     }
 
     @Override
