@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.SystemConfigFactoryConstructor;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 @ManagedObject( category = false, type = JDBCSystemConfigImpl.SYSTEM_CONFIG_TYPE)
 public class JDBCSystemConfigImpl extends AbstractSystemConfig<JDBCSystemConfigImpl> implements JDBCSystemConfig<JDBCSystemConfigImpl>
@@ -91,5 +92,11 @@ public class JDBCSystemConfigImpl extends AbstractSystemConfig<JDBCSystemConfigI
     public String getTableNamePrefix()
     {
         return _tableNamePrefix;
+    }
+
+    @Override
+    public PreferenceStore getPreferenceStore()
+    {
+        return ((GenericJDBCConfigurationStore) getConfigurationStore()).getPreferenceStore();
     }
 }

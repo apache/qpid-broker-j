@@ -25,9 +25,12 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.SizeMonitoringSettings;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
+import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 
-public interface DerbySystemConfig<X extends DerbySystemConfig<X>> extends SystemConfig<X>, FileBasedSettings,
-                                                                           SizeMonitoringSettings
+public interface DerbySystemConfig<X extends DerbySystemConfig<X>> extends SystemConfig<X>,
+                                                                           FileBasedSettings,
+                                                                           SizeMonitoringSettings,
+                                                                           PreferenceStoreProvider
 {
     @Override
     @ManagedAttribute(defaultValue = "${qpid.work_dir}${file.separator}config.json")

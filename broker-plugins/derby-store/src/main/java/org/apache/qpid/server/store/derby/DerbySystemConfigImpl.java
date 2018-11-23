@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.SystemConfigFactoryConstructor;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 @ManagedObject(category = false, type = DerbySystemConfigImpl.SYSTEM_CONFIG_TYPE)
 public class DerbySystemConfigImpl extends AbstractSystemConfig<DerbySystemConfigImpl> implements DerbySystemConfig<DerbySystemConfigImpl>
@@ -75,5 +76,11 @@ public class DerbySystemConfigImpl extends AbstractSystemConfig<DerbySystemConfi
     public Long getStoreOverfullSize()
     {
         return _storeOverfullSize;
+    }
+
+    @Override
+    public PreferenceStore getPreferenceStore()
+    {
+        return ((DerbyConfigurationStore) getConfigurationStore()).getPreferenceStore();
     }
 }
