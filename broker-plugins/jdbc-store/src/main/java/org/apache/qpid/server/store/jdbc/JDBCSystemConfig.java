@@ -24,8 +24,11 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
+import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 
-public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemConfig<X>, JDBCSettings
+public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemConfig<X>,
+                                                                         JDBCSettings,
+                                                                         PreferenceStoreProvider
 {
     @Override
     @ManagedAttribute(mandatory=true, defaultValue = "${systemConfig.connectionUrl}")
