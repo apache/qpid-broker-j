@@ -353,8 +353,13 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     protected ListenableFuture<Void> onClose()
     {
         closeConfigurationStore();
-        _virtualHostExecutor.stop();
+        onCloseOrDelete();
         return Futures.immediateFuture(null);
+    }
+
+    protected void onCloseOrDelete()
+    {
+        _virtualHostExecutor.stop();
     }
 
     private void closeConfigurationStore()

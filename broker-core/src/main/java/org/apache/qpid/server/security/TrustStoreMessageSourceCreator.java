@@ -58,7 +58,7 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
             updateTrustStoreSourceRegistration(registry, trustStore);
             trustStore.addChangeListener(trustStoreChangeListener);
         }
-        broker.addChangeListener(new AbstractConfigurationChangeListener()
+        AbstractConfigurationChangeListener brokerListener = new AbstractConfigurationChangeListener()
         {
             @Override
             public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
@@ -82,6 +82,25 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
 
                     trustStore.removeChangeListener(trustStoreChangeListener);
                     registry.removeSystemNode(TrustStoreMessageSource.getSourceNameFromTrustStore(trustStore));
+                }
+                else if (child == virtualHostNode)
+                {
+                    object.removeChangeListener(this);
+                    broker.getChildren(TrustStore.class).forEach(t -> t.removeChangeListener(trustStoreChangeListener));
+                }
+            }
+        };
+        broker.addChangeListener(brokerListener);
+        virtualHostNode.addChangeListener(new AbstractConfigurationChangeListener()
+        {
+            @Override
+            public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+            {
+                if (child == vhost)
+                {
+                    broker.removeChangeListener(brokerListener);
+                    object.removeChangeListener(this);
+                    broker.getChildren(TrustStore.class).forEach(t -> t.removeChangeListener(trustStoreChangeListener));
                 }
             }
         });

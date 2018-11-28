@@ -195,6 +195,11 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
     }
 
     @Override
+    public void close()
+    {
+    }
+
+    @Override
     public MessageConversionExceptionHandlingPolicy getMessageConversionExceptionHandlingPolicy()
     {
         return MessageConversionExceptionHandlingPolicy.CLOSE;

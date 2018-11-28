@@ -473,6 +473,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                                                  this, e.getMessage(), helpers));
                                      }
                                  }
+                                 onCloseOrDelete();
                              });
     }
 

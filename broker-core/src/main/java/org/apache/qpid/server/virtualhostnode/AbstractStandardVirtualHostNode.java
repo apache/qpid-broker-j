@@ -153,6 +153,7 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
                                      configurationStore.closeConfigurationStore();
                                      configurationStore.onDelete(AbstractStandardVirtualHostNode.this);
                                  }
+                                 onCloseOrDelete();
                              });
     }
 

@@ -1535,6 +1535,11 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     }
 
     @Override
+    public void close()
+    {
+    }
+
+    @Override
     public NamedAddressSpace getAddressSpace()
     {
         return _addressSpace;

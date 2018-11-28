@@ -55,6 +55,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource
     private final TrustStore<?> _trustStore;
     private final AtomicReference<Set<Certificate>> _certCache = new AtomicReference<>();
     private final VirtualHost<?> _virtualHost;
+    private final AbstractConfigurationChangeListener _trustStoreListener;
 
 
     public TrustStoreMessageSource(final TrustStore<?> trustStore, final VirtualHost<?> virtualHost)
@@ -62,7 +63,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource
         super(getSourceNameFromTrustStore(trustStore), virtualHost);
         _virtualHost = virtualHost;
         _trustStore = trustStore;
-        _trustStore.addChangeListener(new AbstractConfigurationChangeListener()
+        _trustStoreListener = new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
@@ -81,8 +82,8 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource
             {
                 updateCertCache();
             }
-
-        });
+        };
+        _trustStore.addChangeListener(_trustStoreListener);
         if(_trustStore.getState() == State.ACTIVE)
         {
             updateCertCache();
@@ -102,6 +103,12 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource
         consumer.send(createMessage());
         target.noMessagesAvailable();
         return consumer;
+    }
+
+    @Override
+    public void close()
+    {
+        _trustStore.removeChangeListener(_trustStoreListener);
     }
 
     private void updateCertCache()

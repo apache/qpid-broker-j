@@ -1615,6 +1615,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
 
         stopLogging(_virtualHostLoggersToClose);
+        _systemNodeRegistry.close();
         return Futures.immediateFuture(null);
     }
 
@@ -2077,7 +2078,16 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
             if(node instanceof MessageSource)
             {
-                _systemNodeSources.remove(node.getName());
+                removeMessageSource(node.getName());
+            }
+        }
+
+        private void removeMessageSource(final String name)
+        {
+            MessageSource messageSource = _systemNodeSources.remove(name);
+            if (messageSource != null)
+            {
+                messageSource.close();
             }
         }
 
@@ -2085,7 +2095,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         public void removeSystemNode(final String name)
         {
             _systemNodeDestinations.remove(name);
-            _systemNodeSources.remove(name);
+            removeMessageSource(name);
         }
 
         @Override
@@ -2106,6 +2116,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             return _systemNodeSources.containsKey(name) || _systemNodeDestinations.containsKey(name);
         }
 
+        public void close()
+        {
+            _systemNodeSources.values().forEach(MessageSource::close);
+        }
     }
 
 

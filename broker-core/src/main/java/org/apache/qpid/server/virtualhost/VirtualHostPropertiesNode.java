@@ -61,6 +61,11 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
         return consumer;
     }
 
+    @Override
+    public void close()
+    {
+    }
+
     protected InternalMessage createMessage()
     {
 

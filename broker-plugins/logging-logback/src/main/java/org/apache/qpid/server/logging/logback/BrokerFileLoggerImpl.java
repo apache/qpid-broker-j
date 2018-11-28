@@ -212,12 +212,24 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     protected ListenableFuture<Void> onClose()
     {
+        onCloseOrDelete();
+        return Futures.immediateFuture(null);
+
+    }
+
+    @Override
+    protected ListenableFuture<Void> onDelete()
+    {
+        onCloseOrDelete();
+        return super.onDelete();
+    }
+
+    private void onCloseOrDelete()
+    {
         if (_statusManager != null)
         {
             _statusManager.remove(_logbackStatusListener);
         }
-        return Futures.immediateFuture(null);
-
     }
 
     static class BrokerFileLoggerStatusListener implements StatusListener

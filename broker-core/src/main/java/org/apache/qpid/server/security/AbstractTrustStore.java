@@ -28,9 +28,7 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -55,17 +53,12 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
-import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
 
 public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         extends AbstractConfiguredObject<X> implements TrustStore<X>
@@ -110,12 +103,17 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     @Override
     protected ListenableFuture<Void> onClose()
     {
+        onCloseOrDelete();
+        return Futures.immediateFuture(null);
+    }
+
+    private void onCloseOrDelete()
+    {
         if(_checkExpiryTaskFuture != null)
         {
             _checkExpiryTaskFuture.cancel(false);
             _checkExpiryTaskFuture = null;
         }
-        return Futures.immediateFuture(null);
     }
 
     @Override
@@ -155,6 +153,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     @Override
     protected ListenableFuture<Void> onDelete()
     {
+        onCloseOrDelete();
         _eventLogger.message(TrustStoreMessages.DELETE(getName()));
         return super.onDelete();
     }

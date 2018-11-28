@@ -23,11 +23,8 @@ package org.apache.qpid.server.security;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -42,9 +39,7 @@ import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.KeyStore;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 
 public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
@@ -82,12 +77,17 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     @Override
     protected ListenableFuture<Void> onClose()
     {
+        onCloseOrDelete();
+        return Futures.immediateFuture(null);
+    }
+
+    private void onCloseOrDelete()
+    {
         if(_checkExpiryTaskFuture != null)
         {
             _checkExpiryTaskFuture.cancel(false);
             _checkExpiryTaskFuture = null;
         }
-        return Futures.immediateFuture(null);
     }
 
     @Override
@@ -162,6 +162,7 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     @Override
     protected ListenableFuture<Void> onDelete()
     {
+        onCloseOrDelete();
         getEventLogger().message(KeyStoreMessages.DELETE(getName()));
         return super.onDelete();
     }

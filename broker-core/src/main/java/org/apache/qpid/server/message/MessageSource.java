@@ -43,6 +43,7 @@ public interface MessageSource extends TransactionLogResource, MessageNode
 
     boolean verifySessionAccess(AMQPSession<?,?> session);
 
+    void close();
     /**
      * ExistingExclusiveConsumer signals a failure to create a consumer, because an exclusive consumer
      * already exists.
