@@ -2846,11 +2846,23 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     if (!exch.isBound(bindingKeyStr, arguments, queue))
                     {
 
-                        if (!exch.addBinding(bindingKeyStr, queue, arguments)
-                            && ExchangeDefaults.TOPIC_EXCHANGE_CLASS.equals(
-                                exch.getType()))
+                        try
                         {
-                            exch.replaceBinding(bindingKeyStr, queue, arguments);
+                            if (!exch.addBinding(bindingKeyStr, queue, arguments)
+                                && ExchangeDefaults.TOPIC_EXCHANGE_CLASS.equals(exch.getType()))
+                            {
+                                exch.replaceBinding(bindingKeyStr, queue, arguments);
+                            }
+                        }
+                        catch (AMQInvalidArgumentException e)
+                        {
+                            _connection.sendConnectionClose(ErrorCodes.ARGUMENT_INVALID,
+                                                            String.format(
+                                                                    "Cannot bind queue '%s' to exchange '%s' due to invalid argument : %s",
+                                                                    queueName,
+                                                                    exch.getName(),
+                                                                    e.getMessage()),
+                                                            getChannelId());
                         }
                     }
 

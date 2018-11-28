@@ -83,6 +83,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.exchange.DefaultDestination;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.MessageStoreMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
@@ -2876,7 +2877,14 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
                         for (String binding : bindings.keySet())
                         {
-                            exchange.addBinding(binding, queue, bindings.get(binding));
+                            try
+                            {
+                                exchange.addBinding(binding, queue, bindings.get(binding));
+                            }
+                            catch (AMQInvalidArgumentException ia)
+                            {
+                                throw new IllegalArgumentException("Unexpected bind argument : " + ia.getMessage(), ia);
+                            }
                         }
                     }
                     else
@@ -2893,6 +2901,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 throw new IllegalStateException("subscription already in use");
             }
+        }
+        catch (AMQInvalidArgumentException e)
+        {
+            throw new IllegalArgumentException("Unexpected bind argument : " + e.getMessage(), e);
         }
         return queue;
     }

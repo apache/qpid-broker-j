@@ -26,8 +26,10 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
@@ -242,7 +244,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
     }
     private void processDoOnConfigMethod(final PrintWriter pw, final String className, final ExecutableElement methodElement, final AnnotationMirror annotationMirror)
     {
-
+        pw.println("    @Override");
         pw.print("    public " + methodElement.getReturnType() + " " + methodElement.getSimpleName().toString() + "(");
         boolean first = true;
         for(VariableElement param : methodElement.getParameters())
@@ -262,6 +264,11 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.print(getParamName(param));
         }
         pw.println(")");
+        final List<? extends TypeMirror> thrownTypes = methodElement.getThrownTypes();
+        if (!thrownTypes.isEmpty())
+        {
+            pw.println(thrownTypes.stream().map(TypeMirror::toString).collect(Collectors.joining(" , ", "    throws ", "")));
+        }
         pw.println("    {");
 
 
@@ -412,6 +419,12 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
                    + boxedReturnTypeName
                    + "> execute()");
         pw.println("                {");
+        final List<? extends TypeMirror> thrownTypes = methodElement.getThrownTypes();
+        if (!thrownTypes.isEmpty())
+        {
+            pw.println("                    try");
+            pw.println("                    {");
+        }
         if (methodElement.getReturnType().getKind() != TypeKind.VOID)
         {
             pw.println("                    return Futures.<"
@@ -428,6 +441,16 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.println("                    return Futures.<"
                        + boxedReturnTypeName
                        + ">immediateFuture(null);");
+        }
+        if (!thrownTypes.isEmpty())
+        {
+            pw.println("                    }");
+            pw.println(thrownTypes.stream()
+                                  .map(TypeMirror::toString)
+                                  .collect(Collectors.joining(" | ", "                    catch (", " e)")));
+            pw.println("                    {");
+            pw.println("                        return Futures.immediateFailedFuture(e);");
+            pw.println("                    }");
         }
         pw.println("                }");
 

@@ -67,41 +67,29 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
         }
 
         BindingSet addBinding(final BindingIdentifier binding, final Map<String, Object> arguments)
+                throws AMQInvalidArgumentException
         {
             MessageDestination destination = binding.getDestination();
             if (FilterSupport.argumentsContainFilter(arguments))
             {
-                try
-                {
-                    Map<MessageDestination, Map<BindingIdentifier, FilterManagerReplacementRoutingKeyTuple>>
-                            filteredDestinations = new HashMap<>(_filteredDestinations);
+                Map<MessageDestination, Map<BindingIdentifier, FilterManagerReplacementRoutingKeyTuple>>
+                        filteredDestinations = new HashMap<>(_filteredDestinations);
 
-                    filteredDestinations.computeIfAbsent(destination, messageDestination -> new HashMap<>());
+                filteredDestinations.computeIfAbsent(destination, messageDestination -> new HashMap<>());
 
-                    Map<BindingIdentifier, FilterManagerReplacementRoutingKeyTuple> bindingsForDestination =
-                            new HashMap<>(filteredDestinations.get(destination));
+                Map<BindingIdentifier, FilterManagerReplacementRoutingKeyTuple> bindingsForDestination =
+                        new HashMap<>(filteredDestinations.get(destination));
 
-                    FilterManager filterManager = FilterSupport.createMessageFilter(arguments, destination);
-                    String replacementRoutingKey = arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY) != null
-                            ? String.valueOf(arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY))
-                            : null;
+                FilterManager filterManager = FilterSupport.createMessageFilter(arguments, destination);
+                String replacementRoutingKey = arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY) != null
+                        ? String.valueOf(arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY))
+                        : null;
 
-                    bindingsForDestination.put(binding,
-                                               new FilterManagerReplacementRoutingKeyTuple(filterManager,
-                                                                                           replacementRoutingKey));
-                    filteredDestinations.put(destination, Collections.unmodifiableMap(bindingsForDestination));
-                    return new BindingSet(_unfilteredDestinations, Collections.unmodifiableMap(filteredDestinations));
-                }
-                catch (AMQInvalidArgumentException e)
-                {
-                    LOGGER.warn(
-                            "Binding ignored: cannot parse filter on binding of destination '{}' to exchange '{}' with arguments: {}",
-                            destination.getName(),
-                            FanoutExchangeImpl.this.getName(),
-                            arguments,
-                            e);
-                    return this;
-                }
+                bindingsForDestination.put(binding,
+                                           new FilterManagerReplacementRoutingKeyTuple(filterManager,
+                                                                                       replacementRoutingKey));
+                filteredDestinations.put(destination, Collections.unmodifiableMap(bindingsForDestination));
+                return new BindingSet(_unfilteredDestinations, Collections.unmodifiableMap(filteredDestinations));
             }
             else
             {
@@ -126,6 +114,7 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
         }
 
         BindingSet updateBinding(final BindingIdentifier binding, final Map<String, Object> newArguments)
+                throws AMQInvalidArgumentException
         {
             return removeBinding(binding).addBinding(binding, newArguments);
         }
@@ -232,13 +221,14 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
 
     @Override
     protected void onBindingUpdated(final BindingIdentifier binding,
-                                    final Map<String, Object> newArguments)
+                                    final Map<String, Object> newArguments) throws AMQInvalidArgumentException
     {
         _bindingSet = _bindingSet.updateBinding(binding, newArguments);
     }
 
     @Override
     protected void onBind(final BindingIdentifier binding, final Map<String, Object> arguments)
+            throws AMQInvalidArgumentException
     {
         _bindingSet = _bindingSet.addBinding(binding, arguments);
     }

@@ -466,4 +466,56 @@ public class DirectExchangeTest extends UnitTestBase
         assertFalse("Message unexpectedly routed to queue", result.hasRoutes());
     }
 
+    @Test
+    public void testBindWithInvalidSelector()
+    {
+        final String queueName = getTestName() + "_queue";
+        _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+
+        final Map<String, Object> bindArguments = Collections.singletonMap(JMS_SELECTOR.toString(), "foo in (");
+
+        try
+        {
+            _exchange.bind(queueName, queueName, bindArguments, false);
+            fail("Queue can be bound when invalid selector expression is supplied as part of bind arguments");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+
+        final ServerMessage<?> testMessage = createTestMessage(Collections.singletonMap("foo", "bar"));
+        final RoutingResult<ServerMessage<?>> result = _exchange.route(testMessage, queueName, _instanceProperties);
+
+        assertFalse("Message is unexpectedly routed to queue", result.hasRoutes());
+    }
+
+    @Test
+    public void testBindWithInvalidSelectorWhenBindingExists()
+    {
+        final String queueName = getTestName() + "_queue";
+        _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+
+        final Map<String, Object> bindArguments = Collections.singletonMap(JMS_SELECTOR.toString(), "foo in ('bar')");
+        final boolean isBound = _exchange.bind(queueName, queueName, bindArguments, false);
+        assertTrue("Could not bind queue", isBound);
+
+        final ServerMessage<?> testMessage = createTestMessage(Collections.singletonMap("foo", "bar"));
+        final RoutingResult<ServerMessage<?>> result = _exchange.route(testMessage, queueName, _instanceProperties);
+        assertTrue("Message should be routed to queue", result.hasRoutes());
+
+        final Map<String, Object> bindArguments2 = Collections.singletonMap(JMS_SELECTOR.toString(), "foo in (");
+        try
+        {
+            _exchange.bind(queueName, queueName, bindArguments2, true);
+            fail("Queue can be bound when invalid selector expression is supplied as part of bind arguments");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+
+        final RoutingResult<ServerMessage<?>> result2 = _exchange.route(testMessage, queueName, _instanceProperties);
+        assertTrue("Message should be be possible to route using old binding", result2.hasRoutes());
+    }
 }

@@ -87,6 +87,7 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
         }
 
         BindingSet putBinding(MessageDestination destination, Map<String, Object> arguments, boolean force)
+                throws AMQInvalidArgumentException
         {
             if (!force && (_unfilteredDestinations.containsKey(destination) || _filteredDestinations.containsKey(
                     destination)))
@@ -95,44 +96,30 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
             }
             else if(FilterSupport.argumentsContainFilter(arguments))
             {
-                try
+                FilterManager messageFilter = FilterSupport.createMessageFilter(arguments, destination);
+                Map<MessageDestination, String> unfilteredDestinations;
+                Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> filteredDestinations;
+                if (_unfilteredDestinations.containsKey(destination))
                 {
-                    Map<MessageDestination, String> unfilteredDestinations;
-                    Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> filteredDestinations;
-                    if (_unfilteredDestinations.containsKey(destination))
-                    {
-                        unfilteredDestinations = new HashMap<>(_unfilteredDestinations);
-                        unfilteredDestinations.remove(destination);
-                    }
-                    else
-                    {
-                        unfilteredDestinations = _unfilteredDestinations;
-                    }
-
-                    filteredDestinations = new HashMap<>(_filteredDestinations);
-                    FilterManager messageFilter = FilterSupport.createMessageFilter(arguments, destination);
-                    String replacementRoutingKey = arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY) != null
-                            ? String.valueOf(arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY))
-                            : null;
-                    filteredDestinations.put(destination,
-                                       new FilterManagerReplacementRoutingKeyTuple(messageFilter,
-                                                                                   replacementRoutingKey));
-
-                    return new BindingSet(Collections.unmodifiableMap(unfilteredDestinations),
-                                          Collections.unmodifiableMap(filteredDestinations));
-
+                    unfilteredDestinations = new HashMap<>(_unfilteredDestinations);
+                    unfilteredDestinations.remove(destination);
                 }
-                catch (AMQInvalidArgumentException e)
+                else
                 {
-                    LOGGER.warn(
-                            "Binding ignored: cannot parse filter on binding of destination '{}' to exchange '{}' with arguments: {}",
-                            destination.getName(),
-                            DirectExchangeImpl.this.getName(),
-                            arguments,
-                            e);
-                    return this;
+                    unfilteredDestinations = _unfilteredDestinations;
                 }
 
+                filteredDestinations = new HashMap<>(_filteredDestinations);
+
+                String replacementRoutingKey = arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY) != null
+                        ? String.valueOf(arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY))
+                        : null;
+                filteredDestinations.put(destination,
+                                   new FilterManagerReplacementRoutingKeyTuple(messageFilter,
+                                                                               replacementRoutingKey));
+
+                return new BindingSet(Collections.unmodifiableMap(unfilteredDestinations),
+                                      Collections.unmodifiableMap(filteredDestinations));
             }
             else
             {
@@ -232,6 +219,7 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
 
     @Override
     protected void onBindingUpdated(final BindingIdentifier binding, final Map<String, Object> newArguments)
+            throws AMQInvalidArgumentException
     {
         String bindingKey = binding.getBindingKey();
 
@@ -241,6 +229,7 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
 
     @Override
     protected void onBind(final BindingIdentifier binding, final Map<String, Object> arguments)
+            throws AMQInvalidArgumentException
     {
         String bindingKey = binding.getBindingKey();
 

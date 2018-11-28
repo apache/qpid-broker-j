@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.apache.qpid.server.exchange.DestinationReferrer;
+import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSender;
@@ -122,7 +123,7 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     @DoOnConfigThread
     boolean addBinding(@Param(name = "bindingKey") String bindingKey,
                        @Param(name = "queue") Queue<?> queue,
-                       @Param(name = "arguments") Map<String, Object> arguments);
+                       @Param(name = "arguments") Map<String, Object> arguments) throws AMQInvalidArgumentException;
 
     @DoOnConfigThread
     boolean deleteBinding(@Param(name = "bindingKey") String bindingKey,
@@ -135,7 +136,7 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     @DoOnConfigThread
     void replaceBinding(@Param(name = "bindingKey") String bindingKey,
                         @Param(name = "queue") Queue<?> queue,
-                        @Param(name = "arguments") Map<String, Object> arguments);
+                        @Param(name = "arguments") Map<String, Object> arguments) throws AMQInvalidArgumentException;
 
     QueueManagingVirtualHost<?> getVirtualHost();
 

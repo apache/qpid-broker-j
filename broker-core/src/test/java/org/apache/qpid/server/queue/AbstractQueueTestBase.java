@@ -161,7 +161,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     }
 
     @Test
-    public void testBinding()
+    public void testBinding() throws Exception
     {
         _exchange.addBinding(_routingKey, _queue, Collections.EMPTY_MAP);
 

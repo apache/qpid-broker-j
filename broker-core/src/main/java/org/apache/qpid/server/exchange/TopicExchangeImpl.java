@@ -65,6 +65,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
     @Override
     protected synchronized void onBindingUpdated(final BindingIdentifier binding, final Map<String, Object> newArguments)
+            throws AMQInvalidArgumentException
     {
         final String bindingKey = binding.getBindingKey();
         final MessageDestination destination = binding.getDestination();
@@ -73,17 +74,10 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
         String routingKey = TopicNormalizer.normalize(bindingKey);
 
-        try
+        if (_bindings.containsKey(binding))
         {
-            if (_bindings.containsKey(binding))
-            {
-                TopicExchangeResult result = _topicExchangeResults.get(routingKey);
-                updateTopicExchangeResult(result, binding, newArguments);
-            }
-        }
-        catch (AMQInvalidArgumentException e)
-        {
-            throw new ConnectionScopedRuntimeException(e);
+            TopicExchangeResult result = _topicExchangeResults.get(routingKey);
+            updateTopicExchangeResult(result, binding, newArguments);
         }
     }
 
@@ -217,16 +211,9 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
     @Override
     protected void onBind(final BindingIdentifier binding, Map<String, Object> arguments)
+            throws AMQInvalidArgumentException
     {
-        try
-        {
-            bind(binding, arguments);
-        }
-        catch (AMQInvalidArgumentException e)
-        {
-            // TODO - this seems incorrect, handling of invalid bindings should be propagated more cleanly
-            throw new ConnectionScopedRuntimeException(e);
-        }
+        bind(binding, arguments);
     }
 
     @Override

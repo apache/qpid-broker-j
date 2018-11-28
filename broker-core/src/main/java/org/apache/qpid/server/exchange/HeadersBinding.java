@@ -61,6 +61,7 @@ class HeadersBinding
      * @param binding the binding to create a header binding using
      */
     public HeadersBinding(AbstractExchange.BindingIdentifier binding, Map<String,Object> arguments)
+            throws AMQInvalidArgumentException
     {
         _binding = binding;
         arguments = arguments == null ? Collections.emptyMap() : arguments;
@@ -77,22 +78,11 @@ class HeadersBinding
         _replacementRoutingKey = key == null ? null : String.valueOf(key);
     }
 
-    private void initMappings()
+    private void initMappings() throws AMQInvalidArgumentException
     {
         if(FilterSupport.argumentsContainFilter(_mappings))
         {
-            try
-            {
-                _filter = FilterSupport.createMessageFilter(_mappings, _binding.getDestination());
-            }
-            catch (AMQInvalidArgumentException e)
-            {
-                LOGGER.warn("Invalid filter in binding queue '"+_binding.getDestination().getName()
-                             +"' with arguments: " + _mappings);
-                _filter = new FilterManager();
-
-                _filter.add("x-exclude-all", new ExcludeAllFilter());
-            }
+            _filter = FilterSupport.createMessageFilter(_mappings, _binding.getDestination());
         }
         for(Map.Entry<String, Object> entry : _mappings.entrySet())
         {

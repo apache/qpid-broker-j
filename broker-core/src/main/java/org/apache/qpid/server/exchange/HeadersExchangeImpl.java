@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
@@ -106,13 +107,13 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
 
 
     @Override
-    protected void onBind(final BindingIdentifier binding, Map<String,Object> arguments)
+    protected void onBind(final BindingIdentifier binding, Map<String,Object> arguments) throws AMQInvalidArgumentException
     {
         _bindingHeaderMatchers.add(new HeadersBinding(binding, arguments));
     }
 
     @Override
-    protected void onBindingUpdated(final BindingIdentifier binding, final Map<String, Object> arguments)
+    protected void onBindingUpdated(final BindingIdentifier binding, final Map<String, Object> arguments)  throws AMQInvalidArgumentException
     {
         _bindingHeaderMatchers.add(new HeadersBinding(binding, arguments));
     }
@@ -120,7 +121,14 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
     @Override
     protected void onUnbind(final BindingIdentifier binding)
     {
-        _bindingHeaderMatchers.remove(new HeadersBinding(binding, Collections.emptyMap()));
+        try
+        {
+            _bindingHeaderMatchers.remove(new HeadersBinding(binding, Collections.emptyMap()));
+        }
+        catch (AMQInvalidArgumentException e)
+        {
+            // ignore
+        }
     }
 
 }

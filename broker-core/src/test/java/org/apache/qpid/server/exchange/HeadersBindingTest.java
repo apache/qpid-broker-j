@@ -207,7 +207,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testDefault_1()
+    public void testDefault_1() throws Exception
     {
         bindHeaders.put("A", "Value of A");
 
@@ -219,7 +219,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testDefault_2()
+    public void testDefault_2() throws Exception
     {
         bindHeaders.put("A", "Value of A");
 
@@ -232,7 +232,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testDefault_3()
+    public void testDefault_3() throws Exception
     {
         bindHeaders.put("A", "Value of A");
 
@@ -244,7 +244,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAll_1()
+    public void testAll_1() throws Exception
     {
         bindHeaders.put("X-match", "all");
         bindHeaders.put("A", "Value of A");
@@ -257,7 +257,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAll_2()
+    public void testAll_2() throws Exception
     {
         bindHeaders.put("X-match", "all");
         bindHeaders.put("A", "Value of A");
@@ -271,7 +271,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAll_3()
+    public void testAll_3() throws Exception
     {
         bindHeaders.put("X-match", "all");
         bindHeaders.put("A", "Value of A");
@@ -286,7 +286,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAll_4()
+    public void testAll_4() throws Exception
     {
         bindHeaders.put("X-match", "all");
         bindHeaders.put("A", "Value of A");
@@ -302,7 +302,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAll_5()
+    public void testAll_5() throws Exception
     {
         bindHeaders.put("X-match", "all");
         bindHeaders.put("A", "Value of A");
@@ -318,7 +318,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAny_1()
+    public void testAny_1() throws Exception
     {
         bindHeaders.put("X-match", "any");
         bindHeaders.put("A", "Value of A");
@@ -331,7 +331,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAny_2()
+    public void testAny_2() throws Exception
     {
         bindHeaders.put("X-match", "any");
         bindHeaders.put("A", "Value of A");
@@ -345,7 +345,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAny_3()
+    public void testAny_3() throws Exception
     {
         bindHeaders.put("X-match", "any");
         bindHeaders.put("A", "Value of A");
@@ -360,7 +360,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAny_4()
+    public void testAny_4() throws Exception
     {
         bindHeaders.put("X-match", "any");
         bindHeaders.put("A", "Value of A");
@@ -376,7 +376,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAny_5()
+    public void testAny_5() throws Exception
     {
         bindHeaders.put("X-match", "any");
         bindHeaders.put("A", "Value of A");
@@ -392,7 +392,7 @@ public class HeadersBindingTest extends UnitTestBase
     }
 
     @Test
-    public void testAny_6()
+    public void testAny_6() throws Exception
     {
         bindHeaders.put("X-match", "any");
         bindHeaders.put("A", "Value of A");

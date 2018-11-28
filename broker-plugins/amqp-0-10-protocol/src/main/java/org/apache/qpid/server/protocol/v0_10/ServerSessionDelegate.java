@@ -1237,6 +1237,17 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                         {
                             exception(session, method, ExecutionErrorCode.UNAUTHORIZED_ACCESS, e.getMessage());
                         }
+                        catch (AMQInvalidArgumentException e)
+                        {
+                            exception(session,
+                                      method,
+                                      ExecutionErrorCode.INVALID_ARGUMENT,
+                                      String.format(
+                                              "Cannot bind queue '%s' to exchange '%s' due to invalid argument : %s",
+                                              queue.getName(),
+                                              exchangeName,
+                                              e.getMessage()));
+                        }
                     }
                     else
                     {

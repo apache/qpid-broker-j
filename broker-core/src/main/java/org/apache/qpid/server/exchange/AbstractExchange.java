@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.BindingMessages;
@@ -216,7 +217,14 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 if (messageDestination != null)
                 {
                     Map<String, Object> arguments = b.getArguments() == null ? Collections.emptyMap() : b.getArguments();
-                    onBind(new BindingIdentifier(b.getBindingKey(), messageDestination), arguments);
+                    try
+                    {
+                        onBind(new BindingIdentifier(b.getBindingKey(), messageDestination), arguments);
+                    }
+                    catch (AMQInvalidArgumentException e)
+                    {
+                        throw new IllegalConfigurationException("Unexpected bind argument : " + e.getMessage(), e);
+                    }
                     messageDestination.linkAdded(this, b);
                 }
             }
@@ -567,9 +575,10 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
     protected abstract void onBindingUpdated(final BindingIdentifier binding,
-                                             final Map<String, Object> newArguments);
+                                             final Map<String, Object> newArguments) throws AMQInvalidArgumentException;
 
-    protected abstract void onBind(final BindingIdentifier binding, final Map<String, Object> arguments);
+    protected abstract void onBind(final BindingIdentifier binding, final Map<String, Object> arguments)
+            throws AMQInvalidArgumentException;
 
     protected abstract void onUnbind(final BindingIdentifier binding);
 
@@ -666,6 +675,21 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                         Map<String, Object> arguments,
                         boolean replaceExistingArguments)
     {
+        try
+        {
+            return bindInternal(destination, bindingKey, arguments, replaceExistingArguments);
+        }
+        catch (AMQInvalidArgumentException e)
+        {
+            throw new IllegalArgumentException("Unexpected bind argument : " + e.getMessage(), e);
+        }
+    }
+
+    private boolean bindInternal(final String destination,
+                                 final String bindingKey,
+                                 Map<String, Object> arguments,
+                                 final boolean replaceExistingArguments) throws AMQInvalidArgumentException
+    {
         MessageDestination messageDestination = getAttainedMessageDestination(destination);
         if (messageDestination == null)
         {
@@ -679,32 +703,24 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
         Binding newBinding = new BindingImpl(bindingKey, destination, arguments);
 
-        boolean modified = false;
+        Binding previousBinding = null;
         for(Binding b : _bindings)
         {
-
             if (b.getBindingKey().equals(bindingKey) && b.getDestination().equals(messageDestination.getName()))
             {
-                if (replaceExistingArguments)
-                {
-                    _bindings.remove(b);
-                    modified = true;
-                    break;
-                }
-                else
-                {
-                    return false;
-                }
+                previousBinding = b;
+                break;
             }
         }
-        _bindings.add(newBinding);
-        if(isDurable() && messageDestination.isDurable())
+
+        if (previousBinding != null && !replaceExistingArguments)
         {
-            final Collection<Binding> durableBindings = getDurableBindings();
-            attributeSet(DURABLE_BINDINGS, durableBindings, durableBindings);
+            return false;
         }
+
+
         final BindingIdentifier bindingIdentifier = new BindingIdentifier(bindingKey, messageDestination);
-        if(modified)
+        if(previousBinding != null)
         {
             onBindingUpdated(bindingIdentifier, arguments);
         }
@@ -716,6 +732,17 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
             onBind(bindingIdentifier, arguments);
             messageDestination.linkAdded(this, newBinding);
+        }
+
+        if (previousBinding != null)
+        {
+            _bindings.remove(previousBinding);
+        }
+        _bindings.add(newBinding);
+        if(isDurable() && messageDestination.isDurable())
+        {
+            final Collection<Binding> durableBindings = getDurableBindings();
+            attributeSet(DURABLE_BINDINGS, durableBindings, durableBindings);
         }
         return true;
     }
@@ -857,16 +884,17 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     @Override
     public boolean addBinding(String bindingKey, final Queue<?> queue, Map<String, Object> arguments)
+            throws AMQInvalidArgumentException
     {
-        return bind(queue.getName(), bindingKey, arguments, false);
+        return bindInternal(queue.getName(), bindingKey, arguments, false);
     }
 
     @Override
     public void replaceBinding(String bindingKey,
                                final Queue<?> queue,
-                               Map<String, Object> arguments)
+                               Map<String, Object> arguments) throws AMQInvalidArgumentException
     {
-        bind(queue.getName(), bindingKey, arguments, true);
+        bindInternal(queue.getName(), bindingKey, arguments, true);
     }
 
     private boolean autoDeleteIfNecessary()
