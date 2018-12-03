@@ -264,7 +264,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
             <programlisting>
 {
   "name": "\${broker.name}",
-  "modelVersion": "7.0",
+  "modelVersion" : "7.1",
   "authenticationproviders" : [ {
     "name" : "passwordFile",
     "type" : "PlainPasswordFile",

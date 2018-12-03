@@ -56,9 +56,29 @@ public final class BrokerModel extends Model
      * 7.0 Remove bindings, Consumer sole parent is Queue
      *     Remodelled alternateExchange as alternateBindings
      *     Remodelled Queue grouping attributes
+     * 7.1 Operations for transition into DELETE state are replaced with delete method on AbstractConfiguredObject similar to open/close
+     *     Introduced pluggable service AuthIdentityConnectionPropertyEnricher
+     *     Introduced attribute Port#bindingAddress
+     *     Introduced attribute Queue#expiryPolicy and context variable 'queue.defaultExpiryPolicy'
+     *     Introduced property 'abstract' in annotation ManagedAttributeValueType
+     *     Attributes property 'initialization' is set to 'materialize' for
+     *         FileKeyStore#keyManagerFactoryAlgorithm and FileKeyStore#keyStoreType
+     *         FileTrustStore#trustManagerFactoryAlgorithm and FileTrustStore#trustStoreType
+     *     Introduced attribute FileKeyStore#useHostNameMatching
+     *     Introduced context variable 'broker.failStartupWithErroredChildScope'
+     *     Introduced ACL rule owner attribute
+     *     // changes below are back ported into 7.0
+     *     Introduced context variables for named caches on VirtualHost
+     *     Introduced statistic Broker#inboundMessageSizeHighWatermark
+     *     Introduced statistics Connection#lastInboundMessageTime, Connection#lastOutboundMessageTime and Connection#lastMessageTime
+     *     Introduced statistics AmqpPort#totalConnectionCount
+     *     Parameter bindingKey is made mandatory in Exchange#bind and Exchange#unbind
+     *     Attribute OAuth2AuthenticationProvider#clientSecret is not mandatory anymore
+     *     Introduced statistics QueueManagingVirtualHost#totalConnectionCount and QueueManagingVirtualHost#InboundMessageSizeHighWatermark
+     *     BDBHAVirtualHostNode attributes name, groupName, address are made immutable
      */
     public static final int MODEL_MAJOR_VERSION = 7;
-    public static final int MODEL_MINOR_VERSION = 0;
+    public static final int MODEL_MINOR_VERSION = 1;
     public static final String MODEL_VERSION = MODEL_MAJOR_VERSION + "." + MODEL_MINOR_VERSION;
     private static final Model MODEL_INSTANCE = new BrokerModel();
     private final Map<Class<? extends ConfiguredObject>, Class<? extends ConfiguredObject>> _parents =
