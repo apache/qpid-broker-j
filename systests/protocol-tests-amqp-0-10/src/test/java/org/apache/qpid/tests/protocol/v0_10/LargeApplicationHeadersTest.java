@@ -24,22 +24,17 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.*;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -113,12 +108,10 @@ public class LargeApplicationHeadersTest extends BrokerAdminUsingTestBase
                        .consumeResponse()
                        .getLatestResponse(SessionCompleted.class);
 
-
-            MessageTransfer transfer = consumeResponse(interaction,
-                                                       MessageTransfer.class,
-                                                       SessionCompleted.class,
-                                                       SessionCommandPoint.class,
-                                                       SessionConfirmed.class);
+            MessageTransfer transfer = interaction.consume(MessageTransfer.class,
+                                                           SessionCompleted.class,
+                                                           SessionCommandPoint.class,
+                                                           SessionConfirmed.class);
 
             assertThat(transfer.getBodySize(), is(0));
 
@@ -132,28 +125,6 @@ public class LargeApplicationHeadersTest extends BrokerAdminUsingTestBase
             assertThat(receivedApplicationHeaders, is(notNullValue()));
             assertThat(receivedApplicationHeaders, is(equalTo(applicationHeaders)));
         }
-    }
-
-    private <T extends Method> T consumeResponse(final Interaction interaction,
-                                                 final Class<T> expected,
-                                                 final Class<? extends Method>... ignore)
-            throws Exception
-    {
-        List<Class<? extends Method>> possibleResponses = new ArrayList<>(Arrays.asList(ignore));
-        possibleResponses.add(expected);
-
-        T completed = null;
-        do
-        {
-            interaction.consumeResponse(possibleResponses.toArray(new Class[possibleResponses.size()]));
-            Response<?> response = interaction.getLatestResponse();
-            if (expected.isAssignableFrom(response.getBody().getClass()))
-            {
-                completed = (T) response.getBody();
-            }
-        }
-        while (completed == null);
-        return completed;
     }
 
     private Map<String, Object> createApplicationHeadersThatExceedSingleFrame(final int headerPropertySize, final int maxFrameSize)

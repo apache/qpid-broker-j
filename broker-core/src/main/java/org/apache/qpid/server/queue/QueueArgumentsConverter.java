@@ -20,16 +20,21 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -130,11 +135,24 @@ public class QueueArgumentsConverter
 
 
     public static Map<String,Object> convertWireArgsToModel(final String queueName,
-                                                            Map<String, Object> wireArguments)
+                                                            final Map<String, Object> wireArguments,
+                                                            final Model model)
     {
         Map<String,Object> modelArguments = new HashMap<>();
         if(wireArguments != null)
         {
+            final ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
+            final Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes =
+                    new HashMap<>(typeRegistry.getAttributeTypes(Queue.class));
+            typeRegistry.getTypeSpecialisations(Queue.class)
+                        .forEach(type -> typeRegistry.getTypeSpecificAttributes(type)
+                                                     .forEach(t -> attributeTypes.put(t.getName(), t)));
+            wireArguments.entrySet()
+                         .stream()
+                         .filter(entry -> attributeTypes.containsKey(entry.getKey())
+                                          && !attributeTypes.get(entry.getKey()).isDerived())
+                         .forEach(entry -> modelArguments.put(entry.getKey(), entry.getValue()));
+
             for(Map.Entry<String,String> entry : ATTRIBUTE_MAPPINGS.entrySet())
             {
                 if(wireArguments.containsKey(entry.getKey()))

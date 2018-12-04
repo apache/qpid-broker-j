@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
+import java.util.Map;
+
 import org.apache.qpid.server.protocol.v0_10.transport.QueueDeclare;
 import org.apache.qpid.server.protocol.v0_10.transport.QueueDelete;
 import org.apache.qpid.server.protocol.v0_10.transport.QueuePurge;
@@ -142,5 +144,11 @@ public class QueueInteraction
     public Interaction query() throws Exception
     {
         return _interaction.sendPerformative(_query);
+    }
+
+    public QueueInteraction declareArguments(final Map<String, Object> arguments)
+    {
+        _declare.setArguments(arguments);
+        return this;
     }
 }

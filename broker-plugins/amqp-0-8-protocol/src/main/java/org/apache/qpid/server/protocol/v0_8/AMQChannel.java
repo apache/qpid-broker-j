@@ -2985,7 +2985,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 }
 
                 Map<String, Object> attributes =
-                        QueueArgumentsConverter.convertWireArgsToModel(queueNameString, wireArguments);
+                        QueueArgumentsConverter.convertWireArgsToModel(queueNameString, wireArguments, getModel());
 
                 attributes.put(Queue.NAME, queueNameString);
                 attributes.put(Queue.DURABLE, durable);

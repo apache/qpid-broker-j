@@ -27,9 +27,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -41,14 +38,12 @@ import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquireMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
-import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.Range;
 import org.apache.qpid.server.protocol.v0_10.transport.RangeSet;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCommandPoint;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCompleted;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionConfirmed;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionFlush;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -115,10 +110,8 @@ public class MessageTest extends BrokerAdminUsingTestBase
                        .flushCompleted()
                        .flush();
 
-            SessionCompleted completed = consumeResponse(interaction,
-                                                         SessionCompleted.class,
-                                                         SessionCommandPoint.class,
-                                                         SessionConfirmed.class);
+            SessionCompleted completed =
+                    interaction.consume(SessionCompleted.class, SessionCommandPoint.class, SessionConfirmed.class);
 
             assertThat(completed.getCommands(), is(notNullValue()));
             assertThat(completed.getCommands().includes(0), is(equalTo(true)));
@@ -160,11 +153,10 @@ public class MessageTest extends BrokerAdminUsingTestBase
                        .flowValue(-1)
                        .flow();
 
-            MessageTransfer transfer = consumeResponse(interaction,
-                                                       MessageTransfer.class,
-                                                       SessionCompleted.class,
-                                                       SessionCommandPoint.class,
-                                                       SessionConfirmed.class);
+            MessageTransfer transfer = interaction.consume(MessageTransfer.class,
+                                                           SessionCompleted.class,
+                                                           SessionCommandPoint.class,
+                                                           SessionConfirmed.class);
 
             try (QpidByteBuffer buffer = transfer.getBody())
             {
@@ -210,11 +202,10 @@ public class MessageTest extends BrokerAdminUsingTestBase
                        .flowValue(-1)
                        .flow();
 
-            MessageTransfer transfer = consumeResponse(interaction,
-                                                       MessageTransfer.class,
-                                                       SessionCompleted.class,
-                                                       SessionCommandPoint.class,
-                                                       SessionConfirmed.class);
+            MessageTransfer transfer = interaction.consume(MessageTransfer.class,
+                                                           SessionCompleted.class,
+                                                           SessionCommandPoint.class,
+                                                           SessionConfirmed.class);
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
 
@@ -224,11 +215,10 @@ public class MessageTest extends BrokerAdminUsingTestBase
                        .flushCompleted()
                        .flush();
 
-            SessionCompleted completed = consumeResponse(interaction,
-                                                         SessionCompleted.class,
-                                                         SessionCommandPoint.class,
-                                                         SessionConfirmed.class,
-                                                         SessionFlush.class);
+            SessionCompleted completed = interaction.consume(SessionCompleted.class,
+                                                             SessionCommandPoint.class,
+                                                             SessionConfirmed.class,
+                                                             SessionFlush.class);
 
             assertThat(completed.getCommands(), is(notNullValue()));
             assertThat(completed.getCommands().includes(3), is(equalTo(true)));
@@ -273,12 +263,11 @@ public class MessageTest extends BrokerAdminUsingTestBase
                        .flowValue(-1)
                        .flow();
 
-            MessageTransfer transfer = consumeResponse(interaction,
-                                                       MessageTransfer.class,
-                                                       SessionCompleted.class,
-                                                       SessionCommandPoint.class,
-                                                       SessionConfirmed.class,
-                                                       SessionFlush.class);
+            MessageTransfer transfer = interaction.consume(MessageTransfer.class,
+                                                           SessionCompleted.class,
+                                                           SessionCommandPoint.class,
+                                                           SessionConfirmed.class,
+                                                           SessionFlush.class);
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
 
@@ -293,11 +282,10 @@ public class MessageTest extends BrokerAdminUsingTestBase
                        .session().flushCompleted()
                                  .flush();
 
-            SessionCompleted completed = consumeResponse(interaction,
-                                                         SessionCompleted.class,
-                                                         SessionCommandPoint.class,
-                                                         SessionConfirmed.class,
-                                                         SessionFlush.class);
+            SessionCompleted completed = interaction.consume(SessionCompleted.class,
+                                                             SessionCommandPoint.class,
+                                                             SessionConfirmed.class,
+                                                             SessionFlush.class);
 
             assertThat(completed.getCommands(), is(notNullValue()));
             assertThat(completed.getCommands().includes(4), is(equalTo(true)));
@@ -305,27 +293,4 @@ public class MessageTest extends BrokerAdminUsingTestBase
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
         }
     }
-
-    private <T extends Method> T consumeResponse(final Interaction interaction,
-                                                 final Class<T> expected,
-                                                 final Class<? extends Method>... ignore)
-            throws Exception
-    {
-        List<Class<? extends Method>> possibleResponses = new ArrayList<>(Arrays.asList(ignore));
-        possibleResponses.add(expected);
-
-        T completed = null;
-        do
-        {
-            interaction.consumeResponse(possibleResponses.toArray(new Class[possibleResponses.size()]));
-            Response<?> response = interaction.getLatestResponse();
-            if (expected.isAssignableFrom(response.getBody().getClass()))
-            {
-                completed = (T) response.getBody();
-            }
-        }
-        while (completed == null);
-        return completed;
-    }
-
 }

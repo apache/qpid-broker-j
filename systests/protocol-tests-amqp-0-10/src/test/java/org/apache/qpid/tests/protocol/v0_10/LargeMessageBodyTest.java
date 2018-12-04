@@ -26,9 +26,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.IntStream;
 
 import org.junit.Before;
@@ -41,11 +38,9 @@ import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTune;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
-import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCommandPoint;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCompleted;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionConfirmed;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -119,11 +114,10 @@ public class LargeMessageBodyTest extends BrokerAdminUsingTestBase
                        .consumeResponse()
                        .getLatestResponse(SessionCompleted.class);
 
-            MessageTransfer transfer = consumeResponse(interaction,
-                                                       MessageTransfer.class,
-                                                       SessionCompleted.class,
-                                                       SessionCommandPoint.class,
-                                                       SessionConfirmed.class);
+            MessageTransfer transfer = interaction.consume(MessageTransfer.class,
+                                                           SessionCompleted.class,
+                                                           SessionCommandPoint.class,
+                                                           SessionConfirmed.class);
 
             assertThat(transfer.getBodySize(), is(equalTo(messageContent.length)));
             QpidByteBuffer receivedBody = transfer.getBody();
@@ -131,27 +125,5 @@ public class LargeMessageBodyTest extends BrokerAdminUsingTestBase
             receivedBody.get(receivedBytes);
             assertThat(receivedBytes, is(equalTo(messageContent)));
         }
-    }
-
-    private <T extends Method> T consumeResponse(final Interaction interaction,
-                                                 final Class<T> expected,
-                                                 final Class<? extends Method>... ignore)
-            throws Exception
-    {
-        List<Class<? extends Method>> possibleResponses = new ArrayList<>(Arrays.asList(ignore));
-        possibleResponses.add(expected);
-
-        T completed = null;
-        do
-        {
-            interaction.consumeResponse(possibleResponses.toArray(new Class[possibleResponses.size()]));
-            Response<?> response = interaction.getLatestResponse();
-            if (expected.isAssignableFrom(response.getBody().getClass()))
-            {
-                completed = (T) response.getBody();
-            }
-        }
-        while (completed == null);
-        return completed;
     }
 }

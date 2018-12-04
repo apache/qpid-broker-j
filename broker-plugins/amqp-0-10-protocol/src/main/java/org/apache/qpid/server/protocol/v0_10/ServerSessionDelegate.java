@@ -1557,7 +1557,9 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             try
             {
                 final Map<String, Object> arguments = QueueArgumentsConverter.convertWireArgsToModel(queueName,
-                                                                                                     method.getArguments());
+                                                                                                     method.getArguments(),
+                                                                                                     session.getAMQPConnection()
+                                                                                                            .getModel());
                 final String alternateExchangeName = method.getAlternateExchange();
                 if (method.hasAlternateExchange() && !nameNullOrEmpty(alternateExchangeName))
                 {

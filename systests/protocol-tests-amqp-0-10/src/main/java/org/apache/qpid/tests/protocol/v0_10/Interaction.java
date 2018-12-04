@@ -21,6 +21,7 @@
 package org.apache.qpid.tests.protocol.v0_10;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.apache.qpid.server.protocol.v0_10.transport.BBDecoder;
 import org.apache.qpid.server.protocol.v0_10.transport.BBEncoder;
@@ -34,6 +35,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionAttached;
 import org.apache.qpid.tests.protocol.AbstractFrameTransport;
 import org.apache.qpid.tests.protocol.AbstractInteraction;
+import org.apache.qpid.tests.protocol.Response;
 
 public class Interaction extends AbstractInteraction<Interaction>
 {
@@ -203,5 +205,25 @@ public class Interaction extends AbstractInteraction<Interaction>
     public ExchangeInteraction exchange()
     {
         return _exchangeInteraction;
+    }
+
+    public <T extends Method> T consume(final Class<T> expected,
+                                        final Class<? extends Method>... ignore)
+            throws Exception
+    {
+        final Class<? extends Method>[] expectedResponses = Arrays.copyOf(ignore, ignore.length + 1);
+        expectedResponses[ignore.length] = expected;
+
+        T completed = null;
+        do
+        {
+            Response<?> response = consumeResponse(expectedResponses).getLatestResponse();
+            if (expected.isAssignableFrom(response.getBody().getClass()))
+            {
+                completed = (T) response.getBody();
+            }
+        }
+        while (completed == null);
+        return completed;
     }
 }
