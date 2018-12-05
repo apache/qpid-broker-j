@@ -2709,6 +2709,34 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @StateTransition( currentState = { State.STOPPED }, desiredState = State.ACTIVE )
     private ListenableFuture<Void> onRestart()
     {
+        final SettableFuture<Void> returnVal = SettableFuture.create();
+        try
+        {
+            addFutureCallback(doRestart(),new FutureCallback<Void>()
+                              {
+                                  @Override
+                                  public void onSuccess(final Void result)
+                                  {
+                                      returnVal.set(null);
+                                  }
+
+                                  @Override
+                                  public void onFailure(final Throwable t)
+                                  {
+                                      doAfterAlways(onRestartFailure(), ()-> returnVal.setException(t));
+                                  }
+                              }, getTaskExecutor()
+                             );
+        }
+        catch (IllegalArgumentException | IllegalConfigurationException e)
+        {
+            doAfterAlways(onRestartFailure(), ()-> returnVal.setException(e));
+        }
+        return returnVal;
+    }
+
+    private ListenableFuture<Void> doRestart()
+    {
         createHousekeepingExecutor();
 
         final VirtualHostStoreUpgraderAndRecoverer virtualHostStoreUpgraderAndRecoverer =
@@ -2742,6 +2770,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                     {
                                         LOGGER.error("Exception occurred while opening {} : {}",
                                                       child.getClass().getSimpleName(), child.getName(), t);
+                                        onRestartFailure();
                                     }
 
                                 }, getTaskExecutor());
@@ -2751,6 +2780,24 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childOpenFutures);
         return Futures.transformAsync(combinedFuture, input -> onActivate(), MoreExecutors.directExecutor());
+    }
+
+    private ChainedListenableFuture<Void> onRestartFailure()
+    {
+        final List<VirtualHostLogger> loggers = new ArrayList<>(getChildren(VirtualHostLogger.class));
+        return doAfter(closeChildren(), () -> {
+            shutdownHouseKeeping();
+            closeNetworkConnectionScheduler();
+            if (_linkRegistry != null)
+            {
+                _linkRegistry.close();
+            }
+            closeMessageStore();
+            stopPreferenceTaskExecutor();
+            closePreferenceStore();
+            setState(State.ERRORED);
+            stopLogging(loggers);
+        });
     }
 
     private class FileSystemSpaceChecker extends HouseKeepingTask

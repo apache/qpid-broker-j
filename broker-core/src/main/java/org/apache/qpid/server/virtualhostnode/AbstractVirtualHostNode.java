@@ -186,34 +186,31 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
                                     @Override
                                     public void onFailure(final Throwable t)
                                     {
-                                        setState(State.ERRORED);
-                                        if (_broker.isManagementMode())
-                                        {
-                                            LOGGER.warn("Failed to make " + this + " active.", t);
-                                            returnVal.set(null);
-                                        }
-                                        else
-                                        {
-                                            returnVal.setException(t);
-                                        }
+                                        onActivationFailure(returnVal, t);
                                     }
                                 }, getTaskExecutor()
                                );
         }
         catch(RuntimeException e)
         {
-            setState(State.ERRORED);
-            returnVal.set(null);
+            onActivationFailure(returnVal, e);
+        }
+        return returnVal;
+    }
+
+    private void onActivationFailure(final SettableFuture<Void> returnVal, final Throwable e)
+    {
+        doAfterAlways(stopAndSetStateTo(State.ERRORED), () -> {
             if (_broker.isManagementMode())
             {
                 LOGGER.warn("Failed to make " + this + " active.", e);
+                returnVal.set(null);
             }
             else
             {
-                throw e;
+                returnVal.setException(e);
             }
-        }
-        return returnVal;
+        });
     }
 
     @Override
