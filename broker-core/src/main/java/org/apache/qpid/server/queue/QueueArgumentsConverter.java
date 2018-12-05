@@ -20,12 +20,15 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Objects;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,10 +66,10 @@ public class QueueArgumentsConverter
     private static final String QPID_LAST_VALUE_QUEUE_KEY = "qpid.last_value_queue_key";
 
     private static final String QPID_QUEUE_SORT_KEY = "qpid.queue_sort_key";
-    static final String X_QPID_DLQ_ENABLED = "x-qpid-dlq-enabled";
+    private static final String X_QPID_DLQ_ENABLED = "x-qpid-dlq-enabled";
     private static final String X_QPID_MAXIMUM_DELIVERY_COUNT = "x-qpid-maximum-delivery-count";
-    static final String QPID_GROUP_HEADER_KEY = "qpid.group_header_key";
-    static final String QPID_SHARED_MSG_GROUP = "qpid.shared_msg_group";
+    private static final String QPID_GROUP_HEADER_KEY = "qpid.group_header_key";
+    private static final String QPID_SHARED_MSG_GROUP = "qpid.shared_msg_group";
     private static final String QPID_DEFAULT_MESSAGE_GROUP_ARG = "qpid.default-message-group";
 
     private static final String QPID_MESSAGE_DURABILITY = "qpid.message_durability";
@@ -142,22 +145,28 @@ public class QueueArgumentsConverter
         if(wireArguments != null)
         {
             final ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
-            final Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes =
-                    new HashMap<>(typeRegistry.getAttributeTypes(Queue.class));
+            final List<ConfiguredObjectAttribute<?, ?>> attributeTypes =
+                    new ArrayList<>(typeRegistry.getAttributeTypes(Queue.class).values());
             typeRegistry.getTypeSpecialisations(Queue.class)
-                        .forEach(type -> typeRegistry.getTypeSpecificAttributes(type)
-                                                     .forEach(t -> attributeTypes.put(t.getName(), t)));
+                        .forEach(type -> attributeTypes.addAll(typeRegistry.getTypeSpecificAttributes(type)));
+
+            final Set<String> wireArgumentNames = new HashSet<>(wireArguments.keySet());
             wireArguments.entrySet()
                          .stream()
-                         .filter(entry -> attributeTypes.containsKey(entry.getKey())
-                                          && !attributeTypes.get(entry.getKey()).isDerived())
-                         .forEach(entry -> modelArguments.put(entry.getKey(), entry.getValue()));
+                         .filter(entry -> attributeTypes.stream()
+                                                        .anyMatch(type -> Objects.equals(entry.getKey(), type.getName())
+                                                                          && !type.isDerived()))
+                         .forEach(entry -> {
+                             modelArguments.put(entry.getKey(), entry.getValue());
+                             wireArgumentNames.remove(entry.getKey());
+                         });
 
             for(Map.Entry<String,String> entry : ATTRIBUTE_MAPPINGS.entrySet())
             {
                 if(wireArguments.containsKey(entry.getKey()))
                 {
                     modelArguments.put(entry.getValue(), wireArguments.get(entry.getKey()));
+                    wireArgumentNames.remove(entry.getKey());
                 }
             }
             if(wireArguments.containsKey(QPID_LAST_VALUE_QUEUE) && !wireArguments.containsKey(QPID_LAST_VALUE_QUEUE_KEY))
@@ -169,10 +178,13 @@ public class QueueArgumentsConverter
                 modelArguments.put(Queue.OVERFLOW_POLICY, OverflowPolicy.valueOf(String.valueOf(wireArguments.get(QPID_POLICY_TYPE)).toUpperCase()));
             }
 
-            if(wireArguments.containsKey(QPID_SHARED_MSG_GROUP)
-               && SHARED_MSG_GROUP_ARG_VALUE.equals(String.valueOf(wireArguments.get(QPID_SHARED_MSG_GROUP))))
+            if(wireArguments.containsKey(QPID_SHARED_MSG_GROUP))
             {
-                modelArguments.put(Queue.MESSAGE_GROUP_TYPE, MessageGroupType.SHARED_GROUPS);
+                wireArgumentNames.remove(QPID_SHARED_MSG_GROUP);
+                if (SHARED_MSG_GROUP_ARG_VALUE.equals(String.valueOf(wireArguments.get(QPID_SHARED_MSG_GROUP))))
+                {
+                    modelArguments.put(Queue.MESSAGE_GROUP_TYPE, MessageGroupType.SHARED_GROUPS);
+                }
             }
             else if(wireArguments.containsKey(QPID_GROUP_HEADER_KEY))
             {
@@ -189,34 +201,40 @@ public class QueueArgumentsConverter
                 modelArguments.put(Queue.NO_LOCAL, Boolean.parseBoolean(wireArguments.get(QPID_NO_LOCAL).toString()));
             }
 
-            if (wireArguments.get(X_QPID_FLOW_RESUME_CAPACITY) != null && wireArguments.get(X_QPID_CAPACITY) != null)
+            if (wireArguments.containsKey(X_QPID_FLOW_RESUME_CAPACITY))
             {
-                double resumeCapacity = Integer.parseInt(wireArguments.get(X_QPID_FLOW_RESUME_CAPACITY).toString());
-                double maximumCapacity = Integer.parseInt(wireArguments.get(X_QPID_CAPACITY).toString());
-                if (resumeCapacity > maximumCapacity)
+                wireArgumentNames.remove(X_QPID_FLOW_RESUME_CAPACITY);
+                if (wireArguments.get(X_QPID_FLOW_RESUME_CAPACITY) != null && wireArguments.get(X_QPID_CAPACITY) != null)
                 {
-                    throw new ConnectionScopedRuntimeException(
-                            "Flow resume size can't be greater than flow control size");
+                    double resumeCapacity = Integer.parseInt(wireArguments.get(X_QPID_FLOW_RESUME_CAPACITY).toString());
+                    double maximumCapacity = Integer.parseInt(wireArguments.get(X_QPID_CAPACITY).toString());
+                    if (resumeCapacity > maximumCapacity)
+                    {
+                        throw new ConnectionScopedRuntimeException(
+                                "Flow resume size can't be greater than flow control size");
+                    }
+                    Map<String, String> context = (Map<String, String>) modelArguments.get(Queue.CONTEXT);
+                    if (context == null)
+                    {
+                        context = new HashMap<>();
+                        modelArguments.put(Queue.CONTEXT, context);
+                    }
+                    double ratio = resumeCapacity / maximumCapacity;
+                    context.put(Queue.QUEUE_FLOW_RESUME_LIMIT, String.format("%.2f", ratio * 100.0));
+                    modelArguments.put(Queue.OVERFLOW_POLICY, OverflowPolicy.PRODUCER_FLOW_CONTROL);
                 }
-                Map<String, String> context = (Map<String, String>) modelArguments.get(Queue.CONTEXT);
-                if (context == null)
-                {
-                    context = new HashMap<>();
-                    modelArguments.put(Queue.CONTEXT, context);
-                }
-                double ratio = resumeCapacity / maximumCapacity;
-                context.put(Queue.QUEUE_FLOW_RESUME_LIMIT, String.format("%.2f", ratio * 100.0));
-                modelArguments.put(Queue.OVERFLOW_POLICY, OverflowPolicy.PRODUCER_FLOW_CONTROL);
             }
 
-            if (wireArguments.get(ALTERNATE_EXCHANGE) != null)
+            if (wireArguments.containsKey(ALTERNATE_EXCHANGE))
             {
+                wireArgumentNames.remove(ALTERNATE_EXCHANGE);
                 modelArguments.put(Queue.ALTERNATE_BINDING,
                                    Collections.singletonMap(AlternateBinding.DESTINATION,
                                                             wireArguments.get(ALTERNATE_EXCHANGE)));
             }
             else if (wireArguments.containsKey(X_QPID_DLQ_ENABLED))
             {
+                wireArgumentNames.remove(X_QPID_DLQ_ENABLED);
                 Object argument = wireArguments.get(X_QPID_DLQ_ENABLED);
                 if ((argument instanceof Boolean && ((Boolean) argument).booleanValue())
                     || (argument instanceof String && Boolean.parseBoolean((String)argument)))
@@ -225,6 +243,12 @@ public class QueueArgumentsConverter
                                        Collections.singletonMap(AlternateBinding.DESTINATION,
                                                                 getDeadLetterQueueName(queueName)));
                 }
+            }
+
+            if (!wireArgumentNames.isEmpty())
+            {
+                throw new IllegalArgumentException(String.format("Unsupported queue declare argument(s) : %s",
+                                                                 String.join(",", wireArgumentNames)));
             }
         }
         return modelArguments;

@@ -24,10 +24,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -37,15 +34,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v0_10.transport.ExecutionResult;
+import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
+import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
-import org.apache.qpid.server.protocol.v0_10.transport.QueueQueryResult;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCommandPoint;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCompleted;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionConfirmed;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v0_10.FrameTransport;
 import org.apache.qpid.tests.protocol.v0_10.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -65,7 +61,6 @@ public class QueueTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @SpecificationTest(section = "10.queue.declare", description = "This command creates or checks a queue.")
     public void queueDeclareUsingRealQueueAttributesInWireArguments() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
@@ -147,6 +142,32 @@ public class QueueTest extends BrokerAdminUsingTestBase
                 buffer.get(dst);
                 assertThat(new String(dst, UTF_8), is(equalTo(body2)));
             }
+        }
+    }
+
+
+    @Test
+    public void queueDeclareInvalidWireArguments() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.openAnonymousConnection()
+                       .channelId(1)
+                       .attachSession(SESSION_NAME)
+                       .queue()
+                       .declareQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                       .declareArguments(Collections.singletonMap("foo", "bar"))
+                       .declareId(0)
+                       .declare()
+                       .session()
+                       .flushCompleted()
+                       .flush();
+
+            ExecutionException exception =
+                    interaction.consume(ExecutionException.class, SessionCompleted.class, SessionCommandPoint.class);
+
+            assertThat(exception.getErrorCode(), is(equalTo(ExecutionErrorCode.ILLEGAL_ARGUMENT)));
         }
     }
 }

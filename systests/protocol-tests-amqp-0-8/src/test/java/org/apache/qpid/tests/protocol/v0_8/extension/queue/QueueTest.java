@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicConsumeOkBody;
@@ -46,10 +47,10 @@ import org.apache.qpid.server.protocol.v0_8.transport.BasicQosOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelFlowOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeclareOkBody;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v0_8.FrameTransport;
 import org.apache.qpid.tests.protocol.v0_8.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -68,7 +69,6 @@ public class QueueTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @SpecificationTest(section = "1.7.2.1", description = "declare queue, create if needed")
     public void queueDeclareUsingRealQueueAttributesInWireArguments() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
@@ -156,6 +156,23 @@ public class QueueTest extends BrokerAdminUsingTestBase
                        .ack()
                        .channel().close().consumeResponse(ChannelCloseOkBody.class);
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+        }
+    }
+
+    @Test
+    public void queueDeclareInvalidWireArguments() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ConnectionCloseBody response = interaction.openAnonymousConnection()
+                                                      .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                      .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME)
+                                                      .declareArguments(Collections.singletonMap("foo", "bar"))
+                                                      .declare()
+                                                      .consumeResponse().getLatestResponse(ConnectionCloseBody.class);
+
+            assertThat(response.getReplyCode(), is(equalTo(ErrorCodes.INVALID_ARGUMENT)));
         }
     }
 }

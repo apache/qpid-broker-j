@@ -3107,7 +3107,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             catch (IllegalArgumentException | IllegalConfigurationException e)
             {
                 String message = String.format("Error creating queue '%s': %s", queueName, e.getMessage());
-                _connection.sendConnectionClose(ErrorCodes.COMMAND_INVALID, message, getChannelId());
+                _connection.sendConnectionClose(ErrorCodes.INVALID_ARGUMENT, message, getChannelId());
             }
         }
     }
