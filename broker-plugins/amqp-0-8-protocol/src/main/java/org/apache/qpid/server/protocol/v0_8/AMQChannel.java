@@ -35,10 +35,12 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 
@@ -77,6 +79,8 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObjectAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -2624,6 +2628,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         attributes.put(Exchange.ALTERNATE_BINDING,
                                        Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchangeName));
                     }
+                    validateExchangeDeclareArguments(attributes);
                     exchange = virtualHost.createMessageDestination(Exchange.class, attributes);
 
                     if (!nowait)
@@ -2689,7 +2694,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 }
                 catch (IllegalArgumentException | IllegalConfigurationException e)
                 {
-                    _connection.sendConnectionClose(ErrorCodes.COMMAND_INVALID, "Error creating exchange '"
+                    _connection.sendConnectionClose(ErrorCodes.INVALID_ARGUMENT, "Error creating exchange '"
                                                                                 + exchangeName
                                                                                 + "': "
                                                                                 + e.getMessage(), getChannelId());
@@ -2698,6 +2703,24 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             }
         }
 
+    }
+
+    private void validateExchangeDeclareArguments(final Map<String, Object> attributes)
+    {
+        final ConfiguredObjectTypeRegistry typeRegistry = getModel().getTypeRegistry();
+        final List<ConfiguredObjectAttribute<?, ?>> types = new ArrayList<>(typeRegistry.getAttributeTypes(Exchange.class).values());
+        typeRegistry.getTypeSpecialisations(Exchange.class).forEach(type -> types.addAll(typeRegistry.getTypeSpecificAttributes(type)));
+        final Set<String> unsupported = attributes.keySet()
+                                                  .stream()
+                                                  .filter(name -> types.stream().noneMatch(a -> Objects.equals(name, a.getName())
+                                                                                               && !a.isDerived()))
+                                                  .collect(Collectors.toSet());
+
+        if (!unsupported.isEmpty())
+        {
+            throw new IllegalArgumentException(String.format(
+                    "Unsupported exchange declare arguments : %s", String.join(",", unsupported)));
+        }
     }
 
     private void validateAlternateExchangeIsNotQueue(final NamedAddressSpace addressSpace, final String alternateExchangeName)

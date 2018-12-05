@@ -235,4 +235,10 @@ public class ExchangeInteraction
     {
         return _interaction.sendPerformative(_unbind);
     }
+
+    public ExchangeInteraction declareArguments(final Map<String, Object> arguments)
+    {
+        _declare.setArguments(arguments);
+        return this;
+    }
 }

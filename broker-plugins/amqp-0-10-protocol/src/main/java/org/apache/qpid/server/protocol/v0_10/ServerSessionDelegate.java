@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -30,7 +31,10 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import com.google.common.util.concurrent.Futures;
 import org.slf4j.Logger;
@@ -57,9 +61,12 @@ import org.apache.qpid.server.message.RejectType;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AlternateBinding;
+import org.apache.qpid.server.model.ConfiguredObjectAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NoFactoryForTypeException;
 import org.apache.qpid.server.model.Queue;
@@ -870,17 +877,6 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         String exchangeName = method.getExchange();
         NamedAddressSpace addressSpace = getAddressSpace(session);
 
-        //we must check for any unsupported arguments present and throw not-implemented
-        if(method.hasArguments())
-        {
-            Map<String,Object> args = method.getArguments();
-            //QPID-3392: currently we don't support any!
-            if(!args.isEmpty())
-            {
-                exception(session, method, ExecutionErrorCode.NOT_IMPLEMENTED, "Unsupported exchange argument(s) found " + args.keySet().toString());
-                return;
-            }
-        }
         String alternateExchangeName = method.getAlternateExchange();
         if(nameNullOrEmpty(method.getExchange()))
         {
@@ -926,7 +922,10 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 try
                 {
                     Map<String,Object> attributes = new HashMap<String, Object>();
-
+                    if(method.hasArguments())
+                    {
+                        attributes.putAll(method.getArguments());
+                    }
                     attributes.put(org.apache.qpid.server.model.Exchange.NAME, method.getExchange());
                     attributes.put(org.apache.qpid.server.model.Exchange.TYPE, method.getType());
                     attributes.put(org.apache.qpid.server.model.Exchange.DURABLE, method.getDurable());
@@ -939,6 +938,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                         attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_BINDING,
                                        Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchangeName));
                     }
+                    validateExchangeDeclareArguments(attributes, session.getAMQPConnection().getModel());
                     addressSpace.createMessageDestination(Exchange.class, attributes);;
                 }
                 catch(ReservedExchangeNameException e)
@@ -994,6 +994,24 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     exception(session, method, ExecutionErrorCode.ILLEGAL_ARGUMENT, e.getMessage());
                 }
             }
+        }
+    }
+
+    private void validateExchangeDeclareArguments(final Map<String, Object> attributes, final Model model)
+    {
+        final ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
+        final List<ConfiguredObjectAttribute<?, ?>> types = new ArrayList<>(typeRegistry.getAttributeTypes(Exchange.class).values());
+        typeRegistry.getTypeSpecialisations(Exchange.class).forEach(type -> types.addAll(typeRegistry.getTypeSpecificAttributes(type)));
+        final Set<String> unsupported = attributes.keySet()
+                                                  .stream()
+                                                  .filter(name -> types.stream().noneMatch(a -> Objects.equals(name, a.getName())
+                                                                                                && !a.isDerived()))
+                                                  .collect(Collectors.toSet());
+
+        if (!unsupported.isEmpty())
+        {
+            throw new IllegalArgumentException(String.format(
+                    "Unsupported exchange declare arguments : %s", String.join(",", unsupported)));
         }
     }
 
