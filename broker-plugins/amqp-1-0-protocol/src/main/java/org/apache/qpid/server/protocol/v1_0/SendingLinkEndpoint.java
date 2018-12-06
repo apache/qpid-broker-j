@@ -185,6 +185,14 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
 
                     }
+                    else if (entry.getValue() instanceof Filter.InvalidFilter)
+                    {
+                        Error error = new Error();
+                        error.setCondition(AmqpError.NOT_IMPLEMENTED);
+                        error.setDescription("Unsupported filter type: " + ((Filter.InvalidFilter)entry.getValue()).getDescriptor());
+                        error.setInfo(Collections.singletonMap(Symbol.valueOf("field"), Symbol.valueOf("filter")));
+                        throw new AmqpErrorException(error);
+                    }
                 }
             }
             source.setFilter(actualFilters.isEmpty() ? null : actualFilters);

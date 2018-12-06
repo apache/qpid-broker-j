@@ -113,9 +113,15 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map<Object,Obje
             }
 
             Object value = handler.parse(in);
-            if (value != null && !valueType.isAssignableFrom(value.getClass()))
+            if (value instanceof DescribedType
+                && SpecializedDescribedType.class.isAssignableFrom(valueType)
+                && SpecializedDescribedType.hasInvalidValue((Class<SpecializedDescribedType>)valueType))
             {
-                String message = String.format("Expected key type is '%s' but got '%s'",
+                value = SpecializedDescribedType.getInvalidValue((Class<SpecializedDescribedType>)valueType, (DescribedType) value);
+            }
+            else if (value != null && !valueType.isAssignableFrom(value.getClass()))
+            {
+                String message = String.format("Expected value type is '%s' but got '%s'",
                                                valueType.getSimpleName(),
                                                value.getClass().getSimpleName());
                 throw new AmqpErrorException(AmqpError.DECODE_ERROR, message);

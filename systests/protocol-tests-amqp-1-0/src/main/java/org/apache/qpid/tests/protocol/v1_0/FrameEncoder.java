@@ -30,6 +30,8 @@ import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.tests.protocol.OutputEncoder;
+import org.apache.qpid.tests.protocol.v1_0.extensions.type.TestFilterConstructor;
+import org.apache.qpid.tests.protocol.v1_0.extensions.type.TestFilterWriter;
 
 public class FrameEncoder implements OutputEncoder
 {
@@ -39,6 +41,10 @@ public class FrameEncoder implements OutputEncoder
                                                                                             .registerTransactionLayer()
                                                                                             .registerSecurityLayer()
                                                                                             .registerExtensionSoleconnLayer();
+    static{
+        TestFilterConstructor.register(TYPE_REGISTRY);
+        TestFilterWriter.register(TYPE_REGISTRY);
+    }
 
     @Override
     public ByteBuffer encode(final Object msg)

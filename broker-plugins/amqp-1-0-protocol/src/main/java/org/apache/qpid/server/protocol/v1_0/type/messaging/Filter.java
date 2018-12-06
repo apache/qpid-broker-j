@@ -23,6 +23,20 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-public interface Filter
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedType;
+import org.apache.qpid.server.protocol.v1_0.codec.SpecializedDescribedType;
+
+public interface Filter extends SpecializedDescribedType
 {
+
+    interface InvalidFilter extends Filter
+    {
+        Object getDescriptor();
+    }
+
+    @SuppressWarnings("unused")
+    static Filter getInvalidValue(DescribedType describedType)
+    {
+        return (InvalidFilter) describedType::getDescriptor;
+    }
 }
