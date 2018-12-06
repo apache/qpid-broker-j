@@ -236,9 +236,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private String _messageGroupDefaultGroup;
     @ManagedAttributeField
     private int _maximumDistinctGroups;
-    @ManagedAttributeField
+    @ManagedAttributeField(afterSet = "queueMessageTtlChanged")
     private long _minimumMessageTtl;
-    @ManagedAttributeField
+    @ManagedAttributeField(afterSet = "queueMessageTtlChanged")
     private long _maximumMessageTtl;
     @ManagedAttributeField
     private boolean _ensureNondestructiveConsumers;
@@ -3718,4 +3718,49 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             _transactions.remove(localTransaction);
         }
     }
+
+    @SuppressWarnings("unused")
+    private void queueMessageTtlChanged()
+    {
+        if (getState() == State.ACTIVE)
+        {
+            String taskName = String.format("Queue Housekeeping : %s : TTL Update", getName());
+            getVirtualHost().executeTask(taskName,
+                                         this::updateQueueEntryExpiration,
+                                         getSystemTaskControllerContext(taskName, _virtualHost.getPrincipal()));
+        }
+    }
+
+    private void updateQueueEntryExpiration()
+    {
+        final QueueEntryList entries = getEntries();
+        if (entries != null)
+        {
+            final QueueEntryIterator queueListIterator = entries.iterator();
+            while (!_stopped.get() && queueListIterator.advance())
+            {
+                final QueueEntry node = queueListIterator.getNode();
+                if (!node.isDeleted())
+                {
+                    ServerMessage msg = node.getMessage();
+                    if (msg != null)
+                    {
+                        try (MessageReference messageReference = msg.newReference())
+                        {
+                            updateExpiration(node);
+                        }
+                        catch (MessageDeletedException e)
+                        {
+                            // Ignore
+                        }
+                    }
+                    if (node.expired())
+                    {
+                        expireEntry(node);
+                    }
+                }
+            }
+        }
+    }
+
 }
