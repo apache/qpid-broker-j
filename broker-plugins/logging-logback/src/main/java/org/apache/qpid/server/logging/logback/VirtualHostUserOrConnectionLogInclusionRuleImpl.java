@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.VirtualHostLogger;
 
 class VirtualHostUserOrConnectionLogInclusionRuleImpl
         extends AbstractPredicateLogInclusionRule<VirtualHostUserOrConnectionLogInclusionRuleImpl>
@@ -45,7 +45,7 @@ class VirtualHostUserOrConnectionLogInclusionRuleImpl
 
     @ManagedObjectFactoryConstructor
     protected VirtualHostUserOrConnectionLogInclusionRuleImpl(final Map<String, Object> attributes,
-                                                              BrokerLogger<?> logger)
+                                                              final VirtualHostLogger<?> logger)
     {
         super(logger, attributes);
     }
@@ -54,8 +54,8 @@ class VirtualHostUserOrConnectionLogInclusionRuleImpl
     protected void validateChange(ConfiguredObject<?> proxyForValidation, Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        BrokerUserOrConnectionLogInclusionRule proxy =
-                (BrokerUserOrConnectionLogInclusionRule) proxyForValidation;
+        VirtualHostUserOrConnectionLogInclusionRule proxy =
+                (VirtualHostUserOrConnectionLogInclusionRule) proxyForValidation;
         if (changedAttributes.contains(LOGGER_NAME) &&
             ((getLoggerName() != null && !getLoggerName().equals(proxy.getLoggerName())) ||
              (getLoggerName() == null && proxy.getLoggerName() != null)))
