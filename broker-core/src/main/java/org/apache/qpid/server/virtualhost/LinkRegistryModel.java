@@ -25,18 +25,32 @@ import java.util.regex.Pattern;
 
 import org.apache.qpid.server.protocol.LinkModel;
 
-public interface LinkRegistryModel
+public interface LinkRegistryModel<T extends LinkModel>
 {
-    <T extends LinkModel> T getSendingLink(String remoteContainerId, String linkName);
-    <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName);
-    <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
-                                                         final Pattern linkNamePattern);
+    T getSendingLink(String remoteContainerId, String linkName);
+
+    T getReceivingLink(String remoteContainerId, String linkName);
+
+    @Deprecated
+    Collection<T> findSendingLinks(final Pattern containerIdPattern,
+                                   final Pattern linkNamePattern);
+
+    void visitSendingLinks(LinkVisitor<T> visitor);
+
     void purgeSendingLinks(Pattern containerIdPattern, Pattern linkNamePattern);
+
     void purgeReceivingLinks(Pattern containerIdPattern, Pattern linkNamePattern);
 
     void open();
+
     void close();
+
     void delete();
 
     Object dump();
+
+    interface LinkVisitor<T extends LinkModel>
+    {
+        boolean visit(T link);
+    }
 }

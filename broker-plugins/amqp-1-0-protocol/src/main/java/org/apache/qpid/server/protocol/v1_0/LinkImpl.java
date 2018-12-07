@@ -56,7 +56,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
     private final String _remoteContainerId;
     private final String _linkName;
     private final Role _role;
-    private final LinkRegistry _linkRegistry;
+    private final LinkRegistry<S, T> _linkRegistry;
     private final Queue<ThiefInformation> _thiefQueue = new LinkedList<>();
 
     private volatile LinkEndpoint<S, T> _linkEndpoint;
@@ -65,7 +65,10 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
     private boolean _stealingInProgress;
     private final Queue<Action<? super Link_1_0<S, T>>> _deleteTasks = new ConcurrentLinkedQueue<>();
 
-    public LinkImpl(final String remoteContainerId, final String linkName, final Role role, final LinkRegistry linkRegistry)
+    public LinkImpl(final String remoteContainerId,
+                    final String linkName,
+                    final Role role,
+                    final LinkRegistry<S, T> linkRegistry)
     {
         _remoteContainerId = remoteContainerId;
         _linkName = linkName;
@@ -73,7 +76,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
         _linkRegistry = linkRegistry;
     }
 
-    public LinkImpl(final LinkDefinition<S, T> linkDefinition, final LinkRegistry linkRegistry)
+    public LinkImpl(final LinkDefinition<S, T> linkDefinition, final LinkRegistry<S, T> linkRegistry)
     {
         this(linkDefinition.getRemoteContainerId(), linkDefinition.getName(), linkDefinition.getRole(), linkRegistry);
         setTermini(linkDefinition.getSource(), linkDefinition.getTarget());
@@ -116,7 +119,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
     }
 
     @Override
-    public void linkClosed()
+    public synchronized void linkClosed()
     {
         Iterator<Action<? super Link_1_0<S, T>>> iterator = _deleteTasks.iterator();
         while (iterator.hasNext())
@@ -130,7 +133,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
     }
 
     @Override
-    public void discardEndpoint()
+    public synchronized void discardEndpoint()
     {
         _linkEndpoint = null;
     }
@@ -266,7 +269,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
     private ListenableFuture<LinkEndpoint<S, T>> doStealLink(final Session_1_0 session, final Attach attach)
     {
         final SettableFuture<LinkEndpoint<S, T>> returnFuture = SettableFuture.create();
-        LinkEndpoint<S, T> linkEndpoint = _linkEndpoint;
+        final LinkEndpoint<S, T> linkEndpoint = _linkEndpoint;
 
         // check whether linkEndpoint has been closed in the mean time
         if (linkEndpoint != null)
@@ -275,9 +278,10 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
                     () ->
                     {
                         // check whether linkEndpoint has been closed in the mean time
-                        if (_linkEndpoint != null)
+                        LinkEndpoint<S, T> endpoint = _linkEndpoint;
+                        if (endpoint != null)
                         {
-                            _linkEndpoint.close(new Error(LinkError.STOLEN,
+                            endpoint.close(new Error(LinkError.STOLEN,
                                                           String.format("Link is being stolen by connection '%s'",
                                                                         session.getConnection())));
                         }

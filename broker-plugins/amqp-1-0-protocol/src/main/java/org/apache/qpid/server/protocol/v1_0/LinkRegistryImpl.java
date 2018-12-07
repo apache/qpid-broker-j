@@ -45,11 +45,11 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
-public class LinkRegistryImpl implements LinkRegistry
+public class LinkRegistryImpl<S extends BaseSource, T extends BaseTarget> implements LinkRegistry<S, T>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(LinkRegistryImpl.class);
-    private final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> _sendingLinkRegistry = new ConcurrentHashMap<>();
-    private final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> _receivingLinkRegistry = new ConcurrentHashMap<>();
+    private final ConcurrentMap<LinkKey, Link_1_0<S, T>> _sendingLinkRegistry = new ConcurrentHashMap<>();
+    private final ConcurrentMap<LinkKey, Link_1_0<S, T>> _receivingLinkRegistry = new ConcurrentHashMap<>();
 
     private final LinkStore _linkStore;
 
@@ -74,22 +74,21 @@ public class LinkRegistryImpl implements LinkRegistry
     }
 
     @Override
-    public Link_1_0<? extends BaseSource, ? extends BaseTarget> getSendingLink(final String remoteContainerId, final String linkName)
+    public Link_1_0<S, T> getSendingLink(final String remoteContainerId, final String linkName)
     {
         return getLinkFromRegistry(remoteContainerId, linkName, _sendingLinkRegistry, Role.SENDER);
     }
 
     @Override
-    public Link_1_0<? extends BaseSource, ? extends BaseTarget> getReceivingLink(final String remoteContainerId, final String linkName)
+    public Link_1_0<S, T> getReceivingLink(final String remoteContainerId, final String linkName)
     {
         return getLinkFromRegistry(remoteContainerId, linkName, _receivingLinkRegistry, Role.RECEIVER);
     }
 
     @Override
-    public void linkClosed(final Link_1_0<? extends BaseSource, ? extends BaseTarget>  link)
+    public void linkClosed(final Link_1_0<S, T> link)
     {
-        ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry =
-                getLinkRegistry(link.getRole());
+        ConcurrentMap<LinkKey, Link_1_0<S, T>> linkRegistry = getLinkRegistry(link.getRole());
         linkRegistry.remove(new LinkKey(link));
         if (isDurableLink(link))
         {
@@ -98,7 +97,7 @@ public class LinkRegistryImpl implements LinkRegistry
     }
 
     @Override
-    public void linkChanged(final Link_1_0<? extends BaseSource, ? extends BaseTarget> link)
+    public void linkChanged(final Link_1_0<S,T> link)
     {
         getLinkRegistry(link.getRole()).putIfAbsent(new LinkKey(link), link);
         if (isDurableLink(link))
@@ -115,7 +114,7 @@ public class LinkRegistryImpl implements LinkRegistry
     }
 
     @Override
-    public Collection<Link_1_0<? extends BaseSource, ? extends BaseTarget>> findSendingLinks(final Pattern containerIdPattern,
+    public Collection<Link_1_0<S,T>> findSendingLinks(final Pattern containerIdPattern,
                                                                                              final Pattern linkNamePattern)
     {
         return _sendingLinkRegistry.entrySet()
@@ -124,6 +123,25 @@ public class LinkRegistryImpl implements LinkRegistry
                                                 && linkNamePattern.matcher(e.getKey().getLinkName()).matches())
                                    .map(Map.Entry::getValue)
                                    .collect(Collectors.toList());
+    }
+
+
+    @Override
+    public void visitSendingLinks(final LinkVisitor<Link_1_0<S,T>> visitor)
+    {
+        visitLinks(_sendingLinkRegistry.values(), visitor);
+    }
+
+    private void visitLinks(final Collection<Link_1_0<S, T>> links,
+                            final LinkVisitor<Link_1_0<S, T>> visitor)
+    {
+        for (Link_1_0<S, T> link : links)
+        {
+            if (visitor.visit(link))
+            {
+                break;
+            }
+        }
     }
 
     @Override
@@ -142,10 +160,11 @@ public class LinkRegistryImpl implements LinkRegistry
     public void open()
     {
         Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-        for(LinkDefinition<? extends BaseSource, ? extends BaseTarget> link: links)
+        for(LinkDefinition<Source, Target> link: links)
         {
-            ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry = getLinkRegistry(link.getRole());
-            linkRegistry.put(new LinkKey(link), new LinkImpl<>(link, this));
+            ConcurrentMap<LinkKey, Link_1_0<S,T>> linkRegistry = getLinkRegistry(link.getRole());
+            LinkDefinition<S, T> definition = (LinkDefinition<S, T>) link;
+            linkRegistry.put(new LinkKey(link), new LinkImpl<>(definition, this));
         }
     }
 
@@ -169,14 +188,14 @@ public class LinkRegistryImpl implements LinkRegistry
                    && ((Target) link.getTarget()).getDurable() != TerminusDurability.NONE);
     }
 
-    private Link_1_0<? extends BaseSource, ? extends BaseTarget> getLinkFromRegistry(final String remoteContainerId,
-                                                                                     final String linkName,
-                                                                                     final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry,
-                                                                                     final Role role)
+    private Link_1_0<S, T> getLinkFromRegistry(final String remoteContainerId,
+                                               final String linkName,
+                                               final ConcurrentMap<LinkKey, Link_1_0<S, T>> linkRegistry,
+                                               final Role role)
     {
         LinkKey linkKey = new LinkKey(remoteContainerId, linkName, role);
-        Link_1_0<? extends BaseSource, ? extends BaseTarget> newLink = new LinkImpl(remoteContainerId, linkName, role, this);
-        Link_1_0<? extends BaseSource, ? extends BaseTarget> link = linkRegistry.putIfAbsent(linkKey, newLink);
+        Link_1_0<S, T> newLink = new LinkImpl<>(remoteContainerId, linkName, role, this);
+        Link_1_0<S, T> link = linkRegistry.putIfAbsent(linkKey, newLink);
         if (link == null)
         {
             link = newLink;
@@ -184,7 +203,7 @@ public class LinkRegistryImpl implements LinkRegistry
         return link;
     }
 
-    private void purgeLinks(final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry,
+    private void purgeLinks(final ConcurrentMap<LinkKey, Link_1_0<S,T>> linkRegistry,
                             final Pattern containerIdPattern, final Pattern linkNamePattern)
     {
         linkRegistry.entrySet()
@@ -194,9 +213,9 @@ public class LinkRegistryImpl implements LinkRegistry
                     .forEach(e -> e.getValue().linkClosed());
     }
 
-    private ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> getLinkRegistry(final Role role)
+    private ConcurrentMap<LinkKey, Link_1_0<S,T>> getLinkRegistry(final Role role)
     {
-        ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry;
+        ConcurrentMap<LinkKey, Link_1_0<S,T>> linkRegistry;
         if (Role.SENDER == role)
         {
             linkRegistry = _sendingLinkRegistry;
@@ -223,10 +242,10 @@ public class LinkRegistryImpl implements LinkRegistry
         return dump;
     }
 
-    private void dumpRegistry(ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> registry,
+    private void dumpRegistry(ConcurrentMap<LinkKey, Link_1_0<S, T>> registry,
                               LinkRegistryDump dump)
     {
-        for (Map.Entry<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> entry : registry.entrySet())
+        for (Map.Entry<LinkKey, Link_1_0<S,T>> entry : registry.entrySet())
         {
             LinkKey linkKey = entry.getKey();
             LinkRegistryDump.ContainerDump containerLinks =
@@ -246,9 +265,9 @@ public class LinkRegistryImpl implements LinkRegistry
         }
     }
 
-    public static class LinkRegistryDump
+    static class LinkRegistryDump
     {
-        public static class ContainerDump
+        static class ContainerDump
         {
             public static class LinkDump
             {
@@ -269,12 +288,12 @@ public class LinkRegistryImpl implements LinkRegistry
             private Map<String, LinkDump> _sendingLinks = new LinkedHashMap<>();
             private Map<String, LinkDump> _receivingLinks = new LinkedHashMap<>();
 
-            public Map<String, LinkDump> getSendingLinks()
+            Map<String, LinkDump> getSendingLinks()
             {
                 return Collections.unmodifiableMap(_sendingLinks);
             }
 
-            public Map<String, LinkDump> getReceivingLinks()
+            Map<String, LinkDump> getReceivingLinks()
             {
                 return Collections.unmodifiableMap(_receivingLinks);
             }
@@ -282,7 +301,7 @@ public class LinkRegistryImpl implements LinkRegistry
 
         private Map<String, ContainerDump> _containers = new LinkedHashMap<>();
 
-        public Map<String, ContainerDump> getContainers()
+        Map<String, ContainerDump> getContainers()
         {
             return Collections.unmodifiableMap(_containers);
         }

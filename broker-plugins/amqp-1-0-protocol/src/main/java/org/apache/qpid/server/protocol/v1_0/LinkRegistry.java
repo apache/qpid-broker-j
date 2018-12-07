@@ -25,11 +25,11 @@ import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.virtualhost.LinkRegistryModel;
 
-public interface LinkRegistry extends LinkRegistryModel
+public interface LinkRegistry<S extends BaseSource, T extends BaseTarget> extends LinkRegistryModel<Link_1_0<S, T>>
 {
-    void linkClosed(final Link_1_0<? extends BaseSource, ? extends BaseTarget> link);
+    void linkClosed(final Link_1_0<S, T> link);
 
-    void linkChanged(final Link_1_0<? extends BaseSource, ? extends BaseTarget> link);
+    void linkChanged(final Link_1_0<S, T> link);
 
     TerminusDurability getHighestSupportedTerminusDurability();
 }

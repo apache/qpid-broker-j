@@ -35,6 +35,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.ConnectionEstablishmentPolicy;
+import org.apache.qpid.server.virtualhost.LinkRegistryModel;
 
 public interface NamedAddressSpace extends Named
 {
@@ -62,8 +63,11 @@ public interface NamedAddressSpace extends Named
 
     <T extends LinkModel> T getSendingLink(String remoteContainerId, String linkName);
     <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName);
+    @Deprecated
     <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
                                                          final Pattern linkNamePattern);
+
+    <T extends LinkModel> void visitSendingLinks(final LinkRegistryModel.LinkVisitor<T> visitor);
 
     boolean authoriseCreateConnection(AMQPConnection<?> connection);
 

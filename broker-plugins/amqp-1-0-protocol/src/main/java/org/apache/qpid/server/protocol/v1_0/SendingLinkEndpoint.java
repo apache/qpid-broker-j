@@ -84,6 +84,7 @@ import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.LinkRegistryModel;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
@@ -391,27 +392,25 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                 && capabilities.contains(Session_1_0.SHARED_CAPABILITY)
                 && getLinkName().endsWith("|global"))
             {
-                NamedAddressSpace namedAddressSpace = getSession().getConnection().getAddressSpace();
-                Collection<Link_1_0<? extends BaseSource, ? extends BaseTarget>> links =
-                        namedAddressSpace.findSendingLinks(ANY_CONTAINER_ID,
-                                                           Pattern.compile("^" + Pattern.quote(getLinkName()) + "$"));
-                for (Link_1_0<? extends BaseSource, ? extends BaseTarget> link : links)
-                {
-                    BaseSource baseSource = link.getSource();
-                    if (baseSource instanceof Source)
+                final NamedAddressSpace namedAddressSpace = getSession().getConnection().getAddressSpace();
+                final Pattern linkNamePattern = Pattern.compile("^" + Pattern.quote(getLinkName()) + "$");
+                namedAddressSpace.visitSendingLinks((LinkRegistryModel.LinkVisitor<Link_1_0<Source, Target>>) link -> {
+                    if (link.getSource() != null
+                        && ANY_CONTAINER_ID.matcher(link.getRemoteContainerId()).matches()
+                        && linkNamePattern.matcher(link.getName()).matches())
                     {
-                        Source linkSource = (Source) baseSource;
-                        source = new Source(linkSource);
-                        getLink().setSource(source);
-                        break;
+                        getLink().setSource(new Source(link.getSource()));
+                        return true;
                     }
-                }
+                    return false;
+                });
             }
         }
 
+        source = getSource();
         if (source == null)
         {
-            throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND, ""));
+            throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND, "Link not found"));
         }
 
         attach.setSource(source);
@@ -861,18 +860,19 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                         && sourceCapabilities.contains(Session_1_0.SHARED_CAPABILITY)
                         && sourceCapabilities.contains(ExchangeSendingDestination.TOPIC_CAPABILITY))
                     {
-                        Pattern containerIdPattern = sourceCapabilities.contains(Session_1_0.GLOBAL_CAPABILITY)
+                        final Pattern containerIdPattern = sourceCapabilities.contains(Session_1_0.GLOBAL_CAPABILITY)
                                 ? ANY_CONTAINER_ID
                                 : Pattern.compile("^" + Pattern.quote(getSession().getConnection().getRemoteContainerId()) + "$");
-                        Pattern linkNamePattern = Pattern.compile("^" + Pattern.quote(getLinkName()) + "\\|?\\d*$");
-                        final Collection<LinkModel> links = addressSpace.findSendingLinks(containerIdPattern, linkNamePattern);
-                        for (LinkModel link : links)
-                        {
-                            if (link instanceof Link_1_0)
+                        final Pattern linkNamePattern = Pattern.compile("^" + Pattern.quote(getLinkName()) + "\\|?\\d*$");
+
+                        addressSpace.visitSendingLinks((LinkRegistryModel.LinkVisitor<Link_1_0<Source, Target>>) link -> {
+                            if (containerIdPattern.matcher(link.getRemoteContainerId()).matches()
+                                && linkNamePattern.matcher(link.getName()).matches())
                             {
-                                ((Link_1_0) link).linkClosed();
+                                link.linkClosed();
                             }
-                        }
+                            return false;
+                        });
                     }
                 }
                 catch (AccessControlException e)
@@ -918,23 +918,12 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                  && ((QueueManagingVirtualHost) addressSpace).isDiscardGlobalSharedSubscriptionLinksOnDetach()
                  && sourceCapabilities.contains(Session_1_0.SHARED_CAPABILITY)
                  && sourceCapabilities.contains(Session_1_0.GLOBAL_CAPABILITY)
-                 && sourceCapabilities.contains(ExchangeSendingDestination.TOPIC_CAPABILITY))
+                 && sourceCapabilities.contains(ExchangeSendingDestination.TOPIC_CAPABILITY)
+                 && !getLinkName().endsWith("|global"))
         {
             // For JMS 2.0 global shared subscriptions we do not want to keep the links hanging around.
             // However, we keep one link (ending with "|global") to perform a null-source lookup upon un-subscription.
-            if (!getLinkName().endsWith("|global"))
-            {
-                getLink().linkClosed();
-            }
-            else
-            {
-                Pattern linkNamePattern = Pattern.compile("^" + Pattern.quote(getLinkName()) + "$");
-                final Collection<LinkModel> links = addressSpace.findSendingLinks(ANY_CONTAINER_ID, linkNamePattern);
-                if (links.size() > 1)
-                {
-                    getLink().linkClosed();
-                }
-            }
+            getLink().linkClosed();
         }
         super.detach(error, close);
     }

@@ -1755,22 +1755,129 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public <T extends LinkModel> T getSendingLink(String remoteContainerId, String linkName)
+    public <T extends LinkModel> T getSendingLink( String remoteContainerId, String linkName)
     {
-        return _linkRegistry.getSendingLink(remoteContainerId, linkName);
+        return doSync(doOnConfigThread(new Task<ListenableFuture<T>, RuntimeException>()
+        {
+            @Override
+            public ListenableFuture<T> execute()
+            {
+                return Futures.immediateFuture((T)_linkRegistry.getSendingLink(remoteContainerId, linkName));
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractVirtualHost.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "getSendingLink";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return String.format("remoteContainerId='%s', linkName='%s'", remoteContainerId, linkName);
+            }
+        }));
     }
 
     @Override
     public <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName)
     {
-        return _linkRegistry.getReceivingLink(remoteContainerId, linkName);
+        return doSync(doOnConfigThread(new Task<ListenableFuture<T>, RuntimeException>()
+        {
+            @Override
+            public ListenableFuture<T> execute()
+            {
+                return Futures.immediateFuture((T)_linkRegistry.getReceivingLink(remoteContainerId, linkName));
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractVirtualHost.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "getReceivingLink";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return String.format("remoteContainerId='%s', linkName='%s'", remoteContainerId, linkName);
+            }
+        }));
     }
 
     @Override
     public <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
                                                                 final Pattern linkNamePattern)
     {
-        return _linkRegistry.findSendingLinks(containerIdPattern, linkNamePattern);
+        return doSync(doOnConfigThread(new Task<ListenableFuture<Collection<T>>, RuntimeException>()
+        {
+            @Override
+            public ListenableFuture<Collection<T>> execute()
+            {
+                return Futures.immediateFuture(_linkRegistry.findSendingLinks(containerIdPattern, linkNamePattern));
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractVirtualHost.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "findSendingLinks";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return String.format("containerIdPattern='%s', linkNamePattern='%s'", containerIdPattern, linkNamePattern);
+            }
+        }));
+    }
+
+    @Override
+    public <T extends LinkModel> void visitSendingLinks(final LinkRegistryModel.LinkVisitor<T> visitor)
+    {
+        doSync(doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
+        {
+            @Override
+            public ListenableFuture<Void> execute()
+            {
+                _linkRegistry.visitSendingLinks(visitor);
+                return Futures.immediateFuture(null);
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractVirtualHost.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "visitSendingLinks";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return String.format("visitor='%s'", visitor);
+            }
+        }));
     }
 
     @Override

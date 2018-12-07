@@ -164,6 +164,11 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
+    public <T extends LinkModel> void visitSendingLinks(final LinkRegistryModel.LinkVisitor<T> visitor)
+    {
+    }
+
+    @Override
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
         return false;

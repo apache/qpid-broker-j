@@ -241,13 +241,13 @@ public class ManagementAddressSpace implements NamedAddressSpace
     @Override
     public <T extends LinkModel> T getSendingLink(final String remoteContainerId, final String linkName)
     {
-        return _linkRegistry.getSendingLink(remoteContainerId, linkName);
+        return (T)_linkRegistry.getSendingLink(remoteContainerId, linkName);
     }
 
     @Override
     public <T extends LinkModel> T getReceivingLink(final String remoteContainerId, final String linkName)
     {
-        return _linkRegistry.getReceivingLink(remoteContainerId, linkName);
+        return (T)_linkRegistry.getReceivingLink(remoteContainerId, linkName);
     }
 
     @Override
@@ -255,6 +255,12 @@ public class ManagementAddressSpace implements NamedAddressSpace
                                                                 final Pattern linkNamePattern)
     {
         return _linkRegistry.findSendingLinks(containerIdPattern, linkNamePattern);
+    }
+
+    @Override
+    public <T extends LinkModel> void visitSendingLinks(final LinkRegistryModel.LinkVisitor<T> visitor)
+    {
+        _linkRegistry.visitSendingLinks(visitor);
     }
 
     @Override
