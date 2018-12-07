@@ -24,7 +24,7 @@ define(["dojo/dom",
         "dijit/registry",
         "qpid/common/util",
         "dojo/parser",
-        "dojo/text!lloginclusionrule/userorconnectionspecific/add.html",
+        "dojo/text!loginclusionrule/userorconnectionspecific/add.html",
         "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
 {
     var addLogInclusionRule = {
