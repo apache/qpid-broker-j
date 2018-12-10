@@ -169,9 +169,13 @@ public class QueueArgumentsConverter
                     wireArgumentNames.remove(entry.getKey());
                 }
             }
-            if(wireArguments.containsKey(QPID_LAST_VALUE_QUEUE) && !wireArguments.containsKey(QPID_LAST_VALUE_QUEUE_KEY))
+            if(wireArguments.containsKey(QPID_LAST_VALUE_QUEUE))
             {
-                modelArguments.put(LastValueQueue.LVQ_KEY, LastValueQueue.DEFAULT_LVQ_KEY);
+                wireArgumentNames.remove(QPID_LAST_VALUE_QUEUE);
+                if (!wireArguments.containsKey(QPID_LAST_VALUE_QUEUE_KEY))
+                {
+                    modelArguments.put(LastValueQueue.LVQ_KEY, LastValueQueue.DEFAULT_LVQ_KEY);
+                }
             }
             if(wireArguments.containsKey(QPID_POLICY_TYPE))
             {
