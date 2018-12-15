@@ -19,82 +19,51 @@
 
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
-import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERATION_TIMEOUT;
-import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME;
-import static org.apache.qpid.server.management.plugin.HttpManagementUtil.ensureFilenameIsRfc2183;
-import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.getCollectionMemberType;
-import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsCollectionOfConfiguredObjects;
-
 import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.base.Strings;
 
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.management.plugin.ManagementController;
+import org.apache.qpid.server.management.plugin.ManagementException;
+import org.apache.qpid.server.management.plugin.ManagementRequest;
+import org.apache.qpid.server.management.plugin.ManagementResponse;
+import org.apache.qpid.server.management.plugin.ResponseType;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObjectFinder;
-import org.apache.qpid.server.model.ConfiguredObjectOperation;
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.Content;
-import org.apache.qpid.server.model.IllegalStateTransitionException;
-import org.apache.qpid.server.model.IntegrityViolationException;
-import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.OperationTimeoutException;
-import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.util.DataUrlUtils;
-import org.apache.qpid.server.util.ExternalServiceException;
-import org.apache.qpid.server.util.ExternalServiceTimeoutException;
-import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public class RestServlet extends AbstractServlet
 {
     private static final long serialVersionUID = 1L;
+    private static final String APPLICATION_JSON = "application/json";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RestServlet.class);
-
-    public static final String DEPTH_PARAM = "depth";
-    public static final String OVERSIZE_PARAM = "oversize";
-    public static final String ACTUALS_PARAM = "actuals";
-    public static final String SORT_PARAM = "sort";
-    public static final String EXTRACT_INITIAL_CONFIG_PARAM = "extractInitialConfig";
-    public static final String EXCLUDE_INHERITED_CONTEXT_PARAM = "excludeInheritedContext";
-    private static final String SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST = "singletonModelObjectResponseAsList";
-    public static final Set<String> RESERVED_PARAMS =
-            new HashSet<>(Arrays.asList(DEPTH_PARAM,
-                                        SORT_PARAM,
-                                        OVERSIZE_PARAM,
-                                        ACTUALS_PARAM,
-                                        EXTRACT_INITIAL_CONFIG_PARAM,
-                                        CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM,
-                                        EXCLUDE_INHERITED_CONTEXT_PARAM,
-                                        SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST));
-    public static final int DEFAULT_DEPTH = 0;
-    public static final int DEFAULT_OVERSIZE = 120;
-
-    private transient final ConfiguredObjectToMapConverter _objectConverter = new ConfiguredObjectToMapConverter();
-    private transient RestUserPreferenceHandler _userPreferenceHandler;
+    private transient ManagementController _managementController;
 
     @SuppressWarnings("unused")
     public RestServlet()
@@ -107,505 +76,178 @@ public class RestServlet extends AbstractServlet
     {
         super.init();
 
-        Handler.register();
-        Long preferenceOperationTimeout = getManagementConfiguration().getContextValue(Long.class, PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME);
-        _userPreferenceHandler = new RestUserPreferenceHandler(preferenceOperationTimeout == null
-                                                                       ? DEFAULT_PREFERENCE_OPERATION_TIMEOUT
-                                                                       : preferenceOperationTimeout);
-    }
+        final ServletConfig servletConfig = getServletConfig();
+        final ServletContext servletContext = servletConfig.getServletContext();
 
-
-    private Collection<ConfiguredObject<?>> getTargetObjects(final Class<? extends ConfiguredObject> configuredClass,
-                                                             final ConfiguredObjectFinder finder,
-                                                             RequestInfo requestInfo,
-                                                             List<Predicate<ConfiguredObject<?>>> filterPredicateList)
-    {
-        List<String> names = requestInfo.getModelParts();
-
-        Collection<ConfiguredObject<?>> targetObjects = finder.findObjectsFromPath(names, finder.getHierarchy(configuredClass), true);
-
-        if (!(targetObjects == null || filterPredicateList.isEmpty()))
+        final String modelVersion = servletConfig.getInitParameter("qpid.controller.version");
+        if (modelVersion == null)
         {
-            Iterator<ConfiguredObject<?>> iter = targetObjects.iterator();
-            while (iter.hasNext())
-            {
-                ConfiguredObject obj = iter.next();
-                for (Predicate<ConfiguredObject<?>> predicate : filterPredicateList)
-                {
-                    if (!predicate.apply(obj))
-                    {
-                        iter.remove();
-                        break;
-                    }
-                }
-            }
-
+            throw new ServletException("Controller version is not specified");
         }
-        return targetObjects;
-    }
 
-    private List<Predicate<ConfiguredObject<?>>> buildFilterPredicates(final HttpServletRequest request)
-    {
-        List<Predicate<ConfiguredObject<?>>> predicates = new ArrayList<>();
-
-        for (final String paramName : Collections.list(request.getParameterNames()))
+        @SuppressWarnings("uncjecked")
+        ManagementController controller = (ManagementController) servletContext.getAttribute("qpid.controller.chain");
+        do
         {
-            if (!RESERVED_PARAMS.contains(paramName))
+            if (controller.getVersion().equals(modelVersion))
             {
-                final List<String> allowedValues = Arrays.asList(request.getParameterValues(paramName));
-
-                predicates.add(new Predicate<ConfiguredObject<?>>()
-                {
-                    @Override
-                    public boolean apply(final ConfiguredObject<?> obj)
-                    {
-                        Object value = obj.getAttribute(paramName);
-                        return allowedValues.contains(String.valueOf(value));
-                    }
-                });
+                _managementController = controller;
+                break;
             }
+            controller = controller.getNextVersionManagementController();
         }
-        return Collections.unmodifiableList(predicates);
+        while (controller != null);
+
+        if (_managementController == null)
+        {
+            throw new ServletException("Controller is not found");
+        }
     }
 
     @Override
-    protected void doGet(HttpServletRequest request,
-                         HttpServletResponse response,
+    protected void doGet(final HttpServletRequest httpServletRequest,
+                         final HttpServletResponse httpServletResponse,
                          final ConfiguredObject<?> managedObject)
-            throws ServletException, IOException
-    {
-        ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
-        Class<? extends ConfiguredObject> configuredClass = getConfiguredClass(request, managedObject);
-        if(configuredClass == null)
-        {
-            sendError(response, HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
-        if(hierarchy == null)
-        {
-            sendError(response, HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-
-        RequestInfoParser requestInfoParser = new RequestInfoParser(hierarchy);
-
-        RequestInfo requestInfo = requestInfoParser.parse(request);
-        switch (requestInfo.getType())
-        {
-            case OPERATION:
-            {
-                doOperation(requestInfo, managedObject, configuredClass, finder, request, response);
-                break;
-            }
-            case MODEL_OBJECT:
-            {
-                // TODO - sort special params, everything else should act as a filter
-                String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
-
-                if (attachmentFilename != null)
-                {
-                    setContentDispositionHeaderIfNecessary(response, attachmentFilename);
-                }
-
-                List<Predicate<ConfiguredObject<?>>> filterPredicateList = buildFilterPredicates(request);
-                Collection<ConfiguredObject<?>> allObjects =
-                        getTargetObjects(configuredClass, finder, requestInfo, filterPredicateList);
-
-                boolean singleObjectRequest = requestInfo.isSingletonRequest() && filterPredicateList.isEmpty();
-
-                if (allObjects == null || (allObjects.isEmpty() && singleObjectRequest))
-                {
-                    sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
-                    return;
-                }
-
-                int depth;
-                boolean actuals;
-                int oversizeThreshold;
-                boolean excludeInheritedContext;
-
-                depth = getIntParameterFromRequest(request, DEPTH_PARAM, DEFAULT_DEPTH);
-                oversizeThreshold = getIntParameterFromRequest(request, OVERSIZE_PARAM, DEFAULT_OVERSIZE);
-                actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
-                String excludeInheritedContextParameter = request.getParameter(EXCLUDE_INHERITED_CONTEXT_PARAM);
-
-                excludeInheritedContext = excludeInheritedContextParameter == null || Boolean.parseBoolean(
-                        excludeInheritedContextParameter);
-
-                boolean responseAsList = Boolean.parseBoolean(request.getParameter(SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST));
-                final Object responseObject;
-                if (!responseAsList && singleObjectRequest)
-                {
-                    if (allObjects.size() != 1)
-                    {
-                        throw new IllegalStateException(String.format(
-                                "Unexpected number of objects found [%d] for singleton request URI '%s'",
-                                allObjects.size(), request.getRequestURI()));
-                    }
-                    ConfiguredObject<?> singletonObject = allObjects.iterator().next();
-                    responseObject = _objectConverter.convertObjectToMap(singletonObject, configuredClass,
-                                                                         new ConfiguredObjectToMapConverter
-                                                                                 .ConverterOptions(
-                                                                                 depth,
-                                                                                 actuals,
-                                                                                 oversizeThreshold,
-                                                                                 request.isSecure(),
-                                                                                 excludeInheritedContext));
-                }
-                else
-                {
-                    final List<Object> outputList = new ArrayList<>();
-                    for (ConfiguredObject configuredObject : allObjects)
-                    {
-
-                        outputList.add(_objectConverter.convertObjectToMap(configuredObject, configuredClass,
-                                                                           new ConfiguredObjectToMapConverter.ConverterOptions(
-                                                                                   depth,
-                                                                                   actuals,
-                                                                                   oversizeThreshold,
-                                                                                   request.isSecure(),
-                                                                                   excludeInheritedContext)));
-                    }
-
-                    responseObject = outputList;
-                }
-
-                boolean sendCachingHeaders = attachmentFilename == null;
-                sendJsonResponse(responseObject,
-                                 request,
-                                 response,
-                                 HttpServletResponse.SC_OK,
-                                 sendCachingHeaders);
-                break;
-            }
-            case VISIBLE_PREFERENCES:
-            case USER_PREFERENCES:
-            {
-                doGetUserPreferences(managedObject, configuredClass, finder, requestInfo, request, response);
-                break;
-            }
-
-            default:
-            {
-                throw new IllegalStateException(String.format("Unexpected request type '%s' for path '%s'",
-                                                              requestInfo.getType(),
-                                                              request.getPathInfo()));
-            }
-        }
-    }
-
-
-    private boolean isSingleObjectRequest(final RequestInfo requestInfo,
-                                          final Class<? extends ConfiguredObject>[] hierarchy)
-    {
-        if (hierarchy.length > 0)
-        {
-            List<String> pathInfoElements = requestInfo.getModelParts();
-            return pathInfoElements.size() == hierarchy.length;
-        }
-
-        return false;
-    }
-
-    private Class<? extends ConfiguredObject> getConfiguredClass(HttpServletRequest request, ConfiguredObject<?> managedObject)
-    {
-        final String[] servletPathElements = request.getServletPath().split("/");
-        String categoryName = servletPathElements[servletPathElements.length-1];
-        Model model = managedObject.getModel();
-        for(Class<? extends ConfiguredObject> category : model.getSupportedCategories())
-        {
-            if(category.getSimpleName().toLowerCase().equals(categoryName))
-            {
-                return category;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    protected void doPut(HttpServletRequest request,
-                         HttpServletResponse response,
-                         final ConfiguredObject<?> managedObject)
-            throws ServletException, IOException
-    {
-        performCreateOrUpdate(request, response, managedObject);
-    }
-
-    @Override
-    protected void service(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException
+            throws IOException
     {
         try
         {
-            super.service(request, response);
+            final ManagementRequest request = new ServletManagementRequest(managedObject, httpServletRequest);
+            final ManagementController controller = getManagementController();
+            final ManagementResponse response = controller.handleGet(request);
+
+            sendResponse(request, response, httpServletRequest, httpServletResponse, controller);
         }
-        catch (Exception | NoClassDefFoundError e)
+        catch (ManagementException e)
         {
-            setResponseStatus(request, response, e);
-        }
-    }
-
-    private void performCreateOrUpdate(HttpServletRequest request,
-                                       HttpServletResponse response,
-                                       final ConfiguredObject<?> managedObject)
-            throws IOException, ServletException
-    {
-
-        ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
-        final Class<? extends ConfiguredObject> configuredClass = getConfiguredClass(request, managedObject);
-        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
-        RequestInfoParser requestInfoParser = new RequestInfoParser(hierarchy);
-
-        response.setContentType("application/json");
-
-        RequestInfo requestInfo = requestInfoParser.parse(request);
-        switch (requestInfo.getType())
-        {
-            case MODEL_OBJECT:
-            {
-                List<String> names = requestInfo.getModelParts();
-                boolean isFullObjectURL = names.size() == hierarchy.length;
-                Map<String, Object> providedObject = getRequestProvidedObject(request, requestInfo);
-                if (names.isEmpty() && hierarchy.length == 0)
-                {
-                    managedObject.setAttributes(providedObject);
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    return;
-                }
-
-                ConfiguredObject theParent = managedObject;
-                Class<? extends ConfiguredObject> objClass = configuredClass;
-                if (hierarchy.length > 1)
-                {
-
-                    theParent = finder.findObjectParentsFromPath(names, hierarchy, configuredClass);
-                }
-
-                if (isFullObjectURL)
-                {
-                    String name = names.get(names.size() - 1);
-                    ConfiguredObject<?> configuredObject = theParent.getChildByName(objClass, name);
-
-                    if (configuredObject != null)
-                    {
-                        configuredObject.setAttributes(providedObject);
-                        response.setStatus(HttpServletResponse.SC_OK);
-                        return;
-                    }
-                    else if ("POST".equalsIgnoreCase(request.getMethod()))
-                    {
-                        sendJsonErrorResponse(request, response,
-                                              HttpServletResponse.SC_NOT_FOUND,
-                                              String.format("%s '%s' not found", configuredClass.getSimpleName(), name));
-                        return;
-                    }
-                    else
-                    {
-                        providedObject.put(ConfiguredObject.NAME, name);
-                    }
-                }
-
-                ConfiguredObject<?> configuredObject = theParent.createChild(objClass, providedObject);
-                StringBuffer requestURL = request.getRequestURL();
-                if (!isFullObjectURL)
-                {
-                    requestURL.append("/").append(configuredObject.getName());
-                }
-                response.setHeader("Location", requestURL.toString());
-                response.setStatus(HttpServletResponse.SC_CREATED);
-                break;
-            }
-            case OPERATION:
-            {
-                doOperation(requestInfo, managedObject, configuredClass, finder, request, response);
-                break;
-            }
-            case USER_PREFERENCES:
-            {
-                doPostOrPutUserPreference(requestInfo, managedObject, configuredClass, finder, request, response);
-                break;
-            }
-            default:
-            {
-                throw new IllegalStateException(String.format("Unexpected request type '%s' for path '%s'",
-                                                              requestInfo.getType(),
-                                                              request.getPathInfo()));
-            }
+            sendResponse(e, httpServletRequest, httpServletResponse);
         }
     }
 
-    private void doGetUserPreferences(final ConfiguredObject<?> managedObject,
-                                      final Class<? extends ConfiguredObject> configuredClass,
-                                      final ConfiguredObjectFinder finder, final RequestInfo requestInfo,
-                                      final HttpServletRequest request,
-                                      final HttpServletResponse response) throws IOException, ServletException
+    @Override
+    protected void doPost(final HttpServletRequest httpServletRequest,
+                          final HttpServletResponse httpServletResponse,
+                          final ConfiguredObject<?> managedObject) throws IOException
     {
-        Collection<ConfiguredObject<?>> allObjects = getTargetObjects(
-                configuredClass,
-                                                                      finder,
-                                                                      requestInfo,
-                                                                      Collections.<Predicate<ConfiguredObject<?>>>emptyList());
-
-        if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo, finder.getHierarchy(configuredClass))))
+        try
         {
-            sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
-            return;
+            final ManagementRequest request = new ServletManagementRequest(managedObject, httpServletRequest);
+            final ManagementController controller = getManagementController();
+            final ManagementResponse response = controller.handlePost(request);
+
+            sendResponse(request, response, httpServletRequest, httpServletResponse, controller);
         }
-
-        final Object responseObject;
-        if (requestInfo.hasWildcard())
+        catch (ManagementException e)
         {
-            responseObject = new ArrayList<>(allObjects.size());
-            for (ConfiguredObject<?> target : allObjects)
-            {
-                final UserPreferences userPreferences = target.getUserPreferences();
-                try
-                {
-                    final Object preferences = _userPreferenceHandler.handleGET(userPreferences, requestInfo);
-                    if (preferences == null || (preferences instanceof Collection
-                                                && ((Collection) preferences).isEmpty()) || (preferences instanceof Map
-                                                                                             && ((Map) preferences).isEmpty()))
-                    {
-                        continue;
-                    }
-                    ((List<Object>) responseObject).add(preferences);
-                }
-                catch (NotFoundException e)
-                {
-                    // The case where the preference's type and name is provided, but this particular object does not
-                    // have a matching preference.
-                }
-            }
+            sendResponse(e, httpServletRequest, httpServletResponse);
+        }
+    }
+
+    @Override
+    protected void doPut(final HttpServletRequest httpServletRequest,
+                         final HttpServletResponse httpServletResponse,
+                         final ConfiguredObject<?> managedObject) throws IOException
+    {
+        try
+        {
+            final ManagementRequest request = new ServletManagementRequest(managedObject, httpServletRequest);
+            final ManagementController controller = getManagementController();
+            final ManagementResponse response = controller.handlePut(request);
+
+            sendResponse(request, response, httpServletRequest, httpServletResponse, controller);
+        }
+        catch (ManagementException e)
+        {
+            sendResponse(e, httpServletRequest, httpServletResponse);
+        }
+    }
+
+    @Override
+    protected void doDelete(final HttpServletRequest httpServletRequest,
+                            final HttpServletResponse httpServletResponse,
+                            final ConfiguredObject<?> managedObject) throws IOException
+    {
+        try
+        {
+            final ManagementRequest request = new ServletManagementRequest(managedObject, httpServletRequest);
+            final ManagementController controller = getManagementController();
+            final ManagementResponse response = controller.handleDelete(request);
+
+            sendResponse(request, response, httpServletRequest, httpServletResponse, controller);
+        }
+        catch (ManagementException e)
+        {
+            sendResponse(e, httpServletRequest, httpServletResponse);
+        }
+    }
+
+    private ManagementController getManagementController()
+    {
+        return _managementController;
+    }
+
+    private void sendResponse(final ManagementException managementException,
+                              final HttpServletRequest request,
+                              final HttpServletResponse response) throws IOException
+    {
+        setHeaders(response);
+        setExceptionHeaders(managementException, response);
+        response.setStatus(managementException.getStatusCode());
+        writeJsonResponse(Collections.singletonMap("errorMessage", managementException.getMessage()),
+                          request,
+                          response);
+    }
+
+    private void setExceptionHeaders(final ManagementException managementException, final HttpServletResponse response)
+    {
+        Map<String, String> headers = managementException.getHeaders();
+        if (headers != null)
+        {
+            headers.forEach(response::setHeader);
+        }
+    }
+
+    private String toContentDispositionHeader(final String attachmentFilename)
+    {
+        String filenameRfc2183 = HttpManagementUtil.ensureFilenameIsRfc2183(attachmentFilename);
+        if (filenameRfc2183.length() > 0)
+        {
+            return String.format("attachment; filename=\"%s\"", filenameRfc2183);
         }
         else
         {
-            ConfiguredObject<?> target = allObjects.iterator().next();
-            final UserPreferences userPreferences = target.getUserPreferences();
-
-            responseObject = _userPreferenceHandler.handleGET(userPreferences, requestInfo);
-        }
-        sendJsonResponse(responseObject, request, response);
-    }
-
-    private void doPostOrPutUserPreference(final RequestInfo requestInfo,
-                                           final ConfiguredObject<?> managedObject,
-                                           final Class<? extends ConfiguredObject> configuredClass,
-                                           final ConfiguredObjectFinder finder,
-                                           final HttpServletRequest request,
-                                           final HttpServletResponse response) throws IOException, ServletException
-    {
-        ConfiguredObject<?> target = getTarget(requestInfo, managedObject, configuredClass, finder);
-
-        final Object providedObject = getRequestProvidedObject(request, requestInfo, Object.class);
-        if ("POST".equals(request.getMethod()))
-        {
-            _userPreferenceHandler.handlePOST(target, requestInfo, providedObject);
-        }
-        else if ("PUT".equals(request.getMethod()))
-        {
-            _userPreferenceHandler.handlePUT(target, requestInfo, providedObject);
-        }
-        else
-        {
-            sendJsonErrorResponse(request,
-                                  response,
-                                  HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                                  "unexpected http method");
+            // Agent will allow user to choose a name
+            return "attachment";
         }
     }
 
-    private void doOperation(final RequestInfo requestInfo,
-                             final ConfiguredObject<?> managedObject,
-                             final Class<? extends ConfiguredObject> configuredClass,
-                             final ConfiguredObjectFinder finder,
-                             final HttpServletRequest request,
-                             final HttpServletResponse response) throws IOException, ServletException
+    private void sendResponse(final ManagementRequest managementRequest,
+                              final ManagementResponse managementResponse,
+                              final HttpServletRequest request,
+                              final HttpServletResponse response,
+                              final ManagementController controller) throws IOException
     {
-        ConfiguredObject<?> target = getTarget(requestInfo, managedObject, configuredClass, finder);
-        if (target == null)
+        setHeaders(response);
+        Map<String, String> headers = managementResponse.getHeaders();
+        if (!headers.isEmpty())
         {
-            return;
-        }
-        String operationName = requestInfo.getOperationName();
-        final Map<String, ConfiguredObjectOperation<?>> availableOperations =
-                managedObject.getModel().getTypeRegistry().getOperations(target.getClass());
-        ConfiguredObjectOperation operation = availableOperations.get(operationName);
-        Map<String, Object> operationArguments;
-
-
-        String requestMethod = request.getMethod();
-        if (operation == null)
-        {
-            sendJsonErrorResponse(request,
-                                  response,
-                                  HttpServletResponse.SC_NOT_FOUND,
-                                  "No such operation: " + operationName);
-            return;
-        }
-        else
-        {
-            switch (requestMethod)
-            {
-                case "GET":
-                    if (operation.isNonModifying())
-                    {
-                        operationArguments = getOperationArgumentsAsMap(request);
-                        operationArguments.keySet().removeAll(Arrays.asList(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM));
-                    }
-                    else
-                    {
-                        response.addHeader("Allow", "POST");
-                        sendJsonErrorResponse(request,
-                                              response,
-                                              HttpServletResponse.SC_METHOD_NOT_ALLOWED,
-                                              "Operation "
-                                              + operationName
-                                              + " modifies the object so you must use POST.");
-                        return;
-                    }
-
-                    break;
-                case "POST":
-                    operationArguments = getRequestProvidedObject(request, requestInfo);
-                    break;
-                default:
-                    response.addHeader("Allow", (operation.isNonModifying() ? "POST, GET" : "POST"));
-                    sendJsonErrorResponse(request,
-                                          response,
-                                          HttpServletResponse.SC_METHOD_NOT_ALLOWED,
-                                          "Operation "
-                                          + operationName
-                                          + " does not support the "
-                                          + requestMethod
-                                          + " requestMethod.");
-                    return;
-            }
+            headers.forEach(response::setHeader);
         }
 
-
-        if(operation.isSecure(target, operationArguments) && !(request.isSecure() || HttpManagementUtil.getPort(request).isAllowConfidentialOperationsOnInsecureChannels()))
+        Map<String, List<String>> parameters = managementRequest.getParameters();
+        if (parameters.containsKey(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM))
         {
-            sendJsonErrorResponse(request,
-                                  response,
-                                  HttpServletResponse.SC_FORBIDDEN,
-                                  "Operation '" + operationName + "' can only be performed over a secure (HTTPS) connection");
-            return;
+            String attachmentFilename = managementRequest.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
+            response.setHeader(CONTENT_DISPOSITION, toContentDispositionHeader(attachmentFilename));
         }
+        response.setStatus(managementResponse.getResponseCode());
 
-        Object returnVal = operation.perform(target, operationArguments);
-        String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
-        if (attachmentFilename != null)
+        Object body = managementResponse.getBody();
+        if (body instanceof Content)
         {
-            setContentDispositionHeaderIfNecessary(response, attachmentFilename);
-        }
-
-        if(returnVal instanceof Content)
-        {
-            Content content = (Content)returnVal;
+            Content content = (Content) body;
             try
             {
-
                 writeTypedContent(content, request, response);
             }
             finally
@@ -613,350 +255,242 @@ public class RestServlet extends AbstractServlet
                 content.release();
             }
         }
-        else
+        else if (body != null)
         {
-            final ConfiguredObjectToMapConverter.ConverterOptions converterOptions =
-                    new ConfiguredObjectToMapConverter.ConverterOptions(DEFAULT_DEPTH,
-                                                                        false,
-                                                                        DEFAULT_OVERSIZE,
-                                                                        request.isSecure(),
-                                                                        true);
-            if (ConfiguredObject.class.isAssignableFrom(operation.getReturnType()))
+            response.setContentType(APPLICATION_JSON);
+            Object data;
+            if (managementResponse.getType() == ResponseType.MODEL_OBJECT)
             {
-                returnVal = _objectConverter.convertObjectToMap((ConfiguredObject<?>) returnVal,
-                                                                operation.getReturnType(),
-                                                                converterOptions);
-            }
-            else if (returnsCollectionOfConfiguredObjects(operation))
-            {
-                List<Map<String, Object>> output = new ArrayList<>();
-                for (Object configuredObject : (Collection)returnVal)
-                {
-                    output.add(_objectConverter.convertObjectToMap((ConfiguredObject<?>) configuredObject,
-                                                                   getCollectionMemberType((ParameterizedType) operation.getGenericReturnType()),
-                                                                   converterOptions));
-                }
-                returnVal = output;
-            }
-            sendJsonResponse(returnVal, request, response);
-        }
-    }
-
-    private ConfiguredObject<?> getTarget(final RequestInfo requestInfo,
-                                          final ConfiguredObject<?> managedObject,
-                                          final Class<? extends ConfiguredObject> configuredClass,
-                                          final ConfiguredObjectFinder finder) throws IOException
-    {
-        final ConfiguredObject<?> target;
-        final List<String> names = requestInfo.getModelParts();
-        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
-        if (names.isEmpty() && hierarchy.length == 0)
-        {
-            target = managedObject;
-        }
-        else
-        {
-            ConfiguredObject theParent = managedObject;
-            if (hierarchy.length > 1)
-            {
-
-                ConfiguredObject parent =
-                        finder.findObjectParentsFromPath(names, hierarchy, configuredClass);
-                theParent = parent;
-            }
-            String name = names.get(names.size() - 1);
-            target = theParent.getChildByName(configuredClass, name);
-            if (target == null)
-            {
-
-                final String errorMessage = String.format("%s '%s' not found",
-                                                          configuredClass.getSimpleName(),
-                                                          Joiner.on("/").join(names));
-                throw new NotFoundException(errorMessage);
-            }
-        }
-        return target;
-    }
-
-    private Map<String, Object> getOperationArgumentsAsMap(HttpServletRequest request)
-    {
-        Map<String, Object> providedObject;
-        providedObject = new HashMap<>();
-        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet())
-        {
-            String[] value = entry.getValue();
-            if (value != null)
-            {
-                if(value.length > 1)
-                {
-                    providedObject.put(entry.getKey(), Arrays.asList(value));
-                }
-                else
-                {
-                    providedObject.put(entry.getKey(), value[0]);
-                }
-            }
-        }
-        return providedObject;
-    }
-
-    private Map<String, Object> getRequestProvidedObject(HttpServletRequest request, final RequestInfo requestInfo)
-            throws IOException, ServletException
-    {
-        return getRequestProvidedObject(request, requestInfo, LinkedHashMap.class);
-    }
-
-    private <T> T getRequestProvidedObject(HttpServletRequest request,
-                                           final RequestInfo requestInfo,
-                                           Class<T> expectedClass)
-            throws IOException, ServletException
-    {
-        T providedObject;
-
-        ArrayList<String> headers = Collections.list(request.getHeaderNames());
-        ObjectMapper mapper = new ObjectMapper();
-
-        if (headers.contains("Content-Type") && request.getHeader("Content-Type").startsWith("multipart/form-data"))
-        {
-            providedObject = (T) new LinkedHashMap<>();
-            Map<String, String> fileUploads = new HashMap<>();
-            Collection<Part> parts = request.getParts();
-            for (Part part : parts)
-            {
-                if ("data".equals(part.getName()) && "application/json".equals(part.getContentType()))
-                {
-                    try
-                    {
-                        providedObject = (T) mapper.readValue(part.getInputStream(), LinkedHashMap.class);
-                    }
-                    catch (JsonProcessingException e)
-                    {
-                        throw new IllegalArgumentException("Cannot parse the operation body as json",e);
-                    }
-
-                }
-                else
-                {
-                    byte[] data = new byte[(int) part.getSize()];
-                    part.getInputStream().read(data);
-                    String inlineURL = DataUrlUtils.getDataUrlForBytes(data);
-                    fileUploads.put(part.getName(), inlineURL);
-                }
-            }
-            ((Map<String, Object>) providedObject).putAll(fileUploads);
-        }
-        else
-        {
-            try
-            {
-                providedObject = mapper.readValue(request.getInputStream(), expectedClass);
-            }
-            catch (JsonProcessingException e)
-            {
-                throw new IllegalArgumentException("Cannot parse the operation body as json",e);
-            }
-        }
-        return providedObject;
-    }
-
-    private void setResponseStatus(HttpServletRequest request, HttpServletResponse response, Throwable e)
-            throws IOException
-    {
-        if (e instanceof SecurityException)
-        {
-            LOGGER.debug("{}, sending {}", e.getClass().getName(), HttpServletResponse.SC_FORBIDDEN, e);
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        }
-        else
-        {
-            int responseCode = HttpServletResponse.SC_BAD_REQUEST;
-            String message = e.getMessage();
-            if (e instanceof AbstractConfiguredObject.DuplicateIdException
-                || e instanceof AbstractConfiguredObject.DuplicateNameException
-                || e instanceof IntegrityViolationException
-                || e instanceof IllegalStateTransitionException)
-            {
-                responseCode = HttpServletResponse.SC_CONFLICT;
-            }
-            else if (e instanceof NotFoundException)
-            {
-                if (LOGGER.isTraceEnabled())
-                {
-                    LOGGER.trace(e.getClass().getSimpleName() + " processing request", e);
-                }
-                responseCode = HttpServletResponse.SC_NOT_FOUND;
-            }
-            else if (e instanceof IllegalConfigurationException || e instanceof IllegalArgumentException)
-            {
-                LOGGER.warn("{} processing request {} from user '{}': {}",
-                            e.getClass().getSimpleName(),
-                            HttpManagementUtil.getRequestURL(request),
-                            HttpManagementUtil.getRequestPrincipals(request),
-                            message);
-                Throwable t = e;
-                int maxDepth = 10;
-                while ((t = t.getCause()) != null && maxDepth-- != 0)
-                {
-                    LOGGER.warn("... caused by " + t.getClass().getSimpleName() + "  : " + t.getMessage());
-                }
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug(e.getClass().getSimpleName() + " processing request", e);
-                }
-                responseCode = SC_UNPROCESSABLE_ENTITY;
-            }
-            else if (e instanceof OperationTimeoutException)
-            {
-                message = "Timeout occurred";
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Timeout during processing of request {} from user '{}'",
-                                 HttpManagementUtil.getRequestURL(request),
-                                 HttpManagementUtil.getRequestPrincipals(request),
-                                 e);
-                }
-                else
-                {
-                    LOGGER.info("Timeout during processing of request {} from user '{}'",
-                            HttpManagementUtil.getRequestURL(request),
-                            HttpManagementUtil.getRequestPrincipals(request));
-                }
-
-                responseCode = HttpServletResponse.SC_BAD_GATEWAY;
-            }
-            else if (e instanceof NoClassDefFoundError)
-            {
-                message = "Not found: " + message;
-                LOGGER.warn("Unexpected exception processing request ", e);
-            }
-            else if (e instanceof ExternalServiceTimeoutException)
-            {
-                responseCode = HttpServletResponse.SC_GATEWAY_TIMEOUT;
-                LOGGER.warn("External request timeout ", e);
-            }
-            else if (e instanceof ExternalServiceException)
-            {
-                responseCode = HttpServletResponse.SC_BAD_GATEWAY;
-                LOGGER.warn("External request failed ", e);
+                data = controller.formatConfiguredObject(
+                        managementResponse.getBody(),
+                        parameters,
+                        managementRequest.isSecure()
+                        || managementRequest.isConfidentialOperationAllowedOnInsecureChannel());
             }
             else
             {
-                // This should not happen
-                if (e instanceof RuntimeException)
-                {
-                    throw (RuntimeException) e;
-                }
-                else if (e instanceof Error)
-                {
-                    throw (Error) e;
-                }
-                else
-                {
-                    throw new RuntimeException("Unexpected Exception", e);
-                }
+                data = managementResponse.getBody();
             }
-
-            sendJsonErrorResponse(request, response, responseCode, message);
+            writeJsonResponse(data, request, response);
         }
     }
 
-    @Override
-    protected void doDelete(HttpServletRequest request,
-                            HttpServletResponse response,
-                            final ConfiguredObject<?> managedObject) throws ServletException, IOException
+    private void setHeaders(final HttpServletResponse response)
     {
-        ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
-        Class<? extends ConfiguredObject> configuredClass = getConfiguredClass(request, managedObject);
-        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
-        RequestInfoParser requestInfoParser = new RequestInfoParser(hierarchy);
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+    }
 
-        RequestInfo requestInfo = requestInfoParser.parse(request);
-
-        Collection<ConfiguredObject<?>> allObjects = getTargetObjects(configuredClass, finder, requestInfo, buildFilterPredicates(request));
-        if (allObjects == null)
+    private void writeJsonResponse(final Object formattedResponse,
+                                   final HttpServletRequest request,
+                                   final HttpServletResponse response) throws IOException
+    {
+        try (OutputStream stream = HttpManagementUtil.getOutputStream(request,
+                                                                      response,
+                                                                      getManagementConfiguration()))
         {
-            throw new NotFoundException("Not Found");
+            ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false);
+            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+            mapper.writeValue(stream, formattedResponse);
         }
+    }
 
-        switch (requestInfo.getType())
+    private static Map<String, List<String>> parseQueryString(String queryString)
+    {
+        if (Strings.isNullOrEmpty(queryString))
         {
-            case MODEL_OBJECT:
-            {
-                for (ConfiguredObject o : allObjects)
-                {
-                    o.delete();
-                }
-
-                sendCachingHeadersOnResponse(response);
-                response.setStatus(HttpServletResponse.SC_OK);
-                break;
-            }
-            case USER_PREFERENCES:
-            {
-                //TODO: define format how to report the results for bulk delete, i.e. how to report individual errors and success statuses
-                if (allObjects.size() > 1)
-                {
-                    sendJsonErrorResponse(request,
-                                          response,
-                                          HttpServletResponse.SC_BAD_REQUEST,
-                                          "Deletion of user preferences using wildcards is unsupported");
-                    return;
-                }
-                for (ConfiguredObject o : allObjects)
-                {
-                    _userPreferenceHandler.handleDELETE(o.getUserPreferences(), requestInfo);
-                }
-                break;
-            }
-
-            default:
-            {
-                sendJsonErrorResponse(request, response, HttpServletResponse.SC_BAD_REQUEST, "Unsupported delete call");
-            }
+            return Collections.emptyMap();
         }
+        Map<String, List<String>> query = new LinkedHashMap<>();
+        final String[] pairs = queryString.split("&");
+        for (String pairString : pairs)
+        {
+            List<String> pair = new ArrayList<>(Arrays.asList(pairString.split("=")));
+            if (pair.size() == 1)
+            {
+                pair.add(null);
+            }
+            else if (pair.size() != 2)
+            {
+                throw new IllegalArgumentException(String.format("could not parse query string '%s'", queryString));
+            }
+
+            String key;
+            String value;
+            try
+            {
+                key = URLDecoder.decode(pair.get(0), "UTF-8");
+                value = pair.get(1) == null ? null : URLDecoder.decode(pair.get(1), "UTF-8");
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new RuntimeException(e);
+            }
+            if (!query.containsKey(key))
+            {
+                query.put(key, new ArrayList<>());
+            }
+            query.get(key).add(value);
+        }
+        return query;
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request,
-                          HttpServletResponse response,
-                          final ConfiguredObject<?> managedObject) throws ServletException, IOException
+    private static class ServletManagementRequest implements ManagementRequest
     {
-        performCreateOrUpdate(request, response, managedObject);
-    }
+        private final HttpPort<?> _port;
+        private final HttpServletRequest _request;
+        private final Map<String, List<String>> _query;
+        private final List<String> _path;
+        private final ConfiguredObject<?> _root;
+        private final String _category;
+        private final Map<String, String> _headers;
 
+        ServletManagementRequest(final ConfiguredObject<?> root,
+                                 final HttpServletRequest request)
+        {
+            _root = root;
+            _request = request;
+            _port = HttpManagementUtil.getPort(request);
+            _query = Collections.unmodifiableMap(parseQueryString(request.getQueryString()));
+            String pathInfo = _request.getPathInfo() == null ? "" : _request.getPathInfo();
+            String servletPath = request.getServletPath();
+            _path = Collections.unmodifiableList(HttpManagementUtil.getPathInfoElements(servletPath, pathInfo));
+            final String[] servletPathElements = servletPath.split("/");
+            _category = servletPathElements[servletPathElements.length - 1];
+            final Map<String, String> headers = Collections.list(request.getHeaderNames())
+                                                           .stream()
+                                                           .collect(Collectors.toMap(name -> name, request::getHeader));
+            _headers = Collections.unmodifiableMap(headers);
+        }
 
-    private int getIntParameterFromRequest(final HttpServletRequest request,
-                                           final String paramName,
-                                           final int defaultValue)
-    {
-        int intValue = defaultValue;
-        final String stringValue = request.getParameter(paramName);
-        if(stringValue!=null)
+        public ConfiguredObject<?> getRoot()
+        {
+            return _root;
+        }
+
+        public boolean isSecure()
+        {
+            return _request.isSecure();
+        }
+
+        public boolean isConfidentialOperationAllowedOnInsecureChannel()
+        {
+            return _port.isAllowConfidentialOperationsOnInsecureChannels();
+        }
+
+        public List<String> getPath()
+        {
+            return _path;
+        }
+
+        public String getMethod()
+        {
+            return _request.getMethod();
+        }
+
+        public Map<String, List<String>> getParameters()
+        {
+            return Collections.unmodifiableMap(_query);
+        }
+
+        @Override
+        public String getParameter(final String name)
+        {
+            final List<String> values = _query.get(name);
+            return values == null || values.isEmpty() ? null : values.get(0);
+        }
+
+        public Map<String, String> getHeaders()
+        {
+            return _headers;
+        }
+
+        @SuppressWarnings("unchecked")
+        public <T> T getBody(Class<T> type)
         {
             try
             {
-                intValue = Integer.parseInt(stringValue);
+                return parse(type);
             }
-            catch (NumberFormatException e)
+            catch (IOException | ServletException e)
             {
-                LOGGER.warn("Could not parse " + stringValue + " as integer for parameter " + paramName);
+                throw ManagementException.createBadRequestManagementException("Cannot parse body", e);
             }
         }
-        return intValue;
-    }
 
-    private boolean getBooleanParameterFromRequest(HttpServletRequest request, final String paramName)
-    {
-        return getBooleanParameterFromRequest(request, paramName, false);
-    }
-
-    private boolean getBooleanParameterFromRequest(HttpServletRequest request, final String paramName, final boolean defaultValue)
-    {
-        String value = request.getParameter(paramName);
-        if (value == null)
+        @Override
+        public String getRequestURL()
         {
-            return defaultValue;
+            return _request.getRequestURL().toString();
         }
-        return Boolean.parseBoolean(value);
+
+        @SuppressWarnings("unchecked")
+        private <T> T parse(Class<T> type) throws IOException, ServletException
+        {
+            T providedObject;
+            final ObjectMapper mapper = new ObjectMapper();
+
+            if (_headers.containsKey("Content-Type") && _request.getHeader("Content-Type")
+                                                                .startsWith("multipart/form-data"))
+            {
+                Map<String, Object> items = new LinkedHashMap<>();
+                Map<String, String> fileUploads = new HashMap<>();
+                Collection<Part> parts = _request.getParts();
+                for (Part part : parts)
+                {
+                    if ("data".equals(part.getName()) && "application/json".equals(part.getContentType()))
+                    {
+                        items = mapper.readValue(part.getInputStream(), LinkedHashMap.class);
+                    }
+                    else
+                    {
+                        byte[] data = new byte[(int) part.getSize()];
+                        try (InputStream inputStream = part.getInputStream())
+                        {
+                            inputStream.read(data);
+                        }
+                        fileUploads.put(part.getName(), DataUrlUtils.getDataUrlForBytes(data));
+                    }
+                }
+                items.putAll(fileUploads);
+
+                providedObject = (T) items;
+            }
+            else
+            {
+                providedObject = mapper.readValue(_request.getInputStream(), type);
+            }
+            return providedObject;
+        }
+
+        @Override
+        public Map<String, Object> getParametersAsFlatMap()
+        {
+            final Map<String, Object> providedObject = new HashMap<>();
+            for (Map.Entry<String, List<String>> entry : _query.entrySet())
+            {
+                final List<String> value = entry.getValue();
+                if (value != null)
+                {
+                    if (value.size() == 1)
+                    {
+                        providedObject.put(entry.getKey(), value.get(0));
+                    }
+                    else
+                    {
+                        providedObject.put(entry.getKey(), value);
+                    }
+                }
+            }
+            return providedObject;
+        }
+
+        @Override
+        public String getCategory()
+        {
+            return _category;
+        }
     }
 }

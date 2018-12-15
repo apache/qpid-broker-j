@@ -25,6 +25,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -655,55 +656,59 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return factory;
     }
 
-    private void addRestServlet(ServletContextHandler root)
+    private void addRestServlet(final ServletContextHandler root)
     {
-        Set<Class<? extends ConfiguredObject>> categories = new HashSet<>(getModel().getSupportedCategories());
-        final RestServlet restServlet = new RestServlet();
+        final Map<String, ManagementControllerFactory> factories = ManagementControllerFactory.loadFactories();
         final ApiDocsServlet apiDocsServlet = new ApiDocsServlet();
-
-        for (Class<? extends ConfiguredObject> category : categories)
+        final List<String> supportedVersions = new ArrayList<>();
+        String currentVersion = BrokerModel.MODEL_VERSION;
+        ManagementController managementController = null;
+        ManagementControllerFactory factory;
+        do
         {
-            String name = category.getSimpleName().toLowerCase();
-
-            ServletHolder servletHolder = new ServletHolder(name, restServlet);
-            servletHolder.getRegistration().setMultipartConfig(
-                    new MultipartConfigElement("",
-                                               getContextValue(Long.class, MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME),
-                                               -1L,
-                                               getContextValue(Integer.class,
-                                                               MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)));
-
-            List<String> paths = Arrays.asList("/api/latest/" + name,
-                                               "/api/v" + BrokerModel.MODEL_VERSION + "/" + name);
-
-            for (String path : paths)
+            factory = factories.get(currentVersion);
+            if (factory != null)
             {
-                root.addServlet(servletHolder, path + "/*");
+                managementController = factory.createManagementController(this, managementController);
+                final RestServlet managementServlet = new RestServlet();
+                final Collection<String> categories = managementController.getCategories();
+                for (String category : categories)
+                {
+                    final String name = category.toLowerCase();
+                    final String path = managementController.getCategoryMapping(name);
+                    final ServletHolder servletHolder = new ServletHolder(path, managementServlet);
+                    servletHolder.setInitParameter("qpid.controller.version", managementController.getVersion());
+
+                    servletHolder.getRegistration().setMultipartConfig(
+                            new MultipartConfigElement("",
+                                                       getContextValue(Long.class,
+                                                                       MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME),
+                                                       -1L,
+                                                       getContextValue(Integer.class,
+                                                                       MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)));
+
+                    root.addServlet(servletHolder, path + (path.endsWith("/") ? "*" : "/*"));
+
+                    if (BrokerModel.MODEL_VERSION.equals(managementController.getVersion()))
+                    {
+                        root.addServlet(servletHolder, "/api/latest/" + name + "/*");
+                        ServletHolder docServletHolder = new ServletHolder(name + "docs", apiDocsServlet);
+                        root.addServlet(docServletHolder, "/apidocs/latest/" + name + "/");
+                        root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name + "/");
+                        root.addServlet(docServletHolder, "/apidocs/latest/" + name);
+                        root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name);
+                    }
+                }
+                supportedVersions.add("v" + currentVersion);
+                currentVersion = factory.getPreviousVersion();
             }
-            ServletHolder docServletHolder = new ServletHolder(name + "docs", apiDocsServlet);
-            root.addServlet(docServletHolder, "/apidocs/latest/" + name + "/");
-            root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name + "/");
-            root.addServlet(docServletHolder, "/apidocs/latest/" + name);
-            root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name);
-
-
         }
-
-        final ServletHolder versionsServletHolder = new ServletHolder(new JsonValueServlet(getApiProperties()));
-        root.addServlet(versionsServletHolder,"/api");
-        root.addServlet(versionsServletHolder,"/api/");
-
-    }
-
-    private Map<String, Object> getApiProperties()
-    {
-        return Collections.singletonMap("supportedVersions", getSupportedRestApiVersions());
-    }
-
-    private List<String> getSupportedRestApiVersions()
-    {
-        // TODO - actually support multiple versions and add those versions to the list
-        return Collections.singletonList(getLatestSupportedVersion());
+        while (factory != null);
+        root.getServletContext().setAttribute("qpid.controller.chain", managementController);
+        final Map<String, List<String>> supported = Collections.singletonMap("supportedVersions", supportedVersions);
+        final ServletHolder versionsServletHolder = new ServletHolder(new JsonValueServlet(supported));
+        root.addServlet(versionsServletHolder, "/api");
+        root.addServlet(versionsServletHolder, "/api/");
     }
 
     private String getLatestSupportedVersion()

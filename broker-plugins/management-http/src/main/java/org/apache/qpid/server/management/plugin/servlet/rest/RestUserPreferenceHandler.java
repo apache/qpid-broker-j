@@ -19,12 +19,8 @@
 
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
-import java.security.AccessController;
-import java.security.Principal;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,16 +29,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import javax.security.auth.Subject;
-
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.util.FutureHelper;
+import org.apache.qpid.server.management.plugin.RequestType;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
 import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.util.FutureHelper;
 
 public class RestUserPreferenceHandler
 {
@@ -88,7 +83,7 @@ public class RestUserPreferenceHandler
         awaitFuture(userPreferences.delete(type, name, id));
     }
 
-    void handlePUT(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
+    public void handlePUT(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
     {
         UserPreferences userPreferences = target.getUserPreferences();
         if (userPreferences == null)
@@ -146,7 +141,7 @@ public class RestUserPreferenceHandler
         }
     }
 
-    void handlePOST(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
+    public void handlePOST(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
     {
         UserPreferences userPreferences = target.getUserPreferences();
         if (userPreferences == null)
@@ -185,7 +180,7 @@ public class RestUserPreferenceHandler
         awaitFuture(userPreferences.updateOrAppend(preferences));
     }
 
-    Object handleGET(UserPreferences userPreferences, RequestInfo requestInfo)
+    public Object handleGET(UserPreferences userPreferences, RequestInfo requestInfo)
     {
         if (userPreferences == null)
         {
@@ -197,11 +192,11 @@ public class RestUserPreferenceHandler
         UUID id = getIdFromQueryParameters(queryParameters);
 
         final ListenableFuture<Set<Preference>> allPreferencesFuture;
-        if (requestInfo.getType() == RequestInfo.RequestType.USER_PREFERENCES)
+        if (requestInfo.getType() == RequestType.USER_PREFERENCES)
         {
             allPreferencesFuture = userPreferences.getPreferences();
         }
-        else if (requestInfo.getType() == RequestInfo.RequestType.VISIBLE_PREFERENCES)
+        else if (requestInfo.getType() == RequestType.VISIBLE_PREFERENCES)
         {
             allPreferencesFuture = userPreferences.getVisiblePreferences();
         }

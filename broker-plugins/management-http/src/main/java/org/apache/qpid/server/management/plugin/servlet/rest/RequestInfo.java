@@ -26,6 +26,8 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import org.apache.qpid.server.management.plugin.RequestType;
+
 public class RequestInfo
 {
     private final RequestType _type;
@@ -124,8 +126,5 @@ public class RequestInfo
         return _hierarchySatisfied && !_hasWildcard;
     }
 
-    enum RequestType
-    {
-        OPERATION, USER_PREFERENCES, VISIBLE_PREFERENCES, MODEL_OBJECT
-    }
+
 }
