@@ -24,6 +24,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +36,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
+import org.apache.qpid.server.management.plugin.ManagementResponse;
+import org.apache.qpid.server.management.plugin.ResponseType;
+import org.apache.qpid.server.management.plugin.controller.ControllerManagementResponse;
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
 import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -58,34 +62,26 @@ public class SessionControllerTest extends UnitTestBase
     public void convertNextVersionLegacyConfiguredObject()
     {
         final UUID sessionID = UUID.randomUUID();
-        final UUID connectionID = UUID.randomUUID();
 
         final LegacyConfiguredObject nextVersionSession = mock(LegacyConfiguredObject.class);
-        final LegacyConfiguredObject nextVersionConnection = mock(LegacyConfiguredObject.class);
-        final LegacyConfiguredObject nextVersionVirtualHost = mock(LegacyConfiguredObject.class);
-        final LegacyConfiguredObject nextVersionQueue = mock(LegacyConfiguredObject.class);
         final LegacyConfiguredObject nextVersionConsumer = mock(LegacyConfiguredObject.class);
 
         when(nextVersionSession.getCategory()).thenReturn(SessionController.TYPE);
-        when(nextVersionSession.getParent(LegacyCategoryControllerFactory.CATEGORY_CONNECTION)).thenReturn(nextVersionConnection);
         when(nextVersionSession.getAttribute(LegacyConfiguredObject.ID)).thenReturn(sessionID);
 
-        when(nextVersionConnection.getParent(VirtualHostController.TYPE)).thenReturn(nextVersionVirtualHost);
-        when(nextVersionConnection.getAttribute(LegacyConfiguredObject.ID)).thenReturn(connectionID);
-
-        when(nextVersionVirtualHost.getChildren(QueueController.TYPE)).thenReturn(Collections.singletonList(nextVersionQueue));
-        when(nextVersionQueue.getChildren(ConsumerController.TYPE)).thenReturn(Collections.singletonList(nextVersionConsumer));
-        when(nextVersionConsumer.getAttribute("session")).thenReturn(nextVersionSession);
+        final ManagementResponse operationResult = new ControllerManagementResponse(ResponseType.MODEL_OBJECT,
+                                                                                    Collections.singletonList(
+                                                                                            nextVersionConsumer));
+        when(nextVersionSession.invoke(eq("getConsumers"), eq(Collections.emptyMap()), eq(true))).thenReturn(
+                operationResult);
 
         final LegacyConfiguredObject convertedConsumer = mock(LegacyConfiguredObject.class);
-        final LegacyConfiguredObject convertedConnection = mock(LegacyConfiguredObject.class);
         when(_legacyManagementController.convertFromNextVersion(nextVersionConsumer)).thenReturn(convertedConsumer);
-        when(_legacyManagementController.convertFromNextVersion(nextVersionConnection)).thenReturn(convertedConnection);
 
-        final LegacyConfiguredObject convertedSession = _sessionController.convertNextVersionLegacyConfiguredObject(nextVersionSession);
+        final LegacyConfiguredObject convertedSession =
+                _sessionController.convertNextVersionLegacyConfiguredObject(nextVersionSession);
 
         assertThat(convertedSession.getAttribute(LegacyConfiguredObject.ID), is(equalTo(sessionID)));
-        assertThat(convertedSession.getParent(LegacyCategoryControllerFactory.CATEGORY_CONNECTION), is(equalTo(convertedConnection)));
 
         final Collection<LegacyConfiguredObject> consumers = convertedSession.getChildren(ConsumerController.TYPE);
         assertThat(consumers, is(notNullValue()));

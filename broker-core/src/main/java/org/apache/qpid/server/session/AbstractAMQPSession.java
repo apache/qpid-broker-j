@@ -21,11 +21,13 @@
 package org.apache.qpid.server.session;
 
 import java.security.AccessControlContext;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -47,6 +49,7 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
@@ -77,6 +80,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
 
     protected final Set<AbstractConsumerTarget> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
     private Iterator<AbstractConsumerTarget> _processPendingIterator;
+    private final Set<Consumer<?,X>> _consumers = ConcurrentHashMap.newKeySet();
 
     protected AbstractAMQPSession(final Connection<?> parent, final int sessionId)
     {
@@ -256,15 +260,23 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     }
 
     @Override
-    public final void incConsumerCount()
+    public final void consumerAdded(Consumer<?, X> consumer)
     {
         _consumerCount.incrementAndGet();
+        _consumers.add(consumer);
     }
 
     @Override
-    public final void decConsumerCount()
+    public final void consumerRemoved(Consumer<?, X> consumer)
     {
         _consumerCount.decrementAndGet();
+        _consumers.remove(consumer);
+    }
+
+    @Override
+    public Set<? extends Consumer<?, ?>> getConsumers()
+    {
+        return Collections.unmodifiableSet(_consumers);
     }
 
     protected abstract void updateBlockedStateIfNecessary();

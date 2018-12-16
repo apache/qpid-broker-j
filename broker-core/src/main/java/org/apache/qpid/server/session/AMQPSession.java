@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -60,9 +61,9 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
     @Override
     long getConsumerCount();
 
-    void incConsumerCount();
+    void consumerAdded(Consumer<?, X> consumer);
 
-    void decConsumerCount();
+    void consumerRemoved(Consumer<?, X> consumer);
 
     /**
      * Return the time the current transaction started.

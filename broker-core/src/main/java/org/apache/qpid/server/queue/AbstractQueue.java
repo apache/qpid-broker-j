@@ -1050,7 +1050,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         childAdded(consumer);
         consumer.addChangeListener(_deletedChildListener);
 
-        session.incConsumerCount();
+        session.consumerAdded(consumer);
         addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
@@ -1058,7 +1058,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 if (child.equals(consumer))
                 {
-                    session.decConsumerCount();
+                    session.consumerRemoved(consumer);
                     removeChangeListener(this);
                 }
             }

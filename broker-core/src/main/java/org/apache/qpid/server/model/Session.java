@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
+import java.util.Set;
+
 @ManagedObject( creatable = false, amqpName = "org.apache.qpid.Session")
 public interface Session<X extends Session<X>> extends ConfiguredObject<X>
 {
@@ -58,4 +60,9 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetched")
     long getUnacknowledgedMessages();
+
+    @ManagedOperation(nonModifying = true,
+            changesConfiguredObjectState = false,
+            skipAclCheck = true)
+    Set<? extends Consumer<?, ?>> getConsumers();
 }

@@ -20,12 +20,14 @@
  */
 package org.apache.qpid.server.management.plugin.controller.v6_1.category;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.apache.qpid.server.management.plugin.ManagementException;
+import org.apache.qpid.server.management.plugin.ManagementResponse;
+import org.apache.qpid.server.management.plugin.ResponseType;
 import org.apache.qpid.server.management.plugin.controller.GenericLegacyConfiguredObject;
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
 import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
@@ -60,52 +62,28 @@ public class SessionController extends LegacyCategoryController
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public Collection<LegacyConfiguredObject> getChildren(final String category)
         {
             if (ConsumerController.TYPE.equalsIgnoreCase(category))
             {
                 final LegacyConfiguredObject nextVersionSession = getNextVersionLegacyConfiguredObject();
-                final LegacyConfiguredObject connection =
-                        nextVersionSession.getParent(LegacyCategoryControllerFactory.CATEGORY_CONNECTION);
-                final LegacyConfiguredObject vh = connection.getParent(VirtualHostController.TYPE);
-                final UUID sessionID = (UUID) getAttribute(ID);
-                final UUID connectionID = (UUID) connection.getAttribute(ID);
-                final List<LegacyConfiguredObject> consumers = new ArrayList<>();
-                final Collection<LegacyConfiguredObject> queues = vh.getChildren(QueueController.TYPE);
-                if (queues != null)
+                final ManagementResponse result =
+                        nextVersionSession.invoke("getConsumers", Collections.emptyMap(), true);
+                if (result != null && result.getResponseCode() == 200  && result.getType() == ResponseType.MODEL_OBJECT)
                 {
-                    queues.forEach(q -> {
-                        final Collection<LegacyConfiguredObject> queueConsumers =
-                                q.getChildren(ConsumerController.TYPE);
-                        if (queueConsumers != null)
-                        {
-                            queueConsumers.stream()
-                                          .filter(c -> sameSession(c, sessionID, connectionID))
-                                          .map(c -> getManagementController().convertFromNextVersion(c))
-                                          .forEach(consumers::add);
-                        }
-                    });
+                    final Object objects = result.getBody();
+                    if (objects instanceof Collection)
+                    {
+                        return ((Collection<?>) objects).stream().filter(o -> o instanceof LegacyConfiguredObject)
+                                                        .map(o -> (LegacyConfiguredObject)o)
+                                                        .map(o -> getManagementController().convertFromNextVersion(o))
+                                                        .collect(Collectors.toList());
+                    }
                 }
-                return consumers;
+                throw ManagementException.createInternalServerErrorManagementException(
+                        "Unexpected result of performing operation Session#getConsumers()");
             }
             return super.getChildren(category);
-        }
-
-        private boolean sameSession(final LegacyConfiguredObject consumer,
-                                    final UUID sessionID,
-                                    final UUID connectionID)
-        {
-            LegacyConfiguredObject session = (LegacyConfiguredObject) consumer.getAttribute("session");
-            if (session != null)
-            {
-                if (sessionID.equals(session.getAttribute(ID)))
-                {
-                    LegacyConfiguredObject con = session.getParent(LegacyCategoryControllerFactory.CATEGORY_CONNECTION);
-                    return con != null && connectionID.equals(con.getAttribute(ID));
-                }
-            }
-            return false;
         }
     }
 }
