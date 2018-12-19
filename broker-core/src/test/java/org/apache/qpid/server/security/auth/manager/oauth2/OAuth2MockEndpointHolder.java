@@ -84,6 +84,15 @@ class OAuth2MockEndpointHolder
                                               };
         sslContextFactory.setKeyStorePassword(KEYSTORE_PASSWORD);
         sslContextFactory.setKeyStoreResource(Resource.newClassPathResource(KEYSTORE_RESOURCE));
+
+        // override default jetty excludes as valid IBM JDK are excluded
+        // causing SSL handshake failure (due to default exclude '^SSL_.*$')
+        sslContextFactory.setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$",
+                                                 "^TLS_RSA_.*$",
+                                                 "^SSL_RSA_.*$",
+                                                 "^.*_NULL_.*$",
+                                                 "^.*_anon_.*$");
+
         _connector = new ServerConnector(_server, sslContextFactory);
         _connector.setPort(0);
         _connector.setReuseAddress(true);
