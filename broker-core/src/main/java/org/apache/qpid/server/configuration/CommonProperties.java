@@ -83,6 +83,8 @@ public class CommonProperties
 
     private static final Properties properties = new Properties();
 
+    private static final String QPID_VERSION = "qpid.version";
+
     static
     {
         Manifest jarManifest = getJarManifestFor(CommonProperties.class);
@@ -94,6 +96,7 @@ public class CommonProperties
         productName = p.getImplementationTitle() != null ? p.getImplementationTitle() : DEFAULT;
 
         String version = getImplementationVersion(p);
+        System.setProperty(QPID_VERSION, version);
 
         boolean loadFromFile = true;
         String initialProperties = System.getProperty("qpid.common_properties_file");
