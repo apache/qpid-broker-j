@@ -106,4 +106,25 @@ public class OperationTest extends HttpTestBase
                                                     SC_OK);
         assertThat(response, is(nullValue()));
     }
+
+    @Test
+    public void invokeOperationForUnknownCategory() throws Exception
+    {
+
+        try
+        {
+            getHelper().postJson("broker/performGC",
+                                 Collections.emptyMap(),
+                                 new TypeReference<Void>()
+                                 {
+                                 },
+                                 SC_NOT_FOUND);
+            fail("The request is executed against root object VirtualHost. Thus, any broker request should fail.");
+        }
+        catch (FileNotFoundException e)
+        {
+            //pass
+        }
+
+    }
 }
