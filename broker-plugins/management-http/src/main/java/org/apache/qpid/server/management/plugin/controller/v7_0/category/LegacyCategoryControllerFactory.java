@@ -59,7 +59,7 @@ public class LegacyCategoryControllerFactory implements CategoryControllerFactor
     private static final String CATEGORY_CONSUMER = "Consumer";
     private static final String CATEGORY_CONNECTION = "Connection";
     private static final String CATEGORY_SESSION = "Session";
-    private static final String CATEGORY_SYSTEM_CONFIG = "SystemConfig";
+    static final String CATEGORY_SYSTEM_CONFIG = "SystemConfig";
     static final Map<String, String> SUPPORTED_CATEGORIES =
             Collections.unmodifiableMap(new HashMap<String, String>()
             {

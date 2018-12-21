@@ -63,6 +63,7 @@ public class LegacyCategoryControllerFactory implements CategoryControllerFactor
     static final String CATEGORY_CONSUMER = ConsumerController.TYPE;
     static final String CATEGORY_CONNECTION = "Connection";
     static final String CATEGORY_SESSION = SessionController.TYPE;
+    static final String CATEGORY_SYSTEM_CONFIG = "SystemConfig";
     static final Set<String> SUPPORTED_CATEGORIES =
             Collections.unmodifiableSet(new HashSet<>(Arrays.asList(CATEGORY_BROKER,
                                                                     CATEGORY_BROKER_LOGGER,

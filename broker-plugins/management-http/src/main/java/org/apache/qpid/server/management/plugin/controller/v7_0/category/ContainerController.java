@@ -76,5 +76,19 @@ class ContainerController extends LegacyCategoryController
             }
             return super.getActualAttribute(name);
         }
+
+        @Override
+        public LegacyConfiguredObject getParent(final String category)
+        {
+            if (LegacyCategoryControllerFactory.CATEGORY_BROKER.equals(getCategory())
+                && LegacyCategoryControllerFactory.CATEGORY_SYSTEM_CONFIG.equals(category))
+            {
+                LegacyConfiguredObject nextVersionParent = getNextVersionLegacyConfiguredObject().getParent(category);
+                return new GenericLegacyConfiguredObject(getManagementController(),
+                                                         nextVersionParent,
+                                                         category);
+            }
+            return super.getParent(category);
+        }
     }
 }
