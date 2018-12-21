@@ -26,8 +26,11 @@ import static org.apache.qpid.server.management.plugin.servlet.rest.AbstractServ
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
+import java.io.FileNotFoundException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -37,6 +40,7 @@ import org.junit.Test;
 
 import org.apache.qpid.tests.http.HttpRequestConfig;
 import org.apache.qpid.tests.http.HttpTestBase;
+import org.apache.qpid.tests.http.HttpTestHelper;
 
 @HttpRequestConfig
 public class OperationTest extends HttpTestBase
@@ -88,5 +92,18 @@ public class OperationTest extends HttpTestBase
     public void operationNotFound() throws Exception
     {
         getHelper().submitRequest("virtualhost/notfound", "POST", Collections.emptyMap(), SC_NOT_FOUND);
+    }
+
+    @Test
+    public void invokeOperationReturningVoid() throws Exception
+    {
+        final HttpTestHelper brokerHelper = new HttpTestHelper(getBrokerAdmin());
+        final Void response = brokerHelper.postJson("broker/performGC",
+                                                    Collections.emptyMap(),
+                                                    new TypeReference<Void>()
+                                                    {
+                                                    },
+                                                    SC_OK);
+        assertThat(response, is(nullValue()));
     }
 }
