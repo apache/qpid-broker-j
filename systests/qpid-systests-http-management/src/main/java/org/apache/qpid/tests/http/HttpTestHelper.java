@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -241,7 +242,9 @@ public class HttpTestHelper
             responseCode = connection.getResponseCode();
             Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
 
-            return new ObjectMapper().readValue(new ByteArrayInputStream(readConnectionInputStream(connection)), valueTypeRef);
+            byte[] data = readConnectionInputStream(connection);
+            LOGGER.debug("Response : {}", new String(data, StandardCharsets.UTF_8));
+            return new ObjectMapper().readValue(new ByteArrayInputStream(data), valueTypeRef);
         }
         finally
         {
@@ -263,7 +266,9 @@ public class HttpTestHelper
             responseCode = connection.getResponseCode();
             Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
 
-            return new ObjectMapper().readValue(new ByteArrayInputStream(readConnectionInputStream(connection)), valueTypeRef);
+            byte[] buf = readConnectionInputStream(connection);
+            LOGGER.debug("Response data: {}", new String(buf, StandardCharsets.UTF_8));
+            return new ObjectMapper().readValue(new ByteArrayInputStream(buf), valueTypeRef);
         }
         finally
         {

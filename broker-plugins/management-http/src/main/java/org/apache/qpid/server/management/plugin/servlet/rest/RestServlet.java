@@ -255,23 +255,18 @@ public class RestServlet extends AbstractServlet
                 content.release();
             }
         }
-        else if (body != null)
+        else
         {
             response.setContentType(APPLICATION_JSON);
-            Object data;
-            if (managementResponse.getType() == ResponseType.MODEL_OBJECT)
+            if (body != null && managementResponse.getType() == ResponseType.MODEL_OBJECT)
             {
-                data = controller.formatConfiguredObject(
+                body = controller.formatConfiguredObject(
                         managementResponse.getBody(),
                         parameters,
                         managementRequest.isSecure()
                         || managementRequest.isConfidentialOperationAllowedOnInsecureChannel());
             }
-            else
-            {
-                data = managementResponse.getBody();
-            }
-            writeJsonResponse(data, request, response);
+            writeJsonResponse(body, request, response);
         }
     }
 
