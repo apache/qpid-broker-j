@@ -62,7 +62,7 @@ public class BrokerController extends LegacyCategoryController
     {
         super(legacyManagementController,
               TYPE,
-              new String[0],
+              new String[]{LegacyCategoryControllerFactory.CATEGORY_SYSTEM_CONFIG},
               "Broker",
               typeControllers);
     }
@@ -207,6 +207,19 @@ public class BrokerController extends LegacyCategoryController
         public boolean isOversizedAttribute(final String name)
         {
             return !BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT.containsKey(name) && super.isOversizedAttribute(name);
+        }
+
+        @Override
+        public LegacyConfiguredObject getParent(final String category)
+        {
+            if (LegacyCategoryControllerFactory.CATEGORY_SYSTEM_CONFIG.equals(category))
+            {
+                LegacyConfiguredObject nextVersionParent = getNextVersionLegacyConfiguredObject().getParent(category);
+                return new GenericLegacyConfiguredObject(getManagementController(),
+                                                         nextVersionParent,
+                                                         category);
+            }
+            return super.getParent(category);
         }
     }
 }
