@@ -92,6 +92,7 @@ public class LatestManagementController extends AbstractManagementController
 
     private static final int DEFAULT_DEPTH = 0;
     private static final int DEFAULT_OVERSIZE = 120;
+    private static final Class<? extends ConfiguredObject>[] EMPTY_HIERARCHY = new Class[0];
 
 
     private final ConcurrentMap<ConfiguredObject<?>, ConfiguredObjectFinder> _configuredObjectFinders =
@@ -172,7 +173,7 @@ public class LatestManagementController extends AbstractManagementController
         final ConfiguredObjectFinder finder = getConfiguredObjectFinder(root);
         final String category = request.getCategory();
         final Class<? extends ConfiguredObject> configuredClass = getRequestCategoryClass(category, root.getModel());
-        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
+        final Class<? extends ConfiguredObject>[] hierarchy = getHierarchy(finder, configuredClass);
         return getManagementRequestType(request.getMethod(), category, request.getPath(), hierarchy);
     }
 
@@ -239,7 +240,7 @@ public class LatestManagementController extends AbstractManagementController
             if (hierarchy.size() > 1)
             {
                 final ConfiguredObjectFinder finder = getConfiguredObjectFinder(root);
-                theParent = finder.findObjectParentsFromPath(path, finder.getHierarchy(categoryClass), categoryClass);
+                theParent = finder.findObjectParentsFromPath(path, getHierarchy(finder, categoryClass), categoryClass);
             }
 
             final boolean isFullObjectURL = path.size() == hierarchy.size();
@@ -628,7 +629,7 @@ public class LatestManagementController extends AbstractManagementController
         final ConfiguredObjectFinder finder = getConfiguredObjectFinder(root);
         final Class<? extends ConfiguredObject> configuredClass = getRequestCategoryClass(category, root.getModel());
         Collection<ConfiguredObject<?>> targetObjects =
-                finder.findObjectsFromPath(path, finder.getHierarchy(configuredClass), true);
+                finder.findObjectsFromPath(path, getHierarchy(finder, configuredClass), true);
 
         if (targetObjects == null)
         {
@@ -639,6 +640,17 @@ public class LatestManagementController extends AbstractManagementController
             targetObjects = targetObjects.stream().filter(filterPredicate).collect(Collectors.toList());
         }
         return targetObjects;
+    }
+
+    private Class<? extends ConfiguredObject>[] getHierarchy(final ConfiguredObjectFinder finder,
+                                                             final Class<? extends ConfiguredObject> configuredClass)
+    {
+        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
+        if (hierarchy == null)
+        {
+            return EMPTY_HIERARCHY;
+        }
+        return hierarchy;
     }
 
     private RequestType getManagementRequestType(final String method,
@@ -829,7 +841,7 @@ public class LatestManagementController extends AbstractManagementController
         final Class<? extends ConfiguredObject> configuredClass = getRequestCategoryClass(category, root.getModel());
         final ConfiguredObject<?> target;
         final ConfiguredObjectFinder finder = getConfiguredObjectFinder(root);
-        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
+        final Class<? extends ConfiguredObject>[] hierarchy = getHierarchy(finder, configuredClass);
         if (names.isEmpty() && hierarchy.length == 0)
         {
             target = root;
