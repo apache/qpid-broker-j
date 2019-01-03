@@ -18,3 +18,7 @@
 //
 
 org.apache.qpid.client.ssl.SSLTest#testVerifyLocalHostLocalDomain
+
+// Exclude sporadically failing tests due to slow environment
+org.apache.qpid.test.unit.transacted.CommitRollbackTest#testRollbackSoak
+org.apache.qpid.server.queue.SortedQueueTest#testAutoAckSortedQueue
