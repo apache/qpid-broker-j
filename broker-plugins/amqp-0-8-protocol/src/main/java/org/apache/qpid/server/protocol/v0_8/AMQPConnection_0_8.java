@@ -51,6 +51,11 @@ public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQ
     @ManagedContextDefault(name= BATCH_LIMIT)
     long DEFAULT_BATCH_LIMIT = 10L;
 
+    String VALIDATE_MESSAGE_HEADERS = "qpid.connection.validateHeaders";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name= VALIDATE_MESSAGE_HEADERS)
+    boolean DEFAULT_VALIDATE_MESSAGE_HEADERS = false;
+
     @DerivedAttribute(description = "The actual negotiated value of heartbeat delay.")
     int getHeartbeatDelay();
 

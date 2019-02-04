@@ -351,10 +351,6 @@ public class BasicContentHeaderProperties
         {
             LOGGER.debug("Property flags: " + _propertyFlags);
         }
-        if(_encodedForm != null)
-        {
-            _encodedForm.dispose();
-        }
         _encodedForm = buffer.view(0,size);
 
         try (QpidByteBuffer byteBuffer = _encodedForm.slice())

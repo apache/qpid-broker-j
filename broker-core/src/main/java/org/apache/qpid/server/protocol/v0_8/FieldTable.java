@@ -498,4 +498,22 @@ public class FieldTable
             return null;
         }
     }
+
+    public static boolean isValid(FieldTable fieldTable)
+    {
+        boolean isValid = true;
+        if (fieldTable != EMPTY)
+        {
+            try
+            {
+                FieldTable copy = FieldTableFactory.createFieldTable(FieldTable.convertToMap(fieldTable));
+                isValid = fieldTable.getEncodedSize() == copy.getEncodedSize();
+            }
+            catch (IllegalArgumentException | AMQPInvalidClassException e)
+            {
+                isValid = false;
+            }
+        }
+        return isValid;
+    }
 }

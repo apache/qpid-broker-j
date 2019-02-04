@@ -134,6 +134,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
 
     private final Pre0_10CreditManager _creditManager;
+    private final boolean _validateHeaders;
 
 
     /**
@@ -237,6 +238,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 return null;
             }
         }),_accessControllerContext);
+
+        _validateHeaders = connection.getContextValue(Boolean.class, AMQPConnection_0_8.VALIDATE_MESSAGE_HEADERS);
 
     }
 
@@ -2217,7 +2220,17 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             }
             else
             {
-                publishContentHeader(new ContentHeaderBody(properties, bodySize));
+                if (!_validateHeaders || FieldTable.isValid(properties.getHeaders()))
+                {
+                    publishContentHeader(new ContentHeaderBody(properties, bodySize));
+                }
+                else
+                {
+                    properties.dispose();
+                    _connection.sendConnectionClose(ErrorCodes.FRAME_ERROR,
+                                                    "Attempt to send a malformed content header",
+                                                    _channelId);
+                }
             }
         }
         else

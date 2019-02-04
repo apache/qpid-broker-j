@@ -124,6 +124,7 @@ public class AMQChannelTest extends UnitTestBase
         when(_amqConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(_amqConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
         when(_amqConnection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(Connection.DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        when(_amqConnection.getContextValue(Boolean.class, AMQPConnection_0_8.VALIDATE_MESSAGE_HEADERS)).thenReturn(true);
         when(_amqConnection.getTaskExecutor()).thenReturn(taskExecutor);
         when(_amqConnection.getChildExecutor()).thenReturn(taskExecutor);
         when(_amqConnection.getModel()).thenReturn(BrokerModel.getInstance());

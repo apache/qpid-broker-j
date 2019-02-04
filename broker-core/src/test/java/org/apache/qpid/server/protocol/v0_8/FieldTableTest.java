@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -40,6 +41,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class FieldTableTest extends UnitTestBase
 {
+    private static final String TEST_KEY = "korean";
+    private static final String TEST_KEY_VALUE = "korean-한국어/韓國語";
 
     /**
      * Set a boolean and check that we can only get it back as a boolean and a string
@@ -512,6 +515,57 @@ public class FieldTableTest extends UnitTestBase
         {
             fail("property name are allowed to start with # and $s");
         }
+    }
+
+    @Test
+    public void testValidateMalformedFieldTable()
+    {
+        final QpidByteBuffer buf = buildMalformedFieldTable(TEST_KEY, TEST_KEY_VALUE);
+
+        final FieldTable fieldTable = new FieldTable(buf);
+
+        assertEquals(1, fieldTable.size());
+        assertTrue("Expected key is not found", fieldTable.containsKey(TEST_KEY));
+
+        assertFalse("Validation should return false", FieldTable.isValid(fieldTable));
+    }
+
+    @Test
+    public void testValidateCorrectFieldTable()
+    {
+        final FieldTable ft = new FieldTable(Collections.singletonMap(TEST_KEY, TEST_KEY_VALUE));
+        final int encodedSize = (int)ft.getEncodedSize() + Integer.BYTES;
+        final QpidByteBuffer buf = QpidByteBuffer.allocate(encodedSize);
+        ft.writeToBuffer(buf);
+        buf.flip();
+        buf.position(Integer.BYTES);
+
+        final FieldTable fieldTable = new FieldTable(buf);
+        assertEquals(1, fieldTable.size());
+        assertTrue("Expected key is not found", fieldTable.containsKey(TEST_KEY));
+        assertTrue("Validation should pass", FieldTable.isValid(fieldTable));
+    }
+
+    private QpidByteBuffer buildMalformedFieldTable(final String testKey, final String testKeyValue)
+    {
+        final int keyLength = EncodingUtils.encodedShortStringLength(testKey);
+        final int malformedEncodedSize = keyLength + Byte.BYTES + Integer.BYTES + testKeyValue.length();
+        final QpidByteBuffer buf = QpidByteBuffer.allocate(malformedEncodedSize);
+        EncodingUtils.writeShortStringBytes(buf, TEST_KEY);
+        buf.put(AMQType.LONG_STRING.identifier());
+        buf.putUnsignedInt(TEST_KEY_VALUE.length());
+        int len = TEST_KEY_VALUE.length();
+        byte[] encodedString = new byte[len];
+        char[] cha = TEST_KEY_VALUE.toCharArray();
+
+        for(int i = 0; i < cha.length; ++i)
+        {
+            encodedString[i] = (byte)cha[i];
+        }
+        buf.put(encodedString);
+
+        buf.flip();
+        return buf;
     }
 
     private void assertBytesEqual(byte[] expected, byte[] actual)
