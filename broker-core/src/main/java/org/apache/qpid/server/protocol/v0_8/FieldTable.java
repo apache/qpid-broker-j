@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class FieldTable
 {
@@ -329,6 +330,18 @@ public class FieldTable
         return _encodedSize;
     }
 
+    private synchronized long recalculateEncodedSize()
+    {
+        long size = 0L;
+        for (Map.Entry<String, AMQTypedValue> e : _properties.entrySet())
+        {
+            String key = e.getKey();
+            AMQTypedValue value = e.getValue();
+            size += EncodingUtils.encodedShortStringLength(key) + 1 + value.getEncodingSize();
+        }
+        return size;
+    }
+
     public static Map<String, Object> convertToMap(final FieldTable fieldTable)
     {
         final Map<String, Object> map = new HashMap<>();
@@ -362,8 +375,21 @@ public class FieldTable
 
         if (_encodedForm != null)
         {
-            _encodedForm.dispose();
-            _encodedForm = null;
+            if (_encodedSize == recalculateEncodedSize())
+            {
+                _encodedForm.dispose();
+                _encodedForm = null;
+            }
+            else
+            {
+                // QPID-8273: malformed field table
+                // thus, copying encoded form into heap
+                QpidByteBuffer encodedForm = QpidByteBuffer.allocate(_encodedForm.remaining());
+                encodedForm.putCopyOf(_encodedForm);
+                encodedForm.flip();
+                _encodedForm.dispose();
+                _encodedForm = encodedForm;
+            }
         }
     }
 
