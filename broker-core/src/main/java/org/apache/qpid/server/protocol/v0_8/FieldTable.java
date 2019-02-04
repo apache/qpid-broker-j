@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class FieldTable
 {
@@ -50,7 +51,7 @@ public class FieldTable
     private QpidByteBuffer _encodedForm;
     private boolean _decoded;
     private final Map<String, AMQTypedValue> _properties;
-    private final long _encodedSize;
+    private long _encodedSize;
     private final boolean _strictAMQP;
 
     FieldTable(QpidByteBuffer input, int len)
@@ -324,9 +325,21 @@ public class FieldTable
         }
     }
 
-    public long getEncodedSize()
+    public synchronized long getEncodedSize()
     {
         return _encodedSize;
+    }
+
+    private synchronized long recalculateEncodedSize()
+    {
+        long size = 0L;
+        for (Map.Entry<String, AMQTypedValue> e : _properties.entrySet())
+        {
+            String key = e.getKey();
+            AMQTypedValue value = e.getValue();
+            size += EncodingUtils.encodedShortStringLength(key) + 1 + value.getEncodingSize();
+        }
+        return size;
     }
 
     public static Map<String, Object> convertToMap(final FieldTable fieldTable)
@@ -362,6 +375,11 @@ public class FieldTable
 
         if (_encodedForm != null)
         {
+            long encodedSize = recalculateEncodedSize();
+            if (_encodedSize != encodedSize)
+            {
+                _encodedSize = encodedSize;
+            }
             _encodedForm.dispose();
             _encodedForm = null;
         }
