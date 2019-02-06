@@ -144,18 +144,21 @@ public class Broker
             @Override
             public Object run() throws Exception
             {
-                ch.qos.logback.classic.Logger logger =
-                        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-                if (!logger.iteratorForAppenders().hasNext())
-                {
-                    logger.setLevel(Level.ALL);
-                    logger.setAdditive(true);
-                }
+                StartupAppender startupAppender = null;
+                ch.qos.logback.classic.Logger logger = null;
+                if (LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) instanceof ch.qos.logback.classic.Logger){
+                    logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+                    if (!logger.iteratorForAppenders().hasNext())
+                    {
+                        logger.setLevel(Level.ALL);
+                        logger.setAdditive(true);
+                    }
 
-                StartupAppender startupAppender = new StartupAppender();
-                startupAppender.setContext(logger.getLoggerContext());
-                startupAppender.start();
-                logger.addAppender(startupAppender);
+                    startupAppender = new StartupAppender();
+                    startupAppender.setContext(logger.getLoggerContext());
+                    startupAppender.start();
+                    logger.addAppender(startupAppender);
+                }
 
                 try
                 {
@@ -164,13 +167,19 @@ public class Broker
                 catch (RuntimeException e)
                 {
                     LOGGER.error("Exception during startup", e);
-                    startupAppender.logToConsole();
+                    if (startupAppender != null){
+                        startupAppender.logToConsole();
+                    }
                     closeSystemConfigAndCleanUp();
                 }
                 finally
                 {
-                    logger.detachAppender(startupAppender);
-                    startupAppender.stop();
+                    if (startupAppender != null) {
+                        if (logger != null ) {
+                            logger.detachAppender(startupAppender);
+                        }
+                        startupAppender.stop();
+                    }
                 }
                 return null;
             }
@@ -210,15 +219,16 @@ public class Broker
             @Override
             public void run()
             {
-
-                ch.qos.logback.classic.Logger rootLogger =
+                if (LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) instanceof ch.qos.logback.classic.Logger){
+                    ch.qos.logback.classic.Logger rootLogger =
                         (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
-                StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
-                if (startupAppender != null)
-                {
-                    rootLogger.detachAppender(startupAppender);
-                    startupAppender.stop();
+                    StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
+                    if (startupAppender != null)
+                    {
+                        rootLogger.detachAppender(startupAppender);
+                        startupAppender.stop();
+                    }
                 }
 
             }
