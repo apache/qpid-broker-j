@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
+import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
@@ -227,8 +227,8 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
                 long deliveryTag = getChannel().getNextDeliveryTag();
 
                 addUnacknowledgedMessage(entry);
-                getChannel().addUnacknowledgedMessage(entry, deliveryTag, consumer, _usesCredit);
                 sendToClient(consumer, message, entry.getInstanceProperties(), deliveryTag);
+                getChannel().addUnacknowledgedMessage(entry, deliveryTag, consumer, _usesCredit);
                 entry.incrementDeliveryCount();
             }
         }

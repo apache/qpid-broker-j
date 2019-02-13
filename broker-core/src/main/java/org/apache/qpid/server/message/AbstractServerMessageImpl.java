@@ -28,6 +28,9 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
@@ -36,7 +39,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageImpl<X,T>, T extends StorableMessageMetaData> implements ServerMessage<T>
 {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServerMessageImpl.class);
     private static final AtomicIntegerFieldUpdater<AbstractServerMessageImpl> _refCountUpdater =
             AtomicIntegerFieldUpdater.newUpdater(AbstractServerMessageImpl.class, "_referenceCount");
 
@@ -49,6 +52,12 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     @SuppressWarnings("unused")
     private volatile Collection<UUID> _resources;
 
+    private volatile ServerMessage.ValidationStatus _validationStatus = ServerMessage.ValidationStatus.UNKNOWN;
+
+    private static final AtomicReferenceFieldUpdater<AbstractServerMessageImpl, ServerMessage.ValidationStatus>
+            _validationStatusUpdater = AtomicReferenceFieldUpdater.newUpdater(AbstractServerMessageImpl.class,
+                                                                              ServerMessage.ValidationStatus.class,
+                                                                              "_validationStatus");
 
     public AbstractServerMessageImpl(StoredMessage<T> handle, Object connectionReference)
     {
@@ -192,7 +201,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
         }
         finally
         {
-            if (!wasInMemory)
+            if (!wasInMemory && checkValid())
             {
                 storedMessage.flowToDisk();
             }
@@ -209,6 +218,44 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     public String toString()
     {
         return "Message[" + debugIdentity() + "]";
+    }
+
+    @Override
+    public ServerMessage.ValidationStatus getValidationStatus()
+    {
+        return _validationStatus;
+    }
+
+    @Override
+    public boolean checkValid()
+    {
+        ServerMessage.ValidationStatus status;
+        while ((status = _validationStatus) == ServerMessage.ValidationStatus.UNKNOWN)
+        {
+            ServerMessage.ValidationStatus newStatus;
+            try
+            {
+                validate();
+                newStatus = ServerMessage.ValidationStatus.VALID;
+            }
+            catch (RuntimeException e)
+            {
+                newStatus = ServerMessage.ValidationStatus.MALFORMED;
+                LOGGER.debug("Malformed message '{}' detected", this, e);
+            }
+
+            if (_validationStatusUpdater.compareAndSet(this, status, newStatus))
+            {
+                status = newStatus;
+                break;
+            }
+        }
+        return status == ServerMessage.ValidationStatus.VALID;
+    }
+
+    protected void validate()
+    {
+        // noop
     }
 
     private static class Reference<X extends AbstractServerMessageImpl<X,T>, T extends StorableMessageMetaData>

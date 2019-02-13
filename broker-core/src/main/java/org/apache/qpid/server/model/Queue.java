@@ -478,6 +478,16 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                       description = "Current age of oldest message on the queue.")
     long getOldestMessageAge();
 
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Malformed",
+            description = "Total size of enqueued malformed messages.")
+    long getTotalMalformedBytes();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Malformed",
+            description = "Total number of enqueued malformed messages.")
+    long getTotalMalformedMessages();
+
     @ManagedOperation(description = "move messages from this queue to another", changesConfiguredObjectState = false)
     List<Long> moveMessages(@Param(name = "destination", description = "The queue to which the messages should be moved", mandatory = true) Queue<?> destination,
                             @Param(name = "messageIds", description = "If provided, only messages in the queue whose (internal) message-id is supplied will be considered for moving") List<Long> messageIds,
@@ -571,6 +581,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     QueueEntry getLeastSignificantOldestEntry();
 
     QueueEntryIterator queueEntryIterator();
+
+    boolean checkValid(QueueEntry queueEntry);
 
     enum ExpiryPolicy
     {

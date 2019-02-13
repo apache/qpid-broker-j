@@ -46,4 +46,5 @@ public interface QueueEntry extends MessageInstance, Comparable<QueueEntry>
     MessageReference newMessageReference();
 
     boolean checkHeld(final long evaluationTime);
+
 }

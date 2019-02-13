@@ -1406,6 +1406,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         ServerMessage message = mock(ServerMessage.class);
         when(message.getMessageNumber()).thenReturn(id);
         when(message.getMessageHeader()).thenReturn(header);
+        when(message.checkValid()).thenReturn(true);
 
         StoredMessage storedMessage = mock(StoredMessage.class);
         when(message.getStoredMessage()).thenReturn(storedMessage);

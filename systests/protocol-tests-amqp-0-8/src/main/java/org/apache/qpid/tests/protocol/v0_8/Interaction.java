@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQBody;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
@@ -27,7 +31,9 @@ import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ContentBody;
 import org.apache.qpid.tests.protocol.AbstractInteraction;
+import org.apache.qpid.tests.protocol.Response;
 
 public class Interaction extends AbstractInteraction<Interaction>
 {
@@ -142,5 +148,36 @@ public class Interaction extends AbstractInteraction<Interaction>
     public ExchangeInteraction exchange()
     {
         return _exchangeInteraction;
+    }
+
+    @SafeVarargs
+    public final <T extends AMQBody> T consume(final Class<T> expected,
+                                               final Class<? extends AMQBody>... ignore)
+            throws Exception
+    {
+        final Class<? extends AMQBody>[] expectedResponses = Arrays.copyOf(ignore, ignore.length + 1);
+        expectedResponses[ignore.length] = expected;
+
+        T completed = null;
+        do
+        {
+            Response<?> response = consumeResponse(expectedResponses).getLatestResponse();
+            if (expected.isAssignableFrom(response.getBody().getClass()))
+            {
+                completed = (T) response.getBody();
+            }
+        }
+        while (completed == null);
+        return completed;
+    }
+
+    public String getLatestResponseContentBodyAsString() throws Exception
+    {
+        ContentBody content = getLatestResponse(ContentBody.class);
+        QpidByteBuffer payload = content.getPayload();
+        byte[] contentData = new byte[payload.remaining()];
+        payload.get(contentData);
+        payload.dispose();
+        return new String(contentData, StandardCharsets.UTF_8);
     }
 }

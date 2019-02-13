@@ -51,7 +51,7 @@ public class BasicInteraction
     private boolean _publishMandatory;
     private boolean _publishImmediate;
     private byte[] _content;
-    private Map<String, Object> _contentHeaderPropertiesHeaders = new HashMap<>();
+    private FieldTable _contentHeaderPropertiesHeaders;
     private String _contentHeaderPropertiesContentType;
     private byte _contentHeaderPropertiesDeliveryMode;
     private byte _contentHeaderPropertiesPriority;
@@ -104,6 +104,12 @@ public class BasicInteraction
 
     public BasicInteraction contentHeaderPropertiesHeaders(final Map<String, Object> messageHeaders)
     {
+        _contentHeaderPropertiesHeaders = FieldTable.convertToFieldTable(messageHeaders);
+        return this;
+    }
+
+    public BasicInteraction contentHeaderPropertiesHeaders(final FieldTable messageHeaders)
+    {
         _contentHeaderPropertiesHeaders = messageHeaders;
         return this;
     }
@@ -129,7 +135,7 @@ public class BasicInteraction
     public Interaction contentHeader(int contentSize) throws Exception
     {
         final BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
-        basicContentHeaderProperties.setHeaders(FieldTable.convertToFieldTable(_contentHeaderPropertiesHeaders));
+        basicContentHeaderProperties.setHeaders(_contentHeaderPropertiesHeaders);
         basicContentHeaderProperties.setContentType(_contentHeaderPropertiesContentType);
         basicContentHeaderProperties.setDeliveryMode(_contentHeaderPropertiesDeliveryMode);
         basicContentHeaderProperties.setPriority(_contentHeaderPropertiesPriority);
@@ -156,7 +162,7 @@ public class BasicInteraction
                                                              _publishImmediate);
         frames.add(new AMQFrame(_interaction.getChannelId(), publishFrame));
         final BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
-        basicContentHeaderProperties.setHeaders(FieldTable.convertToFieldTable(_contentHeaderPropertiesHeaders));
+        basicContentHeaderProperties.setHeaders(_contentHeaderPropertiesHeaders);
         basicContentHeaderProperties.setContentType(_contentHeaderPropertiesContentType);
         basicContentHeaderProperties.setDeliveryMode(_contentHeaderPropertiesDeliveryMode);
         basicContentHeaderProperties.setPriority(_contentHeaderPropertiesPriority);

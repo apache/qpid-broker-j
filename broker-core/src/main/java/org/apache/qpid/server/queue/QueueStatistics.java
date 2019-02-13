@@ -54,6 +54,8 @@ final class QueueStatistics
 
     private final AtomicInteger _expiredCount = new AtomicInteger();
     private final AtomicLong _expiredSize = new AtomicLong();
+    private final AtomicInteger _malformedCount = new AtomicInteger();
+    private final AtomicLong _malformedSize = new AtomicLong();
 
     public final int getQueueCount()
     {
@@ -155,6 +157,16 @@ final class QueueStatistics
         return _expiredSize.get();
     }
 
+    public int getMalformedCount()
+    {
+        return _malformedCount.get();
+    }
+
+    public long getMalformedSize()
+    {
+        return _malformedSize.get();
+    }
+
     void addToQueue(long size)
     {
         int count = _queueCount.incrementAndGet();
@@ -241,4 +253,9 @@ final class QueueStatistics
         _expiredSize.addAndGet(size);
     }
 
+    void addToMalformed(final long size)
+    {
+        _malformedCount.incrementAndGet();
+        _malformedSize.addAndGet(size);
+    }
 }

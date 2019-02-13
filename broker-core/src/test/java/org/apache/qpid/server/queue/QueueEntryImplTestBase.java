@@ -377,6 +377,7 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
 
         final Action<? super MessageInstance> action = mock(Action.class);
         when(_queueEntry.getMessage().isResourceAcceptable(dlq)).thenReturn(true);
+        when(_queueEntry.getMessage().checkValid()).thenReturn(true);
         _queueEntry.acquire();
         int enqueues = _queueEntry.routeToAlternate(action, null, null);
 
