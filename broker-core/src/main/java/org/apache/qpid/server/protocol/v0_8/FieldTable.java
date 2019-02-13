@@ -149,6 +149,15 @@ public class FieldTable
             {
                 _encodedForm.reset();
             }
+
+            final long recalculateEncodedSize = calculateEncodedSize();
+            if (_encodedSize != recalculateEncodedSize)
+            {
+                throw new IllegalStateException(String.format(
+                        "Malformed field table detected: provided encoded size '%d' does not equal calculated size '%d'",
+                        _encodedSize,
+                        recalculateEncodedSize));
+            }
         }
     }
 
@@ -921,6 +930,13 @@ public class FieldTable
     private void recalculateEncodedSize()
     {
 
+        int encodedSize = calculateEncodedSize();
+
+        _encodedSize = encodedSize;
+    }
+
+    private int calculateEncodedSize()
+    {
         int encodedSize = 0;
         if (_properties != null)
         {
@@ -932,8 +948,7 @@ public class FieldTable
 
             }
         }
-
-        _encodedSize = encodedSize;
+        return encodedSize;
     }
 
     public synchronized void addAll(FieldTable fieldTable)
@@ -988,18 +1003,23 @@ public class FieldTable
     {
         synchronized (this)
         {
-            if (_properties == null)
+            try
+            {
+                if (_properties == null)
+                {
+                    if (_encodedForm != null)
+                    {
+                        populateFromBuffer();
+                    }
+                }
+            }
+            finally
             {
                 if (_encodedForm != null)
                 {
-                    populateFromBuffer();
+                    _encodedForm.dispose();
+                    _encodedForm = null;
                 }
-            }
-
-            if (_encodedForm != null)
-            {
-                _encodedForm.dispose();
-                _encodedForm = null;
             }
         }
     }
@@ -1251,5 +1271,10 @@ public class FieldTable
         }
     }
 
+
+    public synchronized void validate()
+    {
+       clearEncodedForm();
+    }
 
 }

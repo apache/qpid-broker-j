@@ -123,4 +123,10 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
     {
         return AMQP_0_9_1;
     }
+
+    @Override
+    protected void validate()
+    {
+        getMessageMetaData().validate();
+    }
 }

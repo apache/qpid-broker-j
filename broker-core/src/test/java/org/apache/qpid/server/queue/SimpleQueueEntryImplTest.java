@@ -67,6 +67,7 @@ public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
     {
         ServerMessage message = mock(ServerMessage.class);
         when(message.getMessageNumber()).thenReturn((long)msgId);
+        when(message.checkValid()).thenReturn(true);
         final MessageReference reference = mock(MessageReference.class);
         when(reference.getMessage()).thenReturn(message);
         when(message.newReference()).thenReturn(reference);

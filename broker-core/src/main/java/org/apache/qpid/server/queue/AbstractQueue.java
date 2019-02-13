@@ -1170,7 +1170,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public final void enqueue(ServerMessage message, Action<? super MessageInstance> action, MessageEnqueueRecord enqueueRecord)
     {
-
+        final QueueEntry entry;
         if(_recovering.get() != RECOVERED)
         {
             _enqueuingWhileRecovering.incrementAndGet();
@@ -1194,12 +1194,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     Thread.yield();
                 }
-                doEnqueue(message, action, enqueueRecord);
+                entry = doEnqueue(message, action, enqueueRecord);
+            }
+            else
+            {
+                entry = null;
             }
         }
         else
         {
-            doEnqueue(message, action, enqueueRecord);
+            entry = doEnqueue(message, action, enqueueRecord);
         }
 
         final StoredMessage storedMessage = message.getStoredMessage();
@@ -1207,7 +1211,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
              || QpidByteBuffer.getAllocatedDirectMemorySize() > _flowToDiskThreshold)
             && storedMessage.isInMemory())
         {
-            storedMessage.flowToDisk();
+            if (message.checkValid())
+            {
+                storedMessage.flowToDisk();
+            }
+            else
+            {
+                if (entry != null)
+                {
+                    malformedEntry(entry);
+                }
+                else
+                {
+                    LOGGER.debug("Malformed message '{}' enqueued into '{}'", message, getName());
+                }
+            }
         }
     }
 
@@ -1250,7 +1268,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    protected void doEnqueue(final ServerMessage message, final Action<? super MessageInstance> action, MessageEnqueueRecord enqueueRecord)
+    protected QueueEntry doEnqueue(final ServerMessage message, final Action<? super MessageInstance> action, MessageEnqueueRecord enqueueRecord)
     {
         final QueueEntry entry = getEntries().add(message, enqueueRecord);
         updateExpiration(entry);
@@ -1279,7 +1297,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
             _postEnqueueOverflowPolicyHandler.checkOverflow(entry);
         }
-
+        return entry;
     }
 
     private void updateExpiration(final QueueEntry entry)
@@ -1658,13 +1676,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             QueueEntry node = queueListIterator.getNode();
             MessageReference reference = node.newMessageReference();
-            if(reference != null)
+            if(reference != null && !node.isDeleted())
             {
                 try
                 {
-
-                    final boolean done = !node.isDeleted() && visitor.visit(node);
-                    if(done)
+                    if (!reference.getMessage().checkValid())
+                    {
+                        malformedEntry(node);
+                    }
+                    else if (visitor.visit(node))
                     {
                         break;
                     }
@@ -2176,9 +2196,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     {
                         try (MessageReference messageReference = msg.newReference())
                         {
-                            for(NotificationCheck check : perMessageChecks)
+                            if (!msg.checkValid())
                             {
-                                checkForNotification(msg, listener, currentTime, thresholdTime, check);
+                                malformedEntry(node);
+                            }
+                            else
+                            {
+                                for (NotificationCheck check : perMessageChecks)
+                                {
+                                    checkForNotification(msg, listener, currentTime, thresholdTime, check);
+                                }
                             }
                         }
                         catch(MessageDeletedException e)
@@ -2197,6 +2224,68 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
+    private void malformedEntry(final QueueEntry node)
+    {
+        deleteEntry(node, () -> {
+            _queueStatistics.addToMalformed(node.getSizeWithHeader());
+            logMalformedMessage(node);
+        });
+    }
+
+    private void logMalformedMessage(final QueueEntry node)
+    {
+        final EventLogger eventLogger = getEventLogger();
+        final ServerMessage<?> message = node.getMessage();
+        final StringBuilder messageId = new StringBuilder();
+        messageId.append(message.getMessageNumber());
+        final String id = message.getMessageHeader().getMessageId();
+        if (id != null)
+        {
+            messageId.append('/').append(id);
+        }
+        eventLogger.message(getLogSubject(), QueueMessages.MALFORMED_MESSAGE( messageId.toString(), "DELETE"));
+    }
+
+    @Override
+    public boolean checkValid(final QueueEntry queueEntry)
+    {
+        final ServerMessage message = queueEntry.getMessage();
+        final ServerMessage.ValidationStatus validationStatus = message.getValidationStatus();
+        boolean isValid = false;
+        if (validationStatus == ServerMessage.ValidationStatus.UNKNOWN)
+        {
+            try (MessageReference ref = message.newReference())
+            {
+                isValid = message.checkValid();
+            }
+            catch (MessageDeletedException e)
+            {
+                // noop
+            }
+        }
+        else
+        {
+            isValid = validationStatus == ServerMessage.ValidationStatus.VALID;
+        }
+        if (!isValid)
+        {
+            malformedEntry(queueEntry);
+        }
+        return isValid;
+    }
+
+    @Override
+    public long getTotalMalformedBytes()
+    {
+        return _queueStatistics.getMalformedSize();
+    }
+
+    @Override
+    public long getTotalMalformedMessages()
+    {
+        return _queueStatistics.getMalformedCount();
+    }
+
     @Override
     public void reallocateMessages()
     {
@@ -2213,7 +2302,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     final MessageReference messageReference = message.newReference();
                     try
                     {
-                        message.getStoredMessage().reallocate();
+                        if (!message.checkValid())
+                        {
+                            malformedEntry(node);
+                        }
+                        else
+                        {
+                            message.getStoredMessage().reallocate();
+                        }
                     }
                     finally
                     {
@@ -3262,7 +3358,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 MessageConverter messageConverter =
                         MessageConverterRegistry.getConverter(message.getClass(), InternalMessage.class);
-                if (messageConverter != null)
+                if (messageConverter != null && message.checkValid())
                 {
                     InternalMessage convertedMessage = null;
                     try

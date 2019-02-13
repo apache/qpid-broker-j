@@ -60,4 +60,15 @@ public interface ServerMessage<T extends StorableMessageMetaData> extends Enqueu
     Object getConnectionReference();
 
     boolean isResourceAcceptable(TransactionLogResource resource);
+
+    boolean checkValid();
+
+    ValidationStatus getValidationStatus();
+
+    enum ValidationStatus
+    {
+        UNKNOWN,
+        VALID,
+        MALFORMED
+    }
 }

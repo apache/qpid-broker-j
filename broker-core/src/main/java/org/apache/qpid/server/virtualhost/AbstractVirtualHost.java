@@ -2010,7 +2010,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                     }
                                     else
                                     {
-                                        storedMessage.flowToDisk();
+                                        if (node.getQueue().checkValid(node))
+                                        {
+                                            storedMessage.flowToDisk();
+                                        }
                                     }
                                 }
                             }

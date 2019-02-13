@@ -46,6 +46,7 @@ import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.store.serializer.MessageStoreSerializer;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 @PluggableService
 public class MessageStoreSerializer_v1 implements MessageStoreSerializer
@@ -324,8 +325,19 @@ public class MessageStoreSerializer_v1 implements MessageStoreSerializer
                 handle.addContent(buf);
             }
             final StoredMessage<StorableMessageMetaData> storedMessage = handle.allContentAdded();
-            messageNumberMap.put(originalMessageNumber, storedMessage);
-            storedMessage.flowToDisk();
+            try
+            {
+                storedMessage.flowToDisk();
+                messageNumberMap.put(originalMessageNumber, storedMessage);
+            }
+            catch (RuntimeException e)
+            {
+                if (e instanceof ServerScopedRuntimeException)
+                {
+                    throw e;
+                }
+                throw new IllegalArgumentException("Could not decode message metadata", e);
+            }
 
             record = deserializer.readRecord();
         }

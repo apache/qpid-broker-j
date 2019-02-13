@@ -855,4 +855,10 @@ public class BasicContentHeaderProperties
             _headers.reallocate();
         }
     }
+
+    public synchronized void validate()
+    {
+        _headers.validate();
+    }
+
 }

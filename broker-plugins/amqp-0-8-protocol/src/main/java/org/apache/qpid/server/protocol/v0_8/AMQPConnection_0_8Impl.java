@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.BufferUnderflowException;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -257,7 +258,8 @@ public class AMQPConnection_0_8Impl
                     _decoder.decodeBuffer(msg);
                     receivedCompleteAllChannels();
                 }
-                catch (AMQFrameDecodingException | IOException e)
+                catch (AMQFrameDecodingException | IOException | AMQPInvalidClassException
+                        | IllegalArgumentException | IllegalStateException | BufferUnderflowException e)
                 {
                     LOGGER.error("Unexpected exception", e);
                     throw new ConnectionScopedRuntimeException(e);

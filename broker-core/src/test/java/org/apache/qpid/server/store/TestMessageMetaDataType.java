@@ -130,6 +130,18 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
+        public boolean checkValid()
+        {
+            return true;
+        }
+
+        @Override
+        public ValidationStatus getValidationStatus()
+        {
+            return ValidationStatus.VALID;
+        }
+
+        @Override
         public long getExpiration()
         {
             return 0;

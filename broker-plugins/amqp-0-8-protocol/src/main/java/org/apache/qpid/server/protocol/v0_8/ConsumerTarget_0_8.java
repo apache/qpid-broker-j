@@ -31,6 +31,7 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -402,6 +403,10 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         }
         else
         {
+            if (!serverMessage.checkValid())
+            {
+                throw new MessageConversionException(String.format("Cannot convert malformed message '%s'", serverMessage));
+            }
             messageConverter = MessageConverterRegistry.getConverter((Class<ServerMessage<?>>) serverMessage.getClass(), AMQMessage.class);
             msg = messageConverter.convert(serverMessage, getConnection().getAddressSpace());
         }
