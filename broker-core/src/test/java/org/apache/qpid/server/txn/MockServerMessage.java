@@ -149,6 +149,18 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
+    public boolean checkValid()
+    {
+        return true;
+    }
+
+    @Override
+    public ValidationStatus getValidationStatus()
+    {
+        return ValidationStatus.VALID;
+    }
+
+    @Override
     public long getArrivalTime()
     {
         throw new UnsupportedOperationException();

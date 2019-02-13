@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import java.nio.BufferUnderflowException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -142,8 +143,9 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
             _inputHandler.received(buf);
             _connection.receivedComplete();
         }
-        catch (IllegalArgumentException | IllegalStateException e)
+        catch (IllegalArgumentException | IllegalStateException | BufferUnderflowException e)
         {
+            LOGGER.warn("Unexpected exception", e);
             throw new ConnectionScopedRuntimeException(e);
         }
     }

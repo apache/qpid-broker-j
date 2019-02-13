@@ -595,7 +595,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
         RoutingResult<?> result;
         ServerMessage<?> message = getMessage();
-        if (alternateBindingDestination != null)
+        if (alternateBindingDestination != null && message.checkValid())
         {
             result = alternateBindingDestination.route(message,
                                                        message.getInitialRoutingAddress(),

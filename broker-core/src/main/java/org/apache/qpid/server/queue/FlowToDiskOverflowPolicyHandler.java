@@ -102,7 +102,7 @@ public class FlowToDiskOverflowPolicyHandler implements OverflowPolicyHandler
                             if (cumulativeDepthBytes > maximumQueueDepthBytes
                                 || cumulativeDepthMessages > maximumQueueDepthMessages)
                             {
-                                flowToDisk(message);
+                                flowToDisk(node);
                             }
                         }
                     }
@@ -120,19 +120,18 @@ public class FlowToDiskOverflowPolicyHandler implements OverflowPolicyHandler
             if ((maximumQueueDepthBytes >= 0L && queueDepthBytes > maximumQueueDepthBytes) ||
                 (maximumQueueDepthMessages >= 0L && queueDepthMessages > maximumQueueDepthMessages))
             {
-                ServerMessage message = newlyEnqueued.getMessage();
-                if (message != null)
-                {
-                    flowToDisk(message);
-                }
+                flowToDisk(newlyEnqueued);
             }
         }
 
-        private void flowToDisk(final ServerMessage message)
+        private void flowToDisk(final QueueEntry node)
         {
-            try (MessageReference messageReference = message.newReference())
+            try (MessageReference messageReference = node.getMessage().newReference())
             {
-                message.getStoredMessage().flowToDisk();
+                if (node.getQueue().checkValid(node))
+                {
+                    messageReference.getMessage().getStoredMessage().flowToDisk();
+                }
             }
             catch (MessageDeletedException mde)
             {

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.BufferUnderflowException;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -67,7 +68,6 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.session.AMQPSession;
-import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ByteBufferSender;
@@ -78,7 +78,6 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
@@ -251,9 +250,10 @@ public class AMQPConnection_0_8Impl
             _decoder.decodeBuffer(msg);
             receivedCompleteAllChannels();
         }
-        catch (AMQFrameDecodingException | IOException e)
+        catch (AMQFrameDecodingException | IOException | AMQPInvalidClassException
+                | IllegalArgumentException | IllegalStateException | BufferUnderflowException e)
         {
-            LOGGER.error("Unexpected exception", e);
+            LOGGER.warn("Unexpected exception", e);
             throw new ConnectionScopedRuntimeException(e);
         }
     }

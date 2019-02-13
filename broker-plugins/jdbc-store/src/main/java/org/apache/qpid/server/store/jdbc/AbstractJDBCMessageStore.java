@@ -234,7 +234,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         for (StoredJDBCMessage<?> message : _messages)
         {
-            message.clear();
+            message.clear(true);
         }
         _messages.clear();
         _inMemorySize.set(0);
@@ -1349,27 +1349,43 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         public void reallocate()
         {
-            if(_metaData != null)
+            if (_metaData != null)
             {
                 _metaData.reallocate();
             }
             _data = QpidByteBuffer.reallocateIfNecessary(_data);
         }
 
-        public long clear()
+        public long clear(boolean close)
         {
             long bytesCleared = 0;
-            if(_metaData != null)
-            {
-                bytesCleared += _metaData.getStorableSize();
-                _metaData.clearEncodedForm();
-                _metaData = null;
-            }
             if(_data != null)
             {
-                bytesCleared += _data.remaining();
-                _data.dispose();
-                _data = null;
+                if(_data != null)
+                {
+                    bytesCleared += _data.remaining();
+                    _data.dispose();
+                    _data = null;
+                }
+            }
+            if (_metaData != null)
+            {
+                bytesCleared += _metaData.getStorableSize();
+                try
+                {
+                    if (close)
+                    {
+                        _metaData.dispose();
+                    }
+                    else
+                    {
+                        _metaData.clearEncodedForm();
+                    }
+                }
+                finally
+                {
+                    _metaData = null;
+                }
             }
             return bytesCleared;
         }
@@ -1609,7 +1625,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             flushToStore();
             if(_messageDataRef != null && !_messageDataRef.isHardRef())
             {
-                final long bytesCleared = _messageDataRef.clear();
+                final long bytesCleared = _messageDataRef.clear(false);
                 _inMemorySize.addAndGet(-bytesCleared);
                 _bytesEvacuatedFromMemory.addAndGet(bytesCleared);
             }
@@ -1625,11 +1641,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
         }
 
-        public synchronized void clear()
+        public synchronized void clear(boolean close)
         {
             if (_messageDataRef != null)
             {
-                _messageDataRef.clear();
+                _messageDataRef.clear(close);
             }
         }
 

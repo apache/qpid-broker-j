@@ -216,12 +216,13 @@ public class QueueMessageRecoveryTest extends UnitTestBase
         }
 
         @Override
-        protected void doEnqueue(final ServerMessage message, final Action<? super MessageInstance> action, MessageEnqueueRecord record)
+        protected QueueEntry doEnqueue(final ServerMessage message, final Action<? super MessageInstance> action, MessageEnqueueRecord record)
         {
             synchronized(_messageList)
             {
                 _messageList.add(message);
             }
+            return null;
         }
     }
 }

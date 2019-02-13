@@ -85,6 +85,7 @@ import org.apache.qpid.server.model.OperationParameter;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.session.AMQPSession;
@@ -392,6 +393,10 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                         final Action<? super MessageInstance> action,
                         final MessageEnqueueRecord record)
     {
+        if (!message.checkValid())
+        {
+            throw new MessageConversionException(String.format("Cannot convert malformed message '%s'", message));
+        }
         @SuppressWarnings("unchecked")
         MessageConverter<ServerMessage, InternalMessage> converter =
                 (MessageConverter<ServerMessage, InternalMessage>) MessageConverterRegistry.getConverter((message.getClass()), InternalMessage.class);
