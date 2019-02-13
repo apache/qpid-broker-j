@@ -82,6 +82,13 @@ public class Interaction extends AbstractInteraction<Interaction>
         return this;
     }
 
+    public <T extends Method> Interaction sendPerformativeWithoutCopying(final T performative) throws Exception
+    {
+        performative.setChannel(_channelId);
+        sendPerformativeAndChainFuture(performative);
+        return this;
+    }
+
     public ConnectionInteraction connection()
     {
         return _connectionInteraction;

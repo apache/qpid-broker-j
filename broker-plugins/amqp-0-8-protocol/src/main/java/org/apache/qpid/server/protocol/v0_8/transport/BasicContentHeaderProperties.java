@@ -833,11 +833,15 @@ public class BasicContentHeaderProperties
 
     synchronized void reallocate()
     {
-        _headers.clearEncodedForm();
         if (_encodedForm != null)
         {
             _encodedForm = QpidByteBuffer.reallocateIfNecessary(_encodedForm);
         }
+        _headers.clearEncodedForm();
     }
 
+    public synchronized void validate()
+    {
+        _headers.validate();
+    }
 }

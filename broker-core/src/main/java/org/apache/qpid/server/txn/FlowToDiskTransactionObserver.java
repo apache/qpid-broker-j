@@ -59,30 +59,25 @@ public class FlowToDiskTransactionObserver implements TransactionObserver
     {
         StoredMessage<? extends StorableMessageMetaData> handle = message.getStoredMessage();
         long messageSize = handle.getContentSize() + handle.getMetadataSize();
-
-        long newUncommittedSize = _uncommittedMessageSize.get() + messageSize;
+        long newUncommittedSize = _uncommittedMessageSize.addAndGet(messageSize);
+        TransactionDetails details = _uncommittedMessages.computeIfAbsent(transaction, key -> new TransactionDetails());
+        details.messageEnqueued(handle);
         if (newUncommittedSize > _maxUncommittedInMemorySize)
         {
-            handle.flowToDisk();
-            if (!_reported)
+            // flow to disk only current transaction messages
+            // in order to handle malformed messages on correct channel
+            try
             {
-                _eventLogger.message(_logSubject, ConnectionMessages.LARGE_TRANSACTION_WARN(newUncommittedSize, _maxUncommittedInMemorySize));
-                _reported = true;
+                details.flowToDisk();
             }
-
-            if (!_uncommittedMessages.isEmpty())
+            finally
             {
-                for (TransactionDetails transactionDetails : _uncommittedMessages.values())
+                if (!_reported)
                 {
-                    transactionDetails.flowToDisk();
+                    _eventLogger.message(_logSubject, ConnectionMessages.LARGE_TRANSACTION_WARN(newUncommittedSize, _maxUncommittedInMemorySize));
+                    _reported = true;
                 }
             }
-        }
-        else
-        {
-            _uncommittedMessageSize.addAndGet(messageSize);
-            TransactionDetails details = _uncommittedMessages.computeIfAbsent(transaction, key -> new TransactionDetails());
-            details.messageEnqueued(handle);
         }
     }
 

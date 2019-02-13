@@ -285,9 +285,9 @@ public class BasicTest extends BrokerAdminUsingTestBase
             assertThat(properties.getPriority(), is(equalTo(priority)));
             assertThat(properties.getDeliveryMode(), is(equalTo(deliveryMode)));
 
-            ContentBody content = interaction.consumeResponse(ContentBody.class).getLatestResponse(ContentBody.class);
+            interaction.consumeResponse(ContentBody.class);
 
-            String receivedContent = getContent(content);
+            String receivedContent = interaction.getLatestResponseContentBodyAsString();
 
             assertThat(receivedContent, is(equalTo(messageContent)));
             assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(1)));

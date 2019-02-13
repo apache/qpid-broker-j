@@ -134,6 +134,15 @@ public class FieldTable
             {
                 _encodedForm.reset();
             }
+
+            final long recalculateEncodedSize = recalculateEncodedSize();
+            if (_encodedSize != recalculateEncodedSize)
+            {
+                throw new IllegalStateException(String.format(
+                        "Malformed field table detected: provided encoded size '%d' does not equal calculated size '%d'",
+                        _encodedSize,
+                        recalculateEncodedSize));
+            }
         }
     }
 
@@ -141,8 +150,14 @@ public class FieldTable
     {
         if (!_decoded)
         {
-            decode();
-            _decoded = true;
+            try
+            {
+                decode();
+            }
+            finally
+            {
+                _decoded = true;
+            }
         }
     }
 
@@ -329,6 +344,18 @@ public class FieldTable
         return _encodedSize;
     }
 
+    private synchronized long recalculateEncodedSize()
+    {
+        long size = 0L;
+        for (Map.Entry<String, AMQTypedValue> e : _properties.entrySet())
+        {
+            String key = e.getKey();
+            AMQTypedValue value = e.getValue();
+            size += EncodingUtils.encodedShortStringLength(key) + 1 + value.getEncodingSize();
+        }
+        return size;
+    }
+
     public static Map<String, Object> convertToMap(final FieldTable fieldTable)
     {
         final Map<String, Object> map = new HashMap<>();
@@ -358,12 +385,17 @@ public class FieldTable
 
     public synchronized void clearEncodedForm()
     {
-        decodeIfNecessary();
-
-        if (_encodedForm != null)
+        try
         {
-            _encodedForm.dispose();
-            _encodedForm = null;
+            decodeIfNecessary();
+        }
+        finally
+        {
+            if (_encodedForm != null)
+            {
+                _encodedForm.dispose();
+                _encodedForm = null;
+            }
         }
     }
 
@@ -497,5 +529,10 @@ public class FieldTable
         {
             return null;
         }
+    }
+
+    public synchronized void validate()
+    {
+        decodeIfNecessary();
     }
 }

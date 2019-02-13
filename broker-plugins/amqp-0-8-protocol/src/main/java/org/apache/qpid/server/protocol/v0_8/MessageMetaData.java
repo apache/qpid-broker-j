@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import java.nio.BufferUnderflowException;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
@@ -153,6 +154,11 @@ public class MessageMetaData implements StorableMessageMetaData
         _contentHeaderBody.reallocate();
     }
 
+    public synchronized void validate()
+    {
+        _contentHeaderBody.getProperties().validate();
+    }
+
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData>
     {
 
@@ -177,7 +183,8 @@ public class MessageMetaData implements StorableMessageMetaData
 
                 return new MessageMetaData(publishBody, chb, arrivalTime);
             }
-            catch (AMQFrameDecodingException | AMQProtocolVersionException e)
+            catch (AMQFrameDecodingException | AMQProtocolVersionException | AMQPInvalidClassException
+                    | IllegalArgumentException | IllegalStateException | BufferUnderflowException  e)
             {
                 throw new ConnectionScopedRuntimeException(e);
             }
