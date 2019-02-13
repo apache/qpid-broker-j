@@ -542,6 +542,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         if (read == -1)
         {
             _closed.set(true);
+            _protocolEngine.notifyWork();
         }
 
         _partialRead = read != 0;
