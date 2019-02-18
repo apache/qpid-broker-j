@@ -79,11 +79,11 @@
 <body class="claro">
 
 <div id="pageLayout" data-dojo-type="dijit.layout.BorderContainer" data-dojo-props="design: 'headline', gutters: false">
-    <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'top'">
+    <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'top', isLayoutContainer:true">
         <div class="header"></div>
         <div id="login" style="float: right"></div>
     </div>
-    <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'center'">
+    <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'center', isLayoutContainer:true">
         <div style="width:350px; margin-left: auto; margin-right: auto;">
             <div data-dojo-type="dijit.TitlePane" data-dojo-props="title:'Logout', toggleable: false" >
                 <div class="dijitDialogPaneContentArea">
@@ -94,10 +94,9 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'bottom'">
-       <div qpid-type="footer"></div>
+        <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'bottom', isLayoutContainer:true">
+            <div qpid-type="footer"></div>
+        </div>
     </div>
 </div>
 
