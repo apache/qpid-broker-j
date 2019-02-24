@@ -929,6 +929,46 @@ public class FieldTableTest extends QpidTestCase
         assertTrue("unexpected property value", destinationTable.getBoolean(myBooleanTestProperty));
     }
 
+    public void testValidateMalformedFieldTable()
+    {
+        final FieldTable fieldTable = buildMalformedFieldTable();
+
+        try
+        {
+            fieldTable.validate();
+            fail("Exception is expected");
+        }
+        catch (RuntimeException e)
+        {
+            // pass
+        }
+    }
+
+    public void testValidateCorrectFieldTable()
+    {
+        final FieldTable ft = FieldTable.convertToFieldTable(Collections.singletonMap("testKey", "testValue"));
+        final int encodedSize = (int)ft.getEncodedSize() + Integer.BYTES;
+        final QpidByteBuffer buf = QpidByteBuffer.allocate(encodedSize);
+        ft.writeToBuffer(buf);
+        buf.flip();
+        buf.position(Integer.BYTES);
+
+        final FieldTable fieldTable = new FieldTable(buf);
+        assertEquals(1, fieldTable.size());
+        fieldTable.validate();
+        assertTrue("Expected key is not found", fieldTable.containsKey("testKey"));
+    }
+
+    private FieldTable buildMalformedFieldTable()
+    {
+        final QpidByteBuffer buf = QpidByteBuffer.allocate(1);
+        buf.put((byte) -1);
+
+        buf.flip();
+
+        return new FieldTable(buf);
+    }
+
     private void assertBytesEqual(byte[] expected, byte[] actual)
     {
         Assert.assertEquals(expected.length, actual.length);
