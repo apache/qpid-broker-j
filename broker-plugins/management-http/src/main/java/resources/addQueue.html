@@ -284,7 +284,7 @@
 
             <div class="clear formBox">
                 <fieldset>
-                    <legend>Other Settings</legend>
+                    <legend>Dead Lettering</legend>
                     <div class="clear">
                         <div class="formLabel-labelCell">Maximum Delivery Retries:</div>
                         <div class="formLabel-controlCell">
@@ -314,7 +314,11 @@
 
                     <div class="clear"></div>
                     <div class="infoMessage">Configuring maximum delivery retries on a queue which has no alternate binding (DLQ or exchange) will result in messages being discarded after the limit is reached.</div>
-
+                </fieldset>
+            </div>
+            <div class="clear formBox">
+                <fieldset>
+                    <legend>Message Grouping</legend>
                     <div class="clear">
                         <div class="formLabel-labelCell">Message Group Type:</div>
                         <div class="formLabel-controlCell">
@@ -341,6 +345,26 @@
                                       trim: true"/>
                         </div>
                     </div>
+                </fieldset>
+            </div>
+            <div class="clear formBox">
+                <fieldset>
+                    <legend>Other Settings</legend>
+
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Exclusivity:</div>
+                        <div class="formLabel-controlCell">
+                            <input id="formAddQueue.exclusive"
+                                    data-dojo-type="dijit/form/FilteringSelect"
+                                    data-dojo-props="
+                              name: 'exclusive',
+                              required: false,
+                              promptMessage: 'Exclusivity of Queue',
+                              title: 'Select the queue exclusivity'"/>
+                        </div>
+                    </div>
+                    <div class="clear"></div>
+
                     <div class="clear">
                         <div class="formLabel-labelCell">Hold on Publish Enabled?</div>
                         <div class="formLabel-controlCell">

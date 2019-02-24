@@ -93,6 +93,7 @@ define(["dojo/dom",
                 this.context = registry.byId("formAddQueue.context");
                 this.overflowPolicyWidget = registry.byId("formAddQueue.overflowPolicy");
                 this.messageGroupTypeWidget = registry.byId("formAddQueue.messageGroupType");
+                this.exclusivityWidget = registry.byId("formAddQueue.exclusive");
                 this.editNodeBanner = dom.byId("addQueue.editNoteBanner");
 
 
@@ -226,7 +227,10 @@ define(["dojo/dom",
                     var validGroupingValueStore = util.makeTypeStore(validGroupingValues);
                     this.messageGroupTypeWidget.set("store", validGroupingValueStore);
 
-
+                    var exclusivityOptions = this.management.metadata.getMetaData("Queue",
+                        this.initialData.type).attributes.exclusive.validValues;
+                    var exclusivityOptionStore = util.makeTypeStore(exclusivityOptions);
+                    this.exclusivityWidget.set("store", exclusivityOptionStore);
                     util.applyToWidgets(this.form.domNode,
                         "Queue",
                         this.initialData.type,
