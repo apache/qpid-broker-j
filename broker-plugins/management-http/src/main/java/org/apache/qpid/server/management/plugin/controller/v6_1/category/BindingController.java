@@ -145,10 +145,10 @@ public class BindingController implements CategoryController
                     "Queue is required for binding creation. Please specify queue either in path or in binding attributes");
         }
 
-        final List<String> exchangePath = path.subList(0, hierarchy.size() - 3);
+        final List<String> exchangePath = path.subList(0, hierarchy.size() - 2);
         final LegacyConfiguredObject
                 nextVersionExchange = getNextVersionObject(root, exchangePath, ExchangeController.TYPE);
-        final List<String> queuePath = new ArrayList<>(path.subList(0, hierarchy.size() - 4));
+        final List<String> queuePath = new ArrayList<>(path.subList(0, hierarchy.size() - 3));
         queuePath.add(queueName);
         final LegacyConfiguredObject nextVersionQueue =
                 getNextVersionObject(root, queuePath, QueueController.TYPE);
@@ -222,7 +222,7 @@ public class BindingController implements CategoryController
         final String bindingName = path.size() == hierarchy.size() ? path.get(hierarchy.size() - 1) : null;
         final String queueName = path.get(hierarchy.size() - 2);
         final List<String> ids = parameters.get(GenericLegacyConfiguredObject.ID);
-        final List<String> exchangePath = path.subList(0, hierarchy.size() - 3);
+        final List<String> exchangePath = path.subList(0, hierarchy.size() - 2);
 
         final LegacyConfiguredObject exchange = getNextVersionObject(root, exchangePath, ExchangeController.TYPE);
 
