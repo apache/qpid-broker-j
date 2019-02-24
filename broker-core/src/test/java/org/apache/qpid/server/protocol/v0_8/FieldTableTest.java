@@ -514,6 +514,48 @@ public class FieldTableTest extends UnitTestBase
         }
     }
 
+    @Test
+    public void testValidateMalformedFieldTable()
+    {
+        final FieldTable fieldTable = buildMalformedFieldTable();
+
+        try
+        {
+            fieldTable.validate();
+            fail("Exception is expected");
+        }
+        catch (RuntimeException e)
+        {
+            // pass
+        }
+    }
+
+    @Test
+    public void testValidateCorrectFieldTable()
+    {
+        final FieldTable ft = new FieldTable(Collections.singletonMap("testKey", "testValue"));
+        final int encodedSize = (int)ft.getEncodedSize() + Integer.BYTES;
+        final QpidByteBuffer buf = QpidByteBuffer.allocate(encodedSize);
+        ft.writeToBuffer(buf);
+        buf.flip();
+        buf.position(Integer.BYTES);
+
+        final FieldTable fieldTable = new FieldTable(buf);
+        assertEquals(1, fieldTable.size());
+        fieldTable.validate();
+        assertTrue("Expected key is not found", fieldTable.containsKey("testKey"));
+    }
+
+    private FieldTable buildMalformedFieldTable()
+    {
+        final QpidByteBuffer buf = QpidByteBuffer.allocate(1);
+        buf.put((byte) -1);
+
+        buf.flip();
+
+        return FieldTableFactory.createFieldTable(buf);
+    }
+
     private void assertBytesEqual(byte[] expected, byte[] actual)
     {
         assertEquals(expected.length, actual.length);
