@@ -858,7 +858,22 @@ public class BasicContentHeaderProperties
 
     public synchronized void validate()
     {
-        _headers.validate();
+        if (_headers !=null)
+        {
+            _headers.validate();
+        }
     }
 
+    public boolean checkValid()
+    {
+        try
+        {
+            validate();
+            return true;
+        }
+        catch (RuntimeException e)
+        {
+            return false;
+        }
+    }
 }

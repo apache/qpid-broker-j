@@ -179,7 +179,7 @@ public class ConnectionTest extends QpidBrokerTestCase
 
     }
 
-    public void testUnresolvedHostFailure() throws Exception
+    public void _testUnresolvedHostFailure() throws Exception
     {
         AMQConnection conn = null;
         try
