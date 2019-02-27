@@ -24,15 +24,11 @@ import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
-
-import javax.net.ssl.KeyManager;
-import javax.xml.bind.DatatypeConverter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -48,6 +44,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.KeyManager;
+import javax.xml.bind.DatatypeConverter;
 
 import org.mockito.ArgumentMatcher;
 
@@ -68,6 +67,8 @@ import org.apache.qpid.test.utils.TestFileUtils;
 
 public class NonJavaKeyStoreTest extends QpidTestCase
 {
+    private static final String KEYSTORE = "/ssl/java_broker_keystore.pkcs12";
+
     private final Broker<?> _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
     private final Model _model = BrokerModel.getInstance();
@@ -111,10 +112,10 @@ public class NonJavaKeyStoreTest extends QpidTestCase
         }
     }
 
-    private File[] extractResourcesFromTestKeyStore(boolean pem) throws Exception
+    private File[] extractResourcesFromTestKeyStore(boolean pem, final String storeResource) throws Exception
     {
         java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
-        try(InputStream is = getClass().getResourceAsStream("/java_broker_keystore.jks"))
+        try(InputStream is = getClass().getResourceAsStream(storeResource))
         {
             ks.load(is, KEYSTORE_PASSWORD.toCharArray() );
         }
@@ -186,7 +187,7 @@ public class NonJavaKeyStoreTest extends QpidTestCase
 
     private void runTestCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDerFormat(boolean isPEM)throws Exception
     {
-        File[] resources = extractResourcesFromTestKeyStore(isPEM);
+        File[] resources = extractResourcesFromTestKeyStore(isPEM, KEYSTORE);
         _testResources.addAll(Arrays.asList(resources));
 
         Map<String,Object> attributes = new HashMap<>();
@@ -206,7 +207,7 @@ public class NonJavaKeyStoreTest extends QpidTestCase
 
     public void testCreationOfTrustStoreFromValidPrivateKeyAndInvalidCertificate()throws Exception
     {
-        File[] resources = extractResourcesFromTestKeyStore(true);
+        File[] resources = extractResourcesFromTestKeyStore(true, KEYSTORE);
         _testResources.addAll(Arrays.asList(resources));
 
         File invalidCertificate = TestFileUtils.createTempFile(this, ".invalid.cert", "content");
@@ -231,7 +232,7 @@ public class NonJavaKeyStoreTest extends QpidTestCase
 
     public void testCreationOfTrustStoreFromInvalidPrivateKeyAndValidCertificate()throws Exception
     {
-        File[] resources = extractResourcesFromTestKeyStore(true);
+        File[] resources = extractResourcesFromTestKeyStore(true, KEYSTORE);
         _testResources.addAll(Arrays.asList(resources));
 
         File invalidPrivateKey = TestFileUtils.createTempFile(this, ".invalid.pk", "content");
@@ -274,15 +275,16 @@ public class NonJavaKeyStoreTest extends QpidTestCase
     {
         when(_broker.scheduleHouseKeepingTask(anyLong(), any(TimeUnit.class), any(Runnable.class))).thenReturn(mock(ScheduledFuture.class));
 
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
-        try(InputStream is = getClass().getResourceAsStream("/java_broker_keystore.jks"))
+        java.security.KeyStore ks = java.security.KeyStore.getInstance("pkcs12");
+        final String storeLocation = KEYSTORE;
+        try(InputStream is = getClass().getResourceAsStream(storeLocation))
         {
             ks.load(is, KEYSTORE_PASSWORD.toCharArray() );
         }
         X509Certificate cert = (X509Certificate) ks.getCertificate("rootca");
         int expiryDays = (int)((cert.getNotAfter().getTime() - System.currentTimeMillis()) / (24l * 60l * 60l * 1000l));
 
-        File[] resources = extractResourcesFromTestKeyStore(false);
+        File[] resources = extractResourcesFromTestKeyStore(false, storeLocation);
         _testResources.addAll(Arrays.asList(resources));
 
         Map<String,Object> attributes = new HashMap<>();

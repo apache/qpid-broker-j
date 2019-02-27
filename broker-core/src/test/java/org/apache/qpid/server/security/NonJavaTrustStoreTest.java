@@ -48,6 +48,8 @@ import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class NonJavaTrustStoreTest extends QpidTestCase
 {
+    private static final String EXPIRED_KEYSTORE = "ssl/java_client_expired_keystore.pkcs12";
+    private static final String KEYSTORE_PASSWORD = TestSSLConstants.KEYSTORE_PASSWORD;
     private final Broker<?> _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
     private final Model _model = BrokerModel.getInstance();
@@ -69,7 +71,7 @@ public class NonJavaTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/java_broker.crt").toExternalForm());
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/ssl/java_broker.crt").toExternalForm());
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
@@ -85,7 +87,7 @@ public class NonJavaTrustStoreTest extends QpidTestCase
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
         attributes.put(NonJavaTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/expired.crt").toExternalForm());
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/ssl/expired.crt").toExternalForm());
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
@@ -96,9 +98,9 @@ public class NonJavaTrustStoreTest extends QpidTestCase
         assertTrue("Unexpected trust manager type",trustManagers[0] instanceof X509TrustManager);
         X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
-        KeyStore clientStore = SSLUtil.getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
-                                                              TestSSLConstants.KEYSTORE_PASSWORD,
-                                                              KeyStore.getDefaultType());
+        KeyStore clientStore = SSLUtil.getInitializedKeyStore(EXPIRED_KEYSTORE,
+                                                              KEYSTORE_PASSWORD,
+                                                              "PKCS12");
         String alias = clientStore.aliases().nextElement();
         X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
@@ -126,7 +128,7 @@ public class NonJavaTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/java_broker.req").toExternalForm());
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/ssl/java_broker.req").toExternalForm());
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
 
         try

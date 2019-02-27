@@ -23,6 +23,10 @@ package org.apache.qpid.server.security;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
@@ -34,6 +38,8 @@ import java.util.Map;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import com.google.common.io.ByteStreams;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -51,12 +57,21 @@ import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationMana
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.DataUrlUtils;
-import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class FileTrustStoreTest extends QpidTestCase
 {
+    private static final String TRUSTSTORE_PASSWORD = TestSSLConstants.TRUSTSTORE_PASSWORD;
+    private static final String PEER_STORE_PASSWORD = TestSSLConstants.BROKER_PEERSTORE_PASSWORD;
+    private static final String KEYSTORE_PASSWORD = TestSSLConstants.KEYSTORE_PASSWORD;
+    private static final String TRUST_STORE_PATH = "classpath:ssl/java_client_truststore.pkcs12";
+    private static final String PEER_STORE_PATH = "classpath:ssl/java_broker_peerstore.pkcs12";
+    private static final String EXPIRED_TRUST_STORE_PATH = "classpath:ssl/java_broker_expired_truststore.pkcs12";
+    private static final String EXPIRED_KEYSTORE_PATH = "ssl/java_client_expired_keystore.pkcs12";
+    private static final String TRUST_STORE = "ssl/java_client_truststore.pkcs12";
+    private static final String BROKER_TRUST_STORE_PATH = "classpath:ssl/java_broker_truststore.pkcs12";
+    private static final String BROKER_TRUST_STORE_PASSWORD = TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD;
     private final Broker _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
     private final Model _model = BrokerModel.getInstance();
@@ -80,8 +95,8 @@ public class FileTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
+        attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -95,7 +110,7 @@ public class FileTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.TRUSTSTORE);
+        attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, "wrong");
 
         try
@@ -114,8 +129,8 @@ public class FileTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_PEERSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.BROKER_PEERSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, PEER_STORE_PATH);
+        attributes.put(FileTrustStore.PASSWORD, PEER_STORE_PASSWORD);
         attributes.put(FileTrustStore.PEERS_ONLY, true);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
@@ -131,8 +146,8 @@ public class FileTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_EXPIRED_TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, EXPIRED_TRUST_STORE_PATH);
+        attributes.put(FileTrustStore.PASSWORD, BROKER_TRUST_STORE_PASSWORD);
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
 
@@ -142,9 +157,9 @@ public class FileTrustStoreTest extends QpidTestCase
         assertTrue("Unexpected trust manager type",trustManagers[0] instanceof X509TrustManager);
         X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
-        KeyStore clientStore = SSLUtil.getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
-                                                              TestSSLConstants.KEYSTORE_PASSWORD,
-                                                              KeyStore.getDefaultType());
+        KeyStore clientStore = SSLUtil.getInitializedKeyStore(EXPIRED_KEYSTORE_PATH,
+                                                              KEYSTORE_PASSWORD,
+                                                              "pkcs12");
         String alias = clientStore.aliases().nextElement();
         X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
@@ -155,8 +170,8 @@ public class FileTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_EXPIRED_TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, EXPIRED_TRUST_STORE_PATH);
+        attributes.put(FileTrustStore.PASSWORD, BROKER_TRUST_STORE_PASSWORD);
         attributes.put(FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
@@ -167,9 +182,9 @@ public class FileTrustStoreTest extends QpidTestCase
         assertTrue("Unexpected trust manager type",trustManagers[0] instanceof X509TrustManager);
         X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
-        KeyStore clientStore = SSLUtil.getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
-                                                             TestSSLConstants.KEYSTORE_PASSWORD,
-                                                             KeyStore.getDefaultType());
+        KeyStore clientStore = SSLUtil.getInitializedKeyStore(EXPIRED_KEYSTORE_PATH,
+                                                              KEYSTORE_PASSWORD,
+                                                              KeyStore.getDefaultType());
         String alias = clientStore.aliases().nextElement();
         X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
@@ -195,12 +210,12 @@ public class FileTrustStoreTest extends QpidTestCase
 
     public void testCreateTrustStoreFromDataUrl_Success() throws Exception
     {
-        String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.TRUSTSTORE);
+        String trustStoreAsDataUrl = createDataUrlForFile(TRUST_STORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -212,7 +227,7 @@ public class FileTrustStoreTest extends QpidTestCase
 
     public void testCreateTrustStoreFromDataUrl_WrongPassword() throws Exception
     {
-        String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.TRUSTSTORE);
+        String trustStoreAsDataUrl = createDataUrlForFile(TRUST_STORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
@@ -237,7 +252,7 @@ public class FileTrustStoreTest extends QpidTestCase
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
         attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
 
         try
@@ -257,12 +272,12 @@ public class FileTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
+        attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
 
         FileTrustStore<?> fileTrustStore = (FileTrustStore<?>) _factory.create(TrustStore.class, attributes,  _broker);
 
-        assertEquals("Unexpected path value before change", TestSSLConstants.TRUSTSTORE, fileTrustStore.getStoreUrl());
+        assertEquals("Unexpected path value before change", TRUST_STORE_PATH, fileTrustStore.getStoreUrl());
 
         try
         {
@@ -278,16 +293,16 @@ public class FileTrustStoreTest extends QpidTestCase
             assertTrue("Exception text not as unexpected:" + message, message.contains("Cannot instantiate trust store"));
         }
 
-        assertEquals("Unexpected path value after failed change", TestSSLConstants.TRUSTSTORE, fileTrustStore.getStoreUrl());
+        assertEquals("Unexpected path value after failed change", TRUST_STORE_PATH, fileTrustStore.getStoreUrl());
 
         Map<String,Object> changedAttributes = new HashMap<>();
-        changedAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        changedAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD);
+        changedAttributes.put(FileTrustStore.STORE_URL, BROKER_TRUST_STORE_PATH);
+        changedAttributes.put(FileTrustStore.PASSWORD, BROKER_TRUST_STORE_PASSWORD);
 
         fileTrustStore.setAttributes(changedAttributes);
 
         assertEquals("Unexpected path value after change that is expected to be successful",
-                     TestSSLConstants.BROKER_TRUSTSTORE,
+                     BROKER_TRUST_STORE_PATH,
                      fileTrustStore.getStoreUrl());
     }
 
@@ -295,8 +310,8 @@ public class FileTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, BROKER_TRUST_STORE_PATH);
+        attributes.put(FileTrustStore.PASSWORD, KEYSTORE_PASSWORD);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -307,8 +322,9 @@ public class FileTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, "PKCS12");
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -333,10 +349,11 @@ public class FileTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
-        attributes.put(FileTrustStore.STORE_URL, TestSSLConstants.TRUSTSTORE);
-        attributes.put(FileTrustStore.PASSWORD, TestSSLConstants.TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
+        attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, "PKCS12");
 
-        TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
+        TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes, _broker);
 
         Port<?> port = mock(Port.class);
         when(port.getTrustStores()).thenReturn(Collections.<TrustStore>singletonList(fileTrustStore));
@@ -354,9 +371,29 @@ public class FileTrustStoreTest extends QpidTestCase
         }
     }
 
-    private static String createDataUrlForFile(String filename)
+    public  static String createDataUrlForFile(String filename) throws IOException
     {
-        byte[] fileAsBytes = FileUtils.readFileAsBytes(filename);
-        return DataUrlUtils.getDataUrlForBytes(fileAsBytes);
+        InputStream in = null;
+        try
+        {
+            File f = new File(filename);
+            if (f.exists())
+            {
+                in = new FileInputStream(f);
+            }
+            else
+            {
+                in = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
+            }
+            byte[] fileAsBytes = ByteStreams.toByteArray(in);
+            return DataUrlUtils.getDataUrlForBytes(fileAsBytes);
+        }
+        finally
+        {
+            if (in != null)
+            {
+                in.close();
+            }
+        }
     }
 }
