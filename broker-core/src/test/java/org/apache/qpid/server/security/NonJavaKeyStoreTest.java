@@ -70,6 +70,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class NonJavaKeyStoreTest extends UnitTestBase
 {
+    private static final String KEYSTORE = "/ssl/java_broker_keystore.pkcs12";
     private Broker<?> _broker;
     private ConfiguredObjectFactory _factory;
     private List<File> _testResources;
@@ -88,29 +89,23 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     @After
     public void tearDown() throws Exception
     {
-        try
+        for (File resource: _testResources)
         {
-        }
-        finally
-        {
-            for (File resource: _testResources)
+            try
             {
-                try
-                {
-                    resource.delete();
-                }
-                catch (Exception e)
-                {
-                   e.printStackTrace();
-                }
+                resource.delete();
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
             }
         }
     }
 
-    private File[] extractResourcesFromTestKeyStore(boolean pem) throws Exception
+    private File[] extractResourcesFromTestKeyStore(boolean pem, final String storeResource) throws Exception
     {
         java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
-        try(InputStream is = getClass().getResourceAsStream("/java_broker_keystore.jks"))
+        try(InputStream is = getClass().getResourceAsStream(storeResource))
         {
             ks.load(is, KEYSTORE_PASSWORD.toCharArray() );
         }
@@ -184,7 +179,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
 
     private void runTestCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDerFormat(boolean isPEM)throws Exception
     {
-        File[] resources = extractResourcesFromTestKeyStore(isPEM);
+        File[] resources = extractResourcesFromTestKeyStore(isPEM, KEYSTORE);
         _testResources.addAll(Arrays.asList(resources));
 
         Map<String,Object> attributes = new HashMap<>();
@@ -205,7 +200,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     @Test
     public void testCreationOfTrustStoreFromValidPrivateKeyAndInvalidCertificate()throws Exception
     {
-        File[] resources = extractResourcesFromTestKeyStore(true);
+        File[] resources = extractResourcesFromTestKeyStore(true, KEYSTORE);
         _testResources.addAll(Arrays.asList(resources));
 
         File invalidCertificate = TestFileUtils.createTempFile(this, ".invalid.cert", "content");
@@ -231,7 +226,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     @Test
     public void testCreationOfTrustStoreFromInvalidPrivateKeyAndValidCertificate()throws Exception
     {
-        File[] resources = extractResourcesFromTestKeyStore(true);
+        File[] resources = extractResourcesFromTestKeyStore(true, KEYSTORE);
         _testResources.addAll(Arrays.asList(resources));
 
         File invalidPrivateKey = TestFileUtils.createTempFile(this, ".invalid.pk", "content");
@@ -276,15 +271,16 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     {
         when(_broker.scheduleHouseKeepingTask(anyLong(), any(TimeUnit.class), any(Runnable.class))).thenReturn(mock(ScheduledFuture.class));
 
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
-        try(InputStream is = getClass().getResourceAsStream("/java_broker_keystore.jks"))
+        java.security.KeyStore ks = java.security.KeyStore.getInstance("pkcs12");
+        final String storeLocation = KEYSTORE;
+        try(InputStream is = getClass().getResourceAsStream(storeLocation))
         {
             ks.load(is, KEYSTORE_PASSWORD.toCharArray() );
         }
         X509Certificate cert = (X509Certificate) ks.getCertificate("rootca");
         int expiryDays = (int)((cert.getNotAfter().getTime() - System.currentTimeMillis()) / (24l * 60l * 60l * 1000l));
 
-        File[] resources = extractResourcesFromTestKeyStore(false);
+        File[] resources = extractResourcesFromTestKeyStore(false, storeLocation);
         _testResources.addAll(Arrays.asList(resources));
 
         Map<String,Object> attributes = new HashMap<>();

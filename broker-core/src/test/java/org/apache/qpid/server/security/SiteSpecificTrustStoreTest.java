@@ -65,6 +65,8 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
 {
     private static final String EXPECTED_SUBJECT = "CN=localhost,OU=Unknown,O=Unknown,L=Unknown,ST=Unknown,C=Unknown";
     private static final String EXPECTED_ISSUER = "CN=MyRootCA,O=ACME,ST=Ontario,C=CA";
+    private static final String KEYSTORE = "/ssl/java_broker_keystore.pkcs12";
+    private static final String KEYSTORE_PASSWORD = TestSSLConstants.KEYSTORE_PASSWORD;
     private final Broker<?> _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
     private final Model _model = BrokerModel.getInstance();
@@ -257,8 +259,8 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
 
         private ServerSocket createTestSSLServerSocket() throws Exception
         {
-            char[] keyPassword = TestSSLConstants.KEYSTORE_PASSWORD.toCharArray();
-            try(InputStream inputStream = getClass().getResourceAsStream("/java_broker_keystore.jks"))
+            char[] keyPassword = KEYSTORE_PASSWORD.toCharArray();
+            try(InputStream inputStream = getClass().getResourceAsStream(KEYSTORE))
             {
                 KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
                 KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());

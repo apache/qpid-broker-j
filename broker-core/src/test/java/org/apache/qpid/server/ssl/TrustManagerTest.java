@@ -43,13 +43,23 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class TrustManagerTest extends UnitTestBase
 {
-    private static final String STORE_TYPE = "JKS";
+    private static final String STORE_TYPE = "pkcs12";
     private static final String DEFAULT_TRUST_MANAGER_ALGORITHM = TrustManagerFactory.getDefaultAlgorithm();
+    private static final String KEYSTORE_PASSWORD = TestSSLConstants.KEYSTORE_PASSWORD;
+    private static final String PEER_STORE = "ssl/java_broker_peerstore.pkcs12";
+    private static final String PEER_STORE_PASSWORD = TestSSLConstants.BROKER_PEERSTORE_PASSWORD;
+    private static final String KEYSTORE = "ssl/java_client_keystore.pkcs12";
+    private static final String CERT_ALIAS_APP_1 = TestSSLConstants.CERT_ALIAS_APP1;
+    private static final String CERT_ALIAS_APP_2 = TestSSLConstants.CERT_ALIAS_APP2;
+    private static final String TRUST_STORE = "ssl/java_broker_truststore.pkcs12";
+    private static final String TRUST_STORE_PASSWORD = TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD;
+    private static final String CERT_ALIAS_UNTRUSTED_CLIENT = TestSSLConstants.CERT_ALIAS_UNTRUSTED_CLIENT;
+    private static final String UNTRUSTED_KEYSTORE = "ssl/java_client_untrusted_keystore.pkcs12";
 
     // retrieves the client certificate's chain from store and returns it as an array
     private X509Certificate[] getClientChain(final String storePath, final String alias) throws Exception
     {
-        final KeyStore ks = SSLUtil.getInitializedKeyStore(storePath, TestSSLConstants.KEYSTORE_PASSWORD, STORE_TYPE);
+        final KeyStore ks = SSLUtil.getInitializedKeyStore(storePath, KEYSTORE_PASSWORD, STORE_TYPE);
         final Certificate[] chain = ks.getCertificateChain(alias);
         return Arrays.copyOf(chain, chain.length, X509Certificate[].class);
     }
@@ -61,7 +71,7 @@ public class TrustManagerTest extends UnitTestBase
         while (aliases.hasMoreElements())
         {
             final String alias = aliases.nextElement();
-            if (!alias.equalsIgnoreCase(TestSSLConstants.CERT_ALIAS_APP1))
+            if (!alias.equalsIgnoreCase(CERT_ALIAS_APP_1))
             {
                 fail("Broker's peer store contains other certificate than client's  app1 public key");
             }
@@ -76,7 +86,7 @@ public class TrustManagerTest extends UnitTestBase
     public void testQpidPeersOnlyTrustManager() throws Exception
     {
         // first let's check that peer manager loaded with the PEERstore succeeds
-        final KeyStore ps = SSLUtil.getInitializedKeyStore(TestSSLConstants.BROKER_PEERSTORE, TestSSLConstants.BROKER_PEERSTORE_PASSWORD, STORE_TYPE);
+        final KeyStore ps = SSLUtil.getInitializedKeyStore(PEER_STORE, PEER_STORE_PASSWORD, STORE_TYPE);
         this.noCAinPeerStore(ps);
         final TrustManagerFactory pmf = TrustManagerFactory.getInstance(DEFAULT_TRUST_MANAGER_ALGORITHM);
         pmf.init(ps);
@@ -96,7 +106,7 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // since broker's peerstore contains the client's app1 certificate, the check should succeed
-            peerManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE, TestSSLConstants.CERT_ALIAS_APP1), "RSA");
+            peerManager.checkClientTrusted(this.getClientChain(KEYSTORE, CERT_ALIAS_APP_1), "RSA");
         }
         catch (CertificateException e)
         {
@@ -106,7 +116,7 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // since broker's peerstore does not contain the client's app2 certificate, the check should fail
-            peerManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE, TestSSLConstants.CERT_ALIAS_APP2), "RSA");
+            peerManager.checkClientTrusted(this.getClientChain(KEYSTORE, CERT_ALIAS_APP_2), "RSA");
             fail("Untrusted client's validation against the broker's peer store manager succeeded.");
         }
         catch (CertificateException e)
@@ -117,7 +127,7 @@ public class TrustManagerTest extends UnitTestBase
         // now let's check that peer manager loaded with the brokers TRUSTstore fails because
         // it does not have the clients certificate in it (though it does have a CA-cert that
         // would otherwise trust the client cert when using the regular trust manager).
-        final KeyStore ts = SSLUtil.getInitializedKeyStore(TestSSLConstants.BROKER_TRUSTSTORE, TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD, STORE_TYPE);
+        final KeyStore ts = SSLUtil.getInitializedKeyStore(TRUST_STORE, TRUST_STORE_PASSWORD, STORE_TYPE);
         final TrustManagerFactory tmf = TrustManagerFactory.getInstance(DEFAULT_TRUST_MANAGER_ALGORITHM);
         tmf.init(ts);
         final TrustManager[] delegateTrustManagers = tmf.getTrustManagers();
@@ -137,7 +147,7 @@ public class TrustManagerTest extends UnitTestBase
         {
             // since broker's truststore doesn't contain the client's app1 certificate, the check should fail
             // despite the fact that the truststore does have a CA that would otherwise trust the cert
-            peerManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE, TestSSLConstants.CERT_ALIAS_APP1), "RSA");
+            peerManager.checkClientTrusted(this.getClientChain(KEYSTORE, CERT_ALIAS_APP_1), "RSA");
             fail("Client's validation against the broker's peer store manager didn't fail.");
         }
         catch (CertificateException e)
@@ -149,7 +159,7 @@ public class TrustManagerTest extends UnitTestBase
         {
             // since broker's truststore doesn't contain the client's app2 certificate, the check should fail
             // despite the fact that the truststore does have a CA that would otherwise trust the cert
-            peerManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE, TestSSLConstants.CERT_ALIAS_APP2), "RSA");
+            peerManager.checkClientTrusted(this.getClientChain(KEYSTORE, CERT_ALIAS_APP_2), "RSA");
             fail("Client's validation against the broker's peer store manager didn't fail.");
         }
         catch (CertificateException e)
@@ -166,7 +176,7 @@ public class TrustManagerTest extends UnitTestBase
     public void testQpidMultipleTrustManagerWithRegularTrustStore() throws Exception
     {
         final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
-        final KeyStore ts = SSLUtil.getInitializedKeyStore(TestSSLConstants.BROKER_TRUSTSTORE, TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD, STORE_TYPE);
+        final KeyStore ts = SSLUtil.getInitializedKeyStore(TRUST_STORE, TRUST_STORE_PASSWORD, STORE_TYPE);
         final TrustManagerFactory tmf = TrustManagerFactory.getInstance(DEFAULT_TRUST_MANAGER_ALGORITHM);
         tmf.init(ts);
         final TrustManager[] delegateTrustManagers = tmf.getTrustManagers();
@@ -185,8 +195,7 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // verify the CA-trusted app1 cert (should succeed)
-            mulTrustManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE,
-                                                                   TestSSLConstants.CERT_ALIAS_APP1), "RSA");
+            mulTrustManager.checkClientTrusted(this.getClientChain(KEYSTORE, CERT_ALIAS_APP_1), "RSA");
         }
         catch (CertificateException ex)
         {
@@ -196,8 +205,7 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // verify the CA-trusted app2 cert (should succeed)
-            mulTrustManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE,
-                                                                   TestSSLConstants.CERT_ALIAS_APP2), "RSA");
+            mulTrustManager.checkClientTrusted(this.getClientChain(KEYSTORE, CERT_ALIAS_APP_2), "RSA");
         }
         catch (CertificateException ex)
         {
@@ -207,8 +215,8 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // verify the untrusted cert (should fail)
-            mulTrustManager.checkClientTrusted(this.getClientChain(TestSSLConstants.UNTRUSTED_KEYSTORE,
-                                                                   TestSSLConstants.CERT_ALIAS_UNTRUSTED_CLIENT), "RSA");
+            mulTrustManager.checkClientTrusted(this.getClientChain(UNTRUSTED_KEYSTORE,
+                                                                   CERT_ALIAS_UNTRUSTED_CLIENT), "RSA");
             fail("Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
         }
         catch (CertificateException ex)
@@ -225,7 +233,7 @@ public class TrustManagerTest extends UnitTestBase
     public void testQpidMultipleTrustManagerWithPeerStore() throws Exception
     {
         final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
-        final KeyStore ps = SSLUtil.getInitializedKeyStore(TestSSLConstants.BROKER_PEERSTORE, TestSSLConstants.BROKER_PEERSTORE_PASSWORD, STORE_TYPE);
+        final KeyStore ps = SSLUtil.getInitializedKeyStore(PEER_STORE, PEER_STORE_PASSWORD, STORE_TYPE);
         final TrustManagerFactory pmf = TrustManagerFactory.getInstance(DEFAULT_TRUST_MANAGER_ALGORITHM);
         pmf.init(ps);
         final TrustManager[] delegatePeerManagers = pmf.getTrustManagers();
@@ -244,8 +252,8 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // verify the trusted app1 cert (should succeed as the key is in the peerstore)
-            mulTrustManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE,
-                                                                   TestSSLConstants.CERT_ALIAS_APP1), "RSA");
+            mulTrustManager.checkClientTrusted(this.getClientChain(KEYSTORE,
+                                                                   CERT_ALIAS_APP_1), "RSA");
         }
         catch (CertificateException ex)
         {
@@ -255,8 +263,8 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // verify the untrusted app2 cert (should fail as the key is not in the peerstore)
-            mulTrustManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE,
-                                                                   TestSSLConstants.CERT_ALIAS_APP2), "RSA");
+            mulTrustManager.checkClientTrusted(this.getClientChain(KEYSTORE,
+                                                                   CERT_ALIAS_APP_2), "RSA");
             fail("Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
         }
         catch (CertificateException ex)
@@ -267,8 +275,8 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // verify the untrusted cert (should fail as the key is not in the peerstore)
-            mulTrustManager.checkClientTrusted(this.getClientChain(TestSSLConstants.UNTRUSTED_KEYSTORE,
-                                                                   TestSSLConstants.CERT_ALIAS_UNTRUSTED_CLIENT), "RSA");
+            mulTrustManager.checkClientTrusted(this.getClientChain(UNTRUSTED_KEYSTORE,
+                                                                   CERT_ALIAS_UNTRUSTED_CLIENT), "RSA");
             fail("Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
         }
         catch (CertificateException ex)
@@ -286,7 +294,7 @@ public class TrustManagerTest extends UnitTestBase
     public void testQpidMultipleTrustManagerWithTrustAndPeerStores() throws Exception
     {
         final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
-        final KeyStore ts = SSLUtil.getInitializedKeyStore(TestSSLConstants.BROKER_TRUSTSTORE, TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD, STORE_TYPE);
+        final KeyStore ts = SSLUtil.getInitializedKeyStore(TRUST_STORE, TRUST_STORE_PASSWORD, STORE_TYPE);
         final TrustManagerFactory tmf = TrustManagerFactory.getInstance(DEFAULT_TRUST_MANAGER_ALGORITHM);
         tmf.init(ts);
         final TrustManager[] delegateTrustManagers = tmf.getTrustManagers();
@@ -302,7 +310,7 @@ public class TrustManagerTest extends UnitTestBase
         }
         assertTrue("The regular trust manager for the trust store was not added", trustManagerAdded);
 
-        final KeyStore ps = SSLUtil.getInitializedKeyStore(TestSSLConstants.BROKER_PEERSTORE, TestSSLConstants.BROKER_PEERSTORE_PASSWORD, STORE_TYPE);
+        final KeyStore ps = SSLUtil.getInitializedKeyStore(PEER_STORE, PEER_STORE_PASSWORD, STORE_TYPE);
         final TrustManagerFactory pmf = TrustManagerFactory.getInstance(DEFAULT_TRUST_MANAGER_ALGORITHM);
         pmf.init(ps);
         final TrustManager[] delegatePeerManagers = pmf.getTrustManagers();
@@ -321,8 +329,8 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // verify the CA-trusted app1 cert (should succeed)
-            mulTrustManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE,
-                                                                   TestSSLConstants.CERT_ALIAS_APP1), "RSA");
+            mulTrustManager.checkClientTrusted(this.getClientChain(KEYSTORE,
+                                                                   CERT_ALIAS_APP_1), "RSA");
         }
         catch (CertificateException ex)
         {
@@ -332,8 +340,8 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // verify the CA-trusted app2 cert (should succeed)
-            mulTrustManager.checkClientTrusted(this.getClientChain(TestSSLConstants.KEYSTORE,
-                                                                   TestSSLConstants.CERT_ALIAS_APP2), "RSA");
+            mulTrustManager.checkClientTrusted(this.getClientChain(KEYSTORE,
+                                                                   CERT_ALIAS_APP_2), "RSA");
         }
         catch (CertificateException ex)
         {
@@ -343,8 +351,8 @@ public class TrustManagerTest extends UnitTestBase
         try
         {
             // verify the untrusted cert (should fail)
-            mulTrustManager.checkClientTrusted(this.getClientChain(TestSSLConstants.UNTRUSTED_KEYSTORE,
-                                                                   TestSSLConstants.CERT_ALIAS_UNTRUSTED_CLIENT), "RSA");
+            mulTrustManager.checkClientTrusted(this.getClientChain(UNTRUSTED_KEYSTORE,
+                                                                   CERT_ALIAS_UNTRUSTED_CLIENT), "RSA");
             fail("Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
         }
         catch (CertificateException ex)
