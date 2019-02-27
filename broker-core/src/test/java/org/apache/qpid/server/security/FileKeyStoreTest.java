@@ -21,6 +21,7 @@ package org.apache.qpid.server.security;
 
 
 import static org.apache.qpid.server.security.FileTrustStoreTest.SYMMETRIC_KEY_KEYSTORE_RESOURCE;
+import static org.apache.qpid.server.security.FileTrustStoreTest.createDataUrlForFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -48,14 +49,19 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.util.DataUrlUtils;
-import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.TestSSLConstants;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class FileKeyStoreTest extends UnitTestBase
 {
     static final String EMPTY_KEYSTORE_RESOURCE = "/ssl/test_empty_keystore.jks";
-    static final String KEYSTORE_CERTIFICATE_ONLY_RESOURCE = "/ssl/test_cert_only_keystore.pkcs12";
+    private static final String KEYSTORE_CERTIFICATE_ONLY_RESOURCE = "/ssl/test_cert_only_keystore.pkcs12";
+    private static final String BROKER_KEYSTORE = "ssl/java_broker_keystore.pkcs12";
+    private static final String BROKER_KEYSTORE_PATH = "classpath:" + BROKER_KEYSTORE;
+    private static final String BROKER_KEYSTORE_PASSWORD = TestSSLConstants.BROKER_KEYSTORE_PASSWORD;
+    private static final String CLIENT_KEYSTORE_PATH = "classpath:ssl/java_client_keystore.pkcs12";
+    private static final String CLIENT_KEYSTORE_PASSWORD = TestSSLConstants.KEYSTORE_PASSWORD;
+    private static final String BROKER_KEYSTORE_ALIAS = TestSSLConstants.BROKER_KEYSTORE_ALIAS;
 
     private final Broker _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
@@ -80,8 +86,8 @@ public class FileKeyStoreTest extends UnitTestBase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 
@@ -96,9 +102,9 @@ public class FileKeyStoreTest extends UnitTestBase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.BROKER_KEYSTORE_ALIAS);
+        attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, BROKER_KEYSTORE_ALIAS);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 
@@ -113,7 +119,7 @@ public class FileKeyStoreTest extends UnitTestBase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
+        attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
         attributes.put(FileKeyStore.PASSWORD, "wrong");
 
         try
@@ -135,8 +141,8 @@ public class FileKeyStoreTest extends UnitTestBase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.KEYSTORE);
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, CLIENT_KEYSTORE_PATH);
+        attributes.put(FileKeyStore.PASSWORD, CLIENT_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "notknown");
 
         try
@@ -157,8 +163,8 @@ public class FileKeyStoreTest extends UnitTestBase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.KEYSTORE);
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, CLIENT_KEYSTORE_PATH);
+        attributes.put(FileKeyStore.PASSWORD, CLIENT_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "rootca");
 
         try
@@ -177,12 +183,12 @@ public class FileKeyStoreTest extends UnitTestBase
     @Test
     public void testCreateKeyStoreFromDataUrl_Success() throws Exception
     {
-        String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
+        String trustStoreAsDataUrl = createDataUrlForFile(BROKER_KEYSTORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.STORE_URL, trustStoreAsDataUrl);
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 
@@ -195,13 +201,13 @@ public class FileKeyStoreTest extends UnitTestBase
     @Test
     public void testCreateKeyStoreWithAliasFromDataUrl_Success() throws Exception
     {
-        String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
+        String trustStoreAsDataUrl = createDataUrlForFile(BROKER_KEYSTORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.STORE_URL, trustStoreAsDataUrl);
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.BROKER_KEYSTORE_ALIAS);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, BROKER_KEYSTORE_ALIAS);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 
@@ -214,7 +220,7 @@ public class FileKeyStoreTest extends UnitTestBase
     @Test
     public void testCreateKeyStoreFromDataUrl_WrongPassword() throws Exception
     {
-        String keyStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
+        String keyStoreAsDataUrl = createDataUrlForFile(BROKER_KEYSTORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
@@ -241,7 +247,7 @@ public class FileKeyStoreTest extends UnitTestBase
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keyStoreAsDataUrl);
 
         try
@@ -260,11 +266,11 @@ public class FileKeyStoreTest extends UnitTestBase
     @Test
     public void testCreateKeyStoreFromDataUrl_UnknownAlias() throws Exception
     {
-        String keyStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
+        String keyStoreAsDataUrl = createDataUrlForFile(BROKER_KEYSTORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keyStoreAsDataUrl);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "notknown");
 
@@ -289,7 +295,7 @@ public class FileKeyStoreTest extends UnitTestBase
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, emptyKeystore);
 
         try
@@ -311,7 +317,7 @@ public class FileKeyStoreTest extends UnitTestBase
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, getTestName());
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keystoreUrl);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, "PKCS12");
 
@@ -336,7 +342,7 @@ public class FileKeyStoreTest extends UnitTestBase
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keystoreUrl);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, "PKCS12");
 
@@ -349,8 +355,8 @@ public class FileKeyStoreTest extends UnitTestBase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
-        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
+        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 
@@ -374,19 +380,14 @@ public class FileKeyStoreTest extends UnitTestBase
         assertNull("Unexpected alias value after failed change", fileKeyStore.getCertificateAlias());
 
         Map<String,Object> changedAttributes = new HashMap<>();
-        changedAttributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.BROKER_KEYSTORE_ALIAS);
+        changedAttributes.put(FileKeyStore.CERTIFICATE_ALIAS, BROKER_KEYSTORE_ALIAS);
 
         fileKeyStore.setAttributes(changedAttributes);
 
         assertEquals("Unexpected alias value after change that is expected to be successful",
-                            TestSSLConstants.BROKER_KEYSTORE_ALIAS,
+                     BROKER_KEYSTORE_ALIAS,
                             fileKeyStore.getCertificateAlias());
 
     }
 
-    private static String createDataUrlForFile(String filename)
-    {
-        byte[] fileAsBytes = FileUtils.readFileAsBytes(filename);
-        return DataUrlUtils.getDataUrlForBytes(fileAsBytes);
-    }
 }
