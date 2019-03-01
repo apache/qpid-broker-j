@@ -23,6 +23,7 @@ package org.apache.qpid.server.security;
 import static org.apache.qpid.server.security.FileKeyStoreTest.EMPTY_KEYSTORE_RESOURCE;
 import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.getInitializedKeyStore;
 import static org.apache.qpid.test.utils.JvmVendor.IBM;
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -112,6 +113,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -128,6 +130,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, "wrong");
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -151,6 +154,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.STORE_URL, PEER_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, PEER_STORE_PASSWORD);
         attributes.put(FileTrustStore.PEERS_ONLY, true);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -174,6 +178,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, EXPIRED_TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, BROKER_TRUST_STORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
 
@@ -186,7 +191,7 @@ public class FileTrustStoreTest extends UnitTestBase
 
         KeyStore clientStore = getInitializedKeyStore(EXPIRED_KEYSTORE_PATH,
                                                       KEYSTORE_PASSWORD,
-                                                      "pkcs12");
+                                                      JAVA_KEYSTORE_TYPE);
         String alias = clientStore.aliases().nextElement();
         X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
@@ -201,6 +206,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.STORE_URL, EXPIRED_TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, BROKER_TRUST_STORE_PASSWORD);
         attributes.put(FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
 
@@ -213,7 +219,7 @@ public class FileTrustStoreTest extends UnitTestBase
 
         KeyStore clientStore = getInitializedKeyStore(EXPIRED_KEYSTORE_PATH,
                                                       KEYSTORE_PASSWORD,
-                                                      KeyStore.getDefaultType());
+                                                      JAVA_KEYSTORE_TYPE);
         String alias = clientStore.aliases().nextElement();
         X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
@@ -246,6 +252,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -264,6 +271,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.PASSWORD, "wrong");
         attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -287,6 +295,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
         attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -308,6 +317,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         FileTrustStore<?> fileTrustStore = (FileTrustStore<?>) _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -356,6 +366,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.NAME, "myFileTrustStore");
         attributes.put(FileKeyStore.PASSWORD, KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, emptyKeystore);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, "jks");
 
         try
         {
@@ -378,7 +389,7 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, getTestName());
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
         attributes.put(FileTrustStore.STORE_URL, keystoreUrl);
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, "PKCS12");
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -403,13 +414,13 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, getTestName());
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
         attributes.put(FileTrustStore.STORE_URL, keystoreUrl);
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, "PKCS12");
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
 
         Certificate[] certificates = trustStore.getCertificates();
         assertEquals("Unexpected number of certificates",
-                            (long) getNumberOfCertificates(keystoreUrl, "PKCS12"),
+                            (long) getNumberOfCertificates(keystoreUrl, JAVA_KEYSTORE_TYPE),
                             (long) certificates.length);
     }
 
@@ -423,12 +434,13 @@ public class FileTrustStoreTest extends UnitTestBase
         attributes.put(FileTrustStore.NAME, getTestName());
         attributes.put(FileTrustStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileTrustStore.STORE_URL, keystoreUrl);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
 
         Certificate[] certificates = trustStore.getCertificates();
         assertEquals("Unexpected number of certificates",
-                            (long) getNumberOfCertificates(keystoreUrl, "jks"),
+                            (long) getNumberOfCertificates(keystoreUrl, JAVA_KEYSTORE_TYPE),
                             (long) certificates.length);
     }
 

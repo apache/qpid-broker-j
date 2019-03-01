@@ -21,6 +21,7 @@
 package org.apache.qpid.tests.http;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -349,11 +350,11 @@ public class HttpTestHelper
             try
             {
                 URL ks = new URL(keystore);
-                _keyStore = SSLUtil.getInitializedKeyStore(ks, password, KeyStore.getDefaultType());
+                _keyStore = SSLUtil.getInitializedKeyStore(ks, password, JAVA_KEYSTORE_TYPE);
             }
             catch (MalformedURLException e)
             {
-                _keyStore = SSLUtil.getInitializedKeyStore(keystore, password, KeyStore.getDefaultType());
+                _keyStore = SSLUtil.getInitializedKeyStore(keystore, password, JAVA_KEYSTORE_TYPE);
             }
         }
         else

@@ -25,6 +25,7 @@ import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.canGenerateCerts;
 import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.generateSelfSignedCertificate;
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasKey;
@@ -231,6 +232,7 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
         keystoreAttr.put(FileKeyStore.TYPE, "FileKeyStore");
         keystoreAttr.put(FileKeyStore.STORE_URL, "classpath:java_broker_keystore.jks");
         keystoreAttr.put(FileKeyStore.PASSWORD, STORE_PASSWORD);
+        keystoreAttr.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         getHelper().submitRequest("keystore/mykeystore","PUT", keystoreAttr, SC_CREATED);
         deleteActions.add(object -> getHelper().submitRequest("keystore/mykeystore", "DELETE", SC_OK));
@@ -307,7 +309,7 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
 
     private String createKeyStoreDataUrl(final KeyCertPair keyCertPair, final String password) throws Exception
     {
-        final KeyStore keyStore = KeyStore.getInstance("JKS");
+        final KeyStore keyStore = KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
         keyStore.load(null, null);
         Certificate[] certChain = new Certificate[] {keyCertPair.getCertificate()};
         keyStore.setKeyEntry("key1", keyCertPair.getPrivateKey(), password.toCharArray(), certChain);

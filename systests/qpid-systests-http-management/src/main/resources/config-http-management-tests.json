@@ -25,7 +25,8 @@
     {
       "name": "systestsKeyStore",
       "storeUrl": "classpath:java_broker_keystore.jks",
-      "password": "password"
+      "password": "password",
+      "keyStoreType": "pkcs12"
     }
   ],
   "authenticationproviders": [

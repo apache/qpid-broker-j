@@ -39,4 +39,6 @@ public interface TestSSLConstants
 
     String BROKER_TRUSTSTORE = "test-profiles/test_resources/ssl/java_broker_truststore.jks";
     String BROKER_TRUSTSTORE_PASSWORD = "password";
+
+    String JAVA_KEYSTORE_TYPE = "pkcs12";
 }

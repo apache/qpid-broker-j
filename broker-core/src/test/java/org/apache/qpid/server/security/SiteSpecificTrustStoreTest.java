@@ -21,6 +21,7 @@
 package org.apache.qpid.server.security;
 
 
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -262,7 +263,7 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
             char[] keyPassword = KEYSTORE_PASSWORD.toCharArray();
             try(InputStream inputStream = getClass().getResourceAsStream(KEYSTORE))
             {
-                KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                KeyStore keyStore = KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
                 KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
                 keyStore.load(inputStream, keyPassword);
                 keyManagerFactory.init(keyStore, keyPassword);

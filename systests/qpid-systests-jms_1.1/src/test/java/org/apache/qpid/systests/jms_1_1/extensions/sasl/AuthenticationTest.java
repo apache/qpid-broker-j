@@ -34,6 +34,7 @@ import static org.apache.qpid.test.utils.TestSSLConstants.CERT_ALIAS_APP2;
 import static org.apache.qpid.test.utils.TestSSLConstants.EXPIRED_KEYSTORE;
 import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -91,6 +92,13 @@ public class AuthenticationTest extends JmsTestBase
         {
             System.setProperty("amqj.MaximumStateWait", "4000");
         }
+
+        // legacy client keystore/truststore types can only be configured with JVM settings
+        if (getProtocol() != Protocol.AMQP_1_0)
+        {
+            System.setProperty("javax.net.ssl.trustStoreType", JAVA_KEYSTORE_TYPE);
+            System.setProperty("javax.net.ssl.keyStoreType", JAVA_KEYSTORE_TYPE);
+        }
     }
 
     @AfterClass
@@ -100,6 +108,12 @@ public class AuthenticationTest extends JmsTestBase
         if (getProtocol() != Protocol.AMQP_1_0)
         {
             System.clearProperty("amqj.MaximumStateWait");
+        }
+
+        if (getProtocol() != Protocol.AMQP_1_0)
+        {
+            System.clearProperty("javax.net.ssl.trustStoreType");
+            System.clearProperty("javax.net.ssl.keyStoreType");
         }
     }
 
@@ -278,6 +292,7 @@ public class AuthenticationTest extends JmsTestBase
             Map<String, Object> trustStoreAttributes = new HashMap<>();
             trustStoreAttributes.put(FileTrustStore.STORE_URL, BROKER_TRUSTSTORE);
             trustStoreAttributes.put(FileTrustStore.PASSWORD, BROKER_TRUSTSTORE_PASSWORD);
+            trustStoreAttributes.put(FileTrustStore.TRUST_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
             createEntity(trustStoreName,
                          FileTrustStore.class.getName(),
@@ -479,6 +494,7 @@ public class AuthenticationTest extends JmsTestBase
             final Map<String, Object> keyStoreAttributes = new HashMap<>();
             keyStoreAttributes.put("storeUrl", BROKER_KEYSTORE);
             keyStoreAttributes.put("password", BROKER_KEYSTORE_PASSWORD);
+            keyStoreAttributes.put("keyStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
             final String keyStoreName = providerName + "KeyStore";
             createEntity(keyStoreName,
@@ -486,11 +502,12 @@ public class AuthenticationTest extends JmsTestBase
                          keyStoreAttributes,
                          connection);
 
-
+            Map<String, Object> trustStoreSettings = new HashMap<>(trustStoreAttributes);
+            trustStoreSettings.put("trustStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
             final String trustStoreName = providerName + "TrustStore";
             createEntity(trustStoreName,
                          FileTrustStore.class.getName(),
-                         trustStoreAttributes,
+                         trustStoreSettings,
                          connection);
 
             String portName = getPortName();

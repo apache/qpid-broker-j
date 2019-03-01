@@ -22,6 +22,7 @@ package org.apache.qpid.server.security;
 
 import static org.apache.qpid.server.security.FileTrustStoreTest.SYMMETRIC_KEY_KEYSTORE_RESOURCE;
 import static org.apache.qpid.server.security.FileTrustStoreTest.createDataUrlForFile;
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -88,6 +89,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
         attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 
@@ -105,6 +107,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
         attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, BROKER_KEYSTORE_ALIAS);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 
@@ -121,6 +124,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
         attributes.put(FileKeyStore.PASSWORD, "wrong");
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -144,6 +148,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.STORE_URL, CLIENT_KEYSTORE_PATH);
         attributes.put(FileKeyStore.PASSWORD, CLIENT_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "notknown");
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -166,6 +171,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.STORE_URL, CLIENT_KEYSTORE_PATH);
         attributes.put(FileKeyStore.PASSWORD, CLIENT_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "rootca");
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -189,6 +195,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.STORE_URL, trustStoreAsDataUrl);
         attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 
@@ -208,6 +215,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.STORE_URL, trustStoreAsDataUrl);
         attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, BROKER_KEYSTORE_ALIAS);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 
@@ -226,6 +234,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.PASSWORD, "wrong");
         attributes.put(FileKeyStore.STORE_URL, keyStoreAsDataUrl);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -273,6 +282,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keyStoreAsDataUrl);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "notknown");
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -319,7 +329,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.NAME, getTestName());
         attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keystoreUrl);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, "PKCS12");
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -344,7 +354,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keystoreUrl);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, "PKCS12");
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         KeyStore keyStore = _factory.create(KeyStore.class, attributes,  _broker);
         assertNotNull(keyStore);
@@ -357,6 +367,7 @@ public class FileKeyStoreTest extends UnitTestBase
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
         attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
 

@@ -39,6 +39,8 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
+import org.apache.qpid.test.utils.TestSSLConstants;
+
 public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
 {
     private static final AtomicInteger CLIENTID_COUNTER = new AtomicInteger();
@@ -168,6 +170,14 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setTls(final boolean enableTls)
     {
         _enableTls = enableTls;
+        if (enableTls)
+        {
+            _options.put("transport.storeType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
+        }
+        else
+        {
+            _options.remove("transport.storeType");
+        }
         return this;
     }
 
