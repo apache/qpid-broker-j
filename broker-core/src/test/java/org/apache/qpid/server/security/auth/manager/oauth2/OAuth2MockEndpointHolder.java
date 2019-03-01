@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +34,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import junit.framework.TestCase;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -84,6 +89,7 @@ class OAuth2MockEndpointHolder
                                               };
         sslContextFactory.setKeyStorePassword(KEYSTORE_PASSWORD);
         sslContextFactory.setKeyStoreResource(Resource.newClassPathResource(KEYSTORE_RESOURCE));
+        sslContextFactory.setKeyStoreType(JAVA_KEYSTORE_TYPE);
 
         // override default jetty excludes as valid IBM JDK are excluded
         // causing SSL handshake failure (due to default exclude '^SSL_.*$')
@@ -153,7 +159,16 @@ class OAuth2MockEndpointHolder
         List<String> listOfStrings = Collections.emptyList();
         if(listAsString != null && !"".equals(listAsString))
         {
-            listOfStrings = Arrays.asList(listAsString.split("\\s*,\\s*"));
+            try
+            {
+                listOfStrings = new ObjectMapper().readValue(listAsString.getBytes(UTF_8), new TypeReference<List<String>>()
+                {
+                });
+            }
+            catch (IOException e)
+            {
+                listOfStrings = Arrays.asList(listAsString.split("\\s*,\\s*"));
+            }
         }
         return listOfStrings;
     }

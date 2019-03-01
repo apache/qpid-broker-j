@@ -20,6 +20,7 @@
 package org.apache.qpid.server.security;
 
 
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -104,7 +105,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
 
     private File[] extractResourcesFromTestKeyStore(boolean pem, final String storeResource) throws Exception
     {
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
         try(InputStream is = getClass().getResourceAsStream(storeResource))
         {
             ks.load(is, KEYSTORE_PASSWORD.toCharArray() );
@@ -271,7 +272,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     {
         when(_broker.scheduleHouseKeepingTask(anyLong(), any(TimeUnit.class), any(Runnable.class))).thenReturn(mock(ScheduledFuture.class));
 
-        java.security.KeyStore ks = java.security.KeyStore.getInstance("pkcs12");
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
         final String storeLocation = KEYSTORE;
         try(InputStream is = getClass().getResourceAsStream(storeLocation))
         {

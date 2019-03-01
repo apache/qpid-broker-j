@@ -23,6 +23,7 @@ package org.apache.qpid.systests.jms_1_1.extensions.management;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.model.Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES;
 import static org.apache.qpid.systests.jms_1_1.extensions.tls.TlsTest.TRUSTSTORE;
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -54,6 +55,8 @@ import javax.jms.Session;
 import javax.naming.NamingException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
@@ -71,6 +74,27 @@ public class AmqpManagementTest extends JmsTestBase
     private Queue _replyAddress;
     private MessageConsumer _consumer;
     private MessageProducer _producer;
+
+    @BeforeClass
+    public static void setUp() throws Exception
+    {
+        // legacy client keystore/truststore types can only be configured with JVM settings
+        if (getProtocol() != Protocol.AMQP_1_0)
+        {
+            System.setProperty("javax.net.ssl.trustStoreType", JAVA_KEYSTORE_TYPE);
+            System.setProperty("javax.net.ssl.keyStoreType", JAVA_KEYSTORE_TYPE);
+        }
+    }
+
+    @AfterClass
+    public static void tearDown() throws Exception
+    {
+        if (getProtocol() != Protocol.AMQP_1_0)
+        {
+            System.clearProperty("javax.net.ssl.trustStoreType");
+            System.clearProperty("javax.net.ssl.keyStoreType");
+        }
+    }
 
     private void setUp(final Connection connection) throws Exception
     {

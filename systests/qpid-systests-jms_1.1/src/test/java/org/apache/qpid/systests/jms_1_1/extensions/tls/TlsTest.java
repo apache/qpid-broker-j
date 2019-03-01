@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.tls;
 
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.apache.qpid.test.utils.TestSSLConstants.BROKER_KEYSTORE_PASSWORD;
 import static org.apache.qpid.test.utils.TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD;
 import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
@@ -89,6 +90,13 @@ public class TlsTest extends JmsTestBase
         {
             System.setProperty("amqj.MaximumStateWait", "4000");
         }
+
+        // legacy client keystore/truststore types can only be configured with JVM settings
+        if (getProtocol() != Protocol.AMQP_1_0)
+        {
+            System.setProperty("javax.net.ssl.trustStoreType", JAVA_KEYSTORE_TYPE);
+            System.setProperty("javax.net.ssl.keyStoreType", JAVA_KEYSTORE_TYPE);
+        }
     }
 
     @AfterClass
@@ -98,6 +106,12 @@ public class TlsTest extends JmsTestBase
         if (getProtocol() != Protocol.AMQP_1_0)
         {
             System.clearProperty("amqj.MaximumStateWait");
+        }
+
+        if (getProtocol() != Protocol.AMQP_1_0)
+        {
+            System.clearProperty("javax.net.ssl.trustStoreType");
+            System.clearProperty("javax.net.ssl.keyStoreType");
         }
     }
 
@@ -586,6 +600,7 @@ public class TlsTest extends JmsTestBase
                 final Map<String, Object> keyStoreAttributes = new HashMap<>();
                 keyStoreAttributes.put("storeUrl", BROKER_KEYSTORE);
                 keyStoreAttributes.put("password", BROKER_KEYSTORE_PASSWORD);
+                keyStoreAttributes.put("keyStoreType", JAVA_KEYSTORE_TYPE);
                 managementFacade.createEntityAndAssertResponse(keyStoreName,
                                                                FileKeyStore.class.getName(),
                                                                keyStoreAttributes,
@@ -602,6 +617,7 @@ public class TlsTest extends JmsTestBase
                 final Map<String, Object> trustStoreAttributes = new HashMap<>();
                 trustStoreAttributes.put("storeUrl", BROKER_TRUSTSTORE);
                 trustStoreAttributes.put("password", BROKER_TRUSTSTORE_PASSWORD);
+                trustStoreAttributes.put("trustStoreType", JAVA_KEYSTORE_TYPE);
                 managementFacade.createEntityAndAssertResponse(trustStoreName,
                                                                FileTrustStore.class.getName(),
                                                                trustStoreAttributes,
@@ -678,7 +694,7 @@ public class TlsTest extends JmsTestBase
 
     private File[] extractResourcesFromTestKeyStore() throws Exception
     {
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
         try (InputStream is = new FileInputStream(KEYSTORE))
         {
             ks.load(is, KEYSTORE_PASSWORD.toCharArray());
@@ -728,7 +744,7 @@ public class TlsTest extends JmsTestBase
 
     private File extractCertFileFromTestTrustStore() throws Exception
     {
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
         try (InputStream is = new FileInputStream(TRUSTSTORE))
         {
             ks.load(is, TRUSTSTORE_PASSWORD.toCharArray());
