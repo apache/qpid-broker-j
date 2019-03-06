@@ -64,18 +64,24 @@ public class Logback1027WorkaroundTurboFilterTest extends QpidTestCase
 
     public void testSuppressedExceptionRecursion()
     {
-        Exception e1 = new Exception();
-        Exception e2 = new Exception();
-        e2.addSuppressed(e1);
-        e1.addSuppressed(e2);
+        // https://www.ibm.com/developerworks/community/forums/html/topic?id=8482d948-665c-47a2-862e-457e49ac71a4&ps=25
+        if (getJvmVendor() != JvmVendor.IBM)
+        {
+            //QPID-7955 Behaviourial difference between the IBM JDK and the Open JDK
 
-        final FilterReply reply = doDecide(e1);
-        assertEquals(FilterReply.DENY, reply);
+            Exception e1 = new Exception();
+            Exception e2 = new Exception();
+            e2.addSuppressed(e1);
+            e1.addSuppressed(e2);
 
-        final List<ILoggingEvent> events = _snoopingAppender.getEvents();
-        assertEquals(1, events.size());
+            final FilterReply reply = doDecide(e1);
+            assertEquals(FilterReply.DENY, reply);
 
-        assertLoggingEvent(events.get(0));
+            final List<ILoggingEvent> events = _snoopingAppender.getEvents();
+            assertEquals(1, events.size());
+
+            assertLoggingEvent(events.get(0));
+        }
     }
 
     private void assertLoggingEvent(final ILoggingEvent loggingEvent)
@@ -89,14 +95,20 @@ public class Logback1027WorkaroundTurboFilterTest extends QpidTestCase
 
     public void testInitCauseRecursion() throws Exception
     {
-        Exception e1 = new Exception();
-        Exception e2 = new Exception();
-        e2.initCause(e1);
-        e1.initCause(e2);
+        // https://www.ibm.com/developerworks/community/forums/html/topic?id=8482d948-665c-47a2-862e-457e49ac71a4&ps=25
+        if (getJvmVendor() != JvmVendor.IBM)
+        {
+            //QPID-7955 Behaviourial difference between the IBM JDK and the Open JDK
 
-        final FilterReply reply = doDecide(e1);
-        assertEquals(FilterReply.DENY, reply);
-        assertEquals(1, _snoopingAppender.getEvents().size());
+            Exception e1 = new Exception();
+            Exception e2 = new Exception();
+            e2.initCause(e1);
+            e1.initCause(e2);
+
+            final FilterReply reply = doDecide(e1);
+            assertEquals(FilterReply.DENY, reply);
+            assertEquals(1, _snoopingAppender.getEvents().size());
+        }
     }
 
     public void testNoRecursion()
