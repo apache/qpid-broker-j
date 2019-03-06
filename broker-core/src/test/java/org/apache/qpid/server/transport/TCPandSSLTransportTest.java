@@ -57,6 +57,10 @@ public class TCPandSSLTransportTest extends QpidTestCase
 
     public void testNoSSLv3SupportOnSSLOnlyPort() throws Exception
     {
+        if (getJvmVendor() == JvmVendor.IBM)
+        {
+            return;
+        }
         try
         {
             checkSSLExcluded("SSLv3", Transport.SSL);
@@ -99,6 +103,10 @@ public class TCPandSSLTransportTest extends QpidTestCase
 
     public void testNoSSLv3SupportOnSharedPort() throws Exception
     {
+        if (getJvmVendor() == JvmVendor.IBM)
+        {
+            return;
+        }
         try
         {
             checkSSLExcluded("SSLv3", Transport.TCP, Transport.SSL);

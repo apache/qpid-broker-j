@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.client.ssl;
 
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE;
 import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
@@ -72,6 +73,9 @@ public class SSLTest extends QpidBrokerTestCase
 
         setSslStoreSystemProperties();
 
+        setSystemProperty("javax.net.ssl.trustStoreType", JAVA_KEYSTORE_TYPE);
+        setSystemProperty("javax.net.ssl.keyStoreType", JAVA_KEYSTORE_TYPE);
+
         super.setUp();
     }
 
@@ -106,6 +110,7 @@ public class SSLTest extends QpidBrokerTestCase
                 options.put("transport.keyStorePassword", KEYSTORE_PASSWORD);
                 options.put("transport.trustStoreLocation", TRUSTSTORE);
                 options.put("transport.trustStorePassword", TRUSTSTORE_PASSWORD);
+                options.put("transport.storeType", JAVA_KEYSTORE_TYPE);
 
                 con = getConnectionWithOptions(options);
             }
@@ -675,7 +680,7 @@ public class SSLTest extends QpidBrokerTestCase
 
     private File[] extractResourcesFromTestKeyStore() throws Exception
     {
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
         try(InputStream is = new FileInputStream(KEYSTORE))
         {
             ks.load(is, KEYSTORE_PASSWORD.toCharArray() );
@@ -727,7 +732,7 @@ public class SSLTest extends QpidBrokerTestCase
 
     private File extractCertFileFromTestTrustStore() throws Exception
     {
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
         try(InputStream is = new FileInputStream(TRUSTSTORE))
         {
             ks.load(is, TRUSTSTORE_PASSWORD.toCharArray() );

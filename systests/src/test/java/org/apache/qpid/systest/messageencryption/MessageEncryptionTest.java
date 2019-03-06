@@ -49,6 +49,23 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
     public static final String INCLUDED_VIRTUAL_HOST_NODE_NAME = "includedVirtualHostNode";
 
     @Override
+    public void setUp() throws Exception
+    {
+        super.setUp();
+
+        // Encryption trust store password is set using system property due to client defect QPID-8283
+        setSystemProperty("javax.net.ssl.trustStorePassword", TestSSLConstants.KEYSTORE_PASSWORD);
+        setSystemProperty("javax.net.ssl.trustStoreType", "pkcs12");
+        setSystemProperty("javax.net.ssl.keyStoreType", "pkcs12");
+    }
+
+    @Override
+    public void tearDown() throws Exception
+    {
+        super.tearDown();
+    }
+
+    @Override
     public void startDefaultBroker() throws Exception
     {
         // tests start broker

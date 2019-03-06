@@ -1076,6 +1076,7 @@ public class BrokerACLTest extends QpidRestTestCase
         keyStoreAttributes.put(FileKeyStore.STORE_URL, TestSSLConstants.KEYSTORE);
         keyStoreAttributes.put(FileKeyStore.PASSWORD, TestSSLConstants.KEYSTORE_PASSWORD);
         keyStoreAttributes.put(FileKeyStore.CERTIFICATE_ALIAS, certAlias);
+        keyStoreAttributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
         return getRestTestHelper().submitRequest("keystore/" + name, "PUT", keyStoreAttributes);
     }
@@ -1087,6 +1088,7 @@ public class BrokerACLTest extends QpidRestTestCase
         trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.KEYSTORE);
         trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.KEYSTORE_PASSWORD);
         trustStoreAttributes.put(FileTrustStore.PEERS_ONLY, peersOnly);
+        trustStoreAttributes.put(FileTrustStore.TRUST_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
         return getRestTestHelper().submitRequest("truststore/" + name, "PUT", trustStoreAttributes);
     }

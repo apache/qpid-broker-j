@@ -299,6 +299,10 @@ public class BrokerTestHelper
     public interface TestableSystemPrincipalSource extends SystemPrincipalSource {}
     public interface TestableAccessControlSource extends AccessControlSource {}
 
+    public static <X extends ConfiguredObject> X mockWithSystemPrincipal(Class<X> clazzl)
+    {
+        return mockWithSystemPrincipal(clazzl, SYSTEM_PRINCIPAL);
+    }
     public static <X extends ConfiguredObject> X mockWithSystemPrincipal(Class<X> clazz, Principal principal)
     {
         synchronized (SYSTEM_PRINCIPAL_SOURCE_MOCKS)

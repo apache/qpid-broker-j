@@ -19,9 +19,11 @@
 package org.apache.qpid.systest.rest;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +35,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -47,6 +50,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
@@ -58,10 +62,10 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.ssl.SSLContextFactory;
+import org.apache.qpid.server.transport.network.security.ssl.QpidServerX509KeyManager;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class RestTestHelper
 {
@@ -160,31 +164,38 @@ public class RestTestHelper
 
         if(_useSslAuth)
         {
+            if (_keystore == null)
+            {
+                throw new IllegalStateException("Cannot use SSL client auth without providing a keystore");
+            }
             try
             {
                 // We have to use a SSLSocketFactory from a new SSLContext so that we don't re-use
                 // the JVM's defaults that may have been initialised in previous tests.
-
                 final TrustManager[] trustManagers;
                 final KeyManager[] keyManagers;
 
-                trustManagers =
-                        SSLContextFactory.getTrustManagers(_truststore,
-                                                           _truststorePassword,
-                                                           KeyStore.getDefaultType(),
-                                                           TrustManagerFactory.getDefaultAlgorithm());
+                KeyStore ts = SSLUtil.getInitializedKeyStore(_truststore, _truststorePassword, JAVA_KEYSTORE_TYPE);
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(ts);
+                trustManagers = tmf.getTrustManagers();
 
-                if (_keystore == null)
+                if (_clientAuthAlias != null)
                 {
-                    throw new IllegalStateException("Cannot use SSL client auth without providing a keystore");
+                    keyManagers = new KeyManager[]{new QpidServerX509KeyManager(_clientAuthAlias,
+                                                                                new File(_keystore).toURI().toURL(),
+                                                                                JAVA_KEYSTORE_TYPE,
+                                                                                _keystorePassword,
+                                                                                KeyManagerFactory.getDefaultAlgorithm())};
                 }
-
-                keyManagers =
-                        SSLContextFactory.getKeyManagers(_keystore,
-                                                         _keystorePassword,
-                                                         KeyStore.getDefaultType(),
-                                                         KeyManagerFactory.getDefaultAlgorithm(),
-                                                         _clientAuthAlias);
+                else
+                {
+                    KeyStore ks = SSLUtil.getInitializedKeyStore(_keystore, _keystorePassword, JAVA_KEYSTORE_TYPE);
+                    char[] keyStoreCharPassword = _keystorePassword == null ? null : _keystorePassword.toCharArray();
+                    KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                    kmf.init(ks, keyStoreCharPassword);
+                    keyManagers = kmf.getKeyManagers();
+                }
 
                 final SSLContext sslContext = SSLUtil.tryGetSSLContext();
 
@@ -207,16 +218,29 @@ public class RestTestHelper
                 // the JVM's defaults that may have been initialised in previous tests.
 
                 final TrustManager[] trustManagers;
-                final KeyManager[] keyManagers;
+                KeyManager[] keyManagers = null;
 
-                trustManagers =
-                        SSLContextFactory.getTrustManagers(_truststore,
-                                                           _truststorePassword,
-                                                           KeyStore.getDefaultType(),
-                                                           TrustManagerFactory.getDefaultAlgorithm());
+                KeyStore ts = SSLUtil.getInitializedKeyStore(_truststore, _truststorePassword, JAVA_KEYSTORE_TYPE);
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(ts);
+                trustManagers = tmf.getTrustManagers();
 
-                keyManagers =
-                        SSLContextFactory.getKeyManagers(null, null, null, null, null);
+                if (_keystore != null)
+                {
+                    KeyStore _keyStore;
+                    try
+                    {
+                        URL ks = new File(_keystore).toURI().toURL();
+                        _keyStore = SSLUtil.getInitializedKeyStore(ks, _keystorePassword, JAVA_KEYSTORE_TYPE);
+                    }
+                    catch (MalformedURLException e)
+                    {
+                        _keyStore = SSLUtil.getInitializedKeyStore(_keystore, _keystorePassword, JAVA_KEYSTORE_TYPE);
+                    }
+                    KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                    kmf.init(_keyStore, _keystorePassword.toCharArray());
+                    keyManagers = kmf.getKeyManagers();
+                }
 
                 final SSLContext sslContext = SSLUtil.tryGetSSLContext();
 

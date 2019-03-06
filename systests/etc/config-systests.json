@@ -29,12 +29,14 @@
   "keystores" : [ {
     "name" : "systestsKeyStore",
     "storeUrl" : "${qpid.home_dir}${file.separator}..${file.separator}test-profiles${file.separator}test_resources${file.separator}ssl${file.separator}java_broker_keystore.jks",
-    "password" : "password"
+    "password" : "password",
+    "keyStoreType": "pkcs12"
   } ],
   "truststores" : [ {
     "name" : "systestsTrustStore",
     "storeUrl" : "${qpid.home_dir}${file.separator}..${file.separator}test-profiles${file.separator}test_resources${file.separator}ssl${file.separator}java_broker_truststore.jks",
-    "password" : "password"
+    "password" : "password",
+    "trustStoreType": "pkcs12"
   } ],
   "ports" : [  {
     "name" : "amqp",

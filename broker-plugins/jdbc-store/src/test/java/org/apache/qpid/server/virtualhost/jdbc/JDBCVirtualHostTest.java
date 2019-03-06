@@ -33,6 +33,7 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.SystemConfig;
@@ -60,7 +61,7 @@ public class JDBCVirtualHostTest extends QpidTestCase
 
     public void testInvalidTableNamePrefix() throws Exception
     {
-        final VirtualHostNode vhn = mock(VirtualHostNode.class);
+        final VirtualHostNode vhn = BrokerTestHelper.mockWithSystemPrincipal(VirtualHostNode.class);
         when(vhn.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(vhn.getChildExecutor()).thenReturn(_taskExecutor);
         final ConfiguredObjectFactoryImpl factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());

@@ -21,6 +21,7 @@
 package org.apache.qpid.systest.management.amqp;
 
 import static org.apache.qpid.server.model.Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES;
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
 
@@ -97,6 +98,8 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         // set the ssl system properties
         setSystemProperty("javax.net.ssl.trustStore", TRUSTSTORE);
         setSystemProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
+        setSystemProperty("javax.net.ssl.trustStoreType", JAVA_KEYSTORE_TYPE);
+        setSystemProperty("javax.net.ssl.keyStoreType", JAVA_KEYSTORE_TYPE);
 
         super.setUp();
 

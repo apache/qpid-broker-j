@@ -20,6 +20,7 @@
 package org.apache.qpid.server.security;
 
 
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -97,6 +98,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -112,6 +114,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, "wrong");
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -132,6 +135,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.STORE_URL, PEER_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, PEER_STORE_PASSWORD);
         attributes.put(FileTrustStore.PEERS_ONLY, true);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -144,10 +148,16 @@ public class FileTrustStoreTest extends QpidTestCase
 
     public void testUseOfExpiredTrustAnchorAllowed() throws Exception
     {
+        if (getJvmVendor() == JvmVendor.IBM)
+        {
+            //IBMJSSE2 trust factory (IbmX509) validates the entire chain, including trusted certificates.
+            return;
+        }
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, EXPIRED_TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, BROKER_TRUST_STORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
 
@@ -159,7 +169,7 @@ public class FileTrustStoreTest extends QpidTestCase
 
         KeyStore clientStore = SSLUtil.getInitializedKeyStore(EXPIRED_KEYSTORE_PATH,
                                                               KEYSTORE_PASSWORD,
-                                                              "pkcs12");
+                                                              JAVA_KEYSTORE_TYPE);
         String alias = clientStore.aliases().nextElement();
         X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
@@ -173,6 +183,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.STORE_URL, EXPIRED_TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, BROKER_TRUST_STORE_PASSWORD);
         attributes.put(FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
 
@@ -184,7 +195,7 @@ public class FileTrustStoreTest extends QpidTestCase
 
         KeyStore clientStore = SSLUtil.getInitializedKeyStore(EXPIRED_KEYSTORE_PATH,
                                                               KEYSTORE_PASSWORD,
-                                                              KeyStore.getDefaultType());
+                                                              JAVA_KEYSTORE_TYPE);
         String alias = clientStore.aliases().nextElement();
         X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
@@ -216,6 +227,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -233,6 +245,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.PASSWORD, "wrong");
         attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -254,6 +267,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
         attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         try
         {
@@ -274,6 +288,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         FileTrustStore<?> fileTrustStore = (FileTrustStore<?>) _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -312,6 +327,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, BROKER_TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, KEYSTORE_PASSWORD);
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -324,7 +340,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
         attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, "PKCS12");
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes,  _broker);
 
@@ -351,7 +367,7 @@ public class FileTrustStoreTest extends QpidTestCase
         attributes.put(FileTrustStore.NAME, "myFileTrustStore");
         attributes.put(FileTrustStore.STORE_URL, TRUST_STORE_PATH);
         attributes.put(FileTrustStore.PASSWORD, TRUSTSTORE_PASSWORD);
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, "PKCS12");
+        attributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
 
         TrustStore<?> fileTrustStore = _factory.create(TrustStore.class, attributes, _broker);
 

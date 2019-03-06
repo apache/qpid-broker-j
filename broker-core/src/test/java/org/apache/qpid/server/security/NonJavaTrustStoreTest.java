@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.security;
 
+import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -100,7 +101,7 @@ public class NonJavaTrustStoreTest extends QpidTestCase
 
         KeyStore clientStore = SSLUtil.getInitializedKeyStore(EXPIRED_KEYSTORE,
                                                               KEYSTORE_PASSWORD,
-                                                              "PKCS12");
+                                                              JAVA_KEYSTORE_TYPE);
         String alias = clientStore.aliases().nextElement();
         X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 

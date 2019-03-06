@@ -58,7 +58,7 @@ public class BDBVirtualHostImplTest extends QpidTestCase
 
         _storePath = TestFileUtils.createTestDirectory();
 
-        _node = mock(VirtualHostNode.class);
+        _node = BrokerTestHelper.mockWithSystemPrincipal(VirtualHostNode.class);
         when(_node.getParent()).thenReturn(broker);
         when(_node.getModel()).thenReturn(BrokerModel.getInstance());
         when(_node.getTaskExecutor()).thenReturn(taskExecutor);

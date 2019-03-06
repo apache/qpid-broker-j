@@ -60,7 +60,8 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         setSystemProperty("javax.net.ssl.keyStorePassword", null);
         setSystemProperty("javax.net.ssl.trustStore", null);
         setSystemProperty("javax.net.ssl.trustStorePassword", null);
-
+        setSystemProperty("javax.net.ssl.trustStoreType", JAVA_KEYSTORE_TYPE);
+        setSystemProperty("javax.net.ssl.keyStoreType", JAVA_KEYSTORE_TYPE);
     }
 
     @Override
@@ -236,6 +237,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         sslTrustStoreAttributes.put(FileTrustStore.STORE_URL, BROKER_PEERSTORE);
         sslTrustStoreAttributes.put(FileTrustStore.PASSWORD, BROKER_PEERSTORE_PASSWORD);
         sslTrustStoreAttributes.put(FileTrustStore.PEERS_ONLY, true);
+        sslTrustStoreAttributes.put(FileTrustStore.TRUST_STORE_TYPE, JAVA_KEYSTORE_TYPE);
         getDefaultBrokerConfiguration().addObjectConfiguration(TrustStore.class, sslTrustStoreAttributes);
 
         super.startDefaultBroker();
@@ -380,6 +382,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
             if(trustStoreLocation != null)
             {
                 options.put("transport.trustStoreLocation", trustStoreLocation);
+                options.put("transport.trustStoreType", JAVA_KEYSTORE_TYPE);
             }
             if(trustStorePassword != null)
             {
@@ -388,7 +391,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
             if(keyStoreLocation != null)
             {
                 options.put("transport.keyStoreLocation", keyStoreLocation);
-
+                options.put("transport.keyStoreType", JAVA_KEYSTORE_TYPE);
             }
             if(keyStorePassword != null)
             {

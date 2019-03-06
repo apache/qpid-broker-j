@@ -38,7 +38,7 @@ import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 public class TrustManagerTest extends QpidTestCase
 {
-    private static final String STORE_TYPE = "pkcs12";
+    private static final String STORE_TYPE = TestSSLConstants.JAVA_KEYSTORE_TYPE;
     private static final String DEFAULT_TRUST_MANAGER_ALGORITHM = TrustManagerFactory.getDefaultAlgorithm();
     private static final String KEYSTORE_PASSWORD = TestSSLConstants.KEYSTORE_PASSWORD;
     private static final String PEER_STORE = "ssl/java_broker_peerstore.pkcs12";

@@ -50,7 +50,7 @@ public class TrustStoreRestTest extends QpidRestTestCase
         assertEquals("unexpected (dummy) password of default systests trust store",
                      AbstractConfiguredObject.SECURED_STRING_VALUE, truststore.get(FileTrustStore.PASSWORD));
         assertEquals("unexpected type of default systests trust store",
-                java.security.KeyStore.getDefaultType(), truststore.get(FileTrustStore.TRUST_STORE_TYPE));
+                TestSSLConstants.JAVA_KEYSTORE_TYPE, truststore.get(FileTrustStore.TRUST_STORE_TYPE));
         assertEquals("unexpected peersOnly value", false, truststore.get(FileTrustStore.PEERS_ONLY));
     }
 
@@ -67,7 +67,7 @@ public class TrustStoreRestTest extends QpidRestTestCase
         assertEquals("unexpected trust store name", name, truststore.get(TrustStore.NAME));
         assertEquals("unexpected store URL", TestSSLConstants.TRUSTSTORE, truststore.get(FileTrustStore.STORE_URL));
         assertEquals("unexpected password value", AbstractConfiguredObject.SECURED_STRING_VALUE, truststore.get(FileTrustStore.PASSWORD));
-        assertEquals("unexpected type", java.security.KeyStore.getDefaultType(), truststore.get(FileTrustStore.TRUST_STORE_TYPE));
+        assertEquals("unexpected type", TestSSLConstants.JAVA_KEYSTORE_TYPE, truststore.get(FileTrustStore.TRUST_STORE_TYPE));
         assertEquals("unexpected peersOnly value", true, truststore.get(FileTrustStore.PEERS_ONLY));
     }
 
@@ -88,7 +88,7 @@ public class TrustStoreRestTest extends QpidRestTestCase
         assertEquals("nexpected trust store name", name, truststore.get(TrustStore.NAME));
         assertEquals("unexpected store URL value",  ConfiguredObject.OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT, truststore.get(FileTrustStore.STORE_URL));
         assertEquals("unexpected password value", AbstractConfiguredObject.SECURED_STRING_VALUE, truststore.get(FileTrustStore.PASSWORD));
-        assertEquals("unexpected type of trust store", java.security.KeyStore.getDefaultType(), truststore.get(FileTrustStore.TRUST_STORE_TYPE));
+        assertEquals("unexpected type of trust store", TestSSLConstants.JAVA_KEYSTORE_TYPE, truststore.get(FileTrustStore.TRUST_STORE_TYPE));
         assertEquals("unexpected peersOnly value", false, truststore.get(FileTrustStore.PEERS_ONLY));
     }
 
@@ -109,7 +109,7 @@ public class TrustStoreRestTest extends QpidRestTestCase
         assertEquals("unexpected name", TestBrokerConfiguration.ENTRY_NAME_SSL_TRUSTSTORE, truststore.get(TrustStore.NAME));
         assertEquals("unexpected store URL value",  ConfiguredObject.OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT, truststore.get(FileTrustStore.STORE_URL));
         assertEquals("unexpected password value", AbstractConfiguredObject.SECURED_STRING_VALUE, truststore.get(FileTrustStore.PASSWORD));
-        assertEquals("unexpected type of  trust store", java.security.KeyStore.getDefaultType(), truststore.get(FileTrustStore.TRUST_STORE_TYPE));
+        assertEquals("unexpected type of  trust store", TestSSLConstants.JAVA_KEYSTORE_TYPE, truststore.get(FileTrustStore.TRUST_STORE_TYPE));
         assertEquals("unexpected peersOnly value", false, truststore.get(FileTrustStore.PEERS_ONLY));
     }
 
@@ -133,7 +133,7 @@ public class TrustStoreRestTest extends QpidRestTestCase
         assertEquals("unexpected name", name, trustStore.get(TrustStore.NAME));
         assertEquals("unexpected path to trust store",  TestSSLConstants.TRUSTSTORE, trustStore.get(FileTrustStore.STORE_URL));
         assertEquals("unexpected password", AbstractConfiguredObject.SECURED_STRING_VALUE, trustStore.get(FileTrustStore.PASSWORD));
-        assertEquals("unexpected type", java.security.KeyStore.getDefaultType(), trustStore.get(FileTrustStore.TRUST_STORE_TYPE));
+        assertEquals("unexpected type", TestSSLConstants.JAVA_KEYSTORE_TYPE, trustStore.get(FileTrustStore.TRUST_STORE_TYPE));
         assertEquals("unexpected peersOnly value", false, trustStore.get(FileTrustStore.PEERS_ONLY));
     }
 
@@ -154,6 +154,7 @@ public class TrustStoreRestTest extends QpidRestTestCase
         trustStoreAttributes.put(FileTrustStore.STORE_URL, truststorePath);
         trustStoreAttributes.put(FileTrustStore.PASSWORD, truststorePassword);
         trustStoreAttributes.put(FileTrustStore.PEERS_ONLY, peersOnly);
+        trustStoreAttributes.put(FileTrustStore.TRUST_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
         getRestTestHelper().submitRequest("truststore/" + name, "PUT", trustStoreAttributes, HttpServletResponse.SC_CREATED);
     }
