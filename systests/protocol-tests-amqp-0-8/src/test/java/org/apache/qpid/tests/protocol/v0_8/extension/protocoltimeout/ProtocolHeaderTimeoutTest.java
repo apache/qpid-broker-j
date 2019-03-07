@@ -19,29 +19,17 @@
  */
 package org.apache.qpid.tests.protocol.v0_8.extension.protocoltimeout;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assume.assumeThat;
 
-import java.lang.reflect.Array;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
-import com.google.common.io.CharStreams;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.ProtocolVersion;
-import org.apache.qpid.server.protocol.v0_8.transport.AMQBody;
-import org.apache.qpid.server.protocol.v0_8.transport.AMQVersionAwareProtocolSession;
-import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartBody;
-import org.apache.qpid.server.transport.ByteBufferSender;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v0_8.FrameTransport;
-import org.apache.qpid.tests.protocol.v0_8.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.ConfigItem;

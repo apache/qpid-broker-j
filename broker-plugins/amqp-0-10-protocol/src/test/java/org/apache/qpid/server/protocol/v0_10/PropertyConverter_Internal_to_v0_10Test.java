@@ -60,12 +60,12 @@ import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
 import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
-import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class PropertyConverter_Internal_to_v0_10Test extends UnitTestBase
 {
+    private static final int AMQP_0_8_SHORT_STRING_MAX_LENGTH = 255;
     private MessageConverter_Internal_to_v0_10 _messageConverter;
     private NamedAddressSpace _addressSpace;
 
@@ -674,7 +674,7 @@ public class PropertyConverter_Internal_to_v0_10Test extends UnitTestBase
 
     private String generateLongString()
     {
-        return generateLongString(AMQShortString.MAX_LENGTH + 1);
+        return generateLongString(AMQP_0_8_SHORT_STRING_MAX_LENGTH + 1);
     }
 
     private String generateLongString(long stringLength)
