@@ -21,10 +21,12 @@
 
 package org.apache.qpid.tests.http.endtoend.message;
 
+import static javax.servlet.http.HttpServletResponse.SC_CREATED;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -42,9 +44,12 @@ import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.tests.http.HttpRequestConfig;
 import org.apache.qpid.tests.http.HttpTestBase;
 
@@ -207,6 +212,99 @@ public class MessageManagementTest extends HttpTestBase
         assertThat(getBrokerAdmin().getQueueDepthMessages(SOURCE_QUEUE_NAME), is(equalTo(0)));
     }
 
+    @Test
+    public void testReenqueueMessageForPriorityChange() throws Exception
+    {
+        final String queueName = "priorityQueue";
+        createPriorityQueue(queueName, 10);
+        publishPriorityMessage(queueName, "1", 5);
+        publishPriorityMessage(queueName, "2", 6);
+        publishPriorityMessage(queueName, "3", 1);
+
+        final List<Map<String, Object>> messages =
+                getHelper().getJsonAsList(String.format("queue/%s/getMessageInfo", queueName));
+
+        assertThat(messages.size(), is(equalTo(3)));
+        final Map<String, Object> message1 = messages.get(0);
+        final Map<String, Object> message2 = messages.get(1);
+        final Map<String, Object> message3 = messages.get(2);
+        assertThat(message1.get("messageId"), is(equalTo("2")));
+        assertThat(message2.get("messageId"), is(equalTo("1")));
+        assertThat(message3.get("messageId"), is(equalTo("3")));
+
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("messageId", message3.get("id"));
+        parameters.put("newPriority", 10);
+        Long result = getHelper().postJson(String.format("queue/%s/reenqueueMessageForPriorityChange", queueName),
+                                           parameters,
+                                           new TypeReference<Long>()
+                                           {
+                                           },
+                                           HttpServletResponse.SC_OK);
+
+        assertThat(result, is(not(equalTo(-1L))));
+
+        final List<Map<String, Object>> messages2 =
+                getHelper().getJsonAsList(String.format("queue/%s/getMessageInfo", queueName));
+
+        assertThat(messages.size(), is(equalTo(3)));
+        final Map<String, Object> message1AfterChange = messages2.get(0);
+        final Map<String, Object> message2AfterChange = messages2.get(1);
+        final Map<String, Object> message3AfterChange = messages2.get(2);
+        assertThat(message1AfterChange.get("messageId"), is(equalTo("3")));
+        assertThat(message2AfterChange.get("messageId"), is(equalTo("2")));
+        assertThat(message3AfterChange.get("messageId"), is(equalTo("1")));
+        assertThat(message1AfterChange.get("priority"), is(equalTo(10)));
+    }
+
+    @Test
+    public void testReenqueueMessagesForPriorityChange() throws Exception
+    {
+        final String queueName = "priorityQueue";
+        createPriorityQueue(queueName, 10);
+        publishPriorityMessage(queueName, "1", 5);
+        publishPriorityMessage(queueName, "2", 6);
+        publishPriorityMessage(queueName, "3", 1);
+
+        final List<Map<String, Object>> messages =
+                getHelper().getJsonAsList(String.format("queue/%s/getMessageInfo", queueName));
+
+        assertThat(messages.size(), is(equalTo(3)));
+        final Map<String, Object> message1 = messages.get(0);
+        final Map<String, Object> message2 = messages.get(1);
+        final Map<String, Object> message3 = messages.get(2);
+        assertThat(message1.get("messageId"), is(equalTo("2")));
+        assertThat(message2.get("messageId"), is(equalTo("1")));
+        assertThat(message3.get("messageId"), is(equalTo("3")));
+
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("selector", String.format("id in ('%s', '%s')",
+                                                 message3.get("messageId"),
+                                                 message2.get("messageId")));
+        parameters.put("newPriority", 10);
+        final List<Long> result =
+                getHelper().postJson(String.format("queue/%s/reenqueueMessagesForPriorityChange", queueName),
+                                     parameters,
+                                     new TypeReference<List<Long>>()
+                                     {
+                                     },
+                                     HttpServletResponse.SC_OK);
+
+        assertThat(result.size(), is(equalTo(2)));
+
+        final List<Map<String, Object>> messages2 =
+                getHelper().getJsonAsList(String.format("queue/%s/getMessageInfo", queueName));
+
+        assertThat(messages.size(), is(equalTo(3)));
+        final Map<String, Object> message1AfterChange = messages2.get(0);
+        final Map<String, Object> message2AfterChange = messages2.get(1);
+        final Map<String, Object> message3AfterChange = messages2.get(2);
+        assertThat(message1AfterChange.get("messageId"), is(equalTo("1")));
+        assertThat(message2AfterChange.get("messageId"), is(equalTo("3")));
+        assertThat(message3AfterChange.get("messageId"), is(equalTo("2")));
+        assertThat(message1AfterChange.get("priority"), is(equalTo(10)));
+        assertThat(message2AfterChange.get("priority"), is(equalTo(10)));
+    }
 
     private List<Map<String, Object>> getMessageDetails(final String queueName) throws IOException
     {
@@ -242,4 +340,25 @@ public class MessageManagementTest extends HttpTestBase
                                   SC_OK);
     }
 
+    private void publishPriorityMessage(final String queueName, final String messageId, int priority) throws Exception
+    {
+        final Map<String, Object> messageBody = new HashMap<>();
+        messageBody.put("address", queueName);
+        messageBody.put("messageId", messageId);
+        messageBody.put("headers", Collections.singletonMap("id", messageId));
+        messageBody.put("priority", priority);
+
+        getHelper().submitRequest("virtualhost/publishMessage",
+                                  "POST",
+                                  Collections.singletonMap("message", messageBody),
+                                  SC_OK);
+    }
+
+    private void createPriorityQueue(final String queueName, int priorities) throws IOException
+    {
+        final Map<String, Object> data = new HashMap<>();
+        data.put(ConfiguredObject.TYPE, "priority");
+        data.put(PriorityQueue.PRIORITIES, priorities);
+        getHelper().submitRequest(String.format("queue/%s", queueName), "PUT", data, SC_CREATED);
+    }
 }
