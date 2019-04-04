@@ -82,6 +82,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private static final String XID_TABLE_NAME_SUFFIX = "QPID_XIDS";
     private static final String XID_ACTIONS_TABLE_NAME_SUFFIX = "QPID_XID_ACTIONS";
 
+    private static final int IN_CLAUSE_MAX_SIZE = Integer.getInteger("qpid.jdbcstore.inClauseMaxSize",1000);
+
     private static final int DB_VERSION = 8;
 
     private final AtomicLong _messageId = new AtomicLong(0);
@@ -458,38 +460,22 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         return _messageRemovalScheduled.get();
     }
 
-    private void removeMessages(List<Long> messageIds)
+    void removeMessages(List<Long> messageIds)
     {
         if(messageIds != null && !messageIds.isEmpty())
         {
-            String inpart = messageIds.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
             try(Connection conn = newConnection())
             {
                 try
                 {
-                    try(Statement stmt = conn.createStatement())
-                    {
-                        int results = stmt.executeUpdate("DELETE FROM " + getMetaDataTableName()
-                                     + " WHERE message_id IN " + inpart);
-                        stmt.close();
+                    for (int i = 0; i <= messageIds.size() / IN_CLAUSE_MAX_SIZE; i++) {
+                        List<Long> boundMessageIds = messageIds.stream()
+                                .skip(i * IN_CLAUSE_MAX_SIZE)
+                                .limit(IN_CLAUSE_MAX_SIZE)
+                                .collect(Collectors.toList());
 
-                        if (results != messageIds.size())
-                        {
-                            getLogger().debug(
-                                    "Some message ids in {} not found (attempt to remove failed - probably application initiated rollback)",
-
-                                    messageIds);
-                        }
-
-                        getLogger().debug("Deleted metadata for messages {}", messageIds);
+                        removeMessagesFromDatabase(conn, boundMessageIds);
                     }
-
-                    try(Statement stmt = conn.createStatement())
-                    {
-                        int results = stmt.executeUpdate("DELETE FROM " + getMessageContentTableName()
-                                                         + " WHERE message_id IN " + inpart);
-                    }
-                    conn.commit();
                 }
                 catch(SQLException e)
                 {
@@ -510,7 +496,31 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 throw new StoreException("Error removing messages with ids " + messageIds + " from database: " + e.getMessage(), e);
             }
         }
+    }
 
+    void removeMessagesFromDatabase(Connection conn, List<Long> messageIds) throws SQLException {
+        String inpart = messageIds.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
+
+        try(Statement stmt = conn.createStatement())
+        {
+            int results = stmt.executeUpdate("DELETE FROM " + getMetaDataTableName() + " WHERE message_id IN " + inpart);
+            stmt.close();
+
+            if (results != messageIds.size())
+            {
+                getLogger().debug(
+                        "Some message ids in {} not found (attempt to remove failed - probably application initiated rollback)",
+                        messageIds);
+            }
+            getLogger().debug("Deleted metadata for messages {}", messageIds);
+        }
+
+        try(Statement stmt = conn.createStatement())
+        {
+            stmt.executeUpdate("DELETE FROM " + getMessageContentTableName() + " WHERE message_id IN " + inpart);
+            getLogger().debug("Deleted content for messages {}", messageIds);
+        }
+        conn.commit();
     }
 
     /**

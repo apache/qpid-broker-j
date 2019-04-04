@@ -25,15 +25,22 @@ import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.getTableNames;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.After;
@@ -51,6 +58,7 @@ import org.apache.qpid.server.store.MessageStoreTestCase;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.jdbc.JDBCVirtualHost;
+import org.mockito.Mockito;
 
 public class JDBCMessageStoreTest extends MessageStoreTestCase
 {
@@ -167,6 +175,19 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         store.closeMessageStore();
         store.onDelete(getVirtualHost());
         assertEquals("Delete action was not invoked", true, deleted.get());
+    }
+
+    @Test
+    public void testRemoveMessages() throws Exception
+    {
+        GenericJDBCMessageStore store = spy((GenericJDBCMessageStore) getStore());
+        when(store.newConnection()).thenReturn(mock(Connection.class, Mockito.RETURNS_MOCKS));
+
+        store.removeMessages(LongStream.rangeClosed(1,2001).boxed().collect(Collectors.toList()));
+
+        verify(store).removeMessagesFromDatabase(any(Connection.class), eq(LongStream.rangeClosed(1,1000).boxed().collect(Collectors.toList())));
+        verify(store).removeMessagesFromDatabase(any(Connection.class), eq(LongStream.rangeClosed(1001,2000).boxed().collect(Collectors.toList())));
+        verify(store).removeMessagesFromDatabase(any(Connection.class), eq(Collections.singletonList(2001L)));
     }
 
     private InternalMessage addTestMessage(final MessageStore store,
