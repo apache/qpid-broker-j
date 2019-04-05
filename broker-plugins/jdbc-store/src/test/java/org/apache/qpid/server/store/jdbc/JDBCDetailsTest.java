@@ -33,6 +33,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 
 public class JDBCDetailsTest extends UnitTestBase{
+
     @Test
     public void testDerby()
     {
@@ -41,6 +42,8 @@ public class JDBCDetailsTest extends UnitTestBase{
         assertEquals("varchar(%d) for bit data", derbyDetails.getVarBinaryType());
         assertEquals("bigint", derbyDetails.getBigintType());
         assertEquals("blob", derbyDetails.getBlobType());
+        assertEquals("", derbyDetails.getBlobStorage());
+        assertEquals("timestamp", derbyDetails.getTimestampType());
         assertFalse(derbyDetails.isUseBytesMethodsForBlob());
 
         assertTrue(derbyDetails.isKnownVendor());
@@ -55,7 +58,10 @@ public class JDBCDetailsTest extends UnitTestBase{
         assertEquals("varchar(%d) for bit data", details.getVarBinaryType());
         assertEquals("bigint", details.getBigintType());
         assertEquals("blob", details.getBlobType());
-        assertEquals(false, details.isUseBytesMethodsForBlob());
+        assertEquals("", details.getBlobStorage());
+        assertEquals("timestamp", details.getTimestampType());
+        assertFalse(details.isUseBytesMethodsForBlob());
+
         assertFalse(details.isOverridden());
         assertFalse(details.isKnownVendor());
     }
@@ -63,7 +69,6 @@ public class JDBCDetailsTest extends UnitTestBase{
     @Test
     public void testDerbyWithOverride()
     {
-
         Map<String, String> contextMap = new HashMap<>();
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_VARBINARYTYPE, "myvarbin");
 
@@ -72,14 +77,13 @@ public class JDBCDetailsTest extends UnitTestBase{
         assertEquals("myvarbin", derbyDetails.getVarBinaryType());
         assertEquals("bigint", derbyDetails.getBigintType());
         assertEquals("blob", derbyDetails.getBlobType());
+        assertEquals("", derbyDetails.getBlobStorage());
+        assertEquals("timestamp", derbyDetails.getTimestampType());
         assertFalse(derbyDetails.isUseBytesMethodsForBlob());
 
         assertTrue(derbyDetails.isKnownVendor());
         assertTrue(derbyDetails.isOverridden());
     }
-
-
-
 
     @Test
     public void testRecognisedDriver_AllDetailsProvidedByContext()
@@ -88,6 +92,7 @@ public class JDBCDetailsTest extends UnitTestBase{
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_VARBINARYTYPE, "myvarbin");
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_BIGINTTYPE, "mybigint");
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_BLOBTYPE, "myblob");
+        contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_BLOBSTORAGE, "myblobstorage");
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_TIMESTAMPTYPE, "mytimestamp");
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_USEBYTESFORBLOB, "true");
 
@@ -96,10 +101,27 @@ public class JDBCDetailsTest extends UnitTestBase{
         assertEquals("myvarbin", details.getVarBinaryType());
         assertEquals("mybigint", details.getBigintType());
         assertEquals("myblob", details.getBlobType());
+        assertEquals("myblobstorage", details.getBlobStorage());
         assertEquals("mytimestamp", details.getTimestampType());
         assertEquals(true, details.isUseBytesMethodsForBlob());
+
         assertTrue(details.isKnownVendor());
         assertTrue(details.isOverridden());
     }
 
+    @Test
+    public void testOracle()
+    {
+        JDBCDetails oracleDetails = JDBCDetails.getJdbcDetails("oracle", Collections.emptyMap());
+        assertEquals("oracle", oracleDetails.getVendor());
+        assertEquals("raw(%d)", oracleDetails.getVarBinaryType());
+        assertEquals("number", oracleDetails.getBigintType());
+        assertEquals("blob", oracleDetails.getBlobType());
+        assertEquals("LOB (%s) STORE AS SECUREFILE (RETENTION NONE)", oracleDetails.getBlobStorage());
+        assertEquals("timestamp", oracleDetails.getTimestampType());
+        assertFalse(oracleDetails.isUseBytesMethodsForBlob());
+
+        assertTrue(oracleDetails.isKnownVendor());
+        assertFalse(oracleDetails.isOverridden());
+    }
 }
