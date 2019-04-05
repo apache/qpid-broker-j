@@ -252,6 +252,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     protected abstract String getSqlBlobType();
 
+    protected abstract String getSqlBlobStorage(String columnName);
+
     protected abstract String getSqlVarBinaryType(int size);
 
     protected abstract String getSqlBigIntType();
@@ -317,7 +319,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                              + getSqlBigIntType()
                              + " not null, meta_data "
                              + getSqlBlobType()
-                             + ", PRIMARY KEY ( message_id ) )");
+                             + ", PRIMARY KEY ( message_id ) ) "
+                             + getSqlBlobStorage("meta_data"));
             }
         }
 
@@ -335,7 +338,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                              + getSqlBigIntType()
                              + " not null, content "
                              + getSqlBlobType()
-                             + ", PRIMARY KEY (message_id) )");
+                             + ", PRIMARY KEY (message_id) ) "
+                             + getSqlBlobStorage("content"));
             }
         }
 

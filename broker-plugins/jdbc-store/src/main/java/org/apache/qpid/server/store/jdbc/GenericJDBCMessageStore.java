@@ -49,6 +49,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
     private ConnectionProvider _connectionProvider;
 
     private String _blobType;
+    private String _blobStorage;
     private String _varBinaryType;
     private String _bigIntType;
     private boolean _useBytesMethodsForBlob;
@@ -73,6 +74,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
         }
 
         _blobType = details.getBlobType();
+        _blobStorage = details.getBlobStorage();
         _varBinaryType = details.getVarBinaryType();
         _useBytesMethodsForBlob = details.isUseBytesMethodsForBlob();
         _bigIntType = details.getBigintType();
@@ -116,6 +118,12 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
     protected String getSqlBlobType()
     {
         return _blobType;
+    }
+
+    @Override
+    protected String getSqlBlobStorage(String columnName)
+    {
+        return String.format(_blobStorage, columnName);
     }
 
     @Override

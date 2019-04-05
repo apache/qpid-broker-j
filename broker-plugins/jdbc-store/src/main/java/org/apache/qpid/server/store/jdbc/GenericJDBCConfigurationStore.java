@@ -56,6 +56,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
     private ConnectionProvider _connectionProvider;
 
     private String _blobType;
+    private String _blobStorage;
     private String _varBinaryType;
     private String _bigIntType;
     private boolean _useBytesMethodsForBlob;
@@ -95,6 +96,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
 
         _connectionProvider = JdbcUtils.createConnectionProvider(parent, LOGGER);
         _blobType = details.getBlobType();
+        _blobStorage = details.getBlobStorage();
         _varBinaryType = details.getVarBinaryType();
         _useBytesMethodsForBlob = details.isUseBytesMethodsForBlob();
         _bigIntType = details.getBigintType();
@@ -163,6 +165,12 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
     protected String getSqlBlobType()
     {
         return _blobType;
+    }
+
+    @Override
+    protected String getSqlBlobStorage(String columnName)
+    {
+        return String.format(_blobStorage, columnName);
     }
 
     @Override
@@ -295,6 +303,12 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         protected String getSqlBlobType()
         {
             return GenericJDBCConfigurationStore.this.getSqlBlobType();
+        }
+
+        @Override
+        protected String getSqlBlobStorage(String columnName)
+        {
+            return GenericJDBCConfigurationStore.this.getSqlBlobStorage(columnName);
         }
 
         @Override

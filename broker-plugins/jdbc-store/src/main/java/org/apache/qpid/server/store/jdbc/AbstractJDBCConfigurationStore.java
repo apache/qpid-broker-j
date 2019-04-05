@@ -588,6 +588,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     protected abstract String getSqlBlobType();
 
+    protected abstract String getSqlBlobStorage(String columnName);
+
     protected abstract String getSqlVarBinaryType(int size);
 
     protected abstract String getSqlBigIntType();
