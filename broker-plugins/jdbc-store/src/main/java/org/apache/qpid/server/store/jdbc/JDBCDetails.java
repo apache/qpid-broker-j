@@ -34,12 +34,15 @@ public abstract class JDBCDetails
     public static final String CONTEXT_JDBCSTORE_BIGINTTYPE = "qpid.jdbcstore.bigIntType";
     public static final String CONTEXT_JDBCSTORE_VARBINARYTYPE = "qpid.jdbcstore.varBinaryType";
     public static final String CONTEXT_JDBCSTORE_BLOBTYPE = "qpid.jdbcstore.blobType";
+    public static final String CONTEXT_JDBCSTORE_BLOBSTORAGE = "qpid.jdbcstore.blobStorage";
     public static final String CONTEXT_JDBCSTORE_TIMESTAMPTYPE = "qpid.jdbcstore.timestampType";
     public static final String CONTEXT_JDBCSTORE_USEBYTESFORBLOB = "qpid.jdbcstore.useBytesForBlob";
 
     public abstract String getVendor();
 
     public abstract String getBlobType();
+
+    public abstract String getBlobStorage();
 
     public abstract String getVarBinaryType();
 
@@ -55,19 +58,19 @@ public abstract class JDBCDetails
 
     static class KnownJDBCDetails extends JDBCDetails
     {
-        private static final JDBCDetails FALLBACK = new KnownJDBCDetails("fallback", "blob", "varchar(%d) for bit data", "bigint", "timestamp",
+        private static final JDBCDetails FALLBACK = new KnownJDBCDetails("fallback", "blob", "", "varchar(%d) for bit data", "bigint", "timestamp",
                 false, false);
-        private static final JDBCDetails ORACLE = new KnownJDBCDetails("oracle", "blob", "raw(%d)", "number", "timestamp",
+        private static final JDBCDetails ORACLE = new KnownJDBCDetails("oracle", "blob", "LOB (%s) STORE AS SECUREFILE (RETENTION NONE)", "raw(%d)", "number", "timestamp",
                 false, true);
-        private static final JDBCDetails SYBASE = new KnownJDBCDetails("sybase", "image null", "varbinary(%d)", "bigint", "datetime",
+        private static final JDBCDetails SYBASE = new KnownJDBCDetails("sybase", "image null", "", "varbinary(%d)", "bigint", "datetime",
                 false, true);
-        private static final JDBCDetails POSTGRES = new KnownJDBCDetails("postgresql", "bytea", "bytea", "bigint", "timestamp",
+        private static final JDBCDetails POSTGRES = new KnownJDBCDetails("postgresql", "bytea", "", "bytea", "bigint", "timestamp",
                 true, true);
-        private static final JDBCDetails DERBY = new KnownJDBCDetails("derby", "blob", "varchar(%d) for bit data", "bigint", "timestamp",
+        private static final JDBCDetails DERBY = new KnownJDBCDetails("derby", "blob", "", "varchar(%d) for bit data", "bigint", "timestamp",
                 false, true);
-        private static final JDBCDetails MYSQL = new KnownJDBCDetails("mysql", "longblob", "varbinary(%d)", "bigint", "timestamp",
+        private static final JDBCDetails MYSQL = new KnownJDBCDetails("mysql", "longblob", "", "varbinary(%d)", "bigint", "timestamp",
                 false, true);
-        private static final JDBCDetails MARIA_DB = new KnownJDBCDetails("mariadb", "longblob", "varbinary(%d)", "bigint", "timestamp",
+        private static final JDBCDetails MARIA_DB = new KnownJDBCDetails("mariadb", "longblob", "", "varbinary(%d)", "bigint", "timestamp",
                 false, true);
 
         static
@@ -94,6 +97,7 @@ public abstract class JDBCDetails
 
         private final String _vendor;
         private final String _blobType;
+        private final String _blobStorage;
         private final String _varBinaryType;
         private final String _bigintType;
         private final String _timestampType;
@@ -102,6 +106,7 @@ public abstract class JDBCDetails
 
         KnownJDBCDetails(String vendor,
                          String blobType,
+                         String blobStorage,
                          String varBinaryType,
                          String bigIntType,
                          String timestampType,
@@ -110,6 +115,7 @@ public abstract class JDBCDetails
         {
             _vendor = vendor;
             _blobType = blobType;
+            _blobStorage = blobStorage;
             _varBinaryType = varBinaryType;
             _bigintType = bigIntType;
             _timestampType = timestampType;
@@ -127,6 +133,12 @@ public abstract class JDBCDetails
         public String getBlobType()
         {
             return _blobType;
+        }
+
+        @Override
+        public String getBlobStorage()
+        {
+            return _blobStorage;
         }
 
         @Override
@@ -173,6 +185,7 @@ public abstract class JDBCDetails
         return "JDBCDetails{" +
                "vendor='" + getVendor() + '\'' +
                ", blobType='" + getBlobType() + '\'' +
+               ", blobStorage='" + getBlobStorage() + '\'' +
                ", varBinaryType='" + getVarBinaryType() + '\'' +
                ", bigIntType='" + getBigintType() + '\'' +
                ", timestampType='" + getTimestampType() + '\'' +
@@ -216,6 +229,10 @@ public abstract class JDBCDetails
         {
             return false;
         }
+        if (getBlobStorage() != null ? !getBlobStorage().equals(that.getBlobStorage()) : that.getBlobStorage() != null)
+        {
+            return false;
+        }
         if (getVarBinaryType() != null ? !getVarBinaryType().equals(that.getVarBinaryType()) : that.getVarBinaryType() != null)
         {
             return false;
@@ -237,6 +254,7 @@ public abstract class JDBCDetails
     {
         int result = getVendor() != null ? getVendor().hashCode() : 0;
         result = 31 * result + (getBlobType() != null ? getBlobType().hashCode() : 0);
+        result = 31 * result + (getBlobStorage() != null ? getBlobStorage().hashCode() : 0);
         result = 31 * result + (getVarBinaryType() != null ? getVarBinaryType().hashCode() : 0);
         result = 31 * result + (getBigintType() != null ? getBigintType().hashCode() : 0);
         result = 31 * result + (getTimestampType() != null ? getTimestampType().hashCode() : 0);
@@ -249,7 +267,6 @@ public abstract class JDBCDetails
     public static JDBCDetails getDetailsForJdbcUrl(String jdbcUrl, final ConfiguredObject<?> object)
     {
         String[] components = jdbcUrl.split(":", 3);
-        final JDBCDetails details;
         String vendor = null;
         if(components.length >= 2)
         {
@@ -364,6 +381,13 @@ public abstract class JDBCDetails
             }
 
             @Override
+            public String getBlobStorage()
+            {
+                return contextMap.containsKey(CONTEXT_JDBCSTORE_BLOBSTORAGE)
+                        ? String.valueOf(contextMap.get(CONTEXT_JDBCSTORE_BLOBSTORAGE)) : details.getBlobStorage();
+            }
+
+            @Override
             public String getVarBinaryType()
             {
                 return contextMap.containsKey(CONTEXT_JDBCSTORE_VARBINARYTYPE)
@@ -404,6 +428,7 @@ public abstract class JDBCDetails
                         || contextMap.containsKey(CONTEXT_JDBCSTORE_BIGINTTYPE)
                         || contextMap.containsKey(CONTEXT_JDBCSTORE_VARBINARYTYPE)
                         || contextMap.containsKey(CONTEXT_JDBCSTORE_BLOBTYPE)
+                        || contextMap.containsKey(CONTEXT_JDBCSTORE_BLOBSTORAGE)
                         || contextMap.containsKey(CONTEXT_JDBCSTORE_TIMESTAMPTYPE);
             }
         };

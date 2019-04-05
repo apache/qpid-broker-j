@@ -126,6 +126,12 @@ public abstract class AbstractDerbyMessageStore extends AbstractJDBCMessageStore
     }
 
     @Override
+    protected String getSqlBlobStorage(String columnName)
+    {
+        return "";
+    }
+
+    @Override
     protected String getSqlVarBinaryType(int size)
     {
         return "varchar("+size+") for bit data";
