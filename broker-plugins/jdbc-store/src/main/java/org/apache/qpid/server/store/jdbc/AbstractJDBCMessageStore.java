@@ -462,28 +462,29 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     void removeMessages(List<Long> messageIds)
     {
-        if(messageIds != null && !messageIds.isEmpty())
+        if (messageIds != null && !messageIds.isEmpty())
         {
-            try(Connection conn = newConnection())
+            try (Connection conn = newConnection())
             {
                 try
                 {
-                    for (int i = 0; i <= messageIds.size() / IN_CLAUSE_MAX_SIZE; i++) {
+                    for (int i = 0; i <= messageIds.size() / IN_CLAUSE_MAX_SIZE; i++)
+                    {
                         List<Long> boundMessageIds = messageIds.stream()
-                                .skip(i * IN_CLAUSE_MAX_SIZE)
-                                .limit(IN_CLAUSE_MAX_SIZE)
-                                .collect(Collectors.toList());
+                                                               .skip(i * IN_CLAUSE_MAX_SIZE)
+                                                               .limit(IN_CLAUSE_MAX_SIZE)
+                                                               .collect(Collectors.toList());
 
                         removeMessagesFromDatabase(conn, boundMessageIds);
                     }
                 }
-                catch(SQLException e)
+                catch (SQLException e)
                 {
                     try
                     {
                         conn.rollback();
                     }
-                    catch(SQLException t)
+                    catch (SQLException t)
                     {
                         // ignore - we are re-throwing underlying exception
                     }
@@ -493,15 +494,19 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
             catch (SQLException e)
             {
-                throw new StoreException("Error removing messages with ids " + messageIds + " from database: " + e.getMessage(), e);
+                throw new StoreException("Error removing messages with ids "
+                                         + messageIds
+                                         + " from database: "
+                                         + e.getMessage(), e);
             }
         }
     }
 
-    void removeMessagesFromDatabase(Connection conn, List<Long> messageIds) throws SQLException {
+    void removeMessagesFromDatabase(Connection conn, List<Long> messageIds) throws SQLException
+    {
         String inpart = messageIds.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
 
-        try(Statement stmt = conn.createStatement())
+        try (Statement stmt = conn.createStatement())
         {
             int results = stmt.executeUpdate("DELETE FROM " + getMetaDataTableName() + " WHERE message_id IN " + inpart);
             stmt.close();
@@ -515,7 +520,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             getLogger().debug("Deleted metadata for messages {}", messageIds);
         }
 
-        try(Statement stmt = conn.createStatement())
+        try (Statement stmt = conn.createStatement())
         {
             stmt.executeUpdate("DELETE FROM " + getMessageContentTableName() + " WHERE message_id IN " + inpart);
             getLogger().debug("Deleted content for messages {}", messageIds);
