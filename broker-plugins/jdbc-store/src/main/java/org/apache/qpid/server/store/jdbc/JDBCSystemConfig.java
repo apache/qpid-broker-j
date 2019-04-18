@@ -35,7 +35,7 @@ public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemC
     String getConnectionUrl();
 
     @Override
-    @ManagedAttribute(defaultValue=DefaultConnectionProviderFactory.TYPE)
+    @ManagedAttribute(defaultValue = "${systemConfig.connectionPoolType}")
     String getConnectionPoolType();
 
     @Override
