@@ -21,7 +21,11 @@
 package org.apache.qpid.server.model;
 
 import java.security.GeneralSecurityException;
+import java.util.List;
+
 import javax.net.ssl.KeyManager;
+
+import org.apache.qpid.server.security.CertificateDetails;
 
 @ManagedObject( defaultType = "FileKeyStore" )
 public interface KeyStore<X extends KeyStore<X>> extends ConfiguredObject<X>
@@ -46,4 +50,7 @@ public interface KeyStore<X extends KeyStore<X>> extends ConfiguredObject<X>
     int getCertificateExpiryCheckFrequency();
 
     KeyManager[] getKeyManagers() throws GeneralSecurityException;
+
+    @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")
+    List<CertificateDetails> getCertificateDetails();
 }

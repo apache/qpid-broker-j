@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.PrivateKey;
@@ -55,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -1033,6 +1035,21 @@ public class SSLUtil
             }
         };
 
+    }
+
+    public static Collection<Certificate> getCertificates(final KeyStore ks) throws KeyStoreException
+    {
+        List<Certificate> certificates = new ArrayList<>();
+        Enumeration<String> aliases = ks.aliases();
+        while (aliases.hasMoreElements())
+        {
+            String alias = aliases.nextElement();
+            if (ks.isCertificateEntry(alias))
+            {
+                certificates.add(ks.getCertificate(alias));
+            }
+        }
+        return certificates;
     }
 
     public interface KeyCertPair
