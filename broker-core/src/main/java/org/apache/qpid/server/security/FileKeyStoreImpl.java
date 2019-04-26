@@ -30,6 +30,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
@@ -79,6 +80,8 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     @ManagedAttributeField
     private String _password;
 
+    private volatile Collection<Certificate> _certificates;
+
     static
     {
         Handler.register();
@@ -108,6 +111,40 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     }
 
     @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        initialize();
+    }
+
+    @Override
+    protected void changeAttributes(final Map<String, Object> attributes)
+    {
+        super.changeAttributes(attributes);
+        if (attributes.containsKey(STORE_URL)
+            || attributes.containsKey(PASSWORD)
+            || attributes.containsKey(KEY_STORE_TYPE)
+            || attributes.containsKey(KEY_MANAGER_FACTORY_ALGORITHM))
+        {
+            initialize();
+        }
+    }
+
+    private void initialize()
+    {
+        Collection<Certificate> result;
+        try
+        {
+            result = Collections.unmodifiableCollection(SSLUtil.getCertificates(getInitializedKeyStore(this)));
+        }
+        catch (GeneralSecurityException | IOException e)
+        {
+            result = Collections.emptyList();
+        }
+        _certificates = result;
+    }
+
+    @Override
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
@@ -128,10 +165,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         final String loggableStoreUrl = StringUtil.elideDataUrl(fileKeyStore.getStoreUrl());
         try
         {
-            URL url = getUrlFromString(fileKeyStore.getStoreUrl());
-            String password = fileKeyStore.getPassword();
-            String keyStoreType = fileKeyStore.getKeyStoreType();
-            java.security.KeyStore keyStore = SSLUtil.getInitializedKeyStore(url, password, keyStoreType);
+            java.security.KeyStore keyStore = getInitializedKeyStore(fileKeyStore);
 
             final String certAlias = fileKeyStore.getCertificateAlias();
             if (certAlias != null)
@@ -188,6 +222,15 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         }
 
         checkCertificateExpiry();
+    }
+
+    private java.security.KeyStore getInitializedKeyStore(final FileKeyStore<?> fileKeyStore)
+            throws GeneralSecurityException, IOException
+    {
+        URL url = getUrlFromString(fileKeyStore.getStoreUrl());
+        String password = fileKeyStore.getPassword();
+        String keyStoreType = fileKeyStore.getKeyStoreType();
+        return SSLUtil.getInitializedKeyStore(url, password, keyStoreType);
     }
 
     @Override
@@ -319,8 +362,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
 
             try
             {
-                URL url = getUrlFromString(_storeUrl);
-                final java.security.KeyStore ks = SSLUtil.getInitializedKeyStore(url, getPassword(), _keyStoreType);
+                final java.security.KeyStore ks = getInitializedKeyStore(this);
 
                 char[] keyStoreCharPassword = getPassword() == null ? null : getPassword().toCharArray();
 
@@ -350,6 +392,13 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
             }
         }
 
+    }
+
+    @Override
+    protected Collection<Certificate> getCertificates()
+    {
+        final Collection<Certificate> certificates = _certificates;
+        return certificates == null ? Collections.emptyList() : certificates;
     }
 
     private boolean containsPrivateKey(final java.security.KeyStore keyStore) throws KeyStoreException

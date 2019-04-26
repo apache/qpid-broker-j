@@ -30,8 +30,10 @@ define(["dojo/dom",
         "qpid/common/formatter",
         "qpid/management/addStore",
         "dojo/text!showStore.html",
+        "qpid/management/store/CertificateGridWidget",
         "dojo/domReady!"],
-    function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template)
+    function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template,
+              CertificateGridWidget)
     {
 
         function KeyStore(kwArgs)
@@ -84,6 +86,13 @@ define(["dojo/dom",
                                 addStore.show(data, that.keyStoreUpdater.keyStoreData);
                             }, util.xhrErrorHandler);
                     });
+                    var gridNode = query(".managedCertificatesGrid", contentPane.containerNode)[0];
+                    that.certificatesGrid = new CertificateGridWidget({
+                        management: that.management,
+                        modelObj: that.modelObj
+                    }, gridNode);
+                    that.certificatesGrid.enableCertificateControls(false);
+                    that.certificatesGrid.startup();
                 });
 
         };
@@ -91,6 +100,11 @@ define(["dojo/dom",
         KeyStore.prototype.close = function ()
         {
             updater.remove(this.keyStoreUpdater);
+            if (this.certificatesGrid)
+            {
+                this.certificatesGrid.destroy();
+            }
+
         };
 
         function KeyStoreUpdater(tabObject)
@@ -148,6 +162,8 @@ define(["dojo/dom",
                     {
                         callback();
                     }
+
+                    that.tabObject.certificatesGrid.update(data.certificateDetails);
 
                     if (that.details)
                     {

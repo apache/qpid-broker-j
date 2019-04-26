@@ -20,13 +20,18 @@
  */
 package org.apache.qpid.server.security;
 
+import java.security.cert.Certificate;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -196,4 +201,20 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
         }
         return checkFrequency;
     }
+
+    @Override
+    public List<CertificateDetails> getCertificateDetails()
+    {
+        Collection<Certificate> certificates = getCertificates();
+        if (!certificates.isEmpty())
+        {
+            return certificates.stream()
+                               .filter(cert -> cert instanceof X509Certificate)
+                               .map(x509cert -> new CertificateDetailsImpl((X509Certificate) x509cert))
+                               .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    protected abstract Collection<Certificate> getCertificates();
 }

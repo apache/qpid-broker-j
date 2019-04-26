@@ -349,17 +349,7 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
 
     private Certificate[] createCertificates(final KeyStore ts) throws KeyStoreException
     {
-        final Collection<Certificate> certificates = new ArrayList<>();
-
-        Enumeration<String> aliases = ts.aliases();
-        while (aliases.hasMoreElements())
-        {
-            String alias = aliases.nextElement();
-            if (ts.isCertificateEntry(alias))
-            {
-                certificates.add(ts.getCertificate(alias));
-            }
-        }
+        final Collection<Certificate> certificates = SSLUtil.getCertificates(ts);
 
         return certificates.toArray(new Certificate[certificates.size()]);
     }
