@@ -29,9 +29,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +85,7 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
     }
 
     private volatile X509Certificate _certificate;
+    private volatile Collection<Certificate> _certificates;
 
     @ManagedObjectFactoryConstructor
     public NonJavaKeyStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
@@ -212,9 +216,9 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
             {
                 PrivateKey privateKey = SSLUtil.readPrivateKey(getUrlFromString(_privateKeyUrl));
                 X509Certificate[] certs = SSLUtil.readCertificates(getUrlFromString(_certificateUrl));
+                List<X509Certificate> allCerts = new ArrayList<>(Arrays.asList(certs));
                 if(_intermediateCertificateUrl != null)
                 {
-                    List<X509Certificate> allCerts = new ArrayList<>(Arrays.asList(certs));
                     allCerts.addAll(Arrays.asList(SSLUtil.readCertificates(getUrlFromString(_intermediateCertificateUrl))));
                     certs = allCerts.toArray(new X509Certificate[allCerts.size()]);
                 }
@@ -233,6 +237,7 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
                 kmf.init(inMemoryKeyStore, chars);
                 _keyManagers = kmf.getKeyManagers();
                 _certificate = certs[0];
+                _certificates = Collections.unmodifiableCollection(allCerts);
             }
 
         }
@@ -294,4 +299,10 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
         return url;
     }
 
+    @Override
+    protected Collection<Certificate> getCertificates()
+    {
+        final Collection<Certificate> certificates = _certificates;
+        return certificates == null ? Collections.emptyList() : certificates;
+    }
 }
