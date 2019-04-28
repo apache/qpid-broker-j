@@ -20,11 +20,14 @@
 package org.apache.qpid.server.security;
 
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -40,9 +43,11 @@ import java.io.InputStream;
 import java.security.Key;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +71,10 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.KeyStore;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.TestSSLUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class NonJavaKeyStoreTest extends UnitTestBase
@@ -118,17 +126,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
             Key pvt = ks.getKey("java-broker", KEYSTORE_PASSWORD.toCharArray());
             if (pem)
             {
-                kos.write("-----BEGIN PRIVATE KEY-----\n".getBytes());
-                String base64encoded = Base64.getEncoder().encodeToString(pvt.getEncoded());
-                while(base64encoded.length() > 76)
-                {
-                    kos.write(base64encoded.substring(0,76).getBytes());
-                    kos.write("\n".getBytes());
-                    base64encoded = base64encoded.substring(76);
-                }
-
-                kos.write(base64encoded.getBytes());
-                kos.write("\n-----END PRIVATE KEY-----".getBytes());
+                kos.write(TestSSLUtils.privateKeyToPEM(pvt).getBytes(UTF_8));
             }
             else
             {
@@ -141,20 +139,10 @@ public class NonJavaKeyStoreTest extends UnitTestBase
 
         try(FileOutputStream cos = new FileOutputStream(certificateFile))
         {
-            Certificate pub = ks.getCertificate("rootca");
+            Certificate pub = ks.getCertificate("java-broker");
             if (pem)
             {
-                cos.write("-----BEGIN CERTIFICATE-----\n".getBytes());
-                String base64encoded = Base64.getEncoder().encodeToString(pub.getEncoded());
-                while(base64encoded.length() > 76)
-                {
-                    cos.write(base64encoded.substring(0,76).getBytes());
-                    cos.write("\n".getBytes());
-                    base64encoded = base64encoded.substring(76);
-                }
-                cos.write(base64encoded.getBytes());
-
-                cos.write("\n-----END CERTIFICATE-----".getBytes());
+                cos.write(TestSSLUtils.certificateToPEM(pub).getBytes(UTF_8));
             }
             else
             {
@@ -293,6 +281,76 @@ public class NonJavaKeyStoreTest extends UnitTestBase
         _factory.create(KeyStore.class, attributes, _broker);
     }
 
+    @Test
+    public void testCreationOfKeyStoreWithNonMatchingPrivateKeyAndCertificate()throws Exception
+    {
+        assumeThat(SSLUtil.canGenerateCerts(), is(true));
+
+        final SSLUtil.KeyCertPair keyCertPair = generateSelfSignedCertificate();
+        final SSLUtil.KeyCertPair keyCertPair2 = generateSelfSignedCertificate();
+
+        final Map<String,Object> attributes = new HashMap<>();
+        attributes.put(NonJavaKeyStore.NAME, "myTestTrustStore");
+        attributes.put(NonJavaKeyStore.PRIVATE_KEY_URL,
+                       DataUrlUtils.getDataUrlForBytes(TestSSLUtils.privateKeyToPEM(keyCertPair.getPrivateKey()).getBytes(UTF_8)));
+        attributes.put(NonJavaKeyStore.CERTIFICATE_URL,
+                       DataUrlUtils.getDataUrlForBytes(TestSSLUtils.certificateToPEM(keyCertPair2.getCertificate()).getBytes(UTF_8)));
+        attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+
+        try
+        {
+            _factory.create(KeyStore.class, attributes, _broker);
+            fail("Created key store from invalid certificate");
+        }
+        catch(IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    @Test
+    public void testUpdateKeyStoreToNonMatchingCertificate()throws Exception
+    {
+        assumeThat(SSLUtil.canGenerateCerts(), is(true));
+
+        final SSLUtil.KeyCertPair keyCertPair = generateSelfSignedCertificate();
+        final SSLUtil.KeyCertPair keyCertPair2 = generateSelfSignedCertificate();
+
+        final Map<String,Object> attributes = new HashMap<>();
+        attributes.put(NonJavaKeyStore.NAME, getTestName());
+        attributes.put(NonJavaKeyStore.PRIVATE_KEY_URL,
+                       DataUrlUtils.getDataUrlForBytes(TestSSLUtils.privateKeyToPEM(keyCertPair.getPrivateKey()).getBytes(UTF_8)));
+        attributes.put(NonJavaKeyStore.CERTIFICATE_URL,
+                       DataUrlUtils.getDataUrlForBytes(TestSSLUtils.certificateToPEM(keyCertPair.getCertificate()).getBytes(UTF_8)));
+        attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+
+        final KeyStore trustStore = _factory.create(KeyStore.class, attributes, _broker);
+        try
+        {
+            final String certUrl = DataUrlUtils.getDataUrlForBytes(TestSSLUtils.certificateToPEM(keyCertPair2.getCertificate()).getBytes(UTF_8));
+            trustStore.setAttributes(Collections.singletonMap("certificateUrl", certUrl));
+            fail("Created key store from invalid certificate");
+        }
+        catch(IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    private SSLUtil.KeyCertPair generateSelfSignedCertificate() throws Exception
+    {
+        return SSLUtil.generateSelfSignedCertificate("RSA",
+                                                     "SHA256WithRSA",
+                                                     2048,
+                                                     Instant.now()
+                                                            .minus(1, ChronoUnit.DAYS)
+                                                            .toEpochMilli(),
+                                                     Duration.of(365, ChronoUnit.DAYS)
+                                                             .getSeconds(),
+                                                     "CN=foo",
+                                                     Collections.emptySet(),
+                                                     Collections.emptySet());
+    }
 
     private static class LogMessageArgumentMatcher implements ArgumentMatcher<LogMessage>
     {

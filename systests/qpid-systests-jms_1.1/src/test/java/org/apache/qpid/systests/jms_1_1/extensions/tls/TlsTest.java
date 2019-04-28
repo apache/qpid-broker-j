@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.tls;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.apache.qpid.test.utils.TestSSLConstants.BROKER_KEYSTORE_PASSWORD;
 import static org.apache.qpid.test.utils.TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD;
@@ -66,6 +67,7 @@ import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.test.utils.TestSSLConstants;
+import org.apache.qpid.test.utils.TestSSLUtils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class TlsTest extends JmsTestBase
@@ -704,18 +706,7 @@ public class TlsTest extends JmsTestBase
         try (FileOutputStream kos = new FileOutputStream(privateKeyFile))
         {
             Key pvt = ks.getKey(TestSSLConstants.CERT_ALIAS_APP1, KEYSTORE_PASSWORD.toCharArray());
-            kos.write("-----BEGIN PRIVATE KEY-----\n".getBytes());
-            String base64encoded = Base64.getEncoder().encodeToString(pvt.getEncoded());
-            while (base64encoded.length() > 76)
-            {
-                kos.write(base64encoded.substring(0, 76).getBytes());
-                kos.write("\n".getBytes());
-                base64encoded = base64encoded.substring(76);
-            }
-
-            kos.write(base64encoded.getBytes());
-            kos.write("\n-----END PRIVATE KEY-----".getBytes());
-            kos.flush();
+            kos.write(TestSSLUtils.privateKeyToPEM(pvt).getBytes(UTF_8));
         }
 
         File certificateFile = Files.createTempFile(getTestName(), ".certificate.der").toFile();
@@ -724,17 +715,7 @@ public class TlsTest extends JmsTestBase
             Certificate[] chain = ks.getCertificateChain(TestSSLConstants.CERT_ALIAS_APP1);
             for (Certificate pub : chain)
             {
-                cos.write("-----BEGIN CERTIFICATE-----\n".getBytes());
-                String base64encoded = Base64.getEncoder().encodeToString(pub.getEncoded());
-                while (base64encoded.length() > 76)
-                {
-                    cos.write(base64encoded.substring(0, 76).getBytes());
-                    cos.write("\n".getBytes());
-                    base64encoded = base64encoded.substring(76);
-                }
-                cos.write(base64encoded.getBytes());
-
-                cos.write("\n-----END CERTIFICATE-----\n".getBytes());
+                cos.write(TestSSLUtils.certificateToPEM(pub).getBytes(UTF_8));
             }
             cos.flush();
         }
