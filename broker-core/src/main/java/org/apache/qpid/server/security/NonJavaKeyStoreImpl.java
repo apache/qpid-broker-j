@@ -22,15 +22,19 @@ package org.apache.qpid.server.security;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,6 +42,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.naming.InvalidNameException;
@@ -194,11 +199,23 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
     {
         try
         {
-            SSLUtil.readPrivateKey(getUrlFromString(keyStore.getPrivateKeyUrl()));
-            SSLUtil.readCertificates(getUrlFromString(keyStore.getCertificateUrl()));
+            final PrivateKey privateKey = SSLUtil.readPrivateKey(getUrlFromString(keyStore.getPrivateKeyUrl()));
+            X509Certificate[] certs = SSLUtil.readCertificates(getUrlFromString(keyStore.getCertificateUrl()));
+            final List<X509Certificate> allCerts = new ArrayList<>(Arrays.asList(certs));
             if(keyStore.getIntermediateCertificateUrl() != null)
             {
-                SSLUtil.readCertificates(getUrlFromString(keyStore.getIntermediateCertificateUrl()));
+                allCerts.addAll(Arrays.asList(SSLUtil.readCertificates(getUrlFromString(keyStore.getIntermediateCertificateUrl()))));
+                certs = allCerts.toArray(new X509Certificate[allCerts.size()]);
+            }
+            final PublicKey publicKey = certs[0].getPublicKey();
+            if (privateKey instanceof RSAPrivateKey && publicKey instanceof RSAPublicKey)
+            {
+                final BigInteger privateModulus = ((RSAPrivateKey) privateKey).getModulus();
+                final BigInteger publicModulus = ((RSAPublicKey)publicKey).getModulus();
+                if (!Objects.equals(privateModulus, publicModulus))
+                {
+                    throw new IllegalConfigurationException("Private key does not match certificate");
+                }
             }
         }
         catch (IOException | GeneralSecurityException e )
