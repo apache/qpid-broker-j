@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -472,13 +473,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 try
                 {
-                    for (int i = 0; i <= messageIds.size() / IN_CLAUSE_MAX_SIZE; i++)
+                    for (List<Long> boundMessageIds : Lists.partition(messageIds, IN_CLAUSE_MAX_SIZE))
                     {
-                        List<Long> boundMessageIds = messageIds.stream()
-                                                               .skip(i * IN_CLAUSE_MAX_SIZE)
-                                                               .limit(IN_CLAUSE_MAX_SIZE)
-                                                               .collect(Collectors.toList());
-
                         removeMessagesFromDatabase(conn, boundMessageIds);
                     }
                 }

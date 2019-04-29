@@ -36,6 +36,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -182,6 +183,12 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
     {
         GenericJDBCMessageStore store = spy((GenericJDBCMessageStore) getStore());
         when(store.newConnection()).thenReturn(mock(Connection.class, Mockito.RETURNS_MOCKS));
+
+        store.removeMessages(LongStream.rangeClosed(1,1000).boxed().collect(Collectors.toList()));
+
+        verify(store).removeMessagesFromDatabase(any(Connection.class), any(List.class));
+
+        Mockito.reset(store);
 
         store.removeMessages(LongStream.rangeClosed(1,2001).boxed().collect(Collectors.toList()));
 
