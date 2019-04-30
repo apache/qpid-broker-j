@@ -51,6 +51,7 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     private boolean _enableTls;
     private boolean _enableFailover;
     private final List<Integer> _failoverPorts = new ArrayList<>();
+    private String _transport = "amqp";
 
     QpidJmsClientConnectionBuilder()
     {
@@ -72,7 +73,7 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setPort(final int port)
     {
         _port = port;
-        return this;
+        return setSslPort(port);
     }
 
     @Override
@@ -351,16 +352,23 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
         }
         else if (!_enableTls)
         {
-            connectionUrlBuilder.append("amqp://").append(_host).append(":").append(_port);
+            connectionUrlBuilder.append(_transport).append("://").append(_host).append(":").append(_port);
 
             appendOptions(options, connectionUrlBuilder);
         }
         else
         {
-            connectionUrlBuilder.append("amqps://").append(_host).append(":").append(_sslPort);
+            connectionUrlBuilder.append(_transport).append("s").append("://").append(_host).append(":").append(_sslPort);
             appendOptions(options, connectionUrlBuilder);
         }
         return connectionUrlBuilder.toString();
+    }
+
+    @Override
+    public ConnectionBuilder setTransport(final String transport)
+    {
+        _transport = transport;
+        return this;
     }
 
     private void appendOptions(final Map<String, Object> actualOptions, final StringBuilder stem)

@@ -65,6 +65,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
@@ -87,7 +88,7 @@ class WebSocketProvider implements AcceptingTransport
     private static final String AMQP_WEBSOCKET_SUBPROTOCOL = "amqp";
 
     private final Transport _transport;
-    private final SSLContext _sslContext;
+    private final SslContextFactory _sslContextFactory;
     private final AmqpPort<?> _port;
     private final Broker<?> _broker;
     private final Set<Protocol> _supported;
@@ -108,7 +109,7 @@ class WebSocketProvider implements AcceptingTransport
                       final Protocol defaultSupportedProtocolReply)
     {
         _transport = transport;
-        _sslContext = sslContext;
+        _sslContextFactory = transport == Transport.WSS ? createSslContextFactory(port) : null;
         _port = port;
         _broker = ((Broker<?>) port.getParent());
         _supported = supported;
@@ -142,29 +143,7 @@ class WebSocketProvider implements AcceptingTransport
         }
         else if (_transport == Transport.WSS)
         {
-            SslContextFactory sslContextFactory = new SslContextFactory()
-                                        {
-                                            @Override
-                                            public void customize(final SSLEngine sslEngine)
-                                            {
-                                                super.customize(sslEngine);
-                                                SSLUtil.updateEnabledCipherSuites(sslEngine, _port.getTlsCipherSuiteWhiteList(), _port.getTlsCipherSuiteBlackList());
-                                                SSLUtil.updateEnabledTlsProtocols(sslEngine, _port.getTlsProtocolWhiteList(), _port.getTlsProtocolBlackList());
-
-                                                if(_port.getTlsCipherSuiteWhiteList() != null
-                                                   && !_port.getTlsCipherSuiteWhiteList().isEmpty())
-                                                {
-                                                    SSLParameters sslParameters = sslEngine.getSSLParameters();
-                                                    sslParameters.setUseCipherSuitesOrder(true);
-                                                    sslEngine.setSSLParameters(sslParameters);
-                                                }
-                                            }
-                                        };
-            sslContextFactory.setSslContext(_sslContext);
-
-            sslContextFactory.setNeedClientAuth(_port.getNeedClientAuth());
-            sslContextFactory.setWantClientAuth(_port.getWantClientAuth());
-            connector = new ServerConnector(_server, sslContextFactory, httpConnectionFactory);
+            connector = new ServerConnector(_server, _sslContextFactory, httpConnectionFactory);
             connector.addBean(new SslHandshakeListener()
             {
                 @Override
@@ -270,6 +249,36 @@ class WebSocketProvider implements AcceptingTransport
 
     }
 
+    private SslContextFactory createSslContextFactory(final AmqpPort<?> port)
+    {
+        SslContextFactory sslContextFactory = new SslContextFactory()
+        {
+            @Override
+            public void customize(final SSLEngine sslEngine)
+            {
+                super.customize(sslEngine);
+                SSLUtil.updateEnabledCipherSuites(sslEngine,
+                                                  port.getTlsCipherSuiteWhiteList(),
+                                                  port.getTlsCipherSuiteBlackList());
+                SSLUtil.updateEnabledTlsProtocols(sslEngine,
+                                                  port.getTlsProtocolWhiteList(),
+                                                  port.getTlsProtocolBlackList());
+
+                if (port.getTlsCipherSuiteWhiteList() != null
+                    && !port.getTlsCipherSuiteWhiteList().isEmpty())
+                {
+                    SSLParameters sslParameters = sslEngine.getSSLParameters();
+                    sslParameters.setUseCipherSuitesOrder(true);
+                    sslEngine.setSSLParameters(sslParameters);
+                }
+            }
+        };
+        sslContextFactory.setSslContext(port.getSSLContext());
+        sslContextFactory.setNeedClientAuth(port.getNeedClientAuth());
+        sslContextFactory.setWantClientAuth(port.getWantClientAuth());
+        return sslContextFactory;
+    }
+
     @Override
     public void close()
     {
@@ -293,6 +302,28 @@ class WebSocketProvider implements AcceptingTransport
         return server == null || server.getConnectors().length == 0 || !(server.getConnectors()[0] instanceof ServerConnector) ?
                 _port.getPort() :
                 ((ServerConnector) server.getConnectors()[0]).getLocalPort();
+    }
+
+    @Override
+    public boolean updatesSSLContext()
+    {
+        if (_sslContextFactory != null)
+        {
+            try
+            {
+                _sslContextFactory.reload(f -> {
+                    f.setSslContext(_port.getSSLContext());
+                    f.setNeedClientAuth(_port.getNeedClientAuth());
+                    f.setWantClientAuth(_port.getWantClientAuth());
+                });
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new IllegalConfigurationException("Unexpected exception on reload of ssl context factory", e);
+            }
+        }
+        return false;
     }
 
     private static class QBBTrackingThreadPool extends QueuedThreadPool

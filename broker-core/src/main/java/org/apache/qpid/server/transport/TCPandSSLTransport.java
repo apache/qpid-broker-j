@@ -32,7 +32,7 @@ import org.apache.qpid.server.transport.network.TransportEncryption;
 class TCPandSSLTransport implements AcceptingTransport
 {
     private NonBlockingNetworkTransport _networkTransport;
-    private Set<Transport> _transports;
+    private volatile Set<Transport> _transports;
     private AmqpPort<?> _port;
     private Set<Protocol> _supported;
     private Protocol _defaultSupportedProtocolReply;
@@ -60,15 +60,7 @@ class TCPandSSLTransport implements AcceptingTransport
                         _port,
                         _transports.contains(Transport.TCP) ? Transport.TCP : Transport.SSL);
 
-        EnumSet<TransportEncryption> encryptionSet = EnumSet.noneOf(TransportEncryption.class);
-        if(_transports.contains(Transport.TCP))
-        {
-            encryptionSet.add(TransportEncryption.NONE);
-        }
-        if(_transports.contains(Transport.SSL))
-        {
-            encryptionSet.add(TransportEncryption.TLS);
-        }
+        EnumSet<TransportEncryption> encryptionSet = buildEncryptionSet(_transports);
 
         long threadPoolKeepAliveTimeout = _port.getContextValue(Long.class, AmqpPort.PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT);
 
@@ -80,11 +72,34 @@ class TCPandSSLTransport implements AcceptingTransport
         _networkTransport.start();
     }
 
+    private EnumSet<TransportEncryption> buildEncryptionSet(final Set<Transport> transports)
+    {
+        EnumSet<TransportEncryption> encryptionSet = EnumSet.noneOf(TransportEncryption.class);
+        if(transports.contains(Transport.TCP))
+        {
+            encryptionSet.add(TransportEncryption.NONE);
+        }
+        if(transports.contains(Transport.SSL))
+        {
+            encryptionSet.add(TransportEncryption.TLS);
+        }
+        return encryptionSet;
+    }
+
     @Override
     public int getAcceptingPort()
     {
         NonBlockingNetworkTransport networkTransport = _networkTransport;
         return networkTransport == null ? _port.getPort() : networkTransport.getAcceptingPort();
+    }
+
+    @Override
+    public boolean updatesSSLContext()
+    {
+        Set<Transport> transports = _port.getTransports();
+        _transports = transports;
+        _networkTransport.setEncryptionSet(buildEncryptionSet(transports));
+        return true;
     }
 
     @Override
