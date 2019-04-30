@@ -504,4 +504,22 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         return getCategoryClass().getSimpleName() + "[id=" + getId() + ", name=" + getName() + ", type=" + getType() +  ", port=" + getPort() + "]";
     }
 
+    @Override
+    public boolean isTlsSupported()
+    {
+        return getSSLContext() != null;
+    }
+
+    @Override
+    public boolean updateTLS()
+    {
+        if (isTlsSupported())
+        {
+            return updateSSLContext();
+        }
+        return false;
+    }
+
+    protected abstract boolean updateSSLContext();
+
 }

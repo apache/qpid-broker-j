@@ -23,12 +23,15 @@ package org.apache.qpid.server.model.port;
 import java.util.Map;
 import java.util.Set;
 
+import javax.net.ssl.SSLContext;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.Transport;
 
 public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort<HttpPortImpl>
 {
@@ -66,7 +69,8 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
     @Override
     public int getBoundPort()
     {
-        return _portManager == null ? -1 : _portManager.getBoundPort(this);
+        final PortManager portManager = getPortManager();
+        return portManager == null ? -1 : portManager.getBoundPort(this);
     }
 
     @Override
@@ -108,13 +112,15 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
     @Override
     public int getNumberOfAcceptors()
     {
-        return _portManager == null ? 0 : _portManager.getNumberOfAcceptors(this) ;
+        final PortManager portManager = getPortManager();
+        return portManager == null ? 0 : portManager.getNumberOfAcceptors(this) ;
     }
 
     @Override
     public int getNumberOfSelectors()
     {
-        return _portManager == null ? 0 : _portManager.getNumberOfSelectors(this) ;
+        final PortManager portManager = getPortManager();
+        return portManager == null ? 0 : portManager.getNumberOfSelectors(this) ;
     }
 
     @Override
@@ -145,7 +151,7 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
     @Override
     protected State onActivate()
     {
-        if(_portManager != null)
+        if(getPortManager() != null)
         {
             return super.onActivate();
         }
@@ -153,6 +159,29 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
         {
             return State.QUIESCED;
         }
+    }
+
+    @Override
+    public SSLContext getSSLContext()
+    {
+        final PortManager portManager = getPortManager();
+        return portManager == null ? null : portManager.getSSLContext(this);
+    }
+
+    @Override
+    protected boolean updateSSLContext()
+    {
+        if (getTransports().contains(Transport.SSL))
+        {
+            final PortManager portManager = getPortManager();
+            return portManager != null && portManager.updateSSLContext(this);
+        }
+        return false;
+    }
+
+    private PortManager getPortManager()
+    {
+        return _portManager;
     }
 
     @Override

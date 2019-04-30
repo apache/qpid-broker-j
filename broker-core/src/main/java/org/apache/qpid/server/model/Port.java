@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import javax.net.ssl.SSLContext;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.CommonProperties;
@@ -105,6 +107,8 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
                                     + "hostname.  If null or * then bind to all interfaces.")
     String getBindingAddress();
 
+    SSLContext getSSLContext();
+
     @ManagedAttribute
     boolean getNeedClientAuth();
 
@@ -133,5 +137,14 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 
     SubjectCreator getSubjectCreator(final boolean secure, String host);
 
+    @DerivedAttribute(description = "Indicates whether TLS transport support is created.")
+    boolean isTlsSupported();
 
+    @ManagedOperation(description =
+            "Updates port TLS support without affecting existing connections."
+            + " The TLS changes are applied to new connections only."
+            + " Returns true if TLS support is successfully updated.",
+            nonModifying = true,
+            changesConfiguredObjectState = false)
+    boolean updateTLS();
 }

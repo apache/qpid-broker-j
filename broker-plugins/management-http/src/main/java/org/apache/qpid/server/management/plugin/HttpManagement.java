@@ -182,6 +182,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private boolean _compressResponses;
 
     private final Map<HttpPort<?>, ServerConnector> _portConnectorMap = new ConcurrentHashMap<>();
+    private final Map<HttpPort<?>, SslContextFactory> _sslContextFactoryMap = new ConcurrentHashMap<>();
     private final BrokerChangeListener _brokerChangeListener = new BrokerChangeListener();
 
     private volatile boolean _serveUncompressedDojo;
@@ -460,6 +461,46 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
     }
 
+    @Override
+    public SSLContext getSSLContext(final HttpPort httpPort)
+    {
+        final SslContextFactory sslContextFactory = getSslContextFactory(httpPort);
+        if ( sslContextFactory != null)
+        {
+            return sslContextFactory.getSslContext();
+        }
+        return null;
+    }
+
+    @Override
+    public boolean updateSSLContext(final HttpPort httpPort)
+    {
+        final SslContextFactory sslContextFactory = getSslContextFactory(httpPort);
+        if ( sslContextFactory != null)
+        {
+            try
+            {
+                final SSLContext sslContext = createSslContext(httpPort);
+                sslContextFactory.reload(f -> {
+                    f.setSslContext(sslContext);
+                    f.setNeedClientAuth(httpPort.getNeedClientAuth());
+                    f.setWantClientAuth(httpPort.getWantClientAuth());
+                });
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new IllegalConfigurationException("Unexpected exception on reload of ssl context factory", e);
+            }
+        }
+        return false;
+    }
+
+    private SslContextFactory getSslContextFactory(final HttpPort httpPort)
+    {
+        return _sslContextFactoryMap.get(httpPort);
+    }
+
     private ServerConnector createConnector(final HttpPort<?> port, final Server server)
     {
         port.setPortManager(this);
@@ -482,13 +523,14 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         ConnectionFactory[] connectionFactories;
         Collection<Transport> transports = port.getTransports();
+        SslContextFactory sslContextFactory = null;
         if (!transports.contains(Transport.SSL))
         {
             connectionFactories = new ConnectionFactory[]{httpConnectionFactory};
         }
         else if (transports.contains(Transport.SSL))
         {
-            SslContextFactory sslContextFactory = getSslContextFactory(port);
+            sslContextFactory = createSslContextFactory(port);
             ConnectionFactory sslConnectionFactory;
             if (port.getTransports().contains(Transport.TCP))
             {
@@ -524,6 +566,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                 }
                 catch (BindException e)
                 {
+                    _sslContextFactoryMap.remove(port);
                     InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
                             : new InetSocketAddress(getHost(), getPort());
                     throw new PortBindFailureException(addr);
@@ -590,40 +633,16 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                     acceptors,
                     selectors));
         }
+        if (sslContextFactory != null)
+        {
+            _sslContextFactoryMap.put(port, sslContextFactory);
+        }
 
         return connector;
     }
 
-    private SslContextFactory getSslContextFactory(final HttpPort<?> port)
+    private SslContextFactory createSslContextFactory(final HttpPort<?> port)
     {
-        KeyStore keyStore = port.getKeyStore();
-        if (keyStore == null)
-        {
-            throw new IllegalConfigurationException(
-                    "Key store is not configured. Cannot start management on HTTPS port without keystore");
-        }
-
-        boolean needClientCert = port.getNeedClientAuth() || port.getWantClientAuth();
-        Collection<TrustStore> trustStores = port.getTrustStores();
-
-        if (needClientCert && trustStores.isEmpty())
-        {
-            throw new IllegalConfigurationException(String.format(
-                    "Client certificate authentication is enabled on HTTPS port '%s' but no trust store defined",
-                    this.getName()));
-        }
-
-        SSLContext sslContext = SSLUtil.createSslContext(keyStore, trustStores, port.getName());
-        SSLSessionContext serverSessionContext = sslContext.getServerSessionContext();
-        if (port.getTLSSessionCacheSize() > 0)
-        {
-            serverSessionContext.setSessionCacheSize(port.getTLSSessionCacheSize());
-        }
-        if (port.getTLSSessionTimeout() > 0)
-        {
-            serverSessionContext.setSessionTimeout(port.getTLSSessionTimeout());
-        }
-
         SslContextFactory factory = new SslContextFactory()
         {
             @Override
@@ -645,7 +664,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                                                   port.getTlsProtocolBlackList());
             }
         };
-        factory.setSslContext(sslContext);
+        factory.setSslContext(createSslContext(port));
         if (port.getNeedClientAuth())
         {
             factory.setNeedClientAuth(true);
@@ -655,6 +674,38 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             factory.setWantClientAuth(true);
         }
         return factory;
+    }
+
+    private SSLContext createSslContext(final HttpPort<?> port)
+    {
+        KeyStore keyStore = port.getKeyStore();
+        if (keyStore == null)
+        {
+            throw new IllegalConfigurationException(
+                    "Key store is not configured. Cannot start management on HTTPS port without keystore");
+        }
+
+        final boolean needClientCert = port.getNeedClientAuth() || port.getWantClientAuth();
+        final Collection<TrustStore> trustStores = port.getTrustStores();
+
+        if (needClientCert && trustStores.isEmpty())
+        {
+            throw new IllegalConfigurationException(String.format(
+                    "Client certificate authentication is enabled on HTTPS port '%s' but no trust store defined",
+                    this.getName()));
+        }
+
+        final SSLContext sslContext = SSLUtil.createSslContext(port.getKeyStore(), trustStores, port.getName());
+        final SSLSessionContext serverSessionContext = sslContext.getServerSessionContext();
+        if (port.getTLSSessionCacheSize() > 0)
+        {
+            serverSessionContext.setSessionCacheSize(port.getTLSSessionCacheSize());
+        }
+        if (port.getTLSSessionTimeout() > 0)
+        {
+            serverSessionContext.setSessionTimeout(port.getTLSSessionTimeout());
+        }
+        return sslContext;
     }
 
     private void addRestServlet(final ServletContextHandler root)
@@ -935,6 +986,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                 Server server = _server;
                 if (server != null)
                 {
+                    _sslContextFactoryMap.remove(port);
                     final ServerConnector connector = _portConnectorMap.remove(port);
                     if (connector != null)
                     {

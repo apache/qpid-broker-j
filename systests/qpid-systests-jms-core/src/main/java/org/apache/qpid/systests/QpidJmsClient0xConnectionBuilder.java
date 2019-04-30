@@ -72,7 +72,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setPort(final int port)
     {
         _port = port;
-        return this;
+        return setSslPort(port);
     }
 
     @Override
@@ -359,6 +359,12 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
             cUrlBuilder.append("&").append(entry.getKey()).append("='").append(entry.getValue()).append("'");
         }
         return cUrlBuilder.toString();
+    }
+
+    @Override
+    public ConnectionBuilder setTransport(final String transport)
+    {
+        throw new UnsupportedOperationException("Cannot modify transport");
     }
 
     private String buildTransportQuery()

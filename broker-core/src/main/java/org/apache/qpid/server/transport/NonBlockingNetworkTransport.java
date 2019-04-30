@@ -42,7 +42,7 @@ public class NonBlockingNetworkTransport
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingNetworkTransport.class);
 
-    private final Set<TransportEncryption> _encryptionSet;
+    private volatile Set<TransportEncryption> _encryptionSet;
     private final MultiVersionProtocolEngineFactory _factory;
     private final ServerSocketChannel _serverSocket;
     private final NetworkConnectionScheduler _scheduler;
@@ -204,5 +204,10 @@ public class NonBlockingNetworkTransport
                 }
             }
         }
+    }
+
+    void setEncryptionSet(final Set<TransportEncryption> encryptionSet)
+    {
+        _encryptionSet = encryptionSet;
     }
 }
