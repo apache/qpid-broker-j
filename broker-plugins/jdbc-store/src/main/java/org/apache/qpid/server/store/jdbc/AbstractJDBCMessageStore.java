@@ -86,6 +86,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private static final int IN_CLAUSE_MAX_SIZE_DEFAULT = 1000;
     static final String IN_CLAUSE_MAX_SIZE = "qpid.jdbcstore.inClauseMaxSize";
 
+    private static final int EXECUTOR_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
+    private static final String EXECUTOR_THREADS = "qpid.jdbcstore.executorThreads";
+
     private static final int DB_VERSION = 8;
 
     private final AtomicLong _messageId = new AtomicLong(0);
@@ -219,7 +222,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     protected void initMessageStore(final ConfiguredObject<?> parent)
     {
         _parent = parent;
-        _executor = new ScheduledThreadPoolExecutor(4, new ThreadFactory()
+
+        int corePoolSize = getContextValue(Integer.class, EXECUTOR_THREADS, EXECUTOR_THREADS_DEFAULT);
+
+        _executor = new ScheduledThreadPoolExecutor(corePoolSize, new ThreadFactory()
         {
             private final AtomicInteger _count = new AtomicInteger();
             @Override
