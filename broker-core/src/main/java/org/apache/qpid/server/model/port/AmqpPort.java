@@ -24,8 +24,6 @@ import java.net.SocketAddress;
 import java.util.List;
 import java.util.Set;
 
-import javax.net.ssl.SSLContext;
-
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
@@ -131,8 +129,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     @ManagedContextDefault(name = CONNECTION_PROPERTY_ENRICHERS,
             description = "The connection property enrichers to apply to connections created on this port.")
     String DEFAULT_CONNECTION_PROTOCOL_ENRICHERS = "[ \"STANDARD\" ] ";
-
-    SSLContext getSSLContext();
 
     @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_TCP_NO_DELAY )
     boolean isTcpNoDelay();

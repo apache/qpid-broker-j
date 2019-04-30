@@ -27,4 +27,6 @@ public interface AcceptingTransport
     void close();
 
     int getAcceptingPort();
+
+    boolean updatesSSLContext();
 }

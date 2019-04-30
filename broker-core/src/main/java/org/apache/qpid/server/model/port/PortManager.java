@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.model.port;
 
+import javax.net.ssl.SSLContext;
+
 public interface PortManager
 {
     int getBoundPort(HttpPort httpPort);
@@ -27,4 +29,8 @@ public interface PortManager
     int getNumberOfAcceptors(HttpPort httpPort);
 
     int getNumberOfSelectors(HttpPort httpPort);
+
+    SSLContext getSSLContext(HttpPort httpPort);
+
+    boolean updateSSLContext(HttpPort httpPort);
 }

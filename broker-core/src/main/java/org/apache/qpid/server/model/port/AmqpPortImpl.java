@@ -98,8 +98,8 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     private final Container<?> _container;
     private final AtomicBoolean _closingOrDeleting = new AtomicBoolean();
 
-    private AcceptingTransport _transport;
-    private SSLContext _sslContext;
+    private volatile AcceptingTransport _transport;
+    private volatile SSLContext _sslContext;
     private volatile int _connectionWarnCount;
     private volatile long _protocolHandshakeTimeout;
     private volatile int _boundPort = -1;
@@ -272,6 +272,18 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
                 throw e;
             }
         }
+    }
+
+    @Override
+    protected boolean updateSSLContext()
+    {
+        final Set<Transport> transports = getTransports();
+        if (transports.contains(Transport.SSL) || transports.contains(Transport.WSS))
+        {
+            _sslContext = createSslContext();
+            return _transport.updatesSSLContext();
+        }
+        return false;
     }
 
     @Override

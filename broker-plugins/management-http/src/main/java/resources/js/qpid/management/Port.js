@@ -72,6 +72,11 @@ define(["dojo/dom",
                         that.showEditDialog();
                     });
 
+                    that.updateTLSButton = registry.byNode(query(".updateTLSButton", contentPane.containerNode)[0]);
+                    that.updateTLSButton.on("click", function (evt) {
+                        that.updateTLS();
+                    });
+
                     that.portUpdater.update(function ()
                     {
                         updater.add(that.portUpdater);
@@ -114,6 +119,28 @@ define(["dojo/dom",
                         brokerData.keystores,
                         brokerData.truststores);
                 }, util.xhrErrorHandler);
+        };
+
+        Port.prototype.updateTLS = function ()
+        {
+            if (confirm("Are you sure you want to update TLS?"))
+            {
+                this.updateTLSButton.set("disabled", true);
+                var that = this;
+                this.management.update({parent: this.modelObj, type: this.modelObj.type, name: "updateTLS"}, {})
+                    .then(function (data)
+                    {
+                        that.updateTLSButton.set("disabled", false);
+                        if (data)
+                        {
+                            alert("TLS was successfully updated.");
+                        }
+                        else
+                        {
+                            alert("TLS was not updated.");
+                        }
+                    });
+            }
         };
 
         function PortUpdater(portTab)
@@ -197,6 +224,7 @@ define(["dojo/dom",
                 : "";
             this.protocolsValue.innerHTML = printArray("protocols", this.portData);
             this.transportsValue.innerHTML = printArray("transports", this.portData);
+            this.tabObject.updateTLSButton.set("disabled", !this.portData.tlsSupported);
             this.bindingAddressValue.innerHTML =
                 this.portData["bindingAddress"] ? entities.encode(String(this.portData["bindingAddress"])) : "";
             this.maxOpenConnectionsValue.innerHTML =
