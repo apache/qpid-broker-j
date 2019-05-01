@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.store.jdbc;
 
+import static org.apache.qpid.server.store.jdbc.AbstractJDBCMessageStore.IN_CLAUSE_MAX_SIZE;
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.assertTablesExistence;
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.getTableNames;
 import static org.junit.Assert.assertEquals;
@@ -53,6 +54,7 @@ import org.mockito.Mockito;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -200,13 +202,14 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
     }
 
     @Test
-    public void testRemoveMessages1000()
+    public void testRemoveMessagesWhenNumberOfMessagesEqualsInClauseMaxSize()
     {
         final String queueName = getTestName();
         final UUID transactionalLogId = UUID.randomUUID();
         final TransactionLogResource resource = mockTransactionLogResource(transactionalLogId, queueName);
-        final int numberOfMessages = 1000;
+        final int numberOfMessages = 10;
         final GenericJDBCMessageStore store = (GenericJDBCMessageStore) getStore();
+        reOpenStoreWithInClauseMaxSize(store, numberOfMessages);
 
         final List<MessageEnqueueRecord> records = enqueueMessages(store, resource, numberOfMessages);
         assertEquals(numberOfMessages, records.size());
@@ -221,6 +224,35 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         });
 
         assertTrue(stored.isEmpty());
+    }
+
+    @Test
+    public void testInClauseMaxSize() throws Exception
+    {
+        final GenericJDBCMessageStore store = spy((GenericJDBCMessageStore) getStore());
+        reOpenStoreWithInClauseMaxSize(store, 10);
+
+        store.removeMessages(LongStream.rangeClosed(1, 21L).boxed().collect(Collectors.toList()));
+
+        verify(store).removeMessagesFromDatabase(any(Connection.class),
+                                                 eq(LongStream.rangeClosed(1L, 10L)
+                                                              .boxed()
+                                                              .collect(Collectors.toList())));
+        verify(store).removeMessagesFromDatabase(any(Connection.class),
+                                                 eq(LongStream.rangeClosed(11L, 20L)
+                                                              .boxed()
+                                                              .collect(Collectors.toList())));
+        verify(store).removeMessagesFromDatabase(any(Connection.class), eq(Collections.singletonList(21L)));
+    }
+
+    private void reOpenStoreWithInClauseMaxSize(final GenericJDBCMessageStore store, final int inClauseMaxSize)
+    {
+        final ConfiguredObject<?> parent = getVirtualHost();
+        when(parent.getContextValue(Integer.class, IN_CLAUSE_MAX_SIZE)).thenReturn(inClauseMaxSize);
+        when(parent.getContextKeys(false)).thenReturn(Collections.singleton(IN_CLAUSE_MAX_SIZE));
+
+        store.closeMessageStore();
+        store.openMessageStore(parent);
     }
 
     private List<MessageEnqueueRecord> enqueueMessages(final MessageStore store,
