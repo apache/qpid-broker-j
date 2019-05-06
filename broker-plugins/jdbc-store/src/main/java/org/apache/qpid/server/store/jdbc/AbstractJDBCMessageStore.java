@@ -598,6 +598,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void enqueueMessages(ConnectionWrapper connWrapper, Map<Long, List<TransactionLogResource>> queuesPerMessage) throws StoreException
     {
+        if (queuesPerMessage.isEmpty())
+        {
+            return;
+        }
         Connection conn = connWrapper.getConnection();
         String sql = String.format("INSERT INTO %s (queue_id, message_id) values (?,?)", getQueueEntryTableName());
 
@@ -1142,6 +1146,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 throw new StoreException(e);
             }
+
+            _preCommitActions.add(() -> AbstractJDBCMessageStore.this.enqueueMessages(_connWrapper, _messagesToEnqueue));
         }
 
         @Override
@@ -1162,13 +1168,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     {
                         throw new StoreException("Exception on enqueuing message into message store" + _messageId, e);
                     }
-                });
-            }
-            if(_messagesToEnqueue.isEmpty())
-            {
-                _preCommitActions.add(() -> {
-                    AbstractJDBCMessageStore.this.enqueueMessages(_connWrapper, _messagesToEnqueue);
-                    _messagesToEnqueue.clear();
                 });
             }
             List<TransactionLogResource> queues = _messagesToEnqueue.computeIfAbsent(message.getMessageNumber(), messageId -> new ArrayList<>());
@@ -1214,6 +1213,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 action.run();
             }
             _preCommitActions.clear();
+            _messagesToEnqueue.clear();
         }
 
         private void doPostCommitActions()
