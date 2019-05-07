@@ -377,6 +377,7 @@ public class LocalTransaction implements ServerTransaction
     @Override
     public void commit(Runnable immediateAction)
     {
+        sync();
         if(!_state.compareAndSet(LocalTransactionState.ACTIVE, LocalTransactionState.DISCHARGING))
         {
             LocalTransactionState state = _state.get();
@@ -386,8 +387,6 @@ public class LocalTransaction implements ServerTransaction
             throw new IllegalStateException(message);
         }
 
-
-        sync();
         try
         {
             if(_transaction != null)
@@ -418,6 +417,7 @@ public class LocalTransaction implements ServerTransaction
 
     public void commitAsync(final Runnable deferred)
     {
+        sync();
         if(!_state.compareAndSet(LocalTransactionState.ACTIVE, LocalTransactionState.DISCHARGING))
         {
             LocalTransactionState state = _state.get();
@@ -426,7 +426,7 @@ public class LocalTransaction implements ServerTransaction
                     : String.format("Cannot commit transaction with state '%s'", state);
             throw new IllegalStateException(message);
         }
-        sync();
+
         if(_transaction != null)
         {
 
@@ -480,6 +480,7 @@ public class LocalTransaction implements ServerTransaction
     @Override
     public void rollback()
     {
+        sync();
         if (!_state.compareAndSet(LocalTransactionState.ACTIVE, LocalTransactionState.DISCHARGING)
             && !_state.compareAndSet(LocalTransactionState.ROLLBACK_ONLY, LocalTransactionState.DISCHARGING)
             && _state.get() != LocalTransactionState.DISCHARGING)
@@ -488,7 +489,6 @@ public class LocalTransaction implements ServerTransaction
                                                           _state.get()));
         }
 
-        sync();
         try
         {
             if(_transaction != null)
