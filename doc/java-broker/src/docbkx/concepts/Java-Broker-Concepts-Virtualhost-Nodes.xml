@@ -31,4 +31,9 @@
     the group. The virtualhost nodes together elect a master. When the high availability feature is
     in use, the virtualhost node has <link linkend="Java-Broker-Concepts-RemoteReplicationNodes">remote replications nodes</link>. There is a remote replication node corresponding to each
     remote virtualhost node that form part of the group.</para>
+  <para>
+    <emphasis>Virtualhost node</emphasis> also provides an initial configuration for its <emphasis>virtualhost</emphasis>.
+    How to specify initial configuration for <emphasis>virtual host</emphasis> is described at
+    <xref linkend="Java-Broker-Virtual-Host-Initial-Configuration"/>.
+  </para>
 </section>

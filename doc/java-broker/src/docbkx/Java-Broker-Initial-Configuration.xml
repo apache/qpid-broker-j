@@ -363,11 +363,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
                         </para>
                     </listitem>
                     <listitem>
-                        <para> Virtualhost Node called default. On initial startup, it
-                            virtualHostInitialConfiguration will cause a virtualhost to be created
-                            with the same name. The configuration will be stored in a
-                                <emphasis>JSON</emphasis> configuration store, the message data will
-                            be stored in a <emphasis>DERBY</emphasis> message store.</para>
+                        <para> Virtualhost Node called <emphasis>default</emphasis>.</para>
                     </listitem>
                     <listitem>
                         <para>One management plugin: "httpManagement" of type "MANAGEMENT-HTTP".</para>
@@ -380,4 +376,34 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
         </example>
     </section>
 
+    <section xml:id="Java-Broker-Virtual-Host-Initial-Configuration">
+        <title>Virtualhost Initial Configuration</title>
+        <para>
+            <emphasis>Virtualhost</emphasis> initial configuration can be specified in <emphasis>Virtualhost node</emphasis>
+            attribute <emphasis>virtualHostInitialConfiguration</emphasis>. On first startup,
+            the <emphasis>virtualhost</emphasis> is created based on provided initial configuration.
+            You can define there manageable <emphasis>Virtualhost</emphasis> attributes and children like exchanges, queues, etc.
+        </para>
+        <para>
+            The attribute <varname>virtualHostInitialConfiguration</varname> can have a value of <emphasis>URL</emphasis>
+            to an external resource where <emphasis>virtualhost</emphasis> initial configuration is provided in json format, or,
+            it can hold a string value with initial configuration in stringified json format. If required, you can
+            specify initial configuration as context variable which can be resolved as <emphasis>URL</emphasis>
+            to external resource or stringified json.
+        </para>
+        <example>
+        <title>Example of virtual host initial configuration provided as stringified JSON</title>
+        <programlisting>
+            ...
+            "virtualhostnodes" : [ {
+            "name" : "default",
+            "type" : "JSON",
+            "defaultVirtualHostNode" : "true",
+            "virtualHostInitialConfiguration" : "{\"type\":\"BDB\",\"nodeAutoCreationPolicies\":[{\"patterns\":\".*\",\"createdOnPublish\":\"true\",\"createdOnConsume\":\"true\",\"nodeType\":\"queue\"}]}"
+            } ]
+            ...</programlisting>
+        </example>
+        <para>After creation of <emphasis>virtualhost</emphasis> the value of
+            <varname>virtualHostInitialConfiguration</varname> is set to an empty string.</para>
+    </section>
 </chapter>
