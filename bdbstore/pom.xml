@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.qpid</groupId>
     <artifactId>qpid-broker-parent</artifactId>
-    <version>7.1.3</version>
+    <version>7.1.4-SNAPSHOT</version>
   </parent>
 
   <artifactId>qpid-bdbstore</artifactId>

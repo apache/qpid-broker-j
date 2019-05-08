@@ -21,7 +21,7 @@
     <parent>
         <artifactId>qpid-broker-parent</artifactId>
         <groupId>org.apache.qpid</groupId>
-        <version>7.1.3</version>
+        <version>7.1.4-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
