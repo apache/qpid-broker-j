@@ -313,7 +313,7 @@ define(["dojo/_base/connect",
                     var parameters = {
                         destination: formValues.destination,
                         bindingKey: formValues.name,
-                        replaceExistingArguments: false
+                        replaceExistingArguments: formValues.replaceExistingArguments
                     };
                     addBinding.bindingArgumentsGrid.store.fetch({
                         onComplete: function (items, request)
