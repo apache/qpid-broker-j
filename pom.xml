@@ -137,7 +137,7 @@
 
     <velocity-version>1.4</velocity-version>
     <jython-version>2.5.3</jython-version>
-    <csvjdbc-version>1.0.8</csvjdbc-version>
+    <csvjdbc-version>1.0.35</csvjdbc-version>
     <jfreechart-version>1.0.13</jfreechart-version>
 
     <dojo-version>1.14.0</dojo-version>
