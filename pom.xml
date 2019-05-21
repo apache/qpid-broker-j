@@ -920,7 +920,7 @@
     <!-- For the BDB JE dependency of the optional bdbstore plugin modules-->
     <repository>
       <id>oracle.releases</id>
-      <url>http://download.oracle.com/maven</url>
+      <url>https://download.oracle.com/maven</url>
       <layout>default</layout>
       <releases>
         <enabled>true</enabled>
