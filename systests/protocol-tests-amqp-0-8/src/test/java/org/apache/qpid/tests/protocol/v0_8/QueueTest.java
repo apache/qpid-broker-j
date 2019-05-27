@@ -430,15 +430,14 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                                    .queue().purgeName(BrokerAdmin.TEST_QUEUE_NAME).purge()
                                                    .consumeResponse().getLatestResponse(QueuePurgeOkBody.class);
 
-            /* TODO purge currently always returns 0 */
-            //assertThat(response.getMessageCount(), is(equalTo(1L)));
+            assertThat(response.getMessageCount(), is(equalTo(1L)));
 
             QueueDeclareOkBody passive = interaction.queue()
                                                     .declareName(BrokerAdmin.TEST_QUEUE_NAME)
                                                     .declarePassive(true).declare()
                                                     .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
             assertThat(passive.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
-            assertThat(response.getMessageCount(), is(equalTo(0L)));
+            assertThat(passive.getMessageCount(), is(equalTo(0L)));
         }
     }
 
