@@ -1710,20 +1710,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         while (queueListIterator.advance())
         {
             final QueueEntry node = queueListIterator.getNode();
-            boolean acquired = node.acquireOrSteal(new Runnable()
-                                                    {
-                                                        @Override
-                                                        public void run()
-                                                        {
-                                                            dequeueEntry(node);
-                                                        }
-                                                    });
+            boolean acquired = node.acquireOrSteal(() -> dequeueEntry(node));
 
             if (acquired)
             {
                 dequeueEntry(node, txn);
+                count++;
             }
-
         }
 
         txn.commit();
