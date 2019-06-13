@@ -105,9 +105,15 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     }
 
                     @Override
-                    public boolean isInMemory()
+                    public boolean isInContentInMemory()
                     {
                         return true;
+                    }
+
+                    @Override
+                    public long getInMemorySize()
+                    {
+                        return getContentSize() + getMetadataSize();
                     }
 
                     @Override

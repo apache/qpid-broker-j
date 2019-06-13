@@ -134,7 +134,8 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
 
         StoredMessage storedMessage = mock(StoredMessage.class);
         when(message.getStoredMessage()).thenReturn(storedMessage);
-        when(storedMessage.isInMemory()).thenReturn(true);
+        when(storedMessage.isInContentInMemory()).thenReturn(true);
+        when(storedMessage.getInMemorySize()).thenReturn(size);
 
         MessageReference ref = mock(MessageReference.class);
         when(ref.getMessage()).thenReturn(message);

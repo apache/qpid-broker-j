@@ -274,9 +274,15 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             }
 
             @Override
-            public boolean isInMemory()
+            public boolean isInContentInMemory()
             {
                 return true;
+            }
+
+            @Override
+            public long getInMemorySize()
+            {
+                return getMetadataSize() + getContentSize();
             }
 
             @Override

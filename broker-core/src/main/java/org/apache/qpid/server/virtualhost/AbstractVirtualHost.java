@@ -2100,7 +2100,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
-    private class FlowToDiskCheckingTask extends HouseKeepingTask
+    class FlowToDiskCheckingTask extends HouseKeepingTask
     {
         public FlowToDiskCheckingTask()
         {
@@ -2133,19 +2133,17 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                             try (MessageReference messageReference = node.getMessage().newReference())
                             {
                                 final StoredMessage storedMessage = messageReference.getMessage().getStoredMessage();
-                                if (storedMessage.isInMemory())
+                                final long inMemorySize = storedMessage.getInMemorySize();
+                                if (inMemorySize > 0)
                                 {
                                     if (cumulativeSize <= currentTargetSize)
                                     {
-                                        cumulativeSize += storedMessage.getContentSize();
-                                        cumulativeSize += storedMessage.getMetadataSize();
+                                        cumulativeSize += inMemorySize;
                                     }
-                                    else
+
+                                    if (cumulativeSize > currentTargetSize && node.getQueue().checkValid(node))
                                     {
-                                        if (node.getQueue().checkValid(node))
-                                        {
-                                            storedMessage.flowToDisk();
-                                        }
+                                        storedMessage.flowToDisk();
                                     }
                                 }
                             }

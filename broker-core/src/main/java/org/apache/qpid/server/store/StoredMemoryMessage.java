@@ -117,9 +117,15 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     }
 
     @Override
-    public boolean isInMemory()
+    public boolean isInContentInMemory()
     {
         return true;
+    }
+
+    @Override
+    public long getInMemorySize()
+    {
+        return getContentSize() + getMetadataSize();
     }
 
     @Override

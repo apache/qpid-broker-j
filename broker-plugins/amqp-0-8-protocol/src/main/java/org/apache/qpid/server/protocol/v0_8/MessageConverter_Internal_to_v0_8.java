@@ -132,9 +132,15 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
             }
 
             @Override
-            public boolean isInMemory()
+            public boolean isInContentInMemory()
             {
                 return true;
+            }
+
+            @Override
+            public long getInMemorySize()
+            {
+                return getContentSize() + getMetadataSize();
             }
 
             @Override
