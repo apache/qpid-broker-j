@@ -194,7 +194,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     public QpidByteBuffer getContent(int offset, int length)
     {
         StoredMessage<T> storedMessage = getStoredMessage();
-        boolean wasInMemory = storedMessage.isInMemory();
+        boolean wasInMemory = storedMessage.isInContentInMemory();
         try
         {
             return storedMessage.getContent(offset, length);

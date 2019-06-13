@@ -1221,9 +1221,34 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public synchronized boolean isInMemory()
+        public synchronized boolean isInContentInMemory()
         {
             return _messageDataRef != null && (_messageDataRef.isHardRef() || _messageDataRef.getData() != null);
+        }
+
+        @Override
+        public synchronized long getInMemorySize()
+        {
+            long size = 0;
+            if (_messageDataRef != null)
+            {
+                if (_messageDataRef.isHardRef())
+                {
+                    size += getMetadataSize() + getContentSize();
+                }
+                else
+                {
+                    if (_messageDataRef.getMetaData() != null)
+                    {
+                        size += getMetadataSize();
+                    }
+                    if (_messageDataRef.getData() != null)
+                    {
+                        size += getContentSize();
+                    }
+                }
+            }
+            return size;
         }
 
         private boolean stored()

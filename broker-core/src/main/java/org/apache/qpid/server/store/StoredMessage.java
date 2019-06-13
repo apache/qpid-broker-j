@@ -41,7 +41,9 @@ public interface StoredMessage<M extends StorableMessageMetaData>
 
     void remove();
 
-    boolean isInMemory();
+    boolean isInContentInMemory();
+
+    long getInMemorySize();
 
     boolean flowToDisk();
 

@@ -323,6 +323,12 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         return new GenericJDBCMessageStore();
     }
 
+    @Override
+    protected boolean flowToDiskSupported()
+    {
+        return true;
+    }
+
     private Connection openConnection() throws SQLException
     {
         return TestJdbcUtils.openConnection(_connectionURL);

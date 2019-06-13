@@ -109,4 +109,10 @@ public class DerbyMessageStoreTest extends MessageStoreTestCase
         return new DerbyMessageStore();
     }
 
+    @Override
+    protected boolean flowToDiskSupported()
+    {
+        return true;
+    }
+
 }

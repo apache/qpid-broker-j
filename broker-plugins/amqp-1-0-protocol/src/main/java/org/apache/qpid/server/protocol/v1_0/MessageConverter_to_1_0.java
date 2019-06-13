@@ -443,9 +443,15 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
 
         @Override
-        public boolean isInMemory()
+        public boolean isInContentInMemory()
         {
             return true;
+        }
+
+        @Override
+        public long getInMemorySize()
+        {
+            return getContentSize() + getMetadataSize();
         }
 
         @Override

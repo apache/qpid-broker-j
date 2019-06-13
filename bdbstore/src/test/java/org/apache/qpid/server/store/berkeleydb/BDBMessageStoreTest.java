@@ -212,4 +212,10 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
         return new BDBMessageStore();
     }
 
+    @Override
+    protected boolean flowToDiskSupported()
+    {
+        return true;
+    }
+
 }

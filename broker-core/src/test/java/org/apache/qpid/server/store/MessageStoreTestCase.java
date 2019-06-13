@@ -21,10 +21,14 @@
 package org.apache.qpid.server.store;
 
 import static junit.framework.TestCase.assertNull;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,19 +38,22 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.hamcrest.Description;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.EnqueueableMessage;
+import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.Transaction.EnqueueRecord;
@@ -93,6 +100,8 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     protected abstract VirtualHost createVirtualHost();
 
     protected abstract MessageStore createMessageStore();
+
+    protected abstract boolean flowToDiskSupported();
 
     protected MessageStore getStore()
     {
@@ -437,6 +446,107 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         message.remove();
 
         verify(listener, times(1)).messageDeleted(message);
+    }
+
+    @Test
+    public void testFlowToDisk() throws Exception
+    {
+        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+
+        final StoredMessage<?> storedMessage = createStoredMessage();
+
+        assertEquals(storedMessage.getContentSize() + storedMessage.getMetadataSize(), storedMessage.getInMemorySize());
+        assertTrue(storedMessage.flowToDisk());
+        assertEquals(0, storedMessage.getInMemorySize());
+    }
+
+    @Test
+    public void testFlowToDiskAfterMetadataReload()
+    {
+        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+
+        final StoredMessage<?> storedMessage = createStoredMessage();
+
+        assertTrue(storedMessage.flowToDisk());
+        assertNotNull(storedMessage.getMetaData());
+        assertEquals(storedMessage.getMetadataSize(), storedMessage.getInMemorySize());
+
+        assertTrue(storedMessage.flowToDisk());
+        assertEquals(0, storedMessage.getInMemorySize());
+    }
+
+    @Test
+    public void testFlowToDiskAfterContentReload()
+    {
+        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+
+        final StoredMessage<?> storedMessage = createStoredMessage();
+
+        assertTrue(storedMessage.flowToDisk());
+        assertNotNull(storedMessage.getContent(0, storedMessage.getContentSize()));
+        assertEquals(storedMessage.getContentSize(), storedMessage.getInMemorySize());
+
+        assertTrue(storedMessage.flowToDisk());
+        assertEquals(0, storedMessage.getInMemorySize());
+    }
+
+
+    @Test
+    public void testIsInContentInMemoryBeforeFlowControl()
+    {
+        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+
+        final StoredMessage<?> storedMessage = createStoredMessage();
+
+        assertTrue(storedMessage.isInContentInMemory());
+    }
+
+    @Test
+    public void testIsInContentInMemoryAfterFlowControl()
+    {
+        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+
+        final StoredMessage<?> storedMessage = createStoredMessage();
+        assertTrue(storedMessage.flowToDisk());
+        assertFalse(storedMessage.isInContentInMemory());
+    }
+
+    @Test
+    public void testIsInContentInMemoryAfterReload()
+    {
+        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+
+        final StoredMessage<?> storedMessage = createStoredMessage();
+        assertTrue(storedMessage.flowToDisk());
+        assertFalse(storedMessage.isInContentInMemory());
+        assertNotNull(storedMessage.getContent(0, storedMessage.getContentSize()));
+        assertTrue(storedMessage.isInContentInMemory());
+    }
+
+    private StoredMessage<?> createStoredMessage()
+    {
+        return createStoredMessage(Collections.singletonMap("test", "testValue"), "testContent", "testQueue");
+    }
+
+    private StoredMessage<?> createStoredMessage(final Map<String, String> headers,
+                                                 final String content,
+                                                 final String queueName)
+    {
+        return createInternalTestMessage(headers, content, queueName).getStoredMessage();
+    }
+
+    private InternalMessage createInternalTestMessage(final Map<String, String> headers,
+                                                      final String content,
+                                                      final String queueName)
+    {
+        final AMQMessageHeader messageHeader = mock(AMQMessageHeader.class);
+        if (headers != null)
+        {
+            headers.forEach((k,v) -> when(messageHeader.getHeader(k)).thenReturn(v));
+            when(messageHeader.getHeaderNames()).thenReturn(headers.keySet());
+        }
+
+        return InternalMessage.createMessage(_store, messageHeader, content, true, queueName);
     }
 
     private TransactionLogResource createTransactionLogResource(UUID queueId)

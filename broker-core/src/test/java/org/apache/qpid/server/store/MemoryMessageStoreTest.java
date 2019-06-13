@@ -42,6 +42,12 @@ public class MemoryMessageStoreTest extends MessageStoreTestCase
     }
 
     @Override
+    protected boolean flowToDiskSupported()
+    {
+        return false;
+    }
+
+    @Override
     protected void reopenStore() throws Exception
     {
         // cannot re-open memory message store as it is not persistent

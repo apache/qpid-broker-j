@@ -115,9 +115,15 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
             }
 
             @Override
-            public boolean isInMemory()
+            public boolean isInContentInMemory()
             {
                 return true;
+            }
+
+            @Override
+            public long getInMemorySize()
+            {
+                return getContentSize() + getMetadataSize();
             }
 
             @Override

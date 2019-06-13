@@ -1226,7 +1226,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         final StoredMessage storedMessage = message.getStoredMessage();
         if ((_virtualHost.isOverTargetSize()
              || QpidByteBuffer.getAllocatedDirectMemorySize() > _flowToDiskThreshold)
-            && storedMessage.isInMemory())
+            && storedMessage.getInMemorySize() > 0)
         {
             if (message.checkValid())
             {
@@ -2383,26 +2383,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public boolean checkValid(final QueueEntry queueEntry)
     {
         final ServerMessage message = queueEntry.getMessage();
-        final ServerMessage.ValidationStatus validationStatus = message.getValidationStatus();
-        boolean isValid = false;
-        if (validationStatus == ServerMessage.ValidationStatus.UNKNOWN)
+        boolean isValid = true;
+        try (MessageReference ref = message.newReference())
         {
-            try (MessageReference ref = message.newReference())
-            {
-                isValid = message.checkValid();
-            }
-            catch (MessageDeletedException e)
-            {
-                // noop
-            }
+            isValid = message.checkValid();
         }
-        else
+        catch (MessageDeletedException e)
         {
-            isValid = validationStatus == ServerMessage.ValidationStatus.VALID;
-        }
-        if (!isValid)
-        {
-            malformedEntry(queueEntry);
+            // noop
         }
         return isValid;
     }

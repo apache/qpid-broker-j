@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
@@ -69,6 +70,7 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -1212,6 +1214,62 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         assertEquals("Unexpected number of messages on target queue after test",
                             (long) 2,
                             (long) target.getQueueDepthMessages());
+    }
+
+    @Test
+    public void testEnqueuedMessageFlowedToDisk() throws Exception
+    {
+        makeVirtualHostTargetSizeExceeded();
+
+        final ServerMessage message2 = createMessage(1L, 2, 3);
+        final long sizeIncludingHeader = message2.getSizeIncludingHeader();
+        final StoredMessage storedMessage = message2.getStoredMessage();
+        when(storedMessage.getInMemorySize()).thenReturn(sizeIncludingHeader);
+
+        _queue.enqueue(message2, null, null);
+
+        verify(storedMessage).getInMemorySize();
+        verify(storedMessage).flowToDisk();
+
+        assertEquals("Unexpected number of messages on the queue",
+                     2,
+                     _queue.getQueueDepthMessages());
+    }
+
+    @Test
+    public void testEnqueuedMalformedMessageDeleted() throws Exception
+    {
+        makeVirtualHostTargetSizeExceeded();
+
+        final ServerMessage message2 = createMessage(1L, 2, 3);
+        final long sizeIncludingHeader = message2.getSizeIncludingHeader();
+        final StoredMessage storedMessage = message2.getStoredMessage();
+        when(storedMessage.getInMemorySize()).thenReturn(sizeIncludingHeader);
+        when(message2.checkValid()).thenReturn(false);
+
+        _queue.enqueue(message2, null, null);
+
+        verify(storedMessage).getInMemorySize();
+        verify(storedMessage, never()).flowToDisk();
+
+        assertEquals("Unexpected number of messages on the queue",
+                     1,
+                     _queue.getQueueDepthMessages());
+    }
+
+    private void makeVirtualHostTargetSizeExceeded()
+    {
+        final InternalMessage message = InternalMessage.createMessage(_virtualHost.getMessageStore(),
+                                                                       mock(AMQMessageHeader.class),
+                                                                       "test",
+                                                                       true,
+                                                                       _qname);
+        _queue.enqueue(message, null, null);
+        assertEquals("Unexpected number of messages on the queue",
+                     1,
+                     _queue.getQueueDepthMessages());
+        _virtualHost.setTargetSize(1L);
+        assertTrue(_virtualHost.isOverTargetSize());
     }
 
     private long getExpirationOnQueue(final Queue<?> queue, long arrivalTime, long expiration)
