@@ -109,14 +109,11 @@ public class FieldTable
         return value;
     }
 
-    private void decode()
+    private Map<String, AMQTypedValue> decode()
     {
+        final Map<String, AMQTypedValue> properties = new HashMap<>();
         if (_encodedSize > 0 && _encodedForm != null)
         {
-            if (!_properties.isEmpty())
-            {
-                _properties.clear();
-            }
             _encodedForm.mark();
             try
             {
@@ -126,7 +123,7 @@ public class FieldTable
 
                     checkPropertyName(key);
                     AMQTypedValue value = AMQTypedValue.readFromBuffer(_encodedForm);
-                    _properties.put(key, value);
+                    properties.put(key, value);
                 }
                 while (_encodedForm.hasRemaining());
             }
@@ -135,7 +132,7 @@ public class FieldTable
                 _encodedForm.reset();
             }
 
-            final long recalculateEncodedSize = recalculateEncodedSize();
+            final long recalculateEncodedSize = recalculateEncodedSize(properties);
             if (_encodedSize != recalculateEncodedSize)
             {
                 throw new IllegalStateException(String.format(
@@ -144,6 +141,7 @@ public class FieldTable
                         recalculateEncodedSize));
             }
         }
+        return properties;
     }
 
     private void decodeIfNecessary()
@@ -152,7 +150,12 @@ public class FieldTable
         {
             try
             {
-                decode();
+                final Map<String, AMQTypedValue> properties = decode();
+                if (!_properties.isEmpty())
+                {
+                    _properties.clear();
+                }
+                _properties.putAll(properties);
             }
             finally
             {
@@ -344,10 +347,10 @@ public class FieldTable
         return _encodedSize;
     }
 
-    private synchronized long recalculateEncodedSize()
+    private synchronized long recalculateEncodedSize(final Map<String, AMQTypedValue> properties)
     {
         long size = 0L;
-        for (Map.Entry<String, AMQTypedValue> e : _properties.entrySet())
+        for (Map.Entry<String, AMQTypedValue> e : properties.entrySet())
         {
             String key = e.getKey();
             AMQTypedValue value = e.getValue();
@@ -533,6 +536,9 @@ public class FieldTable
 
     public synchronized void validate()
     {
-        decodeIfNecessary();
+        if (!_decoded)
+        {
+            decode();
+        }
     }
 }
