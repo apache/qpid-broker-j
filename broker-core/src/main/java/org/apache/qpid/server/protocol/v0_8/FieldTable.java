@@ -132,33 +132,39 @@ public class FieldTable
     {
         if (_encodedSize > 0)
         {
-            _properties = new LinkedHashMap<>(INITIAL_HASHMAP_CAPACITY);
-
-            _encodedForm.mark();
-            try
-            {
-                do
-                {
-                    final String key = AMQShortString.readAMQShortStringAsString(_encodedForm);
-                    AMQTypedValue value = AMQTypedValue.readFromBuffer(_encodedForm);
-                    _properties.put(key, value);
-                }
-                while (_encodedForm.hasRemaining());
-            }
-            finally
-            {
-                _encodedForm.reset();
-            }
-
-            final long recalculateEncodedSize = calculateEncodedSize();
-            if (_encodedSize != recalculateEncodedSize)
-            {
-                throw new IllegalStateException(String.format(
-                        "Malformed field table detected: provided encoded size '%d' does not equal calculated size '%d'",
-                        _encodedSize,
-                        recalculateEncodedSize));
-            }
+            _properties = decode();
         }
+    }
+
+    private Map<String, AMQTypedValue> decode()
+    {
+        final Map<String, AMQTypedValue> properties = new LinkedHashMap<>(INITIAL_HASHMAP_CAPACITY);
+
+        _encodedForm.mark();
+        try
+        {
+            do
+            {
+                final String key = AMQShortString.readAMQShortStringAsString(_encodedForm);
+                AMQTypedValue value = AMQTypedValue.readFromBuffer(_encodedForm);
+                properties.put(key, value);
+            }
+            while (_encodedForm.hasRemaining());
+        }
+        finally
+        {
+            _encodedForm.reset();
+        }
+
+        final long recalculateEncodedSize = calculateEncodedSize(properties);
+        if (_encodedSize != recalculateEncodedSize)
+        {
+            throw new IllegalStateException(String.format(
+                    "Malformed field table detected: provided encoded size '%d' does not equal calculated size '%d'",
+                    _encodedSize,
+                    recalculateEncodedSize));
+        }
+        return properties;
     }
 
     private AMQTypedValue setProperty(String key, AMQTypedValue val)
@@ -930,17 +936,17 @@ public class FieldTable
     private void recalculateEncodedSize()
     {
 
-        int encodedSize = calculateEncodedSize();
+        int encodedSize = calculateEncodedSize(_properties);
 
         _encodedSize = encodedSize;
     }
 
-    private int calculateEncodedSize()
+    private int calculateEncodedSize(final Map<String, AMQTypedValue> properties)
     {
         int encodedSize = 0;
-        if (_properties != null)
+        if (properties != null)
         {
-            for (Map.Entry<String, AMQTypedValue> e : _properties.entrySet())
+            for (Map.Entry<String, AMQTypedValue> e : properties.entrySet())
             {
                 encodedSize += EncodingUtils.encodedShortStringLength(e.getKey());
                 encodedSize++; // the byte for the encoding Type
@@ -1274,7 +1280,10 @@ public class FieldTable
 
     public synchronized void validate()
     {
-       clearEncodedForm();
+        if (_properties == null && _encodedForm != null && _encodedSize > 0)
+        {
+            decode();
+        }
     }
 
 }
