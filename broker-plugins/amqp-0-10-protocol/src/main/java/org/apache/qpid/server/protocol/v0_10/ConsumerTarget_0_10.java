@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,16 +68,15 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     private final String _targetAddress;
 
 
-    private FlowCreditManager_0_10 _creditManager;
+    private volatile FlowCreditManager_0_10 _creditManager;
 
     private final MessageAcceptMode _acceptMode;
     private final MessageAcquireMode _acquireMode;
-    private MessageFlowMode _flowMode;
+    private volatile MessageFlowMode _flowMode;
     private final ServerSession _session;
-    private final AtomicBoolean _stopped = new AtomicBoolean(true);
 
-    private int _deferredMessageCredit;
-    private long _deferredSizeCredit;
+    private volatile int _deferredMessageCredit;
+    private volatile long _deferredSizeCredit;
 
     private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, EntryState>()
     {
