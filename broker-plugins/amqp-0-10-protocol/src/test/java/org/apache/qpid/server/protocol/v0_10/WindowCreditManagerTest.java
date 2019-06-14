@@ -96,4 +96,19 @@ public class WindowCreditManagerTest extends UnitTestBase
         assertEquals("unexpected credit value", (long) 1, _creditManager.getMessageCredit());
         assertTrue("Manager should 'haveCredit'", _creditManager.hasCredit());
     }
+
+    @Test
+    public void testRestoreCreditWhenInfiniteBytesCredit()
+    {
+        _creditManager.addCredit(1, WindowCreditManager.INFINITE_CREDIT);
+
+        _creditManager.useCreditForMessage(10);
+        assertEquals(0, _creditManager.getMessageCredit());
+        assertEquals(Long.MAX_VALUE, _creditManager.getBytesCredit());
+
+        _creditManager.restoreCredit(1, 10);
+
+        assertEquals(1, _creditManager.getMessageCredit());
+        assertEquals(Long.MAX_VALUE, _creditManager.getBytesCredit());
+    }
 }

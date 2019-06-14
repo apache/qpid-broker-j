@@ -63,18 +63,24 @@ public class WindowCreditManager implements FlowCreditManager_0_10
     @Override
     public synchronized void restoreCredit(final long messageCredit, final long bytesCredit)
     {
-        _messageUsed -= messageCredit;
-        if (_messageUsed < 0L)
+        if (_messageCreditLimit >= 0L)
         {
-            LOGGER.error("Message credit used value was negative: " + _messageUsed);
-            _messageUsed = 0;
+            _messageUsed -= messageCredit;
+            if (_messageUsed < 0L)
+            {
+                LOGGER.warn("Message credit used value was negative: " + _messageUsed);
+                _messageUsed = 0;
+            }
         }
 
-        _bytesUsed -= bytesCredit;
-        if (_bytesUsed < 0L)
+        if (_bytesCreditLimit >= 0L)
         {
-            LOGGER.error("Bytes credit used value was negative: " + _bytesUsed);
-            _bytesUsed = 0;
+            _bytesUsed -= bytesCredit;
+            if (_bytesUsed < 0L)
+            {
+                LOGGER.warn("Bytes credit used value was negative: " + _bytesUsed);
+                _bytesUsed = 0;
+            }
         }
     }
 
