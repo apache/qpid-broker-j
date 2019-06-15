@@ -153,7 +153,12 @@ public class ClasspathQuery
 
     private String buildClassPath(final Class<?> clientClazz, final Collection<String> gavs)
     {
-        List<File> classpathElements = new ArrayList<>(_classpathCache.getUnchecked(gavs));
+        final List<File> classpathElements = new ArrayList<>();
+        final List<File> cached = _classpathCache.getUnchecked(gavs);
+        if (cached != null)
+        {
+            classpathElements.addAll(cached);
+        }
         classpathElements.add(getLocalClasspathElement(clientClazz));
 
         final String collect = classpathElements.stream()
