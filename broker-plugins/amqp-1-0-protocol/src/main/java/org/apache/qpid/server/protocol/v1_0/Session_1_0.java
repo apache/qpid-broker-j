@@ -248,32 +248,54 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         send(disposition);
     }
 
-    void updateDisposition(final Role role,
+    void updateDisposition(final LinkEndpoint<?,?> linkEndpoint,
                            final Binary deliveryTag,
                            final DeliveryState state,
                            final boolean settled)
     {
-        final DeliveryRegistry deliveryRegistry = role == Role.RECEIVER ? _incomingDeliveryRegistry : _outgoingDeliveryRegistry;
-        UnsignedInteger deliveryId = deliveryRegistry.getDeliveryIdByTag(deliveryTag);
+        final UnsignedInteger deliveryId = getDeliveryId(deliveryTag, linkEndpoint);
+        updateDisposition(linkEndpoint.getRole(), deliveryId, deliveryId, state, settled);
+    }
+
+    private UnsignedInteger getDeliveryId(final DeliveryRegistry deliveryRegistry,
+                                          final Binary deliveryTag,
+                                          final LinkEndpoint<?, ?> linkEndpoint)
+    {
+        final UnsignedInteger deliveryId = deliveryRegistry.getDeliveryId(deliveryTag, linkEndpoint);
         if (deliveryId == null)
         {
             throw new ConnectionScopedRuntimeException(String.format(
                     "Delivery with tag '%s' is not found in unsettled deliveries", deliveryTag));
         }
-        updateDisposition(role, deliveryId, deliveryId, state, settled);
+        return deliveryId;
     }
 
-    void updateDisposition(final Role role,
+    private SortedSet<UnsignedInteger> getDeliveryIds(final Set<Binary> deliveryTags, final LinkEndpoint<?, ?> linkEndpoint)
+    {
+        final DeliveryRegistry deliveryRegistry = getDeliveryRegistry(linkEndpoint.getRole());
+        return deliveryTags.stream()
+                           .map(deliveryTag -> getDeliveryId(deliveryRegistry, deliveryTag, linkEndpoint))
+                           .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    private UnsignedInteger getDeliveryId(final Binary deliveryTag, final LinkEndpoint<?, ?> linkEndpoint)
+    {
+        final DeliveryRegistry deliveryRegistry = getDeliveryRegistry(linkEndpoint.getRole());
+        return getDeliveryId(deliveryRegistry, deliveryTag, linkEndpoint);
+    }
+
+    private DeliveryRegistry getDeliveryRegistry(final Role role)
+    {
+        return role == Role.RECEIVER ? getIncomingDeliveryRegistry() : getOutgoingDeliveryRegistry();
+    }
+
+    void updateDisposition(final LinkEndpoint<?,?> linkEndpoint,
                            final Set<Binary> deliveryTags,
                            final DeliveryState state,
                            final boolean settled)
     {
-        final DeliveryRegistry deliveryRegistry = role == Role.RECEIVER ? _incomingDeliveryRegistry : _outgoingDeliveryRegistry;
-        SortedSet<UnsignedInteger> deliveryIds = deliveryTags.stream()
-                                                             .map(deliveryRegistry::getDeliveryIdByTag)
-                                                             .collect(Collectors.toCollection(TreeSet::new));
-
-        final Iterator<UnsignedInteger> iterator = deliveryIds.iterator();
+        final Role role = linkEndpoint.getRole();
+        final Iterator<UnsignedInteger> iterator = getDeliveryIds(deliveryTags, linkEndpoint).iterator();
         if (iterator.hasNext())
         {
             UnsignedInteger begin = iterator.next();

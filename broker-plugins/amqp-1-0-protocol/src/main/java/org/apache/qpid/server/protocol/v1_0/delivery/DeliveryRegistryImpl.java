@@ -31,13 +31,13 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 public class DeliveryRegistryImpl implements DeliveryRegistry
 {
     private final Map<UnsignedInteger, UnsettledDelivery> _deliveries = new ConcurrentHashMap<>();
-    private final Map<Binary, UnsignedInteger> _deliveryIds = new ConcurrentHashMap<>();
+    private final Map<UnsettledDelivery, UnsignedInteger> _deliveryIds = new ConcurrentHashMap<>();
 
     @Override
     public void addDelivery(final UnsignedInteger deliveryId, final UnsettledDelivery unsettledDelivery)
     {
         _deliveries.put(deliveryId, unsettledDelivery);
-        _deliveryIds.put(unsettledDelivery.getDeliveryTag(), deliveryId);
+        _deliveryIds.put(unsettledDelivery, deliveryId);
     }
 
     @Override
@@ -46,7 +46,7 @@ public class DeliveryRegistryImpl implements DeliveryRegistry
         UnsettledDelivery unsettledDelivery = _deliveries.remove(deliveryId);
         if (unsettledDelivery != null)
         {
-            _deliveryIds.remove(unsettledDelivery.getDeliveryTag());
+            _deliveryIds.remove(unsettledDelivery);
         }
     }
 
@@ -66,15 +66,15 @@ public class DeliveryRegistryImpl implements DeliveryRegistry
             if (unsettledDelivery.getLinkEndpoint() == linkEndpoint)
             {
                 iterator.remove();
-                _deliveryIds.remove(unsettledDelivery.getDeliveryTag());
+                _deliveryIds.remove(unsettledDelivery);
             }
         }
     }
 
     @Override
-    public UnsignedInteger getDeliveryIdByTag(final Binary deliveryTag)
+    public UnsignedInteger getDeliveryId(final Binary deliveryTag, final LinkEndpoint<?, ?> linkEndpoint)
     {
-        return _deliveryIds.get(deliveryTag);
+        return _deliveryIds.get(new UnsettledDelivery(deliveryTag, linkEndpoint));
     }
 
     @Override
