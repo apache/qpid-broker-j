@@ -24,7 +24,6 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -50,10 +49,7 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
-import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -648,7 +644,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     {
         if (settled && (_unsettled.remove(deliveryTag) != null))
         {
-            getSession().updateDisposition(getRole(), deliveryTag, state, settled);
+            getSession().updateDisposition(this, deliveryTag, state, settled);
         }
     }
 

@@ -30,6 +30,6 @@ public interface DeliveryRegistry
     void removeDelivery(UnsignedInteger deliveryId);
     UnsettledDelivery getDelivery(UnsignedInteger deliveryId);
     void removeDeliveriesForLinkEndpoint(LinkEndpoint<?, ?> linkEndpoint);
-    UnsignedInteger getDeliveryIdByTag(Binary deliveryTag);
+    UnsignedInteger getDeliveryId(Binary deliveryTag, LinkEndpoint<?, ?> linkEndpoint);
     int size();
 }

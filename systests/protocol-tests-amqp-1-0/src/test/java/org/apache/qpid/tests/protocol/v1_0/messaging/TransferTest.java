@@ -21,6 +21,7 @@
 package org.apache.qpid.tests.protocol.v1_0.messaging;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,8 +32,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
@@ -79,7 +80,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.server.util.SystemUtils;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -192,6 +192,64 @@ public class TransferTest extends BrokerAdminUsingTestBase
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
             assertThat(responseDisposition.getState(), is(instanceOf(Accepted.class)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.6.12 Transferring A Message",
+            description = "The delivery-tag MUST be unique amongst all deliveries"
+                          + " that could be considered unsettled by either end of the link.")
+    public void transferMessagesWithTheSameDeliveryTagOnSeparateLinksBelongingToTheSameSession() throws Exception
+    {
+        try (final FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final UnsignedInteger link1Handle = UnsignedInteger.ONE;
+            final UnsignedInteger link2Handle = UnsignedInteger.valueOf(2);
+            final Binary deliveryTag = new Binary("deliveryTag".getBytes(StandardCharsets.UTF_8));
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateProtocol().consumeResponse()
+                                     .open().consumeResponse(Open.class)
+                                     .begin().consumeResponse(Begin.class)
+
+                                     .attachName("test1")
+                                     .attachRole(Role.SENDER)
+                                     .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                     .attachSndSettleMode(SenderSettleMode.UNSETTLED)
+                                     .attachRcvSettleMode(ReceiverSettleMode.FIRST)
+                                     .attachHandle(link1Handle)
+                                     .attach().consumeResponse(Attach.class)
+                                     .consumeResponse(Flow.class)
+
+                                     .attachName("test2")
+                                     .attachHandle(link2Handle)
+                                     .attach().consumeResponse(Attach.class)
+                                     .consumeResponse(Flow.class)
+
+                                     .transferHandle(link1Handle)
+                                     .transferPayloadData("testData")
+                                     .transferDeliveryTag(deliveryTag)
+                                     .transferDeliveryId(UnsignedInteger.ZERO)
+                                     .transfer()
+                                     .transferHandle(link2Handle)
+                                     .transferDeliveryId(UnsignedInteger.ONE)
+                                     .transferPayloadData("testData2")
+                                     .transferDeliveryTag(deliveryTag)
+                                     .transfer();
+
+            final Disposition disposition1 = interaction.consumeResponse().getLatestResponse(Disposition.class);
+            final UnsignedInteger first = disposition1.getFirst();
+            final UnsignedInteger last = disposition1.getLast();
+
+            assertThat(first, anyOf(is(UnsignedInteger.ZERO), is(UnsignedInteger.ONE)));
+            assertThat(last, anyOf(nullValue(), is(UnsignedInteger.ZERO), is(UnsignedInteger.ONE)));
+
+            if (last == null || first.equals(last))
+            {
+                final Disposition disposition2 = interaction.consumeResponse().getLatestResponse(Disposition.class);
+                assertThat(disposition2.getFirst(), anyOf(is(UnsignedInteger.ZERO), is(UnsignedInteger.ONE)));
+                assertThat(disposition2.getLast(), anyOf(nullValue(), is(UnsignedInteger.ZERO), is(UnsignedInteger.ONE)));
+                assertThat(disposition2.getFirst(), is(not(equalTo(first))));
+            }
         }
     }
 
