@@ -336,7 +336,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
 
             if (outcomeUpdate || settled)
             {
-                getSession().updateDisposition(getRole(), unsettledKeys, state, settled);
+                getSession().updateDisposition(this, deliveryTags, state, settled);
             }
 
             if (settled)

@@ -632,7 +632,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     {
         if (settled && (_unsettled.remove(deliveryTag) != null))
         {
-            getSession().updateDisposition(getRole(), deliveryTag, state, settled);
+            getSession().updateDisposition(this, deliveryTag, state, settled);
         }
     }
 

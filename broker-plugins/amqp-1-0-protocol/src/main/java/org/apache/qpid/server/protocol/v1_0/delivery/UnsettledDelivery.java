@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0.delivery;
 
+import java.util.Objects;
+
 import org.apache.qpid.server.protocol.v1_0.LinkEndpoint;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 
@@ -42,5 +44,27 @@ public class UnsettledDelivery
     public LinkEndpoint<?, ?> getLinkEndpoint()
     {
         return _linkEndpoint;
+    }
+
+    @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        final UnsettledDelivery that = (UnsettledDelivery) o;
+        return Objects.equals(_deliveryTag, that._deliveryTag) &&
+               Objects.equals(_linkEndpoint, that._linkEndpoint);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(_deliveryTag, _linkEndpoint);
     }
 }
