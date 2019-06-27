@@ -1144,4 +1144,23 @@ public class Interaction extends AbstractInteraction<Interaction>
         sendPerformative(EMPTY_FRAME, UnsignedShort.ZERO);
         return this;
     }
+
+    public <T> T consume(final Class<T> expected, final Class<?>... ignore)
+            throws Exception
+    {
+        final Class<?>[] expectedResponses = Arrays.copyOf(ignore, ignore.length + 1);
+        expectedResponses[ignore.length] = expected;
+
+        T completed = null;
+        do
+        {
+            Response<?> response = consumeResponse(expectedResponses).getLatestResponse();
+            if (expected.isAssignableFrom(response.getBody().getClass()))
+            {
+                completed = (T) response.getBody();
+            }
+        }
+        while (completed == null);
+        return completed;
+    }
 }
