@@ -114,11 +114,6 @@ h1 {
 
 }
 
-div .messages {
-	width: 100%;
-	height: 350px;
-}
-
 .formBox {
     margin: 10px 5px;
 }
@@ -837,3 +832,10 @@ td.advancedSearchField, col.autoWidth {
 .logViewer .field-logger { width: 20%;}
 .logViewer .field-threadName { width: 10%;}
 .logViewer .field-message { width: auto;}
+
+.queueMessages .field-selected { width: 2em; }
+.queueMessages .field-id { width: 15%; }
+.queueMessages .field-messageId { width: 20%; }
+.queueMessages .field-size { width: 20%;}
+.queueMessages .field-state { width: 20%; }
+.queueMessages .field-arrivalTime { width: auto }

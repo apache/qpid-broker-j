@@ -108,7 +108,7 @@ define(["dojo/_base/lang",
 
             if (request)
             {
-                shallowCopy(request, requestOptions, ["url"]);
+                shallowCopy(request, requestOptions, ["url", "returnOriginalPromise"]);
                 if (requestOptions.data && requestOptions.headers && requestOptions.headers["Content-Type"]
                     && requestOptions.headers["Content-Type"] == "application/json" && typeof requestOptions.data
                                                                                        != "string")
@@ -137,6 +137,12 @@ define(["dojo/_base/lang",
                     }
                 }
             }));
+
+            if ("returnOriginalPromise" in request && request.returnOriginalPromise === true)
+            {
+                return promise;
+            }
+
             var errorHandler = this.errorHandler;
 
             // decorate promise in order to use a default error handler when 'then' method is invoked without providing error handler
@@ -250,6 +256,25 @@ define(["dojo/_base/lang",
             {
                 request.query = parameters;
             }
+            return this.get(request);
+        };
+
+        Management.prototype.invoke = function (modelObj, parameters, requestOptions)
+        {
+            var url = this.objectToURL(modelObj);
+            var request = {url: url};
+
+            if (requestOptions)
+            {
+                lang.mixin(request, requestOptions);
+            }
+
+            if (parameters)
+            {
+                request.query = parameters;
+            }
+            request.returnOriginalPromise = true;
+
             return this.get(request);
         };
 
@@ -624,6 +649,7 @@ define(["dojo/_base/lang",
                 query: {}
             };
             shallowCopy(query, request.query, ["parent", "category"]);
+            request.returnOriginalPromise = true;
             return this.get(request);
         };
 
