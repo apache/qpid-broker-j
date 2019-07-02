@@ -132,6 +132,7 @@ define(["dojo/_base/declare",
                         var newResults = results.slice(0);
                         var idProperty = this.idProperty;
                         var newResultsIdToIndexMap = createIdToIndexMap(newResults, idProperty);
+                        var total = data.totalLength;
                         if (this._currentResults)
                         {
                             var currentResults = this._currentResults.slice(0);
@@ -142,7 +143,7 @@ define(["dojo/_base/declare",
                                 var newResultIndex = newResultsIdToIndexMap[id];
                                 if (newResultIndex === undefined)
                                 {
-                                    this._pushChange("delete", currentResult, offset + i, offset + i);
+                                    this._pushChange("delete", currentResult, offset + i, offset + i, total);
                                     currentResults.splice(i, 1);
                                     updateIdToIndexMap(currentResults,
                                         idProperty,
@@ -165,7 +166,7 @@ define(["dojo/_base/declare",
                                         idProperty,
                                         this._currentResultsIdToIndexMap,
                                         j);
-                                    this._pushChange("add", newResult, offset + j);
+                                    this._pushChange("add", newResult, offset + j, -1, total);
                                 }
                                 else
                                 {
@@ -175,12 +176,12 @@ define(["dojo/_base/declare",
                                         currentResults[j] = newResult;
                                         if (!util.equals(newResult, currentResult))
                                         {
-                                            this._pushChange("update", newResult, offset + j, previousIndex + offset);
+                                            this._pushChange("update", newResult, offset + j, previousIndex + offset, total);
                                         }
                                     }
                                     else
                                     {
-                                        this._pushChange("update", newResult, offset + j, previousIndex + offset);
+                                        this._pushChange("update", newResult, offset + j, previousIndex + offset, total);
                                         currentResults.splice(previousIndex, 1);
                                         currentResults.splice(j, 0, currentResult);
                                         updateIdToIndexMap(currentResults,
@@ -195,7 +196,7 @@ define(["dojo/_base/declare",
                         {
                             for (var j = 0; j < newResults.length; j++)
                             {
-                                this._pushChange("add", newResults[j], offset + j);
+                                this._pushChange("add", newResults[j], offset + j, -1,  total);
                             }
                         }
 
@@ -203,7 +204,7 @@ define(["dojo/_base/declare",
                         this._currentResultsIdToIndexMap = newResultsIdToIndexMap;
                     }
                 },
-                _pushChange: function (change, item, currentIndex, previousIndex)
+                _pushChange: function (change, item, currentIndex, previousIndex, total)
                 {
                     if (this.targetStore)
                     {
@@ -231,6 +232,10 @@ define(["dojo/_base/declare",
                             "index": currentIndex,
                             "previousIndex": previousIndex
                         };
+                        if (total >= 0)
+                        {
+                            event.totalLength = total;
+                        }
                         this.emit(change, event);
                     }
                 }

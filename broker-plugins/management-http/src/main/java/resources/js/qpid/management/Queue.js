@@ -36,15 +36,20 @@ define(["dojo/_base/declare",
         "qpid/management/moveCopyMessages",
         "qpid/management/showMessage",
         "qpid/management/addQueue",
-        "qpid/common/JsonRest",
-        "dojox/grid/EnhancedGrid",
         "qpid/management/query/QueryGrid",
         "qpid/common/StatisticsWidget",
-        "dojo/data/ObjectStore",
         "dojox/html/entities",
         "dojo/text!showQueue.html",
-        "dojox/grid/enhanced/plugins/Pagination",
-        "dojox/grid/enhanced/plugins/IndirectSelection",
+        "dgrid/Grid",
+        "dgrid/Selector",
+        "dgrid/Keyboard",
+        "dgrid/Selection",
+        "dgrid/extensions/Pagination",
+        "dgrid/extensions/ColumnResizer",
+        "dgrid/extensions/DijitRegistry",
+        "dojo/aspect",
+        "qpid/management/MessageStore",
+        "qpid/management/query/StoreUpdater",
         "dojo/domReady!"],
     function (declare,
               lang,
@@ -64,13 +69,20 @@ define(["dojo/_base/declare",
               moveMessages,
               showMessage,
               addQueue,
-              JsonRest,
-              EnhancedGrid,
               QueryGrid,
               StatisticsWidget,
-              ObjectStore,
               entities,
-              template)
+              template,
+              Grid,
+              Selector,
+              Keyboard,
+              Selection,
+              Pagination,
+              ColumnResizer,
+              DijitRegistry,
+              aspect,
+              MessageStore,
+              StoreUpdater)
     {
 
         function Queue(kwArgs)
@@ -111,87 +123,6 @@ define(["dojo/_base/declare",
                 .then(function (instances)
                 {
                     that.queueUpdater = new QueueUpdater(that);
-
-                    // double encode to allow slashes in object names.
-                    var myStore = new JsonRest({
-                        management: that.management,
-                        modelObject: that.modelObj,
-                        queryOperation: "getMessageInfo",
-                        queryParams: {includeHeaders: false},
-                        totalRetriever: function ()
-                        {
-                            if (that.queueUpdater.queueData && that.queueUpdater.queueData.queueDepthMessages !== undefined)
-                            {
-                                return that.queueUpdater.queueData.queueDepthMessages;
-                            }
-                            return that.management.query(
-                                {
-                                    parent: that.modelObj.parent,
-                                    category: "queue",
-                                    select: "queueDepthMessages",
-                                    where: "name='" + that.modelObj.name.replace(/'/g, "'''") + "'"
-                                })
-                                .then(function (data)
-                                {
-                                    return data && data.results && data.results[0] ? data.results[0][0] : 0;
-                                }, function (error)
-                                {
-                                    return undefined;
-                                });
-                        }
-                    });
-                    var messageGridDiv = query(".messages", contentPane.containerNode)[0];
-                    that.dataStore = new ObjectStore({objectStore: myStore});
-                    var userPreferences = this.management.userPreferences;
-                    that.grid = new EnhancedGrid({
-                        store: that.dataStore,
-                        autoHeight: 10,
-                        keepSelection: true,
-                        structure: [{
-                            name: "Payload Size",
-                            field: "size",
-                            width: "40%"
-                        }, {
-                            name: "State",
-                            field: "state",
-                            width: "30%"
-                        },
-
-                            {
-                                name: "Arrival",
-                                field: "arrivalTime",
-                                width: "30%",
-                                formatter: function (val)
-                                {
-                                    return userPreferences.formatDateTime(val, {
-                                        addOffset: true,
-                                        appendTimeZone: true
-                                    });
-                                }
-                            }],
-                        plugins: {
-                            pagination: {
-                                pageSizes: ["10", "25", "50", "100"],
-                                description: true,
-                                sizeSwitch: true,
-                                pageStepper: true,
-                                gotoButton: true,
-                                maxPageStep: 4,
-                                position: "bottom"
-                            },
-                            indirectSelection: true
-                        },
-                        canSort: function (col)
-                        {
-                            return false;
-                        }
-                    }, messageGridDiv);
-
-                    connect.connect(that.grid, "onRowDblClick", that.grid, function (evt)
-                    {
-                        var idx = evt.rowIndex, theItem = this.getItem(idx);
-                        showMessage.show(that.management, that.modelObj, theItem);
-                    });
 
                     var deleteMessagesButton = query(".deleteMessagesButton", contentPane.containerNode)[0];
                     var deleteWidget = registry.byNode(deleteMessagesButton);
@@ -256,29 +187,21 @@ define(["dojo/_base/declare",
 
         Queue.prototype.deleteMessages = function ()
         {
-            var data = this.grid.selection.getSelected();
-            if (data.length)
+            var selected = this.queueUpdater.getSelectedMessageIDs();
+            if (selected.length > 0)
             {
-                if (confirm("Delete " + data.length + " messages?"))
+                var confirmationRequest = "Delete " + selected.length + " message" + (selected.length > 1 ? "s" : "" )+ "?";
+                if (confirm(confirmationRequest))
                 {
                     var modelObj = {
                         type: "queue",
                         name: "deleteMessages",
                         parent: this.modelObj
                     };
-                    var parameters = {messageIds: []};
-                    for (var i = 0; i < data.length; i++)
-                    {
-                        if (data[i])
-                        {
-                            parameters.messageIds.push(data[i].id);
-                        }
-                    }
-
-                    this.management.update(modelObj, parameters)
+                    this.management.update(modelObj, {messageIds: selected})
                         .then(lang.hitch(this, function ()
                         {
-                            this.grid.selection.deselectAll();
+                            this.queueUpdater.clearMessageSelection();
                             this.reloadGridData();
                         }));
                 }
@@ -295,21 +218,14 @@ define(["dojo/_base/declare",
                 };
                 this.management.update(modelObj, {}).then(lang.hitch(this, function ()
                 {
-                    this.grid.selection.deselectAll();
+                    this.queueUpdater.clearMessageSelection();
                     this.reloadGridData();
                 }));
             }
         };
         Queue.prototype.refreshMessages = function ()
         {
-            var currentPage = this.grid.pagination.currentPage;
-            var currentPageSize = this.grid.pagination.currentPageSize;
-            var first = (currentPage - 1 ) * currentPageSize;
-            var last = currentPage * currentPageSize;
-            this.grid.setQuery({
-                first: first,
-                last: last
-            });
+            this.queueUpdater.refreshMessages();
         };
         Queue.prototype.reloadGridData = function ()
         {
@@ -318,26 +234,20 @@ define(["dojo/_base/declare",
         Queue.prototype.moveOrCopyMessages = function (obj)
         {
             var move = obj.move;
-            var data = this.grid.selection.getSelected();
-            if (data.length)
+            var data = this.queueUpdater.getSelectedMessageIDs();
+            if (data.length > 0)
             {
-                var i, putData = {messages: []};
+                var putData = {messages: data};
                 if (move)
                 {
                     putData.move = true;
                 }
-                for (i = 0; i < data.length; i++)
-                {
-                    if (data[i])
-                    {
-                        putData.messages.push(data[i].id);
-                    }
-                }
+
                 moveMessages.show(this.management, this.modelObj, putData, lang.hitch(this, function ()
                 {
                     if (move)
                     {
-                        this.grid.selection.deselectAll();
+                        this.queueUpdater.clearMessageSelection();
                         this.reloadGridData();
                     }
                 }));
@@ -348,7 +258,6 @@ define(["dojo/_base/declare",
 
         Queue.prototype.startup = function ()
         {
-            this.grid.startup();
         };
 
         Queue.prototype.close = function ()
@@ -496,7 +405,133 @@ define(["dojo/_base/declare",
                 {
                     that.consumersGrid.resize();
                 });
+
+            this._messagesGrid = this._buildMessagesGrid(findNode);
         }
+
+        QueueUpdater.prototype.clearMessageSelection = function()
+        {
+            this._messagesGrid.clearSelection();
+        };
+
+        QueueUpdater.prototype.refreshMessages = function()
+        {
+            this._messagesStore.updateRange();
+        };
+
+        QueueUpdater.prototype.getSelectedMessageIDs = function ()
+        {
+            var selected = [];
+            var selection = this._messagesGrid.selection || {};
+            for (var item in selection)
+            {
+                if (selection.hasOwnProperty(item) && selection[item])
+                {
+                    selected.push(parseInt(item));
+                }
+            }
+            return selected;
+        };
+
+        QueueUpdater.prototype._buildMessagesGrid = function(findNode)
+        {
+            var Store = declare([MessageStore, StoreUpdater],
+                {
+                    track: function () {
+                        return this;
+                    },
+
+                    _createSubCollection: function () {
+                        return this;
+                    }
+                });
+
+            this._messagesStore = new Store({
+                idProperty: "id",
+                modelObject: this.modelObj,
+                management: this.management
+            });
+
+            var userPreferences = this.management.userPreferences;
+            var MessagesGrid = declare([Grid,
+                                        Keyboard,
+                                        Selection,
+                                        Selector,
+                                        Pagination,
+                                        ColumnResizer,
+                                        DijitRegistry
+            ]);
+
+            var messagesGrid = new MessagesGrid({
+                rowsPerPage: 10,
+                selectionMode: 'none',
+                detectChanges: true,
+                deselectOnRefresh: false,
+                allowSelectAll: true,
+                cellNavigation: true,
+                className: 'dgrid-autoheight',
+                pageSizeOptions: [10, 20, 30, 40, 50, 100],
+                adjustLastColumn: true,
+                collection: this._messagesStore,
+                highlightRow: function () {
+                },
+                columns: [
+                    {
+                        label: 'All',
+                        selector: 'checkbox',
+                        field: "selected",
+                        sortable: false
+                    },
+                    {
+                        label: "ID",
+                        field: "id",
+                        sortable: false
+                    }, {
+                        label: "Payload Size",
+                        field: "size",
+                        formatter: formatter.formatBytes,
+                        sortable: false
+                    }, {
+                        label: "State",
+                        field: "state",
+                        sortable: false
+                    }, {
+                        label: "Arrival",
+                        field: "arrivalTime",
+                        sortable: false,
+                        formatter: function (value, object) {
+                            return userPreferences.formatDateTime(value,
+                                {
+                                    addOffset: true,
+                                    appendTimeZone: true
+                                });
+                        }
+                    }
+                ]
+            }, findNode("messagesGrid"));
+
+            var management = this.management;
+            var modelObj = this.modelObj;
+            messagesGrid.on('.dgrid-row:dblclick', lang.hitch(this, function (event) {
+                showMessage.show(management, modelObj, messagesGrid.row(event));
+            }));
+            messagesGrid.on('.dgrid-row:keypress', lang.hitch(this, function (event) {
+                if (event.keyCode === keys.ENTER)
+                {
+                    showMessage.show(management, modelObj, messagesGrid.row(event));
+                }
+            }));
+
+            messagesGrid.startup();
+            var queueMessagesPanel = registry.byNode(findNode("queueMessages"));
+            aspect.after(queueMessagesPanel, "toggle", function () {
+                if (queueMessagesPanel.get("open") === true)
+                {
+                    messagesGrid.refresh();
+                }
+            });
+            return messagesGrid;
+        };
 
         function renderMaximumQueueDepthMessages(valueElement, value, bytes)
         {
