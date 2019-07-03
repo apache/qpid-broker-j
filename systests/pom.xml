@@ -155,6 +155,9 @@
             <exclude>src/test/resources/org/apache/qpid/test/unit/message/**</exclude>
             <exclude>qpid-systests-jms_2.0/**</exclude>
             <exclude>protocol-tests-amqp-1-0/**</exclude>
+            <exclude>protocol-tests-core/**</exclude>
+            <exclude>end-to-end-conversion-tests/**</exclude>
+            <exclude>systests-utils/**</exclude>
           </excludes>
         </configuration>
       </plugin>
