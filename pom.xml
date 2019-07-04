@@ -105,7 +105,8 @@
     <derby-version>10.13.1.1</derby-version>
     <logback-version>1.2.2</logback-version>
     <guava-version>27.0-jre</guava-version>
-    <fasterxml-jackson-version>2.9.8</fasterxml-jackson-version>
+    <fasterxml-jackson-version>2.9.9</fasterxml-jackson-version>
+    <fasterxml-jackson-databind-version>2.9.9.1</fasterxml-jackson-databind-version>
     <slf4j-version>1.7.25</slf4j-version>
     <jetty-version>9.4.12.v20180830</jetty-version>
 
@@ -527,7 +528,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>${fasterxml-jackson-version}</version>
+        <version>${fasterxml-jackson-databind-version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
