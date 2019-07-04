@@ -33,7 +33,7 @@ From: 'an unknown organization'
     License: BSD 3-Clause  (https://spdx.org/licenses/BSD 3-Clause#licenseText)
 
 From: 'Apache Software Foundation' (http://db.apache.org/)
-  - Apache Derby Database Engine and Embedded JDBC Driver (http://db.apache.org/derby/) org.apache.derby:derby:jar:10.13.1.1
+  - Apache Derby Database Engine and Embedded JDBC Driver (http://db.apache.org/derby/) org.apache.derby:derby:jar:10.14.2.0
     License: Apache 2  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'FasterXML' (http://fasterxml.com/)
