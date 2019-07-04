@@ -108,7 +108,7 @@
     <fasterxml-jackson-version>2.9.9</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>2.9.9.1</fasterxml-jackson-databind-version>
     <slf4j-version>1.7.25</slf4j-version>
-    <jetty-version>9.4.12.v20180830</jetty-version>
+    <jetty-version>9.4.19.v20190610</jetty-version>
 
     <!-- dependency version numbers -->
     <bonecp-version>0.7.1.RELEASE</bonecp-version>
