@@ -226,20 +226,6 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         // wait for new master
         _restTestHelper.waitForAttributeChanged(_baseNodeRestUrl + NODE2 + "?depth=0", BDBHAVirtualHostNode.ROLE, "MASTER");
 
-        // delete remote node
-        getRestTestHelper().submitRequest("remotereplicationnode/" + NODE2 + "/" + NODE1, "DELETE", HttpServletResponse.SC_OK);
-
-        int counter = 0;
-        while (data.size() != 1 && counter<50)
-        {
-            data = getRestTestHelper().getJsonAsList("remotereplicationnode/" + NODE2);
-            if (data.size() != 1)
-            {
-                Thread.sleep(100l);
-            }
-            counter++;
-        }
-        assertEquals("Unexpected number of remote nodes on " + NODE2, 1, data.size());
     }
 
     public void testIntruderBDBHAVHNNotAllowedToConnect() throws Exception
