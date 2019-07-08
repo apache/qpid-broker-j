@@ -38,6 +38,7 @@ import static org.junit.Assume.assumeThat;
 
 import java.io.ByteArrayOutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
@@ -45,10 +46,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -328,7 +331,7 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
                                              Duration.of(365, ChronoUnit.DAYS).getSeconds(),
                                              x500Name,
                                              Collections.emptySet(),
-                                             Collections.emptySet());
+                                             Collections.singleton(InetAddress.getLoopbackAddress()));
     }
 
 }
