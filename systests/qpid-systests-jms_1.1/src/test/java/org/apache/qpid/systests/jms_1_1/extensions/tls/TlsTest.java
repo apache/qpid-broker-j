@@ -124,7 +124,7 @@ public class TlsTest extends JmsTestBase
         int port = configureTlsPort(getTestPortName(), true, false, false);
 
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setKeyStoreLocation(KEYSTORE)
@@ -153,7 +153,7 @@ public class TlsTest extends JmsTestBase
         File trustCertFile = extractCertFileFromTestTrustStore();
 
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setOptions(Collections.singletonMap("trusted_certs_path",
@@ -178,7 +178,7 @@ public class TlsTest extends JmsTestBase
         try
         {
             InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-            getConnectionBuilder().setSslPort(brokerAddress.getPort())
+            getConnectionBuilder().setPort(brokerAddress.getPort())
                                   .setHost(brokerAddress.getHostName())
                                   .setTls(true)
                                   .build();
@@ -205,7 +205,7 @@ public class TlsTest extends JmsTestBase
 
         try
         {
-            getConnectionBuilder().setSslPort(port)
+            getConnectionBuilder().setPort(port)
                                   .setHost("127.0.0.1")
                                   .setTls(true)
                                   .setKeyStoreLocation(KEYSTORE)
@@ -220,7 +220,7 @@ public class TlsTest extends JmsTestBase
             // PASS
         }
 
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost("127.0.0.1")
                                                       .setTls(true)
                                                       .setKeyStoreLocation(KEYSTORE)
@@ -247,7 +247,7 @@ public class TlsTest extends JmsTestBase
         setSslStoreSystemProperties();
         try
         {
-            Connection connection = getConnectionBuilder().setSslPort(port)
+            Connection connection = getConnectionBuilder().setPort(port)
                                                           .setTls(true)
                                                           .build();
             try
@@ -274,7 +274,7 @@ public class TlsTest extends JmsTestBase
         try
         {
             Connection connection = getConnectionBuilder().setClientId(getTestName())
-                                                          .setSslPort(port)
+                                                          .setPort(port)
                                                           .setTls(true)
                                                           .setKeyAlias(TestSSLConstants.CERT_ALIAS_APP1)
                                                           .build();
@@ -287,7 +287,7 @@ public class TlsTest extends JmsTestBase
                 connection.close();
             }
 
-            Connection connection2 = getConnectionBuilder().setSslPort(port)
+            Connection connection2 = getConnectionBuilder().setPort(port)
                                                            .setTls(true)
                                                            .setKeyAlias(TestSSLConstants.CERT_ALIAS_APP2)
                                                            .build();
@@ -317,7 +317,7 @@ public class TlsTest extends JmsTestBase
         setSslStoreSystemProperties();
         try
         {
-            getConnectionBuilder().setSslPort(port)
+            getConnectionBuilder().setPort(port)
                                   .setHost("127.0.0.1")
                                   .setTls(true)
                                   .setVerifyHostName(true)
@@ -343,7 +343,7 @@ public class TlsTest extends JmsTestBase
         setSslStoreSystemProperties();
         try
         {
-            Connection connection = getConnectionBuilder().setSslPort(port)
+            Connection connection = getConnectionBuilder().setPort(port)
                                                           .setHost("localhost")
                                                           .setTls(true)
                                                           .build();
@@ -369,7 +369,7 @@ public class TlsTest extends JmsTestBase
         int port = configureTlsPort(getTestPortName(), false, true, false);
 
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setTrustStoreLocation(TRUSTSTORE)
@@ -395,7 +395,7 @@ public class TlsTest extends JmsTestBase
 
         try
         {
-            getConnectionBuilder().setSslPort(port)
+            getConnectionBuilder().setPort(port)
                                   .setHost(getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getHostName())
                                   .setTls(true)
                                   .setTrustStoreLocation(TRUSTSTORE)
@@ -416,7 +416,7 @@ public class TlsTest extends JmsTestBase
         int port = configureTlsPort(getTestPortName(), false, true, false);
 
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setTrustStoreLocation(TRUSTSTORE)
@@ -441,7 +441,7 @@ public class TlsTest extends JmsTestBase
 
         try
         {
-            getConnectionBuilder().setSslPort(port)
+            getConnectionBuilder().setPort(port)
                                   .setHost(getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getHostName())
                                   .setTls(true)
                                   .setTrustStoreLocation(TRUSTSTORE)
@@ -463,7 +463,7 @@ public class TlsTest extends JmsTestBase
         int port = configureTlsPort(getTestPortName(), false, true, true);
 
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setKeyStoreLocation(KEYSTORE)
@@ -513,7 +513,7 @@ public class TlsTest extends JmsTestBase
         options.put("client_cert_path", encodePathOption(certAndKeyFiles[1].getCanonicalPath()));
         options.put("client_cert_priv_key_path", encodePathOption(certAndKeyFiles[0].getCanonicalPath()));
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setTrustStoreLocation(TRUSTSTORE)

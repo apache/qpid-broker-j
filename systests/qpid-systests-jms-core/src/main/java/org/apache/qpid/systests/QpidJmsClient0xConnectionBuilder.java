@@ -52,7 +52,6 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     private int _connectdelay;
     private String _host = "localhost";
     private int _port;
-    private int _sslPort;
     private String _keyStoreLocation;
     private String _keyStorePassword;
     private String _trustStoreLocation;
@@ -72,20 +71,13 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setPort(final int port)
     {
         _port = port;
-        return setSslPort(port);
+        return this;
     }
 
     @Override
     public ConnectionBuilder addFailoverPort(final int port)
     {
         _failoverPorts.add(port);
-        return this;
-    }
-
-    @Override
-    public ConnectionBuilder setSslPort(final int port)
-    {
-        _sslPort = port;
         return this;
     }
 
@@ -329,7 +321,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
         cUrlBuilder.append("?");
 
         final List<Integer> copy = new ArrayList<>(_failoverPorts.size() + 1);
-        copy.add(_enableTls ? _sslPort : _port);
+        copy.add(_port);
 
         if (_enableFailover)
         {

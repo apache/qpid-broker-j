@@ -35,9 +35,6 @@ public interface ConnectionBuilder
     ConnectionBuilder setHost(String host);
     ConnectionBuilder setPort(int port);
 
-    @Deprecated
-    ConnectionBuilder setSslPort(int port);
-
     ConnectionBuilder setPrefetch(int prefetch);
     ConnectionBuilder setClientId(String clientId);
     ConnectionBuilder setUsername(String username);

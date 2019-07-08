@@ -692,7 +692,7 @@ public class AmqpManagementTest extends JmsTestBase
                                             getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getPort());
 
         Connection connection = getConnectionBuilder().setTls(true)
-                                                      .setSslPort(tlsPort)
+                                                      .setPort(tlsPort)
                                                       .setTrustStoreLocation(TRUSTSTORE)
                                                       .setTrustStorePassword(TRUSTSTORE_PASSWORD)
                                                       .build();

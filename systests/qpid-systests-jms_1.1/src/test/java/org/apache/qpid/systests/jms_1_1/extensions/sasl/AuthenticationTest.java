@@ -157,7 +157,7 @@ public class AuthenticationTest extends JmsTestBase
     {
         int port = createExternalProviderAndTlsPort();
 
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setTls(true)
                                                       .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                                       .setKeyStoreLocation(KEYSTORE)
@@ -185,7 +185,7 @@ public class AuthenticationTest extends JmsTestBase
 
         try
         {
-            getConnectionBuilder().setSslPort(port)
+            getConnectionBuilder().setPort(port)
                                   .setTls(true)
                                   .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                   .setKeyStoreLocation(KEYSTORE)
@@ -215,7 +215,7 @@ public class AuthenticationTest extends JmsTestBase
 
         try
         {
-            getConnectionBuilder().setSslPort(port)
+            getConnectionBuilder().setPort(port)
                                   .setTls(true)
                                   .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                   .setKeyStoreLocation(TEST_PROFILE_RESOURCE_BASE + EXPIRED_KEYSTORE)
@@ -240,7 +240,7 @@ public class AuthenticationTest extends JmsTestBase
         trustStoreAttributes.put(FileTrustStore.PEERS_ONLY, true);
         int port = createExternalProviderAndTlsPort(trustStoreAttributes);
 
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setTls(true)
                                                       .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                                       .setKeyStoreLocation(KEYSTORE)
@@ -262,7 +262,7 @@ public class AuthenticationTest extends JmsTestBase
         try
         {
 
-            getConnectionBuilder().setSslPort(port)
+            getConnectionBuilder().setPort(port)
                                   .setTls(true)
                                   .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                   .setKeyStoreLocation(KEYSTORE)
@@ -311,7 +311,7 @@ public class AuthenticationTest extends JmsTestBase
         trustStoreAttributes.put(FileTrustStore.PEERS_ONLY, true);
         int port = createExternalProviderAndTlsPort(trustStoreAttributes, trustStoreName, false);
 
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setTls(true)
                                                       .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                                       .setKeyStoreLocation(KEYSTORE)
@@ -330,7 +330,7 @@ public class AuthenticationTest extends JmsTestBase
         }
 
         //use the app2 cert, which is NOT in the peerstore (but is signed by the same CA as app1)
-        Connection connection2 = getConnectionBuilder().setSslPort(port)
+        Connection connection2 = getConnectionBuilder().setPort(port)
                               .setTls(true)
                               .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                               .setKeyStoreLocation(KEYSTORE)
@@ -359,7 +359,7 @@ public class AuthenticationTest extends JmsTestBase
 
         String clientId = getTestName();
         int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, true);
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setTls(true)
                                                       .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                                       .setKeyStoreLocation(KEYSTORE)
@@ -392,7 +392,7 @@ public class AuthenticationTest extends JmsTestBase
 
         String clientId = getTestName();
         int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
-        Connection connection = getConnectionBuilder().setSslPort(port)
+        Connection connection = getConnectionBuilder().setPort(port)
                                                       .setTls(true)
                                                       .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                                       .setKeyStoreLocation(KEYSTORE)

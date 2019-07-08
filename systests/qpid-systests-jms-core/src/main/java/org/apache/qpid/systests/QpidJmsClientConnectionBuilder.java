@@ -46,7 +46,6 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     private static final AtomicInteger CLIENTID_COUNTER = new AtomicInteger();
     private String _host;
     private int _port;
-    private int _sslPort;
     private Map<String, Object> _options;
     private boolean _enableTls;
     private boolean _enableFailover;
@@ -73,20 +72,13 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setPort(final int port)
     {
         _port = port;
-        return setSslPort(port);
+        return this;
     }
 
     @Override
     public ConnectionBuilder addFailoverPort(final int port)
     {
         _failoverPorts.add(port);
-        return this;
-    }
-
-    @Override
-    public ConnectionBuilder setSslPort(final int port)
-    {
-        _sslPort = port;
         return this;
     }
 
@@ -341,7 +333,7 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
             final String transportQuery = transportQueryBuilder.toString();
 
             final List<Integer> copy = new ArrayList<>(_failoverPorts.size() + 1);
-            copy.add(_enableTls ? _sslPort : _port);
+            copy.add(_port);
             copy.addAll(_failoverPorts);
 
             final String failover = copy.stream()
@@ -350,17 +342,13 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
             connectionUrlBuilder.append(failover);
             appendOptions(options, connectionUrlBuilder);
         }
-        else if (!_enableTls)
+        connectionUrlBuilder.append(_transport);
+        if (_enableTls)
         {
-            connectionUrlBuilder.append(_transport).append("://").append(_host).append(":").append(_port);
-
-            appendOptions(options, connectionUrlBuilder);
+            connectionUrlBuilder.append("s");
         }
-        else
-        {
-            connectionUrlBuilder.append(_transport).append("s").append("://").append(_host).append(":").append(_sslPort);
-            appendOptions(options, connectionUrlBuilder);
-        }
+        connectionUrlBuilder.append("://").append(_host).append(":").append(_port);
+        appendOptions(options, connectionUrlBuilder);
         return connectionUrlBuilder.toString();
     }
 
