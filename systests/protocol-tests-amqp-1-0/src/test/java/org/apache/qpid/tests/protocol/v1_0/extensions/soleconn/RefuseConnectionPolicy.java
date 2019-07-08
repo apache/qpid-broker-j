@@ -29,8 +29,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
@@ -80,7 +80,7 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
             if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
             {
                 assertThat(responseOpen.getProperties().get(SOLE_CONNECTION_DETECTION_POLICY),
-                           isIn(new UnsignedInteger[]{SoleConnectionDetectionPolicy.STRONG.getValue(),
+                           in(new UnsignedInteger[]{SoleConnectionDetectionPolicy.STRONG.getValue(),
                                    SoleConnectionDetectionPolicy.WEAK.getValue()}));
             }
         }

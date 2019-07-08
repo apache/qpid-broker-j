@@ -29,10 +29,10 @@ import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.oneOf;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
@@ -706,7 +706,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
             Transfer second = interaction.consumeResponse(Transfer.class)
                                          .getLatestResponse(Transfer.class);
-            assertThat(second.getMore(), isOneOf(false, null));
+            assertThat(second.getMore(), oneOf(false, null));
             messageDecoder.addTransfer(second);
 
             assertThat(messageDecoder.getData(), is(equalTo(testMessageData)));

@@ -27,7 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.isIn;
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.typeCompatibleWith;
@@ -245,7 +245,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                 assertThat(remoteUnsettled.keySet(), is(not(empty())));
                 for (Binary deliveryTag : remoteUnsettled.keySet())
                 {
-                    assertThat(deliveryTag, isIn(localUnsettled.keySet()));
+                    assertThat(deliveryTag, in(localUnsettled.keySet()));
                 }
                 assertThat(responseAttach2.getIncompleteUnsettled(), is(equalTo(true)));
             }
@@ -428,7 +428,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             assertThat(remoteUnsettled.keySet(), is(not(empty())));
             for (Binary deliveryTag : remoteUnsettled.keySet())
             {
-                assertThat(deliveryTag, isIn(localUnsettled.keySet()));
+                assertThat(deliveryTag, in(localUnsettled.keySet()));
             }
             assertThat(resumingAttach.getIncompleteUnsettled(), is(equalTo(true)));
 

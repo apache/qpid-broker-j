@@ -26,7 +26,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.oneOf;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -127,7 +127,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                 payload.dispose();
             }
             assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
-            assertThat(disposition.getLast(), isOneOf(null, deliveryId));
+            assertThat(disposition.getLast(), oneOf(null, deliveryId));
             assertThat(disposition.getSettled(), is(equalTo(false)));
         }
     }
@@ -187,7 +187,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                 payload.dispose();
             }
             assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
-            assertThat(disposition.getLast(), isOneOf(null, deliveryId));
+            assertThat(disposition.getLast(), oneOf(null, deliveryId));
             assertThat(disposition.getSettled(), is(equalTo(false)));
             assertThat(disposition.getState(), is(instanceOf(Accepted.class)));
         }
@@ -327,7 +327,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                                                      .getLatestResponse(Disposition.class);
                 dispositionMap.put(disposition.getFirst(), disposition);
 
-                assertThat(disposition.getLast(), isOneOf(null, disposition.getFirst()));
+                assertThat(disposition.getLast(), oneOf(null, disposition.getFirst()));
                 assertThat(disposition.getSettled(), is(equalTo(false)));
                 assertThat(disposition.getState(), is(instanceOf(Accepted.class)));
             }
