@@ -30,7 +30,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.oneOf;
 import static org.junit.Assume.assumeThat;
 
 import java.io.ByteArrayInputStream;
@@ -321,7 +321,7 @@ public class ReadTest extends HttpTestBase
         Map<String, Object> parentAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
 
         int response = getHelper().submitRequest(parentUrl, "PUT", parentAttrs);
-        assertThat(response, is(isOneOf(SC_CREATED, SC_OK)));
+        assertThat(response, is(oneOf(SC_CREATED, SC_OK)));
 
         final String childUrl = String.format("virtualhostloginclusionrule/%s/%s", loggerName, inclusionRuleName);
         Map<String, Object> childAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
