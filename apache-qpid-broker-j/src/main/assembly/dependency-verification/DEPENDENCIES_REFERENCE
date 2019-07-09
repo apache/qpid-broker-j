@@ -65,7 +65,7 @@ From: 'QOS.ch' (http://www.qos.ch)
     License: MIT License  (http://www.opensource.org/licenses/mit-license.php)
 
 From: 'The Apache Software Foundation' (http://www.apache.org/)
-  - Apache Commons BCEL (http://commons.apache.org/proper/commons-bcel) org.apache.bcel:bcel:jar:6.2
+  - Apache Commons BCEL (http://commons.apache.org/proper/commons-bcel) org.apache.bcel:bcel:jar:6.3.1
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'The Apache Software Foundation' (https://www.apache.org/)
