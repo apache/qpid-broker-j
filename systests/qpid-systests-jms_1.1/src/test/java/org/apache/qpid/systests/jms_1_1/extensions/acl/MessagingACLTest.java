@@ -55,6 +55,8 @@ import javax.jms.TextMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -80,6 +82,8 @@ import org.apache.qpid.systests.JmsTestBase;
 
 public class MessagingACLTest extends JmsTestBase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessagingACLTest.class);
+
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     private static final String USER1 = "guest";
     private static final String USER1_PASSWORD = "guest";
@@ -227,7 +231,14 @@ public class MessagingACLTest extends JmsTestBase
         }
         finally
         {
-            connection.close();
+            try
+            {
+                connection.close();
+            }
+            catch (Exception e)
+            {
+                LOGGER.error("Unexpected exception on connection close", e);
+            }
         }
     }
 
