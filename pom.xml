@@ -1423,8 +1423,8 @@
               <licenseMerges>
                 <licenseMerge>Apache Software License, Version 2.0|The Apache Software License, Version 2.0|Apache Software License - Version 2.0|Apache v2|Apache 2|Apache License, Version 2.0|Apache 2.0|Apache Public License 2.0</licenseMerge>
                 <licenseMerge>The MIT License|MIT License|MIT license</licenseMerge>
-                <licenseMerge>BSD License|New BSD|New BSD License|BSD 3-Clause</licenseMerge>
-                <licenseMerge>Eclipse Public License - Version 1.0|Eclipse Public License - v 1.0|Eclipse Public License, Version 1.0</licenseMerge>
+                <licenseMerge>BSD License|New BSD|New BSD License|BSD 3-Clause|BSD Licence 3</licenseMerge>
+                <licenseMerge>Eclipse Public License - Version 1.0|Eclipse Public License - v 1.0|Eclipse Public License, Version 1.0|Eclipse Public License 1.0</licenseMerge>
                 <licenseMerge>Academic Free License v2.1|AFL-2.1</licenseMerge>
                 <licenseMerge>COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0|CDDL + GPLv2 with classpath exception</licenseMerge>
               </licenseMerges>
