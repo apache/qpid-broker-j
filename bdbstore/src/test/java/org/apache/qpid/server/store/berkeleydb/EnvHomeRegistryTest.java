@@ -25,7 +25,6 @@ import java.io.File;
 
 import org.junit.Test;
 
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class EnvHomeRegistryTest extends UnitTestBase
@@ -36,7 +35,7 @@ public class EnvHomeRegistryTest extends UnitTestBase
     @Test
     public void testDuplicateEnvHomeRejected() throws Exception
     {
-        File home = new File(QpidTestCase.TMP_FOLDER, getTestName());
+        File home = new File(UnitTestBase.TMP_FOLDER, getTestName());
 
         _ehr.registerHome(home);
         try
@@ -53,8 +52,8 @@ public class EnvHomeRegistryTest extends UnitTestBase
     @Test
     public void testUniqueEnvHomesAllowed() throws Exception
     {
-        File home1 = new File(QpidTestCase.TMP_FOLDER, getTestName() + "1");
-        File home2 = new File(QpidTestCase.TMP_FOLDER, getTestName() + "2");
+        File home1 = new File(UnitTestBase.TMP_FOLDER, getTestName() + "1");
+        File home2 = new File(UnitTestBase.TMP_FOLDER, getTestName() + "2");
 
         _ehr.registerHome(home1);
         _ehr.registerHome(home2);
@@ -63,7 +62,7 @@ public class EnvHomeRegistryTest extends UnitTestBase
     @Test
     public void testReuseOfEnvHomesAllowed() throws Exception
     {
-        File home = new File(QpidTestCase.TMP_FOLDER, getTestName() + "1");
+        File home = new File(UnitTestBase.TMP_FOLDER, getTestName() + "1");
 
         _ehr.registerHome(home);
 

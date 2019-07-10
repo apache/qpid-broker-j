@@ -60,7 +60,7 @@ import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHostImpl;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 import org.apache.qpid.server.virtualhostnode.AbstractVirtualHostNode;
-import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.UnitTestBase;
 
 /**
  * Helper class to make the tests of BDB HA Virtual Host Nodes simpler and more concise.
@@ -90,7 +90,7 @@ public class BDBHAVirtualHostNodeTestHelper
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getContextValue(Long.class, BDBVirtualHost.QPID_BROKER_BDB_TOTAL_CACHE_SIZE)).thenReturn(BDBVirtualHost.BDB_MIN_CACHE_SIZE);
 
-        _bdbStorePath = new File(QpidTestCase.TMP_FOLDER, _testName + "." + System.currentTimeMillis());
+        _bdbStorePath = new File(UnitTestBase.TMP_FOLDER, _testName + "." + System.currentTimeMillis());
         _bdbStorePath.deleteOnExit();
         _numberOfSleeps = Integer.getInteger("BDBHAVirtualHostNodeTestHelper.numberOfSleepsOnChangeWaiting", 50);
         _sleepInterval = Integer.getInteger("BDBHAVirtualHostNodeTestHelper.sleepIntervalOnChangeWaiting", 100);

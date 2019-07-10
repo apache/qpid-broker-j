@@ -29,7 +29,6 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
 import org.apache.qpid.server.logging.subjects.TestBlankSubject;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 import java.util.List;
