@@ -109,30 +109,31 @@ public class RejectPolicyHandler
             final long maximumQueueDepthBytes = _queue.getMaximumQueueDepthBytes();
             final int queueDepthMessages = _queue.getQueueDepthMessages();
             final long queueDepthBytes = _queue.getQueueDepthBytes();
-
-            int pendingMessages = _pendingDepthMessages.addAndGet(1);
-            long pendingBytes = _pendingDepthBytes.addAndGet(newMessage.getSizeIncludingHeader());
-
-            boolean messagesOverflow = maximumQueueDepthMessages >= 0
-                                       && queueDepthMessages + pendingMessages > maximumQueueDepthMessages;
-            boolean bytesOverflow = maximumQueueDepthBytes >= 0
-                                    && queueDepthBytes + pendingBytes > maximumQueueDepthBytes;
-            if (bytesOverflow || messagesOverflow)
+            final long size = newMessage.getSizeIncludingHeader();
+            if (_pendingMessages.putIfAbsent(newMessage.getStoredMessage(), size) == null)
             {
-                final long depthBytesDelta = -newMessage.getSizeIncludingHeader();
-                _pendingDepthBytes.addAndGet(-depthBytesDelta);
-                _pendingDepthMessages.addAndGet(-1);
-                final String message = String.format(
-                        "Maximum depth exceeded on '%s' : current=[count: %d, size: %d], max=[count: %d, size: %d]",
-                        _queue.getName(),
-                        queueDepthMessages + pendingMessages,
-                        queueDepthBytes + pendingBytes,
-                        maximumQueueDepthMessages,
-                        maximumQueueDepthBytes);
-                throw new MessageUnacceptableException(message);
-            }
+                int pendingMessages = _pendingDepthMessages.addAndGet(1);
+                long pendingBytes = _pendingDepthBytes.addAndGet(size);
 
-            _pendingMessages.put(newMessage.getStoredMessage(), newMessage.getSizeIncludingHeader());
+                boolean messagesOverflow = maximumQueueDepthMessages >= 0
+                                           && queueDepthMessages + pendingMessages > maximumQueueDepthMessages;
+                boolean bytesOverflow = maximumQueueDepthBytes >= 0
+                                        && queueDepthBytes + pendingBytes > maximumQueueDepthBytes;
+                if (bytesOverflow || messagesOverflow)
+                {
+                    _pendingDepthBytes.addAndGet(-size);
+                    _pendingDepthMessages.addAndGet(-1);
+                    _pendingMessages.remove(newMessage.getStoredMessage());
+                    final String message = String.format(
+                            "Maximum depth exceeded on '%s' : current=[count: %d, size: %d], max=[count: %d, size: %d]",
+                            _queue.getName(),
+                            queueDepthMessages + pendingMessages,
+                            queueDepthBytes + pendingBytes,
+                            maximumQueueDepthMessages,
+                            maximumQueueDepthBytes);
+                    throw new MessageUnacceptableException(message);
+                }
+            }
         }
 
         private void postEnqueue(MessageInstance instance)

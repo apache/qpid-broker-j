@@ -25,7 +25,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -33,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -45,9 +43,8 @@ import javax.jms.Session;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.OverflowPolicy;
-import org.apache.qpid.systests.JmsTestBase;
 
-public class ProducerFlowControlTest extends JmsTestBase
+public class ProducerFlowControlTest extends OverflowPolicyTestBase
 {
 
     @Test
@@ -306,27 +303,6 @@ public class ProducerFlowControlTest extends JmsTestBase
         }
     }
 
-    private int getQueueDepthBytes(final String queueName) throws Exception
-    {
-        return getStatistics(queueName, "queueDepthBytes").intValue();
-    }
-
-    private Number getStatistics(final String queueName, final String statisticsName) throws Exception
-    {
-        Map<String, Object> arguments =
-                Collections.singletonMap("statistics", Collections.singletonList(statisticsName));
-        Object statistics = performOperationUsingAmqpManagement(queueName,
-                                                                "getStatistics",
-                                                                "org.apache.qpid.Queue",
-                                                                arguments);
-        assertNotNull("Statistics is null", statistics);
-        assertTrue("Statistics is not map", statistics instanceof Map);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
-        assertTrue(String.format("%s is not present", statisticsName), statisticsMap.get(statisticsName) instanceof Number);
-        return ((Number) statisticsMap.get(statisticsName));
-    }
-
     private void setFlowLimits(final String queueName, final int blockValue, final int resumeValue) throws Exception
     {
         final Map<String, Object> attributes = new HashMap<>();
@@ -338,12 +314,6 @@ public class ProducerFlowControlTest extends JmsTestBase
                                        resumeLimit);
         attributes.put(org.apache.qpid.server.model.Queue.CONTEXT, context);
         updateEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", attributes);
-    }
-
-    private String getFlowResumeLimit(final double maximumCapacity, final double resumeCapacity)
-    {
-        double ratio = resumeCapacity / maximumCapacity;
-        return String.format("%.2f", ratio * 100.0);
     }
 
     private boolean isFlowStopped(final String queueName) throws Exception
@@ -358,19 +328,7 @@ public class ProducerFlowControlTest extends JmsTestBase
                                                            int resumeCapacity) throws Exception
     {
 
-        final Map<String, Object> attributes = new HashMap<>();
-        if (capacity != 0)
-        {
-            String flowResumeLimit = getFlowResumeLimit(capacity, resumeCapacity);
-            attributes.put(org.apache.qpid.server.model.Queue.CONTEXT,
-                           String.format("{\"%s\": %s}",
-                                         org.apache.qpid.server.model.Queue.QUEUE_FLOW_RESUME_LIMIT,
-                                         flowResumeLimit));
-        }
-        attributes.put(org.apache.qpid.server.model.Queue.MAXIMUM_QUEUE_DEPTH_BYTES, capacity);
-        attributes.put(org.apache.qpid.server.model.Queue.OVERFLOW_POLICY, OverflowPolicy.PRODUCER_FLOW_CONTROL.name());
-        createEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", attributes);
-        return createQueue(queueName);
+       return createQueueWithOverflowPolicy(queueName, OverflowPolicy.PRODUCER_FLOW_CONTROL, capacity, -1, resumeCapacity);
     }
 
     private MessageSender sendMessagesAsync(final MessageProducer producer,
@@ -388,16 +346,6 @@ public class ProducerFlowControlTest extends JmsTestBase
         MessageSender sender = new MessageSender(producer, producerSession, numMessages, messageCounter);
         new Thread(sender).start();
         return sender;
-    }
-
-    private final byte[] BYTE_300 = new byte[300];
-
-    private Message nextMessage(int msg, Session producerSession) throws JMSException
-    {
-        BytesMessage send = producerSession.createBytesMessage();
-        send.writeBytes(BYTE_300);
-        send.setIntProperty("msg", msg);
-        return send;
     }
 
     private boolean awaitStatisticsValue(String queueName, String statisticsName, Number expectedValue, long timeout)
@@ -465,26 +413,6 @@ public class ProducerFlowControlTest extends JmsTestBase
             }
         } while (!found && System.currentTimeMillis() <= endTime);
         return found;
-    }
-
-    private int evaluateMessageSize() throws Exception
-    {
-        String tmpQueueName = getTestName() + "_Tmp";
-        Queue tmpQueue = createQueue(tmpQueueName);
-        final Connection connection = getConnection();
-        try
-        {
-            connection.start();
-            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-            MessageProducer tmpQueueProducer = session.createProducer(tmpQueue);
-            tmpQueueProducer.send(nextMessage(0, session));
-            session.commit();
-            return getQueueDepthBytes(tmpQueueName);
-        }
-        finally
-        {
-            connection.close();
-        }
     }
 
     private class MessageSender implements Runnable
