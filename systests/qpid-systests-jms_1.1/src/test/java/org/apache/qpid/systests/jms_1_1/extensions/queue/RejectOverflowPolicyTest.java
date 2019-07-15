@@ -61,21 +61,29 @@ public class RejectOverflowPolicyTest extends OverflowPolicyTestBase
         try
         {
             final Session producerSession = producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            final MessageProducer producer = producerSession.createProducer(queue);
             final Message firstMessage = nextMessage(0, producerSession);
             final Message secondMessage = nextMessage(1, producerSession);
-
-            producer.send(firstMessage);
             try
             {
-                producer.send(secondMessage);
-                fail("Message send should fail due to reject policy");
+                final MessageProducer producer = producerSession.createProducer(queue);
+                producer.send(firstMessage);
+                try
+                {
+                    producer.send(secondMessage);
+                    fail("Message send should fail due to reject policy");
+                }
+                catch (JMSException e)
+                {
+                    // pass
+                }
             }
-            catch (JMSException e)
+            finally
             {
-                // pass
+                producerSession.close();
             }
 
+            final Session producerSession2 = producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final MessageProducer producer2 = producerSession2.createProducer(queue);
             final Connection consumerConnection = getConnection();
             try
             {
@@ -89,7 +97,7 @@ public class RejectOverflowPolicyTest extends OverflowPolicyTestBase
 
                 consumerSession.commit();
 
-                producer.send(secondMessage);
+                producer2.send(secondMessage);
 
                 Message message2 = consumer.receive(getReceiveTimeout());
                 assertNotNull("Message is not received", message2);
