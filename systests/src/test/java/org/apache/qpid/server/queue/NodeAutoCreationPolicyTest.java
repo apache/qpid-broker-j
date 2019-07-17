@@ -21,10 +21,17 @@
 package org.apache.qpid.server.queue;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import javax.jms.Connection;
 import javax.jms.InvalidDestinationException;
@@ -53,6 +60,10 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
 {
     private static final String DEAD_LETTER_QUEUE_SUFFIX = "_DLQ";
     private static final String DEAD_LETTER_EXCHANGE_SUFFIX = "_DLE";
+    private static final String TEST_MESSAGE = "Hello world!";
+    private static final String VALID_QUEUE_NAME = "fooQueue";
+    private static final String TYPE_QUEUE = "queue";
+    private static final String TYPE_TOPIC = "topic";
 
     private Connection _connection;
     private Session _session;
@@ -238,6 +249,85 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
         assertEquals("Hello world!", ((TextMessage)received).getText());
     }
 
+    public void testConcurrentQueueCreation() throws Exception
+    {
+        final String destination = getDestinationAddress(VALID_QUEUE_NAME, TYPE_QUEUE);
+        final int numberOfActors = 3;
+        final Connection[] connections = new Connection[numberOfActors];
+        try
+        {
+            final Session[] sessions = new Session[numberOfActors];
+            for (int i = 0; i < numberOfActors; i++)
+            {
+                final Connection connection = getConnection();
+                connections[i] = connection;
+                sessions[i] = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            }
+
+            final List<CompletableFuture<MessageProducer>> futures = new ArrayList<>(numberOfActors);
+            final ExecutorService executorService = Executors.newFixedThreadPool(numberOfActors);
+            try
+            {
+                Stream.of(sessions)
+                      .forEach(session -> futures.add(CompletableFuture.supplyAsync(() -> publishMessage(session,
+                                                                                                         destination),
+                                                                                    executorService)));
+                final CompletableFuture<Void> combinedFuture =
+                        CompletableFuture.allOf(futures.toArray(new CompletableFuture[numberOfActors]));
+                combinedFuture.get(getReceiveTimeout(), TimeUnit.MILLISECONDS);
+            }
+            finally
+            {
+                executorService.shutdown();
+            }
+
+            final Connection connection = getConnection();
+            try
+            {
+                connection.start();
+                final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                final Queue queue = session.createQueue(destination);
+                final MessageConsumer consumer = session.createConsumer(queue);
+
+                for (int i = 0; i < numberOfActors; i++)
+                {
+                    Message received = consumer.receive(getReceiveTimeout());
+                    assertNotNull(received);
+                    assertTrue(received instanceof TextMessage);
+                    assertEquals(TEST_MESSAGE, ((TextMessage) received).getText());
+                }
+            }
+            finally
+            {
+                connection.close();
+            }
+        }
+        finally
+        {
+            for (Connection connection : connections)
+            {
+                if (connection != null)
+                {
+                    connection.close();
+                }
+            }
+        }
+    }
+
+    private MessageProducer publishMessage(final Session session, final String destination)
+    {
+        try
+        {
+            final Queue queue = session.createQueue(destination);
+            final MessageProducer producer = session.createProducer(queue);
+            producer.send(session.createTextMessage(TEST_MESSAGE));
+            return producer;
+        }
+        catch (JMSException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
 
     public void testSendingToNonMatchingQueuePattern() throws Exception
     {
@@ -437,5 +527,10 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
             actualAlternateBindingMap = (Map<String, Object>) actualAlternateBinding;
         }
         return actualAlternateBindingMap;
+    }
+
+    private String getDestinationAddress(final String name, final String type)
+    {
+        return isBroker10() ? name : String.format("ADDR: %s; { assert: never, node: { type: %s } }", name, type);
     }
 }
