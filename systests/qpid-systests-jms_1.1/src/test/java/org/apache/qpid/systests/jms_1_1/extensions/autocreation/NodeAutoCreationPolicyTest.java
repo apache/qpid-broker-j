@@ -32,10 +32,17 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -63,6 +70,10 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
     private static final String DEAD_LETTER_QUEUE_SUFFIX = "_DLQ";
     private static final String DEAD_LETTER_EXCHANGE_SUFFIX = "_DLE";
     private static final String AUTO_CREATION_POLICIES = createAutoCreationPolicies();
+    private static final String TEST_MESSAGE = "Hello world!";
+    private static final String VALID_QUEUE_NAME = "fooQueue";
+    private static final String TYPE_QUEUE = "queue";
+    private static final String TYPE_TOPIC = "topic";
 
 
     private static String createAutoCreationPolicies()
@@ -227,21 +238,102 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
         {
             connection.start();
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            final Queue queue = session.createQueue(getProtocol() == Protocol.AMQP_1_0
-                                                             ? "fooQueue"
-                                                             : "ADDR: fooQueue ; { assert: never, node: { type: queue } }");
+            final Queue queue = session.createQueue(getDestinationAddress(VALID_QUEUE_NAME, TYPE_QUEUE));
             final MessageProducer producer = session.createProducer(queue);
-            producer.send(session.createTextMessage("Hello world!"));
+            producer.send(session.createTextMessage(TEST_MESSAGE));
 
             final MessageConsumer consumer = session.createConsumer(queue);
             Message received = consumer.receive(getReceiveTimeout());
             assertNotNull(received);
             assertTrue(received instanceof TextMessage);
-            assertEquals("Hello world!", ((TextMessage) received).getText());
+            assertEquals(TEST_MESSAGE, ((TextMessage) received).getText());
         }
         finally
         {
             connection.close();
+        }
+    }
+
+    @Test
+    public void testConcurrentQueueCreation() throws Exception
+    {
+        updateAutoCreationPolicies();
+
+        final String destination = getDestinationAddress(VALID_QUEUE_NAME, TYPE_QUEUE);
+        final int numberOfActors = 3;
+        final Connection[] connections = new Connection[numberOfActors];
+        try
+        {
+            final Session[] sessions = new Session[numberOfActors];
+            for (int i = 0; i < numberOfActors; i++)
+            {
+                final Connection connection = getConnection();
+                connections[i] = connection;
+                sessions[i] = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            }
+
+            final List<CompletableFuture<MessageProducer>> futures = new ArrayList<>(numberOfActors);
+            final ExecutorService executorService = Executors.newFixedThreadPool(numberOfActors);
+            try
+            {
+                Stream.of(sessions)
+                      .forEach(session -> futures.add(CompletableFuture.supplyAsync(() -> publishMessage(session,
+                                                                                                         destination),
+                                                                                    executorService)));
+                final CompletableFuture<Void> combinedFuture =
+                        CompletableFuture.allOf(futures.toArray(new CompletableFuture[numberOfActors]));
+                combinedFuture.get(getReceiveTimeout(), TimeUnit.MILLISECONDS);
+            }
+            finally
+            {
+                executorService.shutdown();
+            }
+
+            final Connection connection = getConnection();
+            try
+            {
+                connection.start();
+                final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                final Queue queue = session.createQueue(destination);
+                final MessageConsumer consumer = session.createConsumer(queue);
+
+                for (int i = 0; i < numberOfActors; i++)
+                {
+                    Message received = consumer.receive(getReceiveTimeout());
+                    assertNotNull(received);
+                    assertTrue(received instanceof TextMessage);
+                    assertEquals(TEST_MESSAGE, ((TextMessage) received).getText());
+                }
+            }
+            finally
+            {
+                connection.close();
+            }
+        }
+        finally
+        {
+            for (Connection connection : connections)
+            {
+                if (connection != null)
+                {
+                    connection.close();
+                }
+            }
+        }
+    }
+
+    private MessageProducer publishMessage(final Session session, final String destination)
+    {
+        try
+        {
+            final Queue queue = session.createQueue(destination);
+            final MessageProducer producer = session.createProducer(queue);
+            producer.send(session.createTextMessage(TEST_MESSAGE));
+            return producer;
+        }
+        catch (JMSException e)
+        {
+            throw new IllegalStateException(e);
         }
     }
 
@@ -254,9 +346,7 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
         try
         {
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            final Queue queue = session.createQueue(getProtocol() == Protocol.AMQP_1_0
-                                                            ? "foQueue"
-                                                            : "ADDR: foQueue ; { assert: never, node: { type: queue } }");
+            final Queue queue = session.createQueue(getDestinationAddress("foQueue", TYPE_QUEUE));
             try
             {
                 session.createProducer(queue);
@@ -283,11 +373,9 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
         {
             connection.start();
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            final Topic topic = session.createTopic(getProtocol() == Protocol.AMQP_1_0
-                                                            ? "barExchange/foo"
-                                                            : "ADDR: barExchange/foo ; { assert: never, node: { type: topic } }");
+            final Topic topic = session.createTopic(getDestinationAddress("barExchange/foo", TYPE_TOPIC));
             final MessageProducer producer = session.createProducer(topic);
-            producer.send(session.createTextMessage("Hello world!"));
+            producer.send(session.createTextMessage(TEST_MESSAGE));
 
             final MessageConsumer consumer = session.createConsumer(topic);
             Message received = consumer.receive(getReceiveTimeout() / 4);
@@ -316,9 +404,7 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
         try
         {
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            final Topic topic = session.createTopic(getProtocol() == Protocol.AMQP_1_0
-                                                            ? "baa"
-                                                            : "ADDR: baa ; { assert: never, node: { type: topic } }");
+            final Topic topic = session.createTopic(getDestinationAddress("baa", TYPE_TOPIC));
             try
             {
                 session.createProducer(topic);
@@ -350,13 +436,13 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final Queue queue = session.createQueue("BURL:direct:///fooQ/fooQ");
             final MessageProducer producer = session.createProducer(queue);
-            producer.send(session.createTextMessage("Hello world!"));
+            producer.send(session.createTextMessage(TEST_MESSAGE));
 
             final MessageConsumer consumer = session.createConsumer(queue);
             Message received = consumer.receive(getReceiveTimeout());
             assertNotNull(received);
             assertTrue(received instanceof TextMessage);
-            assertEquals("Hello world!", ((TextMessage) received).getText());
+            assertEquals(TEST_MESSAGE, ((TextMessage) received).getText());
         }
         finally
         {
@@ -380,7 +466,7 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
             try
             {
                 final MessageProducer producer = session.createProducer(queue);
-                producer.send(session.createTextMessage("Hello world!"));
+                producer.send(session.createTextMessage(TEST_MESSAGE));
 
                 fail("Sending a message should fail");
             }
@@ -466,5 +552,12 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
             actualAlternateBindingMap = (Map<String, Object>) actualAlternateBinding;
         }
         return actualAlternateBindingMap;
+    }
+
+    private String getDestinationAddress(final String name, final String type)
+    {
+        return getProtocol() == Protocol.AMQP_1_0
+                ? name
+                : String.format("ADDR: %s; { assert: never, node: { type: %s } }", name, type);
     }
 }

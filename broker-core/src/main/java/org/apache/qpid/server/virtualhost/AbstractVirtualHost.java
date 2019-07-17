@@ -1350,11 +1350,14 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         }
 
                     }
+                    catch (AbstractConfiguredObject.DuplicateNameException e)
+                    {
+                        return (T)e.getExisting();
+                    }
                     catch (RuntimeException e)
                     {
-                        LOGGER.info("Unable to auto create a node named {} due to exception", name, e);
+                        LOGGER.info("Unable to auto create a node named '{}' due to exception", name, e);
                     }
-
                 }
             }
 
