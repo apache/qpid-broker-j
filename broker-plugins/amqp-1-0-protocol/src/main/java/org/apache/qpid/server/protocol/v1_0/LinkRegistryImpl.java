@@ -288,12 +288,13 @@ public class LinkRegistryImpl<S extends BaseSource, T extends BaseTarget> implem
             private Map<String, LinkDump> _sendingLinks = new LinkedHashMap<>();
             private Map<String, LinkDump> _receivingLinks = new LinkedHashMap<>();
 
-            Map<String, LinkDump> getSendingLinks()
+
+            public Map<String, LinkDump> getSendingLinks()
             {
                 return Collections.unmodifiableMap(_sendingLinks);
             }
 
-            Map<String, LinkDump> getReceivingLinks()
+            public Map<String, LinkDump> getReceivingLinks()
             {
                 return Collections.unmodifiableMap(_receivingLinks);
             }
@@ -301,7 +302,7 @@ public class LinkRegistryImpl<S extends BaseSource, T extends BaseTarget> implem
 
         private Map<String, ContainerDump> _containers = new LinkedHashMap<>();
 
-        Map<String, ContainerDump> getContainers()
+        public Map<String, ContainerDump> getContainers()
         {
             return Collections.unmodifiableMap(_containers);
         }
