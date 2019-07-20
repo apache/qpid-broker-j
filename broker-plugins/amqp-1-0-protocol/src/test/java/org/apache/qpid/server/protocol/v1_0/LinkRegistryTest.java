@@ -24,8 +24,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 
+import java.util.Map;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -158,4 +160,51 @@ public class LinkRegistryTest extends UnitTestBase
         assertEquals((long) dump.getContainers().get("testContainerId").getReceivingLinks().size(), (long) 0);
         assertEquals((long) dump.getContainers().get("testContainerId").getSendingLinks().size(), (long) 1);
     }
+
+    @Test
+    public void testDump() throws Exception
+    {
+        _linkRegistry.getSendingLink("testContainerId1", "testLinkName");
+        _linkRegistry.getReceivingLink("testContainerId2", "testLinkName");
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+
+        assertNotNull(dump);
+        final Map<String, LinkRegistryImpl.LinkRegistryDump.ContainerDump> containers = dump.getContainers();
+
+        assertNotNull(containers);
+        assertEquals(2, containers.size());
+
+        final LinkRegistryImpl.LinkRegistryDump.ContainerDump container1 = containers.get("testContainerId1");
+        final LinkRegistryImpl.LinkRegistryDump.ContainerDump container2 = containers.get("testContainerId2");
+
+        assertNotNull(container1);
+        assertNotNull(container2);
+
+        assertEquals(0, container1.getReceivingLinks().size());
+        assertEquals(1, container1.getSendingLinks().size());
+        assertEquals(1, container2.getReceivingLinks().size());
+        assertEquals(0, container2.getSendingLinks().size());
+
+        final LinkRegistryImpl.LinkRegistryDump.ContainerDump.LinkDump link1 =
+                container1.getSendingLinks().get("testLinkName");
+
+        final LinkRegistryImpl.LinkRegistryDump.ContainerDump.LinkDump link2 =
+                container2.getReceivingLinks().get("testLinkName");
+
+        assertNotNull(link1);
+        assertNotNull(link2);
+    }
+
+    @Test
+    public void testDumpIsSerializable() throws Exception
+    {
+        _linkRegistry.getSendingLink("testContainerId1", "testLinkName");
+        _linkRegistry.getReceivingLink("testContainerId2", "testLinkName");
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final String data = objectMapper.writeValueAsString(dump);
+
+        assertNotNull(data);
+    }
+
 }
