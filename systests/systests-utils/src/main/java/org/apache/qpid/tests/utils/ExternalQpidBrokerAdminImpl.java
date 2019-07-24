@@ -22,6 +22,7 @@ package org.apache.qpid.tests.utils;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -34,6 +35,8 @@ import org.apache.qpid.server.plugin.PluggableService;
 public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExternalQpidBrokerAdminImpl.class);
+    private static final String EXTERNAL_BROKER = "EXTERNAL_BROKER";
+    private static final String KIND_BROKER_UNKNOWN = "unknown";
 
     @Override
     public void beforeTestClass(final Class testClass)
@@ -71,10 +74,13 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
             case ANONYMOUS_AMQP:
                 port = Integer.getInteger("qpid.tests.protocol.broker.external.port.anonymous");
                 break;
+            case ANONYMOUS_AMQPWS:
+                port = Integer.getInteger("qpid.tests.protocol.broker.external.port.websocket.anonymous");
+                break;
             default:
                 throw new IllegalArgumentException(String.format("Unknown port type '%s'", portType));
         }
-        return new InetSocketAddress(port);
+        return new InetSocketAddress( "127.0.0.1", port);
     }
 
     @Override
@@ -116,13 +122,13 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     @Override
     public boolean isSASLSupported()
     {
-        return true;
+        return Boolean.parseBoolean(System.getProperty("qpid.tests.protocol.broker.external.saslSupported", "true"));
     }
 
     @Override
     public boolean isWebSocketSupported()
     {
-        return true;
+        return Boolean.parseBoolean(System.getProperty("qpid.tests.protocol.broker.external.webSocketSupported", "false"));
     }
 
     @Override
@@ -134,36 +140,37 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     @Override
     public boolean isManagementSupported()
     {
-        return false;
+        return Boolean.parseBoolean(System.getProperty("qpid.tests.protocol.broker.external.managementSupported", "false"));
     }
 
     @Override
     public boolean isSASLMechanismSupported(final String mechanismName)
     {
-        return true;
+        String supportedSaslMechanisms = System.getProperty("qpid.tests.protocol.broker.external.supportedSaslMechanisms","PLAIN,CRAM-MD5");
+        return Arrays.asList(supportedSaslMechanisms.split(",")).contains(mechanismName);
     }
 
     @Override
     public String getValidUsername()
     {
-        return "guest";
+        return System.getProperty("qpid.tests.protocol.broker.external.username");
     }
 
     @Override
     public String getValidPassword()
     {
-        return "guest";
+        return System.getProperty("qpid.tests.protocol.broker.external.password");
     }
 
     @Override
     public String getKind()
     {
-        return KIND_BROKER_J;
+        return  System.getProperty("qpid.tests.protocol.broker.external.kind", KIND_BROKER_UNKNOWN);
     }
 
     @Override
     public String getType()
     {
-        return "EXTERNAL_BROKER";
+        return EXTERNAL_BROKER;
     }
 }
