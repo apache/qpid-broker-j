@@ -37,7 +37,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 @CompositeType( symbolicDescriptor = "amqp:source:list", numericDescriptor = 0x0000000000000028L)
-public class Source implements BaseSource
+public class Source implements BaseSource, Terminus
 {
     @CompositeTypeField(index = 0)
     private String _address;
