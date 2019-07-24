@@ -282,6 +282,18 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
     }
 
     @Override
+    public boolean isPutMessageOnQueueSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isDeleteQueueSupported()
+    {
+        return true;
+    }
+
+    @Override
     public String getValidUsername()
     {
         return "admin";

@@ -157,6 +157,18 @@ public class LoggingBrokerAdminDecorator implements BrokerAdmin
     }
 
     @Override
+    public boolean isPutMessageOnQueueSupported()
+    {
+        return _delegate.isPutMessageOnQueueSupported();
+    }
+
+    @Override
+    public boolean isDeleteQueueSupported()
+    {
+        return _delegate.isDeleteQueueSupported();
+    }
+
+    @Override
     public String getValidUsername()
     {
         return _delegate.getValidUsername();

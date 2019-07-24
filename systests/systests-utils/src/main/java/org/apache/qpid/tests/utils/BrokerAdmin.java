@@ -53,6 +53,8 @@ public interface BrokerAdmin extends Pluggable
     boolean isWebSocketSupported();
     boolean isQueueDepthSupported();
     boolean isManagementSupported();
+    boolean isPutMessageOnQueueSupported();
+    boolean isDeleteQueueSupported();
 
     String getValidUsername();
     String getValidPassword();

@@ -173,4 +173,17 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     {
         return EXTERNAL_BROKER;
     }
+
+    @Override
+    public boolean isPutMessageOnQueueSupported()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isDeleteQueueSupported()
+    {
+        return false;
+    }
+
 }
