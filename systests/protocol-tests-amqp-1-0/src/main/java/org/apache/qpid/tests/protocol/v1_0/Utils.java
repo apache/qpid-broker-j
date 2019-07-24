@@ -20,14 +20,23 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assume.assumeThat;
+
 import java.net.InetSocketAddress;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class Utils
 {
@@ -114,5 +123,43 @@ public class Utils
         }
 
         return result;
+    }
+
+    public static void putMessageOnQueue(final BrokerAdmin brokerAdmin, final String queueName, final String... message)
+            throws Exception
+    {
+        if (brokerAdmin.isPutMessageOnQueueSupported())
+        {
+            brokerAdmin.putMessageOnQueue(queueName, message);
+        }
+        else
+        {
+            final InetSocketAddress brokerAddress = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+            try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
+            {
+                final Interaction interaction = transport.newInteraction();
+                final Flow flow = interaction.negotiateProtocol().consumeResponse()
+                                             .open().consumeResponse(Open.class)
+                                             .begin().consumeResponse(Begin.class)
+                                             .attachRole(Role.SENDER)
+                                             .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                             .attach().consumeResponse(Attach.class)
+                                             .consumeResponse(Flow.class)
+                                             .getLatestResponse(Flow.class);
+
+                assumeThat(String.format("insufficient credit (%d) to publish %d messages",
+                                         flow.getLinkCredit().intValue(),
+                                         message.length),
+                           flow.getLinkCredit().intValue(),
+                           is(greaterThan(message.length)));
+                for (String payload : message)
+                {
+                    interaction.transferPayloadData(payload)
+                               .transferSettled(true)
+                               .transfer()
+                               .sync();
+                }
+            }
+        }
     }
 }

@@ -132,7 +132,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
     public void synchronousGet() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "foo");
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, "foo");
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
 
         String data = (String) Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME);
@@ -260,7 +260,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         String messageContent = "Test";
-        brokerAdmin.putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, messageContent);
 
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
@@ -320,9 +320,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         String messageContent1 = "Test1";
         String messageContent2 = "Test2";
         String messageContent3 = "Test2";
-        brokerAdmin.putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent1);
-        brokerAdmin.putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent2);
-        brokerAdmin.putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent3);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, messageContent1, messageContent2, messageContent3);
 
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
@@ -389,8 +387,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         String messageContent1 = "Test1";
         String messageContent2 = "Test2";
-        brokerAdmin.putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent1);
-        brokerAdmin.putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent2);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, messageContent1, messageContent2);
 
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
@@ -441,7 +438,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
     {
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        brokerAdmin.putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "Test1");
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, "Test1");
 
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())

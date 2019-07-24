@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -439,7 +440,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveTransferUnsettled() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -477,7 +478,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveTransferReceiverSettleFirst() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -515,7 +516,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveTransferReceiverSettleSecond() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -557,7 +558,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveTransferReceiverSettleSecondWithRejectedOutcome() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -607,7 +608,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveTransferReceiverSettleSecondWithImplicitDispositionState() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -665,7 +666,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             int negotiatedFrameSize = open.getMaxFrameSize().intValue();
             String testMessageData = Stream.generate(() -> "*").limit(negotiatedFrameSize).collect(Collectors.joining());
 
-            getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, testMessageData);
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, testMessageData);
 
             interaction.begin().consumeResponse()
                        .attachRole(Role.RECEIVER)
@@ -727,7 +728,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                         + " the receiver initiates the attach exchange and the sender supports the desired mode.")
     public void receiveTransferSenderSettleModeSettled() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -764,7 +765,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         {
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
         }
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "test");
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, "test");
         assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo("test")));
     }
 
@@ -1047,10 +1048,8 @@ public class TransferTest extends BrokerAdminUsingTestBase
     public void receiveMultipleDeliveries() throws Exception
     {
         int numberOfMessages = 4;
-        for (int i = 0; i < numberOfMessages; i++)
-        {
-            getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA + "_" + i);
-        }
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME,
+                                IntStream.range(0, 4).mapToObj(i -> TEST_MESSAGE_DATA + "_" + i).toArray(String[]::new));
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -1099,7 +1098,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         }
 
         String messageText = TEST_MESSAGE_DATA + "_" + 4;
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageText);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, messageText);
         Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
         assertThat(receivedMessage, is(equalTo(messageText)));
     }
@@ -1109,10 +1108,8 @@ public class TransferTest extends BrokerAdminUsingTestBase
     public void receiveMixtureOfTransactionalAndNonTransactionalDeliveries() throws Exception
     {
         int numberOfMessages = 4;
-        for (int i = 0; i < numberOfMessages; i++)
-        {
-            getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA + "_" + i);
-        }
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME,
+                                IntStream.range(0, 4).mapToObj(i -> TEST_MESSAGE_DATA + "_" + i).toArray(String[]::new));
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -1196,7 +1193,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         }
 
         String messageText = TEST_MESSAGE_DATA + "_" + 4;
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageText);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, messageText);
         Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
         assertThat(receivedMessage, is(equalTo(messageText)));
     }

@@ -38,6 +38,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.SpecificationTest;
+import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -58,8 +59,7 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
                                                         + " MUST NOT be redelivered to the modifying link endpoint.")
     public void modifiedOutcomeWithUndeliverableHere() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message1");
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message2");
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, "message1", "message2");
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {

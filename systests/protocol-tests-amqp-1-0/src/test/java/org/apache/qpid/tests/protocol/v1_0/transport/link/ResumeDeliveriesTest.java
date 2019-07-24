@@ -351,7 +351,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
     {
         for (int i = 0; i < MIN_MAX_FRAME_SIZE; i++)
         {
-            getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT + "-" + i);
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT + "-" + i);
         }
 
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
@@ -470,7 +470,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                          + " considered unsettled by the issuing link endpoint.")
     public void resumeReceivingLinkEmptyUnsettled() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -518,7 +518,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                          + " considered unsettled by the issuing link endpoint.")
     public void resumeReceivingLinkWithSingleUnsettledAccepted() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -606,7 +606,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                          + " considered unsettled by the issuing link endpoint.")
     public void resumeReceivingLinkOneUnsettledWithNoOutcome() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {

@@ -265,7 +265,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                         + "wish to associate the outcome of a delivery with a transaction.")
     public void receiveTransactionalRetirementReceiverSettleFirst() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -314,7 +314,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                         + "wish to associate the outcome of a delivery with a transaction.")
     public void receiveTransactionalRetirementDischargeFail() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -370,7 +370,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                         + " upon a successful discharge.")
     public void receiveTransactionalRetirementDispositionFailsDueToUnknownTransactionId() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -422,7 +422,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                         + "wish to associate the outcome of a delivery with a transaction.")
     public void receiveTransactionalRetirementReceiverSettleSecond() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -483,7 +483,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                         + " anticipated by the controller.")
     public void receiveTransactionalAcquisitionReceiverSettleFirst() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -545,7 +545,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                         + " anticipated by the controller.")
     public void receiveTransactionalAcquisitionDischargeFail() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -609,7 +609,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                         + " properties map of the flow frame.")
     public void receiveTransactionalAcquisitionFlowFailsDueToUnknownTransactionId() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
