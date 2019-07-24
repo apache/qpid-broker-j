@@ -30,8 +30,6 @@ import javax.naming.NamingException;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TestName;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.ConnectionBuilder;
@@ -43,9 +41,6 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public abstract class HttpTestBase extends BrokerAdminUsingTestBase
 {
     public static final String DEFAULT_BROKER_CONFIG = "classpath:config-http-management-tests.json";
-
-    @Rule
-    public final TestName _testName = new TestName();
 
     private HttpTestHelper _helper;
 
@@ -72,12 +67,12 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
 
     protected String getVirtualHost()
     {
-        return getClass().getSimpleName() + "_" + _testName.getMethodName();
+        return getClass().getSimpleName() + "_" + getTestName();
     }
 
     protected String getVirtualHostNode()
     {
-        return getClass().getSimpleName() + "_" + _testName.getMethodName();
+        return getClass().getSimpleName() + "_" + getTestName();
     }
 
     public HttpTestHelper getHelper()
@@ -102,7 +97,7 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
 
     private HttpRequestConfig getHttpRequestConfig() throws Exception
     {
-        HttpRequestConfig config = getClass().getMethod(_testName.getMethodName(), new Class[]{}).getAnnotation(HttpRequestConfig.class);
+        HttpRequestConfig config = getClass().getMethod(getTestName(), new Class[]{}).getAnnotation(HttpRequestConfig.class);
         if (config == null)
         {
             config = getClass().getAnnotation(HttpRequestConfig.class);
@@ -119,11 +114,6 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
     protected static Protocol getProtocol()
     {
         return Utils.getProtocol();
-    }
-
-    protected String getTestName()
-    {
-        return _testName.getMethodName();
     }
 
 }

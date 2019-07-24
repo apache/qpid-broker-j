@@ -20,6 +20,8 @@
 
 package org.apache.qpid.tests.utils;
 
+import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,8 @@ import org.slf4j.LoggerFactory;
 public abstract class BrokerAdminUsingTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerAdminUsingTestBase.class);
+    @Rule
+    public final TestName _testName = new TestName();
 
     private BrokerAdmin _brokerAdmin;
 
@@ -39,5 +43,10 @@ public abstract class BrokerAdminUsingTestBase
     public BrokerAdmin getBrokerAdmin()
     {
         return _brokerAdmin;
+    }
+
+    protected String getTestName()
+    {
+        return _testName.getMethodName();
     }
 }

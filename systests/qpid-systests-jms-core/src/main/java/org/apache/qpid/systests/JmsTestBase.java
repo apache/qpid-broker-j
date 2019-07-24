@@ -41,8 +41,6 @@ import javax.jms.TopicConnection;
 import javax.naming.NamingException;
 
 import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,9 +55,6 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     private static final Logger LOGGER = LoggerFactory.getLogger(JmsTestBase.class);
     private static JmsProvider _jmsProvider;
     private static AmqpManagementFacade _managementFacade;
-
-    @Rule
-    public final TestName _testName = new TestName();
 
     @BeforeClass
     public static void setUpTestBase()
@@ -128,12 +123,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected String getVirtualHostName()
     {
-        return getClass().getSimpleName() + "_" + _testName.getMethodName();
-    }
-
-    protected String getTestName()
-    {
-        return _testName.getMethodName();
+        return getClass().getSimpleName() + "_" + getTestName();
     }
 
     protected Queue getQueue(String queueName) throws Exception
