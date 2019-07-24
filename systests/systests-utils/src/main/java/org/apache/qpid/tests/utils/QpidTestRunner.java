@@ -70,7 +70,7 @@ public class QpidTestRunner extends BlockJUnit4ClassRunner
         BrokerSpecific brokerSpecific = method.getAnnotation(BrokerSpecific.class);
         if (brokerSpecific == null)
         {
-            brokerSpecific = method.getClass().getAnnotation(BrokerSpecific.class);
+            brokerSpecific = method.getDeclaringClass().getAnnotation(BrokerSpecific.class);
         }
         if (brokerSpecific != null && !brokerSpecific.kind().equalsIgnoreCase(_brokerAdmin.getKind()))
         {
