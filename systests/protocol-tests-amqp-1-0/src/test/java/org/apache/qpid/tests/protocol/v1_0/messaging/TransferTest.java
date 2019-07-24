@@ -737,7 +737,6 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                     .attachRcvSettleMode(ReceiverSettleMode.FIRST)
                                                      .attachSndSettleMode(SenderSettleMode.SETTLED)
                                                      .attach().consumeResponse(Attach.class);
             Attach attach = interaction.getLatestResponse(Attach.class);
@@ -760,6 +759,13 @@ public class TransferTest extends BrokerAdminUsingTestBase
             // verify no unexpected performative received by closing the connection
             interaction.doCloseConnection();
         }
+
+        if (getBrokerAdmin().isQueueDepthSupported())
+        {
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+        }
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "test");
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo("test")));
     }
 
     @Test

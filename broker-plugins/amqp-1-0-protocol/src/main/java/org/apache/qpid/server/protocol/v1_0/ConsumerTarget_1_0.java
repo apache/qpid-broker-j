@@ -238,9 +238,14 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
             if (_linkEndpoint.isAttached())
             {
-                if (SenderSettleMode.SETTLED.equals(getEndpoint().getSendingSettlementMode()))
+                boolean sendPreSettled = SenderSettleMode.SETTLED.equals(getEndpoint().getSendingSettlementMode());
+                if (sendPreSettled)
                 {
                     transfer.setSettled(true);
+                    if (_acquires && _transactionId == null)
+                    {
+                        transfer.setState(new Accepted());
+                    }
                 }
                 else
                 {
@@ -295,6 +300,11 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 }
                 getSession().getAMQPConnection().registerMessageDelivered(message.getSize());
                 getEndpoint().transfer(transfer, false);
+
+                if (sendPreSettled && _acquires && _transactionId == null)
+                {
+                    handleAcquiredEntrySentPareSettledNonTransactional(entry, consumer);
+                }
             }
             else
             {
@@ -309,6 +319,35 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             {
                 converter.dispose(message);
             }
+        }
+    }
+
+    private void handleAcquiredEntrySentPareSettledNonTransactional(final MessageInstance entry,
+                                                                    final MessageInstanceConsumer consumer)
+    {
+        if (entry.makeAcquisitionUnstealable(consumer))
+        {
+            final ServerTransaction txn = _linkEndpoint.getAsyncAutoCommitTransaction();
+            txn.dequeue(entry.getEnqueueRecord(),
+                        new ServerTransaction.Action()
+                        {
+                            @Override
+                            public void postCommit()
+                            {
+                                entry.delete();
+                            }
+
+                            @Override
+                            public void onRollback()
+                            {
+                                entry.release(consumer);
+                            }
+                        });
+            txn.commit();
+        }
+        else
+        {
+            entry.release(consumer);
         }
     }
 
