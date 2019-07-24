@@ -63,6 +63,7 @@ import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
@@ -496,6 +497,51 @@ public class Session_1_0Test extends QpidTestCase
         assertAttachSent(connection2, session2, attach);
     }
 
+    public void testAttachSourceDynamicWithLifeTimePolicyDeleteOnClose()
+    {
+        final Attach attach = createReceiverAttach(getTestName());
+        final Source source = createDynamicSource(new DeleteOnClose());
+        attach.setSource(source);
+
+        _session.receiveAttach(attach);
+
+        assertQueueDurability(getDynamicNodeAddressFromAttachResponse(), false);
+    }
+
+    public void testAttachSourceDynamicWithLifeTimePolicyDeleteOnCloseAndExpiryPolicyNever()
+    {
+        final Attach attach = createReceiverAttach(getTestName());
+        final Source source = createDynamicSource(new DeleteOnClose());
+        source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
+        attach.setSource(source);
+
+        _session.receiveAttach(attach);
+
+        assertQueueDurability(getDynamicNodeAddressFromAttachResponse(), true);
+    }
+
+    private Source createDynamicSource(final DeleteOnClose lifetimePolicy)
+    {
+        final Source source = new Source();
+        source.setDynamic(true);
+        source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, lifetimePolicy));
+        return source;
+    }
+
+    private String getDynamicNodeAddressFromAttachResponse()
+    {
+        final Attach sentAttach = captureAttach(_connection, _session, 0);
+        assertTrue(sentAttach.getSource() instanceof Source);
+        return ((Source) (sentAttach.getSource())).getAddress();
+    }
+
+    public void assertQueueDurability(final String queueName, final boolean expectedDurability)
+    {
+        final Queue queue = _virtualHost.getChildByName(Queue.class, queueName);
+        assertNotNull("Queue not found", queue);
+        assertEquals("Unexpected durability", queue.isDurable(), expectedDurability);
+    }
+
     private void assertFilter(final Attach sentAttach, final String selectorExpression)
     {
         Source source = (Source)sentAttach.getSource();
@@ -675,7 +721,7 @@ public class Session_1_0Test extends QpidTestCase
                                 final boolean isGlobal,
                                 final boolean isShared)
     {
-        Attach attach = new Attach();
+        Attach attach = createReceiverAttach(linkName);
         Source source = new Source();
 
         List<Symbol> capabilities = new ArrayList<>();
@@ -701,14 +747,20 @@ public class Session_1_0Test extends QpidTestCase
             source.setDurable(TerminusDurability.NONE);
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
         }
+        source.setAddress(address);
         attach.setSource(source);
+        return attach;
+    }
+
+    private Attach createReceiverAttach(String linkName)
+    {
+        final Attach attach = new Attach();
         Target target = new Target();
         attach.setTarget(target);
         attach.setHandle(new UnsignedInteger(_handle++));
         attach.setIncompleteUnsettled(false);
         attach.setName(linkName);
         attach.setRole(Role.RECEIVER);
-        source.setAddress(address);
         return attach;
     }
 
@@ -719,7 +771,7 @@ public class Session_1_0Test extends QpidTestCase
 
     private AMQPConnection_1_0 createAmqpConnection_1_0(String containerId)
     {
-        AMQPConnection_1_0 connection = mock(AMQPConnection_1_0.class);
+        AMQPConnection_1_0 connection = BrokerTestHelper.mockAsSystemPrincipalSource(AMQPConnection_1_0.class);
         Subject subject =
                 new Subject(true, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
         when(connection.getSubject()).thenReturn(subject);

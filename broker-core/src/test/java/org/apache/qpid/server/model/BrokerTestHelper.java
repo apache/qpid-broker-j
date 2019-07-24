@@ -411,4 +411,8 @@ public class BrokerTestHelper
         }
     }
 
+    public static <X extends ConfiguredObject> X mockAsSystemPrincipalSource(Class<X> clazz)
+    {
+        return mockWithSystemPrincipal(clazz, SYSTEM_PRINCIPAL);
+    }
 }

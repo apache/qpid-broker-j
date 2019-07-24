@@ -28,7 +28,6 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -89,6 +88,8 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnNoMessages;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.StdDistMode;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Terminus;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
@@ -665,7 +666,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             if (Boolean.TRUE.equals(target.getDynamic()))
             {
-                MessageDestination tempDestination = createDynamicDestination(link, target.getDynamicNodeProperties(), target.getCapabilities());
+                MessageDestination tempDestination = createDynamicDestination(link, target);
                 if(tempDestination != null)
                 {
                     target.setAddress(_primaryDomain + tempDestination.getName());
@@ -744,10 +745,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
         if (Boolean.TRUE.equals(source.getDynamic()))
         {
-            final Set<Symbol> sourceCapabilities = source.getCapabilities() == null
-                    ? Collections.emptySet()
-                    : new HashSet<>(Arrays.asList(source.getCapabilities()));
-            MessageSource tempSource = createDynamicSource(link, source.getDynamicNodeProperties(), sourceCapabilities);
+            MessageSource tempSource = createDynamicSource(link, source);
             if(tempSource != null)
             {
                 source.setAddress(_primaryDomain + tempSource.getName());
@@ -822,21 +820,23 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     }
 
     private MessageSource createDynamicSource(final Link_1_0<?, ?> link,
-                                              Map properties,
-                                              final Set<Symbol> capabilities) throws AmqpErrorException
+                                              final Terminus terminus) throws AmqpErrorException
     {
         // TODO temporary topics?
         final String queueName = "TempQueue" + UUID.randomUUID().toString();
         try
         {
-            Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(link, properties, queueName);
+            final Map<String, Object> attributes = createDynamicNodeAttributes(link, terminus, queueName);
 
-            if (capabilities.contains(Symbol.valueOf("temporary-queue"))
-                || capabilities.contains(Symbol.valueOf("temporary-topic")))
+            if (terminus.getCapabilities() != null)
             {
-                attributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONNECTION);
+                final Set<Symbol> capabilities = Sets.newHashSet(terminus.getCapabilities());
+                if (capabilities.contains(Symbol.valueOf("temporary-queue"))
+                    || capabilities.contains(Symbol.valueOf("temporary-topic")))
+                {
+                    attributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONNECTION);
+                }
             }
-
             return Subject.doAs(getSubjectWithAddedSystemRights(),
                                 (PrivilegedAction<MessageSource>) () -> getAddressSpace().createMessageSource(MessageSource.class, attributes));
         }
@@ -853,15 +853,15 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
 
     private MessageDestination createDynamicDestination(final Link_1_0<?, ?> link,
-                                                        Map properties,
-                                                        final Symbol[] capabilities) throws AmqpErrorException
+                                                        final Terminus terminus) throws AmqpErrorException
     {
+        final Symbol[] capabilities = terminus.getCapabilities();
         final Set<Symbol> capabilitySet = capabilities == null ? Collections.emptySet() : Sets.newHashSet(capabilities);
         boolean isTopic = capabilitySet.contains(Symbol.valueOf("temporary-topic")) || capabilitySet.contains(Symbol.valueOf("topic"));
         final String destName = (isTopic ? "TempTopic" : "TempQueue") + UUID.randomUUID().toString();
         try
         {
-            Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(link, properties, destName);
+            final Map<String, Object> attributes = createDynamicNodeAttributes(link, terminus, destName);
 
 
             Class<? extends MessageDestination> clazz = isTopic ? Exchange.class : MessageDestination.class;
@@ -888,11 +888,14 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
     }
 
-    private Map<String, Object> convertDynamicNodePropertiesToAttributes(final Link_1_0<?, ?> link,
-                                                                         final Map properties,
-                                                                         final String nodeName)
+    private Map<String, Object> createDynamicNodeAttributes(final Link_1_0<?, ?> link,
+                                                            final Terminus terminus,
+                                                            final String nodeName)
     {
         // TODO convert AMQP 1-0 node properties to queue attributes
+
+        final Map<Symbol, Object> properties = terminus.getDynamicNodeProperties();
+        final TerminusExpiryPolicy expiryPolicy = terminus.getExpiryPolicy();
         LifetimePolicy lifetimePolicy = properties == null
                                         ? null
                                         : (LifetimePolicy) properties.get(LIFETIME_POLICY);
@@ -900,7 +903,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.ID, UUID.randomUUID());
         attributes.put(ConfiguredObject.NAME, nodeName);
-        attributes.put(ConfiguredObject.DURABLE, true);
+        attributes.put(ConfiguredObject.DURABLE, TerminusExpiryPolicy.NEVER.equals(expiryPolicy));
 
         if(lifetimePolicy instanceof DeleteOnNoLinks)
         {
