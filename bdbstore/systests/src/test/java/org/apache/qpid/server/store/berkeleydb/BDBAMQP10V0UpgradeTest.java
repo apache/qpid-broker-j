@@ -23,18 +23,11 @@ import static org.apache.qpid.systests.JmsTestBase.DEFAULT_BROKER_CONFIG;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.security.MessageDigest;
-import java.util.Collections;
-import java.util.Map;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -43,17 +36,12 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.util.StringUtil;
-import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
-import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.tests.utils.ConfigItem;
-import org.apache.qpid.tests.utils.RunBrokerAdmin;
 
 /**
  *
