@@ -27,6 +27,7 @@ import org.junit.runners.model.InitializationError;
 
 public class QpidTestRunner extends BlockJUnit4ClassRunner
 {
+    private static final String PROPERTY_BROKER_ADMIN_TYPE = "qpid.tests.brokerAdminType";
     private final BrokerAdmin _brokerAdmin;
     private final BrokerAdmin _original;
     private final Class _testClass;
@@ -35,8 +36,16 @@ public class QpidTestRunner extends BlockJUnit4ClassRunner
     {
         super(klass);
         _testClass = klass;
-        RunBrokerAdmin runBrokerAdmin = (RunBrokerAdmin) _testClass.getAnnotation(RunBrokerAdmin.class);
-        String type = runBrokerAdmin == null ? "EMBEDDED_BROKER_PER_CLASS" : runBrokerAdmin.type();
+        final RunBrokerAdmin runBrokerAdmin = (RunBrokerAdmin) _testClass.getAnnotation(RunBrokerAdmin.class);
+        final String type;
+        if (runBrokerAdmin == null)
+        {
+            type = System.getProperty(PROPERTY_BROKER_ADMIN_TYPE, EmbeddedBrokerPerClassAdminImpl.TYPE);
+        }
+        else
+        {
+            type = runBrokerAdmin.type();
+        }
         _original = new BrokerAdminFactory().createInstance(type);
         _brokerAdmin = new LoggingBrokerAdminDecorator(_original);
     }

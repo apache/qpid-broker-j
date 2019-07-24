@@ -70,6 +70,7 @@ import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddedBrokerPerClassAdminImpl.class);
+    public static final String TYPE = "EMBEDDED_BROKER_PER_CLASS";
     private final Map<String, Integer> _ports = new HashMap<>();
     private SystemLauncher _systemLauncher;
     private Broker<?> _broker;
@@ -393,7 +394,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     @Override
     public String getType()
     {
-        return "EMBEDDED_BROKER_PER_CLASS";
+        return TYPE;
     }
 
     private Queue getQueue(final String queueName)
