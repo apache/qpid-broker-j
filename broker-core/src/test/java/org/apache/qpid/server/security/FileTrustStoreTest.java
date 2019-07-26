@@ -66,7 +66,9 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.DataUrlUtils;
+import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.TestSSLConstants;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -442,6 +444,59 @@ public class FileTrustStoreTest extends UnitTestBase
         assertEquals("Unexpected number of certificates",
                             (long) getNumberOfCertificates(keystoreUrl, JAVA_KEYSTORE_TYPE),
                             (long) certificates.length);
+    }
+
+    @Test
+    public void testReloadKeystore() throws Exception
+    {
+        assumeThat(SSLUtil.canGenerateCerts(), is(equalTo(true)));
+
+        final SSLUtil.KeyCertPair selfSigned1 = KeystoreTestHelper.generateSelfSigned("CN=foo");
+        final SSLUtil.KeyCertPair selfSigned2 = KeystoreTestHelper.generateSelfSigned("CN=bar");
+
+        final File keyStoreFile = TestFileUtils.createTempFile(this, ".ks");
+        final String dummy = "changit";
+        final char[] pass = dummy.toCharArray();
+        final String alias = "test";
+        try
+        {
+            final java.security.KeyStore keyStore =
+                    KeystoreTestHelper.saveKeyStore(alias, selfSigned1.getCertificate(), pass, keyStoreFile);
+
+            final Map<String, Object> attributes = new HashMap<>();
+            attributes.put(FileTrustStore.NAME, getTestName());
+            attributes.put(FileTrustStore.PASSWORD, dummy);
+            attributes.put(FileTrustStore.STORE_URL, keyStoreFile.getAbsolutePath());
+            attributes.put(FileTrustStore.TRUST_STORE_TYPE, keyStore.getType());
+
+            final FileTrustStore trustStore = (FileTrustStore) _factory.create(TrustStore.class, attributes, _broker);
+
+            final X509Certificate certificate = getCertificate(trustStore);
+            assertEquals("CN=foo", certificate.getIssuerX500Principal().getName());
+
+            KeystoreTestHelper.saveKeyStore(alias, selfSigned2.getCertificate(), pass, keyStoreFile);
+
+            trustStore.reload();
+
+            final X509Certificate certificate2 = getCertificate(trustStore);
+            assertEquals("CN=bar", certificate2.getIssuerX500Principal().getName());
+        }
+        finally
+        {
+            assertTrue(keyStoreFile.delete());
+        }
+    }
+
+    public X509Certificate getCertificate(final FileTrustStore trustStore) throws java.security.GeneralSecurityException
+    {
+        Certificate[] certificates = trustStore.getCertificates();
+
+        assertNotNull(certificates);
+        assertEquals(1, certificates.length);
+
+        Certificate certificate = certificates[0];
+        assertTrue(certificate instanceof X509Certificate);
+        return (X509Certificate)certificate;
     }
 
     private int getNumberOfCertificates(URL url, String type) throws Exception

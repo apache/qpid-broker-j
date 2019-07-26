@@ -28,6 +28,7 @@ import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.TrustStore;
 
 @ManagedObject( category = false, type = "FileTrustStore" )
@@ -69,4 +70,7 @@ public interface FileTrustStore<X extends FileTrustStore<X>> extends TrustStore<
     String getPassword();
 
     void setPassword(String password);
+
+    @ManagedOperation( description = "Reloads trust store.", changesConfiguredObjectState = true)
+    void reload();
 }

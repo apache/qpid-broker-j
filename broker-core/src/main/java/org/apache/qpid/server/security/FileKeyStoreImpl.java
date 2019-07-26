@@ -139,7 +139,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         }
         catch (GeneralSecurityException | IOException e)
         {
-            result = Collections.emptyList();
+            throw new IllegalConfigurationException(String.format("Cannot instantiate keystore '%s'", getName()), e);
         }
         _certificates = result;
     }
@@ -273,6 +273,12 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     public boolean isUseHostNameMatching()
     {
         return _useHostNameMatching;
+    }
+
+    @Override
+    public void reload()
+    {
+        initialize();
     }
 
     public void setPassword(String password)
