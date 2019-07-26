@@ -48,7 +48,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
@@ -95,7 +94,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] payloads = Utils.splitPayload("testData", 2);
+            QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 2);
 
             final UnsignedInteger deliveryId = UnsignedInteger.ZERO;
             final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
@@ -106,7 +105,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                                                  .begin().consumeResponse(Begin.class)
                                                  .attachRole(Role.SENDER)
                                                  .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                 .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                                                  .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                                                  .attach().consumeResponse(Attach.class)
                                                  .consumeResponse(Flow.class)
@@ -128,8 +126,9 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             }
             assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
             assertThat(disposition.getLast(), oneOf(null, deliveryId));
-            assertThat(disposition.getSettled(), is(equalTo(false)));
+            assertThat(disposition.getSettled(), is(equalTo(true)));
         }
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 
     @Test
@@ -141,7 +140,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] payloads = Utils.splitPayload("testData", 4);
+            QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 4);
             final UnsignedInteger deliveryId = UnsignedInteger.ZERO;
             final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
 
@@ -151,7 +150,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .begin().consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
@@ -188,13 +186,11 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             }
             assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
             assertThat(disposition.getLast(), oneOf(null, deliveryId));
-            assertThat(disposition.getSettled(), is(equalTo(false)));
+            assertThat(disposition.getSettled(), is(equalTo(true)));
             assertThat(disposition.getState(), is(instanceOf(Accepted.class)));
         }
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
-
-
-    //
 
     @Test
     @SpecificationTest(section = "2.6.14",
@@ -204,7 +200,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] payloads = Utils.splitPayload("testData", 2);
+            QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 2);
 
             final UnsignedInteger deliveryId = UnsignedInteger.ZERO;
             final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
@@ -215,7 +211,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .begin().consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
@@ -238,15 +233,18 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             assertThat(latestResponse, is(nullValue()));
         }
     }
+
     @Test
     @SpecificationTest(section = "2.6.14",
             description = "[...]messages being transferred along different links MAY be interleaved")
     public void multiTransferInterleaved() throws Exception
     {
+        String messageContent1 = getTestName() + "_1";
+        String messageContent2 = getTestName() + "_2";
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] messagePayload1 = Utils.splitPayload("testData1", 2);
-            QpidByteBuffer[] messagePayload2 = Utils.splitPayload("testData2", 2);
+            QpidByteBuffer[] messagePayload1 = Utils.splitPayload(messageContent1, 2);
+            QpidByteBuffer[] messagePayload2 = Utils.splitPayload(messageContent2, 2);
 
             UnsignedInteger linkHandle1 = UnsignedInteger.ZERO;
             UnsignedInteger linkHandle2 = UnsignedInteger.ONE;
@@ -265,7 +263,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .attachHandle(linkHandle1)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
@@ -274,7 +271,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .attachHandle(linkHandle2)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
@@ -328,7 +324,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                 dispositionMap.put(disposition.getFirst(), disposition);
 
                 assertThat(disposition.getLast(), oneOf(null, disposition.getFirst()));
-                assertThat(disposition.getSettled(), is(equalTo(false)));
+                assertThat(disposition.getSettled(), is(equalTo(true)));
                 assertThat(disposition.getState(), is(instanceOf(Accepted.class)));
             }
 
@@ -336,6 +332,8 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             assertThat(dispositionMap.containsKey(deliverId1), is(true));
             assertThat(dispositionMap.containsKey(deliveryId2), is(true));
         }
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(messageContent1)));
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(messageContent2)));
     }
 
     @Test
@@ -343,10 +341,12 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             description = "[...]messages transferred along a single link MUST NOT be interleaved")
     public void illegallyInterleavedMultiTransferOnSingleLink() throws Exception
     {
+        String messageContent1 = getTestName() + "_1";
+        String messageContent2 = getTestName() + "_2";
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] messagePayload1 = Utils.splitPayload("testData1", 2);
-            QpidByteBuffer[] messagePayload2 = Utils.splitPayload("testData2", 2);
+            QpidByteBuffer[] messagePayload1 = Utils.splitPayload(messageContent1, 2);
+            QpidByteBuffer[] messagePayload2 = Utils.splitPayload(messageContent2, 2);
 
             Binary deliveryTag1 = new Binary("testTransfer1".getBytes(UTF_8));
             Binary deliveryTag2 = new Binary("testTransfer2".getBytes(UTF_8));
@@ -361,7 +361,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
 
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)

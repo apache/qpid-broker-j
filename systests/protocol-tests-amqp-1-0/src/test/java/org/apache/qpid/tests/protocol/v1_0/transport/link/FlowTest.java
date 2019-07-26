@@ -32,6 +32,7 @@ import java.net.InetSocketAddress;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
@@ -132,11 +133,37 @@ public class FlowTest extends BrokerAdminUsingTestBase
     public void synchronousGet() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, "foo");
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
 
-        String data = (String) Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME);
-        assertThat(data, is(equalTo("foo")));
+        try (FrameTransport transport = new FrameTransport(addr).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateProtocol().consumeResponse()
+                       .open().consumeResponse()
+                       .begin().consumeResponse()
+                       .attachRole(Role.RECEIVER)
+                       .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                       .attach().consumeResponse()
+                       .flowIncomingWindow(UnsignedInteger.ONE)
+                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowOutgoingWindow(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowLinkCredit(UnsignedInteger.ONE)
+                       .flowHandleFromLinkHandle()
+                       .flow()
+                       .receiveDelivery()
+                       .decodeLatestDelivery()
+                       .dispositionSettled(true)
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionFirst(interaction.getLatestDeliveryId())
+                       .dispositionLast(interaction.getLatestDeliveryId())
+                       .dispositionState(new Accepted())
+                       .disposition()
+                       .sync();
+            final Object data = interaction.getDecodedLatestDelivery();
+            assertThat(data, is(equalTo(getTestName())));
+        }
     }
 
     @Test
@@ -259,7 +286,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
     {
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        String messageContent = "Test";
+        String messageContent = getTestName();
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, messageContent);
 
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
@@ -289,7 +316,8 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                                        .getDecodedLatestDelivery();
 
             assertThat(receivedMessageContent, is(equalTo(messageContent)));
-            assertThat(interaction.getLatestDeliveryId(), is(equalTo(UnsignedInteger.ZERO)));
+            UnsignedInteger firstDeliveryId = interaction.getLatestDeliveryId();
+            assertThat(firstDeliveryId, is(equalTo(UnsignedInteger.ZERO)));
 
             Flow responseFlow = interaction.flowNextIncomingId(UnsignedInteger.ONE)
                                            .flowLinkCredit(UnsignedInteger.ONE)
@@ -301,6 +329,13 @@ public class FlowTest extends BrokerAdminUsingTestBase
 
             assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
             assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
+
+            interaction.dispositionSettled(true)
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionFirst(firstDeliveryId)
+                       .dispositionState(new Accepted())
+                       .disposition()
+                       .sync();
         }
     }
 
@@ -317,10 +352,8 @@ public class FlowTest extends BrokerAdminUsingTestBase
     {
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        String messageContent1 = "Test1";
-        String messageContent2 = "Test2";
-        String messageContent3 = "Test2";
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, messageContent1, messageContent2, messageContent3);
+        final String[] contents = Utils.createTestMessageContents(3, getTestName());
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, contents);
 
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
@@ -348,8 +381,9 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                                         .decodeLatestDelivery()
                                                         .getDecodedLatestDelivery();
 
-            assertThat(receivedMessageContent1, is(equalTo(messageContent1)));
-            assertThat(interaction.getLatestDeliveryId(), is(equalTo(UnsignedInteger.ZERO)));
+            assertThat(receivedMessageContent1, is(equalTo(contents[0])));
+            UnsignedInteger firstDeliveryId = interaction.getLatestDeliveryId();
+            assertThat(firstDeliveryId, is(equalTo(UnsignedInteger.ZERO)));
 
             Object receivedMessageContent2 = interaction.flowIncomingWindow(incomingWindow)
                                                         .flowNextIncomingId(UnsignedInteger.ONE)
@@ -360,8 +394,9 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                                         .decodeLatestDelivery()
                                                         .getDecodedLatestDelivery();
 
-            assertThat(receivedMessageContent2, is(equalTo(messageContent2)));
-            assertThat(interaction.getLatestDeliveryId(), is(equalTo(UnsignedInteger.ONE)));
+            assertThat(receivedMessageContent2, is(equalTo(contents[1])));
+            UnsignedInteger secondDeliveryId = interaction.getLatestDeliveryId();
+            assertThat(secondDeliveryId, is(equalTo(UnsignedInteger.ONE)));
 
             // send session flow with echo=true to verify that no message is delivered without issuing a credit
             Flow responseFlow = interaction.flowNextIncomingId(UnsignedInteger.valueOf(2))
@@ -372,7 +407,16 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                            .consumeResponse().getLatestResponse(Flow.class);
 
             assertThat(responseFlow.getHandle(), is(nullValue()));
+
+            interaction.dispositionSettled(true)
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionFirst(firstDeliveryId)
+                       .dispositionLast(secondDeliveryId)
+                       .dispositionState(new Accepted())
+                       .disposition()
+                       .sync();
         }
+        assertThat(Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(contents[2])));
     }
 
     @Test
@@ -385,9 +429,8 @@ public class FlowTest extends BrokerAdminUsingTestBase
     {
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        String messageContent1 = "Test1";
-        String messageContent2 = "Test2";
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, messageContent1, messageContent2);
+        final String[] contents = Utils.createTestMessageContents(2, getTestName());
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, contents);
 
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
@@ -413,7 +456,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                                         .decodeLatestDelivery()
                                                         .getDecodedLatestDelivery();
 
-            assertThat(receivedMessageContent1, is(equalTo(messageContent1)));
+            assertThat(receivedMessageContent1, is(equalTo(contents[0])));
             assertThat(interaction.getLatestDeliveryId(), is(equalTo(UnsignedInteger.ZERO)));
 
             Flow responseFlow = interaction.flowNextIncomingId(UnsignedInteger.ONE)
@@ -425,7 +468,15 @@ public class FlowTest extends BrokerAdminUsingTestBase
 
             assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
             assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
+
+            interaction.dispositionSettled(true)
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionFirst(interaction.getLatestDeliveryId())
+                       .dispositionState(new Accepted())
+                       .disposition()
+                       .sync();
         }
+        assertThat(Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(contents[1])));
     }
 
     @Test
@@ -438,7 +489,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
     {
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, "Test1");
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
@@ -466,5 +517,6 @@ public class FlowTest extends BrokerAdminUsingTestBase
             assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
             assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
         }
+        assertThat(Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 }

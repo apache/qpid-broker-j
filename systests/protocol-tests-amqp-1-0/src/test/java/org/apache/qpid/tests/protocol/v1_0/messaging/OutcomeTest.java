@@ -59,7 +59,9 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
                                                         + " MUST NOT be redelivered to the modifying link endpoint.")
     public void modifiedOutcomeWithUndeliverableHere() throws Exception
     {
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, "message1", "message2");
+        String content1 = getTestName() + "_1";
+        String content2 = getTestName() + "_2";
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content1, content2);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -79,7 +81,7 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
                                                      .decodeLatestDelivery();
 
             Object firstDeliveryPayload = interaction.getDecodedLatestDelivery();
-            assertThat(firstDeliveryPayload, is(equalTo("message1")));
+            assertThat(firstDeliveryPayload, is(equalTo(content1)));
 
             Modified modifiedOutcome = new Modified();
             modifiedOutcome.setUndeliverableHere(Boolean.TRUE);
@@ -96,10 +98,12 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
                        .decodeLatestDelivery();
 
             Object secondDeliveryPayload = interaction.getDecodedLatestDelivery();
-            assertThat(secondDeliveryPayload, is(equalTo("message2")));
+            assertThat(secondDeliveryPayload, is(equalTo(content2)));
 
             // verify that no unexpected performative is received by closing
             interaction.doCloseConnection();
         }
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content1)));
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content2)));
     }
 }

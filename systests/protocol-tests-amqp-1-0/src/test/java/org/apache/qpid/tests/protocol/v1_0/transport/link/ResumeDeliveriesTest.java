@@ -78,7 +78,6 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 {
     private static final int MIN_MAX_FRAME_SIZE = 512;
-    private static final String TEST_MESSAGE_CONTENT = "foo";
     private InetSocketAddress _brokerAddress;
     private String _originalMmsMessageStorePersistence;
 
@@ -136,7 +135,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             final Disposition responseDisposition = interaction.transferHandle(linkHandle1)
                                                                .transferDeliveryId(UnsignedInteger.ZERO)
                                                                .transferDeliveryTag(deliveryTag)
-                                                               .transferPayloadData(TEST_MESSAGE_CONTENT)
+                                                               .transferPayloadData(getTestName())
                                                                .transfer()
                                                                .consumeResponse()
                                                                .getLatestResponse(Disposition.class);
@@ -197,7 +196,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             // 2. send enough unsettled deliveries to cause incomplete-unsettled to be true
             //    assume each delivery requires at least 1 byte, therefore max-frame-size deliveries should be enough
             interaction.transferHandle(linkHandle1)
-                       .transferPayloadData(TEST_MESSAGE_CONTENT);
+                       .transferPayloadData(getTestName());
             Map<Binary, DeliveryState> localUnsettled = new HashMap<>(open.getMaxFrameSize().intValue());
             for (int i = 0; i < open.getMaxFrameSize().intValue(); ++i)
             {
@@ -291,7 +290,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             // 2. send enough unsettled deliverys to cause incomplete-unsettled to be true
             //    assume each delivery requires at least 1 byte, therefore max-frame-size deliveries should be enough
             interaction.transferHandle(linkHandle1)
-                       .transferPayloadData(TEST_MESSAGE_CONTENT);
+                       .transferPayloadData(getTestName());
             Map<Binary, DeliveryState> localUnsettled = new HashMap<>(open.getMaxFrameSize().intValue());
             for (int i = 0; i < open.getMaxFrameSize().intValue(); ++i)
             {
@@ -351,7 +350,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
     {
         for (int i = 0; i < MIN_MAX_FRAME_SIZE; i++)
         {
-            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT + "-" + i);
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName() + "-" + i);
         }
 
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
@@ -470,7 +469,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                          + " considered unsettled by the issuing link endpoint.")
     public void resumeReceivingLinkEmptyUnsettled() throws Exception
     {
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -490,9 +489,11 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                      .decodeLatestDelivery();
 
             Object data = interaction.getDecodedLatestDelivery();
-            assertThat(data, is(equalTo(TEST_MESSAGE_CONTENT)));
+            assertThat(data, is(equalTo(getTestName())));
 
             interaction.dispositionSettled(true)
+                       .dispositionState(new Accepted())
+                       .dispositionFirstFromLatestDelivery()
                        .dispositionRole(Role.RECEIVER)
                        .disposition();
 
@@ -518,7 +519,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                          + " considered unsettled by the issuing link endpoint.")
     public void resumeReceivingLinkWithSingleUnsettledAccepted() throws Exception
     {
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -549,7 +550,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             assertThat(deliveryTag, is(notNullValue()));
             assertThat(transfer.getSettled(), is(not(equalTo(true))));
             Object data = interaction.decodeLatestDelivery().getDecodedLatestDelivery();
-            assertThat(data, is(equalTo(TEST_MESSAGE_CONTENT)));
+            assertThat(data, is(equalTo(getTestName())));
 
             Detach detach = interaction.detach().consumeResponse().getLatestResponse(Detach.class);
             assertThat(detach.getClosed(), anyOf(nullValue(), equalTo(false)));
@@ -606,7 +607,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                          + " considered unsettled by the issuing link endpoint.")
     public void resumeReceivingLinkOneUnsettledWithNoOutcome() throws Exception
     {
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -636,7 +637,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             Binary deliveryTag = transfer.getDeliveryTag();
             assertThat(deliveryTag, is(notNullValue()));
             Object data = interaction.decodeLatestDelivery().getDecodedLatestDelivery();
-            assertThat(data, is(equalTo(TEST_MESSAGE_CONTENT)));
+            assertThat(data, is(equalTo(getTestName())));
 
             Detach detach = interaction.detach().consumeResponse(Detach.class).getLatestResponse(Detach.class);
             assertThat(detach.getClosed(), anyOf(nullValue(), equalTo(false)));
@@ -693,7 +694,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         final String destination = BrokerAdmin.TEST_QUEUE_NAME;
         final Binary deliveryTag = new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8));
 
-        QpidByteBuffer[] messagePayload = Utils.splitPayload("testData1", 2);
+        QpidByteBuffer[] messagePayload = Utils.splitPayload(getTestName(), 2);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
 

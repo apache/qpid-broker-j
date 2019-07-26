@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
+import java.util.stream.IntStream;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -74,25 +75,38 @@ public class Utils
     {
         try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
         {
-            final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
-                                                     .begin().consumeResponse()
-                                                     .attachRole(Role.RECEIVER)
-                                                     .attachSourceAddress(queueName)
-                                                     .attach().consumeResponse()
-                                                     .flowIncomingWindow(UnsignedInteger.ONE)
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
-                                                     .flowOutgoingWindow(UnsignedInteger.ZERO)
-                                                     .flowNextOutgoingId(UnsignedInteger.ZERO)
-                                                     .flowLinkCredit(UnsignedInteger.ONE)
-                                                     .flowHandleFromLinkHandle()
-                                                     .flow()
-                                                     .receiveDelivery()
-                                                     .decodeLatestDelivery();
-
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateProtocol().consumeResponse()
+                       .open().consumeResponse()
+                       .begin().consumeResponse()
+                       .attachRole(Role.RECEIVER)
+                       .attachSourceAddress(queueName)
+                       .attach().consumeResponse()
+                       .flowIncomingWindow(UnsignedInteger.ONE)
+                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowOutgoingWindow(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowLinkCredit(UnsignedInteger.ONE)
+                       .flowHandleFromLinkHandle()
+                       .flow()
+                       .receiveDelivery()
+                       .decodeLatestDelivery()
+                       .dispositionSettled(true)
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionFirst(interaction.getLatestDeliveryId())
+                       .dispositionLast(interaction.getLatestDeliveryId())
+                       .dispositionState(new Accepted())
+                       .disposition()
+                       .sync();
             return interaction.getDecodedLatestDelivery();
         }
+    }
+
+    public static  String[] createTestMessageContents(final int numberOfMessages, final String testName)
+    {
+        return IntStream.range(0, numberOfMessages)
+                        .mapToObj(i -> String.format("%s_%d", testName, i))
+                        .toArray(String[]::new);
     }
 
     public static  QpidByteBuffer[] splitPayload(final String messageContent, int numberOfParts)

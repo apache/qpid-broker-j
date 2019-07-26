@@ -102,7 +102,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
                           + "assigning it to an unused handle, and sending an attach frame.")
     public void successfulAttachAsReceiver() throws Exception
     {
-        String queueName = "testQueue";
+        String queueName = BrokerAdmin.TEST_QUEUE_NAME;
         getBrokerAdmin().createQueue(queueName);
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
@@ -130,7 +130,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
                           + " detach the newly created link endpoint.")
     public void attachReceiverWithNullTarget() throws Exception
     {
-        String queueName = "testQueue";
+        String queueName = BrokerAdmin.TEST_QUEUE_NAME;
         getBrokerAdmin().createQueue(queueName);
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())

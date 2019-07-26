@@ -24,10 +24,10 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.net.InetSocketAddress;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -57,7 +57,6 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "virtualhost.storeTransactionOpenTimeoutClose", value = "1000")
 public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
 {
-    private static final String TEST_MESSAGE_CONTENT = "testMessageContent";
     private InetSocketAddress _brokerAddress;
 
     @Before
@@ -93,7 +92,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
                                                          .consumeResponse(Flow.class)
 
                                                          .transferHandle(linkHandle)
-                                                         .transferPayloadData(TEST_MESSAGE_CONTENT)
+                                                         .transferPayloadData(getTestName())
                                                          .transferTransactionalState(txnState.getCurrentTransactionId())
                                                          .transfer()
                                                          .consumeResponse(Disposition.class)
@@ -105,7 +104,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
             assertThat(((TransactionalState) responseDisposition.getState()).getOutcome(), is(instanceOf(Accepted.class)));
 
             Close responseClose = interaction.consumeResponse().getLatestResponse(Close.class);
-            assertThat(responseClose.getError(), is(Matchers.notNullValue()));
+            assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(TransactionError.TRANSACTION_TIMEOUT));
         }
     }
@@ -113,7 +112,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
     @Test
     public void transactionalRetirementTimeout() throws Exception
     {
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -147,7 +146,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
                        .decodeLatestDelivery();
 
             Object data = interaction.getDecodedLatestDelivery();
-            assertThat(data, is(equalTo(TEST_MESSAGE_CONTENT)));
+            assertThat(data, is(equalTo(getTestName())));
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
@@ -165,8 +164,9 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
             {
                 responseClose = interaction.consumeResponse().getLatestResponse(Close.class);
             }
-            assertThat(responseClose.getError(), is(Matchers.notNullValue()));
+            assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(TransactionError.TRANSACTION_TIMEOUT));
         }
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 }

@@ -60,7 +60,6 @@ import org.apache.qpid.tests.utils.BrokerSpecific;
 @BrokerSpecific(kind = KIND_BROKER_J)
 public class QueueDeletionTest extends BrokerAdminUsingTestBase
 {
-    private static final String TEST_MESSAGE_CONTENT = "test";
 
     private InetSocketAddress _brokerAddress;
 
@@ -153,7 +152,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
             Disposition responseDisposition = interaction.consumeResponse(Flow.class)
 
                                                          .transferHandle(linkHandle)
-                                                         .transferPayloadData(TEST_MESSAGE_CONTENT)
+                                                         .transferPayloadData(getTestName())
                                                          .transferTransactionalState(txnState.getCurrentTransactionId())
                                                          .transfer()
                                                          .consumeResponse(Disposition.class)
@@ -183,8 +182,8 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
     {
         Utils.putMessageOnQueue(getBrokerAdmin(),
                                 BrokerAdmin.TEST_QUEUE_NAME,
-                                TEST_MESSAGE_CONTENT + 1,
-                                TEST_MESSAGE_CONTENT + 2);
+                                getTestName() + 1,
+                                getTestName() + 2);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -218,7 +217,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
                        .decodeLatestDelivery();
 
             Object data = interaction.getDecodedLatestDelivery();
-            assertThat(data, is(equalTo(TEST_MESSAGE_CONTENT + 1)));
+            assertThat(data, is(equalTo(getTestName() + 1)));
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
@@ -236,7 +235,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
                        .decodeLatestDelivery();
 
             data = interaction.getDecodedLatestDelivery();
-            assertThat(data, is(equalTo(TEST_MESSAGE_CONTENT + 2)));
+            assertThat(data, is(equalTo(getTestName() + 2)));
 
             getBrokerAdmin().deleteQueue(BrokerAdmin.TEST_QUEUE_NAME);
 

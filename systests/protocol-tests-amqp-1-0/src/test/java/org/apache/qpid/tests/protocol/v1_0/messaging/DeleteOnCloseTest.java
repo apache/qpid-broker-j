@@ -83,9 +83,14 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             assertThat(attachResponse.getSource(), is(notNullValue()));
             final String newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 
-            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
-
-            interaction.detachClose(true).detach().consumeResponse().getLatestResponse(Detach.class);
+            try
+            {
+                assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+            }
+            finally
+            {
+                interaction.detachClose(true).detach().consumeResponse().getLatestResponse(Detach.class);
+            }
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
         }
@@ -116,7 +121,14 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
 
             interaction.consumeResponse().getLatestResponse(Flow.class);
-            interaction.detachClose(true).detach().consumeResponse().getLatestResponse(Detach.class);
+            try
+            {
+                assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+            }
+            finally
+            {
+                interaction.detachClose(true).detach().consumeResponse().getLatestResponse(Detach.class);
+            }
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
         }
@@ -144,11 +156,24 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             assertThat(attachResponse.getSource(), is(notNullValue()));
             final String newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 
+            try
+            {
+                assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+            }
+            finally
+            {
+                interaction.detach().consumeResponse().getLatestResponse(Detach.class);
+            }
+
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
 
-            interaction.detach().consumeResponse().getLatestResponse(Detach.class);
-
-            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+            interaction.attach()
+                       .consumeResponse(Attach.class)
+                       .detachClose(true)
+                       .detach()
+                       .consumeResponse()
+                       .getLatestResponse(Detach.class);
+            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
         }
     }
 
