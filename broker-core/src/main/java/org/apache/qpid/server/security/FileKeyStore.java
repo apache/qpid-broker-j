@@ -29,6 +29,7 @@ import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedOperation;
 
 @ManagedObject( category = false, type = "FileKeyStore" )
 public interface FileKeyStore<X extends FileKeyStore<X>> extends KeyStore<X>
@@ -70,4 +71,8 @@ public interface FileKeyStore<X extends FileKeyStore<X>> extends KeyStore<X>
 
     @ManagedAttribute( defaultValue = "true", description = "Use SNI server name from the SSL handshake to select the most appropriate certificate for the indicated hostname")
     boolean isUseHostNameMatching();
+
+    @ManagedOperation( description = "Reloads keystore.", changesConfiguredObjectState = true)
+    void reload();
+
 }

@@ -17,7 +17,16 @@
  * under the License.
  */
 
-define(["qpid/common/util", "dojo/domReady!"], function (util)
+define(["dojo/_base/lang",
+        "qpid/common/util",
+        "dojo/query",
+        "dojo/mouse",
+        "dojo/on",
+        "dijit/registry",
+        "dijit/Tooltip",
+        "dijit/form/Button",
+        "dojo/domReady!"],
+    function (lang, util, query, mouse, on, registry, Tooltip)
 {
 
     function FileKeyStoreProvider(data)
@@ -28,13 +37,56 @@ define(["qpid/common/util", "dojo/domReady!"], function (util)
         {
             this.fields.push(name);
         }
-        util.buildUI(data.containerNode, data.parent, "store/filekeystore/show.html", this.fields, this);
+
+        this.parent = data.parent;
+        this.management = data.parent.management;
+        this.modelObj = data.parent.modelObj;
+        this.containerNode = data.containerNode;
+
+        util.buildUI(data.containerNode,
+                     data.parent,
+                    "store/filekeystore/show.html",
+                     this.fields,
+                     this,
+                     lang.hitch(this, function(){
+                         this.reloadButton = registry.byNode(query(".reload", data.containerNode)[0]);
+                         this.reloadButton.on("click", lang.hitch(this, this.reload));
+                     }));
     }
 
     FileKeyStoreProvider.prototype.update = function (data)
     {
         util.updateUI(data, this.fields, this);
-    }
+    };
+
+    FileKeyStoreProvider.prototype.reload = function (evt)
+    {
+        evt.preventDefault();
+        evt.stopPropagation();
+        this.reloadButton.set("disabled", true);
+        var parentModelObj = this.modelObj;
+        var modelObj = {
+            type: parentModelObj.type,
+            name: "reload",
+            parent: parentModelObj
+        };
+        var url = this.management.buildObjectURL(modelObj);
+        this.management.post({url: url}, {})
+            .then(lang.hitch(this, function () {
+                    this.parent.update();
+                    var domNode = this.reloadButton.domNode;
+                    Tooltip.show("Keystore is reloaded successfully", domNode);
+                    on.once(domNode, mouse.leave, function()
+                    {
+                        Tooltip.hide(domNode);
+                    });
+            }),
+            this.management.xhrErrorHandler)
+            .always(lang.hitch(this, function ()
+            {
+                this.reloadButton.set("disabled", false);
+            }));
+    };
 
     return FileKeyStoreProvider;
 });

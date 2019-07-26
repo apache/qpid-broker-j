@@ -236,6 +236,12 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     }
 
     @Override
+    public void reload()
+    {
+        initialize();
+    }
+
+    @Override
     protected TrustManager[] getTrustManagersInternal()
     {
         TrustManager[] trustManagers = _trustManagers;
@@ -287,8 +293,10 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
         try
         {
             KeyStore ts = initializeKeyStore(this);
-            _trustManagers = createTrustManagers(ts);
-            _certificates = createCertificates(ts);
+            TrustManager[] trustManagers = createTrustManagers(ts);
+            Certificate[] certificates = createCertificates(ts);
+            _trustManagers = trustManagers;
+            _certificates = certificates;
         }
         catch (Exception e)
         {

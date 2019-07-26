@@ -23,16 +23,23 @@ package org.apache.qpid.server.security;
 import static org.apache.qpid.server.security.FileTrustStoreTest.SYMMETRIC_KEY_KEYSTORE_RESOURCE;
 import static org.apache.qpid.server.security.FileTrustStoreTest.createDataUrlForFile;
 import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.net.URL;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.KeyManager;
@@ -49,7 +56,9 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.DataUrlUtils;
+import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.TestSSLConstants;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -401,4 +410,57 @@ public class FileKeyStoreTest extends UnitTestBase
 
     }
 
+    @Test
+    public void testReloadKeystore() throws Exception
+    {
+        assumeThat(SSLUtil.canGenerateCerts(), is(equalTo(true)));
+
+        final SSLUtil.KeyCertPair selfSigned1 = KeystoreTestHelper.generateSelfSigned("CN=foo");
+        final SSLUtil.KeyCertPair selfSigned2 = KeystoreTestHelper.generateSelfSigned("CN=bar");
+
+        final File keyStoreFile = TestFileUtils.createTempFile(this, ".ks");
+        final String dummy = "changit";
+        final char[] pass = dummy.toCharArray();
+        final String certificateAlias = "test1";
+        final String keyAlias = "test2";
+        try
+        {
+            final java.security.KeyStore keyStore =
+                    KeystoreTestHelper.saveKeyStore(selfSigned1, certificateAlias, keyAlias, pass, keyStoreFile);
+
+            final Map<String, Object> attributes = new HashMap<>();
+            attributes.put(FileKeyStore.NAME, getTestName());
+            attributes.put(FileKeyStore.STORE_URL, keyStoreFile.getAbsolutePath());
+            attributes.put(FileKeyStore.PASSWORD, dummy);
+            attributes.put(FileKeyStore.KEY_STORE_TYPE, keyStore.getType());
+
+            final FileKeyStore keyStoreObject = (FileKeyStore) _factory.create(KeyStore.class, attributes, _broker);
+
+            final CertificateDetails certificate = getCertificate(keyStoreObject);
+            assertEquals("CN=foo", certificate.getIssuerName());
+
+            assertTrue(keyStoreFile.delete());
+            assertTrue(keyStoreFile.createNewFile());keyStoreFile.deleteOnExit();
+            KeystoreTestHelper.saveKeyStore(selfSigned2, certificateAlias, keyAlias, pass, keyStoreFile);
+
+            keyStoreObject.reload();
+
+            final CertificateDetails certificate2 = getCertificate(keyStoreObject);
+            assertEquals("CN=bar", certificate2.getIssuerName());
+        }
+        finally
+        {
+            assertTrue(keyStoreFile.delete());
+        }
+    }
+
+    public CertificateDetails getCertificate(final FileKeyStore keyStore) throws java.security.GeneralSecurityException
+    {
+        final List<CertificateDetails> certificates = keyStore.getCertificateDetails();
+
+        assertNotNull(certificates);
+        assertEquals(1, certificates.size());
+
+        return certificates.get(0);
+    }
 }
