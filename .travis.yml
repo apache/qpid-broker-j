@@ -1,7 +1,6 @@
 language: java
-sudo: false
 jdk:
-  - oraclejdk8
+  - openjdk8
 env:
   - phase="test" pl="" additionalprops="-Dskip.systests=true"
   - phase="verify" pl="-pl systests/protocol-tests-amqp-1-0" additionalprops="-Dskip.unittests=true"
