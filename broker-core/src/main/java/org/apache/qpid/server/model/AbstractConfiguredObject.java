@@ -3505,7 +3505,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         if(!excludeSystem)
         {
             inheritedContext.putAll(System.getenv());
-            inheritedContext.putAll((Map) System.getProperties());
+            //clone is synchronized and will avoid ConcurrentModificationException
+            inheritedContext.putAll((Map) System.getProperties().clone());
         }
         generateInheritedContext(getModel(), this, inheritedContext);
         return Collections.unmodifiableSet(inheritedContext.keySet());
