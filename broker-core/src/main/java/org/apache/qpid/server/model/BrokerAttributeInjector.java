@@ -71,7 +71,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                     ManagementFactory.getPlatformMXBean((Class<? extends PlatformManagedObject>) hotSpotDiagnosticMXBeanClass);
 
         }
-        catch (ClassNotFoundException e)
+        catch (IllegalArgumentException | ClassNotFoundException e)
         {
             LOGGER.debug("Cannot find com.sun.management.HotSpotDiagnosticMXBean MXBean: " + e);
         }

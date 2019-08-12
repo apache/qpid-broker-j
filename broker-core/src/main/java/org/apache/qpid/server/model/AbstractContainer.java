@@ -137,7 +137,7 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
             String maxDirectMemoryAsString = (String)getValue.invoke(vmOption);
             maxMemory = Long.parseLong(maxDirectMemoryAsString);
         }
-        catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException e)
+        catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | IllegalArgumentException e)
         {
             LOGGER.debug("Cannot determine direct memory max size using com.sun.management.HotSpotDiagnosticMXBean: " + e.getMessage());
         }
