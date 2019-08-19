@@ -1730,6 +1730,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                             SoleConnectionDetectionPolicy.STRONG);
         }
 
+        if (_soleConnectionEnforcementPolicy == SoleConnectionEnforcementPolicy.CLOSE_EXISTING)
+        {
+            _properties.put(SOLE_CONNECTION_ENFORCEMENT_POLICY, SoleConnectionEnforcementPolicy.CLOSE_EXISTING.getValue());
+        }
+
         open.setProperties(_properties);
 
         sendFrame(CONNECTION_CONTROL_CHANNEL, open);
