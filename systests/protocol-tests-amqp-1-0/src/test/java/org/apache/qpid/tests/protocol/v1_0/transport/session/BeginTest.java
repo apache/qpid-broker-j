@@ -23,7 +23,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 
@@ -46,7 +48,7 @@ public class BeginTest extends BrokerAdminUsingTestBase
 {
     @Test
     @SpecificationTest(section = "1.3.4",
-            description = "Begin without mandatory fields should result in a decoding error.")
+            description = "mandatory [...] a non null value for the field is always encoded.")
     public void emptyBegin() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
@@ -60,7 +62,7 @@ public class BeginTest extends BrokerAdminUsingTestBase
                                            .beginOutgoingWindow(null)
                                            .begin().consumeResponse()
                                            .getLatestResponse(Close.class);
-            assertThat(responseClose.getError(), is(notNullValue()));
+            assumeThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
         }
     }
@@ -93,20 +95,29 @@ public class BeginTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "2.7.1",
-                       description = "A peer that receives a channel number outside the supported range MUST close "
-                                     + "the connection with the framing-error error-code..")
+            description = "A peer MUST not use channel numbers outside the range that its partner can handle."
+                          + "A peer that receives a channel number outside the supported range MUST close "
+                          + "the connection with the framing-error error-code..")
     public void channelMax() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            Close responseClose = transport.newInteraction()
-                                           .negotiateProtocol().consumeResponse()
-                                           .openChannelMax(UnsignedShort.valueOf(5))
-                                           .open().consumeResponse(Open.class)
-                                           .sessionChannel(UnsignedShort.valueOf(6))
-                                           .begin().consumeResponse()
-                                           .getLatestResponse(Close.class);
+            final Interaction interaction = transport.newInteraction();
+            final int ourChannelMax = 5;
+            final Open responseOpen = interaction.negotiateProtocol().consumeResponse()
+                                                 .openChannelMax(UnsignedShort.valueOf(ourChannelMax))
+                                                 .open().consumeResponse(Open.class).getLatestResponse(Open.class);
+
+            final UnsignedShort remoteChannelMax = responseOpen.getChannelMax();
+            assumeThat(remoteChannelMax, is(notNullValue()));
+            assumeThat(remoteChannelMax.intValue(), is(lessThan(UnsignedShort.MAX_VALUE.intValue())));
+
+            final int illegalSessionChannel =  remoteChannelMax.intValue() + 1;
+
+            final Close responseClose = interaction.sessionChannel(UnsignedShort.valueOf(illegalSessionChannel))
+                                                   .begin().consumeResponse()
+                                                   .getLatestResponse(Close.class);
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(ConnectionError.FRAMING_ERROR));
         }
