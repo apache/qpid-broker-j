@@ -84,12 +84,12 @@ public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
         return getInteraction();
     }
 
-    public Response<?> getLatestResponse() throws Exception
+    public Response<?> getLatestResponse()
     {
         return _latestResponse;
     }
 
-    public <T> T getLatestResponse(Class<T> type) throws Exception
+    public <T> T getLatestResponse(Class<T> type)
     {
         if (_latestResponse.getBody() == null)
         {

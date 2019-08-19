@@ -30,12 +30,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -113,6 +115,8 @@ public class Interaction extends AbstractInteraction<Interaction>
     private Object _decodedLatestDelivery;
     private UnsignedInteger _latestDeliveryId;
     private Map<String, Object> _latestDeliveryApplicationProperties;
+    private Map<Class, FrameBody> _latestResponses = new HashMap<>();
+    private AtomicLong _receivedDeliveryCount = new AtomicLong();
 
     Interaction(final FrameTransport frameTransport)
     {
@@ -644,6 +648,12 @@ public class Interaction extends AbstractInteraction<Interaction>
         return flowNextIncomingId(_latestDeliveryId.add(UnsignedInteger.ONE));
     }
 
+    public Interaction flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+    {
+        final Begin begin = (Begin) _latestResponses.get(Begin.class);
+        return flowNextIncomingId(begin.getNextOutgoingId().add(UnsignedInteger.valueOf(_receivedDeliveryCount.get())));
+    }
+
     public Interaction flowOutgoingWindow(final UnsignedInteger outgoingWindow)
     {
         _flow.setOutgoingWindow(outgoingWindow);
@@ -677,6 +687,12 @@ public class Interaction extends AbstractInteraction<Interaction>
     public Interaction flowDeliveryCount(final UnsignedInteger deliveryCount)
     {
         _flow.setDeliveryCount(deliveryCount);
+        return this;
+    }
+
+    public Interaction flowDeliveryCount()
+    {
+        _flow.setDeliveryCount(UnsignedInteger.valueOf(_receivedDeliveryCount.get()));
         return this;
     }
 
@@ -1071,6 +1087,7 @@ public class Interaction extends AbstractInteraction<Interaction>
         sync();
         _latestDelivery = receiveAllTransfers(ignore);
         _latestDeliveryId = _latestDelivery.size() > 0 ? _latestDelivery.get(0).getDeliveryId() : null;
+        _receivedDeliveryCount.incrementAndGet();
         return this;
     }
 
@@ -1163,4 +1180,16 @@ public class Interaction extends AbstractInteraction<Interaction>
         while (completed == null);
         return completed;
     }
+
+    @Override
+    protected Response<?> getNextResponse() throws Exception
+    {
+        Response<?> response = super.getNextResponse();
+        if (response != null && response.getBody() instanceof FrameBody)
+        {
+            _latestResponses.put(response.getBody().getClass(), (FrameBody)response.getBody());
+        }
+        return response;
+    }
+
 }
