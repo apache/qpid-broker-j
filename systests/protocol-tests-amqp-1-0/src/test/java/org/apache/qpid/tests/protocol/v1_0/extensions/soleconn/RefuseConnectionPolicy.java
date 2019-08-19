@@ -24,31 +24,28 @@ import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.Sole
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_ENFORCEMENT_POLICY;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.REFUSE_CONNECTION;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assertConnectionEstablishmentFailed;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assertInvalidContainerId;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeConnectionEstablishmentFailed;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeDetectionPolicyStrong;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeEnforcementPolicyRefuse;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeSoleConnectionCapability;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.in;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
-import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
@@ -76,7 +73,9 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
                                                  .open().consumeResponse()
                                                  .getLatestResponse(Open.class);
 
-            assertThat(Arrays.asList(responseOpen.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
+            assumeSoleConnectionCapability(responseOpen);
+            assumeEnforcementPolicyRefuse(responseOpen);
+
             if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
             {
                 assertThat(responseOpen.getProperties().get(SOLE_CONNECTION_DETECTION_POLICY),
@@ -99,6 +98,10 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
                                                                  REFUSE_CONNECTION))
                         .open().consumeResponse(Open.class);
 
+            final Open responseOpen = interaction1.getLatestResponse(Open.class);
+            assumeSoleConnectionCapability(responseOpen);
+            assumeEnforcementPolicyRefuse(responseOpen);
+
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
@@ -110,26 +113,16 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
                                                                REFUSE_CONNECTION))
                                                        .open().consumeResponse()
                                                        .getLatestResponse(Open.class);
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()),
-                           hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                assertThat(responseOpen2.getProperties(),
-                           hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
-                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")),
-                           is(true));
 
-                final Close close2 = interaction2.consumeResponse().getLatestResponse(Close.class);
-                assertThat(close2.getError(), is(notNullValue()));
-                assertThat(close2.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-                assertThat(close2.getError().getInfo(),
-                           is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"),
-                                                               Symbol.valueOf("container-id")))));
+                assertConnectionEstablishmentFailed(responseOpen2);
+                assertInvalidContainerId(interaction2.consumeResponse().getLatestResponse(Close.class));
             }
         }
     }
 
 
     @Test
-    public void weakDetection() throws Exception
+    public void strongDetectionWhenConnectionWithoutSoleConnectionCapabilityOpened() throws Exception
     {
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
@@ -139,6 +132,10 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
                         .openContainerId("testContainerId")
                         .open().consumeResponse(Open.class);
 
+            final Open responseOpen = interaction1.getLatestResponse(Open.class);
+            assumeSoleConnectionCapability(responseOpen);
+            assumeDetectionPolicyStrong(responseOpen);
+
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
@@ -150,19 +147,9 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
                                                                REFUSE_CONNECTION))
                                                        .open().consumeResponse()
                                                        .getLatestResponse(Open.class);
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()),
-                           hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                assertThat(responseOpen2.getProperties(),
-                           hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
-                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")),
-                           is(true));
 
-                final Close close2 = interaction2.consumeResponse().getLatestResponse(Close.class);
-                assertThat(close2.getError(), is(notNullValue()));
-                assertThat(close2.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-                assertThat(close2.getError().getInfo(),
-                           is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"),
-                                                               Symbol.valueOf("container-id")))));
+                assumeConnectionEstablishmentFailed(responseOpen2);
+                assertInvalidContainerId(interaction2.consumeResponse().getLatestResponse(Close.class));
             }
         }
     }
@@ -178,15 +165,13 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
                                                   .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                                                   .openProperties(Collections.singletonMap(
                                                           SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                          REFUSE_CONNECTION))
+                                                          REFUSE_CONNECTION.getValue()))
                                                   .open().consumeResponse()
                                                   .getLatestResponse(Open.class);
-            assertThat(Arrays.asList(responseOpen.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-            if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
-            {
-                assumeThat(responseOpen.getProperties().get(SOLE_CONNECTION_DETECTION_POLICY),
-                           is(equalTo(SoleConnectionDetectionPolicy.STRONG.getValue())));
-            }
+
+            assumeSoleConnectionCapability(responseOpen);
+            assumeEnforcementPolicyRefuse(responseOpen);
+            assumeDetectionPolicyStrong(responseOpen);
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
@@ -197,19 +182,8 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
                                                        .open().consumeResponse()
                                                        .getLatestResponse(Open.class);
 
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()),
-                           hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                assertThat(responseOpen2.getProperties(),
-                           hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
-                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")),
-                           is(true));
-
-                final Close close2 = interaction2.consumeResponse().getLatestResponse(Close.class);
-                assertThat(close2.getError(), is(notNullValue()));
-                assertThat(close2.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-                assertThat(close2.getError().getInfo(),
-                           is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"),
-                                                               Symbol.valueOf("container-id")))));
+                assertConnectionEstablishmentFailed(responseOpen2);
+                assertInvalidContainerId(interaction2.consumeResponse().getLatestResponse(Close.class));
             }
         }
     }
@@ -226,6 +200,10 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                         .open().consumeResponse(Open.class);
 
+            final Open responseOpen = interaction1.getLatestResponse(Open.class);
+            assumeSoleConnectionCapability(responseOpen);
+            assumeEnforcementPolicyRefuse(responseOpen);
+
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
@@ -236,19 +214,8 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
                                                        .open().consumeResponse()
                                                        .getLatestResponse(Open.class);
 
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()),
-                           hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                assertThat(responseOpen2.getProperties(),
-                           hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
-                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")),
-                           is(true));
-
-                final Close close2 = interaction2.consumeResponse().getLatestResponse(Close.class);
-                assertThat(close2.getError(), is(notNullValue()));
-                assertThat(close2.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-                assertThat(close2.getError().getInfo(),
-                           is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"),
-                                                               Symbol.valueOf("container-id")))));
+                assertConnectionEstablishmentFailed(responseOpen2);
+                assertInvalidContainerId(interaction2.consumeResponse().getLatestResponse(Close.class));
             }
         }
     }

@@ -24,6 +24,9 @@ import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.Sole
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.CLOSE_EXISTING;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.REFUSE_CONNECTION;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeEnforcementPolicyCloseExisting;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeEnforcementPolicyRefuse;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeSoleConnectionCapability;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -33,9 +36,9 @@ import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class MixedPolicy extends BrokerAdminUsingTestBase
@@ -60,6 +63,10 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
                         .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                  CLOSE_EXISTING))
                         .open().consumeResponse(Open.class);
+
+            Open responseOpen = interaction1.getLatestResponse(Open.class);
+            assumeSoleConnectionCapability(responseOpen);
+            assumeEnforcementPolicyCloseExisting(responseOpen);
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
@@ -103,6 +110,10 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
                         .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                  REFUSE_CONNECTION))
                         .open().consumeResponse(Open.class);
+
+            final Open responseOpen = interaction1.getLatestResponse(Open.class);
+            assumeSoleConnectionCapability(responseOpen);
+            assumeEnforcementPolicyRefuse(responseOpen);
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {

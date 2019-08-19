@@ -24,30 +24,28 @@ import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.Sole
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_ENFORCEMENT_POLICY;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.CLOSE_EXISTING;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assertEnforcementPolicyCloseExisting;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assertResourceLocked;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assertSoleConnectionCapability;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeDetectionPolicyStrong;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeEnforcementPolicyCloseExisting;
+import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeSoleConnectionCapability;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.in;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
-import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class CloseExistingPolicy extends BrokerAdminUsingTestBase
@@ -75,7 +73,9 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
                                          .open().consumeResponse()
                                          .getLatestResponse(Open.class);
 
-            assertThat(Arrays.asList(responseOpen.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
+            assumeSoleConnectionCapability(responseOpen);
+            assumeEnforcementPolicyCloseExisting(responseOpen);
+
             if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
             {
                 assertThat(responseOpen.getProperties().get(SOLE_CONNECTION_DETECTION_POLICY),
@@ -98,6 +98,10 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
                                                                  CLOSE_EXISTING))
                         .open().consumeResponse(Open.class);
 
+            final Open responseOpen = interaction1.getLatestResponse(Open.class);
+            assumeSoleConnectionCapability(responseOpen);
+            assumeEnforcementPolicyCloseExisting(responseOpen);
+
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
@@ -109,26 +113,18 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
                             .open()
                             .sync();
 
-                final Close close1 = interaction1.consumeResponse().getLatestResponse(Close.class);
-                assertThat(close1.getError(), is(notNullValue()));
-                assertThat(close1.getError().getCondition(), is(equalTo(AmqpError.RESOURCE_LOCKED)));
-                assertThat(close1.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true))));
+                assertResourceLocked(interaction1.consumeResponse().getLatestResponse(Close.class));
 
                 final Open responseOpen2 = interaction2.consumeResponse().getLatestResponse(Open.class);
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                if (responseOpen2.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
-                {
-                    assertThat(responseOpen2.getProperties().get(SOLE_CONNECTION_DETECTION_POLICY),
-                               in(new UnsignedInteger[]{SoleConnectionDetectionPolicy.STRONG.getValue(),
-                                       SoleConnectionDetectionPolicy.WEAK.getValue()}));
-                }
+                assertSoleConnectionCapability(responseOpen2);
+                assertEnforcementPolicyCloseExisting(responseOpen2);
             }
         }
     }
 
 
     @Test
-    public void weakDetection() throws Exception
+    public void strongDetectionWhenConnectionWithoutSoleConnectionCapabilityOpened() throws Exception
     {
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
@@ -138,6 +134,10 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
                         .openContainerId("testContainerId")
                         .open().consumeResponse(Open.class);
 
+            final Open responseOpen = interaction1.getLatestResponse(Open.class);
+            assumeSoleConnectionCapability(responseOpen);
+            assumeDetectionPolicyStrong(responseOpen);
+
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
@@ -147,21 +147,13 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
                             .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                      CLOSE_EXISTING))
                             .open()
-                            .sync();
+                            .consumeResponse(Open.class);
 
-                final Close close1 = interaction1.consumeResponse().getLatestResponse(Close.class);
-                assertThat(close1.getError(), is(notNullValue()));
-                assertThat(close1.getError().getCondition(), is(equalTo(AmqpError.RESOURCE_LOCKED)));
-                assertThat(close1.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true))));
-
-                final Open responseOpen2 = interaction2.consumeResponse().getLatestResponse(Open.class);
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                if (responseOpen2.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
-                {
-                    assertThat(responseOpen2.getProperties().get(SOLE_CONNECTION_DETECTION_POLICY),
-                               in(new UnsignedInteger[]{SoleConnectionDetectionPolicy.STRONG.getValue(),
-                                       SoleConnectionDetectionPolicy.WEAK.getValue()}));
-                }
+                final Open responseOpen2 = interaction2.getLatestResponse(Open.class);
+                assumeSoleConnectionCapability(responseOpen2);
+                assumeEnforcementPolicyCloseExisting(responseOpen2);
+                assumeDetectionPolicyStrong(responseOpen2);
+                assertResourceLocked(interaction1.consumeResponse().getLatestResponse(Close.class));
             }
         }
     }
@@ -180,12 +172,10 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
                                                     CLOSE_EXISTING))
                                             .open().consumeResponse()
                                             .getLatestResponse(Open.class);
-            assertThat(Arrays.asList(responseOpen.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-            if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
-            {
-                assumeThat(responseOpen.getProperties().get(SOLE_CONNECTION_DETECTION_POLICY),
-                           is(equalTo(SoleConnectionDetectionPolicy.STRONG.getValue())));
-            }
+
+            assumeSoleConnectionCapability(responseOpen);
+            assumeEnforcementPolicyCloseExisting(responseOpen);
+            assumeDetectionPolicyStrong(responseOpen);
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
@@ -195,19 +185,8 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
                             .openContainerId("testContainerId")
                             .open().sync();
 
-                final Close close1 = interaction1.consumeResponse().getLatestResponse(Close.class);
-                assertThat(close1.getError(), is(notNullValue()));
-                assertThat(close1.getError().getCondition(), is(equalTo(AmqpError.RESOURCE_LOCKED)));
-                assertThat(close1.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true))));
-
-                final Open responseOpen2 = interaction2.consumeResponse().getLatestResponse(Open.class);
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                if (responseOpen2.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
-                {
-                    assertThat(responseOpen2.getProperties().get(SOLE_CONNECTION_DETECTION_POLICY),
-                               in(new UnsignedInteger[]{SoleConnectionDetectionPolicy.STRONG.getValue(),
-                                       SoleConnectionDetectionPolicy.WEAK.getValue()}));
-                }
+                assertResourceLocked(interaction1.consumeResponse().getLatestResponse(Close.class));
+                assertSoleConnectionCapability(interaction2.consumeResponse().getLatestResponse(Open.class));
             }
         }
     }
