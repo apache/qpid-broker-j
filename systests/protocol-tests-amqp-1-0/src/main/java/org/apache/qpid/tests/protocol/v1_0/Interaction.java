@@ -159,7 +159,7 @@ public class Interaction extends AbstractInteraction<Interaction>
         _transfer = new Transfer();
         _transfer.setHandle(defaultLinkHandle);
         _transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
-        _transfer.setDeliveryId(getNextDeliveryId());
+        _transfer.setDeliveryId(UnsignedInteger.valueOf(_deliveryIdCounter));
 
         _disposition = new Disposition();
         _disposition.setFirst(UnsignedInteger.ZERO);
@@ -671,6 +671,12 @@ public class Interaction extends AbstractInteraction<Interaction>
         return this;
     }
 
+    public Interaction flowNextOutgoingId()
+    {
+        _flow.setNextOutgoingId(UnsignedInteger.valueOf(_deliveryIdCounter));
+        return this;
+    }
+
     public Interaction flowEcho(final Boolean echo)
     {
         _flow.setEcho(echo);
@@ -758,6 +764,12 @@ public class Interaction extends AbstractInteraction<Interaction>
     public Interaction transferDeliveryId(final UnsignedInteger deliveryId)
     {
         _transfer.setDeliveryId(deliveryId);
+        return this;
+    }
+
+    public Interaction transferDeliveryId()
+    {
+        _transfer.setDeliveryId(getNextDeliveryId());
         return this;
     }
 
