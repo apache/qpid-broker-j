@@ -24,6 +24,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
@@ -35,6 +38,7 @@ import org.apache.qpid.tests.protocol.v1_0.extensions.type.TestFilterWriter;
 
 public class FrameEncoder implements OutputEncoder
 {
+    private static final Logger FRAME_LOGGER = LoggerFactory.getLogger("amqp.frame");
     private static final AMQPDescribedTypeRegistry TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
                                                                                             .registerTransportLayer()
                                                                                             .registerMessagingLayer()
@@ -79,7 +83,9 @@ public class FrameEncoder implements OutputEncoder
 
                 }
             });
-            _frameWriter.send(((AMQFrame) msg));
+            AMQFrame frame = (AMQFrame) msg;
+            FRAME_LOGGER.debug("SEND: " + frame.getFrameBody());
+            _frameWriter.send(frame);
 
             int remaining = 0;
             for (ByteBuffer byteBuffer: buffers)

@@ -60,6 +60,7 @@ import org.apache.qpid.tests.protocol.Response;
 
 public class FrameDecoder implements InputDecoder
 {
+    private static final Logger FRAME_LOGGER = LoggerFactory.getLogger("amqp.frame");
     private static final Logger LOGGER = LoggerFactory.getLogger(FrameDecoder.class);
     private static final AMQPDescribedTypeRegistry TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
                                                                                             .registerTransportLayer()
@@ -104,7 +105,10 @@ public class FrameDecoder implements InputDecoder
                     {
                         byte[] header = new byte[8];
                         inputBuffer.get(header);
-                        _connectionHandler._responseQueue.add(new HeaderResponse(header));
+
+                        HeaderResponse headerResponse = new HeaderResponse(header);
+                        FRAME_LOGGER.debug("RECV:" + headerResponse);
+                        _connectionHandler._responseQueue.add(headerResponse);
                         _state = ParsingState.PERFORMATIVES;
                     }
                     break;
@@ -250,6 +254,7 @@ public class FrameDecoder implements InputDecoder
                     throw new UnsupportedOperationException("Unexpected frame type : " + val.getClass());
                 }
 
+                FRAME_LOGGER.debug("RECV:" + response.getBody());
                 _responseQueue.add(response);
             }
         }
