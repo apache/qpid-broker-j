@@ -46,12 +46,13 @@ import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.utils.BrokerSpecific;
 
 public class AttachTest extends BrokerAdminUsingTestBase
 {
     @Test
     @SpecificationTest(section = "1.3.4",
-            description = "Attach without mandatory fields should result in a decoding error.")
+            description = "mandatory [...] a non null value for the field is always encoded.")
     public void emptyAttach() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
@@ -128,6 +129,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
                           + " still create a link endpoint and issue an attach indicating that the link endpoint has"
                           + " no associated local terminus. In this case, the session endpoint MUST immediately"
                           + " detach the newly created link endpoint.")
+    @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
     public void attachReceiverWithNullTarget() throws Exception
     {
         String queueName = BrokerAdmin.TEST_QUEUE_NAME;
@@ -170,6 +172,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
                           + " still create a link endpoint and issue an attach indicating that the link endpoint has"
                           + " no associated local terminus. In this case, the session endpoint MUST immediately"
                           + " detach the newly created link endpoint.")
+    @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
     public void attachSenderWithNullSource() throws Exception
     {
         String queueName = "testQueue";
