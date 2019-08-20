@@ -117,6 +117,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                            .attachRole(Role.SENDER)
                                            .attach().consumeResponse(Attach.class)
                                            .consumeResponse(Flow.class)
+                                           .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                                            .transferHandle(null)
                                            .transfer()
                                            .consumeResponse()
@@ -160,6 +161,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                  .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                                  .attach().consumeResponse(Attach.class)
                                                  .consumeResponse(Flow.class)
+                                                 .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                                                  .transferDeliveryId()
                                                  .transferDeliveryTag(null)
                                                  .transferPayloadData(getTestName())
@@ -185,6 +187,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                        .attachHandle(linkHandle)
                                                        .attach().consumeResponse(Attach.class)
                                                        .consumeResponse(Flow.class)
+                                                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                                                        .transferDeliveryId()
                                                        .transferHandle(linkHandle)
                                                        .transferPayloadData(getTestName())
@@ -223,11 +226,13 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                      .attachHandle(link1Handle)
                                      .attach().consumeResponse(Attach.class)
                                      .consumeResponse(Flow.class)
+                                     .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
 
                                      .attachName("test2")
                                      .attachHandle(link2Handle)
                                      .attach().consumeResponse(Attach.class)
                                      .consumeResponse(Flow.class)
+                                     .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
 
                                      .transferHandle(link1Handle)
                                      .transferPayloadData(contents[0])
@@ -273,6 +278,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                                        .attach().consumeResponse(Attach.class)
                                                        .consumeResponse(Flow.class)
+                                                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                                                        .transferPayloadData(getTestName())
                                                        .transferRcvSettleMode(ReceiverSettleMode.FIRST)
                                                        .transfer()
@@ -307,6 +313,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                      .attachRcvSettleMode(ReceiverSettleMode.FIRST)
                                      .attach().consumeResponse(Attach.class)
                                      .consumeResponse(Flow.class)
+                                     .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                                      .transferPayloadData(getTestName())
                                      .transferRcvSettleMode(ReceiverSettleMode.SECOND)
                                      .transfer()
@@ -390,6 +397,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                                                    Rejected.REJECTED_SYMBOL)
                                                              .attach().consumeResponse(Attach.class)
                                                              .consumeResponse(Flow.class)
+                                                             .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                                                              .transferDeliveryId()
                                                              .transferPayload(messageEncoder.getPayload())
                                                              .transferRcvSettleMode(ReceiverSettleMode.FIRST)
@@ -436,6 +444,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                   .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                                                   .attach().consumeResponse(Attach.class)
                                                   .consumeResponse(Flow.class)
+                                                  .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                                                   .transferDeliveryId()
                                                   .transferPayload(messageEncoder.getPayload())
                                                   .transferRcvSettleMode(ReceiverSettleMode.FIRST)
@@ -555,6 +564,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                                      .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
                                                      .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
@@ -602,6 +612,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
                                                      .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
                                                      .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
@@ -659,6 +670,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachSourceOutcomes()
                                                      .attachSourceDefaultOutcome(null)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
                                                      .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
@@ -705,6 +717,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attach().consumeResponse()
+                       .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                        .flowIncomingWindow(UnsignedInteger.ONE)
                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
@@ -821,7 +834,10 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attach()
                        .consumeResponse(Attach.class)
+                       .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                        .consumeResponse(Flow.class)
+                       .assertLatestResponse(Flow.class,
+                                             flow -> assumeThat(flow.getLinkCredit().intValue(), is(greaterThan(1))))
                        .transferDeliveryId()
                        .transferDeliveryTag(deliveryTag)
                        .transferPayloadData(content1)
@@ -1223,5 +1239,15 @@ public class TransferTest extends BrokerAdminUsingTestBase
         {
             assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content)));
         }
+    }
+
+    private void assumeSufficientCredits(final Flow flow)
+    {
+        assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ZERO)));
+    }
+
+    private void assumeReceiverSettlesSecond(final Attach attach)
+    {
+        assumeThat(attach.getRcvSettleMode(), is(equalTo(ReceiverSettleMode.SECOND)));
     }
 }

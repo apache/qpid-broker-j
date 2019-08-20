@@ -29,6 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -263,6 +264,9 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attach().consumeResponse(Attach.class)
+                       .assertLatestResponse(Attach.class,
+                                             attach -> assumeThat(attach.getRcvSettleMode(),
+                                                                  is(equalTo(ReceiverSettleMode.SECOND))))
                        .consumeResponse(Flow.class)
 
                        .transferDeliveryId()

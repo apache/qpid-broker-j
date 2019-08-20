@@ -113,6 +113,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                        .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attachTargetAddress(destination)
                        .attach().consumeResponse(Attach.class)
+                       .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                        .consumeResponse(Flow.class);
 
             // 2. send a unsettled delivery
@@ -175,6 +176,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                        .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attachTargetAddress(destination)
                        .attach().consumeResponse(Attach.class)
+                       .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                        .consumeResponse(Flow.class);
 
             // 2. send enough unsettled deliveries to cause incomplete-unsettled to be true
@@ -269,6 +271,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                        .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attachTargetAddress(destination)
                        .attach().consumeResponse(Attach.class)
+                       .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                        .consumeResponse(Flow.class);
 
             // 2. send enough unsettled deliverys to cause incomplete-unsettled to be true
@@ -356,7 +359,8 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                        .attachSndSettleMode(SenderSettleMode.UNSETTLED)
                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attach()
-                       .consumeResponse(Attach.class);
+                       .consumeResponse(Attach.class)
+                       .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond);
 
             Attach attach = interaction.getLatestResponse(Attach.class);
             assumeThat(attach.getSndSettleMode(), is(equalTo(SenderSettleMode.UNSETTLED)));
@@ -754,5 +758,10 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
             interaction.doCloseConnection();
         }
+    }
+
+    private void assumeReceiverSettlesSecond(final Attach attach)
+    {
+        assumeThat(attach.getRcvSettleMode(), Matchers.is(Matchers.equalTo(ReceiverSettleMode.SECOND)));
     }
 }

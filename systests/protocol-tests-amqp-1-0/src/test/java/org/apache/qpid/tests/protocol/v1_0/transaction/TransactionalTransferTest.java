@@ -201,6 +201,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .attachHandle(linkHandle)
                                                          .attach()
                                                          .consumeResponse(Attach.class)
+                                                         .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                                                          .consumeResponse(Flow.class)
 
                                                          .transferDeliveryId()
@@ -451,6 +452,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .attachHandle(UnsignedInteger.ONE)
                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attachRcvSettleMode(ReceiverSettleMode.SECOND)
+                       .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                        .attach()
                        .consumeResponse(Attach.class)
 
@@ -697,5 +699,10 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         data[1] = (byte) ((txnId & 0xff0000) >> 16);
         data[0] = (byte) ((txnId & 0xff000000) >> 24);
         return new Binary(data);
+    }
+
+    private void assumeReceiverSettlesSecond(final Attach attach)
+    {
+        assumeThat(attach.getRcvSettleMode(), is(equalTo(ReceiverSettleMode.SECOND)));
     }
 }

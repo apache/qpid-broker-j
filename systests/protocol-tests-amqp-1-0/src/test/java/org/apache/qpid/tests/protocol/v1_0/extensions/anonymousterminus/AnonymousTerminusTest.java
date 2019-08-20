@@ -26,6 +26,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 
@@ -100,7 +101,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachRole(Role.SENDER)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
                        .transferSettled(Boolean.TRUE)
@@ -136,7 +137,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachRole(Role.SENDER)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferSettled(Boolean.TRUE)
@@ -177,7 +178,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
@@ -225,7 +226,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
@@ -261,7 +262,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachHandle(linkHandle)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
@@ -294,7 +295,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachHandle(linkHandle)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
@@ -340,7 +341,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachHandle(linkHandle)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
@@ -388,7 +389,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachHandle(linkHandle)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
@@ -459,7 +460,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
@@ -526,7 +527,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-
+                       .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
@@ -586,4 +587,10 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
         messageEncoder.addData(TEST_MESSAGE_CONTENT);
         return messageEncoder.getPayload();
     }
+
+    private void assumeSufficientCredits(final Flow flow)
+    {
+        assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ZERO)));
+    }
+
 }

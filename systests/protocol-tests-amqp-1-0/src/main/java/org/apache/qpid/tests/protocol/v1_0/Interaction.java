@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -848,6 +849,9 @@ public class Interaction extends AbstractInteraction<Interaction>
         try (QpidByteBuffer encodedForm = section.getEncodedForm())
         {
             transfer.setPayload(encodedForm);
+        }
+        finally
+        {
             section.dispose();
         }
     }
@@ -1264,4 +1268,10 @@ public class Interaction extends AbstractInteraction<Interaction>
         return response;
     }
 
+    public <T> Interaction assertLatestResponse(Class<T> type, Consumer<T> assertion)
+    {
+        T latestResponse = getLatestResponse(type);
+        assertion.accept(latestResponse);
+        return this;
+    }
 }
