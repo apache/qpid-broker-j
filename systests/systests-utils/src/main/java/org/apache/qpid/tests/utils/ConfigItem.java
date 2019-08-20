@@ -33,4 +33,5 @@ public @interface ConfigItem
 {
     String name();
     String value();
+    boolean jvm() default false;
 }

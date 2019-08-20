@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.hamcrest.Matchers;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -67,41 +66,26 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.tests.protocol.Response;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.utils.ConfigItem;
 
+@ConfigItem(name = "qpid.tests.mms.messagestore.persistence", value = "false", jvm = true)
 public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 {
     private static final int MIN_MAX_FRAME_SIZE = 512;
     private InetSocketAddress _brokerAddress;
-    private String _originalMmsMessageStorePersistence;
 
     @Before
     public void setUp()
     {
-        _originalMmsMessageStorePersistence = System.getProperty("qpid.tests.mms.messagestore.persistence");
-        System.setProperty("qpid.tests.mms.messagestore.persistence", "false");
-
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
-
-    @After
-    public void tearDown()
-    {
-        if (_originalMmsMessageStorePersistence != null)
-        {
-            System.setProperty("qpid.tests.mms.messagestore.persistence", _originalMmsMessageStorePersistence);
-        }
-        else
-        {
-            System.clearProperty("qpid.tests.mms.messagestore.persistence");
-        }
     }
 
     @Ignore("QPID-7845")

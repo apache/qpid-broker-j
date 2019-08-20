@@ -22,7 +22,6 @@ package org.apache.qpid.tests.protocol.v1_0.messaging;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -32,7 +31,6 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,36 +52,20 @@ import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.utils.ConfigItem;
 
+@ConfigItem(name = "qpid.tests.mms.messagestore.persistence", value = "false", jvm = true)
 public class MultiTransferTest extends BrokerAdminUsingTestBase
 {
     private InetSocketAddress _brokerAddress;
-    private String _originalMmsMessageStorePersistence;
 
     @Before
     public void setUp()
     {
-        _originalMmsMessageStorePersistence = System.getProperty("qpid.tests.mms.messagestore.persistence");
-        System.setProperty("qpid.tests.mms.messagestore.persistence", "false");
-
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
-
-    @After
-    public void tearDown()
-    {
-        if (_originalMmsMessageStorePersistence != null)
-        {
-            System.setProperty("qpid.tests.mms.messagestore.persistence", _originalMmsMessageStorePersistence);
-        }
-        else
-        {
-            System.clearProperty("qpid.tests.mms.messagestore.persistence");
-        }
     }
 
     @Test

@@ -742,6 +742,8 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
             classpath = new String(Files.readAllBytes(file.toPath()), UTF_8);
         }
 
+        final ConfigItem[] configItems = (ConfigItem[]) testClass.getAnnotationsByType(ConfigItem.class);
+
         List<String> jvmArguments = new ArrayList<>();
         jvmArguments.add("java");
         jvmArguments.add("-cp");
@@ -749,6 +751,10 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
         jvmArguments.add("-Djava.io.tmpdir=" + escape(System.getProperty("java.io.tmpdir")));
         jvmArguments.add("-Dlogback.configurationFile=default-broker-logback.xml");
         jvmArguments.add("-Dqpid.tests.mms.messagestore.persistence=true");
+        jvmArguments.addAll(Arrays.stream(configItems)
+                                  .filter(ConfigItem::jvm)
+                                  .map(ci -> String.format("-D%s=%s", ci.name(), ci.value()))
+                                  .collect(Collectors.toList()));
         jvmArguments.add("org.apache.qpid.server.Main");
         jvmArguments.add("--store-type");
         jvmArguments.add("JSON");
@@ -766,7 +772,8 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
               .filter(n -> n.startsWith("qpid."))
               .forEach(n -> context.put(n, System.getProperty(n)));
 
-        context.putAll(Arrays.stream((ConfigItem[]) testClass.getAnnotationsByType(ConfigItem.class))
+        context.putAll(Arrays.stream(configItems)
+                             .filter(i -> !i.jvm())
                              .collect(Collectors.toMap(ConfigItem::name,
                                                        ConfigItem::value,
                                                        (name, value) -> value)));

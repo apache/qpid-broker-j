@@ -48,7 +48,6 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.google.common.collect.Sets;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -89,34 +88,19 @@ import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.BrokerSpecific;
+import org.apache.qpid.tests.utils.ConfigItem;
 
+@ConfigItem(name = "qpid.tests.mms.messagestore.persistence", value = "false", jvm = true)
 public class TransferTest extends BrokerAdminUsingTestBase
 {
     private static final long MAX_MAX_MESSAGE_SIZE_WE_ARE_WILLING_TO_TEST = 200 * 1024 * 1024L;
     private InetSocketAddress _brokerAddress;
-    private String _originalMmsMessageStorePersistence;
 
     @Before
     public void setUp()
     {
-        _originalMmsMessageStorePersistence = System.getProperty("qpid.tests.mms.messagestore.persistence");
-        System.setProperty("qpid.tests.mms.messagestore.persistence", "false");
-
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
-
-    @After
-    public void tearDown()
-    {
-        if (_originalMmsMessageStorePersistence != null)
-        {
-            System.setProperty("qpid.tests.mms.messagestore.persistence", _originalMmsMessageStorePersistence);
-        }
-        else
-        {
-            System.clearProperty("qpid.tests.mms.messagestore.persistence");
-        }
     }
 
     @Test

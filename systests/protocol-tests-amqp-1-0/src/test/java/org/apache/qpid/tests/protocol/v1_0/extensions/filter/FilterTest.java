@@ -37,7 +37,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -63,34 +62,19 @@ import org.apache.qpid.tests.protocol.v1_0.extensions.type.TestFilter;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.BrokerSpecific;
+import org.apache.qpid.tests.utils.ConfigItem;
 
+@ConfigItem(name = "qpid.tests.mms.messagestore.persistence", value = "false", jvm = true)
 public class FilterTest extends BrokerAdminUsingTestBase
 {
     public static final String TEST_MESSAGE_CONTENT = "testContent";
     private InetSocketAddress _brokerAddress;
-    private String _originalMmsMessageStorePersistence;
 
     @Before
     public void setUp()
     {
-        _originalMmsMessageStorePersistence = System.getProperty("qpid.tests.mms.messagestore.persistence");
-        System.setProperty("qpid.tests.mms.messagestore.persistence", "false");
-
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
-
-    @After
-    public void tearDown()
-    {
-        if (_originalMmsMessageStorePersistence != null)
-        {
-            System.setProperty("qpid.tests.mms.messagestore.persistence", _originalMmsMessageStorePersistence);
-        }
-        else
-        {
-            System.clearProperty("qpid.tests.mms.messagestore.persistence");
-        }
     }
 
     @Test

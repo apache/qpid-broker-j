@@ -77,26 +77,32 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     private VirtualHostNode<?> _currentVirtualHostNode;
     private String _currentWorkDirectory;
     private boolean _isPersistentStore;
-    private Map<String, String> _preservedContext;
+    private Map<String, String> _preservedProperties;
 
     @Override
     public void beforeTestClass(final Class testClass)
     {
+        _preservedProperties = new HashMap<>();
         try
         {
             String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(System.currentTimeMillis()));
             _currentWorkDirectory = Files.createTempDirectory(String.format("qpid-work-%s-%s-", timestamp, testClass.getSimpleName())).toString();
 
+            ConfigItem[] configItems = (ConfigItem[]) testClass.getAnnotationsByType(ConfigItem.class);
+            Arrays.stream(configItems).filter(ConfigItem::jvm).forEach(i -> {
+                _preservedProperties.put(i.name(), System.getProperty(i.name()));
+                System.setProperty(i.name(), i.value());
+            });
             Map<String, String> context = new HashMap<>();
             context.put("qpid.work_dir", _currentWorkDirectory);
             context.put("qpid.port.protocol_handshake_timeout", "1000000");
-            context.putAll(Arrays.stream((ConfigItem[]) testClass.getAnnotationsByType(ConfigItem.class))
+            context.putAll(Arrays.stream(configItems)
+                                 .filter(i -> !i.jvm())
                                  .collect(Collectors.toMap(ConfigItem::name,
                                                            ConfigItem::value,
                                                            (name, value) -> value)));
 
             Map<String,Object> systemConfigAttributes = new HashMap<>();
-            //systemConfigAttributes.put(SystemConfig.INITIAL_CONFIGURATION_LOCATION, "classpath:config-protocol-tests.json");
             systemConfigAttributes.put(ConfiguredObject.CONTEXT, context);
             systemConfigAttributes.put(ConfiguredObject.TYPE, System.getProperty("broker.config-store-type", "JSON"));
             systemConfigAttributes.put(SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, Boolean.FALSE);
@@ -187,6 +193,17 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         {
             FileUtils.delete(new File(_currentWorkDirectory), true);
         }
+
+        _preservedProperties.forEach((k,v)-> {
+            if (v == null)
+            {
+                System.clearProperty(k);
+            }
+            else
+            {
+                System.setProperty(k, v);
+            }
+        });
     }
 
     @Override
