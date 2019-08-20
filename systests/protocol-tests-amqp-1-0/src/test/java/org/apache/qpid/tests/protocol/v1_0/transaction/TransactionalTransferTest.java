@@ -58,7 +58,6 @@ import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -86,7 +85,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             Disposition responseDisposition = interaction.negotiateProtocol()
                                                          .consumeResponse()
                                                          .open()
@@ -94,8 +92,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
-                                                         .txnAttachCoordinatorLink(txnState)
-                                                         .txnDeclare(txnState)
+                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                                         .txnDeclare()
 
                                                          .attachRole(Role.SENDER)
                                                          .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -106,7 +104,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .transferDeliveryId()
                                                          .transferHandle(linkHandle)
                                                          .transferPayloadData(getTestName())
-                                                         .transferTransactionalState(txnState.getCurrentTransactionId())
+                                                         .transferTransactionalStateFromCurrentTransaction()
                                                          .transfer()
                                                          .consumeResponse(Disposition.class)
                                                          .getLatestResponse(Disposition.class);
@@ -116,9 +114,9 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             assertThat(responseDisposition.getState(), is(instanceOf(TransactionalState.class)));
             assertThat(((TransactionalState) responseDisposition.getState()).getOutcome(), is(instanceOf(Accepted.class)));
 
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(false);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
         Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
         assertThat(receivedMessage, is(equalTo(getTestName())));
@@ -136,7 +134,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             Disposition responseDisposition = interaction.negotiateProtocol()
                                                          .consumeResponse()
                                                          .open()
@@ -144,8 +141,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
-                                                         .txnAttachCoordinatorLink(txnState)
-                                                         .txnDeclare(txnState)
+                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                                         .txnDeclare()
 
                                                          .attachRole(Role.SENDER)
                                                          .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -156,7 +153,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .transferDeliveryId()
                                                          .transferHandle(linkHandle)
                                                          .transferPayloadData(getTestName())
-                                                         .transferTransactionalState(txnState.getCurrentTransactionId())
+                                                         .transferTransactionalStateFromCurrentTransaction()
                                                          .transfer()
                                                          .consumeResponse(Disposition.class)
                                                          .getLatestResponse(Disposition.class);
@@ -166,9 +163,9 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             assertThat(responseDisposition.getState(), is(instanceOf(TransactionalState.class)));
             assertThat(((TransactionalState) responseDisposition.getState()).getOutcome(), is(instanceOf(Accepted.class)));
 
-            interaction.txnDischarge(txnState, true);
+            interaction.txnDischarge(true);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             final String content = getTestName() + "_2";
             Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
@@ -188,7 +185,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             Disposition responseDisposition = interaction.negotiateProtocol()
                                                          .consumeResponse()
                                                          .open()
@@ -196,8 +192,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
-                                                         .txnAttachCoordinatorLink(txnState)
-                                                         .txnDeclare(txnState)
+                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                                         .txnDeclare()
 
                                                          .attachRole(Role.SENDER)
                                                          .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -210,7 +206,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .transferDeliveryId()
                                                          .transferHandle(linkHandle)
                                                          .transferPayloadData(getTestName())
-                                                         .transferTransactionalState(txnState.getCurrentTransactionId())
+                                                         .transferTransactionalStateFromCurrentTransaction()
                                                          .transfer()
                                                          .consumeResponse(Disposition.class)
                                                          .getLatestResponse(Disposition.class);
@@ -222,12 +218,12 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             interaction.dispositionRole(Role.SENDER)
                        .dispositionSettled(true)
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
+                       .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
                        .disposition();
 
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(false);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
         assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
@@ -244,13 +240,13 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+
             Response<?> response = interaction.negotiateProtocol().consumeResponse()
                                               .open().consumeResponse(Open.class)
                                               .begin().consumeResponse(Begin.class)
 
-                                              .txnAttachCoordinatorLink(txnState)
-                                              .txnDeclare(txnState)
+                                              .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                              .txnDeclare()
 
                                               .attachRole(Role.SENDER)
                                               .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -280,7 +276,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+
             interaction.negotiateProtocol()
                        .consumeResponse()
                        .open()
@@ -288,8 +284,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
                        .attachHandle(UnsignedInteger.ONE)
@@ -314,12 +310,10 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
-                       .disposition()
-                       .txnDischarge(txnState, false);
+                       .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
+                       .disposition().txnDischarge(false);
 
-
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
     }
 
@@ -332,7 +326,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.negotiateProtocol()
                        .consumeResponse()
                        .open()
@@ -340,8 +333,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
                        .attachHandle(UnsignedInteger.ONE)
@@ -366,11 +359,10 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
-                       .disposition()
-                       .txnDischarge(txnState, true);
+                       .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
+                       .disposition().txnDischarge(true);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(getTestName())));
@@ -390,13 +382,12 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             List<Transfer> transfers = interaction.negotiateProtocol().consumeResponse()
                                                   .open().consumeResponse(Open.class)
                                                   .begin().consumeResponse(Begin.class)
 
-                                                  .txnAttachCoordinatorLink(txnState)
-                                                  .txnDeclare(txnState)
+                                                  .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                                  .txnDeclare()
 
                                                   .attachRole(Role.RECEIVER)
                                                   .attachHandle(UnsignedInteger.ONE)
@@ -446,7 +437,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.negotiateProtocol()
                        .consumeResponse()
                        .open()
@@ -454,8 +444,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
                        .attachHandle(UnsignedInteger.ONE)
@@ -480,8 +470,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             Disposition settledDisposition = interaction.dispositionSettled(false)
                                                     .dispositionRole(Role.RECEIVER)
-                                                    .dispositionTransactionalState(txnState.getCurrentTransactionId(),
-                                                                                   new Accepted())
+                                                    .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
                                                     .disposition()
                                                     .consumeResponse(Disposition.class)
                                                     .getLatestResponse(Disposition.class);
@@ -490,9 +479,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             assertThat(settledDisposition.getState(), is(instanceOf(TransactionalState.class)));
             assertThat(((TransactionalState) settledDisposition.getState()).getOutcome(), is(instanceOf(Accepted.class)));
 
-            interaction.txnDischarge(txnState, false);
-
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            interaction.txnDischarge(false);
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
     }
 
@@ -509,7 +497,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.negotiateProtocol()
                        .consumeResponse()
                        .open()
@@ -517,8 +504,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
                        .attachHandle(UnsignedInteger.ONE)
@@ -533,7 +520,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
-                       .flowProperties(Collections.singletonMap(Symbol.valueOf("txn-id"), txnState.getCurrentTransactionId()))
+                       .flowProperties(Collections.singletonMap(Symbol.valueOf("txn-id"),
+                                                                interaction.getCurrentTransactionId()))
                        .flow()
 
                        .receiveDelivery();
@@ -546,17 +534,15 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
+                       .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
                        .dispositionFirstFromLatestDelivery()
-                       .disposition()
-                       .txnDischarge(txnState, false);
+                       .disposition().txnDischarge(false);
 
-
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             Transfer transfer = transfers.get(0);
             assumeThat(transfer.getState(), is(instanceOf(TransactionalState.class)));
-            assumeThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(txnState.getCurrentTransactionId())));
+            assumeThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(interaction.getCurrentTransactionId())));
 
             final String content = getTestName() + "_2";
             Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
@@ -577,7 +563,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.negotiateProtocol()
                        .consumeResponse()
                        .open()
@@ -585,8 +570,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
                        .attachHandle(UnsignedInteger.ONE)
@@ -601,7 +586,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
-                       .flowProperties(Collections.singletonMap(Symbol.valueOf("txn-id"), txnState.getCurrentTransactionId()))
+                       .flowProperties(Collections.singletonMap(Symbol.valueOf("txn-id"),
+                                                                interaction.getCurrentTransactionId()))
                        .flow()
 
                        .receiveDelivery();
@@ -614,17 +600,16 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
-                       .disposition()
-                       .txnDischarge(txnState, true);
+                       .dispositionTransactionalState(interaction.getCurrentTransactionId(), new Accepted())
+                       .disposition().txnDischarge(true);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
 
             Transfer transfer = transfers.get(0);
             assumeThat(transfer.getState(), is(instanceOf(TransactionalState.class)));
-            assumeThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(txnState.getCurrentTransactionId())));
+            assumeThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(interaction.getCurrentTransactionId())));
         }
     }
 
@@ -643,7 +628,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             Response<?> response = interaction.negotiateProtocol()
                                               .consumeResponse()
                                               .open()
@@ -651,8 +635,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                               .begin()
                                               .consumeResponse(Begin.class)
 
-                                              .txnAttachCoordinatorLink(txnState)
-                                              .txnDeclare(txnState)
+                                              .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                              .txnDeclare()
 
                                               .attachRole(Role.RECEIVER)
                                               .attachHandle(UnsignedInteger.ONE)

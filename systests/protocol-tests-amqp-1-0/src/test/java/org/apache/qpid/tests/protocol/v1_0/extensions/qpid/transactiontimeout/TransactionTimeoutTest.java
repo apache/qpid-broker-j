@@ -46,7 +46,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -74,7 +73,6 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             Disposition responseDisposition = interaction.negotiateProtocol()
                                                          .consumeResponse()
                                                          .open()
@@ -82,8 +80,8 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
-                                                         .txnAttachCoordinatorLink(txnState)
-                                                         .txnDeclare(txnState)
+                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                                         .txnDeclare()
 
                                                          .attachRole(Role.SENDER)
                                                          .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -93,7 +91,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
 
                                                          .transferHandle(linkHandle)
                                                          .transferPayloadData(getTestName())
-                                                         .transferTransactionalState(txnState.getCurrentTransactionId())
+                                                         .transferTransactionalStateFromCurrentTransaction()
                                                          .transfer()
                                                          .consumeResponse(Disposition.class)
                                                          .getLatestResponse(Disposition.class);
@@ -116,7 +114,6 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.negotiateProtocol()
                        .consumeResponse()
                        .open()
@@ -124,8 +121,8 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
                        .attachHandle(UnsignedInteger.ONE)
@@ -150,7 +147,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
+                       .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
                        .disposition()
                        .sync();
 

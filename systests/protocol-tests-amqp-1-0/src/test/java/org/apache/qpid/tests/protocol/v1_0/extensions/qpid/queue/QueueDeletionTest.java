@@ -51,7 +51,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -132,7 +131,6 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
 
             Attach attach = interaction.negotiateProtocol()
                                        .consumeResponse()
@@ -141,8 +139,8 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
                                        .begin()
                                        .consumeResponse(Begin.class)
 
-                                       .txnAttachCoordinatorLink(txnState)
-                                       .txnDeclare(txnState)
+                                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                       .txnDeclare()
 
                                        .attachRole(Role.SENDER)
                                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -153,7 +151,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
 
                                                          .transferHandle(linkHandle)
                                                          .transferPayloadData(getTestName())
-                                                         .transferTransactionalState(txnState.getCurrentTransactionId())
+                                                         .transferTransactionalStateFromCurrentTransaction()
                                                          .transfer()
                                                          .consumeResponse(Disposition.class)
                                                          .getLatestResponse(Disposition.class);
@@ -171,9 +169,9 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
             assertThat(receivedDetach.getError().getCondition(), is(AmqpError.RESOURCE_DELETED));
             assertThat(receivedDetach.getHandle(), is(equalTo(attach.getHandle())));
 
-            interaction.txnSendDischarge(txnState, false);
+            interaction.txnSendDischarge(false);
 
-            assertTransactionRollbackOnly(interaction, txnState);
+            assertTransactionRollbackOnly(interaction);
         }
     }
 
@@ -187,7 +185,6 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             Attach attach = interaction.negotiateProtocol()
                                        .consumeResponse()
                                        .open()
@@ -195,8 +192,8 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
                                        .begin()
                                        .consumeResponse(Begin.class)
 
-                                       .txnAttachCoordinatorLink(txnState)
-                                       .txnDeclare(txnState)
+                                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                       .txnDeclare()
 
                                        .attachRole(Role.RECEIVER)
                                        .attachHandle(UnsignedInteger.ONE)
@@ -221,7 +218,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
+                       .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
                        .disposition();
 
             interaction.flowIncomingWindow(UnsignedInteger.valueOf(2))
@@ -244,14 +241,13 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
             assertThat(receivedDetach.getError().getCondition(), is(AmqpError.RESOURCE_DELETED));
             assertThat(receivedDetach.getHandle(), is(equalTo(attach.getHandle())));
 
-            interaction.txnSendDischarge(txnState, false);
+            interaction.txnSendDischarge(false);
 
-            assertTransactionRollbackOnly(interaction, txnState);
+            assertTransactionRollbackOnly(interaction);
         }
     }
 
-    private void assertTransactionRollbackOnly(final Interaction interaction,
-                                               final InteractionTransactionalState txnState) throws Exception
+    private void assertTransactionRollbackOnly(final Interaction interaction) throws Exception
     {
         Disposition declareTransactionDisposition = null;
         Flow coordinatorFlow = null;
@@ -266,7 +262,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
             if (response.getBody() instanceof Flow)
             {
                 final Flow flowResponse = (Flow) response.getBody();
-                if (flowResponse.getHandle().equals(txnState.getHandle()))
+                if (flowResponse.getHandle().equals(interaction.getCoordinatorHandle()))
                 {
                     coordinatorFlow = flowResponse;
                 }

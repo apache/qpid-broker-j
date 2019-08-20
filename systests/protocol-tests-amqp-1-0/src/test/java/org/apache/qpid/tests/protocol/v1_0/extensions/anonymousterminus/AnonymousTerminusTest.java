@@ -61,7 +61,6 @@ import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -252,12 +251,11 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.SENDER)
                        .attachHandle(linkHandle)
@@ -268,13 +266,11 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
                        .transferDeliveryTag(_deliveryTag)
-                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.TRUE)
-                       .transfer()
+                       .transfer().txnDischarge(false);
 
-                       .txnDischarge(txnState, false);
-
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
@@ -288,12 +284,11 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.SENDER)
                        .attachHandle(linkHandle)
@@ -304,7 +299,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
                        .transferDeliveryTag(_deliveryTag)
-                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.FALSE)
                        .transfer();
 
@@ -318,9 +313,9 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             final TransactionalState receivedTxnState = (TransactionalState) dispositionState;
             assertThat(receivedTxnState.getOutcome(), is(instanceOf(Accepted.class)));
 
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(false);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
@@ -334,12 +329,11 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.SENDER)
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
@@ -351,7 +345,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
-                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.FALSE)
                        .transfer();
 
@@ -370,9 +364,9 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(rejectedError.getInfo(), is(notNullValue()));
             assertThat(rejectedError.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
 
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(false);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
     }
 
@@ -383,12 +377,11 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.SENDER)
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
@@ -401,7 +394,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryId(UnsignedInteger.valueOf(1))
                        .transferDeliveryTag(_deliveryTag)
-                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.FALSE)
                        .transfer();
 
@@ -412,9 +405,9 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(senderLinkDetachError.getInfo(), is(notNullValue()));
             assertThat(senderLinkDetachError.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
 
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(false);
 
-            DeliveryState txnDischargeDeliveryState = txnState.getDeliveryState();
+            DeliveryState txnDischargeDeliveryState = interaction.getCoordinatorLatestDeliveryState();
             assertThat(txnDischargeDeliveryState, is(instanceOf(Rejected.class)));
             Rejected rejected = (Rejected) txnDischargeDeliveryState;
             Error error = rejected.getError();
@@ -454,13 +447,12 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             final Interaction interaction =
                     openInteractionWithAnonymousRelayCapability(transport);
 
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.begin()
                        .consumeResponse(Begin.class)
 
                        // attaching coordinator link with supported outcomes Accepted and Rejected
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.SENDER)
                        .attachHandle(linkHandle)
@@ -472,13 +464,13 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
-                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.TRUE)
                        .transfer();
 
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(false);
 
-            DeliveryState txDischargeDeliveryState = txnState.getDeliveryState();
+            DeliveryState txDischargeDeliveryState = interaction.getCoordinatorLatestDeliveryState();
             assertThat(txDischargeDeliveryState, is(instanceOf(Rejected.class)));
 
             Rejected rejected = (Rejected) txDischargeDeliveryState;
@@ -521,13 +513,11 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             final Interaction interaction =
                     openInteractionWithAnonymousRelayCapability(transport);
 
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
-
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState, Accepted.ACCEPTED_SYMBOL)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, Accepted.ACCEPTED_SYMBOL)
+                       .txnDeclare()
 
                        .attachRole(Role.SENDER)
                        .attachHandle(linkHandle)
@@ -541,10 +531,9 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
-                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.TRUE)
-                       .transfer()
-                       .txnSendDischarge(txnState, false);
+                       .transfer().txnSendDischarge(false);
 
             Detach transactionCoordinatorDetach = interaction.consumeResponse().getLatestResponse(Detach.class);
             Error transactionCoordinatorDetachError = transactionCoordinatorDetach.getError();

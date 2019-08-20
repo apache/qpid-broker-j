@@ -112,6 +112,7 @@ public class Interaction extends AbstractInteraction<Interaction>
     private Map<Class, FrameBody> _latestResponses = new HashMap<>();
     private AtomicLong _receivedDeliveryCount = new AtomicLong();
     private AtomicLong _coordinatorCredits = new AtomicLong();
+    private InteractionTransactionalState _transactionalState;
 
     Interaction(final FrameTransport frameTransport)
     {
@@ -811,6 +812,11 @@ public class Interaction extends AbstractInteraction<Interaction>
         return transferState(transactionalState);
     }
 
+    public Interaction transferTransactionalStateFromCurrentTransaction()
+    {
+        return transferTransactionalState(getCurrentTransactionId());
+    }
+
     public Interaction transferResume(final Boolean resume)
     {
         _transfer.setResume(resume);
@@ -901,6 +907,11 @@ public class Interaction extends AbstractInteraction<Interaction>
         return dispositionState(state);
     }
 
+    public Interaction dispositionTransactionalStateFromCurrentTransaction(final Outcome outcome)
+    {
+        return dispositionTransactionalState(getCurrentTransactionId(), outcome);
+    }
+
     public Interaction dispositionRole(final Role role)
     {
         _disposition.setRole(role);
@@ -948,23 +959,40 @@ public class Interaction extends AbstractInteraction<Interaction>
     // transaction //
     ////////////////
 
-    public Interaction txnAttachCoordinatorLink(InteractionTransactionalState transactionalState) throws Exception
+
+    public UnsignedInteger getCoordinatorHandle()
     {
-        return txnAttachCoordinatorLink(transactionalState, Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL);
+        return _transactionalState == null ? null : _transactionalState.getHandle();
     }
 
-    public Interaction txnAttachCoordinatorLink(final InteractionTransactionalState transactionalState,
+    public Binary getCurrentTransactionId()
+    {
+        return _transactionalState == null ? null : _transactionalState.getCurrentTransactionId();
+    }
+
+    public DeliveryState getCoordinatorLatestDeliveryState()
+    {
+        return _transactionalState == null ? null : _transactionalState.getDeliveryState();
+    }
+
+    public Interaction txnAttachCoordinatorLink(final UnsignedInteger handle) throws Exception
+    {
+        return txnAttachCoordinatorLink(handle, Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL);
+    }
+
+    public Interaction txnAttachCoordinatorLink(final UnsignedInteger handle,
                                                 final Symbol... outcomes) throws Exception
     {
         Attach attach = new Attach();
-        attach.setName("testTransactionCoordinator-" + transactionalState.getHandle());
-        attach.setHandle(transactionalState.getHandle());
+        attach.setName("testTransactionCoordinator-" + handle);
+        attach.setHandle(handle);
         attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
         attach.setTarget(new Coordinator());
         attach.setRole(Role.SENDER);
         Source source = new Source();
         attach.setSource(source);
         source.setOutcomes(outcomes);
+        _transactionalState = new InteractionTransactionalState(handle);
         sendPerformativeAndChainFuture(attach, _sessionChannel);
         consumeResponse(Attach.class);
         final Flow flow = consumeResponse(Flow.class).getLatestResponse(Flow.class);
@@ -972,32 +1000,42 @@ public class Interaction extends AbstractInteraction<Interaction>
         return this;
     }
 
-    public Interaction txnDeclare(final InteractionTransactionalState txnState) throws Exception
+    public Interaction txnDeclare() throws Exception
     {
-        sendPayloadToCoordinator(new Declare(), txnState.getHandle());
+        sendPayloadToCoordinator(new Declare(), _transactionalState.getHandle());
         final DeliveryState state = handleCoordinatorResponse();
-        txnState.setDeliveryState(state);
+        _transactionalState.setDeliveryState(state);
         final Binary transactionId = ((Declared) state).getTxnId();
-        txnState.setLastTransactionId(transactionId);
+        _transactionalState.setLastTransactionId(transactionId);
         return this;
     }
 
-    public Interaction txnSendDischarge(final InteractionTransactionalState txnState, final boolean failed)
+    public Interaction txnSendDischarge(final boolean failed)
+            throws Exception
+    {
+        return txnSendDischarge(_transactionalState.getCurrentTransactionId(), failed);
+    }
+
+    public Interaction txnSendDischarge(Binary transactionId, final boolean failed)
             throws Exception
     {
         final Discharge discharge = new Discharge();
-        discharge.setTxnId(txnState.getCurrentTransactionId());
+        discharge.setTxnId(transactionId);
         discharge.setFail(failed);
-        sendPayloadToCoordinator(discharge, txnState.getHandle());
+        sendPayloadToCoordinator(discharge, _transactionalState.getHandle());
         return this;
     }
 
-    public Interaction txnDischarge(final InteractionTransactionalState txnState, boolean failed) throws Exception
+    public Interaction txnDischarge(boolean failed) throws Exception
     {
-        txnSendDischarge(txnState, failed);
+        return txnDischarge(_transactionalState.getCurrentTransactionId(), failed);
+    }
+
+    public Interaction txnDischarge(Binary transactionId, boolean failed) throws Exception
+    {
+        txnSendDischarge(transactionId, failed);
         final DeliveryState state = handleCoordinatorResponse();
-        txnState.setDeliveryState(state);
-        txnState.setLastTransactionId(null);
+        _transactionalState.setDeliveryState(state);
         return this;
     }
 
@@ -1184,11 +1222,6 @@ public class Interaction extends AbstractInteraction<Interaction>
         while (hasMore);
 
         return transfers;
-    }
-
-    public InteractionTransactionalState createTransactionalState(final UnsignedInteger handle)
-    {
-        return new InteractionTransactionalState(handle);
     }
 
     ///////////

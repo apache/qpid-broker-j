@@ -83,7 +83,6 @@ import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.protocol.v1_0.MessageDecoder;
 import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
@@ -1056,9 +1055,8 @@ public class TransferTest extends BrokerAdminUsingTestBase
             Flow flow = interaction.getLatestResponse(Flow.class);
             assumeThat("insufficient credit for the test", flow.getLinkCredit().intValue(), is(greaterThan(2)));
 
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ONE);
-            interaction.txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState);
+            interaction.txnAttachCoordinatorLink(UnsignedInteger.ONE)
+                       .txnDeclare();
 
             interaction.transferDeliveryId()
                        .transferDeliveryTag(new Binary("A".getBytes(StandardCharsets.UTF_8)))
@@ -1070,11 +1068,11 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .transfer()
                        .transferDeliveryId()
                        .transferDeliveryTag(new Binary("C".getBytes(StandardCharsets.UTF_8)))
-                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferTransactionalStateFromCurrentTransaction()
                        .transferPayloadData(contents[2])
                        .transfer();
 
-            interaction.txnSendDischarge(txnState, false);
+            interaction.txnSendDischarge(false);
 
             assertDeliveries(interaction, Sets.newTreeSet(Arrays.asList(UnsignedInteger.ONE,
                                                                         UnsignedInteger.valueOf(2),
@@ -1174,9 +1172,8 @@ public class TransferTest extends BrokerAdminUsingTestBase
                 deliveryIds.add(interaction.getLatestDeliveryId());
             }
 
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ONE);
-            interaction.txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState);
+            interaction.txnAttachCoordinatorLink(UnsignedInteger.ONE)
+                       .txnDeclare();
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
@@ -1188,10 +1185,10 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .dispositionRole(Role.RECEIVER)
                        .dispositionFirst(deliveryIds.get(2))
                        .dispositionLast(deliveryIds.get(3))
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
+                       .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
                        .disposition();
 
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(false);
         }
 
         String messageText = getTestName() + "_" + 4;

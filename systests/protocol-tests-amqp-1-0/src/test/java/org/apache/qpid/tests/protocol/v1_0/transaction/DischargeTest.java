@@ -55,7 +55,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -81,24 +80,22 @@ public class DischargeTest extends BrokerAdminUsingTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final InteractionTransactionalState txnState = new InteractionTransactionalState(UnsignedInteger.ZERO);
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol().consumeResponse()
                        .open().consumeResponse(Open.class)
                        .begin().consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState, Rejected.REJECTED_SYMBOL)
-                       .txnDeclare(txnState);
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, Rejected.REJECTED_SYMBOL)
+                       .txnDeclare();
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Declared.class)));
-            assertThat(txnState.getCurrentTransactionId(), is(notNullValue()));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Declared.class)));
+            assertThat(interaction.getCurrentTransactionId(), is(notNullValue()));
 
-            txnState.setLastTransactionId(new Binary("nonExistingTransaction".getBytes(UTF_8)));
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(new Binary("nonExistingTransaction".getBytes(UTF_8)), false);
             interaction.doCloseConnection();
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Rejected.class)));
-            final Error error = ((Rejected) txnState.getDeliveryState()).getError();
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Rejected.class)));
+            final Error error = ((Rejected) interaction.getCoordinatorLatestDeliveryState()).getError();
             assertThat(error, is(notNullValue()));
 
             if (KIND_BROKER_J.equals(getBrokerAdmin().getKind()))
@@ -119,19 +116,17 @@ public class DischargeTest extends BrokerAdminUsingTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final InteractionTransactionalState txnState = new InteractionTransactionalState(UnsignedInteger.ZERO);
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol().consumeResponse()
                                            .open().consumeResponse(Open.class)
                                            .begin().consumeResponse(Begin.class)
-                                           .txnAttachCoordinatorLink(txnState, Accepted.ACCEPTED_SYMBOL)
-                                           .txnDeclare(txnState);
+                                           .txnAttachCoordinatorLink(UnsignedInteger.ZERO, Accepted.ACCEPTED_SYMBOL)
+                                           .txnDeclare();
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Declared.class)));
-            assertThat(txnState.getCurrentTransactionId(), is(notNullValue()));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Declared.class)));
+            assertThat(interaction.getCurrentTransactionId(), is(notNullValue()));
 
-            txnState.setLastTransactionId(new Binary("nonExistingTransaction".getBytes(UTF_8)));
-            interaction.txnSendDischarge(txnState, false);
+            interaction.txnSendDischarge(new Binary("nonExistingTransaction".getBytes(UTF_8)), false);
 
             final Detach detachResponse = interaction.consumeResponse(Detach.class).getLatestResponse(Detach.class);
             interaction.doCloseConnection();
@@ -157,13 +152,12 @@ public class DischargeTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.negotiateProtocol().consumeResponse()
                        .open().consumeResponse(Open.class)
                        .begin().consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
                        .attachHandle(UnsignedInteger.ONE)
@@ -187,12 +181,11 @@ public class DischargeTest extends BrokerAdminUsingTestBase
             final UnsignedInteger deliveryId = transfers.get(0).getDeliveryId();
             interaction.detach().consumeResponse(Detach.class)
                        .dispositionFirst(deliveryId)
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
+                       .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
                        .dispositionRole(Role.RECEIVER)
-                       .disposition()
-                       .txnDischarge(txnState, false);
+                       .disposition().txnDischarge(false);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             interaction.doCloseConnection();
         }
@@ -217,13 +210,12 @@ public class DischargeTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.negotiateProtocol().consumeResponse()
                        .open().consumeResponse(Open.class)
                        .begin().consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.SENDER)
                        .attachHandle(UnsignedInteger.ONE)
@@ -232,16 +224,16 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Flow.class)
 
                        .transferDeliveryId()
-                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferTransactionalStateFromCurrentTransaction()
                        .transferPayloadData(getTestName())
                        .transferHandle(UnsignedInteger.ONE)
                        .transfer().consumeResponse(Disposition.class)
 
                        .detachHandle(UnsignedInteger.ONE)
                        .detach().consumeResponse(Detach.class);
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(false);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
 
         final Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
@@ -259,13 +251,12 @@ public class DischargeTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
             interaction.negotiateProtocol().consumeResponse()
                        .open().consumeResponse(Open.class)
                        .begin().consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnDeclare()
 
                        .attachRole(Role.SENDER)
                        .attachHandle(UnsignedInteger.ONE)
@@ -275,7 +266,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Flow.class)
 
                        .transferDeliveryId()
-                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferTransactionalStateFromCurrentTransaction()
                        .transferPayloadData(getTestName())
                        .transferHandle(UnsignedInteger.ONE)
                        .transfer().consumeResponse(Disposition.class)
@@ -283,9 +274,9 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .detachHandle(UnsignedInteger.ONE)
                        .detachClose(true)
                        .detach().consumeResponse(Detach.class);
-            interaction.txnDischarge(txnState, false);
+            interaction.txnDischarge(false);
 
-            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+            assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
 
         final Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
