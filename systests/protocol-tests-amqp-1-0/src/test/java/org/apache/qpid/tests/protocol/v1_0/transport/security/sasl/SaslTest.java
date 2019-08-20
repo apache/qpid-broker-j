@@ -64,7 +64,6 @@ public class SaslTest extends BrokerAdminUsingTestBase
     {
         assumeThat(getBrokerAdmin().isSASLSupported(), is(true));
         assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN.toString()), is(true));
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported(CRAM_MD5.toString()), is(true));
         _username = getBrokerAdmin().getValidUsername();
         _password = getBrokerAdmin().getValidPassword();
     }
@@ -84,7 +83,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
             SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
-            assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
+            assumeThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
 
             final Binary initialResponse = new Binary(String.format("\0%s\0%s", _username, _password).getBytes(StandardCharsets.US_ASCII));
             SaslOutcome saslOutcome = interaction.saslMechanism(PLAIN)
@@ -130,7 +129,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
             SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
-            assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
+            assumeThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
 
             SaslOutcome saslOutcome = interaction.consumeResponse().getLatestResponse(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.OK));
@@ -148,6 +147,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             description = "SASL Negotiation [...] challenge/response step occurs once")
     public void saslSuccessfulAuthenticationWithChallengeResponse() throws Exception
     {
+        assumeThat(getBrokerAdmin().isSASLMechanismSupported(CRAM_MD5.toString()), is(true));
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
@@ -198,7 +198,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
             SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
-            assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
+            assumeThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
 
             final Binary initialResponse =
                     new Binary(String.format("\0%s\0badpassword", _username).getBytes(StandardCharsets.US_ASCII));
