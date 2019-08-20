@@ -38,6 +38,7 @@ import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
@@ -62,7 +63,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Received;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
@@ -78,6 +78,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -121,13 +122,13 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "1.3.4",
-            description = "Transfer without mandatory fields should result in a decoding error.")
+            description = "mandatory [...] a non null value for the field is always encoded.")
     public void emptyTransfer() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            Close responseClose = transport.newInteraction()
-                                           .negotiateProtocol().consumeResponse()
+            Interaction interact = transport.newInteraction();
+            Response<?> response = interact.negotiateProtocol().consumeResponse()
                                            .open().consumeResponse(Open.class)
                                            .begin().consumeResponse(Begin.class)
                                            .attachRole(Role.SENDER)
@@ -136,9 +137,27 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                            .transferHandle(null)
                                            .transfer()
                                            .consumeResponse()
-                                           .getLatestResponse(Close.class);
-            assertThat(responseClose.getError(), is(notNullValue()));
-            assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
+                                           .getLatestResponse();
+
+            assertThat(response.getBody(), is(notNullValue()));
+
+            if (response.getBody() instanceof Close)
+            {
+                final Close responseClose = (Close)response.getBody();
+                assertThat(responseClose.getError(), is(notNullValue()));
+                assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
+
+                interact.close().sync();
+            }
+            else if (response.getBody() instanceof End)
+            {
+                final End responseEnd = (End)response.getBody();
+                assertThat(responseEnd.getError(), is(notNullValue()));
+                assertThat(responseEnd.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
+
+                interact.end().doCloseConnection();
+            }
+            transport.assertNoMoreResponses();
         }
     }
 
@@ -158,10 +177,11 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                  .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                                  .attach().consumeResponse(Attach.class)
                                                  .consumeResponse(Flow.class)
+                                                 .transferDeliveryId()
                                                  .transferDeliveryTag(null)
                                                  .transferPayloadData(getTestName())
                                                  .transfer();
-            interaction.consumeResponse(Detach.class, End.class, Close.class);
+            interaction.consumeResponse(Detach.class, End.class, Close.class, ChannelClosedResponse.class);
         }
     }
 
@@ -182,6 +202,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                        .attachHandle(linkHandle)
                                                        .attach().consumeResponse(Attach.class)
                                                        .consumeResponse(Flow.class)
+                                                       .transferDeliveryId()
                                                        .transferHandle(linkHandle)
                                                        .transferPayloadData(getTestName())
                                                        .transfer()
@@ -283,12 +304,18 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "2.7.5",
-            description = "If the negotiated link value is first, then it is illegal to set this field to second.")
+            description = "rcv-settle-mode "
+                          + "If first, this indicates that the receiver MUST settle the delivery once it has arrived"
+                          + " without waiting for the sender to settle first."
+                          + " If second, this indicates that the receiver MUST NOT settle until sending its disposition"
+                          + " to the sender and receiving a settled disposition from the sender."
+                          + " If not set, this value is defaulted to the value negotiated on link attach."
+                          + " If the negotiated link value is first, then it is illegal to set this field to second.")
     public void transferReceiverSettleModeCannotBeSecondWhenLinkModeIsFirst() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            Detach detach = transport.newInteraction()
+            Response<?> response = transport.newInteraction()
                                      .negotiateProtocol().consumeResponse()
                                      .open().consumeResponse(Open.class)
                                      .begin().consumeResponse(Begin.class)
@@ -301,10 +328,24 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                      .transferRcvSettleMode(ReceiverSettleMode.SECOND)
                                      .transfer()
                                      .consumeResponse()
-                                     .getLatestResponse(Detach.class);
-            Error error = detach.getError();
-            assertThat(error, is(notNullValue()));
-            assertThat(error.getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
+                                     .getLatestResponse();
+
+            if (response.getBody() instanceof Detach)
+            {
+                final Detach detach = (Detach) response.getBody();
+                Error error = detach.getError();
+                assertThat(error, is(notNullValue()));
+                assertThat(error.getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
+            }
+            else
+            {
+                if (response.getBody() instanceof Disposition)
+                {
+                    // clean up
+                    Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+                }
+                fail("it is illegal to set transfer 'rcv-settle-mode' to 'second' when link 'rcv-settle-mode' is set to 'first'");
+            }
         }
     }
 
@@ -366,6 +407,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                                                    Rejected.REJECTED_SYMBOL)
                                                              .attach().consumeResponse(Attach.class)
                                                              .consumeResponse(Flow.class)
+                                                             .transferDeliveryId()
                                                              .transferPayload(messageEncoder.getPayload())
                                                              .transferRcvSettleMode(ReceiverSettleMode.FIRST)
                                                              .transfer()
@@ -411,6 +453,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                   .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                                                   .attach().consumeResponse(Attach.class)
                                                   .consumeResponse(Flow.class)
+                                                  .transferDeliveryId()
                                                   .transferPayload(messageEncoder.getPayload())
                                                   .transferRcvSettleMode(ReceiverSettleMode.FIRST)
                                                   .transfer()
@@ -453,7 +496,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                                      .attach().consumeResponse()
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
                                                      .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                      .flowLinkCredit(UnsignedInteger.ONE)
@@ -493,7 +536,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachRcvSettleMode(ReceiverSettleMode.FIRST)
                                                      .attach().consumeResponse()
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
                                                      .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                      .flowLinkCredit(UnsignedInteger.ONE)
@@ -519,8 +562,6 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveTransferReceiverSettleSecond() throws Exception
     {
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
@@ -532,19 +573,22 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                                                      .attach().consumeResponse()
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
                                                      .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                      .flowLinkCredit(UnsignedInteger.ONE)
                                                      .flowHandleFromLinkHandle()
-                                                     .flow()
-                                                     .receiveDelivery()
-                                                     .decodeLatestDelivery();
+                                                     .flow();
 
-            Object data = interaction.getDecodedLatestDelivery();
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
+
+            Object data = interaction.receiveDelivery()
+                                     .decodeLatestDelivery()
+                                     .getDecodedLatestDelivery();
             assertThat(data, is(equalTo(getTestName())));
 
             Disposition disposition = interaction.dispositionSettled(false)
+                                                 .dispositionFirstFromLatestDelivery()
                                                  .dispositionRole(Role.RECEIVER)
                                                  .dispositionState(new Accepted())
                                                  .disposition()
@@ -552,8 +596,11 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                  .getLatestResponse(Disposition.class);
             assertThat(disposition.getSettled(), is(true));
 
-            interaction.consumeResponse(null, Flow.class);
-
+            interaction.dispositionSettled(true)
+                       .dispositionFirstFromLatestDelivery()
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionState(new Accepted())
+                       .disposition();
         }
     }
 
@@ -561,8 +608,6 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveTransferReceiverSettleSecondWithRejectedOutcome() throws Exception
     {
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
@@ -575,17 +620,20 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                                                      .attach().consumeResponse()
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
                                                      .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                      .flowLinkCredit(UnsignedInteger.ONE)
                                                      .flowHandleFromLinkHandle()
                                                      .flow();
 
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
+
             Object data = interaction.receiveDelivery().decodeLatestDelivery().getDecodedLatestDelivery();
             assertThat(data, is(equalTo(getTestName())));
 
             interaction.dispositionSettled(false)
+                       .dispositionFirstFromLatestDelivery()
                        .dispositionRole(Role.RECEIVER)
                        .dispositionState(new Rejected())
                        .disposition()
@@ -599,9 +647,11 @@ public class TransferTest extends BrokerAdminUsingTestBase
             Disposition disposition = interaction.getLatestResponse(Disposition.class);
             assertThat(disposition.getSettled(), is(true));
 
-            interaction.consumeResponse(null, Flow.class);
-
-
+            interaction.dispositionSettled(true)
+                       .dispositionFirstFromLatestDelivery()
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionState(new Rejected())
+                       .disposition();
 
         }
         assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
@@ -627,7 +677,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachSourceDefaultOutcome(null)
                                                      .attach().consumeResponse()
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
                                                      .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                      .flowLinkCredit(UnsignedInteger.ONE)
@@ -640,6 +690,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             assertThat(data, is(equalTo(getTestName())));
 
             Disposition disposition = interaction.dispositionSettled(false)
+                                                 .dispositionFirstFromLatestDelivery()
                                                  .dispositionRole(Role.RECEIVER)
                                                  .dispositionState(null)
                                                  .disposition()
@@ -658,7 +709,6 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                          + " non-terminal delivery states to the sender")
     public void receiveTransferReceiverIndicatesNonTerminalDeliveryState() throws Exception
     {
-        String testMessageData;
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -667,25 +717,24 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                    .openMaxFrameSize(UnsignedInteger.valueOf(4096))
                                    .open().consumeResponse()
                                    .getLatestResponse(Open.class);
-
-            int negotiatedFrameSize = open.getMaxFrameSize().intValue();
-            testMessageData = Stream.generate(() -> "*").limit(negotiatedFrameSize).collect(Collectors.joining());
-
-            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, testMessageData);
-
             interaction.begin().consumeResponse()
                        .attachRole(Role.RECEIVER)
                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attach().consumeResponse()
                        .flowIncomingWindow(UnsignedInteger.ONE)
-                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
                        .flow()
                        .sync();
+
+            final int negotiatedFrameSize = open.getMaxFrameSize().intValue();
+            final String testMessageData = Stream.generate(() -> "*").limit(negotiatedFrameSize).collect(Collectors.joining());
+
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, testMessageData);
 
             MessageDecoder messageDecoder = new MessageDecoder();
 
@@ -745,14 +794,14 @@ public class TransferTest extends BrokerAdminUsingTestBase
             assumeThat(attach.getSndSettleMode(), is(equalTo(SenderSettleMode.SETTLED)));
 
             interaction.flowIncomingWindow(UnsignedInteger.ONE)
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
-                                                     .flowOutgoingWindow(UnsignedInteger.ZERO)
-                                                     .flowNextOutgoingId(UnsignedInteger.ZERO)
-                                                     .flowLinkCredit(UnsignedInteger.ONE)
-                                                     .flowHandleFromLinkHandle()
-                                                     .flow();
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                       .flowOutgoingWindow(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowLinkCredit(UnsignedInteger.ONE)
+                       .flowHandleFromLinkHandle()
+                       .flow();
 
-            List<Transfer> transfers = interaction.receiveDelivery().getLatestDelivery();
+            final List<Transfer> transfers = interaction.receiveDelivery().getLatestDelivery();
             final AtomicBoolean isSettled = new AtomicBoolean();
             transfers.forEach(transfer -> { if (Boolean.TRUE.equals(transfer.getSettled())) { isSettled.set(true);}});
 
@@ -762,10 +811,6 @@ public class TransferTest extends BrokerAdminUsingTestBase
             interaction.doCloseConnection();
         }
 
-        if (getBrokerAdmin().isQueueDepthSupported())
-        {
-            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
-        }
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, "test");
         assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo("test")));
     }
@@ -793,17 +838,13 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attach()
                        .consumeResponse(Attach.class)
-                       .consumeResponse(Flow.class);
-
-            Flow flow = interaction.getLatestResponse(Flow.class);
-            assertThat(flow.getLinkCredit().intValue(), is(greaterThan(1)));
-
-            interaction.transferDeliveryId(UnsignedInteger.ZERO)
+                       .consumeResponse(Flow.class)
+                       .transferDeliveryId()
                        .transferDeliveryTag(deliveryTag)
                        .transferPayloadData(content1)
                        .transfer()
                        .transferDeliveryTag(deliveryTag)
-                       .transferDeliveryId(UnsignedInteger.ONE)
+                       .transferDeliveryId()
                        .transferPayloadData(getTestName() + "_2")
                        .transfer()
                        .sync();
@@ -1019,28 +1060,21 @@ public class TransferTest extends BrokerAdminUsingTestBase
             interaction.txnAttachCoordinatorLink(txnState)
                        .txnDeclare(txnState);
 
-            interaction.transferDeliveryId(UnsignedInteger.ONE)
+            interaction.transferDeliveryId()
                        .transferDeliveryTag(new Binary("A".getBytes(StandardCharsets.UTF_8)))
                        .transferPayloadData(contents[0])
                        .transfer()
-                       .transferDeliveryId(UnsignedInteger.valueOf(2))
+                       .transferDeliveryId()
                        .transferDeliveryTag(new Binary("B".getBytes(StandardCharsets.UTF_8)))
                        .transferPayloadData(contents[1])
                        .transfer()
-                       .transferDeliveryId(UnsignedInteger.valueOf(3))
+                       .transferDeliveryId()
                        .transferDeliveryTag(new Binary("C".getBytes(StandardCharsets.UTF_8)))
                        .transferTransactionalState(txnState.getCurrentTransactionId())
                        .transferPayloadData(contents[2])
                        .transfer();
 
-            final Discharge discharge = new Discharge();
-            discharge.setTxnId(txnState.getCurrentTransactionId());
-            discharge.setFail(false);
-
-            interaction.transferHandle(txnState.getHandle())
-                       .transferDeliveryId(UnsignedInteger.valueOf(4))
-                       .transferDeliveryTag(new Binary(("transaction-" + 4).getBytes(StandardCharsets.UTF_8)))
-                       .transferPayloadData(discharge).transfer();
+            interaction.txnSendDischarge(txnState, false);
 
             assertDeliveries(interaction, Sets.newTreeSet(Arrays.asList(UnsignedInteger.ONE,
                                                                         UnsignedInteger.valueOf(2),
@@ -1069,39 +1103,32 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachRcvSettleMode(ReceiverSettleMode.FIRST)
                                                      .attach().consumeResponse()
                                                      .flowIncomingWindow(UnsignedInteger.valueOf(numberOfMessages))
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
                                                      .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                      .flowLinkCredit(UnsignedInteger.valueOf(numberOfMessages))
                                                      .flowHandleFromLinkHandle()
                                                      .flow();
 
-            for (int i = 0; i < contents.length; i++)
+            UnsignedInteger firstDeliveryId = null;
+            for (final String content : contents)
             {
                 interaction.receiveDelivery(Flow.class).decodeLatestDelivery();
                 Object data = interaction.getDecodedLatestDelivery();
-                assertThat(data, is(equalTo(contents[i])));
-                assertThat(interaction.getLatestDeliveryId(), is(equalTo(UnsignedInteger.valueOf(i))));
+                assertThat(data, is(equalTo(content)));
+                if (firstDeliveryId == null)
+                {
+                    firstDeliveryId = interaction.getLatestDeliveryId();
+                }
             }
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionFirst(UnsignedInteger.ZERO)
+                       .dispositionFirst(firstDeliveryId)
                        .dispositionLast(interaction.getLatestDeliveryId())
                        .dispositionState(new Accepted())
                        .disposition();
-
-            // make sure sure the disposition is handled by making drain request
-            interaction.flowLinkCredit(UnsignedInteger.ONE)
-                       .flowNextIncomingId(UnsignedInteger.valueOf(numberOfMessages))
-                       .flowDrain(Boolean.TRUE)
-                       .flow()
-                       .consumeResponse(Flow.class);
-
-            if (getBrokerAdmin().isQueueDepthSupported())
-            {
-                assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
-            }
+            interaction.doCloseConnection();
         }
 
         final String messageText = getTestName() + "_" + 4;
@@ -1116,7 +1143,6 @@ public class TransferTest extends BrokerAdminUsingTestBase
     {
         final int numberOfMessages = 4;
         final String[] contents = Utils.createTestMessageContents(numberOfMessages, getTestName());
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, contents);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -1130,19 +1156,22 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachHandle(UnsignedInteger.ZERO)
                                                      .attach().consumeResponse()
                                                      .flowIncomingWindow(UnsignedInteger.valueOf(numberOfMessages))
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
                                                      .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                      .flowLinkCredit(UnsignedInteger.valueOf(numberOfMessages))
                                                      .flowHandleFromLinkHandle()
                                                      .flow();
 
-            for (int i = 0; i < contents.length; i++)
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, contents);
+
+            final List<UnsignedInteger> deliveryIds = new ArrayList<>();
+            for (final String content : contents)
             {
                 interaction.receiveDelivery(Flow.class).decodeLatestDelivery();
                 Object data = interaction.getDecodedLatestDelivery();
-                assertThat(data, is(equalTo(contents[i])));
-                assertThat(interaction.getLatestDeliveryId(), is(equalTo(UnsignedInteger.valueOf(i))));
+                assertThat(data, is(equalTo(content)));
+                deliveryIds.add(interaction.getLatestDeliveryId());
             }
 
             final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ONE);
@@ -1151,31 +1180,18 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionFirst(UnsignedInteger.ZERO)
-                       .dispositionLast(UnsignedInteger.ONE)
+                       .dispositionFirst(deliveryIds.get(0))
+                       .dispositionLast(deliveryIds.get(1))
                        .dispositionState(new Accepted())
                        .disposition()
                        .dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionFirst(UnsignedInteger.valueOf(2))
-                       .dispositionLast(UnsignedInteger.valueOf(3))
+                       .dispositionFirst(deliveryIds.get(2))
+                       .dispositionLast(deliveryIds.get(3))
                        .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
                        .disposition();
 
-
-            final Discharge discharge = new Discharge();
-            discharge.setTxnId(txnState.getCurrentTransactionId());
-            discharge.setFail(false);
-
-            interaction.transferHandle(txnState.getHandle())
-                       .transferDeliveryId(UnsignedInteger.valueOf(4))
-                       .transferDeliveryTag(new Binary(("transaction-" + 4).getBytes(StandardCharsets.UTF_8)))
-                       .transferPayloadData(discharge)
-                       .transfer();
-
-
-            final Flow coordinatorFlow = interaction.consume(Flow.class, Disposition.class);
-            assertThat(coordinatorFlow.getHandle(), is(equalTo(txnState.getHandle())));
+            interaction.txnDischarge(txnState, false);
         }
 
         String messageText = getTestName() + "_" + 4;
@@ -1202,6 +1218,10 @@ public class TransferTest extends BrokerAdminUsingTestBase
                               assertThat(value, is(equalTo(deliveryId.longValue())));
                               expectedDeliveryIds.remove(deliveryId);
                           });
+            }
+            else if (response.getBody() instanceof Flow)
+            {
+                // ignore flows
             }
         }
         while (!expectedDeliveryIds.isEmpty());

@@ -44,9 +44,14 @@ public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
 
     public I consumeResponse(final Class<?>... responseTypes) throws Exception
     {
+        final Set<Class<?>> acceptableResponseClasses = new HashSet<>(Arrays.asList(responseTypes));
+        return consumeResponse(acceptableResponseClasses);
+    }
+
+    protected I consumeResponse(final Set<Class<?>> acceptableResponseClasses) throws Exception
+    {
         sync();
         _latestResponse = getNextResponse();
-        final Set<Class<?>> acceptableResponseClasses = new HashSet<>(Arrays.asList(responseTypes));
         if ((acceptableResponseClasses.isEmpty() && _latestResponse != null)
             || (acceptableResponseClasses.contains(null) && _latestResponse == null))
         {

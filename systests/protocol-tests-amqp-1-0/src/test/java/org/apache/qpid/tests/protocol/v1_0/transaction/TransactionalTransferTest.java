@@ -26,6 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -102,6 +103,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .attach().consumeResponse(Attach.class)
                                                          .consumeResponse(Flow.class)
 
+                                                         .transferDeliveryId()
                                                          .transferHandle(linkHandle)
                                                          .transferPayloadData(getTestName())
                                                          .transferTransactionalState(txnState.getCurrentTransactionId())
@@ -116,9 +118,10 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             interaction.txnDischarge(txnState, false);
 
-            Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
-            assertThat(receivedMessage, is(equalTo(getTestName())));
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
         }
+        Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+        assertThat(receivedMessage, is(equalTo(getTestName())));
     }
 
     @Test
@@ -150,6 +153,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .attach().consumeResponse(Attach.class)
                                                          .consumeResponse(Flow.class)
 
+                                                         .transferDeliveryId()
                                                          .transferHandle(linkHandle)
                                                          .transferPayloadData(getTestName())
                                                          .transferTransactionalState(txnState.getCurrentTransactionId())
@@ -164,16 +168,11 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             interaction.txnDischarge(txnState, true);
 
-            if (getBrokerAdmin().isQueueDepthSupported())
-            {
-                assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
-            }
-            else
-            {
-                final String content = getTestName() + "_2";
-                Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
-                assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content)));
-            }
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+
+            final String content = getTestName() + "_2";
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
+            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content)));
         }
     }
 
@@ -204,9 +203,11 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                                          .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                                                          .attachHandle(linkHandle)
-                                                         .attach().consumeResponse(Attach.class)
+                                                         .attach()
+                                                         .consumeResponse(Attach.class)
                                                          .consumeResponse(Flow.class)
 
+                                                         .transferDeliveryId()
                                                          .transferHandle(linkHandle)
                                                          .transferPayloadData(getTestName())
                                                          .transferTransactionalState(txnState.getCurrentTransactionId())
@@ -225,6 +226,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .disposition();
 
             interaction.txnDischarge(txnState, false);
+
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
         }
         assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
@@ -255,6 +258,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                               .attach().consumeResponse(Attach.class)
                                               .consumeResponse(Flow.class)
 
+                                              .transferDeliveryId()
                                               .transferHandle(linkHandle)
                                               .transferPayloadData(getTestName())
                                               .transferTransactionalState(integerToBinary(Integer.MAX_VALUE))
@@ -295,7 +299,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Attach.class)
 
                        .flowIncomingWindow(UnsignedInteger.ONE)
-                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
@@ -313,6 +317,9 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
                        .disposition()
                        .txnDischarge(txnState, false);
+
+
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
         }
     }
 
@@ -344,7 +351,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Attach.class)
 
                        .flowIncomingWindow(UnsignedInteger.ONE)
-                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
@@ -362,6 +369,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
                        .disposition()
                        .txnDischarge(txnState, true);
+
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(getTestName())));
@@ -396,7 +405,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                   .attach().consumeResponse(Attach.class)
 
                                                   .flowIncomingWindow(UnsignedInteger.ONE)
-                                                  .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                  .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                   .flowOutgoingWindow(UnsignedInteger.ZERO)
                                                   .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                   .flowLinkCredit(UnsignedInteger.ONE)
@@ -421,7 +430,10 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                               .consumeResponse().getLatestResponse();
             assertUnknownTransactionIdError(response);
         }
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+        finally
+        {
+            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+        }
     }
 
     @Ignore("TODO disposition is currently not being sent by Broker")
@@ -479,6 +491,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             assertThat(((TransactionalState) settledDisposition.getState()).getOutcome(), is(instanceOf(Accepted.class)));
 
             interaction.txnDischarge(txnState, false);
+
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
         }
     }
 
@@ -514,7 +528,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Attach.class)
 
                        .flowIncomingWindow(UnsignedInteger.ONE)
-                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
@@ -526,9 +540,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             List<Transfer> transfers = interaction.getLatestDelivery();
             assertThat(transfers.size(), is(equalTo(1)));
-            Transfer transfer = transfers.get(0);
-            assertThat(transfer.getState(), is(instanceOf(TransactionalState.class)));
-            assertThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(txnState.getCurrentTransactionId())));
 
             Object data = interaction.decodeLatestDelivery().getDecodedLatestDelivery();
             assertThat(data, is(equalTo(getTestName())));
@@ -536,19 +547,20 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
                        .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
+                       .dispositionFirstFromLatestDelivery()
                        .disposition()
                        .txnDischarge(txnState, false);
 
-            if (getBrokerAdmin().isQueueDepthSupported())
-            {
-                assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
-            }
-            else
-            {
-                final String content = getTestName() + "_2";
-                Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
-                assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content)));
-            }
+
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+
+            Transfer transfer = transfers.get(0);
+            assumeThat(transfer.getState(), is(instanceOf(TransactionalState.class)));
+            assumeThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(txnState.getCurrentTransactionId())));
+
+            final String content = getTestName() + "_2";
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
+            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content)));
         }
     }
 
@@ -584,7 +596,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Attach.class)
 
                        .flowIncomingWindow(UnsignedInteger.ONE)
-                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
@@ -596,9 +608,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             List<Transfer> transfers = interaction.getLatestDelivery();
             assertThat(transfers.size(), is(equalTo(1)));
-            Transfer transfer = transfers.get(0);
-            assertThat(transfer.getState(), is(instanceOf(TransactionalState.class)));
-            assertThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(txnState.getCurrentTransactionId())));
 
             Object data = interaction.decodeLatestDelivery().getDecodedLatestDelivery();
             assertThat(data, is(equalTo(getTestName())));
@@ -609,11 +618,13 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .disposition()
                        .txnDischarge(txnState, true);
 
-            if (getBrokerAdmin().isQueueDepthSupported())
-            {
-                assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
-            }
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
+
             assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+
+            Transfer transfer = transfers.get(0);
+            assumeThat(transfer.getState(), is(instanceOf(TransactionalState.class)));
+            assumeThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(txnState.getCurrentTransactionId())));
         }
     }
 
@@ -661,7 +672,10 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             assertUnknownTransactionIdError(response);
         }
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+        finally
+        {
+            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+        }
     }
 
     private void assertUnknownTransactionIdError(final Response<?> response)

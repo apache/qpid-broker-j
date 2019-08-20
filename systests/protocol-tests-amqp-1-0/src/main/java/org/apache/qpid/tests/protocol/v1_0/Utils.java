@@ -20,6 +20,7 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
@@ -28,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.util.stream.IntStream;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
@@ -37,6 +39,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class Utils
@@ -83,7 +86,7 @@ public class Utils
                        .attachSourceAddress(queueName)
                        .attach().consumeResponse()
                        .flowIncomingWindow(UnsignedInteger.ONE)
-                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
@@ -157,6 +160,7 @@ public class Utils
                                              .begin().consumeResponse(Begin.class)
                                              .attachRole(Role.SENDER)
                                              .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                             .attachSndSettleMode(SenderSettleMode.SETTLED)
                                              .attach().consumeResponse(Attach.class)
                                              .consumeResponse(Flow.class)
                                              .getLatestResponse(Flow.class);
@@ -166,14 +170,21 @@ public class Utils
                                          message.length),
                            flow.getLinkCredit().intValue(),
                            is(greaterThan(message.length)));
+
+                int tag = 0;
                 for (String payload : message)
                 {
                     interaction.transferPayloadData(payload)
                                .transferSettled(true)
+                               .transferDeliveryId()
+                               .transferDeliveryTag(new Binary(String.valueOf(tag).getBytes(UTF_8)))
                                .transfer()
                                .sync();
+                    tag++;
                 }
+                interaction.doCloseConnection();
             }
         }
     }
+
 }

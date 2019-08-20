@@ -70,7 +70,7 @@ public class MessageFormat extends BrokerAdminUsingTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] payloads = Utils.splitPayload("testData", 2);
+            QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 2);
 
             final Response<?> latestResponse = transport.newInteraction()
                                                         .negotiateProtocol().consumeResponse()

@@ -171,7 +171,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
             assertThat(receivedDetach.getError().getCondition(), is(AmqpError.RESOURCE_DELETED));
             assertThat(receivedDetach.getHandle(), is(equalTo(attach.getHandle())));
 
-            interaction.discharge(txnState, false);
+            interaction.txnSendDischarge(txnState, false);
 
             assertTransactionRollbackOnly(interaction, txnState);
         }
@@ -244,7 +244,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
             assertThat(receivedDetach.getError().getCondition(), is(AmqpError.RESOURCE_DELETED));
             assertThat(receivedDetach.getHandle(), is(equalTo(attach.getHandle())));
 
-            interaction.discharge(txnState, false);
+            interaction.txnSendDischarge(txnState, false);
 
             assertTransactionRollbackOnly(interaction, txnState);
         }

@@ -591,11 +591,9 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
             interaction.doCloseConnection();
 
-            if (getBrokerAdmin().isQueueDepthSupported())
-            {
-                assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME),
-                           is(equalTo(0)));
-            }
+            final String content = getTestName() + "_2";
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
+            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), Matchers.is(Matchers.equalTo(content)));
         }
     }
 
@@ -675,11 +673,9 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
             interaction.doCloseConnection();
 
-            if (getBrokerAdmin().isQueueDepthSupported())
-            {
-                assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME),
-                           Matchers.is(Matchers.equalTo(0)));
-            }
+            final String content = getTestName() + "_2";
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
+            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), Matchers.is(Matchers.equalTo(content)));
         }
     }
 

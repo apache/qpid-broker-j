@@ -21,12 +21,14 @@
 package org.apache.qpid.tests.protocol.v1_0;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class InteractionTransactionalState
 {
     private final UnsignedInteger _handle;
     private Binary _lastTransactionId;
+    private DeliveryState _deliveryState;
 
     public InteractionTransactionalState(final UnsignedInteger handle)
     {
@@ -46,5 +48,15 @@ public class InteractionTransactionalState
     public Binary getCurrentTransactionId()
     {
         return _lastTransactionId;
+    }
+
+    public DeliveryState getDeliveryState()
+    {
+        return _deliveryState;
+    }
+
+    public void setDeliveryState(final DeliveryState deliveryState)
+    {
+        _deliveryState = deliveryState;
     }
 }

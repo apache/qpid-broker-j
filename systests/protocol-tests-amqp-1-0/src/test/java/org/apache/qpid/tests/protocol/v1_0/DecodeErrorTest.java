@@ -24,14 +24,18 @@ import static org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError.DECO
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,6 +43,8 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.StringWriter;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotations;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotationsSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
@@ -53,11 +59,13 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.utils.BrokerSpecific;
 
 public class DecodeErrorTest extends BrokerAdminUsingTestBase
 {
@@ -74,44 +82,46 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "3.2",
             description = "Altogether a message consists of the following sections: Zero or one header,"
                           + " Zero or one delivery-annotations, [...]")
-    public void illegalMessageFormatPayload() throws Exception
+    @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
+    public void illegalMessage() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
+            final Interaction interaction = transport.newInteraction();
+            final Attach attach = interaction.negotiateProtocol()
+                                             .consumeResponse()
+                                             .open()
+                                             .consumeResponse(Open.class)
+                                             .begin()
+                                             .consumeResponse(Begin.class)
+                                             .attachRole(Role.SENDER)
+                                             .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                             .attachRcvSettleMode(ReceiverSettleMode.SECOND)
+                                             .attach()
+                                             .consumeResponse(Attach.class)
+                                             .getLatestResponse(Attach.class);
+            assumeThat(attach.getRcvSettleMode(), is(equalTo(ReceiverSettleMode.SECOND)));
 
-            List<QpidByteBuffer> payloads = new ArrayList<>();
-            final HeaderSection headerSection = new Header().createEncodingRetainingSection();
-            payloads.add(headerSection.getEncodedForm());
-            headerSection.dispose();
-            final StringWriter stringWriter = new StringWriter("string in between annotation sections");
-            QpidByteBuffer encodedString = QpidByteBuffer.allocate(stringWriter.getEncodedSize());
-            stringWriter.writeToBuffer(encodedString);
-            encodedString.flip();
-            payloads.add(encodedString);
-            final DeliveryAnnotationsSection
-                    deliveryAnnotationsSection =
-                    new DeliveryAnnotations(Collections.emptyMap()).createEncodingRetainingSection();
-            payloads.add(deliveryAnnotationsSection.getEncodedForm());
-            deliveryAnnotationsSection.dispose();
+            final Flow flow = interaction.consumeResponse(Flow.class).getLatestResponse(Flow.class);
+            assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ZERO)));
 
-            final Detach detachResponse;
-            try (QpidByteBuffer combinedPayload = QpidByteBuffer.concatenate(payloads))
+            final List<QpidByteBuffer> payloads = buildInvalidMessage();
+            try
             {
-                detachResponse = transport.newInteraction()
-                                          .negotiateProtocol().consumeResponse()
-                                          .open().consumeResponse(Open.class)
-                                          .begin().consumeResponse(Begin.class)
-                                          .attachRole(Role.SENDER)
-                                          .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                          .attach().consumeResponse(Attach.class)
-                                          .consumeResponse(Flow.class)
-                                          .transferMessageFormat(UnsignedInteger.ZERO)
-                                          .transferPayload(combinedPayload)
-                                          .transfer()
-                                          .consumeResponse()
-                                          .getLatestResponse(Detach.class);
+                try (QpidByteBuffer combinedPayload = QpidByteBuffer.concatenate(payloads))
+                {
+                    interaction.transferMessageFormat(UnsignedInteger.ZERO)
+                               .transferPayload(combinedPayload)
+                               .transfer();
+                }
             }
-            payloads.forEach(QpidByteBuffer::dispose);
+            finally
+            {
+                payloads.forEach(QpidByteBuffer::dispose);
+            }
+
+            final Detach detachResponse = interaction.consumeResponse()
+                                                     .getLatestResponse(Detach.class);
             assertThat(detachResponse.getError(), is(notNullValue()));
             assertThat(detachResponse.getError().getCondition(), is(equalTo(DECODE_ERROR)));
         }
@@ -147,6 +157,10 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
             else if (responseBody instanceof Close)
             {
                 error = ((Close) responseBody).getError();
+            }
+            else if (responseBody instanceof Detach)
+            {
+                error = ((Detach) responseBody).getError();
             }
             else
             {
@@ -200,4 +214,51 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
             assertThat(error.getCondition(), is(equalTo(DECODE_ERROR)));
         }
     }
+
+    private List<QpidByteBuffer> buildInvalidMessage()
+    {
+        final List<QpidByteBuffer> payloads = new ArrayList<>();
+        final Header header = new Header();
+        header.setTtl(UnsignedInteger.valueOf(1000L));
+        final HeaderSection headerSection = header.createEncodingRetainingSection();
+        try
+        {
+            payloads.add(headerSection.getEncodedForm());
+        }
+        finally
+        {
+            headerSection.dispose();
+        }
+
+        final StringWriter stringWriter = new StringWriter("string in between annotation sections");
+        QpidByteBuffer encodedString = QpidByteBuffer.allocate(stringWriter.getEncodedSize());
+        stringWriter.writeToBuffer(encodedString);
+        encodedString.flip();
+        payloads.add(encodedString);
+
+        final Map<Symbol, Object> annoationMap = Collections.singletonMap(Symbol.valueOf("foo"), "bar");
+        final DeliveryAnnotations annotations = new DeliveryAnnotations(annoationMap);
+        final DeliveryAnnotationsSection deliveryAnnotationsSection = annotations.createEncodingRetainingSection();
+        try
+        {
+
+            payloads.add(deliveryAnnotationsSection.getEncodedForm());
+        }
+        finally
+        {
+            deliveryAnnotationsSection.dispose();
+        }
+
+        final AmqpValueSection payload = new AmqpValue(getTestName()).createEncodingRetainingSection();
+        try
+        {
+            payloads.add(payload.getEncodedForm());
+        }
+        finally
+        {
+            payload.dispose();
+        }
+        return payloads;
+    }
+
 }

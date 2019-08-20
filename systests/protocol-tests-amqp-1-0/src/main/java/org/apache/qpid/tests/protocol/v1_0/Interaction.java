@@ -20,12 +20,6 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -117,6 +111,7 @@ public class Interaction extends AbstractInteraction<Interaction>
     private Map<String, Object> _latestDeliveryApplicationProperties;
     private Map<Class, FrameBody> _latestResponses = new HashMap<>();
     private AtomicLong _receivedDeliveryCount = new AtomicLong();
+    private AtomicLong _coordinatorCredits = new AtomicLong();
 
     Interaction(final FrameTransport frameTransport)
     {
@@ -955,6 +950,12 @@ public class Interaction extends AbstractInteraction<Interaction>
 
     public Interaction txnAttachCoordinatorLink(InteractionTransactionalState transactionalState) throws Exception
     {
+        return txnAttachCoordinatorLink(transactionalState, Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL);
+    }
+
+    public Interaction txnAttachCoordinatorLink(final InteractionTransactionalState transactionalState,
+                                                final Symbol... outcomes) throws Exception
+    {
         Attach attach = new Attach();
         attach.setName("testTransactionCoordinator-" + transactionalState.getHandle());
         attach.setHandle(transactionalState.getHandle());
@@ -963,70 +964,90 @@ public class Interaction extends AbstractInteraction<Interaction>
         attach.setRole(Role.SENDER);
         Source source = new Source();
         attach.setSource(source);
-        source.setOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL);
+        source.setOutcomes(outcomes);
         sendPerformativeAndChainFuture(attach, _sessionChannel);
         consumeResponse(Attach.class);
-        consumeResponse(Flow.class);
+        final Flow flow = consumeResponse(Flow.class).getLatestResponse(Flow.class);
+        _coordinatorCredits.set(flow.getLinkCredit().longValue());
         return this;
     }
 
     public Interaction txnDeclare(final InteractionTransactionalState txnState) throws Exception
     {
-        Transfer transfer = createTransactionTransfer(txnState.getHandle());
-        transferPayload(transfer, new Declare());
-        sendPerformativeAndChainFuture(transfer, _sessionChannel);
-        consumeResponse(Disposition.class);
-        Disposition declareTransactionDisposition = getLatestResponse(Disposition.class);
-        assertThat(declareTransactionDisposition.getSettled(), is(equalTo(true)));
-        assertThat(declareTransactionDisposition.getState(), is(instanceOf(Declared.class)));
-        Binary transactionId = ((Declared) declareTransactionDisposition.getState()).getTxnId();
-        assertThat(transactionId, is(notNullValue()));
-        consumeResponse(Flow.class);
+        sendPayloadToCoordinator(new Declare(), txnState.getHandle());
+        final DeliveryState state = handleCoordinatorResponse();
+        txnState.setDeliveryState(state);
+        final Binary transactionId = ((Declared) state).getTxnId();
         txnState.setLastTransactionId(transactionId);
         return this;
     }
 
-    public Interaction discharge(final InteractionTransactionalState txnState, final boolean failed) throws Exception
+    public Interaction txnSendDischarge(final InteractionTransactionalState txnState, final boolean failed)
+            throws Exception
     {
         final Discharge discharge = new Discharge();
         discharge.setTxnId(txnState.getCurrentTransactionId());
         discharge.setFail(failed);
-
-        Transfer transfer = createTransactionTransfer(txnState.getHandle());
-        transferPayload(transfer, discharge);
-        sendPerformativeAndChainFuture(transfer, _sessionChannel);
+        sendPayloadToCoordinator(discharge, txnState.getHandle());
         return this;
     }
 
     public Interaction txnDischarge(final InteractionTransactionalState txnState, boolean failed) throws Exception
     {
-        discharge(txnState, failed);
-
-        Disposition declareTransactionDisposition = null;
-        Flow coordinatorFlow = null;
-        do
-        {
-            consumeResponse(Disposition.class, Flow.class);
-            Response<?> response = getLatestResponse();
-            if (response.getBody() instanceof Disposition)
-            {
-                declareTransactionDisposition = (Disposition) response.getBody();
-            }
-            if (response.getBody() instanceof Flow)
-            {
-                final Flow flowResponse = (Flow) response.getBody();
-                if (flowResponse.getHandle().equals(txnState.getHandle()))
-                {
-                    coordinatorFlow = flowResponse;
-                }
-            }
-        } while(declareTransactionDisposition == null || coordinatorFlow == null);
-
-        assertThat(declareTransactionDisposition.getSettled(), is(equalTo(true)));
-        assertThat(declareTransactionDisposition.getState(), is(instanceOf(Accepted.class)));
-
+        txnSendDischarge(txnState, failed);
+        final DeliveryState state = handleCoordinatorResponse();
+        txnState.setDeliveryState(state);
         txnState.setLastTransactionId(null);
         return this;
+    }
+
+    private void sendPayloadToCoordinator(final Object payload, final UnsignedInteger handle)
+            throws Exception
+    {
+        final Transfer transfer = createTransactionTransfer(handle);
+        transferPayload(transfer, payload);
+        sendPerformativeAndChainFuture(transfer, _sessionChannel);
+    }
+
+    private DeliveryState handleCoordinatorResponse() throws Exception
+    {
+        final Set<Class<?>> expected = new HashSet<>(Collections.singletonList(Disposition.class));
+
+        if (_coordinatorCredits.decrementAndGet() == 0)
+        {
+            expected.add(Flow.class);
+        }
+
+        final Map<Class<?>, ?> responses = consumeResponses(expected);
+
+        final Disposition disposition = (Disposition) responses.get(Disposition.class);
+        if (expected.contains(Flow.class))
+        {
+            Flow flow = (Flow) responses.get(Flow.class);
+            _coordinatorCredits.set(flow.getLinkCredit().longValue());
+        }
+        if (!Boolean.TRUE.equals(disposition.getSettled()))
+        {
+            throw new IllegalStateException("Coordinator disposition is not settled");
+        }
+        return disposition.getState();
+    }
+
+    private Map<Class<?>, ?> consumeResponses(final Set<Class<?>> responseTypes)
+            throws Exception
+    {
+        Map<Class<?>, Object> results = new HashMap<>();
+        do
+        {
+            Response<?> response = consumeResponse(responseTypes).getLatestResponse();
+            if (response != null && response.getBody() instanceof FrameBody)
+            {
+                Class<?> bodyClass = response.getBody().getClass();
+                results.put(bodyClass, response.getBody());
+            }
+        }
+        while (!results.keySet().containsAll(responseTypes));
+        return results;
     }
 
     private Transfer createTransactionTransfer(final UnsignedInteger handle)
@@ -1034,7 +1055,8 @@ public class Interaction extends AbstractInteraction<Interaction>
         Transfer transfer = new Transfer();
         transfer.setHandle(handle);
         transfer.setDeliveryId(getNextDeliveryId());
-        transfer.setDeliveryTag(new Binary(("transaction-" + transfer.getDeliveryId()).getBytes(StandardCharsets.UTF_8)));
+        transfer.setDeliveryTag(new Binary(("transaction-"
+                                            + transfer.getDeliveryId()).getBytes(StandardCharsets.UTF_8)));
         return transfer;
     }
 

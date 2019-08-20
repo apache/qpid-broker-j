@@ -21,6 +21,7 @@
 package org.apache.qpid.tests.protocol.v1_0.transport.link;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,6 +43,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SessionError;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
@@ -53,7 +55,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
 {
     @Test
     @SpecificationTest(section = "1.3.4",
-            description = "Flow without mandatory fields should result in a decoding error.")
+            description = "mandatory [...] a non null value for the field is always encoded.")
     public void emptyFlow() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -69,7 +71,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                            .flowOutgoingWindow(null)
                                            .flowNextOutgoingId(null)
                                            .flow()
-                                           .consumeResponse()
+                                           .consumeResponse(Close.class)
                                            .getLatestResponse(Close.class);
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), is(AmqpError.DECODE_ERROR));
@@ -89,6 +91,11 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                          .open().consumeResponse(Open.class)
                                          .begin().consumeResponse(Begin.class)
                                          .flowEcho(true)
+                                         .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                         .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                         .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                                         .flowIncomingWindow(UnsignedInteger.ONE)
+                                         .flowHandle(null)
                                          .flow()
                                          .consumeResponse()
                                          .getLatestResponse(Flow.class);
@@ -118,7 +125,10 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                          .flowHandleFromLinkHandle()
                                          .flowAvailable(UnsignedInteger.valueOf(10))
                                          .flowDeliveryCount(UnsignedInteger.ZERO)
-                                         .flowLinkCredit(UnsignedInteger.ZERO)
+                                         .flowLinkCredit(UnsignedInteger.ONE)
+                                         .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                         .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                         .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                          .flow().consumeResponse()
                                          .getLatestResponse(Flow.class);
             assertThat(responseFlow.getEcho(), not(equalTo(Boolean.TRUE)));
@@ -146,7 +156,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attach().consumeResponse()
                        .flowIncomingWindow(UnsignedInteger.ONE)
-                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
@@ -156,7 +166,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
                        .decodeLatestDelivery()
                        .dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionFirst(interaction.getLatestDeliveryId())
+                       .dispositionFirstFromLatestDelivery()
                        .dispositionLast(interaction.getLatestDeliveryId())
                        .dispositionState(new Accepted())
                        .disposition()
@@ -215,7 +225,12 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                        .open().consumeResponse(Open.class)
                                        .begin().consumeResponse(Begin.class)
                                        .flowEcho(true)
-                                       .flowHandle(UnsignedInteger.ONE)
+                                       .flowIncomingWindow(UnsignedInteger.ONE)
+                                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                                       .flowLinkCredit(UnsignedInteger.ONE)
+                                       .flowHandle(UnsignedInteger.valueOf(Integer.MAX_VALUE))
+                                       .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                       .flowNextOutgoingId(UnsignedInteger.ZERO)
                                        .flow()
                                        .consumeResponse().getLatestResponse(End.class);
 
@@ -249,20 +264,22 @@ public class FlowTest extends BrokerAdminUsingTestBase
             UnsignedInteger remoteHandle = remoteAttach.getHandle();
             assertThat(remoteHandle, is(notNullValue()));
 
-            Flow responseFlow = interaction.flowIncomingWindow(UnsignedInteger.valueOf(1))
-                                           .flowNextIncomingId(UnsignedInteger.ZERO)
+            interaction.flowIncomingWindow(UnsignedInteger.ONE)
+                                           .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                                           .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                           .flowNextOutgoingId(UnsignedInteger.ZERO)
                                            .flowLinkCredit(UnsignedInteger.ONE)
                                            .flowDrain(Boolean.FALSE)
                                            .flowEcho(Boolean.TRUE)
                                            .flowHandleFromLinkHandle()
                                            .flow()
-                                           .consumeResponse().getLatestResponse(Flow.class);
+                                           .consumeResponse(null, Flow.class);
 
-            assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
-            assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ONE)));
-            assertThat(responseFlow.getDrain(), is(equalTo(Boolean.FALSE)));
-
-            responseFlow = interaction.flowLinkCredit(UnsignedInteger.ONE)
+            Flow responseFlow = interaction.flowIncomingWindow(UnsignedInteger.ONE)
+                                      .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                                      .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                      .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                      .flowLinkCredit(UnsignedInteger.ONE)
                                       .flowDrain(Boolean.TRUE)
                                       .flowEcho(Boolean.FALSE)
                                       .flowHandleFromLinkHandle()
@@ -271,6 +288,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
 
             assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
             assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
+            assertThat(responseFlow.getDrain(), is(equalTo(Boolean.TRUE)));
         }
     }
 
@@ -286,8 +304,6 @@ public class FlowTest extends BrokerAdminUsingTestBase
     {
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        String messageContent = getTestName();
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, messageContent);
 
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
@@ -304,35 +320,42 @@ public class FlowTest extends BrokerAdminUsingTestBase
             UnsignedInteger remoteHandle = remoteAttach.getHandle();
             assertThat(remoteHandle, is(notNullValue()));
 
-            Object receivedMessageContent = interaction.flowIncomingWindow(UnsignedInteger.valueOf(1))
-                                                       .flowNextIncomingId(UnsignedInteger.ZERO)
+            interaction.flowIncomingWindow(UnsignedInteger.valueOf(1))
+                                                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                        .flowLinkCredit(UnsignedInteger.ONE)
                                                        .flowDrain(Boolean.FALSE)
                                                        .flowEcho(Boolean.FALSE)
                                                        .flowHandleFromLinkHandle()
+                                                       .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                       .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                        .flow()
-                                                       .receiveDelivery()
-                                                       .decodeLatestDelivery()
-                                                       .getDecodedLatestDelivery();
+                                                       .sync();
 
-            assertThat(receivedMessageContent, is(equalTo(messageContent)));
-            UnsignedInteger firstDeliveryId = interaction.getLatestDeliveryId();
-            assertThat(firstDeliveryId, is(equalTo(UnsignedInteger.ZERO)));
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
-            Flow responseFlow = interaction.flowNextIncomingId(UnsignedInteger.ONE)
-                                           .flowLinkCredit(UnsignedInteger.ONE)
-                                           .flowDrain(Boolean.TRUE)
-                                           .flowEcho(Boolean.FALSE)
-                                           .flowHandleFromLinkHandle()
-                                           .flow()
-                                           .consumeResponse().getLatestResponse(Flow.class);
+            final Object receivedMessageContent = interaction.receiveDelivery()
+                                                             .decodeLatestDelivery()
+                                                             .getDecodedLatestDelivery();
+
+            assertThat(receivedMessageContent, is(equalTo(getTestName())));
+
+            final Flow responseFlow = interaction.flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                                                 .flowLinkCredit(UnsignedInteger.ONE)
+                                                 .flowDrain(Boolean.TRUE)
+                                                 .flowEcho(Boolean.FALSE)
+                                                 .flowHandleFromLinkHandle()
+                                                 .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                 .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                                 .flowDeliveryCount()
+                                                 .flow()
+                                                 .consumeResponse().getLatestResponse(Flow.class);
 
             assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
             assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionFirst(firstDeliveryId)
+                       .dispositionFirst(interaction.getLatestDeliveryId())
                        .dispositionState(new Accepted())
                        .disposition()
                        .sync();
@@ -373,9 +396,12 @@ public class FlowTest extends BrokerAdminUsingTestBase
             UnsignedInteger delta = UnsignedInteger.ONE;
             UnsignedInteger incomingWindow = UnsignedInteger.valueOf(3);
             Object receivedMessageContent1 = interaction.flowIncomingWindow(incomingWindow)
-                                                        .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                         .flowLinkCredit(delta)
                                                         .flowHandleFromLinkHandle()
+                                                        .flowDeliveryCount()
+                                                        .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                         .flow()
                                                         .receiveDelivery()
                                                         .decodeLatestDelivery()
@@ -383,12 +409,14 @@ public class FlowTest extends BrokerAdminUsingTestBase
 
             assertThat(receivedMessageContent1, is(equalTo(contents[0])));
             UnsignedInteger firstDeliveryId = interaction.getLatestDeliveryId();
-            assertThat(firstDeliveryId, is(equalTo(UnsignedInteger.ZERO)));
 
             Object receivedMessageContent2 = interaction.flowIncomingWindow(incomingWindow)
-                                                        .flowNextIncomingId(UnsignedInteger.ONE)
+                                                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                         .flowLinkCredit(delta)
                                                         .flowHandleFromLinkHandle()
+                                                        .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                        .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                                        .flowDeliveryCount()
                                                         .flow()
                                                         .receiveDelivery()
                                                         .decodeLatestDelivery()
@@ -396,17 +424,18 @@ public class FlowTest extends BrokerAdminUsingTestBase
 
             assertThat(receivedMessageContent2, is(equalTo(contents[1])));
             UnsignedInteger secondDeliveryId = interaction.getLatestDeliveryId();
-            assertThat(secondDeliveryId, is(equalTo(UnsignedInteger.ONE)));
 
             // send session flow with echo=true to verify that no message is delivered without issuing a credit
-            Flow responseFlow = interaction.flowNextIncomingId(UnsignedInteger.valueOf(2))
-                                           .flowLinkCredit(null)
-                                           .flowHandle(null)
-                                           .flowEcho(Boolean.TRUE)
-                                           .flow()
-                                           .consumeResponse().getLatestResponse(Flow.class);
-
-            assertThat(responseFlow.getHandle(), is(nullValue()));
+            interaction.flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                       .flowIncomingWindow(incomingWindow)
+                       .flowLinkCredit(null)
+                       .flowHandle(null)
+                       .flowDeliveryCount(null)
+                       .flowEcho(Boolean.TRUE)
+                       .flowOutgoingWindow(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flow()
+                       .consumeResponse(null, Flow.class);
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
@@ -429,10 +458,8 @@ public class FlowTest extends BrokerAdminUsingTestBase
     {
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final String[] contents = Utils.createTestMessageContents(2, getTestName());
-        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, contents);
-
         final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Interaction interaction = transport.newInteraction()
@@ -447,36 +474,68 @@ public class FlowTest extends BrokerAdminUsingTestBase
             UnsignedInteger remoteHandle = remoteAttach.getHandle();
             assertThat(remoteHandle, is(notNullValue()));
 
-            Object receivedMessageContent1 = interaction.flowIncomingWindow(UnsignedInteger.valueOf(2))
-                                                        .flowNextIncomingId(UnsignedInteger.ZERO)
-                                                        .flowLinkCredit(UnsignedInteger.ONE)
+            UnsignedInteger incomingWindow = UnsignedInteger.valueOf(2);
+            Object receivedMessageContent1 = interaction.flowIncomingWindow(incomingWindow)
+                                                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                                                        .flowLinkCredit(incomingWindow)
+                                                        .flowNextOutgoingId()
                                                         .flowHandleFromLinkHandle()
+                                                        .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                         .flow()
                                                         .receiveDelivery()
                                                         .decodeLatestDelivery()
                                                         .getDecodedLatestDelivery();
+            assertThat(receivedMessageContent1, is(equalTo(getTestName())));
 
-            assertThat(receivedMessageContent1, is(equalTo(contents[0])));
-            assertThat(interaction.getLatestDeliveryId(), is(equalTo(UnsignedInteger.ZERO)));
+            final Response<?> response = interaction.flowIncomingWindow(incomingWindow)
+                                                    .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                                                    .flowLinkCredit(UnsignedInteger.ZERO)
+                                                    .flowHandleFromLinkHandle()
+                                                    .flowEcho(Boolean.TRUE)
+                                                    .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                    .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                                    .flowDeliveryCount()
+                                                    .flow()
+                                                    .consumeResponse(null, Flow.class)
+                                                    .getLatestResponse();
 
-            Flow responseFlow = interaction.flowNextIncomingId(UnsignedInteger.ONE)
-                                           .flowLinkCredit(UnsignedInteger.ZERO)
-                                           .flowHandleFromLinkHandle()
-                                           .flowEcho(Boolean.TRUE)
-                                           .flow()
-                                           .consumeResponse().getLatestResponse(Flow.class);
+            if (response != null)
+            {
+                assertThat(response.getBody(), is(instanceOf(Flow.class)));
+                final Flow responseFlow = (Flow) response.getBody();
+                assertThat(responseFlow.getEcho(), not(equalTo(Boolean.TRUE)));
+                assertThat(responseFlow.getHandle(), is(notNullValue()));
+            }
 
-            assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
-            assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
+            final String message2 = getTestName() + "_2";
+            Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, message2);
+            try
+            {
+                // send session flow with echo=true to verify that no message is delivered without issuing a credit
+                interaction.flowIncomingWindow(incomingWindow)
+                           .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                           .flowLinkCredit(null)
+                           .flowHandle(null)
+                           .flowDeliveryCount(null)
+                           .flowEcho(Boolean.TRUE)
+                           .flowOutgoingWindow(UnsignedInteger.ZERO)
+                           .flowNextOutgoingId(UnsignedInteger.ZERO)
+                           .flow()
+                           .consumeResponse(null, Flow.class);
+            }
+            finally
+            {
+                assertThat(Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(message2)));
 
-            interaction.dispositionSettled(true)
-                       .dispositionRole(Role.RECEIVER)
-                       .dispositionFirst(interaction.getLatestDeliveryId())
-                       .dispositionState(new Accepted())
-                       .disposition()
-                       .sync();
+                interaction.dispositionSettled(true)
+                           .dispositionRole(Role.RECEIVER)
+                           .dispositionFirst(interaction.getLatestDeliveryId())
+                           .dispositionState(new Accepted())
+                           .disposition()
+                           .sync();
+            }
         }
-        assertThat(Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(contents[1])));
     }
 
     @Test
@@ -485,7 +544,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
                           + " available to consume the current link-credit. If set, the sender will"
                           + " (after sending all available messages) advance the delivery-count as much as possible,"
                           + " consuming all link-credit, and send the flow state to the receiver.")
-    public void drainWithZeroCredits() throws Exception
+    public void drain() throws Exception
     {
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -507,16 +566,26 @@ public class FlowTest extends BrokerAdminUsingTestBase
             assertThat(remoteHandle, is(notNullValue()));
 
             Flow responseFlow = interaction.flowIncomingWindow(UnsignedInteger.valueOf(2))
-                                           .flowNextIncomingId(UnsignedInteger.ZERO)
-                                           .flowLinkCredit(UnsignedInteger.ZERO)
+                                           .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                                           .flowLinkCredit(UnsignedInteger.valueOf(2))
                                            .flowDrain(Boolean.TRUE)
                                            .flowHandleFromLinkHandle()
+                                           .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                           .flowNextOutgoingId(UnsignedInteger.ZERO)
                                            .flow()
-                                           .consumeResponse().getLatestResponse(Flow.class);
+                                           .receiveDelivery()
+                                           .decodeLatestDelivery()
+                                           .consumeResponse(Flow.class).getLatestResponse(Flow.class);
 
             assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
             assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
+
+            interaction.dispositionSettled(true)
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionFirstFromLatestDelivery()
+                       .dispositionState(new Accepted())
+                       .disposition()
+                       .sync();
         }
-        assertThat(Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 }

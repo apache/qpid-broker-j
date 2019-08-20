@@ -46,8 +46,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -104,6 +102,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
                        .transferSettled(Boolean.TRUE)
                        .transferDeliveryTag(_deliveryTag)
@@ -139,12 +138,13 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferSettled(Boolean.TRUE)
                        .transferDeliveryTag(_deliveryTag)
                        .transfer();
 
-            Detach detach = interaction.consumeResponse().getLatestResponse(Detach.class);
+            Detach detach = interaction.consumeResponse(Detach.class).getLatestResponse(Detach.class);
             Error error = detach.getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
@@ -179,6 +179,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
                        .transfer()
@@ -226,6 +227,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
                        .transfer();
@@ -262,6 +264,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
                        .transferDeliveryTag(_deliveryTag)
@@ -270,6 +273,8 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transfer()
 
                        .txnDischarge(txnState, false);
+
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
@@ -295,6 +300,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
                        .transferDeliveryTag(_deliveryTag)
@@ -313,6 +319,8 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(receivedTxnState.getOutcome(), is(instanceOf(Accepted.class)));
 
             interaction.txnDischarge(txnState, false);
+
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
@@ -339,6 +347,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
@@ -362,6 +371,8 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(rejectedError.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
 
             interaction.txnDischarge(txnState, false);
+
+            assertThat(txnState.getDeliveryState(), is(instanceOf(Accepted.class)));
         }
     }
 
@@ -385,6 +396,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryId(UnsignedInteger.valueOf(1))
@@ -400,23 +412,11 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(senderLinkDetachError.getInfo(), is(notNullValue()));
             assertThat(senderLinkDetachError.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
 
-            final Discharge discharge = new Discharge();
-            discharge.setTxnId(txnState.getCurrentTransactionId());
-            discharge.setFail(false);
+            interaction.txnDischarge(txnState, false);
 
-            interaction.transferHandle(txnState.getHandle())
-                       .transferSettled(Boolean.FALSE)
-                       .transferDeliveryId(UnsignedInteger.valueOf(2))
-                       .transferDeliveryTag(new Binary(("transaction-" + 2).getBytes(StandardCharsets.UTF_8)))
-                       .transferPayloadData(discharge).transfer();
-
-            Disposition dischargeTransactionDisposition =
-                    getDispositionForDeliveryId(interaction, UnsignedInteger.valueOf(2));
-
-            assertThat(dischargeTransactionDisposition.getSettled(), is(equalTo(true)));
-            assertThat(dischargeTransactionDisposition.getState(), is(instanceOf(Rejected.class)));
-
-            Rejected rejected = (Rejected) dischargeTransactionDisposition.getState();
+            DeliveryState txnDischargeDeliveryState = txnState.getDeliveryState();
+            assertThat(txnDischargeDeliveryState, is(instanceOf(Rejected.class)));
+            Rejected rejected = (Rejected) txnDischargeDeliveryState;
             Error error = rejected.getError();
 
             assertThat(error, is(notNullValue()));
@@ -468,30 +468,20 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalState(txnState.getCurrentTransactionId())
                        .transferSettled(Boolean.TRUE)
-                       .transferDeliveryId(UnsignedInteger.valueOf(1))
                        .transfer();
 
-            final Discharge discharge = new Discharge();
-            discharge.setTxnId(txnState.getCurrentTransactionId());
-            discharge.setFail(false);
-            interaction.transferHandle(txnState.getHandle())
-                       .transferDeliveryId(UnsignedInteger.valueOf(2))
-                       .transferSettled(Boolean.FALSE)
-                       .transferDeliveryTag(new Binary(("transaction-" + 2).getBytes(StandardCharsets.UTF_8)))
-                       .transferPayloadData(discharge).transfer();
+            interaction.txnDischarge(txnState, false);
 
-            Disposition dischargeTransactionDisposition =
-                    getDispositionForDeliveryId(interaction, UnsignedInteger.valueOf(2));
+            DeliveryState txDischargeDeliveryState = txnState.getDeliveryState();
+            assertThat(txDischargeDeliveryState, is(instanceOf(Rejected.class)));
 
-            assertThat(dischargeTransactionDisposition.getSettled(), is(equalTo(true)));
-            assertThat(dischargeTransactionDisposition.getState(), is(instanceOf(Rejected.class)));
-
-            Rejected rejected = (Rejected) dischargeTransactionDisposition.getState();
+            Rejected rejected = (Rejected) txDischargeDeliveryState;
             Error error = rejected.getError();
 
             assertThat(error, is(notNullValue()));
@@ -536,14 +526,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .attachRole(Role.SENDER)
-                       .attachName("testTransactionCoordinator-" + txnState.getHandle())
-                       .attachHandle(txnState.getHandle())
-                       .attachInitialDeliveryCount(UnsignedInteger.ZERO)
-                       .attachTarget(new Coordinator())
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
-                       .attach().consumeResponse(Attach.class)
-                       .consumeResponse(Flow.class)
+                       .txnAttachCoordinatorLink(txnState, Accepted.ACCEPTED_SYMBOL)
                        .txnDeclare(txnState)
 
                        .attachRole(Role.SENDER)
@@ -554,22 +537,14 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
+                       .transferDeliveryId()
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalState(txnState.getCurrentTransactionId())
                        .transferSettled(Boolean.TRUE)
-                       .transfer();
-
-            final Discharge discharge = new Discharge();
-            discharge.setTxnId(txnState.getCurrentTransactionId());
-            discharge.setFail(false);
-
-            interaction.transferHandle(txnState.getHandle())
-                       .transferSettled(Boolean.FALSE)
-                       .transferDeliveryId(UnsignedInteger.valueOf(4))
-                       .transferDeliveryTag(new Binary(("transaction-" + 4).getBytes(StandardCharsets.UTF_8)))
-                       .transferPayloadData(discharge).transfer();
+                       .transfer()
+                       .txnSendDischarge(txnState, false);
 
             Detach transactionCoordinatorDetach = interaction.consumeResponse().getLatestResponse(Detach.class);
             Error transactionCoordinatorDetachError = transactionCoordinatorDetach.getError();

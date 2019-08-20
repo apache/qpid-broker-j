@@ -49,6 +49,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -229,9 +230,11 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             {
                 payload.dispose();
             }
-            Response<?> latestResponse = interaction.consumeResponse(new Class<?>[] {null}).getLatestResponse();
-            assertThat(latestResponse, is(nullValue()));
+            interaction.consumeResponse(null, Flow.class);
         }
+        String secondMessage = getTestName() + "_2";
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, secondMessage);
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(secondMessage)));
     }
 
     @Test
@@ -387,7 +390,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                 payload.dispose();
             }
 
-            interaction.consumeResponse(Detach.class, End.class, Close.class);
+            interaction.consumeResponse(Detach.class, End.class, Close.class, ChannelClosedResponse.class);
         }
     }
 }
