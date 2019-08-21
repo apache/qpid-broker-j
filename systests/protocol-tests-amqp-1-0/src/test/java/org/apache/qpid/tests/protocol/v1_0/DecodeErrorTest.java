@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,13 +58,11 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
-import org.apache.qpid.tests.utils.BrokerSpecific;
 
 public class DecodeErrorTest extends BrokerAdminUsingTestBase
 {
@@ -82,28 +79,25 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "3.2",
             description = "Altogether a message consists of the following sections: Zero or one header,"
                           + " Zero or one delivery-annotations, [...]")
-    @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
     public void illegalMessage() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final Attach attach = interaction.negotiateProtocol()
-                                             .consumeResponse()
-                                             .open()
-                                             .consumeResponse(Open.class)
-                                             .begin()
-                                             .consumeResponse(Begin.class)
-                                             .attachRole(Role.SENDER)
-                                             .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                             .attachRcvSettleMode(ReceiverSettleMode.SECOND)
-                                             .attach()
-                                             .consumeResponse(Attach.class)
-                                             .getLatestResponse(Attach.class);
-            assumeThat(attach.getRcvSettleMode(), is(equalTo(ReceiverSettleMode.SECOND)));
-
-            final Flow flow = interaction.consumeResponse(Flow.class).getLatestResponse(Flow.class);
-            assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ZERO)));
+            interaction.negotiateProtocol()
+                       .consumeResponse()
+                       .open()
+                       .consumeResponse(Open.class)
+                       .begin()
+                       .consumeResponse(Begin.class)
+                       .attachRole(Role.SENDER)
+                       .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                       .attach()
+                       .consumeResponse(Attach.class)
+                       .consumeResponse(Flow.class)
+                       .assertLatestResponse(Flow.class,
+                                             flow -> assumeThat(flow.getLinkCredit(),
+                                                                is(greaterThan(UnsignedInteger.ZERO))));
 
             final List<QpidByteBuffer> payloads = buildInvalidMessage();
             try
