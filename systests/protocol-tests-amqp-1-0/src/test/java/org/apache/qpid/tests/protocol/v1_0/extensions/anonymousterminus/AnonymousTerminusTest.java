@@ -58,6 +58,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -139,7 +140,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Flow.class)
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
-                       .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferPayload(generateMessagePayloadToDestination(getNonExistingDestinationName()))
                        .transferSettled(Boolean.TRUE)
                        .transferDeliveryTag(_deliveryTag)
                        .transfer();
@@ -180,7 +181,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Flow.class)
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
-                       .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferPayload(generateMessagePayloadToDestination(getNonExistingDestinationName()))
                        .transferDeliveryTag(_deliveryTag)
                        .transfer()
                        .consumeResponse();
@@ -228,7 +229,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Flow.class)
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
-                       .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferPayload(generateMessagePayloadToDestination(getNonExistingDestinationName()))
                        .transferDeliveryTag(_deliveryTag)
                        .transfer();
 
@@ -344,7 +345,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
-                       .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferPayload(generateMessagePayloadToDestination(getNonExistingDestinationName()))
                        .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.FALSE)
@@ -392,7 +393,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
-                       .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferPayload(generateMessagePayloadToDestination(getNonExistingDestinationName()))
                        .transferDeliveryId(UnsignedInteger.valueOf(1))
                        .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalStateFromCurrentTransaction()
@@ -463,7 +464,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
-                       .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferPayload(generateMessagePayloadToDestination(getNonExistingDestinationName()))
                        .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.TRUE)
@@ -530,7 +531,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                        .transferDeliveryId()
                        .transferHandle(linkHandle)
-                       .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferPayload(generateMessagePayloadToDestination(getNonExistingDestinationName()))
                        .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.TRUE)
@@ -541,6 +542,11 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(transactionCoordinatorDetachError, is(notNullValue()));
             assertThat(transactionCoordinatorDetachError.getCondition(), is(equalTo(TransactionError.TRANSACTION_ROLLBACK)));
         }
+    }
+
+    private String getNonExistingDestinationName()
+    {
+        return String.format("%sNonExisting%s", getTestName(), new StringUtil().randomAlphaNumericString(10));
     }
 
     private Disposition getDispositionForDeliveryId(final Interaction interaction,
