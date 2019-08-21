@@ -64,6 +64,7 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.BrokerSpecific;
 import org.apache.qpid.tests.utils.ConfigItem;
 
+@BrokerSpecific(kind = KIND_BROKER_J)
 @ConfigItem(name = "qpid.tests.mms.messagestore.persistence", value = "false", jvm = true)
 public class FilterTest extends BrokerAdminUsingTestBase
 {
@@ -78,7 +79,6 @@ public class FilterTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @BrokerSpecific(kind = KIND_BROKER_J)
     @SpecificationTest(section = "3.5.1", description = "A source can restrict the messages transferred from a source by specifying a filter.")
     public void selectorFilter() throws Exception
     {
