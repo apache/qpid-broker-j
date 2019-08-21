@@ -21,9 +21,6 @@
 package org.apache.qpid.tests.protocol.v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.util.stream.IntStream;
@@ -36,6 +33,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
@@ -83,6 +81,7 @@ public class Utils
                        .open().consumeResponse()
                        .begin().consumeResponse()
                        .attachRole(Role.RECEIVER)
+                       .attachName("utilsReceiverLink")
                        .attachSourceAddress(queueName)
                        .attach().consumeResponse()
                        .flowIncomingWindow(UnsignedInteger.ONE)
@@ -100,7 +99,10 @@ public class Utils
                        .dispositionLast(interaction.getLatestDeliveryId())
                        .dispositionState(new Accepted())
                        .disposition()
-                       .sync();
+                       .detachClose(true)
+                       .detach().consumeResponse(Detach.class)
+                       .end().consumeResponse(End.class)
+                       .doCloseConnection();
             return interaction.getDecodedLatestDelivery();
         }
     }
@@ -155,21 +157,15 @@ public class Utils
             try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
             {
                 final Interaction interaction = transport.newInteraction();
-                final Flow flow = interaction.negotiateProtocol().consumeResponse()
-                                             .open().consumeResponse(Open.class)
-                                             .begin().consumeResponse(Begin.class)
-                                             .attachRole(Role.SENDER)
-                                             .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                             .attachSndSettleMode(SenderSettleMode.SETTLED)
-                                             .attach().consumeResponse(Attach.class)
-                                             .consumeResponse(Flow.class)
-                                             .getLatestResponse(Flow.class);
-
-                assumeThat(String.format("insufficient credit (%d) to publish %d messages",
-                                         flow.getLinkCredit().intValue(),
-                                         message.length),
-                           flow.getLinkCredit().intValue(),
-                           is(greaterThan(message.length)));
+                interaction.negotiateProtocol().consumeResponse()
+                           .open().consumeResponse(Open.class)
+                           .begin().consumeResponse(Begin.class)
+                           .attachName("utilsSenderLink")
+                           .attachRole(Role.SENDER)
+                           .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                           .attachSndSettleMode(SenderSettleMode.SETTLED)
+                           .attach().consumeResponse(Attach.class)
+                           .consumeResponse(Flow.class);
 
                 int tag = 0;
                 for (String payload : message)
@@ -182,7 +178,10 @@ public class Utils
                                .sync();
                     tag++;
                 }
-                interaction.doCloseConnection();
+                interaction.detachClose(true)
+                    .detach().consumeResponse(Detach.class)
+                    .end().consumeResponse(End.class)
+                    .doCloseConnection();
             }
         }
     }
