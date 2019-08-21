@@ -20,7 +20,10 @@
 package org.apache.qpid.tests.protocol.v1_0.transport;
 
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -61,6 +64,7 @@ public class ProtocolHeaderTest extends BrokerAdminUsingTestBase
                           + "(and version) and then close the socket.")
     public void unacceptableProtocolIdSent_SaslAcceptable() throws Exception
     {
+        assumeThat(getBrokerAdmin().isSASLSupported(), is(equalTo(true)));
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
