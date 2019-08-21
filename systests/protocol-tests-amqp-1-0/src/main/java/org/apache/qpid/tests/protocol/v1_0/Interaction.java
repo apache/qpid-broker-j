@@ -650,8 +650,13 @@ public class Interaction extends AbstractInteraction<Interaction>
 
     public Interaction flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
     {
-        final Begin begin = (Begin) _latestResponses.get(Begin.class);
+        final Begin begin = getCachedResponse(Begin.class);
         return flowNextIncomingId(begin.getNextOutgoingId().add(UnsignedInteger.valueOf(_receivedDeliveryCount.get())));
+    }
+
+    <T extends FrameBody> T getCachedResponse(final Class<T> responseClass)
+    {
+        return (T)_latestResponses.get(responseClass);
     }
 
     public Interaction flowOutgoingWindow(final UnsignedInteger outgoingWindow)

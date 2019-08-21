@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,20 +21,42 @@
 
 package org.apache.qpid.tests.utils;
 
-import java.util.Map;
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.fail;
 
-import org.apache.qpid.server.plugin.QpidServiceLoader;
+import org.junit.Before;
+import org.junit.Test;
 
-public class BrokerAdminFactory
+import org.apache.qpid.test.utils.UnitTestBase;
+
+public class BrokerAdminFactoryTest extends UnitTestBase
 {
-    BrokerAdmin createInstance(String type)
+    private BrokerAdminFactory _factory;
+
+    @Before
+    public void setUp()
     {
-        Map<String, BrokerAdmin> adminFacades = new QpidServiceLoader().getInstancesByType(BrokerAdmin.class);
-        BrokerAdmin brokerAdmin = adminFacades.get(type);
-        if (brokerAdmin == null)
+        _factory = new BrokerAdminFactory();
+    }
+
+    @Test
+    public void createInstanceForExistingType()
+    {
+        final BrokerAdmin admin = _factory.createInstance(EmbeddedBrokerPerClassAdminImpl.TYPE);
+        assertTrue(admin instanceof EmbeddedBrokerPerClassAdminImpl);
+    }
+
+    @Test
+    public void createInstanceForNonExistingType()
+    {
+        try
         {
-            throw new BrokerAdminException(String.format("Could not find BrokerAdmin implementation of type '%s'", type));
+            _factory.createInstance("foo");
+            fail("Exception is expected");
         }
-        return brokerAdmin;
+        catch (BrokerAdminException e)
+        {
+            // pass
+        }
     }
 }

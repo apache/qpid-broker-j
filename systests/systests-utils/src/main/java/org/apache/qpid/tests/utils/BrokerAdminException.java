@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,20 +21,15 @@
 
 package org.apache.qpid.tests.utils;
 
-import java.util.Map;
-
-import org.apache.qpid.server.plugin.QpidServiceLoader;
-
-public class BrokerAdminFactory
+public class BrokerAdminException extends RuntimeException
 {
-    BrokerAdmin createInstance(String type)
+    public BrokerAdminException(final String message)
     {
-        Map<String, BrokerAdmin> adminFacades = new QpidServiceLoader().getInstancesByType(BrokerAdmin.class);
-        BrokerAdmin brokerAdmin = adminFacades.get(type);
-        if (brokerAdmin == null)
-        {
-            throw new BrokerAdminException(String.format("Could not find BrokerAdmin implementation of type '%s'", type));
-        }
-        return brokerAdmin;
+        super(message);
+    }
+
+    public BrokerAdminException(final String message, final Throwable cause)
+    {
+        super(message, cause);
     }
 }

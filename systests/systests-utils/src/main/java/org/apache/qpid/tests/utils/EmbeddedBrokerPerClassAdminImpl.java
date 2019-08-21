@@ -118,7 +118,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         }
         catch (Exception e)
         {
-            throw new RuntimeException("Failed to start broker for test class", e);
+            throw new BrokerAdminException("Failed to start broker for test class", e);
         }
     }
 

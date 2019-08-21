@@ -1,4 +1,4 @@
-package org.apache.qpid.tests.utils;/*
+/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,6 +18,8 @@ package org.apache.qpid.tests.utils;/*
  * under the License.
  *
  */
+
+package org.apache.qpid.tests.utils;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

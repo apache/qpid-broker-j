@@ -23,6 +23,8 @@ package org.apache.qpid.tests.utils;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -38,6 +40,19 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     private static final String EXTERNAL_BROKER = "EXTERNAL_BROKER";
     private static final String KIND_BROKER_UNKNOWN = "unknown";
 
+    private final QueueAdmin _queueAdmin;
+    private final Set<String> _createdQueues;
+
+    public ExternalQpidBrokerAdminImpl()
+    {
+       this(new QueueAdminFactory().create());
+    }
+
+    ExternalQpidBrokerAdminImpl(QueueAdmin queueAdmin)
+    {
+        _queueAdmin = queueAdmin;
+        _createdQueues = new HashSet<>();
+    }
     @Override
     public void beforeTestClass(final Class testClass)
     {
@@ -54,6 +69,8 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     public void afterTestMethod(final Class testClass, final Method method)
     {
         LOGGER.debug("afterTestMethod");
+        new HashSet<>(_createdQueues).forEach(this::deleteQueue);
+        _createdQueues.clear();
     }
 
     @Override
@@ -86,19 +103,21 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     @Override
     public void createQueue(final String queueName)
     {
-        LOGGER.debug(String.format("creation of queue '%s' requested", queueName));
+        _queueAdmin.createQueue(this, queueName);
+        _createdQueues.add(queueName);
     }
 
     @Override
     public void deleteQueue(final String queueName)
     {
-        LOGGER.debug(String.format("deletion of queue '%s' requested", queueName));
+        _queueAdmin.deleteQueue(this, queueName);
+        _createdQueues.remove(queueName);
     }
 
     @Override
     public void putMessageOnQueue(final String queueName, final String... messages)
     {
-        LOGGER.debug(String.format("puting of %d messages on queue '%s' requested", messages.length, queueName));
+        _queueAdmin.putMessageOnQueue(this, queueName, messages);
     }
 
     @Override
@@ -177,13 +196,13 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     @Override
     public boolean isPutMessageOnQueueSupported()
     {
-        return false;
+        return _queueAdmin.isPutMessageOnQueueSupported();
     }
 
     @Override
     public boolean isDeleteQueueSupported()
     {
-        return false;
+        return _queueAdmin.isDeleteQueueSupported();
     }
 
 }
