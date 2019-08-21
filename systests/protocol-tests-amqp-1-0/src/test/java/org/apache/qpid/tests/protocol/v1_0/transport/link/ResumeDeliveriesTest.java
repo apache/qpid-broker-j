@@ -472,6 +472,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
                                                      .flowLinkCredit(UnsignedInteger.ONE)
                                                      .flowHandleFromLinkHandle()
+                                                     .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flow()
                                                      .receiveDelivery()
                                                      .decodeLatestDelivery();
@@ -495,6 +496,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             Attach attach = interaction.getLatestResponse(Attach.class);
 
             Map<Binary, DeliveryState> unsettled = attach.getUnsettled();
+            assumeThat(unsettled, notNullValue());
             assertThat(unsettled.entrySet(), empty());
         }
     }
