@@ -75,6 +75,7 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
                                                      .flowLinkCredit(UnsignedInteger.ONE)
                                                      .flowHandleFromLinkHandle()
+                                                     .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                      .flow()
                                                      .receiveDelivery()
 
@@ -92,7 +93,7 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
                        .disposition()
                        .flowIncomingWindow(UnsignedInteger.valueOf(2))
                        .flowLinkCredit(UnsignedInteger.valueOf(2))
-                       .flowNextIncomingIdFromLatestDelivery()
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flow()
                        .receiveDelivery()
                        .decodeLatestDelivery();
