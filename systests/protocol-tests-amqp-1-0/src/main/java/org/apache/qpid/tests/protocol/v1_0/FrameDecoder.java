@@ -210,6 +210,7 @@ public class FrameDecoder implements InputDecoder
         public void handleError(final Error parsingError)
         {
             LOGGER.error("Unexpected error {}", parsingError);
+            _responseQueue.add(new FrameDecodeError(parsingError));
         }
 
         @Override
@@ -287,6 +288,22 @@ public class FrameDecoder implements InputDecoder
         public void receiveSaslOutcome(final SaslOutcome saslOutcome)
         {
 
+        }
+    }
+
+    private static class FrameDecodeError implements Response<Error>
+    {
+        private final Error _error;
+
+        FrameDecodeError(final Error error)
+        {
+            _error = error;
+        }
+
+        @Override
+        public Error getBody()
+        {
+            return _error;
         }
     }
 }
