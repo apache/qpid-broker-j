@@ -31,7 +31,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.oneOf;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
@@ -72,15 +71,12 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     private static final Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
     private static final Symbol DELIVERY_TAG = Symbol.valueOf("delivery-tag");
 
-    private InetSocketAddress _brokerAddress;
     private Binary _deliveryTag;
 
     @Before
     public void setUp()
     {
-        final BrokerAdmin brokerAdmin = getBrokerAdmin();
-        brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        _brokerAddress = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         _deliveryTag = new Binary("testTag".getBytes(StandardCharsets.UTF_8));
     }
 
@@ -91,7 +87,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     @Test
     public void transferPreSettledToKnownDestination() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
 
@@ -109,7 +105,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transfer()
                        .detachEndCloseUnconditionally();
 
-            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME),
+            assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME),
                        is(equalTo(getTestName())));
         }
     }
@@ -127,7 +123,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     @Test
     public void transferPreSettledToUnknownDestination() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
 
@@ -167,7 +163,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     @Test
     public void transferUnsettledToUnknownDestinationWhenRejectedOutcomeSupportedBySource() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
 
@@ -214,7 +210,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     @Test
     public void transferUnsettledToUnknownDestinationWhenRejectedOutcomeNotSupportedBySource() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
 
@@ -247,7 +243,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     @Test
     public void transferPreSettledInTransactionToKnownDestination() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
@@ -273,7 +269,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
-            Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+            Object receivedMessage = Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(getTestName())));
         }
     }
@@ -281,7 +277,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     @Test
     public void transferUnsettledInTransactionToKnownDestination() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
@@ -318,7 +314,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
-            Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+            Object receivedMessage = Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(getTestName())));
         }
     }
@@ -326,7 +322,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     @Test
     public void transferUnsettledInTransactionToUnknownDestinationWhenRejectedOutcomeSupportedBySource() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
@@ -374,7 +370,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     @Test
     public void transferUnsettledInTransactionToUnknownDestinationWhenRejectedOutcomeNotSupportedBySource() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
@@ -442,7 +438,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     public void transferPreSettledInTransactionToUnknownDestinationWhenRejectOutcomeSupportedByTxController()
             throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
             final Interaction interaction =
@@ -508,7 +504,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     public void transferPreSettledInTransactionToUnknownDestinationWhenRejectOutcomeNotSupportedByTxController()
             throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
             final Interaction interaction =

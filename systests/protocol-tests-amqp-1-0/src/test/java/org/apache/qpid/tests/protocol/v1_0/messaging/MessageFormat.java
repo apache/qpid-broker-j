@@ -24,8 +24,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,12 +42,10 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class MessageFormat extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
@@ -61,7 +57,7 @@ public class MessageFormat extends BrokerAdminUsingTestBase
                           + "continuation transfer differs from the message-format on the first transfer of a delivery.")
     public void differentMessageFormatOnSameDeliveryFails() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 2);
 
@@ -94,6 +90,6 @@ public class MessageFormat extends BrokerAdminUsingTestBase
 
         final String testMessage = getTestName() + "_2";
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, testMessage);
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(testMessage)));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(testMessage)));
     }
 }

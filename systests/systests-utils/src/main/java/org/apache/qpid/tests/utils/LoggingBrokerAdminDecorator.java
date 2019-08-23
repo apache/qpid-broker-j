@@ -127,6 +127,12 @@ public class LoggingBrokerAdminDecorator implements BrokerAdmin
     }
 
     @Override
+    public boolean isAnonymousSupported()
+    {
+        return _delegate.isAnonymousSupported();
+    }
+
+    @Override
     public boolean isSASLSupported()
     {
         return _delegate.isSASLSupported();

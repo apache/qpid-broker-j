@@ -22,7 +22,6 @@ package org.apache.qpid.tests.protocol.v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.net.InetSocketAddress;
 import java.util.stream.IntStream;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -40,10 +39,9 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class Utils
 {
-    public static boolean doesNodeExist(final InetSocketAddress brokerAddress,
-                                        final String nodeAddress) throws Exception
+    public static boolean doesNodeExist(final BrokerAdmin brokerAdmin, final String nodeAddress) throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(brokerAdmin).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final Attach attachValidationResponse = interaction.negotiateOpen()
@@ -68,10 +66,9 @@ public class Utils
         }
     }
 
-    public static Object receiveMessage(final InetSocketAddress brokerAddress,
-                                        final String queueName) throws Exception
+    public static Object receiveMessage(final BrokerAdmin brokerAdmin, final String queueName) throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(brokerAdmin).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -146,8 +143,7 @@ public class Utils
         }
         else
         {
-            final InetSocketAddress brokerAddress = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-            try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
+            try (FrameTransport transport = new FrameTransport(brokerAdmin).connect())
             {
                 final Interaction interaction = transport.newInteraction();
                 interaction.negotiateOpen()

@@ -30,8 +30,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -61,19 +59,16 @@ import org.apache.qpid.tests.utils.BrokerSpecific;
 public class QueueDeletionTest extends BrokerAdminUsingTestBase
 {
 
-    private InetSocketAddress _brokerAddress;
-
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
     @Test
     public void senderDetachedOnQueueDelete() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction();
             final Attach responseAttach = interaction.negotiateOpen()
@@ -98,7 +93,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
     @Test
     public void receiverDetachedOnQueueDelete() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction();
             final Attach responseAttach = interaction.negotiateOpen()
@@ -123,7 +118,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
     @Test
     public void transactedSenderDetachedOnQueueDeletionWhenTransactionInProgress() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
@@ -176,7 +171,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
                                 BrokerAdmin.TEST_QUEUE_NAME,
                                 getTestName() + 1,
                                 getTestName() + 2);
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             Attach attach = interaction.negotiateOpen()

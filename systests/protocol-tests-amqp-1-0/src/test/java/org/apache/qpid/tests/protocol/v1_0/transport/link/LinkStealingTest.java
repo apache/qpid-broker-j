@@ -27,8 +27,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -50,6 +48,7 @@ import org.apache.qpid.tests.utils.BrokerSpecific;
 
 public class LinkStealingTest extends BrokerAdminUsingTestBase
 {
+
     @Test
     @SpecificationTest(section = "2.6.1. Naming a link",
                        description = "Consequently, a link can only be active in one connection at a time."
@@ -61,8 +60,7 @@ public class LinkStealingTest extends BrokerAdminUsingTestBase
     @Ignore("QPID-8328: Broker erroneously ends the session with internal error")
     public void subsequentAttachOnTheSameSession() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final Attach responseAttach = interaction
@@ -99,8 +97,7 @@ public class LinkStealingTest extends BrokerAdminUsingTestBase
     public void subsequentAttachOnDifferentSessions() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final String linkName = "test";

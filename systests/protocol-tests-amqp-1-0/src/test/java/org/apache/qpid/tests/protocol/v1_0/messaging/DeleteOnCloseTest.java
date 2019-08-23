@@ -26,12 +26,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.Session_1_0;
@@ -44,7 +42,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -55,13 +52,6 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "3.5.10",
@@ -69,7 +59,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
                           + "creation ceases to exist.")
     public void deleteOnCloseOnSource() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Source source = new Source();
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
@@ -87,14 +77,14 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
 
             try
             {
-                assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+                assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(true));
             }
             finally
             {
                 interaction.detachClose(true).detach().consumeResponse().getLatestResponse(Detach.class);
             }
 
-            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
+            assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(false));
         }
     }
 
@@ -104,7 +94,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
                           + "creation ceases to exist.")
     public void deleteOnCloseOnTarget() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Target target = new Target();
             target.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
@@ -120,19 +110,19 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             assertThat(attachResponse.getTarget(), is(notNullValue()));
             final String newTempQueueAddress = ((Target) attachResponse.getTarget()).getAddress();
 
-            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+            assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(true));
 
             interaction.consumeResponse().getLatestResponse(Flow.class);
             try
             {
-                assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+                assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(true));
             }
             finally
             {
                 interaction.detachClose(true).detach().consumeResponse().getLatestResponse(Detach.class);
             }
 
-            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
+            assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(false));
         }
     }
 
@@ -142,7 +132,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
                           + "creation ceases to exist.")
     public void doesNotDeleteOnDetach() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Source source = new Source();
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
@@ -160,14 +150,14 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
 
             try
             {
-                assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+                assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(true));
             }
             finally
             {
                 interaction.detach().consumeResponse().getLatestResponse(Detach.class);
             }
 
-            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+            assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(true));
 
             interaction.attach()
                        .consumeResponse(Attach.class)
@@ -175,7 +165,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
                        .detach()
                        .consumeResponse()
                        .getLatestResponse(Detach.class);
-            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
+            assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(false));
         }
     }
 
@@ -185,7 +175,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
         assumeThat(getBrokerAdmin().supportsRestart(), is(true));
 
         final String newTempQueueAddress;
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Source source = new Source();
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
@@ -202,14 +192,12 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             assertThat(attachResponse.getSource(), is(notNullValue()));
             newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 
-            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+            assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(true));
         }
 
         final ListenableFuture<Void> restart = getBrokerAdmin().restart();
         restart.get(BrokerAdmin.RESTART_TIMEOUT, TimeUnit.MILLISECONDS);
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-
-        assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+        assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(true));
     }
 
     private void assumeAttach(final Response<?> response)

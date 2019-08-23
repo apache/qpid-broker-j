@@ -25,8 +25,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Test;
 
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -54,8 +52,7 @@ public class IdleTimeoutTest extends BrokerAdminUsingTestBase
                           + "gracefully close the connection using a close frame with an error explaining why.")
     public void brokerClosesIdleConnection() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction();
             Open responseOpen = interaction
@@ -74,8 +71,7 @@ public class IdleTimeoutTest extends BrokerAdminUsingTestBase
                           + "nothing to send, it MAY send an empty frame.")
     public void idleLine() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction();
             Open responseOpen = interaction

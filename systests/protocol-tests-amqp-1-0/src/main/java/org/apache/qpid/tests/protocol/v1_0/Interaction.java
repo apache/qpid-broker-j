@@ -20,6 +20,8 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
+import static org.apache.qpid.server.security.auth.manager.AbstractScramAuthenticationManager.PLAIN;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -58,7 +61,10 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
+import org.apache.qpid.server.protocol.v1_0.type.security.SaslCode;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
+import org.apache.qpid.server.protocol.v1_0.type.security.SaslMechanisms;
+import org.apache.qpid.server.protocol.v1_0.type.security.SaslOutcome;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslResponse;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
@@ -77,11 +83,16 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
+import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.tests.protocol.AbstractInteraction;
 import org.apache.qpid.tests.protocol.Response;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class Interaction extends AbstractInteraction<Interaction>
 {
+    private static final byte[] SASL_AMQP_HEADER_BYTES = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
+
     private static final FrameBody EMPTY_FRAME = (channel, conn) -> {
         throw new UnsupportedOperationException();
     };
@@ -102,6 +113,8 @@ public class Interaction extends AbstractInteraction<Interaction>
     private final Disposition _disposition;
     private final SaslInit _saslInit;
     private final SaslResponse _saslResponse;
+    private final BrokerAdmin _brokerAdmin;
+    private final BrokerAdmin.PortType _portType;
     private byte[] _protocolHeader;
     private UnsignedShort _connectionChannel;
     private UnsignedShort _sessionChannel;
@@ -115,9 +128,11 @@ public class Interaction extends AbstractInteraction<Interaction>
     private AtomicLong _coordinatorCredits = new AtomicLong();
     private InteractionTransactionalState _transactionalState;
 
-    Interaction(final FrameTransport frameTransport)
+    Interaction(final FrameTransport frameTransport, BrokerAdmin brokerAdmin, BrokerAdmin.PortType portType)
     {
         super(frameTransport);
+        _brokerAdmin = brokerAdmin;
+        _portType = portType;
         final UnsignedInteger defaultLinkHandle = UnsignedInteger.ZERO;
 
         _protocolHeader = frameTransport.getProtocolHeader();
@@ -1335,7 +1350,79 @@ public class Interaction extends AbstractInteraction<Interaction>
 
     public Interaction sendOpen() throws Exception
     {
-        negotiateProtocol().consumeResponse().open();
+        if ((_portType == BrokerAdmin.PortType.ANONYMOUS_AMQP || _portType == BrokerAdmin.PortType.ANONYMOUS_AMQPWS)
+            && _brokerAdmin.isAnonymousSupported())
+        {
+            sendProtocolAndOpen();
+        }
+        else if (_portType == BrokerAdmin.PortType.AMQP
+                 && _brokerAdmin.isSASLSupported()
+                 && _brokerAdmin.isSASLMechanismSupported(PLAIN))
+        {
+            sendSasl();
+            protocolHeader(getTransport().getProtocolHeader()).sendProtocolAndOpen();
+        }
+        else
+        {
+            throw new IllegalStateException("Only ANONYMOUS or PLAIN authentication currently supported by the tests");
+        }
         return this;
+    }
+
+    private void sendProtocolAndOpen() throws Exception
+    {
+        negotiateProtocol().consumeResponse().open();
+    }
+
+    private void sendSasl() throws Exception
+    {
+        final byte[] protocolResponse = protocolHeader(SASL_AMQP_HEADER_BYTES)
+                .negotiateProtocol().consumeResponse()
+                .getLatestResponse(byte[].class);
+        if (!Arrays.equals(SASL_AMQP_HEADER_BYTES, protocolResponse))
+        {
+            throw new IllegalStateException(String.format(
+                    "Unexpected protocol '%s' is reported from broker supporting SASL",
+                    StringUtil.toHex(protocolResponse)));
+        }
+
+        final SaslMechanisms mechanisms = consumeResponse().getLatestResponse(SaslMechanisms.class);
+        final Symbol[] supportedMechanisms = mechanisms.getSaslServerMechanisms();
+        if (Arrays.stream(supportedMechanisms).noneMatch(m -> m.toString().equalsIgnoreCase(PLAIN)))
+        {
+            if (Arrays.stream(supportedMechanisms)
+                      .noneMatch(m -> m.toString().equalsIgnoreCase(AnonymousAuthenticationManager.MECHANISM_NAME)))
+            {
+                throw new IllegalStateException(String.format(
+                        "PLAIN or ANONYMOUS SASL mechanism is not listed among supported '%s'",
+                        Arrays.stream(supportedMechanisms)
+                              .map(String::valueOf)
+                              .collect(Collectors.joining(","))));
+            }
+            else
+            {
+                authenticate(AnonymousAuthenticationManager.MECHANISM_NAME, new byte[0]);
+            }
+        }
+        else
+        {
+            byte[] initialResponseBytes =
+                    String.format("\0%s\0%s", _brokerAdmin.getValidUsername(), _brokerAdmin.getValidPassword())
+                          .getBytes(StandardCharsets.US_ASCII);
+            authenticate(PLAIN, initialResponseBytes);
+        }
+    }
+
+    private void authenticate(final String mechanism, final byte[] initialResponseBytes) throws Exception
+    {
+        final SaslOutcome saslOutcome = saslMechanism(Symbol.getSymbol(mechanism))
+                .saslInitialResponse(new Binary(initialResponseBytes))
+                .saslInit().consumeResponse()
+                .getLatestResponse(SaslOutcome.class);
+
+        if (!SaslCode.OK.equals(saslOutcome.getCode()))
+        {
+            throw new IllegalStateException("Authentication failed.");
+        }
     }
 }

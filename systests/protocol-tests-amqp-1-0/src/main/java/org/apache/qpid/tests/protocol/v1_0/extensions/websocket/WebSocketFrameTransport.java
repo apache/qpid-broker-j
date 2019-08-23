@@ -21,7 +21,6 @@
 
 package org.apache.qpid.tests.protocol.v1_0.extensions.websocket;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
@@ -48,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class WebSocketFrameTransport extends FrameTransport
 {
@@ -57,9 +57,9 @@ public class WebSocketFrameTransport extends FrameTransport
     private final WebSocketDeframingInputHandler _webSocketDeframingInputHandler = new WebSocketDeframingInputHandler();
     private final WebSocketClientHandler _webSocketClientHandler;
 
-    public WebSocketFrameTransport(final InetSocketAddress addr)
+    public WebSocketFrameTransport(final BrokerAdmin brokerAdmin)
     {
-        super(addr);
+        super(brokerAdmin, BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
         URI uri = URI.create(String.format("tcp://%s:%d/",
                                            getBrokerAddress().getHostString(),
                                            getBrokerAddress().getPort()));
@@ -98,7 +98,7 @@ public class WebSocketFrameTransport extends FrameTransport
         private boolean _splitFrames;
 
         @Override
-        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
         {
             if (msg instanceof ByteBuf)
             {

@@ -67,21 +67,17 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "qpid.tests.mms.messagestore.persistence", value = "false", jvm = true)
 public class FilterTest extends BrokerAdminUsingTestBase
 {
-    public static final String TEST_MESSAGE_CONTENT = "testContent";
-    private InetSocketAddress _brokerAddress;
-
     @Before
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
     }
 
     @Test
     @SpecificationTest(section = "3.5.1", description = "A source can restrict the messages transferred from a source by specifying a filter.")
     public void selectorFilter() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -97,7 +93,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
             {
                 QpidByteBuffer payload =
                         generateMessagePayloadWithApplicationProperties(Collections.singletonMap("index", i),
-                                                                        TEST_MESSAGE_CONTENT);
+                                                                        getTestName());
                 interaction.transferPayload(payload)
                            .transferSettled(true)
                            .transfer();
@@ -105,7 +101,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
             interaction.detachClose(true).detach().close().sync();
         }
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -125,7 +121,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
                        .flow();
 
             Object data = interaction.receiveDelivery().decodeLatestDelivery().getDecodedLatestDelivery();
-            assertThat(data, is(equalTo(TEST_MESSAGE_CONTENT)));
+            assertThat(data, is(equalTo(getTestName())));
 
             Map<String, Object> applicationProperties = interaction.getLatestDeliveryApplicationProperties();
             assertThat(applicationProperties, is(notNullValue()));
@@ -144,8 +140,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "3.5.1", description = "")
     public void unsupportedFilter() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final Map<Symbol, Filter> filters = new HashMap<>();

@@ -27,7 +27,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.oneOf;
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,13 +53,11 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "qpid.tests.mms.messagestore.persistence", value = "false", jvm = true)
 public class MultiTransferTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
     }
 
     @Test
@@ -70,7 +67,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                           + " but the last transfer frame")
     public void multiTransferMessage() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 2);
 
@@ -106,7 +103,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             assertThat(disposition.getLast(), oneOf(null, deliveryId));
             assertThat(disposition.getSettled(), is(equalTo(true)));
         }
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 
     @Test
@@ -116,7 +113,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                           + " message and can only be omitted for continuation transfers.")
     public void multiTransferMessageOmittingOptionalTagAndID() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 4);
             final UnsignedInteger deliveryId = UnsignedInteger.ZERO;
@@ -166,7 +163,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             assertThat(disposition.getSettled(), is(equalTo(true)));
             assertThat(disposition.getState(), is(instanceOf(Accepted.class)));
         }
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 
     @Test
@@ -175,7 +172,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                           + "In this case the receiver MUST discard the message data that was transferred prior to the abort.")
     public void abortMultiTransferMessage() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 2);
 
@@ -209,7 +206,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
         }
         String secondMessage = getTestName() + "_2";
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, secondMessage);
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(secondMessage)));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(secondMessage)));
     }
 
     @Test
@@ -219,7 +216,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
     {
         String messageContent1 = getTestName() + "_1";
         String messageContent2 = getTestName() + "_2";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             QpidByteBuffer[] messagePayload1 = Utils.splitPayload(messageContent1, 2);
             QpidByteBuffer[] messagePayload2 = Utils.splitPayload(messageContent2, 2);
@@ -308,8 +305,8 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             assertThat(dispositionMap.containsKey(deliverId1), is(true));
             assertThat(dispositionMap.containsKey(deliveryId2), is(true));
         }
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(messageContent1)));
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(messageContent2)));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(messageContent1)));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(messageContent2)));
     }
 
     @Test
@@ -324,7 +321,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
     {
         String messageContent1 = getTestName() + "_1";
         String messageContent2 = getTestName() + "_2";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             QpidByteBuffer[] messagePayload1 = Utils.splitPayload(messageContent1, 2);
             QpidByteBuffer[] messagePayload2 = Utils.splitPayload(messageContent2, 2);
@@ -385,6 +382,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
 
         final String controlMessage = getTestName() + "_Control";
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, controlMessage);
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(controlMessage)));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(controlMessage)));
     }
 }

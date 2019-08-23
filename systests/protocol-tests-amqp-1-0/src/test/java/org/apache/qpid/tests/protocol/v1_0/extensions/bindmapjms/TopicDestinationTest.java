@@ -32,9 +32,6 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-import java.net.InetSocketAddress;
-
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -50,7 +47,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.BrokerSpecific;
 
@@ -60,13 +56,6 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
     private static final Symbol TOPIC = Symbol.valueOf("topic");
     private static final Symbol GLOBAL = Symbol.valueOf("global");
     private static final Symbol SHARED = Symbol.valueOf("shared");
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "5.2",
@@ -77,7 +66,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
                           + " Destination Type = Topic, terminus capability (type) = topic")
     public void nonSharedVolatileSubscriptionLinkAttachDetach() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
@@ -111,7 +100,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
     @Test
     public void nonSharedDurableSubscriptionLinkAttachDetach() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
@@ -146,7 +135,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
     public void sharedGlobalVolatileSubscriptionLinkAttachDetach() throws Exception
     {
         String subscriptionName = "foo";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
@@ -204,7 +193,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
     public void sharedGlobalDurableSubscriptionLinkAttachDetach() throws Exception
     {
         String subscriptionName = "foo";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
@@ -286,7 +275,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
     public void sharedGlobalDurableSubscriptionCloseWithActiveLink() throws Exception
     {
         String subscriptionName = "foo";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);

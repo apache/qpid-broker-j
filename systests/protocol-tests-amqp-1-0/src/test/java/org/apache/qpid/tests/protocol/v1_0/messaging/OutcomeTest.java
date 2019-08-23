@@ -24,13 +24,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.hasItemInArray;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.oneOf;
 import static org.junit.Assume.assumeThat;
-
-import java.net.InetSocketAddress;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +37,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
@@ -54,13 +49,11 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class OutcomeTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
     }
 
 
@@ -73,7 +66,7 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
         String content2 = getTestName() + "_2";
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content1, content2);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction()
                                                      .negotiateOpen()
@@ -114,8 +107,8 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
             // verify that no unexpected performative is received by closing
             interaction.doCloseConnection();
         }
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content1)));
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content2)));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content1)));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content2)));
     }
 
     @Test
@@ -129,7 +122,7 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
                           + " “amqp:accepted:list”.")
     public void transferMessageWithAttachSourceHavingExplicitlySetOutcomesToAccepted() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction();
             Disposition disposition = interaction.negotiateOpen()
@@ -149,7 +142,7 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
             assertThat(disposition.getLast(), oneOf(null, UnsignedInteger.ZERO));
             assertThat(disposition.getSettled(), is(equalTo(true)));
         }
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 
 

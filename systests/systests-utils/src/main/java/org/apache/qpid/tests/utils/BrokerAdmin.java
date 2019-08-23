@@ -48,6 +48,7 @@ public interface BrokerAdmin extends Pluggable
     boolean supportsRestart();
     ListenableFuture<Void> restart();
 
+    boolean isAnonymousSupported();
     boolean isSASLSupported();
     boolean isSASLMechanismSupported(String mechanismName);
     boolean isWebSocketSupported();

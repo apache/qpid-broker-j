@@ -28,8 +28,6 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
@@ -46,18 +44,17 @@ import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class BeginTest extends BrokerAdminUsingTestBase
 {
+
     @Test
     @SpecificationTest(section = "1.3.4",
             description = "mandatory [...] a non null value for the field is always encoded.")
     public void emptyBegin() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try(FrameTransport transport = new FrameTransport(addr).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Response<?> response =  transport.newInteraction()
                                            .negotiateOpen()
@@ -82,8 +79,7 @@ public class BeginTest extends BrokerAdminUsingTestBase
                           + "and sending a begin announcing the association of the session endpoint with the outgoing channel.")
     public void successfulBegin() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final UnsignedShort channel = UnsignedShort.valueOf(37);
             Interaction interaction = transport.newInteraction();
@@ -109,8 +105,7 @@ public class BeginTest extends BrokerAdminUsingTestBase
                           + "the connection with the framing-error error-code..")
     public void channelMax() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final int ourChannelMax = 5;

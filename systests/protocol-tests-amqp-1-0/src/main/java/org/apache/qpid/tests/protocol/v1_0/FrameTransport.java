@@ -21,20 +21,26 @@ package org.apache.qpid.tests.protocol.v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.net.InetSocketAddress;
-
 import org.apache.qpid.tests.protocol.AbstractFrameTransport;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class FrameTransport extends AbstractFrameTransport<Interaction>
 {
-    public FrameTransport(final InetSocketAddress brokerAddress)
+    private final BrokerAdmin.PortType _portType;
+    private final BrokerAdmin _brokerAdmin;
+
+    public FrameTransport(final BrokerAdmin brokerAdmin)
     {
-        this(brokerAddress, false);
+        this(brokerAdmin, getPortType(brokerAdmin));
     }
 
-    public FrameTransport(final InetSocketAddress brokerAddress, boolean isSasl)
+    public FrameTransport(final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType)
     {
-        super(brokerAddress, new FrameDecoder(isSasl), new FrameEncoder());
+        super(brokerAdmin.getBrokerAddress(portType),
+              new FrameDecoder(portType == BrokerAdmin.PortType.AMQP),
+              new FrameEncoder());
+        _portType = portType;
+        _brokerAdmin = brokerAdmin;
     }
 
     @Override
@@ -52,6 +58,11 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
 
     public Interaction newInteraction()
     {
-        return new Interaction(this);
+        return new Interaction(this, _brokerAdmin, _portType);
+    }
+
+    private static BrokerAdmin.PortType getPortType(final BrokerAdmin brokerAdmin)
+    {
+        return brokerAdmin.isAnonymousSupported() ? BrokerAdmin.PortType.ANONYMOUS_AMQP : BrokerAdmin.PortType.AMQP;
     }
 }

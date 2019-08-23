@@ -29,13 +29,11 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -60,14 +58,6 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class DecodeErrorTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
-
     @Test
     @SpecificationTest(section = "3.2",
             description = "Altogether a message consists of the following sections: Zero or one header,"
@@ -75,7 +65,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
     public void illegalMessage() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -105,7 +95,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
 
         final String validMessage = getTestName() + "_2";
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, validMessage);
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(validMessage)));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(validMessage)));
     }
 
     @Test
@@ -114,7 +104,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                           + "The value of this entry MUST be of a type which provides the lifetime-policy archetype.")
     public void nodePropertiesLifetimePolicy() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
             source.setDynamic(Boolean.TRUE);
@@ -138,7 +128,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                           + "The value of this entry MUST be of a type which provides the lifetime-policy archetype.")
     public void nodePropertiesSupportedDistributionModes() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Target target = new Target();
             target.setDynamic(Boolean.TRUE);

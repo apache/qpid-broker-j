@@ -22,8 +22,6 @@ package org.apache.qpid.tests.protocol.v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.net.InetSocketAddress;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,16 +56,22 @@ public class ExistingQueueAdmin implements QueueAdmin
     @Override
     public void deleteQueue(final BrokerAdmin brokerAdmin, final String queueName)
     {
-        drain(queueName, brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP));
+        try
+        {
+            drainQueue(brokerAdmin, queueName);
+        }
+        catch (Exception e)
+        {
+            throw new BrokerAdminException(String.format("Cannot drain queue '%s'", queueName), e);
+        }
     }
 
     @Override
     public void putMessageOnQueue(final BrokerAdmin brokerAdmin, final String queueName, final String... message)
     {
-        final InetSocketAddress brokerAddress = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try
         {
-            putMessageOnQueue(brokerAddress, queueName, message);
+            send(brokerAdmin, queueName, message);
         }
         catch (Exception e)
         {
@@ -89,23 +93,11 @@ public class ExistingQueueAdmin implements QueueAdmin
         return true;
     }
 
-    private void drain(final String queueName, final InetSocketAddress brokerAddress)
+    private void send(final BrokerAdmin brokerAdmin,
+                      final String queueName,
+                      final String... message) throws Exception
     {
-        try
-        {
-            drainQueue(brokerAddress, queueName);
-        }
-        catch (Exception e)
-        {
-            throw new BrokerAdminException(String.format("Cannot drain queue '%s'", queueName), e);
-        }
-    }
-
-    private void putMessageOnQueue(final InetSocketAddress brokerAddress,
-                                   final String queueName,
-                                   final String... message) throws Exception
-    {
-        try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(brokerAdmin).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -143,11 +135,11 @@ public class ExistingQueueAdmin implements QueueAdmin
     }
 
 
-    private void drainQueue(final InetSocketAddress brokerAddress, final String queueName) throws Exception
+    private void drainQueue(final BrokerAdmin brokerAdmin, final String queueName) throws Exception
     {
         final String controlMessage = String.format("---%s---", new StringUtil().randomAlphaNumericString(32));
-        putMessageOnQueue(brokerAddress, queueName, controlMessage);
-        try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        send(brokerAdmin, queueName, controlMessage);
+        try (FrameTransport transport = new FrameTransport(brokerAdmin).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -194,5 +186,4 @@ public class ExistingQueueAdmin implements QueueAdmin
             closeInteraction(interaction);
         }
     }
-
 }

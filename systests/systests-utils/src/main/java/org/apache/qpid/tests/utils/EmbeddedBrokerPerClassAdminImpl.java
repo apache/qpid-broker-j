@@ -361,6 +361,12 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public boolean isAnonymousSupported()
+    {
+        return true;
+    }
+
+    @Override
     public boolean isSASLSupported()
     {
         return true;

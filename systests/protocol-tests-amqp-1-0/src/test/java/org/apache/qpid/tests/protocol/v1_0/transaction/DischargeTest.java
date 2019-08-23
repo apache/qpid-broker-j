@@ -21,7 +21,6 @@
 package org.apache.qpid.tests.protocol.v1_0.transaction;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
@@ -32,7 +31,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.junit.Before;
@@ -63,13 +61,11 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class DischargeTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
     }
 
     @Test
@@ -80,7 +76,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                           + " message MUST be rejected with this outcome carrying the transaction-error.")
     public void dischargeUnknownTransactionIdWhenSourceSupportsRejectedOutcome() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -112,7 +108,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                           + " the transaction-error.")
     public void dischargeUnknownTransactionIdWhenSourceDoesNotSupportRejectedOutcome() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -143,7 +139,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                           + " desired transaction identifier and the outcome to be applied upon a successful discharge.")
     public void dischargeSettledAfterReceiverDetach() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -185,7 +181,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
 
         String secondMessage = getTestName() + "_2";
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, secondMessage);
-        Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+        Object receivedMessage = Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME);
         assertThat(receivedMessage, is(equalTo(secondMessage)));
     }
 
@@ -200,7 +196,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                           + " was associated.")
     public void dischargeSettledAfterSenderDetach() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -228,7 +224,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
 
-        final Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+        final Object receivedMessage = Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME);
         assertThat(receivedMessage, is(equalTo(getTestName())));
     }
 
@@ -240,7 +236,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                           + " reflect the outcome that was applied.")
     public void dischargeUnsettledAfterSenderClose() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -273,7 +269,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
 
-        final Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+        final Object receivedMessage = Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME);
         assertThat(receivedMessage, is(equalTo(getTestName())));
     }
 

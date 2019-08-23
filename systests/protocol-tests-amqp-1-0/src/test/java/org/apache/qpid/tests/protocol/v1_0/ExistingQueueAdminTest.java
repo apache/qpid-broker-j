@@ -25,8 +25,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.net.InetSocketAddress;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -41,7 +39,6 @@ import org.apache.qpid.tests.utils.EmbeddedBrokerPerClassAdminImpl;
 public class ExistingQueueAdminTest extends UnitTestBase
 {
     private static BrokerAdmin _brokerAdmin;
-    private static InetSocketAddress _brokerAddress;
 
     private ExistingQueueAdmin _queueAdmin;
     private String _testQueueName;
@@ -51,7 +48,6 @@ public class ExistingQueueAdminTest extends UnitTestBase
     {
         _brokerAdmin = new EmbeddedBrokerPerClassAdminImpl();
         _brokerAdmin.beforeTestClass(ExistingQueueAdminTest.class);
-        _brokerAddress = _brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
     }
 
     @AfterClass
@@ -92,7 +88,7 @@ public class ExistingQueueAdminTest extends UnitTestBase
 
         final String controlMessage = String.format("controlMessage %s", _testQueueName);
         _brokerAdmin.putMessageOnQueue(_testQueueName, controlMessage);
-        assertEquals(controlMessage, Utils.receiveMessage(_brokerAddress, _testQueueName));
+        assertEquals(controlMessage, Utils.receiveMessage(_brokerAdmin, _testQueueName));
     }
 
     @Test
@@ -114,8 +110,8 @@ public class ExistingQueueAdminTest extends UnitTestBase
     {
         final String[] messages = Utils.createTestMessageContents(2, _testQueueName);
         _queueAdmin.putMessageOnQueue(_brokerAdmin, _testQueueName, messages);
-        assertEquals(messages[0], Utils.receiveMessage(_brokerAddress, _testQueueName));
-        assertEquals(messages[1], Utils.receiveMessage(_brokerAddress, _testQueueName));
+        assertEquals(messages[0], Utils.receiveMessage(_brokerAdmin, _testQueueName));
+        assertEquals(messages[1], Utils.receiveMessage(_brokerAdmin, _testQueueName));
     }
 
     @Test

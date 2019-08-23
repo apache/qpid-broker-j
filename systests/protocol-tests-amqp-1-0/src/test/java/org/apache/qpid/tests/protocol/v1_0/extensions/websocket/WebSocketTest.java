@@ -30,9 +30,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,28 +39,26 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class WebSocketTest extends BrokerAdminUsingTestBase
 {
-    public static final byte[] AMQP_HEADER = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
 
     @Before
     public void setUp()
     {
         assumeThat("Broker support for AMQP over websockets is required", getBrokerAdmin().isWebSocketSupported(), is(true));
+        assumeThat("Broker support for Anonymous open is required", getBrokerAdmin().isAnonymousSupported(), is(true));
     }
 
     @Test
     @SpecificationTest(section = "2.1", description = "Opening a WebSocket Connection")
     public void protocolHeader() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
-        try (FrameTransport transport = new WebSocketFrameTransport(addr).connect())
+        try (FrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin()).connect())
         {
             final byte[] response = transport.newInteraction().negotiateProtocol().consumeResponse().getLatestResponse(byte[].class);
-            assertArrayEquals("Unexpected protocol header response", AMQP_HEADER, response);
+            assertArrayEquals("Unexpected protocol header response", transport.getProtocolHeader(), response);
         }
     }
 
@@ -71,8 +66,7 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.4", description = "[...] a single AMQP frame MAY be split over one or more consecutive WebSocket messages. ")
     public void amqpFramesSplitOverManyWebSocketFrames() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
-        try (FrameTransport transport = new WebSocketFrameTransport(addr).splitAmqpFrames().connect())
+        try (FrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin()).splitAmqpFrames().connect())
         {
             Interaction interaction = transport.newInteraction();
             final Open responseOpen = interaction
@@ -95,8 +89,7 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
     {
         assumeThat(getBrokerAdmin().isWebSocketSupported(), is(true));
 
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
-        try (FrameTransport transport = new WebSocketFrameTransport(addr).connect())
+        try (FrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction();
             final Open responseOpen = interaction

@@ -29,8 +29,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
@@ -55,14 +53,14 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class FlowTest extends BrokerAdminUsingTestBase
 {
+
     @Test
     @SpecificationTest(section = "1.3.4",
             description = "mandatory [...] a non null value for the field is always encoded.")
     public void emptyFlow() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Response<?> response = transport.newInteraction()
                                                   .negotiateOpen()
@@ -89,8 +87,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
             description = "If set to true then the receiver SHOULD send its state at the earliest convenient opportunity.")
     public void sessionEchoFlow() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Flow responseFlow = transport.newInteraction()
                                          .negotiateOpen()
@@ -116,8 +113,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
     public void linkEchoFlow() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Flow responseFlow = transport.newInteraction()
                                          .negotiateOpen()
@@ -148,9 +144,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -187,8 +181,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
     public void drainEmptyQueue() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Flow responseFlow = transport.newInteraction()
                                          .negotiateOpen()
@@ -218,8 +211,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
                           + " MUST respond by ending the session with an unattached-handle session error.")
     public void flowWithUnknownHandle() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             End responseEnd = transport.newInteraction()
                                        .negotiateOpen()
@@ -249,8 +241,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
     public void synchronousGetWithTimeoutEmptyQueue() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction()
                                                .negotiateOpen()
@@ -303,8 +294,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction()
                                                .negotiateOpen()
@@ -374,8 +364,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         final String[] contents = Utils.createTestMessageContents(3, getTestName());
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, contents);
 
-        final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction()
                                                .negotiateOpen()
@@ -426,7 +415,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
             // detach link and consume detach to verify that no transfer was delivered
             interaction.detachClose(true).detach().consume(Detach.class, Flow.class);
         }
-        assertThat(Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(contents[2])));
+        assertThat(Utils.receiveMessage(brokerAdmin, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(contents[2])));
     }
 
     @Test
@@ -439,9 +428,8 @@ public class FlowTest extends BrokerAdminUsingTestBase
     {
         BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction()
                                                .negotiateOpen()
@@ -506,7 +494,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
             }
             finally
             {
-                assertThat(Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(message2)));
+                assertThat(Utils.receiveMessage(brokerAdmin, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(message2)));
 
                 interaction.dispositionSettled(true)
                            .dispositionRole(Role.RECEIVER)
@@ -530,8 +518,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
-        final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction()
                                                .negotiateOpen()

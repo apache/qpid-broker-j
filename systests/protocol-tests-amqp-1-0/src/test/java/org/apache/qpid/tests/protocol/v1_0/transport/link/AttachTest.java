@@ -30,8 +30,6 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
@@ -58,8 +56,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
             description = "mandatory [...] a non null value for the field is always encoded.")
     public void emptyAttach() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Response<?> response = transport.newInteraction()
                                                   .negotiateOpen()
@@ -87,8 +84,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
     public void successfulAttachAsSender() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Attach responseAttach = transport.newInteraction()
                                                    .negotiateOpen()
@@ -114,8 +110,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
     {
         String queueName = BrokerAdmin.TEST_QUEUE_NAME;
         getBrokerAdmin().createQueue(queueName);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Attach responseAttach = transport.newInteraction()
                                                    .negotiateOpen()
@@ -142,8 +137,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
     {
         String queueName = BrokerAdmin.TEST_QUEUE_NAME;
         getBrokerAdmin().createQueue(queueName);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction();
             final Attach responseAttach = interaction.negotiateOpen()
@@ -184,8 +178,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
     {
         String queueName = "testQueue";
         getBrokerAdmin().createQueue(queueName);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction();
             final Attach responseAttach = interaction.negotiateOpen()

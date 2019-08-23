@@ -22,19 +22,17 @@ package org.apache.qpid.tests.protocol.v1_0.transport;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
 
-import org.apache.qpid.tests.utils.BrokerAdmin;
-import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.protocol.SpecificationTest;
+import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class ProtocolHeaderTest extends BrokerAdminUsingTestBase
 {
@@ -46,8 +44,7 @@ public class ProtocolHeaderTest extends BrokerAdminUsingTestBase
                           + "the protocol version (currently 1 (MAJOR), 0 (MINOR), 0 (REVISION)).")
     public void successfulHeaderExchange() throws Exception
     {
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.ANONYMOUS_AMQP).connect())
         {
             byte[] protocolHeader = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
             final byte[] response = transport.newInteraction()
@@ -66,8 +63,7 @@ public class ProtocolHeaderTest extends BrokerAdminUsingTestBase
     public void unacceptableProtocolIdSent_SaslAcceptable() throws Exception
     {
         assumeThat(getBrokerAdmin().isSASLSupported(), is(equalTo(true)));
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
 
             byte[] rawHeaderBytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);

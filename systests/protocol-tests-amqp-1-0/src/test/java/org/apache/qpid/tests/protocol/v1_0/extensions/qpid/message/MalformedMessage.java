@@ -28,12 +28,10 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -59,20 +57,12 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "connection.maxUncommittedInMemorySize", value = "1")
 public class MalformedMessage extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
     private static final String CONTENT_TEXT = "Test";
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-    }
 
     @Test
     public void malformedMessage() throws Exception
     {
-        try (final FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (final FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()

@@ -252,6 +252,12 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
     }
 
     @Override
+    public boolean isAnonymousSupported()
+    {
+        return true;
+    }
+
+    @Override
     public boolean isSASLSupported()
     {
         return true;

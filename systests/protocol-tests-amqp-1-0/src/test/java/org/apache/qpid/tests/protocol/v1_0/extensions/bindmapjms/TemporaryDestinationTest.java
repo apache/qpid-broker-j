@@ -27,11 +27,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.Session_1_0;
@@ -52,20 +50,12 @@ import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 {
     private static final Symbol TEMPORARY_QUEUE = Symbol.valueOf("temporary-queue");
     private static final Symbol TEMPORARY_TOPIC = Symbol.valueOf("temporary-topic");
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "5.3",
@@ -91,7 +81,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     {
         String newTemporaryNodeAddress;
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Target target = createTarget(targetCapabilities);
 
@@ -115,7 +105,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
             interaction.doCloseConnection();
         }
 
-        assertThat(Utils.doesNodeExist(_brokerAddress, newTemporaryNodeAddress), is(false));
+        assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTemporaryNodeAddress), is(false));
     }
 
 
@@ -140,7 +130,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     public void createTemporaryQueueReceivingLink() throws Exception
     {
         final Symbol[] capabilities = new Symbol[]{TEMPORARY_QUEUE};
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Target target = createTarget(capabilities);
 
@@ -200,7 +190,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     public void createTemporaryQueueReceivingLinkFromOtherConnectionDisallowed() throws Exception
     {
         final Symbol[] capabilities = new Symbol[]{TEMPORARY_QUEUE};
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Target target = createTarget(capabilities);
 
@@ -239,7 +229,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     public void createTemporaryQueueSendingLinkFromOtherConnectionAllowed() throws Exception
     {
         final Symbol[] capabilities = new Symbol[]{TEMPORARY_QUEUE};
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Target target = createTarget(capabilities);
 
@@ -290,7 +280,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     public void createTemporaryTopicSubscriptionReceivingLink() throws Exception
     {
         final Symbol[] capabilities = new Symbol[]{TEMPORARY_TOPIC};
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
@@ -354,7 +344,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     public void createTemporaryTopicSubscriptionReceivingLinkFromOtherConnectionDisallowed() throws Exception
     {
         final Symbol[] capabilities = new Symbol[]{TEMPORARY_TOPIC};
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
@@ -395,7 +385,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     public void createTemporaryTopicSendingLinkFromOtherConnectionAllowed() throws Exception
     {
         final Symbol[] capabilities = new Symbol[]{TEMPORARY_TOPIC};
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
@@ -427,7 +417,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 
     private void assertReceivingLinkFails(final Source source, final AmqpError expectedError) throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final Detach responseDetach = interaction.negotiateOpen()
@@ -448,7 +438,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 
     private void assertSendingLinkSucceeds(final String address) throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Target target = new Target();
             target.setAddress(address);

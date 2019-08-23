@@ -26,14 +26,11 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,10 +44,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
-import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
@@ -66,13 +60,11 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
     }
 
     @Test
@@ -82,7 +74,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                           + "transactional-state carrying the appropriate transaction identifier.")
     public void sendTransactionalPostingReceiverSettlesFirst() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
@@ -116,7 +108,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
-        Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+        Object receivedMessage = Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME);
         assertThat(receivedMessage, is(equalTo(getTestName())));
     }
 
@@ -127,7 +119,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                           + "transactional-state carrying the appropriate transaction identifier.")
     public void sendTransactionalPostingDischargeFail() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
@@ -163,7 +155,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             final String content = getTestName() + "_2";
             Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
-            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content)));
+            assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content)));
         }
     }
 
@@ -174,7 +166,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                           + "transactional-state carrying the appropriate transaction identifier.")
     public void sendTransactionalPostingReceiverSettlesSecond() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
@@ -217,7 +209,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 
     @Test
@@ -227,7 +219,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                           + " transaction identifier.")
     public void sendTransactionalPostingTransferFailsDueToUnknownTransactionId() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
@@ -265,7 +257,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     public void receiveTransactionalRetirementReceiverSettleFirst() throws Exception
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
@@ -312,7 +304,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     public void receiveTransactionalRetirementDischargeFail() throws Exception
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -350,7 +342,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
-            Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+            Object receivedMessage = Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(getTestName())));
         }
     }
@@ -365,7 +357,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     public void receiveTransactionalRetirementDispositionFailsDueToUnknownTransactionId() throws Exception
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             List<Transfer> transfers = interaction.negotiateOpen()
@@ -411,7 +403,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         }
         finally
         {
-            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+            assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
         }
     }
 
@@ -422,7 +414,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     public void receiveTransactionalRetirementReceiverSettleSecond() throws Exception
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -480,7 +472,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     public void receiveTransactionalAcquisitionReceiverSettleFirst() throws Exception
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -529,7 +521,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             final String content = getTestName() + "_2";
             Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
-            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content)));
+            assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(content)));
         }
     }
 
@@ -543,7 +535,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     public void receiveTransactionalAcquisitionDischargeFail() throws Exception
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -585,7 +577,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
-            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+            assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
 
             Transfer transfer = transfers.get(0);
             assumeThat(transfer.getState(), is(instanceOf(TransactionalState.class)));
@@ -605,7 +597,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     public void receiveTransactionalAcquisitionFlowFailsDueToUnknownTransactionId() throws Exception
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             ErrorCarryingFrameBody response = interaction.negotiateOpen()
@@ -636,35 +628,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         }
         finally
         {
-            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+            assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
         }
-    }
-
-    private void assertUnknownTransactionIdError(final Response<?> response)
-    {
-        assertThat(response, is(notNullValue()));
-        final Object body = response.getBody();
-        assertThat(body, is(notNullValue()));
-        Error error = null;
-        if (body instanceof Close)
-        {
-            error = ((Close) body).getError();
-        }
-        else if (body instanceof End)
-        {
-            error = ((End) body).getError();
-        }
-        else if (body instanceof Detach)
-        {
-            error = ((Detach) body).getError();
-        }
-        else
-        {
-            fail(String.format("Unexpected response %s", body.getClass().getSimpleName()));
-        }
-
-        assertThat(error, is(notNullValue()));
-        assertThat(error.getCondition(), equalTo(TransactionError.UNKNOWN_ID));
     }
 
     Binary integerToBinary(final int txnId)

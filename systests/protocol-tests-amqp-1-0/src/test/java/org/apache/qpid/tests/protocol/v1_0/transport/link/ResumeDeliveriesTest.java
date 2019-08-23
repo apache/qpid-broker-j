@@ -36,7 +36,6 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,13 +78,11 @@ import org.apache.qpid.tests.utils.ConfigItem;
 public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 {
     private static final int MIN_MAX_FRAME_SIZE = 512;
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
     }
 
     @Ignore("QPID-7845")
@@ -98,7 +95,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
     {
         final String destination = BrokerAdmin.TEST_QUEUE_NAME;
         final Binary deliveryTag = new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8));
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
 
             final UnsignedInteger linkHandle1 = UnsignedInteger.ZERO;
@@ -157,7 +154,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
     public void resumeSendingLinkWithIncompleteUnsettled() throws Exception
     {
         final String destination = BrokerAdmin.TEST_QUEUE_NAME;
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
@@ -251,7 +248,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
     public void rejectNewDeliveryWhilstUnsettledIncomplete() throws Exception
     {
         final String destination = BrokerAdmin.TEST_QUEUE_NAME;
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
@@ -337,15 +334,13 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName() + "-" + i);
         }
 
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             // 1. open with small max-frame=512, begin, attach receiver with
             //    with rcv-settle-mode=second, snd-settle-mode=unsettled,
             //    flow with incoming-window=MAX_INTEGER and link-credit=MAX_INTEGER
             final Interaction interaction = transport.newInteraction();
-            interaction.consumeResponse()
-                       .openMaxFrameSize(UnsignedInteger.valueOf(MIN_MAX_FRAME_SIZE))
+            interaction.openMaxFrameSize(UnsignedInteger.valueOf(MIN_MAX_FRAME_SIZE))
                        .negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
@@ -454,7 +449,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction()
                                                      .negotiateOpen()
@@ -505,10 +500,11 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateOpen()
+                                                     .negotiateOpen(
+                                                                   )
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -576,7 +572,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
             final String content = getTestName() + "_2";
             Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
-            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), Matchers.is(Matchers.equalTo(content)));
+            assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), Matchers.is(Matchers.equalTo(content)));
         }
     }
 
@@ -590,7 +586,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction()
                                                      .negotiateOpen()
@@ -657,7 +653,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
             final String content = getTestName() + "_2";
             Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
-            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), Matchers.is(Matchers.equalTo(content)));
+            assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), Matchers.is(Matchers.equalTo(content)));
         }
     }
 
@@ -673,7 +669,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         final Binary deliveryTag = new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8));
 
         QpidByteBuffer[] messagePayload = Utils.splitPayload(getTestName(), 2);
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
 
             final UnsignedInteger linkHandle1 = UnsignedInteger.ZERO;

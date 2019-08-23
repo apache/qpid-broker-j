@@ -26,8 +26,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -55,19 +53,16 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "virtualhost.storeTransactionOpenTimeoutClose", value = "1000")
 public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
     @Before
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
     }
 
     @Test
     public void transactionalPostingTimeout() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
@@ -107,7 +102,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
     public void transactionalRetirementTimeout() throws Exception
     {
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
@@ -157,6 +152,6 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(TransactionError.TRANSACTION_TIMEOUT));
         }
-        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 }

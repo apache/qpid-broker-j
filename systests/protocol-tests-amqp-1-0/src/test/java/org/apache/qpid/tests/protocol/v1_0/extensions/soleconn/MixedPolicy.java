@@ -28,33 +28,23 @@ import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnec
 import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeEnforcementPolicyRefuse;
 import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeSoleConnectionCapability;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class MixedPolicy extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     public void firstCloseThenRefuse() throws Exception
     {
-        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport1 = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction1 = transport1.newInteraction();
             interaction1.openContainerId("testContainerId")
@@ -67,7 +57,7 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
             assumeSoleConnectionCapability(responseOpen);
             assumeEnforcementPolicyCloseExisting(responseOpen);
 
-            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
+            try (FrameTransport transport2 = new FrameTransport(getBrokerAdmin()).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
                 interaction2.openContainerId("testContainerId")
@@ -80,7 +70,7 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
 
                 interaction2.consumeResponse(Open.class);
 
-                try (FrameTransport transport3 = new FrameTransport(_brokerAddress).connect())
+                try (FrameTransport transport3 = new FrameTransport(getBrokerAdmin()).connect())
                 {
                     final Interaction interaction3 = transport3.newInteraction();
                     interaction3.openContainerId("testContainerId")
@@ -97,7 +87,7 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
     @Test
     public void firstRefuseThenClose() throws Exception
     {
-        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport1 = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction1 = transport1.newInteraction();
             interaction1.openContainerId("testContainerId")
@@ -110,7 +100,7 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
             assumeSoleConnectionCapability(responseOpen);
             assumeEnforcementPolicyRefuse(responseOpen);
 
-            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
+            try (FrameTransport transport2 = new FrameTransport(getBrokerAdmin()).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
                 interaction2.openContainerId("testContainerId")

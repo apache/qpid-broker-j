@@ -139,6 +139,12 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public boolean isAnonymousSupported()
+    {
+        return Boolean.parseBoolean(System.getProperty("qpid.tests.protocol.broker.external.anonymousSupported", "true"));
+    }
+
+    @Override
     public boolean isSASLSupported()
     {
         return Boolean.parseBoolean(System.getProperty("qpid.tests.protocol.broker.external.saslSupported", "true"));
@@ -165,8 +171,10 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     @Override
     public boolean isSASLMechanismSupported(final String mechanismName)
     {
-        String supportedSaslMechanisms = System.getProperty("qpid.tests.protocol.broker.external.supportedSaslMechanisms","PLAIN,CRAM-MD5");
-        return Arrays.asList(supportedSaslMechanisms.split(",")).contains(mechanismName);
+        final String supportedSaslMechanisms = System.getProperty(
+                "qpid.tests.protocol.broker.external.supportedSaslMechanisms",
+                "PLAIN,CRAM-MD5").toUpperCase();
+        return Arrays.asList(supportedSaslMechanisms.split(",")).contains(mechanismName.toUpperCase());
     }
 
     @Override
