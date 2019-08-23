@@ -19,6 +19,7 @@
 
 package org.apache.qpid.tests.protocol.v1_0.transport.session;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -31,13 +32,16 @@ import java.net.InetSocketAddress;
 
 import org.junit.Test;
 
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -54,16 +58,21 @@ public class BeginTest extends BrokerAdminUsingTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try(FrameTransport transport = new FrameTransport(addr).connect())
         {
-            Close responseClose = transport.newInteraction()
+            final Response<?> response =  transport.newInteraction()
                                            .negotiateProtocol().consumeResponse()
                                            .open().consumeResponse(Open.class)
                                            .beginNextOutgoingId(null)
                                            .beginIncomingWindow(null)
                                            .beginOutgoingWindow(null)
                                            .begin().consumeResponse()
-                                           .getLatestResponse(Close.class);
-            assumeThat(responseClose.getError(), is(notNullValue()));
-            assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
+                                           .getLatestResponse();
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getBody(), is(instanceOf(ErrorCarryingFrameBody.class)));
+            final Error error = ((ErrorCarryingFrameBody) response.getBody()).getError();
+            if (error != null)
+            {
+                assertThat(error.getCondition(), anyOf(equalTo(AmqpError.DECODE_ERROR), equalTo(AmqpError.INVALID_FIELD)));
+            }
         }
     }
 

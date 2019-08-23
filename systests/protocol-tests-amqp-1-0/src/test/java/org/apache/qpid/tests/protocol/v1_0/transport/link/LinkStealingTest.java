@@ -47,6 +47,7 @@ import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.utils.BrokerSpecific;
 
 public class LinkStealingTest extends BrokerAdminUsingTestBase
 {
@@ -94,7 +95,9 @@ public class LinkStealingTest extends BrokerAdminUsingTestBase
 
 
     @Test
-    @SpecificationTest(section = "2.6.1. Naming a link", description = "")
+    @SpecificationTest(section = "2.6.1. Naming a link",
+            description = "Qpid Broker J extended stolen behaviour on sessions")
+    @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
     public void subsequentAttachOnDifferentSessions() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);

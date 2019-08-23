@@ -20,10 +20,9 @@
 
 package org.apache.qpid.tests.protocol.v1_0.messaging;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
 
@@ -34,18 +33,13 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
-import org.apache.qpid.server.protocol.v1_0.type.transport.End;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.SpecificationTest;
+import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -72,7 +66,7 @@ public class MessageFormat extends BrokerAdminUsingTestBase
         {
             QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 2);
 
-            final Response<?> latestResponse = transport.newInteraction()
+            transport.newInteraction()
                                                         .negotiateProtocol().consumeResponse()
                                                         .open().consumeResponse(Open.class)
                                                         .begin().consumeResponse(Begin.class)
@@ -83,6 +77,7 @@ public class MessageFormat extends BrokerAdminUsingTestBase
                                                         .transferMore(true)
                                                         .transferMessageFormat(UnsignedInteger.ZERO)
                                                         .transferPayload(payloads[0])
+                                                        .transferSettled(true)
                                                         .transfer()
                                                         .consumeResponse(null, Flow.class, Disposition.class)
                                                         .transferDeliveryTag(null)
@@ -91,35 +86,16 @@ public class MessageFormat extends BrokerAdminUsingTestBase
                                                         .transferMessageFormat(UnsignedInteger.ONE)
                                                         .transferPayload(payloads[1])
                                                         .transfer()
-                                                        .consumeResponse(Detach.class, End.class, Close.class)
-                                                        .getLatestResponse();
+                                                        .sync();
 
             for (final QpidByteBuffer payload : payloads)
             {
                 payload.dispose();
             }
-            assertThat(latestResponse, is(notNullValue()));
-            final Object responseBody = latestResponse.getBody();
-            final Error error;
-            if (responseBody instanceof Detach)
-            {
-                error = ((Detach) responseBody).getError();
-            }
-            else if (responseBody instanceof End)
-            {
-                error = ((End) responseBody).getError();
-            }
-            else if (responseBody instanceof Close)
-            {
-                error = ((Close) responseBody).getError();
-            }
-            else
-            {
-                fail(String.format("Expected response of either Detach, End, or Close. Got '%s'", responseBody));
-                error = null;
-            }
-
-            assertThat(error, is(notNullValue()));
         }
+
+        final String testMessage = getTestName() + "_2";
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, testMessage);
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(testMessage)));
     }
 }

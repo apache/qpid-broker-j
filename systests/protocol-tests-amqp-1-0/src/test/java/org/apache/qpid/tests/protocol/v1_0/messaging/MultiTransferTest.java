@@ -210,7 +210,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             {
                 payload.dispose();
             }
-            interaction.consumeResponse(null, Flow.class);
         }
         String secondMessage = getTestName() + "_2";
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, secondMessage);
@@ -320,7 +319,12 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "2.6.14",
-            description = "[...]messages transferred along a single link MUST NOT be interleaved")
+            description = "For messages that are too large to fit within the maximum frame size,"
+                          + " additional data MAY be transferred in additional transfer frames by setting"
+                          + " the more flag on all but the last transfer frame."
+                          + " When a message is split up into multiple transfer frames in this manner,"
+                          + " messages being transferred along different links MAY be interleaved."
+                          + " However, messages transferred along a single link MUST NOT be interleaved.")
     public void illegallyInterleavedMultiTransferOnSingleLink() throws Exception
     {
         String messageContent1 = getTestName() + "_1";
@@ -351,14 +355,28 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferDeliveryTag(deliveryTag1)
                        .transferMore(true)
                        .transferPayload(messagePayload1[0])
+                       .transferSettled(true)
                        .transfer()
-                       .sync()
 
                        .transferDeliveryId(deliveryId2)
                        .transferDeliveryTag(deliveryTag2)
                        .transferMore(true)
+                       .transferSettled(true)
                        .transferPayload(messagePayload2[0])
                        .transfer()
+
+                       .transferDeliveryId(deliverId1)
+                       .transferDeliveryTag(deliveryTag1)
+                       .transferMore(false)
+                       .transferPayload(messagePayload1[1])
+                       .transfer()
+
+                       .transferDeliveryId(deliveryId2)
+                       .transferDeliveryTag(deliveryTag2)
+                       .transferMore(false)
+                       .transferPayload(messagePayload2[1])
+                       .transfer()
+
                        .sync();
             for (final QpidByteBuffer payload : messagePayload1)
             {
@@ -369,7 +387,10 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                 payload.dispose();
             }
 
-            interaction.consumeResponse(Detach.class, End.class, Close.class, ChannelClosedResponse.class);
         }
+
+        final String controlMessage = getTestName() + "_Control";
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, controlMessage);
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(controlMessage)));
     }
 }

@@ -19,10 +19,12 @@
 
 package org.apache.qpid.tests.protocol.v1_0.transport.link;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
@@ -32,6 +34,7 @@ import java.net.InetSocketAddress;
 
 import org.junit.Test;
 
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -39,8 +42,10 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -58,17 +63,23 @@ public class AttachTest extends BrokerAdminUsingTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            Close responseClose = transport.newInteraction()
-                                           .negotiateProtocol().consumeResponse()
-                                           .open().consumeResponse(Open.class)
-                                           .begin().consumeResponse(Begin.class)
-                                           .attachRole(null)
-                                           .attachHandle(null)
-                                           .attachName(null)
-                                           .attach().consumeResponse()
-                                           .getLatestResponse(Close.class);
-            assertThat(responseClose.getError(), is(notNullValue()));
-            assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
+            final Response<?> response = transport.newInteraction()
+                                                  .negotiateProtocol().consumeResponse()
+                                                  .open().consumeResponse(Open.class)
+                                                  .begin().consumeResponse(Begin.class)
+                                                  .attachRole(null)
+                                                  .attachHandle(null)
+                                                  .attachName(null)
+                                                  .attach().consumeResponse()
+                                                  .getLatestResponse();
+            assertThat(response.getBody(), is(notNullValue()));
+            assertThat(response.getBody(), instanceOf(ErrorCarryingFrameBody.class));
+            final Error error = ((ErrorCarryingFrameBody) response.getBody()).getError();
+            if (error != null)
+            {
+                assertThat(error.getCondition(),
+                           anyOf(equalTo(AmqpError.DECODE_ERROR), equalTo(AmqpError.INVALID_FIELD)));
+            }
         }
     }
 

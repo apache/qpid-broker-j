@@ -25,8 +25,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
@@ -40,6 +40,7 @@ import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.StringWriter;
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
@@ -52,13 +53,11 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
-import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -91,6 +90,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
+                       .attachSndSettleMode(SenderSettleMode.SETTLED)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attach()
                        .consumeResponse(Attach.class)
@@ -99,31 +99,24 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                                              flow -> assumeThat(flow.getLinkCredit(),
                                                                 is(greaterThan(UnsignedInteger.ZERO))));
 
-            final List<QpidByteBuffer> payloads = buildInvalidMessage();
-            try
+            try(final QpidByteBuffer payload = buildInvalidMessage())
             {
-                try (QpidByteBuffer combinedPayload = QpidByteBuffer.concatenate(payloads))
-                {
-                    interaction.transferMessageFormat(UnsignedInteger.ZERO)
-                               .transferPayload(combinedPayload)
-                               .transfer();
-                }
-            }
-            finally
-            {
-                payloads.forEach(QpidByteBuffer::dispose);
+                interaction.transferMessageFormat(UnsignedInteger.ZERO)
+                           .transferPayload(payload)
+                           .transfer();
             }
 
-            final Detach detachResponse = interaction.consumeResponse()
-                                                     .getLatestResponse(Detach.class);
-            assertThat(detachResponse.getError(), is(notNullValue()));
-            assertThat(detachResponse.getError().getCondition(), is(equalTo(DECODE_ERROR)));
         }
+
+        final String validMessage = getTestName() + "_2";
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, validMessage);
+        assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(validMessage)));
     }
 
     @Test
     @SpecificationTest(section = "3.5.9",
-            description = "The value of this entry MUST be of a type which provides the lifetime-policy archetype.")
+            description = "Node Properties [...] lifetime-policy [...] "
+                          + "The value of this entry MUST be of a type which provides the lifetime-policy archetype.")
     public void nodePropertiesLifetimePolicy() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
@@ -143,24 +136,10 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
 
             assertThat(latestResponse, is(notNullValue()));
             final Object responseBody = latestResponse.getBody();
-            final Error error;
-            if (responseBody instanceof End)
-            {
-                error = ((End) responseBody).getError();
-            }
-            else if (responseBody instanceof Close)
-            {
-                error = ((Close) responseBody).getError();
-            }
-            else if (responseBody instanceof Detach)
-            {
-                error = ((Detach) responseBody).getError();
-            }
-            else
-            {
-                fail(String.format("Expected response of either Detach, End, or Close. Got '%s'", responseBody));
-                error = null;
-            }
+            assertThat(responseBody, is(notNullValue()));
+            assertThat(responseBody, instanceOf(ErrorCarryingFrameBody.class));
+
+            final Error error = ((ErrorCarryingFrameBody) responseBody).getError();
 
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(DECODE_ERROR)));
@@ -169,7 +148,8 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "3.5.9",
-            description = "The value of this entry MUST be of a type which provides the lifetime-policy archetype.")
+            description = "Node Properties [...] supported-dist-modes [...] "
+                          + "The value of this entry MUST be of a type which provides the lifetime-policy archetype.")
     public void nodePropertiesSupportedDistributionModes() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
@@ -189,70 +169,66 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
 
             assertThat(latestResponse, is(notNullValue()));
             final Object responseBody = latestResponse.getBody();
-            final Error error;
-            if (responseBody instanceof End)
-            {
-                error = ((End) responseBody).getError();
-            }
-            else if (responseBody instanceof Close)
-            {
-                error = ((Close) responseBody).getError();
-            }
-            else
-            {
-                fail(String.format("Expected response of either Detach, End, or Close. Got '%s'", responseBody));
-                error = null;
-            }
+            assertThat(responseBody, is(notNullValue()));
+            assertThat(responseBody, instanceOf(ErrorCarryingFrameBody.class));
 
+            final Error error = ((ErrorCarryingFrameBody) responseBody).getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(DECODE_ERROR)));
         }
     }
 
-    private List<QpidByteBuffer> buildInvalidMessage()
+    private QpidByteBuffer buildInvalidMessage()
     {
         final List<QpidByteBuffer> payloads = new ArrayList<>();
-        final Header header = new Header();
-        header.setTtl(UnsignedInteger.valueOf(1000L));
-        final HeaderSection headerSection = header.createEncodingRetainingSection();
         try
         {
-            payloads.add(headerSection.getEncodedForm());
+            final Header header = new Header();
+            header.setTtl(UnsignedInteger.valueOf(10000L));
+            final HeaderSection headerSection = header.createEncodingRetainingSection();
+            try
+            {
+                payloads.add(headerSection.getEncodedForm());
+            }
+            finally
+            {
+                headerSection.dispose();
+            }
+
+            final StringWriter stringWriter = new StringWriter("string in between message sections");
+            final QpidByteBuffer encodedString = QpidByteBuffer.allocate(stringWriter.getEncodedSize());
+            stringWriter.writeToBuffer(encodedString);
+            encodedString.flip();
+            payloads.add(encodedString);
+
+            final Map<Symbol, Object> annotationMap = Collections.singletonMap(Symbol.valueOf("foo"), "bar");
+            final DeliveryAnnotations annotations = new DeliveryAnnotations(annotationMap);
+            final DeliveryAnnotationsSection deliveryAnnotationsSection = annotations.createEncodingRetainingSection();
+            try
+            {
+                payloads.add(deliveryAnnotationsSection.getEncodedForm());
+            }
+            finally
+            {
+                deliveryAnnotationsSection.dispose();
+            }
+
+            final AmqpValueSection payload = new AmqpValue(getTestName()).createEncodingRetainingSection();
+            try
+            {
+                payloads.add(payload.getEncodedForm());
+            }
+            finally
+            {
+                payload.dispose();
+            }
+
+            return QpidByteBuffer.concatenate(payloads);
         }
         finally
         {
-            headerSection.dispose();
+            payloads.forEach(QpidByteBuffer::dispose);
         }
-
-        final StringWriter stringWriter = new StringWriter("string in between annotation sections");
-        QpidByteBuffer encodedString = QpidByteBuffer.allocate(stringWriter.getEncodedSize());
-        stringWriter.writeToBuffer(encodedString);
-        encodedString.flip();
-        payloads.add(encodedString);
-
-        final Map<Symbol, Object> annoationMap = Collections.singletonMap(Symbol.valueOf("foo"), "bar");
-        final DeliveryAnnotations annotations = new DeliveryAnnotations(annoationMap);
-        final DeliveryAnnotationsSection deliveryAnnotationsSection = annotations.createEncodingRetainingSection();
-        try
-        {
-
-            payloads.add(deliveryAnnotationsSection.getEncodedForm());
-        }
-        finally
-        {
-            deliveryAnnotationsSection.dispose();
-        }
-
-        final AmqpValueSection payload = new AmqpValue(getTestName()).createEncodingRetainingSection();
-        try
-        {
-            payloads.add(payload.getEncodedForm());
-        }
-        finally
-        {
-            payload.dispose();
-        }
-        return payloads;
     }
 
 }

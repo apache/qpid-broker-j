@@ -68,7 +68,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
-import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
@@ -77,7 +76,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -106,7 +104,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @Test
     @SpecificationTest(section = "1.3.4",
             description = "mandatory [...] a non null value for the field is always encoded.")
-    public void emptyTransfer() throws Exception
+    public void transferHandleUnspecified() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -123,25 +121,43 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                            .consumeResponse()
                                            .getLatestResponse();
 
+            assertThat(response, is(notNullValue()));
             assertThat(response.getBody(), is(notNullValue()));
+            assertThat(response.getBody(), is(instanceOf(ErrorCarryingFrameBody.class)));
 
-            if (response.getBody() instanceof Close)
-            {
-                final Close responseClose = (Close)response.getBody();
-                assertThat(responseClose.getError(), is(notNullValue()));
-                assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
+            final Error error = ((ErrorCarryingFrameBody)response.getBody()).getError();
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), anyOf(equalTo(AmqpError.DECODE_ERROR), equalTo(AmqpError.INVALID_FIELD)));
+        }
+    }
 
-                interact.close().sync();
-            }
-            else if (response.getBody() instanceof End)
-            {
-                final End responseEnd = (End)response.getBody();
-                assertThat(responseEnd.getError(), is(notNullValue()));
-                assertThat(responseEnd.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
+    @Test
+    @SpecificationTest(section = "2.7.5",
+            description = "The delivery-id MUST be supplied on the first transfer of a multi-transfer delivery.")
+    public void transferDeliveryIdUnspecified() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            Interaction interact = transport.newInteraction();
+            Response<?> response = interact.negotiateProtocol().consumeResponse()
+                                           .open().consumeResponse(Open.class)
+                                           .begin().consumeResponse(Begin.class)
+                                           .attachRole(Role.SENDER)
+                                           .attach().consumeResponse(Attach.class)
+                                           .consumeResponse(Flow.class)
+                                           .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
+                                           .transferDeliveryId(null)
+                                           .transfer()
+                                           .consumeResponse()
+                                           .getLatestResponse();
 
-                interact.end().doCloseConnection();
-            }
-            transport.assertNoMoreResponses();
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getBody(), is(notNullValue()));
+            assertThat(response.getBody(), is(instanceOf(ErrorCarryingFrameBody.class)));
+
+            final Error error = ((ErrorCarryingFrameBody)response.getBody()).getError();
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), anyOf(equalTo(AmqpError.DECODE_ERROR), equalTo(AmqpError.INVALID_FIELD)));
         }
     }
 
@@ -149,30 +165,40 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.7.5",
             description = "[delivery-tag] MUST be specified for the first transfer "
                           + "[...] and can only be omitted for continuation transfers.")
-    public void transferWithoutDeliveryTag() throws Exception
+    public void transferDeliveryTagUnspecified() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             Interaction interaction = transport.newInteraction()
-                                                 .negotiateProtocol().consumeResponse()
-                                                 .open().consumeResponse(Open.class)
-                                                 .begin().consumeResponse(Begin.class)
-                                                 .attachRole(Role.SENDER)
-                                                 .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                 .attach().consumeResponse(Attach.class)
-                                                 .consumeResponse(Flow.class)
-                                                 .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
-                                                 .transferDeliveryId()
-                                                 .transferDeliveryTag(null)
-                                                 .transferPayloadData(getTestName())
-                                                 .transfer();
-            interaction.consumeResponse(Detach.class, End.class, Close.class, ChannelClosedResponse.class);
+                                               .negotiateProtocol().consumeResponse()
+                                               .open().consumeResponse(Open.class)
+                                               .begin().consumeResponse(Begin.class)
+                                               .attachRole(Role.SENDER)
+                                               .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                               .attach().consumeResponse(Attach.class)
+                                               .consumeResponse(Flow.class)
+                                               .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
+                                               .transferDeliveryId()
+                                               .transferDeliveryTag(null)
+                                               .transferPayloadData(getTestName())
+                                               .transfer()
+                                               .consumeResponse();
+
+            final Response<?> response = interaction.getLatestResponse();
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getBody(), is(notNullValue()));
+            assertThat(response.getBody(), is(instanceOf(ErrorCarryingFrameBody.class)));
+
+            final Error error = ((ErrorCarryingFrameBody)response.getBody()).getError();
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), anyOf(equalTo(AmqpError.DECODE_ERROR), equalTo(AmqpError.INVALID_FIELD)));
         }
     }
 
     @Test
-    @SpecificationTest(section = "2.6.12",
-            description = "Transferring A Message.")
+    @SpecificationTest(section = "2.6.12 Transferring A Message",
+            description = "[...] the receiving application chooses to settle immediately upon processing the message"
+                          + " rather than waiting for the sender to settle first, that yields an at-least-once guarantee.")
     public void transferUnsettled() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
@@ -319,27 +345,19 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                      .consumeResponse()
                                      .getLatestResponse();
 
-            if (response.getBody() instanceof Detach)
-            {
-                final Detach detach = (Detach) response.getBody();
-                Error error = detach.getError();
-                assertThat(error, is(notNullValue()));
-                assertThat(error.getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-            }
-            else
-            {
-                if (response.getBody() instanceof Disposition)
-                {
-                    // clean up
-                    Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
-                }
-                fail("it is illegal to set transfer 'rcv-settle-mode' to 'second' when link 'rcv-settle-mode' is set to 'first'");
-            }
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getBody(), is(notNullValue()));
+            assertThat(response.getBody(), is(instanceOf(Detach.class)));
+
+            final Detach detach = (Detach) response.getBody();
+            Error error = detach.getError();
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
         }
     }
 
     @Test
-    @SpecificationTest(section = "", description = "Pipelined message send")
+    @SpecificationTest(section = "2.6.12 Transferring A Message", description = "Pipelined message send")
     public void presettledPipelined() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
