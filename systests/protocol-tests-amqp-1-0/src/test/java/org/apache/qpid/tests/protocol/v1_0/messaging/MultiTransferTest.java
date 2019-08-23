@@ -106,6 +106,9 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             {
                 payload.dispose();
             }
+
+            interaction.detachEndCloseUnconditionally();
+
             assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
             assertThat(disposition.getLast(), oneOf(null, deliveryId));
             assertThat(disposition.getSettled(), is(equalTo(true)));
@@ -165,6 +168,8 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             }
 
             Disposition disposition = interaction.consume(Disposition.class, Flow.class);
+            interaction.detachEndCloseUnconditionally();
+
             assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
             assertThat(disposition.getLast(), oneOf(null, deliveryId));
             assertThat(disposition.getSettled(), is(equalTo(true)));
@@ -210,6 +215,8 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             {
                 payload.dispose();
             }
+
+            interaction.detachEndCloseUnconditionally();
         }
         String secondMessage = getTestName() + "_2";
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, secondMessage);
@@ -309,6 +316,8 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                 assertThat(disposition.getState(), is(instanceOf(Accepted.class)));
             }
 
+            interaction.detachEndCloseUnconditionally();
+
             assertThat("Unexpected number of dispositions", dispositionMap.size(), equalTo(2));
             assertThat(dispositionMap.containsKey(deliverId1), is(true));
             assertThat(dispositionMap.containsKey(deliveryId2), is(true));
@@ -387,6 +396,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                 payload.dispose();
             }
 
+            interaction.closeUnconditionally();
         }
 
         final String controlMessage = getTestName() + "_Control";

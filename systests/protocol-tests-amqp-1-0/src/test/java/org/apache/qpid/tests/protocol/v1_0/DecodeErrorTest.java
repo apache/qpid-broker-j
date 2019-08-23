@@ -106,6 +106,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                            .transfer();
             }
 
+            interaction.closeUnconditionally();
         }
 
         final String validMessage = getTestName() + "_2";
@@ -132,6 +133,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                                                         .attachSource(source)
                                                         .attachRole(Role.SENDER)
                                                         .attach().consumeResponse()
+                                                        .closeUnconditionally()
                                                         .getLatestResponse();
 
             assertThat(latestResponse, is(notNullValue()));
@@ -165,6 +167,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                                                         .attachTarget(target)
                                                         .attachRole(Role.SENDER)
                                                         .attach().consumeResponse()
+                                                        .closeUnconditionally()
                                                         .getLatestResponse();
 
             assertThat(latestResponse, is(notNullValue()));

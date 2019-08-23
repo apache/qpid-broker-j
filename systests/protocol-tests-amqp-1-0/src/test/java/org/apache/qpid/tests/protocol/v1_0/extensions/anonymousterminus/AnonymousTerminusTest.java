@@ -106,7 +106,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferSettled(Boolean.TRUE)
                        .transferDeliveryTag(_deliveryTag)
                        .transfer()
-                       .sync();
+                       .detachEndCloseUnconditionally();
 
             assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME),
                        is(equalTo(getTestName())));
@@ -267,7 +267,8 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalStateFromCurrentTransaction()
                        .transferSettled(Boolean.TRUE)
-                       .transfer().txnDischarge(false);
+                       .transfer().txnDischarge(false)
+                       .detachEndCloseUnconditionally();
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 

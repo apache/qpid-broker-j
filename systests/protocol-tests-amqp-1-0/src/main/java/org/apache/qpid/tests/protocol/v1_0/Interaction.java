@@ -1282,4 +1282,16 @@ public class Interaction extends AbstractInteraction<Interaction>
         assertion.accept(latestResponse);
         return this;
     }
+
+    public void detachEndCloseUnconditionally() throws Exception
+    {
+        detachClose(true).detach().end().close().sync();
+    }
+
+    public Interaction closeUnconditionally() throws Exception
+    {
+        close().sync();
+        return this;
+    }
+
 }

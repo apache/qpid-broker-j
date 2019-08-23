@@ -927,7 +927,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .transfer()
                        .sync();
 
-            interaction.doCloseConnection();
+            interaction.closeUnconditionally();
 
         }
         assertTestQueueMessages(contents);

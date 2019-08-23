@@ -99,10 +99,7 @@ public class Utils
                        .dispositionLast(interaction.getLatestDeliveryId())
                        .dispositionState(new Accepted())
                        .disposition()
-                       .detachClose(true)
-                       .detach().consumeResponse(Detach.class)
-                       .end().consumeResponse(End.class)
-                       .doCloseConnection();
+                       .detachEndCloseUnconditionally();
             return interaction.getDecodedLatestDelivery();
         }
     }
@@ -178,10 +175,7 @@ public class Utils
                                .sync();
                     tag++;
                 }
-                interaction.detachClose(true)
-                    .detach().consumeResponse(Detach.class)
-                    .end().consumeResponse(End.class)
-                    .doCloseConnection();
+                interaction.detachEndCloseUnconditionally();
             }
         }
     }
