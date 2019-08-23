@@ -64,13 +64,12 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             Open responseOpen = transport.newInteraction()
-                                         .negotiateProtocol().consumeResponse()
                                          .openContainerId("testContainerId")
                                          .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                                          .openProperties(Collections.singletonMap(
                                                  SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                  CLOSE_EXISTING))
-                                         .open().consumeResponse()
+                                         .negotiateOpen()
                                          .getLatestResponse(Open.class);
 
             assumeSoleConnectionCapability(responseOpen);
@@ -91,12 +90,11 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction1 = transport1.newInteraction();
-            interaction1.negotiateProtocol().consumeResponse()
-                        .openContainerId("testContainerId")
+            interaction1.openContainerId("testContainerId")
                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                         .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                  CLOSE_EXISTING))
-                        .open().consumeResponse(Open.class);
+                        .negotiateOpen();
 
             final Open responseOpen = interaction1.getLatestResponse(Open.class);
             assumeSoleConnectionCapability(responseOpen);
@@ -105,12 +103,11 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
-                interaction2.negotiateProtocol().consumeResponse()
-                            .openContainerId("testContainerId")
+                interaction2.openContainerId("testContainerId")
                             .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                             .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                      CLOSE_EXISTING))
-                            .open()
+                            .sendOpen()
                             .sync();
 
                 assertResourceLocked(interaction1.consumeResponse().getLatestResponse(Close.class));
@@ -130,9 +127,8 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
         {
             final Interaction interaction1 = transport1.newInteraction();
             // Omit setting the desired capability to test weak detection
-            interaction1.negotiateProtocol().consumeResponse()
-                        .openContainerId("testContainerId")
-                        .open().consumeResponse(Open.class);
+            interaction1.openContainerId("testContainerId")
+                        .negotiateOpen();
 
             final Open responseOpen = interaction1.getLatestResponse(Open.class);
             assumeSoleConnectionCapability(responseOpen);
@@ -141,13 +137,11 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
-                interaction2.negotiateProtocol().consumeResponse()
-                            .openContainerId("testContainerId")
+                interaction2.openContainerId("testContainerId")
                             .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                             .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                      CLOSE_EXISTING))
-                            .open()
-                            .consumeResponse(Open.class);
+                            .negotiateOpen();
 
                 final Open responseOpen2 = interaction2.getLatestResponse(Open.class);
                 assumeSoleConnectionCapability(responseOpen2);
@@ -164,13 +158,12 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction1 = transport1.newInteraction();
-            Open responseOpen = interaction1.negotiateProtocol().consumeResponse()
-                                            .openContainerId("testContainerId")
+            Open responseOpen = interaction1.openContainerId("testContainerId")
                                             .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                                             .openProperties(Collections.singletonMap(
                                                     SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                     CLOSE_EXISTING))
-                                            .open().consumeResponse()
+                                            .negotiateOpen()
                                             .getLatestResponse(Open.class);
 
             assumeSoleConnectionCapability(responseOpen);
@@ -181,9 +174,8 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
             {
                 final Interaction interaction2 = transport2.newInteraction();
                 // Omit setting the desired capability to test strong detection
-                interaction2.negotiateProtocol().consumeResponse()
-                            .openContainerId("testContainerId")
-                            .open().sync();
+                interaction2.openContainerId("testContainerId")
+                            .sendOpen().sync();
 
                 assertResourceLocked(interaction1.consumeResponse().getLatestResponse(Close.class));
                 assertSoleConnectionCapability(interaction2.consumeResponse().getLatestResponse(Open.class));

@@ -33,9 +33,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
-import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -48,8 +46,7 @@ public class Utils
         try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final Attach attachValidationResponse = interaction.negotiateProtocol().consumeResponse()
-                                                               .open().consumeResponse()
+            final Attach attachValidationResponse = interaction.negotiateOpen()
                                                                .begin().consumeResponse()
                                                                .attachName("validationAttach")
                                                                .attachRole(Role.RECEIVER)
@@ -77,8 +74,7 @@ public class Utils
         try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse()
+            interaction.negotiateOpen()
                        .begin().consumeResponse()
                        .attachRole(Role.RECEIVER)
                        .attachName("utilsReceiverLink")
@@ -154,8 +150,7 @@ public class Utils
             try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
             {
                 final Interaction interaction = transport.newInteraction();
-                interaction.negotiateProtocol().consumeResponse()
-                           .open().consumeResponse(Open.class)
+                interaction.negotiateOpen()
                            .begin().consumeResponse(Begin.class)
                            .attachName("utilsSenderLink")
                            .attachRole(Role.SENDER)

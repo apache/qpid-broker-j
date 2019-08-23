@@ -64,13 +64,12 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect();)
         {
             final Interaction interaction = transport.newInteraction();
-            final Open responseOpen = interaction.negotiateProtocol().consumeResponse()
-                                                 .openContainerId("testContainerId")
+            final Open responseOpen = interaction.openContainerId("testContainerId")
                                                  .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                                                  .openProperties(Collections.singletonMap(
                                                          SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                          REFUSE_CONNECTION))
-                                                 .open().consumeResponse()
+                                                 .negotiateOpen()
                                                  .getLatestResponse(Open.class);
 
             assumeSoleConnectionCapability(responseOpen);
@@ -91,12 +90,11 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction1 = transport1.newInteraction();
-            interaction1.negotiateProtocol().consumeResponse()
-                        .openContainerId("testContainerId")
+            interaction1.openContainerId("testContainerId")
                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                         .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                  REFUSE_CONNECTION))
-                        .open().consumeResponse(Open.class);
+                        .negotiateOpen();
 
             final Open responseOpen = interaction1.getLatestResponse(Open.class);
             assumeSoleConnectionCapability(responseOpen);
@@ -105,13 +103,12 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
-                final Open responseOpen2 = interaction2.negotiateProtocol().consumeResponse()
-                                                       .openContainerId("testContainerId")
+                final Open responseOpen2 = interaction2.openContainerId("testContainerId")
                                                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                                                        .openProperties(Collections.singletonMap(
                                                                SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                REFUSE_CONNECTION))
-                                                       .open().consumeResponse()
+                                                       .negotiateOpen()
                                                        .getLatestResponse(Open.class);
 
                 assertConnectionEstablishmentFailed(responseOpen2);
@@ -128,9 +125,8 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
         {
             final Interaction interaction1 = transport1.newInteraction();
             // Omit setting the desired capability to test weak detection
-            interaction1.negotiateProtocol().consumeResponse()
-                        .openContainerId("testContainerId")
-                        .open().consumeResponse(Open.class);
+            interaction1.openContainerId("testContainerId")
+                        .negotiateOpen();
 
             final Open responseOpen = interaction1.getLatestResponse(Open.class);
             assumeSoleConnectionCapability(responseOpen);
@@ -139,13 +135,12 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
-                final Open responseOpen2 = interaction2.negotiateProtocol().consumeResponse()
-                                                       .openContainerId("testContainerId")
+                final Open responseOpen2 = interaction2.openContainerId("testContainerId")
                                                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                                                        .openProperties(Collections.singletonMap(
                                                                SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                REFUSE_CONNECTION))
-                                                       .open().consumeResponse()
+                                                       .negotiateOpen()
                                                        .getLatestResponse(Open.class);
 
                 assumeConnectionEstablishmentFailed(responseOpen2);
@@ -160,13 +155,12 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction1 = transport1.newInteraction();
-            final Open responseOpen = interaction1.negotiateProtocol().consumeResponse()
-                                                  .openContainerId("testContainerId")
+            final Open responseOpen = interaction1.openContainerId("testContainerId")
                                                   .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                                                   .openProperties(Collections.singletonMap(
                                                           SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                           REFUSE_CONNECTION.getValue()))
-                                                  .open().consumeResponse()
+                                                  .negotiateOpen()
                                                   .getLatestResponse(Open.class);
 
             assumeSoleConnectionCapability(responseOpen);
@@ -177,9 +171,8 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
             {
                 final Interaction interaction2 = transport2.newInteraction();
                 // Omit setting the desired capability to test strong detection
-                final Open responseOpen2 = interaction2.negotiateProtocol().consumeResponse()
-                                                       .openContainerId("testContainerId")
-                                                       .open().consumeResponse()
+                final Open responseOpen2 = interaction2.openContainerId("testContainerId")
+                                                       .negotiateOpen()
                                                        .getLatestResponse(Open.class);
 
                 assertConnectionEstablishmentFailed(responseOpen2);
@@ -195,10 +188,9 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
         {
             final Interaction interaction1 = transport1.newInteraction();
             // Omit setting the enforcement policy explicitly. The default is refuse.
-            interaction1.negotiateProtocol().consumeResponse()
-                        .openContainerId("testContainerId")
+            interaction1.openContainerId("testContainerId")
                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                        .open().consumeResponse(Open.class);
+                        .negotiateOpen();
 
             final Open responseOpen = interaction1.getLatestResponse(Open.class);
             assumeSoleConnectionCapability(responseOpen);
@@ -208,10 +200,9 @@ public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
             {
                 final Interaction interaction2 = transport2.newInteraction();
                 // Omit setting the enforcement policy explicitly. The default is refuse.
-                final Open responseOpen2 = interaction2.negotiateProtocol().consumeResponse()
-                                                       .openContainerId("testContainerId")
+                final Open responseOpen2 = interaction2.openContainerId("testContainerId")
                                                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                                                       .open().consumeResponse()
+                                                       .negotiateOpen()
                                                        .getLatestResponse(Open.class);
 
                 assertConnectionEstablishmentFailed(responseOpen2);

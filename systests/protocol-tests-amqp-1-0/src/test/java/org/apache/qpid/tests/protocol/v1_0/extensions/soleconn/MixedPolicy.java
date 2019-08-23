@@ -57,12 +57,11 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction1 = transport1.newInteraction();
-            interaction1.negotiateProtocol().consumeResponse()
-                        .openContainerId("testContainerId")
+            interaction1.openContainerId("testContainerId")
                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                         .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                  CLOSE_EXISTING))
-                        .open().consumeResponse(Open.class);
+                        .negotiateOpen();
 
             Open responseOpen = interaction1.getLatestResponse(Open.class);
             assumeSoleConnectionCapability(responseOpen);
@@ -71,12 +70,11 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
-                interaction2.negotiateProtocol().consumeResponse()
-                            .openContainerId("testContainerId")
+                interaction2.openContainerId("testContainerId")
                             .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                             .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                      REFUSE_CONNECTION))
-                            .open().sync();
+                            .sendOpen().sync();
 
                 interaction1.consumeResponse(Close.class);
 
@@ -85,13 +83,11 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
                 try (FrameTransport transport3 = new FrameTransport(_brokerAddress).connect())
                 {
                     final Interaction interaction3 = transport3.newInteraction();
-                    interaction3.negotiateProtocol().consumeResponse()
-                                .openContainerId("testContainerId")
+                    interaction3.openContainerId("testContainerId")
                                 .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                                 .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                          CLOSE_EXISTING))
-                                .open()
-                                .consumeResponse(Open.class)
+                                .negotiateOpen()
                                 .consumeResponse(Close.class);
                 }
             }
@@ -104,12 +100,11 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction1 = transport1.newInteraction();
-            interaction1.negotiateProtocol().consumeResponse()
-                        .openContainerId("testContainerId")
+            interaction1.openContainerId("testContainerId")
                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                         .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                  REFUSE_CONNECTION))
-                        .open().consumeResponse(Open.class);
+                        .negotiateOpen();
 
             final Open responseOpen = interaction1.getLatestResponse(Open.class);
             assumeSoleConnectionCapability(responseOpen);
@@ -118,13 +113,11 @@ public class MixedPolicy extends BrokerAdminUsingTestBase
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
-                interaction2.negotiateProtocol().consumeResponse()
-                            .openContainerId("testContainerId")
+                interaction2.openContainerId("testContainerId")
                             .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                             .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                      CLOSE_EXISTING))
-                            .open()
-                            .consumeResponse(Open.class)
+                            .negotiateOpen()
                             .consumeResponse(Close.class);
             }
         }

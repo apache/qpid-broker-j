@@ -43,8 +43,8 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -75,8 +75,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             source.setDynamic(true);
             final Interaction interaction = transport.newInteraction();
-            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach attachResponse = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSource(source)
@@ -111,8 +110,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             target.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             target.setDynamic(true);
             final Interaction interaction = transport.newInteraction();
-            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach attachResponse = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.SENDER)
                                                      .attachTarget(target)
@@ -150,8 +148,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             source.setDynamic(true);
             final Interaction interaction = transport.newInteraction();
-            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach attachResponse = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSource(source)
@@ -195,8 +192,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
             source.setDynamic(true);
             final Interaction interaction = transport.newInteraction();
-            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach attachResponse = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSource(source)

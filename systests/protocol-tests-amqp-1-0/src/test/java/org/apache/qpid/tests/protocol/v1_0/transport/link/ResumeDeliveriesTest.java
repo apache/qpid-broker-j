@@ -103,8 +103,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
             final UnsignedInteger linkHandle1 = UnsignedInteger.ZERO;
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class);
 
             // 1. attach with ReceiverSettleMode.SECOND
@@ -161,11 +160,10 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse();
 
             // 0. Open connection with small max-frame-size
             final Open open = interaction.openMaxFrameSize(UnsignedInteger.valueOf(MIN_MAX_FRAME_SIZE))
-                                         .open().consumeResponse()
+                                         .negotiateOpen()
                                          .getLatestResponse(Open.class);
             interaction.begin().consumeResponse(Begin.class);
 
@@ -256,11 +254,10 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse();
 
             // 0. Open connection with small max-frame-size
             final Open open = interaction.openMaxFrameSize(UnsignedInteger.valueOf(MIN_MAX_FRAME_SIZE))
-                                         .open().consumeResponse()
+                                         .negotiateOpen()
                                          .getLatestResponse(Open.class);
             interaction.begin().consumeResponse(Begin.class);
 
@@ -347,11 +344,9 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             //    with rcv-settle-mode=second, snd-settle-mode=unsettled,
             //    flow with incoming-window=MAX_INTEGER and link-credit=MAX_INTEGER
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse()
+            interaction.consumeResponse()
                        .openMaxFrameSize(UnsignedInteger.valueOf(MIN_MAX_FRAME_SIZE))
-                       .open()
-                       .consumeResponse()
+                       .negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
                        .attachRole(Role.RECEIVER)
@@ -462,8 +457,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -514,8 +508,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -600,8 +593,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -686,8 +678,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
             final UnsignedInteger linkHandle1 = UnsignedInteger.ZERO;
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class);
 
             // 1. attach with ReceiverSettleMode.SECOND

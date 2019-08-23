@@ -109,8 +109,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             Interaction interact = transport.newInteraction();
-            Response<?> response = interact.negotiateProtocol().consumeResponse()
-                                           .open().consumeResponse(Open.class)
+            Response<?> response = interact.negotiateOpen()
                                            .begin().consumeResponse(Begin.class)
                                            .attachRole(Role.SENDER)
                                            .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -142,8 +141,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             Interaction interact = transport.newInteraction();
-            Response<?> response = interact.negotiateProtocol().consumeResponse()
-                                           .open().consumeResponse(Open.class)
+            Response<?> response = interact.negotiateOpen()
                                            .begin().consumeResponse(Begin.class)
                                            .attachRole(Role.SENDER)
                                            .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -175,8 +173,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             Interaction interaction = transport.newInteraction()
-                                               .negotiateProtocol().consumeResponse()
-                                               .open().consumeResponse(Open.class)
+                                               .negotiateOpen()
                                                .begin().consumeResponse(Begin.class)
                                                .attachRole(Role.SENDER)
                                                .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -210,8 +207,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
             Disposition responseDisposition = transport.newInteraction()
-                                                       .negotiateProtocol().consumeResponse()
-                                                       .open().consumeResponse(Open.class)
+                                                       .negotiateOpen()
                                                        .begin().consumeResponse(Begin.class)
                                                        .attachRole(Role.SENDER)
                                                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -244,8 +240,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             final UnsignedInteger link2Handle = UnsignedInteger.valueOf(2);
             final Binary deliveryTag = new Binary("deliveryTag".getBytes(StandardCharsets.UTF_8));
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                                     .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                                      .begin().consumeResponse(Begin.class)
 
                                      .attachName("test1")
@@ -302,8 +297,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             Disposition responseDisposition = transport.newInteraction()
-                                                       .negotiateProtocol().consumeResponse()
-                                                       .open().consumeResponse(Open.class)
+                                                       .negotiateOpen()
                                                        .begin().consumeResponse(Begin.class)
                                                        .attachRole(Role.SENDER)
                                                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -335,8 +329,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             Response<?> response = transport.newInteraction()
-                                     .negotiateProtocol().consumeResponse()
-                                     .open().consumeResponse(Open.class)
+                                     .negotiateOpen()
                                      .begin().consumeResponse(Begin.class)
                                      .attachRole(Role.SENDER)
                                      .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -411,8 +404,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             messageEncoder.setHeader(header);
             messageEncoder.addData(getTestName());
             final Disposition receivedDisposition = transport.newInteraction()
-                                                             .negotiateProtocol().consumeResponse()
-                                                             .open().consumeResponse(Open.class)
+                                                             .negotiateOpen()
                                                              .begin().consumeResponse(Begin.class)
                                                              .attachRole(Role.SENDER)
                                                              .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -459,8 +451,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             messageEncoder.setHeader(header);
             messageEncoder.addData(getTestName());
             final Response<?> response = transport.newInteraction()
-                                                  .negotiateProtocol().consumeResponse()
-                                                  .open().consumeResponse(Open.class)
+                                                  .negotiateOpen()
                                                   .begin().consumeResponse(Begin.class)
                                                   .attachRole(Role.SENDER)
                                                   .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -504,8 +495,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -543,8 +533,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -579,8 +568,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -626,8 +614,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -684,8 +671,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -802,8 +788,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -845,10 +830,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             final Binary deliveryTag = new Binary("testDeliveryTag".getBytes(UTF_8));
 
             Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
@@ -909,10 +891,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             final Binary deliveryTag = new Binary("testDeliveryTag".getBytes(UTF_8));
 
             Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
@@ -953,8 +932,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             final Binary deliveryTag = new Binary("testDeliveryTag".getBytes(UTF_8));
 
             Interaction interaction = transport.newInteraction();
-            Open open = interaction.negotiateProtocol().consumeResponse()
-                                   .open().consumeResponse(Open.class)
+            Open open = interaction.negotiateOpen()
                                    .getLatestResponse(Open.class);
 
             long maxFrameSize = open.getMaxFrameSize() == null ? Integer.MAX_VALUE : open.getMaxFrameSize().longValue();
@@ -1020,8 +998,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.SENDER)
                                                      .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -1062,8 +1039,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         final String[] contents = Utils.createTestMessageContents(3, getTestName());
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final Interaction interaction = transport.newInteraction().negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Interaction interaction = transport.newInteraction().negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.SENDER)
                                                      .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -1111,8 +1087,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -1163,8 +1138,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)

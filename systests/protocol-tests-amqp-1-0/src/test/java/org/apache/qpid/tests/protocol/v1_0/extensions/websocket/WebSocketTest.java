@@ -39,11 +39,11 @@ import org.junit.Test;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.tests.protocol.SpecificationTest;
+import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
-import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 
 public class WebSocketTest extends BrokerAdminUsingTestBase
 {
@@ -76,8 +76,7 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
         {
             Interaction interaction = transport.newInteraction();
             final Open responseOpen = interaction
-                                               .negotiateProtocol().consumeResponse()
-                                               .open().consumeResponse()
+                                               .negotiateOpen()
                                                .getLatestResponse(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));
@@ -101,8 +100,7 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
         {
             Interaction interaction = transport.newInteraction();
             final Open responseOpen = interaction
-                                               .negotiateProtocol().consumeResponse()
-                                               .open().consumeResponse()
+                                               .negotiateOpen()
                                                .getLatestResponse(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));

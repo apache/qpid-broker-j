@@ -551,9 +551,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     private Interaction openInteractionWithAnonymousRelayCapability(final FrameTransport transport) throws Exception
     {
         final Interaction interaction = transport.newInteraction();
-        interaction.negotiateProtocol().consumeResponse()
-                   .openDesiredCapabilities(ANONYMOUS_RELAY)
-                   .open().consumeResponse(Open.class);
+        interaction.openDesiredCapabilities(ANONYMOUS_RELAY).negotiateOpen();
 
         Open open = interaction.getLatestResponse(Open.class);
         assumeThat(open.getOfferedCapabilities(), hasItemInArray((ANONYMOUS_RELAY)));

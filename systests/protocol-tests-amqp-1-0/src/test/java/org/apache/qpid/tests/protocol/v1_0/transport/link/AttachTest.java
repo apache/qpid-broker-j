@@ -42,7 +42,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -63,8 +62,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             final Response<?> response = transport.newInteraction()
-                                                  .negotiateProtocol().consumeResponse()
-                                                  .open().consumeResponse(Open.class)
+                                                  .negotiateOpen()
                                                   .begin().consumeResponse(Begin.class)
                                                   .attachRole(null)
                                                   .attachHandle(null)
@@ -93,8 +91,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             final Attach responseAttach = transport.newInteraction()
-                                                   .negotiateProtocol().consumeResponse()
-                                                   .open().consumeResponse(Open.class)
+                                                   .negotiateOpen()
                                                    .begin().consumeResponse(Begin.class)
                                                    .attachRole(Role.SENDER)
                                                    .attachInitialDeliveryCount(UnsignedInteger.ZERO)
@@ -121,8 +118,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             final Attach responseAttach = transport.newInteraction()
-                                                   .negotiateProtocol().consumeResponse()
-                                                   .open().consumeResponse(Open.class)
+                                                   .negotiateOpen()
                                                    .begin().consumeResponse(Begin.class)
                                                    .attachRole(Role.RECEIVER)
                                                    .attachSourceAddress(queueName)
@@ -150,8 +146,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Interaction interaction = transport.newInteraction();
-            final Attach responseAttach = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach responseAttach = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(queueName)
@@ -193,8 +188,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Interaction interaction = transport.newInteraction();
-            final Attach responseAttach = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach responseAttach = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.SENDER)
                                                      .attachSource(null)

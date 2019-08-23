@@ -40,7 +40,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.Response;
@@ -73,10 +72,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            Disposition responseDisposition = interaction.negotiateProtocol()
-                                                         .consumeResponse()
-                                                         .open()
-                                                         .consumeResponse(Open.class)
+            Disposition responseDisposition = interaction.negotiateOpen()
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
@@ -114,10 +110,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
 

@@ -46,7 +46,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -87,8 +86,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
             source.setDurable(TerminusDurability.NONE);
 
             final Interaction interaction = transport.newInteraction();
-            final Attach responseAttach = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach responseAttach = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSource(source)
@@ -122,8 +120,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
             source.setDurable(TerminusDurability.UNSETTLED_STATE);
 
             final Interaction interaction = transport.newInteraction();
-            final Attach responseAttach = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach responseAttach = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSource(source)
@@ -158,8 +155,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
             source.setDurable(TerminusDurability.NONE);
 
             final Interaction interaction = transport.newInteraction();
-            final Attach responseAttach1 = interaction.negotiateProtocol().consumeResponse()
-                                                      .open().consumeResponse(Open.class)
+            final Attach responseAttach1 = interaction.negotiateOpen()
                                                       .begin().consumeResponse(Begin.class)
                                                       .attachName(subscriptionName + "|global-volatile")
                                                       .attachHandle(UnsignedInteger.ZERO)
@@ -217,8 +213,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
             source.setDurable(TerminusDurability.CONFIGURATION);
 
             final Interaction interaction = transport.newInteraction();
-            final Attach responseAttach1 = interaction.negotiateProtocol().consumeResponse()
-                                                      .open().consumeResponse(Open.class)
+            final Attach responseAttach1 = interaction.negotiateOpen()
                                                       .begin().consumeResponse(Begin.class)
                                                       .attachName(subscriptionName + "|global")
                                                       .attachHandle(UnsignedInteger.ZERO)
@@ -300,8 +295,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
             source.setDurable(TerminusDurability.CONFIGURATION);
 
             final Interaction interaction = transport.newInteraction();
-            final Attach responseAttach1 = interaction.negotiateProtocol().consumeResponse()
-                                                      .open().consumeResponse(Open.class)
+            final Attach responseAttach1 = interaction.negotiateOpen()
                                                       .begin().consumeResponse(Begin.class)
                                                       .attachName(subscriptionName + "|global")
                                                       .attachHandle(UnsignedInteger.ZERO)

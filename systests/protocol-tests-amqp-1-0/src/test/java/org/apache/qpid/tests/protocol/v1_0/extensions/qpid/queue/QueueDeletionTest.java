@@ -47,7 +47,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.Response;
@@ -77,8 +76,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             Interaction interaction = transport.newInteraction();
-            final Attach responseAttach = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach responseAttach = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.SENDER)
                                                      .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -103,10 +101,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             Interaction interaction = transport.newInteraction();
-            final Attach responseAttach = interaction.negotiateProtocol()
-                                                     .consumeResponse()
-                                                     .open()
-                                                     .consumeResponse(Open.class)
+            final Attach responseAttach = interaction.negotiateOpen()
                                                      .begin()
                                                      .consumeResponse(Begin.class)
                                                      .attachRole(Role.RECEIVER)
@@ -134,10 +129,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
 
             final Interaction interaction = transport.newInteraction();
 
-            Attach attach = interaction.negotiateProtocol()
-                                       .consumeResponse()
-                                       .open()
-                                       .consumeResponse(Open.class)
+            Attach attach = interaction.negotiateOpen()
                                        .begin()
                                        .consumeResponse(Begin.class)
 
@@ -187,10 +179,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            Attach attach = interaction.negotiateProtocol()
-                                       .consumeResponse()
-                                       .open()
-                                       .consumeResponse(Open.class)
+            Attach attach = interaction.negotiateOpen()
                                        .begin()
                                        .consumeResponse(Begin.class)
 

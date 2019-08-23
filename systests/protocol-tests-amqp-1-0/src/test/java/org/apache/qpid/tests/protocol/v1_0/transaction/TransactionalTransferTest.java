@@ -53,7 +53,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
@@ -88,10 +87,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            Disposition responseDisposition = interaction.negotiateProtocol()
-                                                         .consumeResponse()
-                                                         .open()
-                                                         .consumeResponse(Open.class)
+            Disposition responseDisposition = interaction.negotiateOpen()
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
@@ -136,10 +132,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            Disposition responseDisposition = interaction.negotiateProtocol()
-                                                         .consumeResponse()
-                                                         .open()
-                                                         .consumeResponse(Open.class)
+            Disposition responseDisposition = interaction.negotiateOpen()
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
@@ -186,10 +179,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
 
             final Interaction interaction = transport.newInteraction();
-            Disposition responseDisposition = interaction.negotiateProtocol()
-                                                         .consumeResponse()
-                                                         .open()
-                                                         .consumeResponse(Open.class)
+            Disposition responseDisposition = interaction.negotiateOpen()
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
@@ -243,8 +233,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             final Interaction interaction = transport.newInteraction();
 
-            ErrorCarryingFrameBody response = interaction.negotiateProtocol().consumeResponse()
-                                              .open().consumeResponse(Open.class)
+            ErrorCarryingFrameBody response = interaction.negotiateOpen()
                                               .begin().consumeResponse(Begin.class)
 
                                               .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
@@ -280,10 +269,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = transport.newInteraction();
 
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
 
@@ -329,10 +315,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
 
@@ -385,8 +368,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            List<Transfer> transfers = interaction.negotiateProtocol().consumeResponse()
-                                                  .open().consumeResponse(Open.class)
+            List<Transfer> transfers = interaction.negotiateOpen()
                                                   .begin().consumeResponse(Begin.class)
 
                                                   .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
@@ -443,10 +425,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
 
@@ -504,10 +483,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
 
@@ -570,10 +546,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
 
@@ -635,10 +608,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ErrorCarryingFrameBody response = interaction.negotiateProtocol()
-                                              .consumeResponse()
-                                              .open()
-                                              .consumeResponse(Open.class)
+            ErrorCarryingFrameBody response = interaction.negotiateOpen()
                                               .begin()
                                               .consumeResponse(Begin.class)
 

@@ -46,7 +46,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -97,8 +96,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
             Target target = createTarget(targetCapabilities);
 
             final Interaction interaction = transport.newInteraction();
-            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach attachResponse = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.SENDER)
                                                      .attachTarget(target)
@@ -148,8 +146,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 
             final Interaction interaction = transport.newInteraction();
             final UnsignedInteger senderHandle = UnsignedInteger.ONE;
-            final Attach senderAttachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                           .open().consumeResponse(Open.class)
+            final Attach senderAttachResponse = interaction.negotiateOpen()
                                                            .begin().consumeResponse(Begin.class)
                                                            .attachRole(Role.SENDER)
                                                            .attachHandle(senderHandle)
@@ -209,8 +206,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 
             final Interaction interaction = transport.newInteraction();
             final UnsignedInteger senderHandle = UnsignedInteger.ONE;
-            final Attach senderAttachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                           .open().consumeResponse(Open.class)
+            final Attach senderAttachResponse = interaction.negotiateOpen()
                                                            .begin().consumeResponse(Begin.class)
                                                            .attachRole(Role.SENDER)
                                                            .attachHandle(senderHandle)
@@ -249,8 +245,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 
             final Interaction interaction = transport.newInteraction();
             final UnsignedInteger senderHandle = UnsignedInteger.ONE;
-            final Attach senderAttachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                           .open().consumeResponse(Open.class)
+            final Attach senderAttachResponse = interaction.negotiateOpen()
                                                            .begin().consumeResponse(Begin.class)
                                                            .attachRole(Role.SENDER)
                                                            .attachHandle(senderHandle)
@@ -305,8 +300,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 
             final Interaction interaction = transport.newInteraction();
             final UnsignedInteger receiverHandle = UnsignedInteger.ONE;
-            final Attach receiverAttachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                             .open().consumeResponse(Open.class)
+            final Attach receiverAttachResponse = interaction.negotiateOpen()
                                                              .begin().consumeResponse(Begin.class)
                                                              .attachRole(Role.RECEIVER)
                                                              .attachSource(source)
@@ -370,8 +364,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 
             final Interaction interaction = transport.newInteraction();
             final UnsignedInteger receiverHandle = UnsignedInteger.ONE;
-            final Attach receiverAttachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                             .open().consumeResponse(Open.class)
+            final Attach receiverAttachResponse = interaction.negotiateOpen()
                                                              .begin().consumeResponse(Begin.class)
                                                              .attachRole(Role.RECEIVER)
                                                              .attachSource(source)
@@ -412,8 +405,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 
             final Interaction interaction = transport.newInteraction();
             final UnsignedInteger receiverHandle = UnsignedInteger.ONE;
-            final Attach receiverAttachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                             .open().consumeResponse(Open.class)
+            final Attach receiverAttachResponse = interaction.negotiateOpen()
                                                              .begin().consumeResponse(Begin.class)
                                                              .attachRole(Role.RECEIVER)
                                                              .attachSource(source)
@@ -438,10 +430,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final Detach responseDetach = interaction.negotiateProtocol()
-                                                     .consumeResponse()
-                                                     .open()
-                                                     .consumeResponse(Open.class)
+            final Detach responseDetach = interaction.negotiateOpen()
                                                      .begin()
                                                      .consumeResponse(Begin.class)
                                                      .attachRole(Role.RECEIVER)
@@ -465,10 +454,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
             target.setAddress(address);
 
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                        .consumeResponse()
-                        .open()
-                        .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                         .begin()
                         .consumeResponse(Begin.class)
                         .attachRole(Role.SENDER)

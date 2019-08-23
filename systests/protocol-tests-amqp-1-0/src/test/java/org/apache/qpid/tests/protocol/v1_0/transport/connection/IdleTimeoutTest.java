@@ -59,9 +59,8 @@ public class IdleTimeoutTest extends BrokerAdminUsingTestBase
         {
             Interaction interaction = transport.newInteraction();
             Open responseOpen = interaction
-                    .negotiateProtocol().consumeResponse()
                     .openContainerId("testContainerId")
-                    .open().consumeResponse()
+                    .negotiateOpen()
                     .getLatestResponse(Open.class);
             assertThat(responseOpen.getIdleTimeOut().intValue(), is(equalTo(IDLE_TIMEOUT_MS)));
 
@@ -80,10 +79,9 @@ public class IdleTimeoutTest extends BrokerAdminUsingTestBase
         {
             Interaction interaction = transport.newInteraction();
             Open responseOpen = interaction
-                    .negotiateProtocol().consumeResponse()
                     .openContainerId("testContainerId")
                     .openIdleTimeOut(IDLE_TIMEOUT_MS)
-                    .open().consumeResponse()
+                    .negotiateOpen()
                     .getLatestResponse(Open.class);
             assertThat(responseOpen.getIdleTimeOut().intValue(), is(equalTo(IDLE_TIMEOUT_MS)));
 

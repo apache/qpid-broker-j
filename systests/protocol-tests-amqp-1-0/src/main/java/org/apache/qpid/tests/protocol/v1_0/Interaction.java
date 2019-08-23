@@ -1327,4 +1327,15 @@ public class Interaction extends AbstractInteraction<Interaction>
         return this;
     }
 
+    public Interaction negotiateOpen() throws Exception
+    {
+        sendOpen().consumeResponse(Open.class);
+        return this;
+    }
+
+    public Interaction sendOpen() throws Exception
+    {
+        negotiateProtocol().consumeResponse().open();
+        return this;
+    }
 }

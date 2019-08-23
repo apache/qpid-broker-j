@@ -40,7 +40,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -67,8 +66,7 @@ public class LinkStealingTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = transport.newInteraction();
             final Attach responseAttach = interaction
-                    .negotiateProtocol().consumeResponse()
-                    .open().consumeResponse(Open.class)
+                    .negotiateOpen()
                     .begin().consumeResponse(Begin.class)
                     .attachRole(Role.SENDER)
                     .attachInitialDeliveryCount(UnsignedInteger.ZERO)
@@ -106,8 +104,7 @@ public class LinkStealingTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = transport.newInteraction();
             final String linkName = "test";
-            final Attach responseAttach = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach responseAttach = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.SENDER)
                                                      .attachName(linkName)

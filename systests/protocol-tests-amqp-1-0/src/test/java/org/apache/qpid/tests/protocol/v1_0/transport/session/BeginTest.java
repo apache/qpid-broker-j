@@ -43,11 +43,11 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.Response;
+import org.apache.qpid.tests.protocol.SpecificationTest;
+import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
-import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 
 public class BeginTest extends BrokerAdminUsingTestBase
 {
@@ -60,8 +60,7 @@ public class BeginTest extends BrokerAdminUsingTestBase
         try(FrameTransport transport = new FrameTransport(addr).connect())
         {
             final Response<?> response =  transport.newInteraction()
-                                           .negotiateProtocol().consumeResponse()
-                                           .open().consumeResponse(Open.class)
+                                           .negotiateOpen()
                                            .beginNextOutgoingId(null)
                                            .beginIncomingWindow(null)
                                            .beginOutgoingWindow(null)
@@ -89,8 +88,7 @@ public class BeginTest extends BrokerAdminUsingTestBase
             final UnsignedShort channel = UnsignedShort.valueOf(37);
             Interaction interaction = transport.newInteraction();
             Begin responseBegin = interaction
-                                           .negotiateProtocol().consumeResponse()
-                                           .open().consumeResponse(Open.class)
+                                           .negotiateOpen()
                                            .sessionChannel(channel)
                                            .begin().consumeResponse()
                                            .getLatestResponse(Begin.class);
@@ -116,9 +114,8 @@ public class BeginTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = transport.newInteraction();
             final int ourChannelMax = 5;
-            final Open responseOpen = interaction.negotiateProtocol().consumeResponse()
-                                                 .openChannelMax(UnsignedShort.valueOf(ourChannelMax))
-                                                 .open().consumeResponse(Open.class).getLatestResponse(Open.class);
+            final Open responseOpen = interaction.openChannelMax(UnsignedShort.valueOf(ourChannelMax))
+                                                 .negotiateOpen().getLatestResponse(Open.class);
 
             final UnsignedShort remoteChannelMax = responseOpen.getChannelMax();
             assumeThat(remoteChannelMax, is(notNullValue()));

@@ -50,7 +50,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
@@ -84,8 +83,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
 
                        .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Rejected.REJECTED_SYMBOL)
@@ -117,8 +115,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                                           .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                                            .begin().consumeResponse(Begin.class)
                                            .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Accepted.ACCEPTED_SYMBOL)
                                            .txnDeclare();
@@ -149,8 +146,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
 
                        .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
@@ -207,8 +203,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
 
                        .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
@@ -248,8 +243,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
 
                        .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)

@@ -53,7 +53,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -79,10 +78,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin()
                        .consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
@@ -125,8 +121,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
             source.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("lifetime-policy"),
                                                                      UnsignedInteger.MAX_VALUE));
             final Interaction interaction = transport.newInteraction()
-                                                        .negotiateProtocol().consumeResponse()
-                                                        .open().consumeResponse(Open.class)
+                                                        .negotiateOpen()
                                                         .begin().consumeResponse(Begin.class)
                                                         .attachSource(source)
                                                         .attachRole(Role.RECEIVER)
@@ -150,8 +145,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
             target.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("supported-dist-modes"),
                                                                      UnsignedInteger.ZERO));
             final Interaction interaction = transport.newInteraction()
-                                                        .negotiateProtocol().consumeResponse()
-                                                        .open().consumeResponse(Open.class)
+                                                        .negotiateOpen()
                                                         .begin().consumeResponse(Begin.class)
                                                         .attachTarget(target)
                                                         .attachRole(Role.SENDER)

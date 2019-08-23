@@ -43,7 +43,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SessionError;
 import org.apache.qpid.tests.protocol.Response;
@@ -66,8 +65,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             final Response<?> response = transport.newInteraction()
-                                                  .negotiateProtocol().consumeResponse()
-                                                  .open().consumeResponse(Open.class)
+                                                  .negotiateOpen()
                                                   .begin().consumeResponse(Begin.class)
                                                   .flowIncomingWindow(null)
                                                   .flowNextIncomingId(null)
@@ -95,8 +93,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Flow responseFlow = transport.newInteraction()
-                                         .negotiateProtocol().consumeResponse()
-                                         .open().consumeResponse(Open.class)
+                                         .negotiateOpen()
                                          .begin().consumeResponse(Begin.class)
                                          .flowEcho(true)
                                          .flowOutgoingWindow(UnsignedInteger.ZERO)
@@ -123,8 +120,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Flow responseFlow = transport.newInteraction()
-                                         .negotiateProtocol().consumeResponse()
-                                         .open().consumeResponse(Open.class)
+                                         .negotiateOpen()
                                          .begin().consumeResponse(Begin.class)
                                          .attachRole(Role.RECEIVER)
                                          .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -157,8 +153,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse()
+            interaction.negotiateOpen()
                        .begin().consumeResponse()
                        .attachRole(Role.RECEIVER)
                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -196,8 +191,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Flow responseFlow = transport.newInteraction()
-                                         .negotiateProtocol().consumeResponse()
-                                         .open().consumeResponse(Open.class)
+                                         .negotiateOpen()
                                          .begin().consumeResponse(Begin.class)
                                          .attachRole(Role.RECEIVER)
                                          .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -228,8 +222,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             End responseEnd = transport.newInteraction()
-                                       .negotiateProtocol().consumeResponse()
-                                       .open().consumeResponse(Open.class)
+                                       .negotiateOpen()
                                        .begin().consumeResponse(Begin.class)
                                        .flowEcho(true)
                                        .flowIncomingWindow(UnsignedInteger.ONE)
@@ -260,8 +253,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Interaction interaction = transport.newInteraction()
-                                               .negotiateProtocol().consumeResponse()
-                                               .open().consumeResponse(Open.class)
+                                               .negotiateOpen()
                                                .begin().consumeResponse(Begin.class)
                                                .attachRole(Role.RECEIVER)
                                                .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -315,8 +307,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Interaction interaction = transport.newInteraction()
-                                               .negotiateProtocol().consumeResponse()
-                                               .open().consumeResponse(Open.class)
+                                               .negotiateOpen()
                                                .begin().consumeResponse(Begin.class)
                                                .attachRole(Role.RECEIVER)
                                                .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -387,8 +378,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Interaction interaction = transport.newInteraction()
-                                               .negotiateProtocol().consumeResponse()
-                                               .open().consumeResponse(Open.class)
+                                               .negotiateOpen()
                                                .begin().consumeResponse(Begin.class)
                                                .attachRole(Role.RECEIVER)
                                                .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -454,8 +444,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Interaction interaction = transport.newInteraction()
-                                               .negotiateProtocol().consumeResponse()
-                                               .open().consumeResponse(Open.class)
+                                               .negotiateOpen()
                                                .begin().consumeResponse(Begin.class)
                                                .attachRole(Role.RECEIVER)
                                                .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -545,8 +534,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Interaction interaction = transport.newInteraction()
-                                               .negotiateProtocol().consumeResponse()
-                                               .open().consumeResponse(Open.class)
+                                               .negotiateOpen()
                                                .begin().consumeResponse(Begin.class)
                                                .attachRole(Role.RECEIVER)
                                                .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)

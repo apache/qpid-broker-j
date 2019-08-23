@@ -51,7 +51,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -85,8 +84,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -110,8 +108,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
                        .attachRole(Role.RECEIVER)
                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -154,8 +151,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
             final Map<Symbol, Filter> filters = new HashMap<>();
             filters.put(Symbol.valueOf("selector-filter"), new JMSSelectorFilter("index=1"));
             filters.put(Symbol.valueOf("test-filter"), new TestFilter("foo"));
-            final Attach responseAttach = interaction.negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse(Open.class)
+            final Attach responseAttach = interaction.negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)

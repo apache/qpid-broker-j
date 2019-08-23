@@ -40,14 +40,9 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
-import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
@@ -83,8 +78,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
 
             Interaction interaction = transport.newInteraction();
-            Disposition disposition = interaction.negotiateProtocol().consumeResponse()
-                                                 .open().consumeResponse(Open.class)
+            Disposition disposition = interaction.negotiateOpen()
                                                  .begin().consumeResponse(Begin.class)
                                                  .attachRole(Role.SENDER)
                                                  .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -129,8 +123,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
 
             Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -190,8 +183,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
 
             Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
@@ -241,8 +233,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
 
             Interaction interaction = transport.newInteraction();
 
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
 
                        .attachName("testLink1")
@@ -345,8 +336,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
 
             Interaction interaction = transport.newInteraction();
 
-            interaction.negotiateProtocol().consumeResponse()
-                       .open().consumeResponse(Open.class)
+            interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
 
                        .attachRole(Role.SENDER)

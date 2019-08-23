@@ -35,7 +35,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -67,8 +66,7 @@ public class MessageFormat extends BrokerAdminUsingTestBase
             QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 2);
 
             transport.newInteraction()
-                     .negotiateProtocol().consumeResponse()
-                     .open().consumeResponse(Open.class)
+                     .negotiateOpen()
                      .begin().consumeResponse(Begin.class)
                      .attachRole(Role.SENDER)
                      .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)

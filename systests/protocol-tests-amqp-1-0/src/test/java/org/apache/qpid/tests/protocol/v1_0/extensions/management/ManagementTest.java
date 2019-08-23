@@ -43,13 +43,11 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -82,9 +80,8 @@ public class ManagementTest extends BrokerAdminUsingTestBase
             target.setCapabilities(new Symbol[]{Symbol.valueOf("temporary-queue")});
 
             final Interaction interaction = transport.newInteraction();
-            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
-                                                     .openHostname("$management")
-                                                     .open().consumeResponse(Open.class)
+            final Attach attachResponse = interaction.openHostname("$management")
+                                                     .negotiateOpen()
                                                      .begin().consumeResponse(Begin.class)
                                                      .attachRole(Role.SENDER)
                                                      .attachTarget(target)
