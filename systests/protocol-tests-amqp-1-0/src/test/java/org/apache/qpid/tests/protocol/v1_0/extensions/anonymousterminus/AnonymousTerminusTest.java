@@ -38,7 +38,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.SequenceNumber;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -59,7 +58,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.util.StringUtil;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
@@ -72,7 +70,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
 {
     private static final Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
     private static final Symbol DELIVERY_TAG = Symbol.valueOf("delivery-tag");
-    private static final String TEST_MESSAGE_CONTENT = "test";
+
     private InetSocketAddress _brokerAddress;
     private Binary _deliveryTag;
 
@@ -110,8 +108,8 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transfer()
                        .sync();
 
-            Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
-            assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
+            assertThat(Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME),
+                       is(equalTo(getTestName())));
         }
     }
 
@@ -145,7 +143,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferDeliveryTag(_deliveryTag)
                        .transfer();
 
-            Detach detach = interaction.consumeResponse(Detach.class).getLatestResponse(Detach.class);
+            final Detach detach = interaction.consume(Detach.class, Flow.class);
             Error error = detach.getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
@@ -183,10 +181,9 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferDeliveryId()
                        .transferPayload(generateMessagePayloadToDestination(getNonExistingDestinationName()))
                        .transferDeliveryTag(_deliveryTag)
-                       .transfer()
-                       .consumeResponse();
+                       .transfer();
 
-            Disposition disposition = interaction.getLatestResponse(Disposition.class);
+            final Disposition disposition = interaction.consume(Disposition.class, Flow.class);
 
             assertThat(disposition.getSettled(), is(true));
 
@@ -233,7 +230,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferDeliveryTag(_deliveryTag)
                        .transfer();
 
-            Detach detach = interaction.consumeResponse().getLatestResponse(Detach.class);
+            final Detach detach = interaction.consume(Detach.class, Flow.class);
             Error error = detach.getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
@@ -275,7 +272,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
-            assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
+            assertThat(receivedMessage, is(equalTo(getTestName())));
         }
     }
 
@@ -305,7 +302,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferSettled(Boolean.FALSE)
                        .transfer();
 
-            Disposition disposition = interaction.consumeResponse().getLatestResponse(Disposition.class);
+            final Disposition disposition = interaction.consume(Disposition.class, Flow.class);
 
             assertThat(disposition.getSettled(), is(true));
 
@@ -320,7 +317,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
-            assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
+            assertThat(receivedMessage, is(equalTo(getTestName())));
         }
     }
 
@@ -351,7 +348,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferSettled(Boolean.FALSE)
                        .transfer();
 
-            Disposition disposition = interaction.consumeResponse().getLatestResponse(Disposition.class);
+            final Disposition disposition = interaction.consume(Disposition.class, Flow.class);
 
             assertThat(disposition.getSettled(), is(true));
 
@@ -400,7 +397,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferSettled(Boolean.FALSE)
                        .transfer();
 
-            Detach senderLinkDetach = interaction.consumeResponse().getLatestResponse(Detach.class);
+            final Detach senderLinkDetach = interaction.consume(Detach.class, Flow.class);
             Error senderLinkDetachError = senderLinkDetach.getError();
             assertThat(senderLinkDetachError, is(notNullValue()));
             assertThat(senderLinkDetachError.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
@@ -537,7 +534,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferSettled(Boolean.TRUE)
                        .transfer().txnSendDischarge(false);
 
-            Detach transactionCoordinatorDetach = interaction.consumeResponse().getLatestResponse(Detach.class);
+            final Detach transactionCoordinatorDetach = interaction.consume(Detach.class, Flow.class);
             Error transactionCoordinatorDetachError = transactionCoordinatorDetach.getError();
             assertThat(transactionCoordinatorDetachError, is(notNullValue()));
             assertThat(transactionCoordinatorDetachError.getCondition(), is(equalTo(TransactionError.TRANSACTION_ROLLBACK)));
@@ -547,29 +544,6 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     private String getNonExistingDestinationName()
     {
         return String.format("%sNonExisting%s", getTestName(), new StringUtil().randomAlphaNumericString(10));
-    }
-
-    private Disposition getDispositionForDeliveryId(final Interaction interaction,
-                                                    final UnsignedInteger deliveryId) throws Exception
-    {
-        Disposition dischargeTransactionDisposition = null;
-
-        SequenceNumber id = new SequenceNumber(deliveryId.intValue());
-        do
-        {
-            Response<?> response = interaction.consumeResponse(Disposition.class, Flow.class).getLatestResponse();
-            if (response.getBody() instanceof Disposition)
-            {
-                Disposition disposition = (Disposition) response.getBody();
-                UnsignedInteger first = disposition.getFirst();
-                UnsignedInteger last = disposition.getLast() == null ? disposition.getFirst() : disposition.getLast();
-                if (new SequenceNumber(first.intValue()).compareTo(id) >= 0 && new SequenceNumber(last.intValue()).compareTo(id) <=0)
-                {
-                    dischargeTransactionDisposition = disposition;
-                }
-            }
-        } while (dischargeTransactionDisposition == null);
-        return dischargeTransactionDisposition;
     }
 
     private Interaction openInteractionWithAnonymousRelayCapability(final FrameTransport transport) throws Exception
@@ -590,7 +564,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
         final Properties properties = new Properties();
         properties.setTo(destinationName);
         messageEncoder.setProperties(properties);
-        messageEncoder.addData(TEST_MESSAGE_CONTENT);
+        messageEncoder.addData(getTestName());
         return messageEncoder.getPayload();
     }
 

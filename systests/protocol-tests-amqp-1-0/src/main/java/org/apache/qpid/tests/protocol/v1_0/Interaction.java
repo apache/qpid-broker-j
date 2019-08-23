@@ -1054,19 +1054,25 @@ public class Interaction extends AbstractInteraction<Interaction>
     private DeliveryState handleCoordinatorResponse() throws Exception
     {
         final Set<Class<?>> expected = new HashSet<>(Collections.singletonList(Disposition.class));
-
         if (_coordinatorCredits.decrementAndGet() == 0)
         {
             expected.add(Flow.class);
         }
 
-        final Map<Class<?>, ?> responses = consumeResponses(expected);
+        final Map<Class<?>, ?> responses = consumeResponses(expected, Collections.singleton(Flow.class));
 
         final Disposition disposition = (Disposition) responses.get(Disposition.class);
         if (expected.contains(Flow.class))
         {
             Flow flow = (Flow) responses.get(Flow.class);
-            _coordinatorCredits.set(flow.getLinkCredit().longValue());
+            if (flow.getHandle().equals(getCoordinatorHandle()))
+            {
+                final UnsignedInteger linkCredit = flow.getLinkCredit();
+                if (linkCredit != null)
+                {
+                    _coordinatorCredits.set(linkCredit.longValue());
+                }
+            }
         }
         if (!Boolean.TRUE.equals(disposition.getSettled()))
         {
@@ -1075,13 +1081,15 @@ public class Interaction extends AbstractInteraction<Interaction>
         return disposition.getState();
     }
 
-    private Map<Class<?>, ?> consumeResponses(final Set<Class<?>> responseTypes)
+    private Map<Class<?>, ?> consumeResponses(final Set<Class<?>> responseTypes, Set<Class<?>> ignore)
             throws Exception
     {
-        Map<Class<?>, Object> results = new HashMap<>();
+        final Map<Class<?>, Object> results = new HashMap<>();
+        final Set<Class<?>> expected = new HashSet<>(responseTypes);
+        expected.addAll(ignore);
         do
         {
-            Response<?> response = consumeResponse(responseTypes).getLatestResponse();
+            Response<?> response = consumeResponse(expected).getLatestResponse();
             if (response != null && response.getBody() instanceof FrameBody)
             {
                 Class<?> bodyClass = response.getBody().getClass();

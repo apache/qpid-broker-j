@@ -228,11 +228,11 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .transferTransactionalStateFromCurrentTransaction()
                        .transferPayloadData(getTestName())
                        .transferHandle(UnsignedInteger.ONE)
-                       .transfer().consumeResponse(Disposition.class)
+                       .transfer().consume(Disposition.class, Flow.class);
 
-                       .detachHandle(UnsignedInteger.ONE)
-                       .detach().consumeResponse(Detach.class);
-            interaction.txnDischarge(false);
+            interaction.detachHandle(UnsignedInteger.ONE)
+                       .detach().consumeResponse(Detach.class)
+                       .txnDischarge(false);
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
         }

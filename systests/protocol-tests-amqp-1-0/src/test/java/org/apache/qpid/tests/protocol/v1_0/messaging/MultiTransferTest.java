@@ -48,9 +48,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.ChannelClosedResponse;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -100,8 +100,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                                                  .transferMore(false)
                                                  .transferPayload(payloads[1])
                                                  .transfer()
-                                                 .consumeResponse()
-                                                 .getLatestResponse(Disposition.class);
+                                                 .consume(Disposition.class, Flow.class);
 
             for (final QpidByteBuffer payload : payloads)
             {
@@ -158,15 +157,14 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferDeliveryTag(null)
                        .transferMore(false)
                        .transferPayload(payloads[3])
-                       .transfer()
-                       .consumeResponse();
-
-            Disposition disposition = interaction.getLatestResponse(Disposition.class);
+                       .transfer().sync();
 
             for (final QpidByteBuffer payload : payloads)
             {
                 payload.dispose();
             }
+
+            Disposition disposition = interaction.consume(Disposition.class, Flow.class);
             assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
             assertThat(disposition.getLast(), oneOf(null, deliveryId));
             assertThat(disposition.getSettled(), is(equalTo(true)));
@@ -201,8 +199,8 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferDeliveryId(deliveryId)
                        .transferDeliveryTag(deliveryTag)
                        .transferMore(true)
+                       .transferSettled(true)
                        .transfer()
-                       .sync()
                        .transferPayload(null)
                        .transferMore(null)
                        .transferAborted(true)
@@ -304,8 +302,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
             Map<UnsignedInteger, Disposition> dispositionMap = new HashMap<>();
             for (int i = 0; i < 2; i++)
             {
-                Disposition disposition = interaction.consumeResponse(Disposition.class)
-                                                     .getLatestResponse(Disposition.class);
+                Disposition disposition = interaction.consume(Disposition.class, Flow.class);
                 dispositionMap.put(disposition.getFirst(), disposition);
 
                 assertThat(disposition.getLast(), oneOf(null, disposition.getFirst()));

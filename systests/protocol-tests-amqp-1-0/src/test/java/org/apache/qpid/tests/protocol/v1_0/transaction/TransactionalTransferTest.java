@@ -37,6 +37,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -106,8 +107,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .transferPayloadData(getTestName())
                                                          .transferTransactionalStateFromCurrentTransaction()
                                                          .transfer()
-                                                         .consumeResponse(Disposition.class)
-                                                         .getLatestResponse(Disposition.class);
+                                                         .consume(Disposition.class, Flow.class);
 
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
@@ -155,8 +155,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .transferPayloadData(getTestName())
                                                          .transferTransactionalStateFromCurrentTransaction()
                                                          .transfer()
-                                                         .consumeResponse(Disposition.class)
-                                                         .getLatestResponse(Disposition.class);
+                                                         .consume(Disposition.class, Flow.class);
 
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
@@ -242,7 +241,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             final Interaction interaction = transport.newInteraction();
 
-            Response<?> response = interaction.negotiateProtocol().consumeResponse()
+            ErrorCarryingFrameBody response = interaction.negotiateProtocol().consumeResponse()
                                               .open().consumeResponse(Open.class)
                                               .begin().consumeResponse(Begin.class)
 
@@ -260,10 +259,11 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                               .transferPayloadData(getTestName())
                                               .transferTransactionalState(integerToBinary(Integer.MAX_VALUE))
                                               .transfer()
-                                              .consumeResponse()
-                                              .getLatestResponse();
+                                              .consume(ErrorCarryingFrameBody.class, Flow.class);
 
-            assertUnknownTransactionIdError(response);
+            final Error error = response.getError();
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), equalTo(TransactionError.UNKNOWN_ID));
         }
     }
 
@@ -413,14 +413,17 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             Object data = interaction.decodeLatestDelivery().getDecodedLatestDelivery();
             assertThat(data, is(equalTo(getTestName())));
 
-            Response<?> response = interaction.dispositionSettled(true)
+            ErrorCarryingFrameBody response = interaction.dispositionSettled(true)
                                               .dispositionRole(Role.RECEIVER)
                                               .dispositionTransactionalState(integerToBinary(Integer.MAX_VALUE),
                                                                              new Accepted())
                                               .dispositionFirst(deliveryId)
                                               .disposition()
-                                              .consumeResponse().getLatestResponse();
-            assertUnknownTransactionIdError(response);
+                                              .consume(ErrorCarryingFrameBody.class, Flow.class);
+
+            final Error error = response.getError();
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), equalTo(TransactionError.UNKNOWN_ID));
         }
         finally
         {
@@ -630,7 +633,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            Response<?> response = interaction.negotiateProtocol()
+            ErrorCarryingFrameBody response = interaction.negotiateProtocol()
                                               .consumeResponse()
                                               .open()
                                               .consumeResponse(Open.class)
@@ -653,10 +656,11 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                               .flowProperties(Collections.singletonMap(Symbol.valueOf("txn-id"),
                                                                                        integerToBinary(Integer.MAX_VALUE)))
                                               .flow()
-                                              .consumeResponse()
-                                              .getLatestResponse();
+                                              .consume(ErrorCarryingFrameBody.class, Flow.class);
 
-            assertUnknownTransactionIdError(response);
+            final Error error = response.getError();
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), equalTo(TransactionError.UNKNOWN_ID));
         }
         finally
         {

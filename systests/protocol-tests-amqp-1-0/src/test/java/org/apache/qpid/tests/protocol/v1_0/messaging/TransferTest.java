@@ -192,8 +192,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                        .transferHandle(linkHandle)
                                                        .transferPayloadData(getTestName())
                                                        .transfer()
-                                                       .consumeResponse()
-                                                       .getLatestResponse(Disposition.class);
+                                                       .consume(Disposition.class, Flow.class);
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
             assertThat(responseDisposition.getState(), is(instanceOf(Accepted.class)));
@@ -245,7 +244,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                      .transferDeliveryTag(deliveryTag)
                                      .transfer();
 
-            final Disposition disposition1 = interaction.consumeResponse().getLatestResponse(Disposition.class);
+            final Disposition disposition1 = interaction.consume(Disposition.class, Flow.class);
             final UnsignedInteger first = disposition1.getFirst();
             final UnsignedInteger last = disposition1.getLast();
 
@@ -254,7 +253,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
             if (last == null || first.equals(last))
             {
-                final Disposition disposition2 = interaction.consumeResponse().getLatestResponse(Disposition.class);
+                final Disposition disposition2 = interaction.consume(Disposition.class, Flow.class);
                 assertThat(disposition2.getFirst(), anyOf(is(UnsignedInteger.ZERO), is(UnsignedInteger.ONE)));
                 assertThat(disposition2.getLast(), anyOf(nullValue(), is(UnsignedInteger.ZERO), is(UnsignedInteger.ONE)));
                 assertThat(disposition2.getFirst(), is(not(equalTo(first))));
@@ -265,7 +264,8 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "2.7.5",
-            description = "If first, this indicates that the receiver MUST settle the delivery once it has arrived without waiting for the sender to settle first")
+            description = "If first, this indicates that the receiver MUST settle the delivery once"
+                          + " it has arrived without waiting for the sender to settle first")
     public void transferReceiverSettleModeFirst() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
@@ -282,8 +282,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                        .transferPayloadData(getTestName())
                                                        .transferRcvSettleMode(ReceiverSettleMode.FIRST)
                                                        .transfer()
-                                                       .consumeResponse()
-                                                       .getLatestResponse(Disposition.class);
+                                                       .consume(Disposition.class, Flow.class);
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
             assertThat(responseDisposition.getState(), is(instanceOf(Accepted.class)));
@@ -585,8 +584,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                  .dispositionRole(Role.RECEIVER)
                                                  .dispositionState(new Accepted())
                                                  .disposition()
-                                                 .consumeResponse(Disposition.class)
-                                                 .getLatestResponse(Disposition.class);
+                                                 .consume(Disposition.class, Flow.class);
             assertThat(disposition.getSettled(), is(true));
 
             interaction.dispositionSettled(true)
@@ -689,8 +687,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                  .dispositionRole(Role.RECEIVER)
                                                  .dispositionState(null)
                                                  .disposition()
-                                                 .consumeResponse(Disposition.class)
-                                                 .getLatestResponse(Disposition.class);
+                                                 .consume(Disposition.class, Flow.class);
             assertThat(disposition.getSettled(), is(true));
 
             interaction.consumeResponse(null, Flow.class);
@@ -836,8 +833,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Attach.class)
                        .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                        .consumeResponse(Flow.class)
-                       .assertLatestResponse(Flow.class,
-                                             flow -> assumeThat(flow.getLinkCredit().intValue(), is(greaterThan(1))))
+                       .assertLatestResponse(Flow.class, this::assumeCreditsGreaterThanOne)
                        .transferDeliveryId()
                        .transferDeliveryTag(deliveryTag)
                        .transferPayloadData(content1)
@@ -898,12 +894,9 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attach()
                        .consumeResponse(Attach.class)
-                       .consumeResponse(Flow.class);
-
-            Flow flow = interaction.getLatestResponse(Flow.class);
-            assertThat(flow.getLinkCredit().intValue(), is(greaterThan(1)));
-
-            interaction.transferDeliveryId(UnsignedInteger.ZERO)
+                       .consumeResponse(Flow.class)
+                       .assertLatestResponse(Flow.class, this::assumeCreditsGreaterThanOne)
+                       .transferDeliveryId(UnsignedInteger.ZERO)
                        .transferDeliveryTag(deliveryTag)
                        .transferPayloadData(contents[0])
                        .transferSettled(true)
@@ -1202,24 +1195,16 @@ public class TransferTest extends BrokerAdminUsingTestBase
     {
         do
         {
-            Response<?> response = interaction.consumeResponse(Disposition.class, Flow.class).getLatestResponse();
-            if (response.getBody() instanceof Disposition)
-            {
-                Disposition disposition = (Disposition) response.getBody();
-                LongStream.rangeClosed(disposition.getFirst().longValue(),
-                                       disposition.getLast() == null
-                                               ? disposition.getFirst().longValue()
-                                               : disposition.getLast().longValue())
-                          .forEach(value -> {
-                              UnsignedInteger deliveryId = expectedDeliveryIds.first();
-                              assertThat(value, is(equalTo(deliveryId.longValue())));
-                              expectedDeliveryIds.remove(deliveryId);
-                          });
-            }
-            else if (response.getBody() instanceof Flow)
-            {
-                // ignore flows
-            }
+            Disposition disposition = interaction.consume(Disposition.class, Flow.class);
+            LongStream.rangeClosed(disposition.getFirst().longValue(),
+                                   disposition.getLast() == null
+                                           ? disposition.getFirst().longValue()
+                                           : disposition.getLast().longValue())
+                      .forEach(value -> {
+                          UnsignedInteger deliveryId = expectedDeliveryIds.first();
+                          assertThat(value, is(equalTo(deliveryId.longValue())));
+                          expectedDeliveryIds.remove(deliveryId);
+                      });
         }
         while (!expectedDeliveryIds.isEmpty());
     }
@@ -1243,7 +1228,14 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
     private void assumeSufficientCredits(final Flow flow)
     {
+        assumeThat(flow.getLinkCredit(), is(notNullValue()));
         assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ZERO)));
+    }
+
+    private void assumeCreditsGreaterThanOne(final Flow flow)
+    {
+        assumeThat(flow.getLinkCredit(), is(notNullValue()));
+        assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ONE)));
     }
 
     private void assumeReceiverSettlesSecond(final Attach attach)
