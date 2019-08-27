@@ -29,14 +29,14 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.tests.protocol.Response;
+import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminException;
 import org.apache.qpid.tests.utils.QueueAdmin;
@@ -47,6 +47,8 @@ public class ExistingQueueAdmin implements QueueAdmin
     private static final Logger LOGGER = LoggerFactory.getLogger(ExistingQueueAdmin.class);
     private static final String ADMIN_LINK_NAME = "existingQueueAdminLink";
     private static final int DRAIN_CREDITS = 1000;
+    private static final boolean DRAIN_UNSETTLED =
+            Boolean.getBoolean("qpid.tests.protocol.broker.external.existingQueueAdmin.drainUnsettled");
 
     @Override
     public void createQueue(final BrokerAdmin brokerAdmin, final String queueName)
@@ -145,6 +147,8 @@ public class ExistingQueueAdmin implements QueueAdmin
 
     private void drainQueue(final InetSocketAddress brokerAddress, final String queueName) throws Exception
     {
+        final String controlMessage = String.format("---%s---", new StringUtil().randomAlphaNumericString(32));
+        putMessageOnQueue(brokerAddress, queueName, controlMessage);
         try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -153,55 +157,45 @@ public class ExistingQueueAdmin implements QueueAdmin
                        .begin().consumeResponse()
                        .attachName(ADMIN_LINK_NAME)
                        .attachRole(Role.RECEIVER)
-                       .attachSndSettleMode(SenderSettleMode.SETTLED)
+                       .attachSndSettleMode(DRAIN_UNSETTLED ? SenderSettleMode.UNSETTLED : SenderSettleMode.SETTLED)
                        .attachSourceAddress(queueName)
                        .attach().consumeResponse(Attach.class)
-                       .flowIncomingWindow(UnsignedInteger.MAX_VALUE)
-                       .flowNextIncomingId(interaction.getCachedResponse(Begin.class).getNextOutgoingId())
+                       .flowIncomingWindow(UnsignedInteger.valueOf(DRAIN_CREDITS))
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowLinkCredit(UnsignedInteger.valueOf(DRAIN_CREDITS))
                        .flowHandleFromLinkHandle()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
-                       .flowDrain(Boolean.TRUE)
                        .flow();
-            boolean received;
+
+            boolean controlMessageReceived;
             do
             {
-                received = receive(interaction, queueName);
+                interaction.receiveDelivery(Flow.class);
+                try
+                {
+                    interaction.decodeLatestDelivery();
+                }
+                catch (Exception e)
+                {
+                    LOGGER.error("Message decoding failed", e);
+                }
+
+                final Object message = interaction.getDecodedLatestDelivery();
+                if (DRAIN_UNSETTLED)
+                {
+                    interaction.dispositionSettled(true)
+                               .dispositionRole(Role.RECEIVER)
+                               .dispositionFirstFromLatestDelivery()
+                               .dispositionState(new Accepted())
+                               .disposition();
+                }
+
+                controlMessageReceived = controlMessage.equals(message);
             }
-            while (received);
+            while (!controlMessageReceived);
             closeInteraction(interaction);
         }
     }
 
-    private boolean receive(final Interaction interaction, String queueName) throws Exception
-    {
-        boolean transferExpected;
-        boolean messageReceived = false;
-        do
-        {
-            final Response<?> latestResponse =
-                    interaction.consumeResponse(Transfer.class, Flow.class, null).getLatestResponse();
-            if (latestResponse != null && latestResponse.getBody() instanceof Transfer)
-            {
-                Transfer responseTransfer = (Transfer) latestResponse.getBody();
-                transferExpected = Boolean.TRUE.equals(responseTransfer.getMore());
-                if (!transferExpected)
-                {
-                    messageReceived = true;
-                }
-            }
-            else if (latestResponse != null && latestResponse.getBody() instanceof Flow)
-            {
-                transferExpected = false;
-            }
-            else
-            {
-                LOGGER.warn("Neither transfer no flow was received from '{}'. Assuming no messages left...", queueName);
-                transferExpected = false;
-            }
-        }
-        while (transferExpected);
-        return messageReceived;
-    }
 }
