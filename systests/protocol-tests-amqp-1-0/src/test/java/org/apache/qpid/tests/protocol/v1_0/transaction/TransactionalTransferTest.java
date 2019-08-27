@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v1_0.transaction;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -93,7 +95,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
-                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                                                          .txnDeclare()
 
                                                          .attachRole(Role.SENDER)
@@ -141,7 +143,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
-                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                                                          .txnDeclare()
 
                                                          .attachRole(Role.SENDER)
@@ -191,7 +193,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                          .begin()
                                                          .consumeResponse(Begin.class)
 
-                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                                         .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                                                          .txnDeclare()
 
                                                          .attachRole(Role.SENDER)
@@ -245,7 +247,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                               .open().consumeResponse(Open.class)
                                               .begin().consumeResponse(Begin.class)
 
-                                              .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                              .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                                               .txnDeclare()
 
                                               .attachRole(Role.SENDER)
@@ -285,7 +287,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
@@ -334,7 +336,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
@@ -387,7 +389,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                   .open().consumeResponse(Open.class)
                                                   .begin().consumeResponse(Begin.class)
 
-                                                  .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                                  .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                                                   .txnDeclare()
 
                                                   .attachRole(Role.RECEIVER)
@@ -448,7 +450,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
@@ -509,7 +511,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
@@ -575,7 +577,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
@@ -640,7 +642,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                               .begin()
                                               .consumeResponse(Begin.class)
 
-                                              .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                              .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                                               .txnDeclare()
 
                                               .attachRole(Role.RECEIVER)
@@ -708,5 +710,11 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     private void assumeReceiverSettlesSecond(final Attach attach)
     {
         assumeThat(attach.getRcvSettleMode(), is(equalTo(ReceiverSettleMode.SECOND)));
+    }
+
+    private void coordinatorAttachExpected(final Response<?> response)
+    {
+        assertThat(response, is(notNullValue()));
+        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
     }
 }

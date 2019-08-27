@@ -21,12 +21,14 @@
 package org.apache.qpid.tests.protocol.v1_0.extensions.qpid.queue;
 
 import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 
@@ -139,7 +141,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
                                        .begin()
                                        .consumeResponse(Begin.class)
 
-                                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                                        .txnDeclare()
 
                                        .attachRole(Role.SENDER)
@@ -192,7 +194,7 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
                                        .begin()
                                        .consumeResponse(Begin.class)
 
-                                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                                        .txnDeclare()
 
                                        .attachRole(Role.RECEIVER)
@@ -275,5 +277,11 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
         final Error error = ((Rejected) declareTransactionDisposition.getState()).getError();
         assertThat(error, is(notNullValue()));
         assertThat(error.getCondition(), is(equalTo(TransactionError.TRANSACTION_ROLLBACK)));
+    }
+
+    private void coordinatorAttachExpected(final Response<?> response)
+    {
+        assertThat(response, is(notNullValue()));
+        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
     }
 }

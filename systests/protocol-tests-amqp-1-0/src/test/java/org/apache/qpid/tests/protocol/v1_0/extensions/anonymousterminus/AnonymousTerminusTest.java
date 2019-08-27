@@ -20,19 +20,19 @@
  */
 package org.apache.qpid.tests.protocol.v1_0.extensions.anonymousterminus;
 
-
-import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.oneOf;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -58,6 +58,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.util.StringUtil;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
@@ -193,7 +194,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             Rejected rejected = (Rejected)dispositionState;
             Error error = rejected.getError();
             assertThat(error, is(notNullValue()));
-            assertThat(error.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
+            assertThat(error.getCondition(), is(oneOf(AmqpError.NOT_FOUND, AmqpError.NOT_ALLOWED)));
             assertThat(error.getInfo(), is(notNullValue()));
             assertThat(error.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
         }
@@ -253,7 +254,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
@@ -287,7 +288,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
@@ -332,7 +333,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
@@ -380,7 +381,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
@@ -451,7 +452,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Begin.class)
 
                        // attaching coordinator link with supported outcomes Accepted and Rejected
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
@@ -516,7 +517,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, Accepted.ACCEPTED_SYMBOL)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Accepted.ACCEPTED_SYMBOL)
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
@@ -555,7 +556,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                    .open().consumeResponse(Open.class);
 
         Open open = interaction.getLatestResponse(Open.class);
-        assumeThat(Arrays.asList(open.getOfferedCapabilities()), hasItem(ANONYMOUS_RELAY));
+        assumeThat(open.getOfferedCapabilities(), hasItemInArray((ANONYMOUS_RELAY)));
         return interaction;
     }
 
@@ -574,4 +575,9 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
         assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ZERO)));
     }
 
+    private void coordinatorAttachExpected(final Response<?> response)
+    {
+        assertThat(response, is(notNullValue()));
+        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
+    }
 }

@@ -982,10 +982,23 @@ public class Interaction extends AbstractInteraction<Interaction>
 
     public Interaction txnAttachCoordinatorLink(final UnsignedInteger handle) throws Exception
     {
-        return txnAttachCoordinatorLink(handle, Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL);
+        return txnAttachCoordinatorLink(handle,
+                                        this::txDefaultUnexpectedResponseHandler,
+                                        Accepted.ACCEPTED_SYMBOL,
+                                        Rejected.REJECTED_SYMBOL);
     }
 
     public Interaction txnAttachCoordinatorLink(final UnsignedInteger handle,
+                                                final Consumer<Response<?>> unexpectedResponseHandler) throws Exception
+    {
+        return txnAttachCoordinatorLink(handle,
+                                        unexpectedResponseHandler,
+                                        Accepted.ACCEPTED_SYMBOL,
+                                        Rejected.REJECTED_SYMBOL);
+    }
+
+    public Interaction txnAttachCoordinatorLink(final UnsignedInteger handle,
+                                                final Consumer<Response<?>> unexpectedResponseHandler,
                                                 final Symbol... outcomes) throws Exception
     {
         Attach attach = new Attach();
@@ -999,10 +1012,27 @@ public class Interaction extends AbstractInteraction<Interaction>
         source.setOutcomes(outcomes);
         _transactionalState = new InteractionTransactionalState(handle);
         sendPerformativeAndChainFuture(attach, _sessionChannel);
-        consumeResponse(Attach.class);
-        final Flow flow = consumeResponse(Flow.class).getLatestResponse(Flow.class);
+
+        // attach expected
+        Consumer<Response<?>> handler = unexpectedResponseHandler == null
+                ? this::txDefaultUnexpectedResponseHandler
+                : unexpectedResponseHandler;
+        consumeResponse().assertLatestResponse(handler);
+
+        // flow expected
+        consumeResponse().assertLatestResponse(handler);
+
+        Flow flow = getLatestResponse(Flow.class);
         _coordinatorCredits.set(flow.getLinkCredit().longValue());
         return this;
+    }
+
+    private void txDefaultUnexpectedResponseHandler(Response<?> r)
+    {
+        if (r == null || r.getBody() == null || !(r.getBody() instanceof Attach || r.getBody() instanceof Flow))
+        {
+            throw new IllegalStateException(String.format("Could not attach coordinator link. Got %s", r));
+        }
     }
 
     public Interaction txnDeclare() throws Exception
@@ -1280,6 +1310,13 @@ public class Interaction extends AbstractInteraction<Interaction>
     public <T> Interaction assertLatestResponse(Class<T> type, Consumer<T> assertion)
     {
         T latestResponse = getLatestResponse(type);
+        assertion.accept(latestResponse);
+        return this;
+    }
+
+    public Interaction assertLatestResponse(Consumer<Response<?>> assertion)
+    {
+        Response<?> latestResponse = getLatestResponse();
         assertion.accept(latestResponse);
         return this;
     }

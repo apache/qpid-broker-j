@@ -1066,7 +1066,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             Flow flow = interaction.getLatestResponse(Flow.class);
             assumeThat("insufficient credit for the test", flow.getLinkCredit().intValue(), is(greaterThan(2)));
 
-            interaction.txnAttachCoordinatorLink(UnsignedInteger.ONE)
+            interaction.txnAttachCoordinatorLink(UnsignedInteger.ONE, this::coordinatorAttachExpected)
                        .txnDeclare();
 
             interaction.transferDeliveryId()
@@ -1183,7 +1183,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                 deliveryIds.add(interaction.getLatestDeliveryId());
             }
 
-            interaction.txnAttachCoordinatorLink(UnsignedInteger.ONE)
+            interaction.txnAttachCoordinatorLink(UnsignedInteger.ONE, this::coordinatorAttachExpected)
                        .txnDeclare();
 
             interaction.dispositionSettled(true)
@@ -1259,5 +1259,11 @@ public class TransferTest extends BrokerAdminUsingTestBase
     private void assumeReceiverSettlesSecond(final Attach attach)
     {
         assumeThat(attach.getRcvSettleMode(), is(equalTo(ReceiverSettleMode.SECOND)));
+    }
+
+    private void coordinatorAttachExpected(final Response<?> response)
+    {
+        assertThat(response, is(notNullValue()));
+        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
     }
 }

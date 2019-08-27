@@ -22,6 +22,7 @@ package org.apache.qpid.tests.protocol.v1_0.transaction;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -53,6 +54,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
@@ -86,7 +88,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .open().consumeResponse(Open.class)
                        .begin().consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, Rejected.REJECTED_SYMBOL)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Rejected.REJECTED_SYMBOL)
                        .txnDeclare();
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Declared.class)));
@@ -99,10 +101,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
             final Error error = ((Rejected) interaction.getCoordinatorLatestDeliveryState()).getError();
             assertThat(error, is(notNullValue()));
 
-            if (KIND_BROKER_J.equals(getBrokerAdmin().getKind()))
-            {
-                assertThat(error.getCondition(), is(equalTo(TransactionError.UNKNOWN_ID)));
-            }
+            assertThat(error.getCondition(), is(equalTo(TransactionError.UNKNOWN_ID)));
         }
     }
 
@@ -121,7 +120,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
             interaction.negotiateProtocol().consumeResponse()
                                            .open().consumeResponse(Open.class)
                                            .begin().consumeResponse(Begin.class)
-                                           .txnAttachCoordinatorLink(UnsignedInteger.ZERO, Accepted.ACCEPTED_SYMBOL)
+                                           .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Accepted.ACCEPTED_SYMBOL)
                                            .txnDeclare();
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Declared.class)));
@@ -135,10 +134,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
             final Error error = detachResponse.getError();
             assertThat(error, is(notNullValue()));
 
-            if (KIND_BROKER_J.equals(getBrokerAdmin().getKind()))
-            {
-                assertThat(error.getCondition(), is(equalTo(TransactionError.UNKNOWN_ID)));
-            }
+            assertThat(error.getCondition(), is(equalTo(TransactionError.UNKNOWN_ID)));
         }
     }
 
@@ -157,7 +153,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .open().consumeResponse(Open.class)
                        .begin().consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.RECEIVER)
@@ -215,7 +211,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .open().consumeResponse(Open.class)
                        .begin().consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
@@ -256,7 +252,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .open().consumeResponse(Open.class)
                        .begin().consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected)
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
@@ -287,4 +283,9 @@ public class DischargeTest extends BrokerAdminUsingTestBase
         assertThat(receivedMessage, is(equalTo(getTestName())));
     }
 
+    private void coordinatorAttachExpected(final Response<?> response)
+    {
+        assertThat(response, is(notNullValue()));
+        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
+    }
 }
