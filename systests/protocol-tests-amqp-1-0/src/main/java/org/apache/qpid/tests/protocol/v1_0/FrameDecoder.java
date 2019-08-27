@@ -230,7 +230,7 @@ public class FrameDecoder implements InputDecoder
                 if (val instanceof FrameBody)
                 {
                     FrameBody frameBody = (FrameBody) val;
-                    if (frameBody instanceof Open && ((Open) frameBody).getMaxFrameSize() != null)
+                    if (frameBody instanceof Open && ((Open) frameBody).getMaxFrameSize() != null && ((Open) frameBody).getMaxFrameSize().intValue() > 512)
                     {
                         _frameSize = ((Open) frameBody).getMaxFrameSize().intValue();
                     }
