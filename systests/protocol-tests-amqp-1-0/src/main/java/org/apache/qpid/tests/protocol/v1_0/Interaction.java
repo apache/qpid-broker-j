@@ -157,6 +157,7 @@ public class Interaction extends AbstractInteraction<Interaction>
         _transfer.setHandle(defaultLinkHandle);
         _transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
         _transfer.setDeliveryId(UnsignedInteger.valueOf(_deliveryIdCounter));
+        _transfer.setMessageFormat(UnsignedInteger.ZERO);
 
         _disposition = new Disposition();
         _disposition.setFirst(UnsignedInteger.ZERO);
