@@ -113,10 +113,12 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                            .open().consumeResponse(Open.class)
                                            .begin().consumeResponse(Begin.class)
                                            .attachRole(Role.SENDER)
+                                           .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                            .attach().consumeResponse(Attach.class)
                                            .consumeResponse(Flow.class)
                                            .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                                            .transferHandle(null)
+                                           .transferPayloadData(getTestName())
                                            .transfer()
                                            .consumeResponse()
                                            .getLatestResponse();
@@ -125,9 +127,10 @@ public class TransferTest extends BrokerAdminUsingTestBase
             assertThat(response.getBody(), is(notNullValue()));
             assertThat(response.getBody(), is(instanceOf(ErrorCarryingFrameBody.class)));
 
-            final Error error = ((ErrorCarryingFrameBody)response.getBody()).getError();
+            final Error error = ((ErrorCarryingFrameBody) response.getBody()).getError();
             assertThat(error, is(notNullValue()));
-            assertThat(error.getCondition(), anyOf(equalTo(AmqpError.DECODE_ERROR), equalTo(AmqpError.INVALID_FIELD)));
+            assertThat(error.getCondition(),
+                       oneOf(AmqpError.DECODE_ERROR, AmqpError.INVALID_FIELD, AmqpError.ILLEGAL_STATE));
         }
     }
 
@@ -143,10 +146,12 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                            .open().consumeResponse(Open.class)
                                            .begin().consumeResponse(Begin.class)
                                            .attachRole(Role.SENDER)
+                                           .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                            .attach().consumeResponse(Attach.class)
                                            .consumeResponse(Flow.class)
                                            .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
                                            .transferDeliveryId(null)
+                                           .transferPayloadData(getTestName())
                                            .transfer()
                                            .consumeResponse()
                                            .getLatestResponse();
@@ -347,11 +352,12 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
             assertThat(response, is(notNullValue()));
             assertThat(response.getBody(), is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Detach.class)));
+            assertThat(response.getBody(), is(instanceOf(ErrorCarryingFrameBody.class)));
 
-            final Detach detach = (Detach) response.getBody();
-            Error error = detach.getError();
+            final ErrorCarryingFrameBody performative = (ErrorCarryingFrameBody) response.getBody();
+            final Error error = performative.getError();
             assertThat(error, is(notNullValue()));
+            assumeThat(error.getCondition(), is(not(AmqpError.NOT_IMPLEMENTED)));
             assertThat(error.getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
         }
     }
@@ -562,8 +568,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .dispositionRole(Role.RECEIVER)
                        .disposition();
 
-            // verify that no unexpected performative is received by closing
-            interaction.doCloseConnection();
+            interaction.detachEndCloseUnconditionally();
         }
     }
 
@@ -581,6 +586,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                                      .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(this::assumeAttach)
                                                      .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
                                                      .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
@@ -628,6 +634,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
                                                      .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(this::assumeAttach)
                                                      .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                                                      .flowIncomingWindow(UnsignedInteger.ONE)
                                                      .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
@@ -732,6 +739,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attach().consumeResponse()
+                       .assertLatestResponse(this::assumeAttach)
                        .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond)
                        .flowIncomingWindow(UnsignedInteger.ONE)
                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
@@ -818,8 +826,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
             assertThat(isSettled.get(), is(true));
 
-            // verify no unexpected performative received by closing the connection
-            interaction.doCloseConnection();
+            interaction.detachEndCloseUnconditionally();
         }
 
         Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, "test");
@@ -1137,7 +1144,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .dispositionLast(interaction.getLatestDeliveryId())
                        .dispositionState(new Accepted())
                        .disposition();
-            interaction.doCloseConnection();
+            interaction.detachEndCloseUnconditionally();
         }
 
         final String messageText = getTestName() + "_" + 4;
@@ -1266,4 +1273,11 @@ public class TransferTest extends BrokerAdminUsingTestBase
         assertThat(response, is(notNullValue()));
         assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
     }
+
+    private void assumeAttach(final Response<?> response)
+    {
+        assertThat(response, notNullValue());
+        assumeThat(response.getBody(), is(instanceOf(Attach.class)));
+    }
+
 }

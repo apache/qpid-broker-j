@@ -486,7 +486,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                        .dispositionRole(Role.RECEIVER)
                        .disposition();
 
-            Detach detach = interaction.detach().consumeResponse().getLatestResponse(Detach.class);
+            Detach detach = interaction.detach().consume(Detach.class, Flow.class);
             assertThat(detach.getClosed(), anyOf(nullValue(), equalTo(false)));
 
             interaction.attachUnsettled(new HashMap<>())

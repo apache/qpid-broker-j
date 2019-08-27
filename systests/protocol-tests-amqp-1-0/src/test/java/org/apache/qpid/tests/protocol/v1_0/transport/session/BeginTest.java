@@ -39,6 +39,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.Response;
@@ -93,12 +94,13 @@ public class BeginTest extends BrokerAdminUsingTestBase
                                            .sessionChannel(channel)
                                            .begin().consumeResponse()
                                            .getLatestResponse(Begin.class);
+
             assertThat(responseBegin.getRemoteChannel(), equalTo(channel));
             assertThat(responseBegin.getIncomingWindow(), is(instanceOf(UnsignedInteger.class)));
             assertThat(responseBegin.getOutgoingWindow(), is(instanceOf(UnsignedInteger.class)));
             assertThat(responseBegin.getNextOutgoingId(), is(instanceOf(UnsignedInteger.class)));
 
-            interaction.doCloseConnection();
+            interaction.end().consumeResponse(End.class).close().consumeResponse(Close.class);
         }
     }
 

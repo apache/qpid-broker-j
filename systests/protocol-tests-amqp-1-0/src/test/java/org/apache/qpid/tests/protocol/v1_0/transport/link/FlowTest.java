@@ -39,6 +39,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
@@ -213,7 +214,6 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                          .consumeResponse().getLatestResponse(Flow.class);
 
             assertThat(responseFlow.getHandle(), is(notNullValue()));
-            assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
             assertThat(responseFlow.getDrain(), is(equalTo(Boolean.TRUE)));
         }
     }
@@ -294,7 +294,6 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                       .consumeResponse().getLatestResponse(Flow.class);
 
             assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
-            assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
             assertThat(responseFlow.getDrain(), is(equalTo(Boolean.TRUE)));
         }
     }
@@ -340,7 +339,7 @@ public class FlowTest extends BrokerAdminUsingTestBase
 
             Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, getTestName());
 
-            final Object receivedMessageContent = interaction.receiveDelivery()
+            final Object receivedMessageContent = interaction.receiveDelivery(Flow.class)
                                                              .decodeLatestDelivery()
                                                              .getDecodedLatestDelivery();
 
@@ -358,7 +357,6 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                                  .consumeResponse().getLatestResponse(Flow.class);
 
             assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
-            assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
@@ -396,10 +394,6 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                                .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                                .attach().consumeResponse(Attach.class);
 
-            Attach remoteAttach = interaction.getLatestResponse(Attach.class);
-            UnsignedInteger remoteHandle = remoteAttach.getHandle();
-            assertThat(remoteHandle, is(notNullValue()));
-
             UnsignedInteger delta = UnsignedInteger.ONE;
             UnsignedInteger incomingWindow = UnsignedInteger.valueOf(3);
             Object receivedMessageContent1 = interaction.flowIncomingWindow(incomingWindow)
@@ -432,25 +426,15 @@ public class FlowTest extends BrokerAdminUsingTestBase
             assertThat(receivedMessageContent2, is(equalTo(contents[1])));
             UnsignedInteger secondDeliveryId = interaction.getLatestDeliveryId();
 
-            // send session flow with echo=true to verify that no message is delivered without issuing a credit
-            interaction.flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
-                       .flowIncomingWindow(incomingWindow)
-                       .flowLinkCredit(null)
-                       .flowHandle(null)
-                       .flowDeliveryCount(null)
-                       .flowEcho(Boolean.TRUE)
-                       .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
-                       .flow()
-                       .consumeResponse(null, Flow.class);
-
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
                        .dispositionFirst(firstDeliveryId)
                        .dispositionLast(secondDeliveryId)
                        .dispositionState(new Accepted())
-                       .disposition()
-                       .sync();
+                       .disposition();
+
+            // detach link and consume detach to verify that no transfer was delivered
+            interaction.detachClose(true).detach().consume(Detach.class, Flow.class);
         }
         assertThat(Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(contents[2])));
     }
@@ -585,7 +569,6 @@ public class FlowTest extends BrokerAdminUsingTestBase
                                            .consumeResponse(Flow.class).getLatestResponse(Flow.class);
 
             assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
-            assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
 
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)

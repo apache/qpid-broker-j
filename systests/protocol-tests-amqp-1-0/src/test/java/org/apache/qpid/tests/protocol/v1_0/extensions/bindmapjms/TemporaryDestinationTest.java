@@ -20,10 +20,12 @@
 
 package org.apache.qpid.tests.protocol.v1_0.extensions.bindmapjms;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -46,6 +48,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
@@ -100,6 +103,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                                                      .attachRole(Role.SENDER)
                                                      .attachTarget(target)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(this::assumeAttachResponse)
                                                      .getLatestResponse(Attach.class);
 
             assertThat(attachResponse.getSource(), is(notNullValue()));
@@ -151,6 +155,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                                                            .attachHandle(senderHandle)
                                                            .attachTarget(target)
                                                            .attach().consumeResponse()
+                                                           .assertLatestResponse(this::assumeAttachResponse)
                                                            .getLatestResponse(Attach.class);
 
             assertThat(senderAttachResponse.getSource(), is(notNullValue()));
@@ -211,6 +216,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                                                            .attachHandle(senderHandle)
                                                            .attachTarget(target)
                                                            .attach().consumeResponse()
+                                                           .assertLatestResponse(this::assumeAttachResponse)
                                                            .getLatestResponse(Attach.class);
 
             assertThat(senderAttachResponse.getSource(), is(notNullValue()));
@@ -250,6 +256,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                                                            .attachHandle(senderHandle)
                                                            .attachTarget(target)
                                                            .attach().consumeResponse()
+                                                           .assertLatestResponse(this::assumeAttachResponse)
                                                            .getLatestResponse(Attach.class);
 
             assertThat(senderAttachResponse.getSource(), is(notNullValue()));
@@ -305,6 +312,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                                                              .attachSource(source)
                                                              .attachHandle(receiverHandle)
                                                              .attach().consumeResponse()
+                                                             .assertLatestResponse(this::assumeAttachResponse)
                                                              .getLatestResponse(Attach.class);
 
             assertThat(receiverAttachResponse.getSource(), is(notNullValue()));
@@ -369,6 +377,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                                                              .attachSource(source)
                                                              .attachHandle(receiverHandle)
                                                              .attach().consumeResponse()
+                                                             .assertLatestResponse(this::assumeAttachResponse)
                                                              .getLatestResponse(Attach.class);
 
             assertThat(receiverAttachResponse.getSource(), is(notNullValue()));
@@ -410,6 +419,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                                                              .attachSource(source)
                                                              .attachHandle(receiverHandle)
                                                              .attach().consumeResponse()
+                                                             .assertLatestResponse(this::assumeAttachResponse)
                                                              .getLatestResponse(Attach.class);
 
             assertThat(receiverAttachResponse.getSource(), is(notNullValue()));
@@ -488,5 +498,11 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
         source.setCapabilities(capabilities);
         source.setAddress(name);
         return source;
+    }
+
+    private void assumeAttachResponse(Response<?> response)
+    {
+        assertThat(response, notNullValue());
+        assumeThat(response.getBody(), instanceOf(Attach.class));
     }
 }

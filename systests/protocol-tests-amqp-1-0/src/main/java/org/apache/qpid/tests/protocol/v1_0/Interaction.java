@@ -641,11 +641,6 @@ public class Interaction extends AbstractInteraction<Interaction>
         return this;
     }
 
-    public Interaction flowNextIncomingIdFromLatestDelivery()
-    {
-        return flowNextIncomingId(_latestDeliveryId.add(UnsignedInteger.ONE));
-    }
-
     public Interaction flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
     {
         final Begin begin = getCachedResponse(Begin.class);

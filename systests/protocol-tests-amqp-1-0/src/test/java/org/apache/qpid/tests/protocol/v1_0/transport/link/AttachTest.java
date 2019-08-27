@@ -39,16 +39,15 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.Response;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.BrokerSpecific;
@@ -89,6 +88,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
                           + "assigning it to an unused handle, and sending an attach frame.")
     public void successfulAttachAsSender() throws Exception
     {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
@@ -98,6 +98,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
                                                    .begin().consumeResponse(Begin.class)
                                                    .attachRole(Role.SENDER)
                                                    .attachInitialDeliveryCount(UnsignedInteger.ZERO)
+                                                   .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                                                    .attach().consumeResponse()
                                                    .getLatestResponse(Attach.class);
             assertThat(responseAttach.getName(), is(notNullValue()));

@@ -20,6 +20,7 @@
 
 package org.apache.qpid.tests.protocol.v1_0.messaging;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -44,12 +45,13 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.protocol.Response;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
 {
@@ -79,6 +81,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSource(source)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(this::assumeAttach)
                                                      .getLatestResponse(Attach.class);
             assertThat(attachResponse.getSource(), is(notNullValue()));
             final String newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
@@ -114,6 +117,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
                                                      .attachRole(Role.SENDER)
                                                      .attachTarget(target)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(this::assumeAttach)
                                                      .getLatestResponse(Attach.class);
             assertThat(attachResponse.getTarget(), is(notNullValue()));
             final String newTempQueueAddress = ((Target) attachResponse.getTarget()).getAddress();
@@ -152,6 +156,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSource(source)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(this::assumeAttach)
                                                      .getLatestResponse(Attach.class);
             assertThat(attachResponse.getSource(), is(notNullValue()));
             final String newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
@@ -196,6 +201,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSource(source)
                                                      .attach().consumeResponse()
+                                                     .assertLatestResponse(this::assumeAttach)
                                                      .getLatestResponse(Attach.class);
             assertThat(attachResponse.getSource(), is(notNullValue()));
             newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
@@ -208,5 +214,11 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
         _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
 
         assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+    }
+
+    private void assumeAttach(final Response<?> response)
+    {
+        assertThat(response, notNullValue());
+        assumeThat(response.getBody(), instanceOf(Attach.class));
     }
 }

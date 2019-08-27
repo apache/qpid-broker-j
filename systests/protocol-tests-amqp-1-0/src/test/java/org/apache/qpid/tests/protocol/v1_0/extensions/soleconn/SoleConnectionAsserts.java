@@ -26,19 +26,18 @@ import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.Sole
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.CLOSE_EXISTING;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.REFUSE_CONNECTION;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItemInArray;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.hamcrest.collection.IsMapContaining.hasKey;
 import static org.junit.Assume.assumeThat;
 
 import java.util.Collections;
 
-import org.hamcrest.Matchers;
 
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
@@ -86,7 +85,7 @@ class SoleConnectionAsserts
         assumeThat(open.getProperties(), is(notNullValue()));
         assumeThat(open.getProperties(),
                    anyOf(hasEntry(SOLE_CONNECTION_ENFORCEMENT_POLICY, REFUSE_CONNECTION.getValue()),
-                         is(not(Matchers.hasKey(SOLE_CONNECTION_ENFORCEMENT_POLICY)))));
+                         is(not(hasKey(SOLE_CONNECTION_ENFORCEMENT_POLICY)))));
     }
 
     static void assumeDetectionPolicyStrong(Open open)
@@ -100,14 +99,14 @@ class SoleConnectionAsserts
     static void assertConnectionEstablishmentFailed(final Open open)
     {
         assertThat(open.getProperties(), is(notNullValue()));
-        assertThat(open.getProperties(), Matchers.hasKey(CONNECTION_ESTABLISHMENT_FAILED));
+        assertThat(open.getProperties(), hasKey(CONNECTION_ESTABLISHMENT_FAILED));
         assertThat(open.getProperties(), hasEntry(CONNECTION_ESTABLISHMENT_FAILED, true));
     }
 
     static void assumeConnectionEstablishmentFailed(final Open open)
     {
         assumeThat(open.getProperties(), is(notNullValue()));
-        assumeThat(open.getProperties(), Matchers.hasKey(CONNECTION_ESTABLISHMENT_FAILED));
+        assumeThat(open.getProperties(), hasKey(CONNECTION_ESTABLISHMENT_FAILED));
         assertThat(open.getProperties(), hasEntry(CONNECTION_ESTABLISHMENT_FAILED, true));
     }
 

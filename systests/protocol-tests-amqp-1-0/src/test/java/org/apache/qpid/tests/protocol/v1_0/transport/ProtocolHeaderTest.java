@@ -22,6 +22,7 @@ package org.apache.qpid.tests.protocol.v1_0.transport;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assume.assumeThat;
 

@@ -88,7 +88,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                                                  .begin().consumeResponse(Begin.class)
                                                  .attachRole(Role.SENDER)
                                                  .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                 .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                                                  .attach().consumeResponse(Attach.class)
                                                  .consumeResponse(Flow.class)
                                                  .transferPayload(payloads[0])
@@ -135,7 +134,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .begin().consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
                        .transferDeliveryId(deliveryId)
@@ -197,7 +195,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .begin().consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
                        .transferPayload(payloads[0])
@@ -252,7 +249,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .attachHandle(linkHandle1)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
@@ -260,7 +256,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .attachHandle(linkHandle2)
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
@@ -356,7 +351,6 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
 
                        .attachRole(Role.SENDER)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
 
