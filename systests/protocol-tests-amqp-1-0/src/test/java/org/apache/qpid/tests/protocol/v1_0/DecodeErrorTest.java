@@ -21,11 +21,11 @@
 package org.apache.qpid.tests.protocol.v1_0;
 
 import static org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError.DECODE_ERROR;
+import static org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError.INVALID_FIELD;
+import static org.apache.qpid.tests.protocol.v1_0.ProtocolAsserts.assertAttachError;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 
@@ -40,7 +40,6 @@ import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.StringWriter;
-import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
@@ -53,12 +52,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -71,7 +67,6 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
     public void setUp()
     {
         _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
     @Test
@@ -80,6 +75,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                           + " Zero or one delivery-annotations, [...]")
     public void illegalMessage() throws Exception
     {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -90,7 +86,6 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                        .begin()
                        .consumeResponse(Begin.class)
                        .attachRole(Role.SENDER)
-                       .attachSndSettleMode(SenderSettleMode.SETTLED)
                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attach()
                        .consumeResponse(Attach.class)
@@ -103,7 +98,10 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
             {
                 interaction.transferMessageFormat(UnsignedInteger.ZERO)
                            .transferPayload(payload)
-                           .transfer();
+                           .transferSettled(true)
+                           .transferMessageFormat(UnsignedInteger.ZERO)
+                           .transfer()
+                           .sync();
             }
 
             interaction.closeUnconditionally();
@@ -126,25 +124,16 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
             source.setDynamic(Boolean.TRUE);
             source.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("lifetime-policy"),
                                                                      UnsignedInteger.MAX_VALUE));
-            final Response<?> latestResponse = transport.newInteraction()
+            final Interaction interaction = transport.newInteraction()
                                                         .negotiateProtocol().consumeResponse()
                                                         .open().consumeResponse(Open.class)
                                                         .begin().consumeResponse(Begin.class)
                                                         .attachSource(source)
-                                                        .attachRole(Role.SENDER)
-                                                        .attach().consumeResponse()
-                                                        .closeUnconditionally()
-                                                        .getLatestResponse();
+                                                        .attachRole(Role.RECEIVER)
+                                                        .attach()
+                                                        .sync();
 
-            assertThat(latestResponse, is(notNullValue()));
-            final Object responseBody = latestResponse.getBody();
-            assertThat(responseBody, is(notNullValue()));
-            assertThat(responseBody, instanceOf(ErrorCarryingFrameBody.class));
-
-            final Error error = ((ErrorCarryingFrameBody) responseBody).getError();
-
-            assertThat(error, is(notNullValue()));
-            assertThat(error.getCondition(), is(equalTo(DECODE_ERROR)));
+            assertAttachError(interaction, DECODE_ERROR, INVALID_FIELD);
         }
     }
 
@@ -160,24 +149,15 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
             target.setDynamic(Boolean.TRUE);
             target.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("supported-dist-modes"),
                                                                      UnsignedInteger.ZERO));
-            final Response<?> latestResponse = transport.newInteraction()
+            final Interaction interaction = transport.newInteraction()
                                                         .negotiateProtocol().consumeResponse()
                                                         .open().consumeResponse(Open.class)
                                                         .begin().consumeResponse(Begin.class)
                                                         .attachTarget(target)
                                                         .attachRole(Role.SENDER)
-                                                        .attach().consumeResponse()
-                                                        .closeUnconditionally()
-                                                        .getLatestResponse();
-
-            assertThat(latestResponse, is(notNullValue()));
-            final Object responseBody = latestResponse.getBody();
-            assertThat(responseBody, is(notNullValue()));
-            assertThat(responseBody, instanceOf(ErrorCarryingFrameBody.class));
-
-            final Error error = ((ErrorCarryingFrameBody) responseBody).getError();
-            assertThat(error, is(notNullValue()));
-            assertThat(error.getCondition(), is(equalTo(DECODE_ERROR)));
+                                                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                        .attach().sync();
+            assertAttachError(interaction, DECODE_ERROR, INVALID_FIELD);
         }
     }
 
