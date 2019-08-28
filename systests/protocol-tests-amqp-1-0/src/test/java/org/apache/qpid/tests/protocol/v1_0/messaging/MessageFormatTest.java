@@ -40,7 +40,7 @@ import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
-public class MessageFormat extends BrokerAdminUsingTestBase
+public class MessageFormatTest extends BrokerAdminUsingTestBase
 {
 
     @Before

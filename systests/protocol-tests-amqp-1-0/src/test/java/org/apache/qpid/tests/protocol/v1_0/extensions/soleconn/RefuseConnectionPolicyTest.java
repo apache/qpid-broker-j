@@ -45,7 +45,7 @@ import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
-public class RefuseConnectionPolicy extends BrokerAdminUsingTestBase
+public class RefuseConnectionPolicyTest extends BrokerAdminUsingTestBase
 {
 
     @Test
