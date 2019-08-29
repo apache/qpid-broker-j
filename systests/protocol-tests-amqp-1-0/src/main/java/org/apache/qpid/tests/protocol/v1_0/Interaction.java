@@ -1310,9 +1310,14 @@ public class Interaction extends AbstractInteraction<Interaction>
     protected Response<?> getNextResponse() throws Exception
     {
         Response<?> response = super.getNextResponse();
+        if (response instanceof FrameDecodingError)
+        {
+            throw new IllegalStateException(String.format("Failed to decode response: %s",
+                                                          ((FrameDecodingError) response).getError()));
+        }
         if (response != null && response.getBody() instanceof FrameBody)
         {
-            _latestResponses.put(response.getBody().getClass(), (FrameBody)response.getBody());
+            _latestResponses.put(response.getBody().getClass(), (FrameBody) response.getBody());
         }
         return response;
     }

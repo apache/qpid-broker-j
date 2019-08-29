@@ -210,7 +210,7 @@ public class FrameDecoder implements InputDecoder
         public void handleError(final Error parsingError)
         {
             LOGGER.error("Unexpected error {}", parsingError);
-            _responseQueue.add(new FrameDecodeError(parsingError));
+            _responseQueue.add(new FrameDecodingErrorResponse(parsingError));
         }
 
         @Override
@@ -291,17 +291,23 @@ public class FrameDecoder implements InputDecoder
         }
     }
 
-    private static class FrameDecodeError implements Response<Error>
+    private static class FrameDecodingErrorResponse implements Response<Error>, FrameDecodingError
     {
         private final Error _error;
 
-        FrameDecodeError(final Error error)
+        FrameDecodingErrorResponse(final Error error)
         {
             _error = error;
         }
 
         @Override
         public Error getBody()
+        {
+            return null;
+        }
+
+        @Override
+        public Error getError()
         {
             return _error;
         }
