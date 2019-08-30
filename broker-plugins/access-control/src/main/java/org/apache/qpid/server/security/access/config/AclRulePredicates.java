@@ -119,6 +119,11 @@ public class AclRulePredicates
         return _properties;
     }
 
+    public ObjectProperties getFirewallProperties()
+    {
+        return _properties;
+    }
+
     void setFirewallRuleFactory(FirewallRuleFactory firewallRuleFactory)
     {
         _firewallRuleFactory = firewallRuleFactory;

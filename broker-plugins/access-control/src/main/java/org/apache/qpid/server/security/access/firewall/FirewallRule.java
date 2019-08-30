@@ -20,7 +20,13 @@ package org.apache.qpid.server.security.access.firewall;
 
 import java.net.InetAddress;
 
+import org.apache.qpid.server.security.access.config.ObjectProperties;
+
 public interface FirewallRule
 {
     boolean matches(InetAddress addressOfClient);
+
+    ObjectProperties.Property getPropertyName();
+
+    String getPropertyValue();
 }
