@@ -30,6 +30,8 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.security.access.config.ObjectProperties;
+
 public class HostnameFirewallRule implements FirewallRule
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HostnameFirewallRule.class);
@@ -82,6 +84,17 @@ public class HostnameFirewallRule implements FirewallRule
         return false;
     }
 
+    @Override
+    public ObjectProperties.Property getPropertyName()
+    {
+        return ObjectProperties.Property.FROM_HOSTNAME;
+    }
+
+    @Override
+    public String getPropertyValue()
+    {
+        return String.join(",", _hostnames);
+    }
 
     /**
      * @param remote

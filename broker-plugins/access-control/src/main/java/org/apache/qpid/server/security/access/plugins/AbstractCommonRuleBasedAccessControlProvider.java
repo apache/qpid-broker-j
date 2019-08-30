@@ -149,7 +149,7 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
         @Override
         public Map<ObjectProperties.Property, String> getAttributes()
         {
-            return _rule.getAction().getProperties().asPropertyMap();
+            return _rule.getAttributes();
         }
 
         @Override

@@ -18,10 +18,16 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -30,6 +36,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AclActionTest extends UnitTestBase
 {
+    private static final String TEST_HOSTNAME = "localhost";
+    private static final String TEST_ATTRIBUTES = "test";
+
     @Test
     public void testEqualsAndHashCode()
     {
@@ -55,6 +64,26 @@ public class AclActionTest extends UnitTestBase
 
         assertFalse("Different predicates should cause aclActions to be unequal",
                            aclAction.equals(new AclAction(operation, objectType, createAclRulePredicates())));
+    }
+
+    @Test
+    public void testGetAttributes()
+    {
+        final ObjectType objectType = ObjectType.VIRTUALHOST;
+        final LegacyOperation operation = LegacyOperation.ACCESS;
+        final AclRulePredicates predicates = new AclRulePredicates();
+        predicates.parse(ObjectProperties.Property.FROM_HOSTNAME.name(), TEST_HOSTNAME);
+        predicates.parse(ObjectProperties.Property.ATTRIBUTES.name(), TEST_ATTRIBUTES);
+        predicates.parse(ObjectProperties.Property.NAME.name(), getTestName());
+
+        final AclAction aclAction = new AclAction(operation, objectType, predicates);
+        final Map<ObjectProperties.Property, String> attributes = aclAction.getAttributes();
+
+        assertThat(attributes,
+                   allOf(aMapWithSize(3),
+                         hasEntry(ObjectProperties.Property.FROM_HOSTNAME, TEST_HOSTNAME),
+                         hasEntry(ObjectProperties.Property.ATTRIBUTES, TEST_ATTRIBUTES),
+                         hasEntry(ObjectProperties.Property.NAME, getTestName())));
     }
 
     private AclRulePredicates createAclRulePredicates()
