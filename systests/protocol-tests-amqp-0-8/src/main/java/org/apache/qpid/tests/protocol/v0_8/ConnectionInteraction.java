@@ -140,4 +140,9 @@ public class ConnectionInteraction
     {
         return _interaction.sendPerformative(_closeOkBody);
     }
+
+    public Interaction interaction()
+    {
+        return _interaction;
+    }
 }

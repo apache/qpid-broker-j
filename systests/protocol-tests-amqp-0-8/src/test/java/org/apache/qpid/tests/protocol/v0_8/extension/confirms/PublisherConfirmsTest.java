@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -51,12 +50,9 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
  */
 public class PublisherConfirmsTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
@@ -68,10 +64,10 @@ public class PublisherConfirmsTest extends BrokerAdminUsingTestBase
                           + "contains the sequence number of the confirmed message." )
     public void publishMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            BasicAckBody ackBody = interaction.openAnonymousConnection()
+            BasicAckBody ackBody = interaction.negotiateOpen()
                                               .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                               .basic().confirmSelect().consumeResponse(ConfirmSelectOkBody.class)
                                               .basic().publishExchange("")
@@ -91,10 +87,10 @@ public class PublisherConfirmsTest extends BrokerAdminUsingTestBase
                           + "the broker will send a basic.nack.")
     public void publishUnrouteableMandatoryMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            BasicNackBody nackBody = interaction.openAnonymousConnection()
+            BasicNackBody nackBody = interaction.negotiateOpen()
                                                       .channel()
                                                       .open()
                                                       .consumeResponse(ChannelOpenOkBody.class)
@@ -119,10 +115,10 @@ public class PublisherConfirmsTest extends BrokerAdminUsingTestBase
                           + "confirmed or nack'd once")
     public void publishUnrouteableMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .basic().confirmSelect().consumeResponse(ConfirmSelectOkBody.class)
                        .basic().publishExchange("")
@@ -138,10 +134,10 @@ public class PublisherConfirmsTest extends BrokerAdminUsingTestBase
     @Test
     public void publishWithTransactionalConfirms() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final BasicAckBody ackBody = interaction.openAnonymousConnection()
+            final BasicAckBody ackBody = interaction.negotiateOpen()
                                                     .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                     .tx().select()
                                                     .consumeResponse(TxSelectOkBody.class)
@@ -167,10 +163,10 @@ public class PublisherConfirmsTest extends BrokerAdminUsingTestBase
     @Test
     public void publishUnroutableMessageWithTransactionalConfirms() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select()
                        .consumeResponse(TxSelectOkBody.class)

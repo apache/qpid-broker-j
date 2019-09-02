@@ -27,7 +27,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,12 +61,10 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class BasicTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
@@ -75,10 +72,10 @@ public class BasicTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.8.3.7", description = "publish a message")
     public void publishMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .basic().contentHeaderPropertiesContentType("text/plain")
                                .contentHeaderPropertiesHeaders(Collections.singletonMap("test", "testValue"))
@@ -99,10 +96,10 @@ public class BasicTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.8.3.7", description = "indicate mandatory routing")
     public void publishMandatoryMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .basic().publishExchange("")
                                .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
@@ -123,11 +120,11 @@ public class BasicTest extends BrokerAdminUsingTestBase
                           + "Return method.")
     public void publishUnrouteableMandatoryMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String messageContent = "Test";
-            BasicReturnBody returned = interaction.openAnonymousConnection()
+            BasicReturnBody returned = interaction.negotiateOpen()
                                                   .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                   .basic().publishExchange("")
                                                   .publishRoutingKey("unrouteable")
@@ -152,10 +149,10 @@ public class BasicTest extends BrokerAdminUsingTestBase
                           + "queue. If this flag is zero, the server silently drops the message.")
     public void publishUnrouteableMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .basic().publishExchange("")
                        .publishRoutingKey("unrouteable")
@@ -178,10 +175,10 @@ public class BasicTest extends BrokerAdminUsingTestBase
         byte deliveryMode = (byte) 2;
         Map<String, Object> messageHeaders = Collections.singletonMap("test", "testValue");
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .queue().declareName(queueName).declareDurable(true).declare()
                        .consumeResponse(QueueDeclareOkBody.class)
@@ -202,11 +199,11 @@ public class BasicTest extends BrokerAdminUsingTestBase
         getBrokerAdmin().restart();
         assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(1)));
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .basic().getQueueName(queueName).getNoAck(true).get()
@@ -235,7 +232,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.8.3.3", description = "start a queue consumer")
     public void consumeMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String messageContent = "Test";
@@ -245,7 +242,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
             String messageContentType = "text/plain";
             byte deliveryMode = (byte) 1;
             byte priority = (byte) 2;
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .basic().qosPrefetchCount(1)
@@ -309,13 +306,13 @@ public class BasicTest extends BrokerAdminUsingTestBase
                           + "Note current broker behaviour is spec incompliant: broker ignores not valid delivery tags")
     public void ackWithInvalidDeliveryTag() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String consumerTag = "A";
             final long deliveryTag = 12345L;
             String queueName = BrokerAdmin.TEST_QUEUE_NAME;
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .basic().qosPrefetchCount(1)
@@ -339,10 +336,10 @@ public class BasicTest extends BrokerAdminUsingTestBase
         String messageContent = "message";
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent);
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            BasicGetOkBody response = interaction.openAnonymousConnection()
+            BasicGetOkBody response = interaction.negotiateOpen()
                                                  .channel().open()
                                                  .consumeResponse(ChannelOpenOkBody.class)
                                                  .basic().getQueueName(BrokerAdmin.TEST_QUEUE_NAME).get()
@@ -371,10 +368,10 @@ public class BasicTest extends BrokerAdminUsingTestBase
         String messageContent = "message";
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent);
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .basic().getQueueName(BrokerAdmin.TEST_QUEUE_NAME).getNoAck(true).get()
@@ -396,10 +393,10 @@ public class BasicTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.8.3.10", description = "direct access to a queue")
     public void getEmptyQueue() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .basic().getQueueName(BrokerAdmin.TEST_QUEUE_NAME).get()
@@ -418,12 +415,12 @@ public class BasicTest extends BrokerAdminUsingTestBase
         String messageContent2 = String.join("", Collections.nCopies(128, "2"));
         String messageContent3 = String.join("", Collections.nCopies(256, "3"));
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String consumerTag = "A";
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .basic()
@@ -488,12 +485,12 @@ public class BasicTest extends BrokerAdminUsingTestBase
         String messageContent = String.join("", Collections.nCopies(1024, "*"));
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent);
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String consumerTag = "A";
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .channel().flow(true)
@@ -538,12 +535,12 @@ public class BasicTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "A", "B", "C", "D", "E", "F");
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String consumerTag = "A";
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .channel().flow(true)
@@ -606,12 +603,12 @@ public class BasicTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "A", "B", "C");
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String consumerTag = "A";
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .basic().qosPrefetchCount(1)

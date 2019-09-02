@@ -25,8 +25,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,13 +49,11 @@ import org.apache.qpid.tests.utils.BrokerSpecific;
 @BrokerSpecific(kind = KIND_BROKER_J)
 public class AsyncTransactionTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
     private static final int MESSAGE_COUNT = 10;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
@@ -66,7 +62,7 @@ public class AsyncTransactionTest extends BrokerAdminUsingTestBase
     {
         publishPersistentMessages();
         assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(MESSAGE_COUNT)));
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = createConsumerInteraction(transport);
 
@@ -88,7 +84,7 @@ public class AsyncTransactionTest extends BrokerAdminUsingTestBase
     {
         publishPersistentMessages();
         assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(MESSAGE_COUNT)));
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = createConsumerInteraction(transport);
 
@@ -108,10 +104,10 @@ public class AsyncTransactionTest extends BrokerAdminUsingTestBase
 
     private void publishPersistentMessages() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class);
             for (int i = 0; i < MESSAGE_COUNT; i++)
             {
@@ -130,7 +126,7 @@ public class AsyncTransactionTest extends BrokerAdminUsingTestBase
             throws Exception
     {
         final Interaction interaction = transport.newInteraction();
-        interaction.openAnonymousConnection()
+        interaction.negotiateOpen()
                    .channel().open().consumeResponse(ChannelOpenOkBody.class)
                    .tx().select().consumeResponse(TxSelectOkBody.class)
                    .basic().qosPrefetchCount(MESSAGE_COUNT)

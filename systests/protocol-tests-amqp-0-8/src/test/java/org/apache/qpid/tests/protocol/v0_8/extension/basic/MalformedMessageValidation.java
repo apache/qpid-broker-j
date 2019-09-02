@@ -25,7 +25,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
@@ -47,13 +46,11 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "qpid.connection.forceValidation", value = "true")
 public class MalformedMessageValidation extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
     private static final String CONTENT_TEXT = "Test";
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
@@ -62,10 +59,10 @@ public class MalformedMessageValidation extends BrokerAdminUsingTestBase
     {
         final FieldTable malformedHeader = createMalformedHeaders();
         byte[] contentBytes = CONTENT_TEXT.getBytes(StandardCharsets.UTF_8);
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .basic().publishExchange("")
                        .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)

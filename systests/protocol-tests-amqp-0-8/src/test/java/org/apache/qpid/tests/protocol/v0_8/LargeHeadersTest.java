@@ -50,12 +50,10 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class LargeHeadersTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
@@ -64,17 +62,12 @@ public class LargeHeadersTest extends BrokerAdminUsingTestBase
     public void headersFillContentHeaderFrame() throws Exception
     {
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String consumerTag = "A";
 
-            ConnectionTuneBody connTune = interaction.negotiateProtocol()
-                                                     .consumeResponse(ConnectionStartBody.class)
-                                                     .connection()
-                                                     .startOkMechanism("ANONYMOUS")
-                                                     .startOk()
-                                                     .consumeResponse(ConnectionTuneBody.class)
+            ConnectionTuneBody connTune = interaction.authenticateConnection()
                                                      .getLatestResponse(ConnectionTuneBody.class);
 
             final String headerName = "test";

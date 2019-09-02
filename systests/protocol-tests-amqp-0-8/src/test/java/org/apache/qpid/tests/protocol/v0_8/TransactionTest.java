@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Map;
 
@@ -40,12 +39,10 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class TransactionTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
@@ -54,10 +51,10 @@ public class TransactionTest extends BrokerAdminUsingTestBase
                                                           + "channels.")
     public void commitNonTransactedChannel() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ChannelCloseBody res = interaction.openAnonymousConnection()
+            ChannelCloseBody res = interaction.negotiateOpen()
                                               .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                               .tx().commit()
                                               .consumeResponse().getLatestResponse(ChannelCloseBody.class);
@@ -71,10 +68,10 @@ public class TransactionTest extends BrokerAdminUsingTestBase
                                                           + "channels.")
     public void rollbackNonTransactedChannel() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ChannelCloseBody res = interaction.openAnonymousConnection()
+            ChannelCloseBody res = interaction.negotiateOpen()
                                               .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                               .tx().rollback()
                                               .consumeResponse().getLatestResponse(ChannelCloseBody.class);
@@ -87,10 +84,10 @@ public class TransactionTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.9.2.3", description = "commit the current transaction")
     public void publishMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select().consumeResponse(TxSelectOkBody.class)
                        .basic().contentHeaderPropertiesContentType("text/plain")
@@ -113,10 +110,10 @@ public class TransactionTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.9.2.5", description = "abandon the current transaction")
     public void publishMessageRollback() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select().consumeResponse(TxSelectOkBody.class)
                        .basic()
@@ -139,13 +136,13 @@ public class TransactionTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message");
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select().consumeResponse(TxSelectOkBody.class)
                        .basic().qosPrefetchCount(1)
@@ -182,13 +179,13 @@ public class TransactionTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message");
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select().consumeResponse(TxSelectOkBody.class)
                        .basic().qosPrefetchCount(1)
@@ -243,13 +240,13 @@ public class TransactionTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message");
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select().consumeResponse(TxSelectOkBody.class)
                        .basic().qosPrefetchCount(1)
@@ -293,18 +290,13 @@ public class TransactionTest extends BrokerAdminUsingTestBase
     @Test
     public void publishUnrouteableMandatoryMessageCloseWhenNoRoute() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
             Map<String, Object> clientProperties = Collections.singletonMap(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, true);
-            ConnectionCloseBody response = interaction.negotiateProtocol()
-                                                      .consumeResponse(ConnectionStartBody.class).connection()
-                                                      .startOkClientProperties(clientProperties).startOkMechanism("ANONYMOUS").startOk()
-                                                      .consumeResponse(ConnectionTuneBody.class)
-                                                      .connection().tuneOk()
-                                                      .connection().open()
-                                                      .consumeResponse(ConnectionOpenOkBody.class)
+            ConnectionCloseBody response = interaction.connection().startOkClientProperties(clientProperties)
+                                                      .interaction().negotiateOpen()
                                                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                       .tx()
                                                       .select()
@@ -325,24 +317,14 @@ public class TransactionTest extends BrokerAdminUsingTestBase
     @Test
     public void publishUnrouteableMandatory() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
             Map<String, Object> clientProperties = Collections.singletonMap(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, false);
             final String messageContent = "Test";
-            BasicReturnBody returned = interaction.negotiateProtocol()
-                                                  .consumeResponse(ConnectionStartBody.class)
-                                                  .connection()
-                                                  .startOkClientProperties(clientProperties)
-                                                  .startOkMechanism("ANONYMOUS")
-                                                  .startOk()
-                                                  .consumeResponse(ConnectionTuneBody.class)
-                                                  .connection()
-                                                  .tuneOk()
-                                                  .connection()
-                                                  .open()
-                                                  .consumeResponse(ConnectionOpenOkBody.class)
+            BasicReturnBody returned = interaction.connection().startOkClientProperties(clientProperties)
+                                                  .interaction().negotiateOpen()
                                                   .channel()
                                                   .open()
                                                   .consumeResponse(ChannelOpenOkBody.class)

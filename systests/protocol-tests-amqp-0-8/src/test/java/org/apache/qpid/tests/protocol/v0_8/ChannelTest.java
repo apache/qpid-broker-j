@@ -20,37 +20,26 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
-import java.net.InetSocketAddress;
-
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.tests.protocol.SpecificationTest;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class ChannelTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "1.5.2.1", description = "open a channel for use")
     public void channelOpen() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .channel().open().consumeResponse(ChannelOpenOkBody.class);
         }
@@ -60,11 +49,11 @@ public class ChannelTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.5.2.5", description = "request a channel close")
     public void noFrameCanBeSentOnClosedChannel() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .channel().close().consumeResponse(ChannelCloseOkBody.class)

@@ -25,10 +25,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.ErrorCodes;
@@ -38,7 +36,6 @@ import org.apache.qpid.server.protocol.v0_8.transport.ExchangeBoundOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ExchangeDeclareOkBody;
 import org.apache.qpid.tests.protocol.v0_8.FrameTransport;
 import org.apache.qpid.tests.protocol.v0_8.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.BrokerSpecific;
 
@@ -46,21 +43,14 @@ import org.apache.qpid.tests.utils.BrokerSpecific;
 public class ExchangeTest extends BrokerAdminUsingTestBase
 {
     private static final String TEST_EXCHANGE = "testExchange";
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     public void exchangeDeclareValidWireArguments() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange()
                        .declareName(TEST_EXCHANGE)
@@ -80,10 +70,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     @Test
     public void exchangeDeclareInvalidWireArguments() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionCloseBody response = interaction.openAnonymousConnection()
+            ConnectionCloseBody response = interaction.negotiateOpen()
                                                       .channel()
                                                       .open()
                                                       .consumeResponse(ChannelOpenOkBody.class)

@@ -27,21 +27,34 @@ import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.tests.protocol.AbstractFrameTransport;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 
 
 public class FrameTransport extends AbstractFrameTransport<Interaction>
 {
     private final byte[] _protocolHeader;
     private ProtocolVersion _protocolVersion;
+    private final BrokerAdmin.PortType _portType;
+    private final BrokerAdmin _brokerAdmin;
 
-    public FrameTransport(final InetSocketAddress brokerAddress)
+    public FrameTransport(final BrokerAdmin brokerAdmin)
     {
-        this(brokerAddress, Protocol.AMQP_0_9_1);
+        this(brokerAdmin, getPortType(brokerAdmin), Protocol.AMQP_0_9_1);
     }
 
-    FrameTransport(final InetSocketAddress brokerAddress, Protocol protocol)
+    public FrameTransport(final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType)
     {
-        super(brokerAddress, new FrameDecoder(getProtocolVersion(protocol)), new FrameEncoder());
+        this(brokerAdmin, portType, Protocol.AMQP_0_9_1);
+    }
+
+
+    FrameTransport(final BrokerAdmin brokerAdmin,
+                   final BrokerAdmin.PortType portType,
+                   final Protocol protocol)
+    {
+        super(brokerAdmin.getBrokerAddress(portType), new FrameDecoder(getProtocolVersion(protocol)), new FrameEncoder());
+        _portType = portType;
+        _brokerAdmin = brokerAdmin;
         _protocolVersion = getProtocolVersion(protocol);
         byte[] protocolHeader = null;
         for(ProtocolEngineCreator installedEngine : (new QpidServiceLoader()).instancesOf(ProtocolEngineCreator.class))
@@ -68,7 +81,7 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
 
     public Interaction newInteraction()
     {
-        return new Interaction(this);
+        return new Interaction(this, _brokerAdmin, _portType);
     }
 
     public byte[] getProtocolHeader()
@@ -99,5 +112,10 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
                 throw new IllegalArgumentException(String.format("Unsupported protocol %s", protocol));
         }
         return protocolVersion;
+    }
+
+    private static BrokerAdmin.PortType getPortType(final BrokerAdmin brokerAdmin)
+    {
+        return brokerAdmin.isAnonymousSupported() ? BrokerAdmin.PortType.ANONYMOUS_AMQP : BrokerAdmin.PortType.AMQP;
     }
 }

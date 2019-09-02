@@ -26,11 +26,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -52,22 +50,15 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public class ExchangeTest extends BrokerAdminUsingTestBase
 {
     private static final String TEST_EXCHANGE = "testExchange";
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "1.6.2.1", description = "verify exchange exists, create if needed")
     public void exchangeDeclare() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange().declareName(TEST_EXCHANGE).declare()
                        .consumeResponse(ExchangeDeclareOkBody.class);
@@ -89,10 +80,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                                      + "use this to check whether an exchange exists without modifying the server state.")
     public void exchangeDeclarePassive() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange().declareName(TEST_EXCHANGE).declare()
                        .consumeResponse(ExchangeDeclareOkBody.class)
@@ -114,10 +105,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                           + "option is set, or the exchange already exists.")
     public void exchangeDeclareAmqDisallowed() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange().declarePassive(true).declareName(ExchangeDefaults.DIRECT_EXCHANGE_NAME).declare()
                        .consumeResponse(ExchangeDeclareOkBody.class)
@@ -141,10 +132,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                           + "used in the original Exchange.Declare method")
     public void exchangeRedeclareDifferentType() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange().declareType(ExchangeDefaults.DIRECT_EXCHANGE_CLASS).declareName(TEST_EXCHANGE).declare()
                        .consumeResponse(ExchangeDeclareOkBody.class);
@@ -164,10 +155,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
             description = "When [passive] set, all other method fields [of declare] except name and no-wait are ignored.")
     public void exchangeRedeclarePassiveDifferentType() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange().declareType(ExchangeDefaults.DIRECT_EXCHANGE_CLASS)
                        .declareName(TEST_EXCHANGE).declare()
@@ -187,10 +178,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                           + "support.")
     public void exchangeUnsupportedExchangeType() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange()
                        .declareType(ExchangeDefaults.DIRECT_EXCHANGE_CLASS)
@@ -212,10 +203,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                           + "exchanges) are purged if/when a server restarts.")
     public void exchangeDeclareDurable() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange().declareDurable(true).declareName(TEST_EXCHANGE).declare()
                        .consumeResponse(ExchangeDeclareOkBody.class);
@@ -224,10 +215,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
         assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
         getBrokerAdmin().restart();
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ExchangeBoundOkBody response = interaction.openAnonymousConnection()
+            ExchangeBoundOkBody response = interaction.negotiateOpen()
                                                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                       .exchange()
                                                       .boundExchangeName(TEST_EXCHANGE)
@@ -244,10 +235,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                           + "exchange are cancelled.")
     public void exchangeDelete() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange().declareName(TEST_EXCHANGE).declare()
                        .consumeResponse().getLatestResponse(ExchangeDeclareOkBody.class);
@@ -278,10 +269,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
             description = "The client MUST NOT attempt to delete an exchange that does not exist.")
     public void exchangeDeleteExchangeNotFound() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ChannelCloseBody unknownExchange = interaction.openAnonymousConnection()
+            ChannelCloseBody unknownExchange = interaction.negotiateOpen()
                                                           .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                           .exchange().deleteExchangeName("unknownExchange").delete()
                                                           .consumeResponse().getLatestResponse(ChannelCloseBody.class);
@@ -299,10 +290,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange().declareName(TEST_EXCHANGE).declare()
                        .consumeResponse(ExchangeDeclareOkBody.class)
@@ -343,10 +334,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                           + "exchange type that it implements.")
     public void exchangeDeleteAmqDisallowed() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ChannelCloseBody response = interaction.openAnonymousConnection()
+            ChannelCloseBody response = interaction.negotiateOpen()
                                                    .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                    .exchange()
                                                    .deleteExchangeName(ExchangeDefaults.DIRECT_EXCHANGE_NAME).delete()
@@ -361,10 +352,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange().declareName(TEST_EXCHANGE).declareAutoDelete(true).declare()
                        .consumeResponse(ExchangeDeclareOkBody.class)
@@ -387,11 +378,11 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     @Test
     public void exchangeDeclareWithAlternateExchange() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final String altExchName = "altExchange";
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange()
                        .declareName(altExchName)
@@ -425,10 +416,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     @Test
     public void exchangeDeclareWithUnknownAlternateExchange() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionCloseBody response = interaction.openAnonymousConnection()
+            ConnectionCloseBody response = interaction.negotiateOpen()
                                                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                       .exchange()
                                                       .declareName(TEST_EXCHANGE)

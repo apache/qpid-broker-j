@@ -19,36 +19,21 @@
  */
 package org.apache.qpid.tests.protocol.v0_8.extension.protocoltimeout;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assume.assumeThat;
-
-import java.net.InetSocketAddress;
-
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.tests.protocol.v0_8.FrameTransport;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.ConfigItem;
 
 @ConfigItem(name = AmqpPort.PROTOCOL_HANDSHAKE_TIMEOUT, value = "500")
 public class ProtocolHeaderTimeoutTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     public void noProtocolHeader() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             transport.assertNoMoreResponsesAndChannelClosed();
         }
@@ -57,7 +42,7 @@ public class ProtocolHeaderTimeoutTest extends BrokerAdminUsingTestBase
     @Test
     public void incompleteProtocolHeader() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
 
             final byte[] protocolHeader = transport.getProtocolHeader();

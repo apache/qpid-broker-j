@@ -34,12 +34,10 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assume.assumeThat;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.ErrorCodes;
@@ -63,19 +61,11 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     private static final String PLAIN = "PLAIN";
     private static final String CRAM_MD5 = "CRAM-MD5";
 
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
-
     @Test
     @SpecificationTest(section = "1.4.2.1", description = "start connection negotiation")
     public void connectionStart() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             ConnectionStartBody response =
@@ -90,14 +80,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.4.2.2", description = "select security mechanism and locale")
     public void connectionStartOk() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.negotiateProtocol()
-                       .consumeResponse(ConnectionStartBody.class)
-                       .connection().startOkMechanism(ANONYMOUS)
-                                    .startOk()
-                       .consumeResponse();
+            interaction.authenticateConnection();
 
             interaction.getLatestResponse(ConnectionTuneBody.class);
         }
@@ -110,7 +96,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                           + "further data.")
     public void connectionStartOkUnsupportedMechanism() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol()
@@ -129,14 +115,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.4.2.6", description = "negotiate connection tuning parameters")
     public void connectionTuneOkAndOpen() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTuneBody response = interaction.negotiateProtocol()
-                                                     .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism(ANONYMOUS)
-                                                     .startOk()
-                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+            ConnectionTuneBody response = interaction.authenticateConnection().getLatestResponse(ConnectionTuneBody.class);
 
             interaction.connection().tuneOkChannelMax(response.getChannelMax())
                        .tuneOkFrameMax(response.getFrameMax())
@@ -152,10 +134,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     public void connectionSecure() throws Exception
     {
         assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN), is(true));
-
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final byte[] initialResponse = String.format("\0%s\0%s",
                                                          getBrokerAdmin().getValidUsername(),
@@ -194,9 +173,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     {
         assumeThat(getBrokerAdmin().isSASLMechanismSupported(CRAM_MD5), is(true));
 
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final ConnectionStartBody start = interaction.negotiateProtocol()
@@ -235,9 +212,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     {
         assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN), is(true));
 
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-
-        try (FrameTransport transport = new FrameTransport(addr).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final byte[] initialResponse = String.format("\0%s\0%s",
                                                          getBrokerAdmin().getValidUsername(),
@@ -271,14 +246,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                                                           + " frame-min-size [4096].")
     public void tooSmallFrameSize() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTuneBody response = interaction.negotiateProtocol()
-                                                     .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism(ANONYMOUS)
-                                                     .startOk()
-                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+            ConnectionTuneBody response = interaction.authenticateConnection().getLatestResponse(ConnectionTuneBody.class);
 
             interaction.connection().tuneOkChannelMax(response.getChannelMax())
                        .tuneOkFrameMax(1024)
@@ -297,14 +268,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                                                              + " to assist implementors.")
     public void tooLargeFrameSize() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTuneBody response = interaction.negotiateProtocol()
-                                                     .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism(ANONYMOUS)
-                                                     .startOk()
-                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+            ConnectionTuneBody response = interaction.authenticateConnection().getLatestResponse(ConnectionTuneBody.class);
 
             interaction.connection().tuneOkChannelMax(response.getChannelMax())
                        .tuneOkFrameMax(Long.MAX_VALUE)
@@ -321,14 +288,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                           + "oversized frame MUST signal a connection exception with reply code 501 (frame error).")
     public void overlySizedContentBodyFrame() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTuneBody response = interaction.negotiateProtocol()
-                                                     .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism(ANONYMOUS)
-                                                     .startOk()
-                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+            ConnectionTuneBody response = interaction.authenticateConnection().getLatestResponse(ConnectionTuneBody.class);
 
             final long frameMax = response.getFrameMax();
             // Older Qpid JMS Client 0-x had a defect that meant they could send content body frames that were too
@@ -357,8 +320,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             // Server actually abruptly closes the connection.  We might see a graceful TCP/IP close or a broken pipe.
             try
             {
-                final ChannelClosedResponse closeResponse = interaction.consumeResponse()
-                                                                       .getLatestResponse(ChannelClosedResponse.class);
+                interaction.consumeResponse().getLatestResponse(ChannelClosedResponse.class);
             }
             catch (ExecutionException e)
             {
@@ -380,8 +342,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                                                        + " *challenge S:TUNE C:TUNE OK C:OPEN S:OPEN OK")
     public void authenticationBypassBySendingTuneOk() throws Exception
     {
-        final InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol().consumeResponse(ConnectionStartBody.class)
@@ -396,8 +357,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                                                        + " *challenge S:TUNE C:TUNE OK C:OPEN S:OPEN OK")
     public void authenticationBypassBySendingOpen() throws Exception
     {
-        final InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol().consumeResponse(ConnectionStartBody.class)
@@ -412,8 +372,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             description = "open-connection = C:protocol-header S:START C:START-OK *challenge S:TUNE C:TUNE-OK C:OPEN S:OPEN-OK")
     public void authenticationBypassAfterSendingStartOk() throws Exception
     {
-        InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try(FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol()
@@ -431,14 +390,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                           + " heartbeat frames is negotiated during connection tuning.")
     public void heartbeating() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTuneBody response = interaction.negotiateProtocol()
-                                                     .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism(ANONYMOUS)
-                                                     .startOk()
-                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+            ConnectionTuneBody response = interaction.authenticateConnection().getLatestResponse(ConnectionTuneBody.class);
 
             final Long heartbeatPeriod = 1L;
 
@@ -469,14 +424,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "4.2.7", description = "Any sent octet is a valid substitute for a heartbeat")
     public void heartbeatingIncomingTrafficIsNonHeartbeat() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTuneBody response = interaction.negotiateProtocol()
-                                                     .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism(ANONYMOUS)
-                                                     .startOk()
-                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+            ConnectionTuneBody response = interaction.authenticateConnection().getLatestResponse(ConnectionTuneBody.class);
 
             final Long heartbeatPeriod = 1L;
 
@@ -507,14 +458,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                           + "or longer, it should close the connection without following the Connection.Close/Close-Ok handshaking")
     public void heartbeatingNoIncomingTraffic() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTuneBody response = interaction.negotiateProtocol()
-                                                     .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism(ANONYMOUS)
-                                                     .startOk()
-                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+            ConnectionTuneBody response = interaction.authenticateConnection().getLatestResponse(ConnectionTuneBody.class);
 
             final Long heartbeatPeriod = 1L;
 
@@ -549,14 +496,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.4.2.7", description = "The client tried to work with an unknown virtual host.")
     public void connectionOpenUnknownVirtualHost() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTuneBody tune = interaction.negotiateProtocol()
-                                                 .consumeResponse(ConnectionStartBody.class)
-                                                 .connection().startOkMechanism(ANONYMOUS)
-                                                 .startOk()
-                                                 .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+            ConnectionTuneBody tune = interaction.authenticateConnection().getLatestResponse(ConnectionTuneBody.class);
 
             ConnectionCloseBody close = interaction.connection()
                                                    .tuneOkChannelMax(tune.getChannelMax())

@@ -27,13 +27,11 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -60,21 +58,14 @@ import org.apache.qpid.tests.utils.BrokerSpecific;
 @BrokerSpecific(kind = KIND_BROKER_J)
 public class QueueTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     public void queueDeclareUsingRealQueueAttributesInWireArguments() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            QueueDeclareOkBody response = interaction.openAnonymousConnection()
+            QueueDeclareOkBody response = interaction.negotiateOpen()
                                                      .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                      .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME)
                                                      .declareArguments(Collections.singletonMap("defaultFilters",
@@ -162,10 +153,10 @@ public class QueueTest extends BrokerAdminUsingTestBase
     @Test
     public void queueDeclareInvalidWireArguments() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionCloseBody response = interaction.openAnonymousConnection()
+            ConnectionCloseBody response = interaction.negotiateOpen()
                                                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                       .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME)
                                                       .declareArguments(Collections.singletonMap("foo", "bar"))

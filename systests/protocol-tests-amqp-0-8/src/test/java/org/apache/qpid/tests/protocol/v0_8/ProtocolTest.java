@@ -25,10 +25,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.ProtocolVersion;
@@ -37,18 +35,10 @@ import org.apache.qpid.server.protocol.v0_8.transport.AMQVersionAwareProtocolSes
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartBody;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.tests.protocol.SpecificationTest;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class ProtocolTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "4.2.2",
@@ -56,7 +46,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
                           + "write a valid protocol header to the socket, [...] and then close the socket connection.")
     public void unrecognisedProtocolHeader() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             assumeThat(transport.getProtocolVersion(), is(equalTo(ProtocolVersion.v0_91)));
 
@@ -79,7 +69,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
                           + "the socket connection.")
     public void unrecognisedProtocolVersion() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             assumeThat(transport.getProtocolVersion(), is(equalTo(ProtocolVersion.v0_91)));
 
@@ -99,7 +89,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "4.2.2", description = "The server either accepts [...] the protocol header")
     public void validProtocolVersion() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
@@ -116,7 +106,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
                           + "further data on it")
     public void unrecognisedFrameType() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 

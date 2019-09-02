@@ -22,11 +22,8 @@ package org.apache.qpid.tests.protocol.v0_8;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import org.junit.Before;
@@ -49,30 +46,23 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class LargeMessageTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
     @Test
     public void multiBodyMessage() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String consumerTag = "A";
             String queueName = "testQueue";
 
-            ConnectionTuneBody connTune = interaction.negotiateProtocol()
-                                                     .consumeResponse(ConnectionStartBody.class)
-                                                     .connection()
-                                                     .startOkMechanism("ANONYMOUS")
-                                                     .startOk()
-                                                     .consumeResponse(ConnectionTuneBody.class)
+            ConnectionTuneBody connTune = interaction.authenticateConnection()
                                                      .getLatestResponse(ConnectionTuneBody.class);
 
             byte[] messageContent = new byte[(int)connTune.getFrameMax()];

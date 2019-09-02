@@ -25,7 +25,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,12 +47,10 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "qpid.max_message_size", value = "1000")
 public class MaximumMessageSizeTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
@@ -61,10 +58,10 @@ public class MaximumMessageSizeTest extends BrokerAdminUsingTestBase
     public void limitExceeded() throws Exception
     {
         String content = Stream.generate(() -> String.valueOf('.')).limit(1001).collect(Collectors.joining());
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .basic().contentHeaderPropertiesContentType("text/plain")
                        .contentHeaderPropertiesDeliveryMode((byte) 1)

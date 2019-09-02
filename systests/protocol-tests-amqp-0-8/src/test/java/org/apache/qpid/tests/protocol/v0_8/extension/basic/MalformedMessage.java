@@ -27,7 +27,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -68,13 +67,11 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "connection.maxUncommittedInMemorySize", value = "1")
 public class MalformedMessage extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
     private static final String CONTENT_TEXT = "Test";
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
@@ -106,10 +103,10 @@ public class MalformedMessage extends BrokerAdminUsingTestBase
         basicContentHeaderProperties.setDeliveryMode(BasicContentHeaderProperties.PERSISTENT);
         byte[] contentBytes = CONTENT_TEXT.getBytes(StandardCharsets.UTF_8);
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .queue()
                        .bindName(ExchangeDefaults.TOPIC_EXCHANGE_NAME)
@@ -140,10 +137,10 @@ public class MalformedMessage extends BrokerAdminUsingTestBase
         basicContentHeaderProperties.setDeliveryMode(BasicContentHeaderProperties.PERSISTENT);
         byte[] contentBytes = CONTENT_TEXT.getBytes(StandardCharsets.UTF_8);
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select()
                        .consumeResponse(TxSelectOkBody.class)
@@ -169,11 +166,11 @@ public class MalformedMessage extends BrokerAdminUsingTestBase
         final String content2 = "message2";
         final byte[] content2Bytes = content2.getBytes(StandardCharsets.UTF_8);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             String consumerTag = "A";
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open()
                        .consumeResponse(ChannelOpenOkBody.class)
                        .basic().qosPrefetchCount(1)
@@ -228,10 +225,10 @@ public class MalformedMessage extends BrokerAdminUsingTestBase
     private void publishMalformedMessage(final FieldTable malformedHeader, final byte[] contentBytes) throws Exception
     {
 
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .basic().publishExchange("")
                                .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
