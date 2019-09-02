@@ -25,14 +25,17 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.security.access.config.ObjectProperties;
+
 public class NetworkFirewallRule implements FirewallRule
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkFirewallRule.class);
-
+    private final String _originalNetworks;
     private List<InetNetwork> _networks;
 
     public NetworkFirewallRule(String... networks)
     {
+        _originalNetworks = String.join(",", networks);
         _networks = new ArrayList<InetNetwork>();
         for (int i = 0; i < networks.length; i++)
         {
@@ -103,5 +106,17 @@ public class NetworkFirewallRule implements FirewallRule
         return "NetworkFirewallRule[" +
                "networks=" + _networks +
                ']';
+    }
+
+    @Override
+    public ObjectProperties.Property getPropertyName()
+    {
+        return ObjectProperties.Property.FROM_NETWORK;
+    }
+
+    @Override
+    public String getPropertyValue()
+    {
+        return _originalNetworks;
     }
 }

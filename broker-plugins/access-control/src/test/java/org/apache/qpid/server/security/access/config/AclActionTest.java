@@ -18,14 +18,21 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
-
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AclActionTest extends QpidTestCase
 {
+
+    private static final String TEST_HOSTNAME = "localhost";
+    private static final String TEST_ATTRIBUTES = "test";
+
     public void testEqualsAndHashCode()
     {
         AclRulePredicates predicates = createAclRulePredicates();
@@ -50,6 +57,26 @@ public class AclActionTest extends QpidTestCase
         assertFalse("Different predicates should cause aclActions to be unequal",
                 aclAction.equals(new AclAction(operation, objectType, createAclRulePredicates())));
 
+    }
+
+    public void testGetAttributes()
+    {
+        final ObjectType objectType = ObjectType.VIRTUALHOST;
+        final LegacyOperation operation = LegacyOperation.ACCESS;
+        final AclRulePredicates predicates = new AclRulePredicates();
+        predicates.parse(ObjectProperties.Property.FROM_HOSTNAME.name(), TEST_HOSTNAME);
+        predicates.parse(ObjectProperties.Property.ATTRIBUTES.name(), TEST_ATTRIBUTES);
+        predicates.parse(ObjectProperties.Property.NAME.name(), getTestName());
+
+        final AclAction aclAction = new AclAction(operation, objectType, predicates);
+        final Map<ObjectProperties.Property, String> attributes = aclAction.getAttributes();
+
+        final Map<ObjectProperties.Property, String> expected = new HashMap<>();
+        expected.put(ObjectProperties.Property.FROM_HOSTNAME, TEST_HOSTNAME);
+        expected.put(ObjectProperties.Property.ATTRIBUTES, TEST_ATTRIBUTES);
+        expected.put(ObjectProperties.Property.NAME, getTestName());
+
+        assertEquals(expected, new HashMap<>(attributes));
     }
 
     private AclRulePredicates createAclRulePredicates()

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import java.util.Map;
+
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 
 /**
@@ -112,5 +114,8 @@ public class Rule
                ']';
     }
 
-
+    public Map<ObjectProperties.Property, String> getAttributes()
+    {
+        return _action.getAttributes();
+    }
 }

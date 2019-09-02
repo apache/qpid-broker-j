@@ -18,6 +18,10 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 
 public class AclAction
@@ -95,5 +99,22 @@ public class AclAction
                "action=" + _action +
                ", firewallRule=" + _firewallRule +
                ']';
+    }
+
+    public Map<ObjectProperties.Property, String> getAttributes()
+    {
+        final ObjectProperties properties = _action.getProperties();
+        final Map<ObjectProperties.Property, String> attributes = new HashMap<>(properties.asPropertyMap());
+        final Set<String> attributeNames = properties.getAttributeNames();
+        if (attributeNames != null && !attributeNames.isEmpty())
+        {
+            attributes.put(ObjectProperties.Property.ATTRIBUTES, String.join(",", attributeNames));
+        }
+        final FirewallRule firewallRule = getFirewallRule();
+        if (firewallRule != null)
+        {
+            attributes.put(firewallRule.getPropertyName(), firewallRule.getPropertyValue());
+        }
+        return attributes;
     }
 }
