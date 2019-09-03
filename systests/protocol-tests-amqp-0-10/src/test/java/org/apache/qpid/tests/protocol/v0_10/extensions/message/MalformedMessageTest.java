@@ -54,7 +54,7 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @BrokerSpecific(kind = KIND_BROKER_J)
 @ConfigItem(name = "broker.flowToDiskThreshold", value = "1")
 @ConfigItem(name = "connection.maxUncommittedInMemorySize", value = "1")
-public class MalformedMessage extends BrokerAdminUsingTestBase
+public class MalformedMessageTest extends BrokerAdminUsingTestBase
 {
     private static final String CONTENT_TEXT = "Test";
 
