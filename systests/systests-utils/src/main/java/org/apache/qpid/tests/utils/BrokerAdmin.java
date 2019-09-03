@@ -62,6 +62,11 @@ public interface BrokerAdmin extends Pluggable
 
     String getKind();
 
+    default PortType getPreferredPortType()
+    {
+        return isAnonymousSupported() ? PortType.ANONYMOUS_AMQP : PortType.AMQP;
+    }
+
     enum PortType
     {
         ANONYMOUS_AMQP,

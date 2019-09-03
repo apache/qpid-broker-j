@@ -31,7 +31,7 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
 
     public FrameTransport(final BrokerAdmin brokerAdmin)
     {
-        this(brokerAdmin, getPortType(brokerAdmin));
+        this(brokerAdmin, brokerAdmin.getPreferredPortType());
     }
 
     public FrameTransport(final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType)
@@ -61,8 +61,4 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
         return new Interaction(this, _brokerAdmin, _portType);
     }
 
-    private static BrokerAdmin.PortType getPortType(final BrokerAdmin brokerAdmin)
-    {
-        return brokerAdmin.isAnonymousSupported() ? BrokerAdmin.PortType.ANONYMOUS_AMQP : BrokerAdmin.PortType.AMQP;
-    }
 }

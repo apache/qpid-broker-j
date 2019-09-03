@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
-import java.net.InetSocketAddress;
-
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
@@ -39,7 +37,7 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
 
     public FrameTransport(final BrokerAdmin brokerAdmin)
     {
-        this(brokerAdmin, getPortType(brokerAdmin), Protocol.AMQP_0_9_1);
+        this(brokerAdmin, brokerAdmin.getPreferredPortType(), Protocol.AMQP_0_9_1);
     }
 
     public FrameTransport(final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType)
@@ -114,8 +112,4 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
         return protocolVersion;
     }
 
-    private static BrokerAdmin.PortType getPortType(final BrokerAdmin brokerAdmin)
-    {
-        return brokerAdmin.isAnonymousSupported() ? BrokerAdmin.PortType.ANONYMOUS_AMQP : BrokerAdmin.PortType.AMQP;
-    }
 }

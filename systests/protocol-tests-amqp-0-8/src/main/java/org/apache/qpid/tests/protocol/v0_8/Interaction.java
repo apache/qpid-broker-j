@@ -39,7 +39,6 @@ import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentBody;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.tests.protocol.AbstractInteraction;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class Interaction extends AbstractInteraction<Interaction>
@@ -56,7 +55,7 @@ public class Interaction extends AbstractInteraction<Interaction>
     private TxInteraction _txInteraction;
     private ExchangeInteraction _exchangeInteraction;
 
-    Interaction(final FrameTransport transport, final BrokerAdmin brokerAdmin, BrokerAdmin.PortType portType)
+    Interaction(final FrameTransport transport, final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType)
     {
         super(transport);
         _connectionInteraction = new ConnectionInteraction(this);
@@ -204,27 +203,6 @@ public class Interaction extends AbstractInteraction<Interaction>
     public ExchangeInteraction exchange()
     {
         return _exchangeInteraction;
-    }
-
-    @SafeVarargs
-    public final <T extends AMQBody> T consume(final Class<T> expected,
-                                               final Class<? extends AMQBody>... ignore)
-            throws Exception
-    {
-        final Class<? extends AMQBody>[] expectedResponses = Arrays.copyOf(ignore, ignore.length + 1);
-        expectedResponses[ignore.length] = expected;
-
-        T completed = null;
-        do
-        {
-            Response<?> response = consumeResponse(expectedResponses).getLatestResponse();
-            if (expected.isAssignableFrom(response.getBody().getClass()))
-            {
-                completed = (T) response.getBody();
-            }
-        }
-        while (completed == null);
-        return completed;
     }
 
     public String getLatestResponseContentBodyAsString() throws Exception

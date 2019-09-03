@@ -73,6 +73,25 @@ public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
                                                       _latestResponse == null ? null : _latestResponse.getBody()));
     }
 
+    public <T> T consume(final Class<T> expected, final Class<?>... ignore)
+            throws Exception
+    {
+        final Class<?>[] expectedResponses = Arrays.copyOf(ignore, ignore.length + 1);
+        expectedResponses[ignore.length] = expected;
+
+        T completed = null;
+        do
+        {
+            Response<?> response = consumeResponse(expectedResponses).getLatestResponse();
+            if (expected.isAssignableFrom(response.getBody().getClass()))
+            {
+                completed = (T) response.getBody();
+            }
+        }
+        while (completed == null);
+        return completed;
+    }
+
     protected Response<?> getNextResponse() throws Exception
     {
         return _transport.getNextResponse();

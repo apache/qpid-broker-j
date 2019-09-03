@@ -23,7 +23,6 @@ package org.apache.qpid.tests.protocol.v0_10;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,9 +38,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionAttached;
-import org.apache.qpid.tests.protocol.AbstractFrameTransport;
 import org.apache.qpid.tests.protocol.AbstractInteraction;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class Interaction extends AbstractInteraction<Interaction>
@@ -58,7 +55,7 @@ public class Interaction extends AbstractInteraction<Interaction>
     private int _channelId;
     private TxInteraction _txInteraction;
 
-    public Interaction(final AbstractFrameTransport frameTransport,
+    public Interaction(final FrameTransport frameTransport,
                        final BrokerAdmin brokerAdmin,
                        final BrokerAdmin.PortType portType)
     {
@@ -273,23 +270,4 @@ public class Interaction extends AbstractInteraction<Interaction>
         return _exchangeInteraction;
     }
 
-    public <T extends Method> T consume(final Class<T> expected,
-                                        final Class<? extends Method>... ignore)
-            throws Exception
-    {
-        final Class<? extends Method>[] expectedResponses = Arrays.copyOf(ignore, ignore.length + 1);
-        expectedResponses[ignore.length] = expected;
-
-        T completed = null;
-        do
-        {
-            Response<?> response = consumeResponse(expectedResponses).getLatestResponse();
-            if (expected.isAssignableFrom(response.getBody().getClass()))
-            {
-                completed = (T) response.getBody();
-            }
-        }
-        while (completed == null);
-        return completed;
-    }
 }
