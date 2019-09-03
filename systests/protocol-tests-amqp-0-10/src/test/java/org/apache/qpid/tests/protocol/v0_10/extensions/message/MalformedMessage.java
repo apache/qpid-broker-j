@@ -23,7 +23,6 @@ package org.apache.qpid.tests.protocol.v0_10.extensions.message;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -57,20 +56,18 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "connection.maxUncommittedInMemorySize", value = "1")
 public class MalformedMessage extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
     private static final String CONTENT_TEXT = "Test";
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
     @Test
     public void malformedMessage() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "test".getBytes(UTF_8);
@@ -102,7 +99,7 @@ public class MalformedMessage extends BrokerAdminUsingTestBase
                 }
             };
 
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(sessionName)
                        .sendPerformativeWithoutCopying(malformedTransfer)

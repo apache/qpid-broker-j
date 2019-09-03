@@ -20,19 +20,29 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
-import java.net.InetSocketAddress;
-
 import org.apache.qpid.server.protocol.v0_10.ProtocolEngineCreator_0_10;
 import org.apache.qpid.tests.protocol.AbstractFrameTransport;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 
 
 public class FrameTransport extends AbstractFrameTransport<Interaction>
 {
     private final byte[] _protocolHeader;
+    private final BrokerAdmin.PortType _portType;
+    private final BrokerAdmin _brokerAdmin;
 
-    public FrameTransport(final InetSocketAddress brokerAddress)
+    public FrameTransport(final BrokerAdmin brokerAdmin)
     {
-        super(brokerAddress, new FrameDecoder(new ProtocolEngineCreator_0_10().getHeaderIdentifier()), new FrameEncoder());
+        this(brokerAdmin, getPortType(brokerAdmin));
+    }
+
+    public FrameTransport(final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType)
+    {
+        super(brokerAdmin.getBrokerAddress(portType),
+              new FrameDecoder(new ProtocolEngineCreator_0_10().getHeaderIdentifier()),
+              new FrameEncoder());
+        _portType = portType;
+        _brokerAdmin = brokerAdmin;
         _protocolHeader = new ProtocolEngineCreator_0_10().getHeaderIdentifier();
     }
 
@@ -45,7 +55,7 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
     @Override
     public Interaction newInteraction()
     {
-        return new Interaction(this);
+        return new Interaction(this, _brokerAdmin, _portType);
     }
 
     @Override
@@ -55,4 +65,8 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
         return this;
     }
 
+    private static BrokerAdmin.PortType getPortType(final BrokerAdmin brokerAdmin)
+    {
+        return brokerAdmin.isAnonymousSupported() ? BrokerAdmin.PortType.ANONYMOUS_AMQP : BrokerAdmin.PortType.AMQP;
+    }
 }

@@ -21,19 +21,15 @@
 package org.apache.qpid.tests.protocol.v0_10;
 
 import static org.hamcrest.CoreMatchers.both;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
-
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionClose;
@@ -50,21 +46,14 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class ConnectionTest extends BrokerAdminUsingTestBase
 {
-    private static final String DEFAULT_LOCALE = "en_US";
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "9.connection.start-ok",
             description = "An AMQP client MUST handle incoming connection.start controls.")
     public void startOk() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        assumeThat(getBrokerAdmin().isAnonymousSupported(), is(equalTo(true)));
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.ANONYMOUS_AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol().consumeResponse()
@@ -80,7 +69,8 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                           + " Certain fields are negotiated, others provide capability information.")
     public void tuneOkAndOpen() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        assumeThat(getBrokerAdmin().isAnonymousSupported(), is(equalTo(true)));
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.ANONYMOUS_AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol().consumeResponse()
@@ -98,8 +88,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             description = "open-connection = C:protocol-header S:START C:START-OK *challenge S:TUNE C:TUNE-OK C:OPEN S:OPEN-OK")
     public void authenticationBypassBySendingTuneOk() throws Exception
     {
-        InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try(FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol().consumeResponse()
@@ -115,8 +104,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             description = "open-connection = C:protocol-header S:START C:START-OK *challenge S:TUNE C:TUNE-OK C:OPEN S:OPEN-OK")
     public void authenticationBypassBySendingOpen() throws Exception
     {
-        InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try(FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol().consumeResponse().consumeResponse(ConnectionStart.class)
@@ -130,8 +118,8 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             description = "open-connection = C:protocol-header S:START C:START-OK *challenge S:TUNE C:TUNE-OK C:OPEN S:OPEN-OK")
     public void authenticationBypassAfterSendingStartOk() throws Exception
     {
-        InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try(FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        assumeThat(getBrokerAdmin().isSASLMechanismSupported(ConnectionInteraction.SASL_MECHANISM_PLAIN), is(equalTo(true)));
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol().consumeResponse()
@@ -149,13 +137,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             description = "[...] the minimum negotiated value for max-frame-size is also MIN-MAX-FRAME-SIZE [4096]")
     public void tooSmallFrameSize() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTune response = interaction.negotiateProtocol().consumeResponse()
-                                                 .consumeResponse(ConnectionStart.class)
-                                                 .connection().startOkMechanism(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS).startOk()
-                                                 .consumeResponse().getLatestResponse(ConnectionTune.class);
+            ConnectionTune response = interaction.authenticateConnection().getLatestResponse(ConnectionTune.class);
 
             interaction.connection().tuneOkChannelMax(response.getChannelMax())
                                     .tuneOkMaxFrameSize(1024)
@@ -172,13 +157,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                           + " The server may report the error in some fashion to assist implementers.")
     public void tooLargeFrameSize() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTune response = interaction.negotiateProtocol().consumeResponse()
-                                                 .consumeResponse(ConnectionStart.class)
-                                                 .connection().startOkMechanism(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS).startOk()
-                                                 .consumeResponse().getLatestResponse(ConnectionTune.class);
+            ConnectionTune response = interaction.authenticateConnection().getLatestResponse(ConnectionTune.class);
 
             assumeThat(response.hasMaxFrameSize(), is(true));
             assumeThat(response.getMaxFrameSize(), is(lessThan(0xFFFF)));
@@ -196,13 +178,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                           + "is idle.")
     public void heartbeating() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTune response = interaction.negotiateProtocol().consumeResponse()
-                                                 .consumeResponse(ConnectionStart.class)
-                                                 .connection().startOkMechanism(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS).startOk()
-                                                 .consumeResponse().getLatestResponse(ConnectionTune.class);
+            ConnectionTune response = interaction.authenticateConnection().getLatestResponse(ConnectionTune.class);
 
             assumeThat(response.hasHeartbeatMin(), is(true));
             assumeThat(response.hasHeartbeatMax(), is(true));
@@ -241,13 +220,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                           + "be considered disconnected.")
     public void heartbeatingIncomingIdle() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ConnectionTune response = interaction.negotiateProtocol().consumeResponse()
-                                                 .consumeResponse(ConnectionStart.class)
-                                                 .connection().startOkMechanism(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS).startOk()
-                                                 .consumeResponse().getLatestResponse(ConnectionTune.class);
+            ConnectionTune response = interaction.authenticateConnection().getLatestResponse(ConnectionTune.class);
 
             assumeThat(response.hasHeartbeatMin(), is(true));
             assumeThat(response.hasHeartbeatMax(), is(true));

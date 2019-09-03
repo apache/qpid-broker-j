@@ -19,15 +19,17 @@
  */
 package org.apache.qpid.tests.protocol.v0_10.extensions.authtimeout;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
-
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
+import org.apache.qpid.tests.protocol.v0_10.ConnectionInteraction;
 import org.apache.qpid.tests.protocol.v0_10.FrameTransport;
 import org.apache.qpid.tests.protocol.v0_10.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -40,15 +42,16 @@ public class AuthenticationTimeoutTest extends BrokerAdminUsingTestBase
     @Test
     public void authenticationTimeout() throws Exception
     {
-        InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try(FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        assumeThat(getBrokerAdmin().isSASLMechanismSupported(ConnectionInteraction.SASL_MECHANISM_PLAIN),
+                   is(equalTo(true)));
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final ConnectionStart start = interaction.negotiateProtocol()
-                                                              .consumeResponse()
-                                                              .consumeResponse()
-                                                              .getLatestResponse(ConnectionStart.class);
-            assertThat(start.getMechanisms(), CoreMatchers.hasItem("PLAIN"));
+                                                     .consumeResponse()
+                                                     .consumeResponse()
+                                                     .getLatestResponse(ConnectionStart.class);
+            assertThat(start.getMechanisms(), hasItem(ConnectionInteraction.SASL_MECHANISM_PLAIN));
             transport.assertNoMoreResponsesAndChannelClosed();
         }
     }

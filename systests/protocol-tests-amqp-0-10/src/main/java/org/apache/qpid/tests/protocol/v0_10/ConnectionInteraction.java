@@ -22,6 +22,7 @@ package org.apache.qpid.tests.protocol.v0_10;
 
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionHeartbeat;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpen;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionSecureOk;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStartOk;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTuneOk;
 
@@ -31,6 +32,7 @@ public class ConnectionInteraction
     public static final String SASL_MECHANISM_PLAIN = "PLAIN";
 
     private final Interaction _interaction;
+    private final ConnectionSecureOk _secureOk;
     private ConnectionStartOk _startOk;
     private ConnectionTuneOk _tuneOk;
     private ConnectionOpen _open;
@@ -39,6 +41,7 @@ public class ConnectionInteraction
     public ConnectionInteraction(final Interaction interaction)
     {
         _interaction = interaction;
+        _secureOk = new ConnectionSecureOk();
         _startOk = new ConnectionStartOk();
         _tuneOk = new ConnectionTuneOk();
         _open = new ConnectionOpen();
@@ -84,10 +87,10 @@ public class ConnectionInteraction
         return this;
     }
 
-    public ConnectionInteraction startOkResponse(final byte[] response)
+    public Interaction secureOk(final byte[] response) throws Exception
     {
-        _startOk.setResponse(response);
-        return this;
+        _secureOk.setResponse(response);
+        return _interaction.sendPerformative(_secureOk);
     }
 
     public Interaction heartbeat() throws Exception

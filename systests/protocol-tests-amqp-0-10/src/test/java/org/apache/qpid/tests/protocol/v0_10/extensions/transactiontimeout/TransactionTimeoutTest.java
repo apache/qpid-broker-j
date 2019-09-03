@@ -27,8 +27,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,23 +51,21 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "virtualhost.storeTransactionOpenTimeoutClose", value = "1000")
 public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
     @Test
     public void publishTransactionTimeout() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "test".getBytes(UTF_8);
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(sessionName)
                        .tx().selectId(0).select()
@@ -104,12 +100,12 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
     {
         String testMessageBody = "testMessage";
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, testMessageBody);
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "testSession".getBytes(UTF_8);
             final String subscriberName = "testSubscriber";
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(sessionName)
                        .tx().selectId(0).select()

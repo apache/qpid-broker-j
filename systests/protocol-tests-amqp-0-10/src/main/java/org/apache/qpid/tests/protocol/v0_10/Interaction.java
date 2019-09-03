@@ -20,12 +20,18 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.qpid.server.protocol.v0_10.transport.BBDecoder;
 import org.apache.qpid.server.protocol.v0_10.transport.BBEncoder;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpenOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionSecure;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTune;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
@@ -36,9 +42,12 @@ import org.apache.qpid.server.protocol.v0_10.transport.SessionAttached;
 import org.apache.qpid.tests.protocol.AbstractFrameTransport;
 import org.apache.qpid.tests.protocol.AbstractInteraction;
 import org.apache.qpid.tests.protocol.Response;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class Interaction extends AbstractInteraction<Interaction>
 {
+    private final BrokerAdmin _brokerAdmin;
+    private final BrokerAdmin.PortType _portType;
     private byte[] _protocolHeader;
     private ConnectionInteraction _connectionInteraction;
     private SessionInteraction _sessionInteraction;
@@ -49,7 +58,9 @@ public class Interaction extends AbstractInteraction<Interaction>
     private int _channelId;
     private TxInteraction _txInteraction;
 
-    public Interaction(final AbstractFrameTransport frameTransport)
+    public Interaction(final AbstractFrameTransport frameTransport,
+                       final BrokerAdmin brokerAdmin,
+                       final BrokerAdmin.PortType portType)
     {
         super(frameTransport);
         _connectionInteraction = new ConnectionInteraction(this);
@@ -60,6 +71,8 @@ public class Interaction extends AbstractInteraction<Interaction>
         _queueInteraction = new QueueInteraction(this);
         _exchangeInteraction = new ExchangeInteraction(this);
         _protocolHeader = getTransport().getProtocolHeader();
+        _brokerAdmin = brokerAdmin;
+        _portType = portType;
     }
 
     @Override
@@ -151,16 +164,62 @@ public class Interaction extends AbstractInteraction<Interaction>
         return dst;
     }
 
-    public Interaction openAnonymousConnection() throws Exception
+    public Interaction negotiateOpen() throws Exception
+    {
+        authenticateConnection().connection().tuneOk()
+                                .connection().open()
+                                .consumeResponse(ConnectionOpenOk.class);
+        return this;
+    }
+
+    public Interaction authenticateConnection() throws Exception
+    {
+        if (_portType == BrokerAdmin.PortType.ANONYMOUS_AMQP || _portType == BrokerAdmin.PortType.ANONYMOUS_AMQPWS)
+        {
+            openAnonymous();
+        }
+        else
+        {
+            final ConnectionStart start = this.negotiateProtocol().consumeResponse()
+                                              .consumeResponse().getLatestResponse(ConnectionStart.class);
+            final List<Object> supportedMechanisms =
+                    start.getMechanisms() == null ? Collections.emptyList() : start.getMechanisms();
+
+            if (supportedMechanisms.stream().noneMatch(m -> String.valueOf(m).equalsIgnoreCase(ConnectionInteraction.SASL_MECHANISM_PLAIN)))
+            {
+                if (supportedMechanisms.stream()
+                                       .noneMatch(m -> String.valueOf(m).equalsIgnoreCase(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS)))
+                {
+                    throw new IllegalStateException(String.format(
+                            "PLAIN or ANONYMOUS SASL mechanism is not listed among supported '%s'", supportedMechanisms.stream().map(
+                                    String::valueOf).collect(
+                                    Collectors.joining(","))));
+                }
+                else
+                {
+                    openAnonymous();
+                }
+            }
+            else
+            {
+                final byte[] initialResponse = String.format("\0%s\0%s",
+                                                             _brokerAdmin.getValidUsername(),
+                                                             _brokerAdmin.getValidPassword())
+                                                     .getBytes(UTF_8);
+                this.connection().startOkMechanism(ConnectionInteraction.SASL_MECHANISM_PLAIN).startOk()
+                    .consumeResponse(ConnectionSecure.class)
+                    .connection().secureOk(initialResponse).consumeResponse(ConnectionTune.class);
+            }
+        }
+        return this;
+    }
+
+    private void openAnonymous() throws Exception
     {
         this.negotiateProtocol().consumeResponse()
             .consumeResponse(ConnectionStart.class)
             .connection().startOkMechanism(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS).startOk()
-            .consumeResponse(ConnectionTune.class)
-            .connection().tuneOk()
-            .connection().open()
-            .consumeResponse(ConnectionOpenOk.class);
-        return this;
+            .consumeResponse(ConnectionTune.class);
     }
 
     public SessionInteraction session()

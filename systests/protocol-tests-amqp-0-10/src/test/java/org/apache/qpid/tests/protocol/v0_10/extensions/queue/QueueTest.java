@@ -26,11 +26,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -51,22 +49,15 @@ import org.apache.qpid.tests.utils.BrokerSpecific;
 @BrokerSpecific(kind = KIND_BROKER_J)
 public class QueueTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
     private static final byte[] SESSION_NAME = "test".getBytes(UTF_8);
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     public void queueDeclareUsingRealQueueAttributesInWireArguments() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            SessionCompleted completed = interaction.openAnonymousConnection()
+            SessionCompleted completed = interaction.negotiateOpen()
                                                     .channelId(1)
                                                     .attachSession(SESSION_NAME)
                                                     .queue()
@@ -149,10 +140,10 @@ public class QueueTest extends BrokerAdminUsingTestBase
     @Test
     public void queueDeclareInvalidWireArguments() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .queue()

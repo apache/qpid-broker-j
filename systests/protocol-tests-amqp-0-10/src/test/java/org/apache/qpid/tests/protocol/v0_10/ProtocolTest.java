@@ -20,20 +20,20 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assume.assumeThat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 import org.hamcrest.core.IsEqual;
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
@@ -46,13 +46,6 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public class ProtocolTest extends BrokerAdminUsingTestBase
 {
     private static final String DEFAULT_LOCALE = "en_US";
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "4.3. Version Negotiation",
@@ -62,7 +55,8 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
                           + " header with the requested version to the socket, and then implement the protocol accordingly")
     public void versionNegotiation() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        assumeThat(getBrokerAdmin().isAnonymousSupported(), is(equalTo(true)));
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.ANONYMOUS_AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
             Response<?> response = interaction.negotiateProtocol().consumeResponse().getLatestResponse();
@@ -83,7 +77,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
                           + "header with a supported protocol version and then close the socket.")
     public void unrecognisedProtocolHeader() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
 
             final Interaction interaction = transport.newInteraction();
@@ -104,7 +98,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
                           + "header with a supported protocol version and then close the socket.")
     public void unrecognisedProtocolVersion() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
 
 
@@ -124,7 +118,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "8. Domains", description = "valid values for the frame type indicator.")
     public void invalidSegmentType() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 

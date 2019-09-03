@@ -28,11 +28,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -50,23 +48,16 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class ExchangeTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
     private static final byte[] SESSION_NAME = "test".getBytes(UTF_8);
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "10.exchange.declare", description = "verify exchange exists, create if needed.")
     public void exchangeDeclare() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            SessionCompleted completed = interaction.openAnonymousConnection()
+            SessionCompleted completed = interaction.negotiateOpen()
                                                     .channelId(1)
                                                     .attachSession(SESSION_NAME)
                                                     .exchange()
@@ -90,10 +81,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                           + " message will be sent.")
     public void exchangeDeclareWithAlternateExchange() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .exchange()
@@ -115,10 +106,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                           + "then an exception must be raised.")
     public void exchangeDeclareAlternateExchangeNotFound() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ExecutionException response = interaction.openAnonymousConnection()
+            ExecutionException response = interaction.negotiateOpen()
                                                      .channelId(1)
                                                      .attachSession(SESSION_NAME)
                                                      .exchange()
@@ -145,10 +136,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     public void exchangeDeclareDurable() throws Exception
     {
         String exchangeName = "myexch";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .exchange()
@@ -166,10 +157,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
         assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
         getBrokerAdmin().restart();
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .exchange()
@@ -190,10 +181,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     public void exchangeDelete() throws Exception
     {
         String exchangeName = "myexch";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .exchange()
@@ -237,10 +228,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         String exchangeName1 = "myexch1";
         String exchangeName2 = "myexch2";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ExecutionException response = interaction.openAnonymousConnection()
+            ExecutionException response = interaction.negotiateOpen()
                                                      .channelId(1)
                                                      .attachSession(SESSION_NAME)
                                                      .exchange()
@@ -274,10 +265,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     public void exchangeQuery() throws Exception
     {
         String exchangeName = "myexch";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ExecutionResult result = interaction.openAnonymousConnection()
+            ExecutionResult result = interaction.negotiateOpen()
                                                 .channelId(1)
                                                 .attachSession(SESSION_NAME)
                                                 .exchange()
@@ -307,10 +298,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .exchange()
@@ -355,10 +346,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ExecutionException response = interaction.openAnonymousConnection()
+            ExecutionException response = interaction.negotiateOpen()
                                                      .channelId(1)
                                                      .attachSession(SESSION_NAME)
                                                      .exchange()
@@ -388,10 +379,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ExecutionException response = interaction.openAnonymousConnection()
+            ExecutionException response = interaction.negotiateOpen()
                                                      .channelId(1)
                                                      .attachSession(SESSION_NAME)
                                                      .exchange()
@@ -419,10 +410,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ExecutionException response = interaction.openAnonymousConnection()
+            ExecutionException response = interaction.negotiateOpen()
                                                      .channelId(1)
                                                      .attachSession(SESSION_NAME)
                                                      .exchange()
@@ -449,10 +440,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ExecutionException response = interaction.openAnonymousConnection()
+            ExecutionException response = interaction.negotiateOpen()
                                                      .channelId(1)
                                                      .attachSession(SESSION_NAME)
                                                      .exchange()
@@ -482,10 +473,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .exchange()
@@ -542,10 +533,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .queue()
@@ -571,10 +562,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
 
         getBrokerAdmin().restart();
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ExecutionResult execResult = interaction.openAnonymousConnection()
+            ExecutionResult execResult = interaction.negotiateOpen()
                                                     .channelId(1)
                                                     .attachSession(SESSION_NAME)
                                                     .exchange()
@@ -605,10 +596,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .exchange()
@@ -660,10 +651,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final ExecutionException response = interaction.openAnonymousConnection()
+            final ExecutionException response = interaction.negotiateOpen()
                                                            .channelId(1)
                                                            .attachSession(SESSION_NAME)
                                                            .exchange()
@@ -699,10 +690,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final ExecutionException response = interaction.openAnonymousConnection()
+            final ExecutionException response = interaction.negotiateOpen()
                                                            .channelId(1)
                                                            .attachSession(SESSION_NAME)
                                                            .exchange()
@@ -739,10 +730,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final ExecutionException response = interaction.openAnonymousConnection()
+            final ExecutionException response = interaction.negotiateOpen()
                                                            .channelId(1)
                                                            .attachSession(SESSION_NAME)
                                                            .exchange()

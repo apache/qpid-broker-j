@@ -26,7 +26,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,38 +33,37 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.v0_10.transport.*;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpenOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTune;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionCommandPoint;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionCompleted;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionConfirmed;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class LargeApplicationHeadersTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
     @Test
     public void applicationHeadersSentOverManyFrames() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final String subscriberName = "testSubscriber";
             byte[] sessionName = "test".getBytes(UTF_8);
 
-            ConnectionTune tune = interaction.negotiateProtocol()
-                                             .consumeResponse()
-                                             .consumeResponse(ConnectionStart.class)
-                                             .connection()
-                                             .startOkMechanism(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS)
-                                             .startOk()
-                                             .consumeResponse()
-                                             .getLatestResponse(ConnectionTune.class);
+            final ConnectionTune tune = interaction.authenticateConnection().getLatestResponse(ConnectionTune.class);
 
             int headerPropertySize = ((1<<16) - 1);
             Map<String, Object> applicationHeaders = createApplicationHeadersThatExceedSingleFrame(headerPropertySize,

@@ -22,42 +22,31 @@ package org.apache.qpid.tests.protocol.v0_10;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 import org.hamcrest.core.IsEqual;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.SessionAttached;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionDetachCode;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionDetached;
 import org.apache.qpid.tests.protocol.SpecificationTest;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class SessionTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     @SpecificationTest(section = "9.session.attach",
             description = "Requests that the current transport be attached to the named session.")
     public void attach() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "test".getBytes(StandardCharsets.UTF_8);
             final int channelId = 1;
-            SessionAttached sessionAttached = interaction.openAnonymousConnection()
+            SessionAttached sessionAttached = interaction.negotiateOpen()
                                                          .channelId(channelId)
                                                          .session()
                                                          .attachName(sessionName)
@@ -75,12 +64,12 @@ public class SessionTest extends BrokerAdminUsingTestBase
             description = "Detaches the current transport from the named session.")
     public void detach() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "test".getBytes(StandardCharsets.UTF_8);
             final int channelId = 1;
-            SessionDetached sessionDetached = interaction.openAnonymousConnection()
+            SessionDetached sessionDetached = interaction.negotiateOpen()
                                                          .channelId(channelId)
                                                          .session()
                                                          .attachName(sessionName)
@@ -105,12 +94,12 @@ public class SessionTest extends BrokerAdminUsingTestBase
                           + " session.detached with the \"not-attached\" reason code.")
     public void detachUnknownSession() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "test".getBytes(StandardCharsets.UTF_8);
             final int channelId = 1;
-            SessionDetached sessionDetached = interaction.openAnonymousConnection()
+            SessionDetached sessionDetached = interaction.negotiateOpen()
                                                          .channelId(channelId)
                                                          .session()
                                                          .detachName(sessionName)
@@ -128,12 +117,12 @@ public class SessionTest extends BrokerAdminUsingTestBase
             description = "A session MUST NOT be attached to more than one transport at a time.")
     public void attachSameSessionTwiceDisallowed() throws Exception
     {
-        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport1 = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction1 = transport1.newInteraction();
             byte[] sessionName = "test".getBytes(StandardCharsets.UTF_8);
             final int channelId1 = 1;
-            SessionAttached sessionAttached = interaction1.openAnonymousConnection()
+            SessionAttached sessionAttached = interaction1.negotiateOpen()
                                                           .channelId(channelId1)
                                                           .session()
                                                           .attachName(sessionName)
@@ -145,11 +134,11 @@ public class SessionTest extends BrokerAdminUsingTestBase
             assertThat(sessionAttached.getChannel(), IsEqual.equalTo(channelId1));
 
 
-            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
+            try (FrameTransport transport2 = new FrameTransport(getBrokerAdmin()).connect())
             {
                 final Interaction interaction2 = transport2.newInteraction();
                 final int channelId2 = 2;
-                SessionDetached sessionDetached = interaction2.openAnonymousConnection()
+                SessionDetached sessionDetached = interaction2.negotiateOpen()
                                                               .channelId(channelId2)
                                                               .session()
                                                               .attachName(sessionName)

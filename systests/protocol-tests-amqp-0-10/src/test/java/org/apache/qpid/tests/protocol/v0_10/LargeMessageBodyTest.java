@@ -25,7 +25,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.stream.IntStream;
 
 import org.junit.Before;
@@ -46,32 +45,23 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class LargeMessageBodyTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
     @Test
     public void messageBodyOverManyFrames() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             final String subscriberName = "testSubscriber";
             byte[] sessionName = "test".getBytes(UTF_8);
 
-            ConnectionTune tune = interaction.negotiateProtocol()
-                                             .consumeResponse()
-                                             .consumeResponse(ConnectionStart.class)
-                                             .connection()
-                                             .startOkMechanism(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS)
-                                             .startOk()
-                                             .consumeResponse()
-                                             .getLatestResponse(ConnectionTune.class);
+            final ConnectionTune tune = interaction.authenticateConnection().getLatestResponse(ConnectionTune.class);
 
             final byte[] messageContent = new byte[tune.getMaxFrameSize() * 2];
             IntStream.range(0, messageContent.length).forEach(i -> {messageContent[i] = (byte) (i & 0xFF);});

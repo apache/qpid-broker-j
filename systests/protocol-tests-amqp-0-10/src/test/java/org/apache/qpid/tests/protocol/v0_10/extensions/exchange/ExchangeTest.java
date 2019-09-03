@@ -26,10 +26,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
@@ -39,29 +37,21 @@ import org.apache.qpid.server.protocol.v0_10.transport.SessionCommandPoint;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCompleted;
 import org.apache.qpid.tests.protocol.v0_10.FrameTransport;
 import org.apache.qpid.tests.protocol.v0_10.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.BrokerSpecific;
 
 @BrokerSpecific(kind = KIND_BROKER_J)
 public class ExchangeTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
     private static final byte[] SESSION_NAME = "test".getBytes(UTF_8);
-
-    @Before
-    public void setUp()
-    {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
 
     @Test
     public void exchangeDeclareValidWireArguments() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            SessionCompleted completed = interaction.openAnonymousConnection()
+            SessionCompleted completed = interaction.negotiateOpen()
                                                     .channelId(1)
                                                     .attachSession(SESSION_NAME)
                                                     .exchange()
@@ -83,10 +73,10 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     @Test
     public void exchangeDeclareInvalidWireArguments() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            interaction.openAnonymousConnection()
+            interaction.negotiateOpen()
                        .channelId(1)
                        .attachSession(SESSION_NAME)
                        .exchange()

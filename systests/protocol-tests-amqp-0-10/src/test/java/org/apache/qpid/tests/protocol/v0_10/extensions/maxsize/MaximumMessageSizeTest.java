@@ -24,7 +24,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.stream.IntStream;
 
 import org.hamcrest.core.IsEqual;
@@ -46,19 +45,17 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "qpid.max_message_size", value = "1000")
 public class MaximumMessageSizeTest extends BrokerAdminUsingTestBase
 {
-    private InetSocketAddress _brokerAddress;
 
     @Before
     public void setUp()
     {
-        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
     @Test
     public void limitExceeded() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "test".getBytes(UTF_8);
@@ -69,7 +66,7 @@ public class MaximumMessageSizeTest extends BrokerAdminUsingTestBase
             MessageProperties messageProperties = new MessageProperties();
             messageProperties.setContentLength(messageContent.length);
 
-            ExecutionException executionException = interaction.openAnonymousConnection()
+            ExecutionException executionException = interaction.negotiateOpen()
                                                                .channelId(1)
                                                                .attachSession(sessionName)
                                                                .message()
