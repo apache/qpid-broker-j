@@ -80,9 +80,11 @@ public class JdbcUtils
 
     }
 
-    static ConnectionProvider createConnectionProvider(final ConfiguredObject<?> parent, final Logger logger)
+    public static ConnectionProvider createConnectionProvider(final ConfiguredObject<?> parent,
+                                                              final JDBCSettings settings,
+                                                              final Logger logger)
+            throws SQLException
     {
-        JDBCSettings settings = (JDBCSettings) parent;
         String connectionPoolType = settings.getConnectionPoolType() == null
                 ? DefaultConnectionProviderFactory.TYPE
                 : settings.getConnectionPoolType();
@@ -95,20 +97,26 @@ public class JdbcUtils
             connectionProviderFactory = new DefaultConnectionProviderFactory();
         }
 
+        Map<String, String> providerAttributes = new HashMap<>();
+        Set<String> providerAttributeNames = new HashSet<>(connectionProviderFactory.getProviderAttributeNames());
+        providerAttributeNames.retainAll(parent.getContextKeys(false));
+        for (String attr : providerAttributeNames)
+        {
+            providerAttributes.put(attr, parent.getContextValue(String.class, attr));
+        }
+
+        return connectionProviderFactory.getConnectionProvider(settings.getConnectionUrl(),
+                                                               settings.getUsername(),
+                                                               settings.getPassword(),
+                                                               providerAttributes);
+    }
+
+    static ConnectionProvider createConnectionProvider(final ConfiguredObject<?> parent, final Logger logger)
+    {
+        JDBCSettings settings = (JDBCSettings) parent;
         try
         {
-            Map<String, String> providerAttributes = new HashMap<>();
-            Set<String> providerAttributeNames = new HashSet<>(connectionProviderFactory.getProviderAttributeNames());
-            providerAttributeNames.retainAll(parent.getContextKeys(false));
-            for (String attr : providerAttributeNames)
-            {
-                providerAttributes.put(attr, parent.getContextValue(String.class, attr));
-            }
-
-            return connectionProviderFactory.getConnectionProvider(settings.getConnectionUrl(),
-                                                                   settings.getUsername(),
-                                                                   settings.getPassword(),
-                                                                   providerAttributes);
+            return createConnectionProvider(parent, settings, logger);
         }
         catch (SQLException e)
         {

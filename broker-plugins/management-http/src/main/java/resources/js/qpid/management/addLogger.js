@@ -30,6 +30,7 @@ define(["dojo/_base/lang",
         'dojo/json',
         "qpid/common/util",
         "dojo/text!addLogger.html",
+        "qpid/common/ContextVariablesEditor",
         "dojo/store/Memory",
         "dojox/validate/us",
         "dojox/validate/web",
@@ -92,6 +93,7 @@ define(["dojo/_base/lang",
 
                 this.categoryFieldsContainer = dom.byId("addLogger.categoryFields");
                 this.allFieldsContainer = dom.byId("addLogger.contentPane");
+                this.context = registry.byId("addLogger.context");
             },
             show: function (management, modelObj, category, actualData)
             {
@@ -119,12 +121,18 @@ define(["dojo/_base/lang",
                 var virtualHostlLoggerEditWarningNode = dom.byId("virtualHostlLoggerEditWarning");
                 domStyle.set(brokerLoggerEditWarningNode,
                     "display",
-                    !this.isNew && this.category == "BrokerLogger" ? "block" : "none");
+                    !this.isNew && this.category === "BrokerLogger" ? "block" : "none");
                 domStyle.set(virtualHostlLoggerEditWarningNode,
                     "display",
-                    !this.isNew && this.category == "VirtualHostLogger" ? "block" : "none");
+                    !this.isNew && this.category === "VirtualHostLogger" ? "block" : "none");
 
-                this._loadCategoryUserInterfacesAndShowDialog(actualData);
+                util.loadEffectiveAndInheritedActualData(this.management, this.modelObj, lang.hitch(this, function(data)
+                {
+                    this.context.setData(this.isNew ? {} : this.initialData.context ,
+                        data.effective.context,
+                        data.inheritedActual.context);
+                    this._loadCategoryUserInterfacesAndShowDialog(actualData);
+                }));
             },
             hide: function ()
             {
@@ -150,6 +158,16 @@ define(["dojo/_base/lang",
                                        || this.management.metadata.getDefaultValueForType(this.category,
                             this.loggerType.get("value"));
                     var formData = util.getFormWidgetValues(this.form, excludedData);
+                    var context = this.context.get("value");
+                    var oldContext = null;
+                    if (this.initialData !== null && this.initialData !== undefined)
+                    {
+                        oldContext = this.initialData.context;
+                    }
+                    if (context && !util.equals(context, oldContext))
+                    {
+                        formData["context"] = context;
+                    }
                     var that = this;
                     if (this.isNew)
                     {
@@ -200,7 +218,8 @@ define(["dojo/_base/lang",
                                 data: that.initialData,
                                 metadata: that.management.metadata,
                                 category: that.category,
-                                type: type
+                                type: type,
+                                context: that.context
                             });
                             if (promise)
                             {

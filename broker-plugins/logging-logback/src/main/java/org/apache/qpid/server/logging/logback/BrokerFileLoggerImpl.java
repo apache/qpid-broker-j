@@ -34,16 +34,12 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.rolling.RollingFileAppender;
-import ch.qos.logback.core.status.Status;
 import ch.qos.logback.core.status.StatusListener;
 import ch.qos.logback.core.status.StatusManager;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.LogFileDetails;
-import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Content;
@@ -56,8 +52,6 @@ import org.apache.qpid.server.util.DaemonThreadFactory;
 public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerImpl>
         implements BrokerFileLogger<BrokerFileLoggerImpl>, FileLoggerSettings
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BrokerFileLoggerImpl.class);
-
     private volatile RolloverWatcher _rolloverWatcher;
     private ScheduledExecutorService _rolledPolicyExecutor;
 
@@ -200,7 +194,11 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
     {
         SystemConfig<?> systemConfig = getAncestor(SystemConfig.class);
-        _logbackStatusListener = new BrokerFileLoggerStatusListener(this, systemConfig);
+        _logbackStatusListener = new BrokerLoggerStatusListener(this,
+                                                                systemConfig,
+                                                                BROKER_FAIL_ON_LOGGER_IO_ERROR,
+                                                                IOException.class,
+                                                                IOError.class);
         _statusManager = loggerContext.getStatusManager();
         _statusManager.add(_logbackStatusListener);
 
@@ -232,41 +230,5 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
         }
     }
 
-    static class BrokerFileLoggerStatusListener implements StatusListener
-    {
-        private final SystemConfig<?> _systemConfig;
-        private final BrokerFileLogger<?> _brokerFileLogger;
-
-        public BrokerFileLoggerStatusListener(BrokerFileLogger<?> brokerFileLogger, SystemConfig<?> systemConfig)
-        {
-            _brokerFileLogger = brokerFileLogger;
-            _systemConfig = systemConfig;
-        }
-
-        @Override
-        public void addStatusEvent(Status status)
-        {
-            Throwable throwable = status.getThrowable();
-            if (status.getEffectiveLevel() == Status.ERROR
-                    && (throwable instanceof IOException || throwable instanceof IOError))
-            {
-                LOGGER.error("Unexpected I/O error whilst trying to write to log file. Log messages could be lost.", throwable);
-                if (_brokerFileLogger.getContextValue(Boolean.class, BROKER_FAIL_ON_LOGGER_IO_ERROR))
-                {
-                    try
-                    {
-                        _brokerFileLogger.stopLogging();
-                        _systemConfig.getEventLogger().message(BrokerMessages.FATAL_ERROR(
-                                String.format("Shutting down the broker because context variable '%s' is set and unexpected i/o issue occurred: %s",
-                                        BROKER_FAIL_ON_LOGGER_IO_ERROR, throwable.getMessage())));
-                    }
-                    finally
-                    {
-                        _systemConfig.closeAsync();
-                    }
-                }
-            }
-        }
-    }
 
 }

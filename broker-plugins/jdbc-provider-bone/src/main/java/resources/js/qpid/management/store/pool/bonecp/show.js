@@ -26,7 +26,8 @@ define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "d
         function BoneCP(data)
         {
             var containerNode = data.containerNode;
-            this.parent = data.parent;
+            this.management = data.management ? data.management : data.parent.management;
+            this.modelObj = data.modelObj ? data.modelObj : data.parent.modelObj;
             var that = this;
             xhr.get({
                 url: "store/pool/bonecp/show.html",
@@ -57,7 +58,7 @@ define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "d
 
         BoneCP.prototype._update = function (data)
         {
-            this.parent.management.load(this.parent.modelObj,
+            this.management.load(this.modelObj,
                 {
                     excludeInheritedContext: false,
                     depth: 0

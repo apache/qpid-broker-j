@@ -17,25 +17,35 @@
  * under the License.
  */
 
-package org.apache.qpid.server.store.jdbc;
+package org.apache.qpid.server.logging.logback.jdbc;
 
-import org.apache.qpid.server.store.Settings;
+import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
+import org.apache.qpid.server.model.VirtualHostLogger;
+import org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory;
+import org.apache.qpid.server.store.jdbc.JDBCSettings;
 
-public interface JDBCSettings extends Settings
+public interface JDBCVirtualHostLogger<X extends JDBCVirtualHostLogger<X>> extends VirtualHostLogger<X>, JDBCSettings
 {
-    String CONNECTION_URL = "connectionUrl";
-    String CONNECTION_POOL_TYPE = "connectionPoolType";
-    String USERNAME = "username";
-    String PASSWORD = "password";
-    String TABLE_NAME_PREFIX = "tableNamePrefix";
-
+    @Override
+    @ManagedAttribute(mandatory=true)
     String getConnectionUrl();
 
+    @Override
+    @ManagedAttribute(defaultValue= DefaultConnectionProviderFactory.TYPE,
+            validValues = {"org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory#getAllAvailableConnectionProviderTypes()"} )
     String getConnectionPoolType();
 
+    @Override
+    @ManagedAttribute
     String getUsername();
 
+    @Override
+    @ManagedAttribute(secure=true)
     String getPassword();
 
+    @Override
+    @ManagedAttribute
     String getTableNamePrefix();
+
 }

@@ -127,12 +127,17 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
 
     public void stopLogging()
     {
-        Appender appender = ROOT_LOGGER.getAppender(getName());
+        final Appender appender = getAppender();
         if (appender != null)
         {
             appender.stop();
             ROOT_LOGGER.detachAppender(appender);
         }
+    }
+
+    protected Appender<ILoggingEvent> getAppender()
+    {
+        return ROOT_LOGGER.getAppender(getName());
     }
 
     private class LogInclusionRuleListener extends AbstractConfigurationChangeListener
