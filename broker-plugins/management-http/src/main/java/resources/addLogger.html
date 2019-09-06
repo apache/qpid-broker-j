@@ -69,6 +69,11 @@
                     <div id="addLogger.typeFields"></div>
                 </div>
                 <div class="clear"></div>
+                <div data-dojo-type="dijit/TitlePane" data-dojo-props="title: 'Context variables',  open: false">
+                    <div id="addLogger.context"
+                         data-dojo-type="qpid.common.ContextVariablesEditor"
+                         data-dojo-props="name: 'context', title: 'Context variables'"></div>
+                </div>
             </div>
             <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
                 <button data-dojo-type="dijit/form/Button" id="addLogger.addButton" data-dojo-props="label: 'Save'" type="submit"></button>

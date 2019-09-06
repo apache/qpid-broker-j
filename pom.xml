@@ -151,6 +151,7 @@
     <buildnumber-maven-plugin-version>1.4</buildnumber-maven-plugin-version>
     <maven-jar-plugin-version>3.1.0</maven-jar-plugin-version>
     <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
+    <h2.version>1.4.199</h2.version>
   </properties>
 
   <modules>
@@ -168,6 +169,7 @@
     <module>broker-plugins/derby-store</module>
     <module>broker-plugins/jdbc-provider-bone</module>
     <module>broker-plugins/jdbc-store</module>
+    <module>broker-plugins/jdbc-logging-logback</module>
     <module>broker-plugins/logging-logback</module>
     <module>broker-plugins/management-amqp</module>
     <module>broker-plugins/management-http</module>
@@ -342,6 +344,12 @@
       <dependency>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-broker-plugins-logging-logback</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-jdbc-logging-logback</artifactId>
         <version>${project.version}</version>
       </dependency>
 
