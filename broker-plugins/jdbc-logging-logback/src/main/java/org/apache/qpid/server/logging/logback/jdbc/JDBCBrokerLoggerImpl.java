@@ -45,7 +45,7 @@ import org.apache.qpid.server.store.jdbc.JDBCSettings;
 public class JDBCBrokerLoggerImpl extends AbstractBrokerLogger<JDBCBrokerLoggerImpl>
         implements JDBCBrokerLogger<JDBCBrokerLoggerImpl>
 {
-    static final String CONFIGURED_OBJECT_TYPE = "Jdbc";
+    static final String CONFIGURED_OBJECT_TYPE = "JDBC";
     private final JDBCLoggerHelper _jdbcLoggerHelper;
 
     private volatile BrokerLoggerStatusListener _logbackStatusListener;
