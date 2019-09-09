@@ -146,5 +146,4 @@ public class JDBCBrokerLoggerImplTest extends InMemoryDatabaseTestBase
 
         assertEquals(TABLE_PREFIX, _logger.getTableNamePrefix());
     }
-
 }

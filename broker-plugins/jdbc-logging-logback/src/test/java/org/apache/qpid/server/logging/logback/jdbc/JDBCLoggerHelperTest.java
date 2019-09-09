@@ -66,7 +66,7 @@ public class JDBCLoggerHelperTest extends InMemoryDatabaseTestBase
         assertTrue(appender instanceof DBAppender);
         assertTrue(appender.isStarted());
         assertEquals(context, appender.getContext());
-        assertTrue(((DBAppender)appender).getConnectionSource() instanceof JDBCSettingsDrivenConnectionSource);
+        assertTrue(((DBAppender) appender).getConnectionSource() instanceof JDBCSettingsDrivenConnectionSource);
     }
 
     @Test

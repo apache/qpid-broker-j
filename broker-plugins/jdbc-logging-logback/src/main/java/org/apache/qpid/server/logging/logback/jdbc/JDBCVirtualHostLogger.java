@@ -20,7 +20,6 @@
 package org.apache.qpid.server.logging.logback.jdbc;
 
 import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory;
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
@@ -28,12 +27,12 @@ import org.apache.qpid.server.store.jdbc.JDBCSettings;
 public interface JDBCVirtualHostLogger<X extends JDBCVirtualHostLogger<X>> extends VirtualHostLogger<X>, JDBCSettings
 {
     @Override
-    @ManagedAttribute(mandatory=true)
+    @ManagedAttribute(mandatory = true)
     String getConnectionUrl();
 
     @Override
-    @ManagedAttribute(defaultValue= DefaultConnectionProviderFactory.TYPE,
-            validValues = {"org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory#getAllAvailableConnectionProviderTypes()"} )
+    @ManagedAttribute(defaultValue = DefaultConnectionProviderFactory.TYPE,
+            validValues = {"org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory#getAllAvailableConnectionProviderTypes()"})
     String getConnectionPoolType();
 
     @Override
@@ -41,11 +40,10 @@ public interface JDBCVirtualHostLogger<X extends JDBCVirtualHostLogger<X>> exten
     String getUsername();
 
     @Override
-    @ManagedAttribute(secure=true)
+    @ManagedAttribute(secure = true)
     String getPassword();
 
     @Override
     @ManagedAttribute
     String getTableNamePrefix();
-
 }

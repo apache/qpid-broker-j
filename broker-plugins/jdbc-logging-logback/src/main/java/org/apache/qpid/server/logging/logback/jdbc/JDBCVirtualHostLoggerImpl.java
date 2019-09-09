@@ -22,7 +22,6 @@ package org.apache.qpid.server.logging.logback.jdbc;
 import java.util.Map;
 import java.util.Set;
 
-import ch.qos.logback.classic.db.DBAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;

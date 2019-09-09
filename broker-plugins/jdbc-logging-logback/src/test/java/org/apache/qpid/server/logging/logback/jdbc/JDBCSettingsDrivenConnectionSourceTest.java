@@ -43,7 +43,7 @@ public class JDBCSettingsDrivenConnectionSourceTest extends InMemoryDatabaseTest
     public void setUp()
     {
         final JDBCSettings jdbcSettings = mock(JDBCSettings.class);
-        when(jdbcSettings.getConnectionUrl()).thenReturn( getTestDatabaseUrl());
+        when(jdbcSettings.getConnectionUrl()).thenReturn(getTestDatabaseUrl());
 
         final ConfiguredObject<?> object = mock(ConfiguredObject.class);
         _connectionSource = new JDBCSettingsDrivenConnectionSource(object, jdbcSettings);
