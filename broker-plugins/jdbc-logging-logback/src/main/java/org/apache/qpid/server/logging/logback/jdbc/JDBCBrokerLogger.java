@@ -33,12 +33,12 @@ public interface JDBCBrokerLogger<X extends JDBCBrokerLogger<X>> extends BrokerL
     String DEFAULT_BROKER_FAIL_ON_JDBC_LOGGER_ERROR = "false";
 
     @Override
-    @ManagedAttribute(mandatory=true)
+    @ManagedAttribute(mandatory = true)
     String getConnectionUrl();
 
     @Override
-    @ManagedAttribute(defaultValue= DefaultConnectionProviderFactory.TYPE,
-            validValues = {"org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory#getAllAvailableConnectionProviderTypes()"} )
+    @ManagedAttribute(defaultValue = DefaultConnectionProviderFactory.TYPE,
+            validValues = {"org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory#getAllAvailableConnectionProviderTypes()"})
     String getConnectionPoolType();
 
     @Override
@@ -46,11 +46,10 @@ public interface JDBCBrokerLogger<X extends JDBCBrokerLogger<X>> extends BrokerL
     String getUsername();
 
     @Override
-    @ManagedAttribute(secure=true)
+    @ManagedAttribute(secure = true)
     String getPassword();
 
     @Override
     @ManagedAttribute
     String getTableNamePrefix();
-
 }

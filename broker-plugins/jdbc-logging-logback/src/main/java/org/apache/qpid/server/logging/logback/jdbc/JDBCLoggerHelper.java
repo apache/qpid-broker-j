@@ -33,9 +33,9 @@ import org.apache.qpid.server.store.jdbc.JDBCSettings;
 
 class JDBCLoggerHelper
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JDBCLoggerHelper.class);
     final static ch.qos.logback.classic.Logger ROOT_LOGGER =
             ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME));
+    private static final Logger LOGGER = LoggerFactory.getLogger(JDBCLoggerHelper.class);
 
     Appender<ILoggingEvent> createAppenderInstance(final Context context,
                                                    final ConfiguredObject<?> logger,

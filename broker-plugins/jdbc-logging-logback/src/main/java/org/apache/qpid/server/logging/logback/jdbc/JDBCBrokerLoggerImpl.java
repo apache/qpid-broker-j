@@ -168,5 +168,4 @@ public class JDBCBrokerLoggerImpl extends AbstractBrokerLogger<JDBCBrokerLoggerI
     {
         _jdbcLoggerHelper.restartConnectionSourceIfExists(getAppender());
     }
-
 }

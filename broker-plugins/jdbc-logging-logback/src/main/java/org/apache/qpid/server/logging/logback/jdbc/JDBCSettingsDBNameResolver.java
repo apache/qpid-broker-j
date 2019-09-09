@@ -35,7 +35,7 @@ class JDBCSettingsDBNameResolver implements DBNameResolver
     @Override
     public <N extends Enum<?>> String getTableName(final N tableName)
     {
-        String settingsTableNamePrefix = _settings.getTableNamePrefix() ;
+        final String settingsTableNamePrefix = _settings.getTableNamePrefix();
         final String prefix = settingsTableNamePrefix == null ? "" : settingsTableNamePrefix;
         final String name = prefix + tableName.toString();
         return name.toLowerCase();

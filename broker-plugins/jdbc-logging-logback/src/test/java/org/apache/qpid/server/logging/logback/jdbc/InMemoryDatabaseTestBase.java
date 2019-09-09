@@ -34,7 +34,7 @@ public class InMemoryDatabaseTestBase extends UnitTestBase
     private Connection _setupConnection;
 
     @Before
-    public  void startUpDatabase() throws SQLException
+    public void startUpDatabase() throws SQLException
     {
         _setupConnection = DriverManager.getConnection(getTestDatabaseUrl());
     }
@@ -61,5 +61,4 @@ public class InMemoryDatabaseTestBase extends UnitTestBase
     {
         return _setupConnection;
     }
-
 }

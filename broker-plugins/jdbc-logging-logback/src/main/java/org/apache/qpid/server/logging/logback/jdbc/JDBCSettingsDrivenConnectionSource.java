@@ -65,7 +65,8 @@ public class JDBCSettingsDrivenConnectionSource extends ConnectionSourceBase
     {
         _connectionProvider.getAndUpdate(provider -> provider == null ? create() : provider);
         discoverConnectionProperties();
-        if (!supportsGetGeneratedKeys() && getSQLDialectCode() == SQLDialectCode.UNKNOWN_DIALECT) {
+        if (!supportsGetGeneratedKeys() && getSQLDialectCode() == SQLDialectCode.UNKNOWN_DIALECT)
+        {
             addWarn("Connection does not support GetGeneratedKey method and could not discover the dialect.");
         }
         super.start();
@@ -76,7 +77,7 @@ public class JDBCSettingsDrivenConnectionSource extends ConnectionSourceBase
     {
         super.stop();
 
-        final ConnectionProvider connectionProvider =  _connectionProvider.getAndSet(null);
+        final ConnectionProvider connectionProvider = _connectionProvider.getAndSet(null);
         if (connectionProvider != null)
         {
             try

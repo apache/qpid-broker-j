@@ -134,5 +134,4 @@ public class JDBCVirtualHostLoggerImplTest extends InMemoryDatabaseTestBase
 
         assertEquals(TABLE_PREFIX, _logger.getTableNamePrefix());
     }
-
 }
