@@ -41,7 +41,7 @@ import org.apache.qpid.server.store.jdbc.JDBCSettings;
 public class JDBCVirtualHostLoggerImpl extends AbstractVirtualHostLogger<JDBCVirtualHostLoggerImpl>
         implements JDBCVirtualHostLogger<JDBCVirtualHostLoggerImpl>
 {
-    static final String CONFIGURED_OBJECT_TYPE = "Jdbc";
+    static final String CONFIGURED_OBJECT_TYPE = "JDBC";
 
     private final JDBCLoggerHelper _jdbcLoggerHelper;
 
