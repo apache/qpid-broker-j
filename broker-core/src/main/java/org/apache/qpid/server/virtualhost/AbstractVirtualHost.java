@@ -543,9 +543,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             throw new IllegalConfigurationException(String.format("Number of Selectors %d on VirtualHost %s must be greater than zero.", virtualHost.getNumberOfSelectors(), getName()));
         }
-        if (virtualHost.getConnectionThreadPoolSize() <= virtualHost.getNumberOfSelectors())
+        if (virtualHost.getConnectionThreadPoolSize() < virtualHost.getNumberOfSelectors())
         {
-            throw new IllegalConfigurationException(String.format("Number of Selectors %d on VirtualHost %s must be less than the connection pool size %d.", virtualHost.getNumberOfSelectors(), getName(), virtualHost.getConnectionThreadPoolSize()));
+            throw new IllegalConfigurationException(String.format("Number of Selectors %d on VirtualHost %s must be less than or equal to the connection pool size %d.", virtualHost.getNumberOfSelectors(), getName(), virtualHost.getConnectionThreadPoolSize()));
         }
     }
 
