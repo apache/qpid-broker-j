@@ -509,31 +509,13 @@ public class VirtualHostTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateValidation()
+    public void testSelectorNumberMustBePositiveOnCreate()
     {
+        createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "1"));
         try
         {
-            createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS,
-                                                                      "-1"));
-            fail("Exception not thrown for negative number of selectors");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
-        try
-        {
-            createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, "-1"));
-            fail("Exception not thrown for negative connection thread pool size");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
-        try
-        {
-            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
-            fail("Exception not thrown for number of selectors equal to connection thread pool size");
+            createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "0"));
+            fail("Exception not thrown for non-positive number of selectors");
         }
         catch (IllegalConfigurationException e)
         {
@@ -542,32 +524,84 @@ public class VirtualHostTest extends UnitTestBase
     }
 
     @Test
-    public void testChangeValidation()
+    public void testConnectionThreadPoolSizeMustBePositiveOnCreate()
     {
-        QueueManagingVirtualHost<?> virtualHost = createVirtualHost(getTestName());
+        final Map<String, Object> vhAttributes = new HashMap<>();
+        vhAttributes.put(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, 1);
+        vhAttributes.put(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, 1);
+        createVirtualHost(getTestName(), vhAttributes);
         try
         {
-            virtualHost.setAttributes(Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "-1"));
-            fail("Exception not thrown for negative number of selectors");
+            createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, "0"));
+            fail("Exception not thrown for non-positive connection thread pool size");
         }
         catch (IllegalConfigurationException e)
         {
             // pass
         }
+    }
+
+    @Test
+    public void testSelectorNumberMustBeLessOrEqualToThePoolSizeOnCreate()
+    {
+        createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE - 1));
+        createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
         try
         {
-            virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE,
-                                                               "-1"));
-            fail("Exception not thrown for negative connection thread pool size");
+            createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE + 1));
+            fail("Exception not thrown for number of selectors greater than connection thread pool size");
         }
         catch (IllegalConfigurationException e)
         {
             // pass
         }
+    }
+
+    @Test
+    public void testSelectorNumberMustBePositiveOnChange()
+    {
+        final QueueManagingVirtualHost<?> virtualHost = createVirtualHost(getTestName());
+        virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "1"));
         try
         {
-            virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
-            fail("Exception not thrown for number of selectors equal to connection thread pool size");
+            virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "0"));
+            fail("Exception not thrown for non-positive number of selectors");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    @Test
+    public void testConnectionThreadPoolSizeMustBePositiveOnChange()
+    {
+        final QueueManagingVirtualHost<?> virtualHost = createVirtualHost(getTestName());
+        final Map<String, Object> vhAttributes = new HashMap<>();
+        vhAttributes.put(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, 1);
+        vhAttributes.put(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, 1);
+        virtualHost.setAttributes(vhAttributes);
+        try
+        {
+            virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, "0"));
+            fail("Exception not thrown for non-positive connection thread pool size");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    @Test
+    public void testSelectorNumberMustBeLessOrEqualToThePoolSizeOnChange()
+    {
+        final QueueManagingVirtualHost<?> virtualHost = createVirtualHost(getTestName());
+        virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE - 1));
+        virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
+        try
+        {
+            virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE + 1));
+            fail("Exception not thrown for number of selectors greater than connection thread pool size");
         }
         catch (IllegalConfigurationException e)
         {
