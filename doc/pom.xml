@@ -74,6 +74,7 @@
     <modules>
         <module>java-broker</module>
         <module>java-perftests</module>
+        <module>developer-guide</module>
     </modules>
 
     <build>
