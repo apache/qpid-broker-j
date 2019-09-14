@@ -81,6 +81,7 @@ define(["dojo/query",
                 .then(function (trustStores)
                 {
                     that._initTrustStores(trustStores, data.containerNode);
+                    that._initAuthenticationMethods(data.parent.management.metadata, data.containerNode);
                     if (data.data)
                     {
                         that._initFields(data.data, data.containerNode, data.parent.management.metadata);
@@ -137,28 +138,23 @@ define(["dojo/query",
             var trustStore = registry.byNode(query(".trustStore", containerNode)[0]);
             trustStore.set("store", trustStoresStore);
         },
-        _initFields: function (data, containerNode, metadata)
+        _initAuthenticationMethods: function (metadata, containerNode)
         {
             var attributes = metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
-            for (var name in attributes)
-            {
-                var domNode = query("." + name, containerNode)[0];
-                if (domNode)
-                {
-                    var widget = registry.byNode(domNode);
-                    if (widget)
-                    {
-                        if (widget instanceof dijit.form.CheckBox)
-                        {
-                            widget.set("checked", data[name]);
-                        }
-                        else
-                        {
-                            widget.set("value", data[name]);
-                        }
-                    }
-                }
-            }
+            var store = util.makeTypeStore(attributes.authenticationMethod.validValues);
+            var authenticationMethod = registry.byId("ldapAuthenticationMethod");
+            authenticationMethod.set("store", store);
+            authenticationMethod.on("change", function (value) {
+                registry.byId('ldapSearchUsername').set("required", (value === "SIMPLE"));
+            });
+        },
+        _initFields: function (data, containerNode, metadata)
+        {
+            util.applyToWidgets(containerNode,
+                "AuthenticationProvider",
+                "SimpleLDAP",
+                data,
+                metadata);
         }
     };
 });

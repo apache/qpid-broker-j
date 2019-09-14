@@ -17,27 +17,23 @@
  * under the License.
  */
 
-define(["qpid/common/util", "dojo/domReady!"], function (util)
-{
+package org.apache.qpid.server.security.auth.manager;
 
-    function SimpleLdapAuthenticationProvider(data)
+public enum LdapAuthenticationMethod
+{
+    NONE("none"),
+    SIMPLE("simple"),
+    GSSAPI("GSSAPI");
+
+    private final String _method;
+
+    LdapAuthenticationMethod(String method)
     {
-        this.fields = [];
-        var attributes = data.parent.management.metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
-        for (var name in attributes)
-        {
-            if (attributes.hasOwnProperty(name))
-            {
-                this.fields.push(name);
-            }
-        }
-        util.buildUI(data.containerNode, data.parent, "authenticationprovider/simpleldap/show.html", this.fields, this);
+        _method = method;
     }
 
-    SimpleLdapAuthenticationProvider.prototype.update = function (data)
+    public String getMethod()
     {
-        util.updateUI(data, this.fields, this);
-    };
-
-    return SimpleLdapAuthenticationProvider;
-});
+        return _method;
+    }
+}

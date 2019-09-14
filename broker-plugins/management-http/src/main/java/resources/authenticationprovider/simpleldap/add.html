@@ -68,11 +68,38 @@
                               promptMessage: 'Fully qualified class name for LDAP Context Factory'"/>
         </div>
     </div>
-
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Authentication Method:</div>
+        <div class="tableContainer-valueCell formLabel-controlCell">
+            <select class="authenticationMethod" data-dojo-type="dijit/form/FilteringSelect"
+                    id="ldapAuthenticationMethod"
+                    data-dojo-props="
+                                    required: false,
+                                    name: 'authenticationMethod',
+                                    placeHolder: 'Select authentication method',
+                                    promptMessage: 'Select authentication method to bind into LDAP server',
+                                    title: 'Select authentication method to bind into LDAP server',
+                                    searchAttr: 'name'">
+            </select>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Login Config Scope:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" class="loginConfigScope"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'loginConfigScope',
+                              placeHolder: 'loginConfigScope',
+                              title: 'Login configuration name for GSSAPI authentication',
+                              promptMessage: 'Login configuration name for GSSAPI authentication'"/>
+        </div>
+    </div>
     <div class="clear">
         <div class="formLabel-labelCell tableContainer-labelCell">Search username:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
             <input type="text" class="searchUsername"
+                   id="ldapSearchUsername"
                    data-dojo-type="dijit/form/ValidationTextBox"
                    data-dojo-props="
                               name: 'searchUsername',
@@ -85,6 +112,7 @@
         <div class="formLabel-labelCell tableContainer-labelCell">Search password:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
             <input type="password" class="searchPassword"
+                   id="ldapSearchPassword"
                    data-dojo-type="dijit/form/ValidationTextBox"
                    data-dojo-props="
                               name: 'searchPassword',
