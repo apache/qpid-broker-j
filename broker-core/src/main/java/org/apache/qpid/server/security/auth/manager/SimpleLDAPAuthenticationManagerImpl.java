@@ -25,6 +25,8 @@ import static java.util.Collections.unmodifiableList;
 
 import java.security.GeneralSecurityException;
 import java.security.Principal;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,6 +49,9 @@ import javax.naming.directory.SearchResult;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
+import javax.security.auth.Subject;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -69,23 +74,27 @@ import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
 import org.apache.qpid.server.security.group.GroupPrincipal;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.CipherSuiteAndProtocolRestrictingSSLSocketFactory;
 import org.apache.qpid.server.util.ParameterizedTypes;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StringUtil;
-import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
-public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationManager<SimpleLDAPAuthenticationManagerImpl>
+public class SimpleLDAPAuthenticationManagerImpl
+        extends AbstractAuthenticationManager<SimpleLDAPAuthenticationManagerImpl>
         implements SimpleLDAPAuthenticationManager<SimpleLDAPAuthenticationManagerImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleLDAPAuthenticationManagerImpl.class);
 
     private static final List<String> CONNECTIVITY_ATTRS = unmodifiableList(Arrays.asList(PROVIDER_URL,
-                                                                             PROVIDER_AUTH_URL,
-                                                                             SEARCH_CONTEXT,
-                                                                             LDAP_CONTEXT_FACTORY,
-                                                                             SEARCH_USERNAME,
-                                                                             SEARCH_PASSWORD,
-                                                                             TRUST_STORE));
+                                                                                          PROVIDER_AUTH_URL,
+                                                                                          SEARCH_CONTEXT,
+                                                                                          LDAP_CONTEXT_FACTORY,
+                                                                                          SEARCH_USERNAME,
+                                                                                          SEARCH_PASSWORD,
+                                                                                          TRUST_STORE,
+                                                                                          LOGIN_CONFIG_SCOPE,
+                                                                                          AUTHENTICATION_METHOD));
 
     /**
      * Environment key to instruct {@link InitialDirContext} to override the socket factory.
@@ -131,6 +140,12 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     @ManagedAttributeField
     private boolean _groupSubtreeSearchScope;
 
+    @ManagedAttributeField
+    private LdapAuthenticationMethod _authenticationMethod;
+
+    @ManagedAttributeField
+    private String _loginConfigScope;
+
     private List<String> _tlsProtocolWhiteList;
     private List<String>  _tlsProtocolBlackList;
 
@@ -154,9 +169,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     protected void validateOnCreate()
     {
         super.validateOnCreate();
-
-        Class<? extends SocketFactory> sslSocketFactoryOverrideClass = createSslSocketFactoryOverrideClass(_trustStore);
-        validateInitialDirContext(sslSocketFactoryOverrideClass, _providerUrl, _searchUsername, _searchPassword);
+        validateInitialDirContext(this);
     }
 
     @Override
@@ -166,11 +179,8 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
 
         if (!disjoint(changedAttributes, CONNECTIVITY_ATTRS))
         {
-            SimpleLDAPAuthenticationManager changed = (SimpleLDAPAuthenticationManager)proxyForValidation;
-            TrustStore changedTruststore = changed.getTrustStore();
-            Class<? extends SocketFactory> sslSocketFactoryOverrideClass = createSslSocketFactoryOverrideClass(changedTruststore);
-            validateInitialDirContext(sslSocketFactoryOverrideClass, changed.getProviderUrl(), changed.getSearchUsername(),
-                                      changed.getSearchPassword());
+            SimpleLDAPAuthenticationManager changed = (SimpleLDAPAuthenticationManager) proxyForValidation;
+            validateInitialDirContext(changed);
         }
     }
 
@@ -279,6 +289,18 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     }
 
     @Override
+    public LdapAuthenticationMethod getAuthenticationMethod()
+    {
+        return _authenticationMethod;
+    }
+
+    @Override
+    public String getLoginConfigScope()
+    {
+        return _loginConfigScope;
+    }
+
+    @Override
     public List<String> getMechanisms()
     {
         return singletonList(PlainNegotiator.MECHANISM);
@@ -307,10 +329,24 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
 
     private AuthenticationResult doLDAPNameAuthentication(String userId, String password)
     {
+        Subject gssapiIdentity = null;
+        if (LdapAuthenticationMethod.GSSAPI.equals(getAuthenticationMethod()))
+        {
+            try
+            {
+                gssapiIdentity = doGssApiLogin(getLoginConfigScope());
+            }
+            catch (LoginException e)
+            {
+                LOGGER.warn("JAAS Login failed", e);
+                return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
+            }
+        }
+
         final String name;
         try
         {
-            name = getNameFromId(userId);
+            name = getNameFromId(userId, gssapiIdentity);
         }
         catch (NamingException e)
         {
@@ -334,7 +370,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         InitialDirContext ctx = null;
         try
         {
-            ctx = createInitialDirContext(env, _sslSocketFactoryOverrideClass);
+            ctx = createInitialDirContext(env, _sslSocketFactoryOverrideClass, gssapiIdentity);
 
             Set<Principal> groups = Collections.emptySet();
             if (isGroupSearchRequired())
@@ -342,9 +378,9 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                 if (!providerAuthUrl.equals(getProviderUrl()))
                 {
                     closeSafely(ctx);
-                    ctx = createSearchInitialDirContext();
+                    ctx = createSearchInitialDirContext(gssapiIdentity);
                 }
-                groups = findGroups(ctx, name);
+                groups = findGroups(ctx, name, gssapiIdentity);
             }
 
             //Authentication succeeded
@@ -402,7 +438,8 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         return value != null && !"".equals(value);
     }
 
-    private Set<Principal> findGroups(DirContext context, String userDN) throws NamingException
+    private Set<Principal> findGroups(DirContext context, String userDN, final Subject gssapiIdentity)
+            throws NamingException
     {
         Set<Principal> groupPrincipals = new HashSet<>();
         if (getGroupAttributeName() != null && !"".equals(getGroupAttributeName()))
@@ -436,10 +473,11 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
             searchControls.setSearchScope(isGroupSubtreeSearchScope()
                                                   ? SearchControls.SUBTREE_SCOPE
                                                   : SearchControls.ONELEVEL_SCOPE);
-            NamingEnumeration<?> groupEnumeration = context.search(getGroupSearchContext(),
-                                                                   getGroupSearchFilter(),
-                                                                   new String[]{encode(userDN)},
-                                                                   searchControls);
+            PrivilegedExceptionAction<NamingEnumeration<?>> search = () -> context.search(getGroupSearchContext(),
+                                                                                          getGroupSearchFilter(),
+                                                                                          new String[]{encode(userDN)},
+                                                                                          searchControls);
+            NamingEnumeration<?> groupEnumeration = invokeContextOperationAs(gssapiIdentity, search);
             while (groupEnumeration.hasMore())
             {
                 SearchResult result = (SearchResult) groupEnumeration.next();
@@ -491,8 +529,9 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         return env;
     }
 
-    private InitialDirContext createInitialDirContext(Hashtable<String, Object> env,
-                                                      Class<? extends SocketFactory> sslSocketFactoryOverrideClass) throws NamingException
+    private InitialDirContext createInitialDirContext(final Hashtable<String, Object> env,
+                                                      final Class<? extends SocketFactory> sslSocketFactoryOverrideClass,
+                                                      final Subject gssapiIdentity) throws NamingException
     {
         ClassLoader existingContextClassLoader = null;
 
@@ -508,7 +547,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                 Thread.currentThread().setContextClassLoader(sslSocketFactoryOverrideClass.getClassLoader());
                 revertContentClassLoader = true;
             }
-            return new InitialDirContext(env);
+            return invokeContextOperationAs(gssapiIdentity, () -> new InitialDirContext(env));
         }
         finally
         {
@@ -564,27 +603,45 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                ", providerUrl=" + _providerUrl + ", providerAuthUrl=" + _providerAuthUrl +
                ", searchContext=" + _searchContext + ", state=" + getState() +
                ", searchFilter=" + _searchFilter + ", ldapContextFactory=" + _ldapContextFactory +
-               ", bindWithoutSearch=" + _bindWithoutSearch  + ", trustStore=" + _trustStore  +
-               ", searchUsername=" + _searchUsername + "]";
+               ", bindWithoutSearch=" + _bindWithoutSearch + ", trustStore=" + _trustStore +
+               ", searchUsername=" + _searchUsername + ", loginConfigScope=" + _loginConfigScope +
+               ", authenticationMethod=" + _authenticationMethod + "]";
     }
 
-    private void validateInitialDirContext(Class<? extends SocketFactory> sslSocketFactoryOverrideClass,
-                                           final String providerUrl,
-                                           final String searchUsername, final String searchPassword)
+    private void validateInitialDirContext(final SimpleLDAPAuthenticationManager<?> authenticationProvider)
     {
-        Hashtable<String,Object> env = createInitialDirContextEnvironment(providerUrl);
+        final TrustStore truststore = authenticationProvider.getTrustStore();
+        final Class<? extends SocketFactory> sslSocketFactoryOverrideClass =
+                createSslSocketFactoryOverrideClass(truststore);
 
-        setupSearchContext(env, searchUsername, searchPassword);
+        final Hashtable<String, Object> env =
+                createInitialDirContextEnvironment(authenticationProvider.getProviderUrl());
+        setAuthenticationProperties(env,
+                                    authenticationProvider.getSearchUsername(),
+                                    authenticationProvider.getSearchPassword(),
+                                    authenticationProvider.getAuthenticationMethod());
 
         InitialDirContext ctx = null;
         try
         {
-            ctx = createInitialDirContext(env, sslSocketFactoryOverrideClass);
+            Subject gssapiIdentity = null;
+            if (LdapAuthenticationMethod.GSSAPI.equals(authenticationProvider.getAuthenticationMethod()))
+            {
+                gssapiIdentity = doGssApiLogin(authenticationProvider.getLoginConfigScope());
+            }
+            ctx = createInitialDirContext(env, sslSocketFactoryOverrideClass, gssapiIdentity);
         }
         catch (NamingException e)
         {
-            LOGGER.error("Failed to establish connectivity to the ldap server for '{}'", providerUrl, e);
-            throw new IllegalConfigurationException("Failed to establish connectivity to the ldap server." , e);
+            LOGGER.debug("Failed to establish connectivity to the ldap server for '{}'",
+                         authenticationProvider.getProviderUrl(),
+                         e);
+            throw new IllegalConfigurationException("Failed to establish connectivity to the ldap server.", e);
+        }
+        catch (LoginException e)
+        {
+            LOGGER.debug("JAAS login failed ", e);
+            throw new IllegalConfigurationException("JAAS login failed.", e);
         }
         finally
         {
@@ -592,14 +649,26 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
     }
 
-    private void setupSearchContext(final Hashtable<String, Object> env,
-                                    final String searchUsername, final String searchPassword)
+    private void setAuthenticationProperties(final Hashtable<String, Object> env,
+                                             final String userName,
+                                             final String password,
+                                             final LdapAuthenticationMethod authenticationMethod)
     {
-        if(_searchUsername != null && _searchUsername.trim().length()>0)
+        if (LdapAuthenticationMethod.GSSAPI.equals(authenticationMethod))
+        {
+            env.put(Context.SECURITY_AUTHENTICATION, "GSSAPI");
+        }
+        else if (LdapAuthenticationMethod.SIMPLE.equals(authenticationMethod))
         {
             env.put(Context.SECURITY_AUTHENTICATION, "simple");
-            env.put(Context.SECURITY_PRINCIPAL, searchUsername);
-            env.put(Context.SECURITY_CREDENTIALS, searchPassword);
+            if (userName != null)
+            {
+                env.put(Context.SECURITY_PRINCIPAL, userName);
+            }
+            if (password != null)
+            {
+                env.put(Context.SECURITY_CREDENTIALS, password);
+            }
         }
         else
         {
@@ -607,11 +676,12 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
     }
 
-    private String getNameFromId(String id) throws NamingException
+    private String getNameFromId(final String id, final Subject gssapiIdentity)
+            throws NamingException
     {
-        if(!isBindWithoutSearch())
+        if (!isBindWithoutSearch())
         {
-            InitialDirContext ctx = createSearchInitialDirContext();
+            InitialDirContext ctx = createSearchInitialDirContext(gssapiIdentity);
 
             try
             {
@@ -622,7 +692,13 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                 NamingEnumeration<?> namingEnum = null;
 
                 LOGGER.debug("Searching for '{}'", id);
-                namingEnum = ctx.search(_searchContext, _searchFilter, new String[]{id}, searchControls);
+                namingEnum = invokeContextOperationAs(gssapiIdentity,
+                                                      (PrivilegedExceptionAction<NamingEnumeration<?>>) () -> ctx.search(
+                                                              _searchContext,
+                                                              _searchFilter,
+                                                              new String[]{id},
+                                                              searchControls));
+
                 if (namingEnum.hasMore())
                 {
                     SearchResult result = (SearchResult) namingEnum.next();
@@ -645,14 +721,45 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         {
             return id;
         }
-
     }
 
-    private InitialDirContext createSearchInitialDirContext() throws NamingException
+    private <T> T invokeContextOperationAs(final Subject identity, final PrivilegedExceptionAction<T> action)
+            throws NamingException
+    {
+        try
+        {
+            return Subject.doAs(identity, action);
+        }
+        catch (PrivilegedActionException e)
+        {
+            final Exception exception = e.getException();
+            if (exception instanceof NamingException)
+            {
+                throw (NamingException) exception;
+            }
+            else if (exception instanceof RuntimeException)
+            {
+                throw (RuntimeException) exception;
+            }
+            else
+            {
+                throw new ServerScopedRuntimeException(exception);
+            }
+        }
+    }
+
+    private Subject doGssApiLogin(final String configScope) throws LoginException
+    {
+        LoginContext loginContext = new LoginContext(configScope);
+        loginContext.login();
+        return loginContext.getSubject();
+    }
+
+    private InitialDirContext createSearchInitialDirContext(final Subject gssapiIdentity) throws NamingException
     {
         Hashtable<String, Object> env = createInitialDirContextEnvironment(_providerUrl);
-        setupSearchContext(env, _searchUsername, _searchPassword);
-        return createInitialDirContext(env, _sslSocketFactoryOverrideClass);
+        setAuthenticationProperties(env, _searchUsername, _searchPassword, _authenticationMethod);
+        return createInitialDirContext(env, _sslSocketFactoryOverrideClass, gssapiIdentity);
     }
 
 

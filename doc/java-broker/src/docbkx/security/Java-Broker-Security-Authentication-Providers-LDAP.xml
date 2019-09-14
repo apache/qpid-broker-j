@@ -57,6 +57,16 @@
                 certificate).</para>
         </listitem>
         <listitem>
+            <para><emphasis>Authentication method</emphasis> is a method of authentication to use on binding into LDAP
+                when <literal>bind without search</literal> mode is not selected.
+                Supported methods are NONE, SIMPLE, GSSAPI. The latter requires setting of <emphasis>Login Config Scope</emphasis>
+                which is a name of JAAS login module from JASS login configuration file specified using JVM system
+                property <emphasis>java.security.auth.login.config</emphasis> or Java security properties file. If
+                <emphasis>Login Config Scope</emphasis> is not specified with <literal>GSSAPI</literal>
+                <emphasis>Authentication method</emphasis>, the scope <emphasis>qpid-broker-j</emphasis> will be used.
+            </para>
+        </listitem>
+        <listitem>
             <para>Additional group information can be obtained from LDAP.
                 There are two common ways of representing group membership in LDAP.
                 <itemizedlist>

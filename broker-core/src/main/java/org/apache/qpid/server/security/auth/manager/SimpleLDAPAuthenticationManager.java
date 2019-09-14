@@ -43,10 +43,15 @@ public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticat
     String PROVIDER_AUTH_URL = "providerAuthUrl";
     String SEARCH_CONTEXT = "searchContext";
     String LDAP_CONTEXT_FACTORY = "ldapContextFactory";
-    String SEARCH_USERNAME = "getSearchUsername";
-    String SEARCH_PASSWORD = "getSearchPassword";
+    String SEARCH_USERNAME = "searchUsername";
+    String SEARCH_PASSWORD = "searchPassword";
     String TRUST_STORE = "trustStore";
-
+    String SEARCH_FILTER = "searchFilter";
+    String GROUP_SEARCH_CONTEXT = "groupSearchContext";
+    String GROUP_SEARCH_FILTER = "groupSearchFilter";
+    String AUTHENTICATION_METHOD ="authenticationMethod";
+    String LOGIN_CONFIG_SCOPE = "loginConfigScope";
+    String LOGIN_CONFIG_SCOPE_DEFAULT = "qpid-broker-j";
 
     @ManagedAttribute( description = "LDAP server URL", mandatory = true)
     String getProviderUrl();
@@ -89,6 +94,15 @@ public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticat
 
     @ManagedAttribute( description = "Defines the group search scope. If true the search for group entries is performed in the entire subtree of the group search context")
     boolean isGroupSubtreeSearchScope();
+
+    @ManagedAttribute(description = "Method of authentication to use when binding into LDAP. Supported methods: NONE, SIMPLE, GSSAPI.",
+            defaultValue = "NONE")
+    LdapAuthenticationMethod getAuthenticationMethod();
+
+    @ManagedAttribute(description = "The scope of JAAS configuration from login module to use to obtain Kerberos"
+                                    + " initiator credentials when the authentication method is GSSAPI",
+            defaultValue = LOGIN_CONFIG_SCOPE_DEFAULT)
+    String getLoginConfigScope();
 
     @DerivedAttribute
     List<String> getTlsProtocolWhiteList();

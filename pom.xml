@@ -152,6 +152,7 @@
     <maven-jar-plugin-version>3.1.0</maven-jar-plugin-version>
     <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
     <h2.version>1.4.199</h2.version>
+    <apache-directory-version>2.0.0-M23</apache-directory-version>
   </properties>
 
   <modules>
@@ -723,6 +724,23 @@
         <groupId>org.apache.maven.resolver</groupId>
         <artifactId>maven-resolver-transport-http</artifactId>
         <version>${maven-resolver-version}</version>
+      </dependency>
+      <!-- apacheds test dependency -->
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-all</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+        <exclusions>
+           <exclusion>
+            <groupId>org.apache.directory.shared</groupId>
+            <artifactId>shared-ldap-schema</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.directory.api</groupId>
+            <artifactId>api-ldap-schema-data</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
     </dependencies>
   </dependencyManagement>
