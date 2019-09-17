@@ -3,6 +3,25 @@
 This article documents the standard adopted for Java code in the Qpid project.
 All committers are expected to follow this standard.
 
+<!-- toc -->
+
+- [Executive Summary](#executive-summary)
+- [Details](#details)
+  * [Introduction](#introduction)
+  * [Source files](#source-files)
+  * [Java Elements](#java-elements)
+    + [Class definitions](#class-definitions)
+    + [Variables](#variables)
+    + [Methods](#methods)
+  * [Expressions](#expressions)
+  * [Statements](#statements)
+    + [Simple Statements](#simple-statements)
+    + [Compound Statements](#compound-statements)
+  * [General](#general)
+  * [Exceptions](#exceptions)
+
+<!-- tocstop -->
+
 ## Executive Summary
 
 The main things for layout purposes in the standard are:
@@ -92,7 +111,7 @@ in which the each part should be presented. No rules on programming style, namin
 5. No line in a source file should exceed 120 characters [mandatory].
 6. The sections of a source file should be presented in the following order [mandatory]:
    * File information comment (see rule 7 below).
-   * Package name (see rules 1 to 3 in the section 2.1 above and rule 8 below).
+   * Package name (see rule 8 below).
    * Imports (see rules 9 to 10 below).
    * Other class definitions.
    * Public class definition.
@@ -105,7 +124,9 @@ in which the each part should be presented. No rules on programming style, namin
     clash is greatly increased.
 9. All class imports from the same package should be grouped together. A single blank line should separate imports
    from different packages [recommended].
-10. Use javadoc tags and use HTML mark-up to enhance the readability of the output files [mandatory].
+10. Wildcard imports should be avoided as they could lead to conflicts between classes in different packages
+    with the same name. [recommended].
+11. Use javadoc tags and use HTML mark-up to enhance the readability of the output files [mandatory].
 
 ### Java Elements
 
@@ -175,9 +196,9 @@ then the rule applies to both types of variable.
     ```
 8. Only one variable may be defined per line [mandatory].
 9. Variable declarations should be indented 4 spaces more than their enclosing class [mandatory].
-10. All variables should be preceded by a javadoc comment that specifies what the variable is for,
-    where it is used and so forth. The comment should be of the following form and be indented
-    to the same level as the variable it refers to [recommended]
+10. Class instance variables might be preceded by a javadoc comment that specifies what the variable is for,
+    where it is used and so forth. Though, the self-explanatory variable name should be preferred over comments.
+    If comment is necessary, it should be indented to the same level as the variable it refers to [recommended]
 11. Never declare instance variables as public unless the class is effectively a "struct" [mandatory].
 12. Never give a variable the same name as a variable in a superclass [mandatory].
 13. Ensure that all non-private class variables have sensible values even if no instances have been created
@@ -189,7 +210,7 @@ This section gives guidelines for class and instance method definitions in Java.
 In this section if a rule uses the term method rather than instance method or class method,
 then the rule applies to both types of method.
 
-1. Constructors and finalize methods should follow immediately after the variable declarations [mandatory].
+1. Constructors and `finalize` methods should follow immediately after the variable declarations [mandatory].
 2. Do not call non-final methods from constructors. This can lead to unexpected results when the class is subclassed.
    If you must call non-final methods from constructors, document this in the constructor's javadoc [mandatory].
    Note that private implies final.
@@ -199,7 +220,7 @@ then the rule applies to both types of method.
    * private, protected, public: instance methods.
     It should be noted that as javadoc will automatically order methods in a consistent manner,
     rigid adherence to this rule is not necessary.
-5. Method modifiers should be presented in the following order: abstract, static, final., synchronized [mandatory]
+5. Method modifiers should be presented in the following order: abstract, static, final, synchronized [mandatory]
 6. When a synchronized method is overloaded, it should be explicitly synchronized in the subclass [recommended].
 7. Method names should start with a lower case letter with all subsequent words being capitalised [mandatory].
    For example:
@@ -213,7 +234,7 @@ then the rule applies to both types of method.
     void setVariableName(Type newValue)
     ```
     Exceptions should be used to report any failure to get or set a value.
-    The "@param" description should detail any assumptions made by the implementation,
+    The `@param` description should detail any assumptions made by the implementation,
      for example: "Specifying a null value will cause an error to be reported".
 9. Method definitions should be indented 4 spaces more than their enclosing class [mandatory].
 10. All non-private methods should be preceded by a javadoc comment specifying what the method is for,
@@ -257,15 +278,15 @@ then the rule applies to both types of method.
 This section defines the rules to be used for Java expressions:
 
 1. Unary operators should not be separated from their operand by white space [mandatory].
-2. Embedded ++ or – operators should only be used when it improves code clarity [recommended]. This is rare.
+2. Embedded `++` or `--` operators should only be used when it improves code clarity [recommended]. This is rare.
 3. Extra parenthesis should be used in expressions to improve their clarity [recommended].
-4. The logical expression operand of the "?:" (ternary) operator must be enclosed in parenthesis.
+4. The logical expression operand of the `?:` (ternary) operator must be enclosed in parenthesis.
    If the other operands are also expressions then they should also be enclosed in parenthesis [mandatory]. For example:
     ```java
     biggest = (a > b) ? a : b;
     complex = (a + b > 100) ? (100 * c) : (10 * d);
     ```
-5. Nested "?:" (ternary) operators can be confusing and should be avoided [mandatory].
+5. Nested `?:` (ternary) operators can be confusing and should be avoided [mandatory].
 6. Use of the binary "," operator (the comma operator) should be avoided [mandatory].
    Putting all the work of a for loop on a single line is not a sign of great wisdom and talent.
 7. If an expression is too long for a line (i.e. extends beyond column 119) then it should be split after the lowest
@@ -354,7 +375,6 @@ This section defines the general rules associated with compound statements in Ja
         case NOT_RUNNING:
             start();
             break;
-
         case RUNNING:
         default:
             monitor();
@@ -362,9 +382,9 @@ This section defines the general rules associated with compound statements in Ja
     }
      ```
 6.  In switch statements - the statements associated with all cases should terminate with a statement
-    which explicitly determines the flow of control, for example break [recommended].
+    which explicitly determines the flow of control, for example `break` [recommended].
 7.  In switch statements - fall through should be avoided wherever possible, however if it is unavoidable it must
-    be commented with "// FALLTHROUGH" [mandatory].
+    be commented with `// FALLTHROUGH` [mandatory].
 8.  In switch statements - a default case must be present and should always be the last case [mandatory].
 
 ### General

@@ -1,9 +1,9 @@
 # Qpid Broker-J Developer Guide
 
 This guide is intended for developers and contributors of Qpid Broker-J project to provide guidance and
-reference materials to aid them in development, building and releasing Qpid Broker-J.
+reference materials to aid them in developing, building and releasing Qpid Broker-J.
 
-Each chapter in this guide is intended to be self-contained, so, the reader can jump to an interesting topic.
+Each chapter in this guide is intended to be self-contained, so the reader can jump to an interesting topic.
 
 ## Quick Start Guide
 

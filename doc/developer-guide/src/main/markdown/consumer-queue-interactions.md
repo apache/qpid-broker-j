@@ -2,6 +2,26 @@
 
 This article overviews implementation behind interactions between consumers and queue.
 
+<!-- toc -->
+
+- [Overview](#overview)
+- [Responsibilities](#responsibilities)
+  * [Simple Example](#simple-example)
+  * [Threading Model](#threading-model)
+  * [Interfaces Between Consumers and Queues](#interfaces-between-consumers-and-queues)
+  * [QueueConsumerManager internals](#queueconsumermanager-internals)
+    + [QueueConsumerNodeList](#queueconsumernodelist)
+    + [The "All" List](#the-all-list)
+    + [The "NonAcquiring" List](#the-nonacquiring-list)
+    + [The "NotInterested" List](#the-notinterested-list)
+    + [The "Interested" List](#the-interested-list)
+    + [The "Notified" List](#the-notified-list)
+    + [Handling Consumer Priorities](#handling-consumer-priorities)
+
+<!-- tocstop -->
+
+## Overview
+
 The main players are
 
  * Queue - model object providing the messaging queue functionality.
@@ -25,7 +45,7 @@ it notifies the `Queue` that it is no longer interested OR there are no more mes
 ### Simple Example
 
  1. `Message` arrives on the `Queue`
- 2. The `Queue` notifies some interested `Consumers` that there is work to be done
+ 2. The `Queue` notifies some of interested `Consumers` that there is work to be done
  3. The `Consumers` notify their `ConsumerTarget` that they would like to do work
  4. The `ConsumerTargets` notify their `Sessions` that they would like to do work
  5. The `Sessions` notify their `Connections` that they would like to do work
@@ -35,7 +55,7 @@ it notifies the `Queue` that it is no longer interested OR there are no more mes
  9. The `Sessions` iterate over its `ConsumerTargets` that want to do work
  10. The `ConsumerTargets` iterate over its `Consumers` that want to do work
  11. The Consumer tries to pulls a message from the `Queue`
- 12. If successful the message is put on the IO-buffer to be sent down the wire
+ 12. If successful, the message is put on the IO-buffer to be sent down the wire
 
 ### Threading Model
 
@@ -119,7 +139,7 @@ are not going to do any work.
 #### The "Interested" List
 
 This is the default list for acquiring `Consumers`. It signifies that they are ready to process messages.
-When a message becomes available, the `Queue` it will notify `Consumers` from this list and move them to the
+When a message becomes available, the `Queue` will notify `Consumers` from this list and move them to the
 "Notified" list. It will only notify a single interested `Consumer` to avoid spurious wake-ups.
 
 #### The "Notified" List
