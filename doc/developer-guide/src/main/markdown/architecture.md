@@ -28,6 +28,7 @@ This article provides a high level description of the architecture of Qpid Broke
   * [Subscriptions](#subscriptions)
   * [Messages](#messages)
   * [Message and Configuration Store](#message-and-configuration-store)
+- [Messaging Transactions](#messaging-transactions)
 - [Management](#management)
   * [AMQP management](#amqp-management)
   * [HTTP management](#http-management)
@@ -407,6 +408,45 @@ There are several store provider implementations:
   *  JDBC - Durable Configuration and/or Message Store
 
 These interfaces are pluggable.
+
+## Messaging Transactions
+
+Multiple messages can be consumed or/and published as a single atomic operation within messaging transaction.
+The transaction is usually initiated and discharged (committed or rolled back) on client side, but, `Broker`
+can also use messaging transactions for performing operations on group of messages in atomic way, for example,
+moving/copying messages between queues, deleting messages from queue using management interfaces, etc.
+
+An interface `ServerTransaction` represents messaging transaction on broker side. The following operations
+can be invoked as part of messaging transactions:
+
+ * `dequeue` - dequeue message or collection of messages
+ * `enqueue` - enqueue message into a `TransactionLogResource` or collection of `BaseQueue`
+ * `commit` - commit transaction
+ * `rollback` - rollback transaction
+ * `addPostTransactionAction` - an auxiliary operation to add some post-transactional work, which is executed after
+    transaction is discharged
+
+`LocalTransaction` is a concrete implementation of `ServerTransaction` which is responsible for performing messaging
+transaction. It delegates transactional operations to `Transaction` object provided by `MesssageStore`. Each message
+store type has its own implementation of `Transaction`.
+
+The class diagram below illustrates the transactional model of Qpid Broker-J.
+
+![Transactions](images/transactions.png)
+
+As per diagram, apart from `LocalTransaction`, there are three other implementations of `ServerTransaction`.
+
+ * `DistributedTransaction` is used to run distributed transaction (for AMQP protocol 0-10)
+ * `AutoCommitTransaction` is used to model auto-commit transaction functionality
+ * `AsyncAutoCommitTransaction` is used to model auto-commit transaction functionality
+    with asynchronous discharge (i.e., the caller does not wait for finish of transaction discharge and proceed
+    with invocation of next operations, but, the transaction eventually get discharged).
+
+`AsyncAutoCommitTransaction` is used to invoke enueueing and dequeueing operations when `client`
+ does not need transaction but broker implementation semantic requires passing `ServerTransaction` object.
+
+`AutoCommitTransaction` is used to run a number of messaging operations requiring atomicity, for example,
+`clearQueue`, `publishMessage` from management interface, etc.
 
 ## Management
 
