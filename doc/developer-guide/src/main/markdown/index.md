@@ -17,6 +17,10 @@ The chapter provides an overview of coding style. [Read it](code-guide.md)
 
 The chapter covers build and test options in details. [Read it](build-instructions.md)
 
+## Release Instructions
+
+The chapter covers release process. [Read it](release-instructions.md)
+
 ## IDE integration
 
 Tips on setting up IDE to work with Qpid Broker-J project. [Read it](ide-integration.md)

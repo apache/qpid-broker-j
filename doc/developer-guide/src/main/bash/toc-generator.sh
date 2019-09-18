@@ -21,7 +21,7 @@
 SCRIPT=$(readlink -f "$0")
 SCRIPT_PATH=$(dirname "$SCRIPT")
 DOC_PATH=$(readlink -f "$SCRIPT_PATH/../markdown")
-declare -a ARTICLES=("architecture" "build-instructions" "consumer-queue-interactions" "code-guide")
+declare -a ARTICLES=("architecture" "build-instructions" "consumer-queue-interactions" "code-guide" "release-instructions")
 
 function npm-do { (PATH=$(npm bin):$PATH; eval $@;) }
 
