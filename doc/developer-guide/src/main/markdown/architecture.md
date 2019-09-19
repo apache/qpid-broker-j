@@ -33,6 +33,7 @@ This article provides a high level description of the architecture of Qpid Broke
   * [AMQP management](#amqp-management)
   * [HTTP management](#http-management)
 - [Pluggable Architecture](#pluggable-architecture)
+- [Logging](#logging)
 
 <!-- tocstop -->
 
@@ -544,3 +545,49 @@ other attributes. For example, `PortFactory` examines attribute `protocols` to i
 The Broker allows alternative implementations for various entities. For example, alternative implementations for
 `ProtocolEngine`, `MessageConverter`, `MessageFormat`, etc can be plugged into the `Broker`. Please, check Broker code
 for all extension points by building type hierarchy for `Pluggable`.
+
+## Logging
+
+Qpid Broker-J use **slf4j** API for logging. The **slf4j** abstraction allows to plug-in any logging framework.
+The logback logging framework is used by the broker. However, it is optional. Any other framework can be used with
+the Broker if required.
+
+`VirtualHost` logs can be segregated from other `VirtualHost` and `Broker` logs in order to isolate applications
+on dedicated VirtualHosts from each other. Thus, specific `VirtualHost` users would be able to access their logs
+without seeing Broker logs not related to the `VirtualHost` or logs from other applications on different VirtualHosts.
+
+The Broker defines a number of `ConfigutredObject` categories to be able to dynamically configure logging settings
+at runtime and access generated logs from Broker management API.
+
+ * `Logger`; responsible for accumulation of the logs
+ * `InclusionRule`; governs what appears within accumulated logs
+
+Loggers can includes any number of InclusionRules for log collection.
+
+There are two hierarchy of loggers: Broker Loggers and VirtualHost Loggers.
+
+The class diagram below illustrates Broker Logger Model.
+
+![Broker Loggers](images/broker-loggers.png)
+
+The class diagram below illustrates VirtualHost Logger Model.
+
+![VirtualHost Loggers](images/virtualhost-loggers.png)
+
+Both `Broker` and `VirtualHost` support
+ * FileLogger; accumulates logs in files on file system
+ * SysLogLogger; accumulates logs SysLog of Linux OS
+ * JDBCLogger; accumulates logs in RDBMS
+
+In addition to above `Broker` supports the following Loggers:
+ * MemoryLogger; accumulates predefined number of log records in cyclic memory buffer
+ * ConsoleLogger; redirects logs in system standard output
+ * BrokerLogbackSocketLogger; sends logs into socket (used in integration tests)
+
+Both `Broker` and `VirtualHost` support the following inclusion rules
+ * NameAndLevel; accepts log events that match a given log event source name and have a level
+   that equals or exceeds the specified value
+ * UserOrConnection; accepts the log events matching given regular expressions for principal name,
+   container id and remote remote address
+
+Both `Broker` and `VirtualHost` hierarchies extends `AbstractLogger`.
