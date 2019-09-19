@@ -447,7 +447,7 @@ As per diagram, apart from `LocalTransaction`, there are three other implementat
     with asynchronous discharge (i.e., the caller does not wait for finish of transaction discharge and proceed
     with invocation of next operations, but, the transaction eventually get discharged).
 
-`AsyncAutoCommitTransaction` is used to invoke enueueing and dequeueing operations when `client`
+`AsyncAutoCommitTransaction` is used to invoke enqueueing and dequeueing operations when `client`
  does not need transaction but broker implementation semantic requires passing `ServerTransaction` object.
 
 `AutoCommitTransaction` is used to run a number of messaging operations requiring atomicity, for example,

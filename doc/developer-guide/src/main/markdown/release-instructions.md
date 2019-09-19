@@ -26,7 +26,7 @@ Release artifacts needs to be signed. GNU Privacy Guard from [OpenPGP](https://w
  cryptography. The document provides basic information about release signing and contains links to various resources
  about PGP public key cryptography and how to use GNU Privacy Guard to generate and sign the PGP keys. Install
  [GNU Privacy Guard](http://www.gnupg.org), generate keys following steps provided here and upload public keys to
- keyservers . After publishing keys, login into <https://id.apache.org> and enter PGP key fingerprint(s),
+ keyservers. After publishing keys, login into <https://id.apache.org> and enter PGP key fingerprint(s),
  then the corresponding keys will be made available under <https://people.apache.org/keys/> within a few hours.
  Additionally, qpid project requires adding a public key into <https://dist.apache.org/repos/dist/release/qpid/KEYS>.
 
@@ -36,9 +36,8 @@ Maven is used to build and manage Qpid Java project. 3.x version of maven needs 
  environment should be setup as described at
  [Publishing of Maven Artifacts](http://www.apache.org/dev/publishing-maven-artifacts.html#dev-env).
 
-Please, note that repository id (server id) in `setting.xml` should be **apache.releases.https**. Using different id
- would result in failures to publish release artifacts into staging maven repo.
-
+Please, note that repository id (server id) in `settings.xml` should be **apache.releases.https**. Using different id
+would result in failures to publish release artifacts into staging maven repo.
 
 ### Java
 
@@ -83,7 +82,7 @@ Sources are kept in a Git repository. Thus a git client is required.
 6.  Verify third party licenses
 
         mvn -Pdependency-check prepare-package -DskipTests
-    The check should finish successfully. Otherwise, dependencies with not complaint licenses should be resolved
+    The check should finish successfully. Otherwise, dependencies with not compliant licenses should be resolved
     before taking next release step.
 7.  Check JIRA system for any unresolved JIRAs for the release and notify assigned developers to take actions
     on uncompleted JIRAs.
@@ -110,15 +109,15 @@ Sources are kept in a Git repository. Thus a git client is required.
     * Copy source and binary bundles and their signatures/checksum files from the nexus staging repository into
       qpid dev staging area at <https://dist.apache.org/repos/dist/dev/qpid/broker-j/> under the sub-folder with
       the same name as tag. Binary bundles  and their signatures/checksum files need to be put into sub-folder
-      with name binaries. (Not doing so would break the site). Manually rename the source artefact to keep with
-      the source artefact name consistent.
+      with name binaries. (Not doing so would break the site). Manually rename the source artifact to keep with
+      the source artifact name consistent.
 
             version=x.y.z
             root=https://repository.apache.org/content/repositories/orgapacheqpid-####
             mkdir binaries
 
             for i in "" ".asc"; do
-                curl -O  $root/org/apache/qpid/apache-qpid-broker-j/${version}/apache-qpid-broker-j-$version-src.tar.gz$i
+                curl -O $root/org/apache/qpid/apache-qpid-broker-j/${version}/apache-qpid-broker-j-$version-src.tar.gz$i
                 if [[ "$i" == "" ]]; then
                     sha512sum apache-qpid-broker-j-$version-src.tar.gz > apache-qpid-broker-j-$version-src.tar.gz.sha512
                 fi
@@ -128,7 +127,7 @@ Sources are kept in a Git repository. Thus a git client is required.
 
             for i in "" ".asc"; do
                 for j in "tar.gz" "zip"; do
-                    curl -O  $root/org/apache/qpid/apache-qpid-broker-j/${version}/apache-qpid-broker-j-$version-bin.$j$i
+                    curl -O $root/org/apache/qpid/apache-qpid-broker-j/${version}/apache-qpid-broker-j-$version-bin.$j$i
                 done
             done
 
