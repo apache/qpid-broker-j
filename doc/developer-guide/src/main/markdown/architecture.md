@@ -11,7 +11,7 @@ This article provides a high level description of the architecture of Qpid Broke
   * [Context Variables](#context-variables)
 - [Lifecycle](#lifecycle)
 - [AbstractConfiguredObject](#abstractconfiguredobject)
-- [Model Threading](#model-threading)
+- [Threading Model](#threading-model)
 - [Configuration Persistence](#configuration-persistence)
 - [AMQP Transport Layer](#amqp-transport-layer)
   * [TCP/IP](#tcpip)
@@ -32,6 +32,7 @@ This article provides a high level description of the architecture of Qpid Broke
 - [Management](#management)
   * [AMQP management](#amqp-management)
   * [HTTP management](#http-management)
+- [Pluggable Architecture](#pluggable-architecture)
 
 <!-- tocstop -->
 
@@ -71,11 +72,11 @@ the queue types supported by the `Broker` e.g. `StandardQueue`, `PrirorityQueue`
 
 Each `ConfiguredObject` instance has zero or more attributes. Attributes have a name and a value which can be
 a Java primitive value or an instance of any class for which an `AttributeValueConverter` exist. This mechanism allows
- attribute values to be `Lists`, `Sets`, `Maps`, or arbitrary structured types `ManagedAttributeValues`.
+attribute values to be `Lists`, `Sets`, `Maps`, or arbitrary structured types `ManagedAttributeValues`.
 
 Attributes are marked up in the code with method annotations `@ManagedAttribute` which defines things
 whether the attribute is mandatory or mutable. Attributes can also be marked a secure which indicates restrictions
- no how the attribute is used (used for attributes that that store passwords or private-keys).
+on how the attribute is used (used for attributes that that store passwords or private-keys).
 
 Attributes can have default values. The default value applies if the user omits to supply a value when the object
 is created. Defaults themselves can be defined in terms of `context variable` references.
@@ -117,7 +118,7 @@ During recovery, they follow the opening (`ConfiguredObject#open`)
  * implementation specific opening (#onOpen)
 
 Some `ConfiguredObjects` support starting (`ConfiguredObject#start()`) and stopping (`ConfiguredObject#stop()`)
- but this have not yet been extended to all objects.
+but this have not yet been extended to all objects.
 
 `ConfiguredObject#delete()` caused the object to be deleted.
 
@@ -127,14 +128,14 @@ Most configured object implementations extend `AbstractConfiguredObject` (ACO). 
 behind the configured implementations: attributes, context variables, state and lifecycle,
 and a listener mechanism: `ConfigurationChangeListener`.
 
-## Model Threading
+## Threading Model
 
 The threading model used by the model must be understood before changes can be made safely.
 
 The `Broker` and `VirtualHost` `ConfiguredObject` instances have a task executor backed by single configuration thread.
 Whenever the a configuration object needs to be changed, that change MUST be made by the nearest ancestor's
 configuration thread. This approach ensures avoids the need to employ locking. Any thread is allowed to observe
- the state of a `ConfiguredObject` at any time. For this reasons, changes must be published safely, so they can be
+the state of a `ConfiguredObject` at any time. For this reasons, changes must be published safely, so they can be
 read consistently by the observing threads.
 
 The implementations of the mutating methods (`#setAttributes()`, `#start()`, #`stop()`, etc) within
@@ -194,6 +195,10 @@ to awaken them at other times. For instance, if a message arrives on a queue tha
 the `NonBlockingConnection` associated with that consumer must awoken. The mechanism that does this is
 `NetworkConnectionScheduler#schedule` method which adds it to the work queue. This is wired to the protocol engine via
 a listener.
+
+The class diagram below depicts IO Model
+
+![IO Model](images/io.png)
 
 ### IO Threading
 
@@ -506,3 +511,36 @@ to the configuration provided to by the `Port/KeyStore/TrustStore` model objects
 
 The embedded server also provides a Web Management Console. This is written using the Dojo framework.
 It uses the REST API to interact with the `Broker`.
+
+## Pluggable Architecture
+
+The Broker utilizes java `java.util.ServiceLoader` for implementation of pluggable architecture.
+The `org.apache.qpid.server.plugin.QpidServiceLoader` is thin wrapper around `java.util.ServiceLoader`. It responsible
+for loading of extensions of `org.apache.qpid.server.plugin.Pluggable` which is a core of pluggable abstraction. All
+Broker extension interfaces extend `org.apache.qpid.server.plugin.Pluggable`. The diagram below illustrates some of the
+extension points.
+
+![Pluggable Architecture](images/pluggability.png)
+
+A concrete implementation of `ConfiguredObject` needs to provide a factory class implementing functionality to create
+and recover configured object instance. Such factory needs to implement interface `ConfiguredObjectTypeFactory`.
+An abstract factory `AbstractConfiguredObjectTypeFactory` is used as base class for auto-generated factories.
+It is only required to annotate `ConfiguredObject` constructor with annotation
+`@ManagedObjectFactoryConstructor` to have its factory auto-generated by `ConfiguredObjectFactoryGenerator`
+from `qpid-broker-codegen` module.
+
+Another useful annotation is `@PluggableService`. It is used for auto-generation of services files
+under `META-INF/services/`.
+
+`AbstractConfiguredObjectTypeFactory` delegates `ConfiguredObject` creation to implementation of `ConfiguredObjectFactory`.
+The default implementation of `ConfiguredObjectFactory` relies on value of attribute `type` to identify the type
+of `ConfiguredObject`.
+
+Some of configured object categories have their own factory implementations. For example, factories
+`PortFactory` and `QueueFactory` are used for creation/opening of `Port` and `Queue` accordingly. Such factories
+implement some custom logic required for identification of exact type of `ConfiguredObject` based on values of
+other attributes. For example, `PortFactory` examines attribute `protocols` to identify the `Port` type.
+
+The Broker allows alternative implementations for various entities. For example, alternative implementations for
+`ProtocolEngine`, `MessageConverter`, `MessageFormat`, etc can be plugged into the `Broker`. Please, check Broker code
+for all extension points by building type hierarchy for `Pluggable`.
