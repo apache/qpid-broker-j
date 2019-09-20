@@ -43,7 +43,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.PrivateKey;
-import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -89,10 +88,7 @@ public class SSLUtil
     private static final Logger LOGGER = LoggerFactory.getLogger(SSLUtil.class);
 
     private static final Integer DNS_NAME_TYPE = 2;
-    private static final String[] TLS_PROTOCOL_PREFERENCES = new String[]{"TLSv1.2", "TLSv1.1", "TLS", "TLSv1"};
-
-
-    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final String[] TLS_PROTOCOL_PREFERENCES = new String[]{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLS", "TLSv1"};
 
 
     private static final Constructor<?> CONSTRUCTOR;

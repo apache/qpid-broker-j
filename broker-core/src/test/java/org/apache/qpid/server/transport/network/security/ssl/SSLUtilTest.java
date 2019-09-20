@@ -72,9 +72,9 @@ public class SSLUtilTest extends UnitTestBase
     {
         List<String> whiteList = Arrays.asList("TLSv1\\.[0-9]+");
         List<String> blackList = Collections.emptyList();
-        String[] enabled = {"TLS", "TLSv1.1", "TLSv1.2"};
-        String[] expected = {"TLSv1.1", "TLSv1.2"};
-        String[] supported = {"SSLv3", "TLS", "TLSv1", "TLSv1.1", "TLSv1.2"};
+        String[] enabled = {"TLS", "TLSv1.1", "TLSv1.2", "TLSv1.3"};
+        String[] expected = {"TLSv1.1", "TLSv1.2", "TLSv1.3"};
+        String[] supported = {"SSLv3", "TLS", "TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"};
         String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
         assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
                 result), Arrays.equals(expected, result));
@@ -85,9 +85,9 @@ public class SSLUtilTest extends UnitTestBase
     {
         List<String> whiteList = Arrays.asList();
         List<String> blackList = Arrays.asList("TLSv1\\.[0-9]+");
-        String[] enabled = {"TLS", "TLSv1.1", "TLSv1.2"};
+        String[] enabled = {"TLS", "TLSv1.1", "TLSv1.2", "TLSv1.3"};
         String[] expected = {"TLS"};
-        String[] supported = {"SSLv3", "TLS", "TLSv1", "TLSv1.1", "TLSv1.2"};
+        String[] supported = {"SSLv3", "TLS", "TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"};
         String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
         assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
                 result), Arrays.equals(expected, result));
