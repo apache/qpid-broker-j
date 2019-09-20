@@ -516,9 +516,9 @@ It uses the REST API to interact with the `Broker`.
 ## Pluggable Architecture
 
 The Broker utilizes java `java.util.ServiceLoader` for implementation of pluggable architecture.
-The `org.apache.qpid.server.plugin.QpidServiceLoader` is a thin wrapper around `java.util.ServiceLoader`. It responsible
-for loading of services extending `org.apache.qpid.server.plugin.Pluggable`. All Broker extension interfaces extend
-`org.apache.qpid.server.plugin.Pluggable`. The diagram below illustrates some of the extension points.
+The `org.apache.qpid.server.plugin.QpidServiceLoader` is a thin wrapper around `java.util.ServiceLoader`. It is
+responsible for loading of services extending `org.apache.qpid.server.plugin.Pluggable`. All Broker extension
+interfaces extend `org.apache.qpid.server.plugin.Pluggable`. The diagram below illustrates some of the extension points.
 
 ![Pluggable Architecture](images/pluggability.png)
 
@@ -555,22 +555,24 @@ Please, check Broker code for all extension points by building type hierarchy fo
 ## Logging
 
 Qpid Broker-J uses **slf4j** API for logging. The **slf4j** abstraction allows to plug-in any logging framework.
-The logback logging framework is used by the broker. However, it is optional. Any other framework can be used with
-the Broker if required.
+The **logback** logging framework is used by the Broker. Though, only  handful of modules (`qpid-broker` containing
+code for starting the broker and logging-logback plugins implementing management functionality) have compile time
+dependency to **logback**. The  rest of Broker modules including `qpid-broker-core` and plugins modules
+(except for logging-logback plugins) depend only on **slf4j** API. The Broker can be easily started without logback
+dependent modules. Any other logging framework can be used with the Broker if required.
 
-`VirtualHost` logs can be segregated from other `VirtualHost` and `Broker` logs in order to isolate applications
-on dedicated VirtualHosts from each other. Thus, specific `VirtualHost` users would be able to access their logs
-without seeing Broker logs not related to the `VirtualHost` or logs from other applications on different VirtualHosts.
-
-The Broker defines a number of `ConfigutredObject` categories to be able to dynamically configure logging settings
+The Broker defines a number of `ConfiguredObject` categories to be able to dynamically configure logging settings
 at runtime and access generated logs from Broker management API.
 
- * `Logger`; responsible for accumulation of the logs
- * `InclusionRule`; governs what appears within accumulated logs
+ * *Logger* is responsible for production of logs
+ * *InclusionRule* governs what appears within the logs. Loggers can include any number of InclusionRules for log collection.
 
-Loggers can includes any number of InclusionRules for log collection.
+In order to isolate applications running on dedicated VirtualHosts from each other, the Broker provides separate
+`VirtualHost` logging API. If configured, the users of specific `VirtualHost` can access their logs without seeing
+logs not related to their `VirtualHost` (including logs from other applications on different VirtualHosts
+and Broker own logs).
 
-There are two hierarchy of loggers: Broker Loggers and VirtualHost Loggers.
+Thus, there are two sub-sets of logging API: Broker Logger Model and VirtualHost Logger Model.
 
 The class diagram below illustrates Broker Logger Model.
 
@@ -581,19 +583,19 @@ The class diagram below illustrates VirtualHost Logger Model.
 ![VirtualHost Loggers](images/virtualhost-loggers.png)
 
 Both `Broker` and `VirtualHost` support
- * FileLogger; stores logs in files on file system
- * SysLogLogger; store logs in SysLogs of Linux/Unix OS
- * JDBCLogger; store logs in RDBMS
+ * *FileLogger* which is responsible for storing logs in files on file system
+ * *SysLogLogger* is responsible for storing logs in SysLogs of Linux/Unix OS
+ * *JDBCLogger* is responsible for storing logs in RDBMS
 
-In addition to Loggers above the Broker supports the following Loggers:
- * MemoryLogger; accumulates predefined number of log records in cyclic memory buffer
- * ConsoleLogger; redirects logs into system standard output
- * BrokerLogbackSocketLogger; sends logs into socket (used in integration tests)
+In addition to Loggers listed above, the Broker supports the following Loggers:
+ * *MemoryLogger* is responsible for accumulation of predefined number of log records in cyclic memory buffer
+ * *ConsoleLogger* is responsible for redirection of the logs into system standard output
+ * *BrokerLogbackSocketLogger* is responsible for sending logs into *socket* (used in integration tests)
 
 Both `Broker` and `VirtualHost` support the following inclusion rules
- * NameAndLevel; accepts log events that match a given log event source name and have a level
+ * *NameAndLevel* is responsible for accepting log events that match a given log event source name and have a level
    that equals or exceeds the specified value
- * UserOrConnection; accepts the log events matching given regular expressions for principal name,
-   container id and remote remote address
+ * *UserOrConnection* is responsible for accepting the log events matching given regular expressions for principal name,
+   container id and remote connection address
 
-Both `Broker` and `VirtualHost` hierarchies extends `AbstractLogger`.
+ALl existing logback-based Logger implementations (for both `Broker` and `VirtualHost`) extend `AbstractLogger`.

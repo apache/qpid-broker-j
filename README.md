@@ -32,22 +32,29 @@ Below are some quick pointers you might find useful.
 
 ## Building the code
 
-The [Quick Start Guide](doc/developer-guide/src/main/markdown/quick-start.md) works you through the steps required
+The [Quick Start Guide](doc/developer-guide/src/main/markdown/quick-start.md) walks you through the steps required
 to build, test and run Qpid Broker-J.
 
-The [Build Instructions](doc/developer-guide/src/main/markdown/build-instructions.md) cover all details behind building and testing.
+The [Build Instructions](doc/developer-guide/src/main/markdown/build-instructions.md) cover all details behind building
+and testing.
 
 ## Running the Broker
 
-For full details, see the `Getting Started` documentation in the docbook documentation mentioned below.
+For full details, see the `Getting Started` in User documentation mentioned below.
 
-For convenience, the brief instructions are repeated in The [Quick Start Guide](doc/developer-guide/src/main/markdown/quick-start.md).
+For convenience, the brief instructions are repeated in the
+[Quick Start Guide](doc/developer-guide/src/main/markdown/quick-start.md).
 
 ### IDE Integration
 
-Tips on setting up IDE to work with Qpid Broker-J project are provided in [IDE Integration](doc/developer-guide/src/main/markdown/ide-integration.md).
+Tips on setting up IDE to work with Qpid Broker-J project are provided in
+[IDE Integration](doc/developer-guide/src/main/markdown/ide-integration.md).
 
 ## Documentation
 
 Documentation (in docbook format) is found beneath the *doc* module.
 
+Links to latest published User documentation can be found in overview of
+[Broker-J Component](http://qpid.apache.org/components/broker-j/index.html).
+
+Please check [Developer Guide](doc/developer-guide/src/main/markdown/index.md) for developer documentation.
