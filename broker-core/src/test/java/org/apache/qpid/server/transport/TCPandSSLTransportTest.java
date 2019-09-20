@@ -110,7 +110,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
         assumeThat("The IBM JDK has different TLS defaults", getJvmVendor(), is(not(equalTo(IBM))));
         try
         {
-            checkSSLExcluded("SSLv3", Transport.SSL);
+            checkHandshakeWithTlsProtocol("SSLv3", Transport.SSL);
             fail("Should not be able to connect using SSLv3");
         }
         catch(SSLHandshakeException e)
@@ -125,7 +125,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
         assumeThat("The IBM JDK has different TLS defaults", getJvmVendor(), is(not(equalTo(IBM))));
         try
         {
-            checkSSLExcluded("SSLv3", Transport.TCP, Transport.SSL);
+            checkHandshakeWithTlsProtocol("SSLv3", Transport.TCP, Transport.SSL);
             fail("Should not be able to connect using SSLv3");
         }
         catch(SSLHandshakeException e)
@@ -139,7 +139,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
     {
         try
         {
-            checkSSLExcluded("TLSv1", Transport.SSL);
+            checkHandshakeWithTlsProtocol("TLSv1", Transport.SSL);
             fail("Should not be able to connect using TLSv1");
         }
         catch(SSLHandshakeException e)
@@ -153,7 +153,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
     {
         try
         {
-            checkSSLExcluded("TLSv1", Transport.TCP, Transport.SSL);
+            checkHandshakeWithTlsProtocol("TLSv1", Transport.TCP, Transport.SSL);
             fail("Should not be able to connect using TLSv1");
         }
         catch(SSLHandshakeException e)
@@ -167,7 +167,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
     {
         try
         {
-            checkSSLExcluded("TLSv1.1", Transport.SSL);
+            checkHandshakeWithTlsProtocol("TLSv1.1", Transport.SSL);
             fail("Should not be able to connect using TLSv1.1");
         }
         catch(SSLHandshakeException e)
@@ -181,7 +181,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
     {
         try
         {
-            checkSSLExcluded("TLSv1.1", Transport.TCP, Transport.SSL);
+            checkHandshakeWithTlsProtocol("TLSv1.1", Transport.TCP, Transport.SSL);
             fail("Should not be able to connect using TLSv1.1");
         }
         catch(SSLHandshakeException e)
@@ -195,7 +195,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
     {
         try
         {
-            checkSSLExcluded("TLSv1.2", Transport.SSL);
+            checkHandshakeWithTlsProtocol("TLSv1.2", Transport.SSL);
         }
         catch(SSLHandshakeException e)
         {
@@ -209,7 +209,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
     {
         try
         {
-            checkSSLExcluded("TLSv1.2", Transport.TCP, Transport.SSL);
+            checkHandshakeWithTlsProtocol("TLSv1.2", Transport.TCP, Transport.SSL);
         }
         catch(SSLHandshakeException e)
         {
@@ -218,8 +218,38 @@ public class TCPandSSLTransportTest extends UnitTestBase
         }
     }
 
+    @Test
+    public void testTLSv1_3SupportOnSSLOnlyPort() throws Exception
+    {
+        assumeThat("Java 11 or above is required", isJava11OrAbove(), is(true));
+        try
+        {
+            checkHandshakeWithTlsProtocol("TLSv1.3", Transport.SSL);
+        }
+        catch(SSLHandshakeException e)
+        {
+            LOGGER.error("Should be able to connect using TLSv1.3", e);
+            fail("Should be able to connect using TLSv1.3");
+        }
+    }
 
-    private void checkSSLExcluded(String clientProtocol, final Transport... transports) throws Exception
+    @Test
+    public void testTLSv1_3SupportOnSharedPort() throws Exception
+    {
+        assumeThat("Java 11 or above is required", isJava11OrAbove(), is(true));
+        try
+        {
+            checkHandshakeWithTlsProtocol("TLSv1.3", Transport.TCP, Transport.SSL);
+        }
+        catch(SSLHandshakeException e)
+        {
+            LOGGER.error("Should be able to connect using TLSv1.3", e);
+            fail("Should be able to connect using TLSv1.3");
+        }
+    }
+
+
+    private void checkHandshakeWithTlsProtocol(String clientProtocol, final Transport... transports) throws Exception
     {
         KeyStore keyStore = KeyStore.getInstance("JKS");
         keyStore.load(new ByteArrayInputStream(Base64.getDecoder().decode(KEYSTORE_STRING)), "password".toCharArray());
@@ -277,6 +307,20 @@ public class TCPandSSLTransportTest extends UnitTestBase
         finally
         {
             transport.close();
+        }
+    }
+
+    private boolean isJava11OrAbove()
+    {
+        try
+        {
+            // introduced in java 11
+            Class.forName("java.net.http.HttpClient");
+            return true;
+        }
+        catch (ClassNotFoundException e)
+        {
+            return false;
         }
     }
 }
