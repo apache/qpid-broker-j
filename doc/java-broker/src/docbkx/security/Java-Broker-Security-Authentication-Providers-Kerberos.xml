@@ -53,7 +53,49 @@ com.sun.security.jgss.accept {
         environment where you are running (see the existing documentation for the C++ broker about
         creating a keytab file). </para>
 
-    <para> Note: You may need to install the "Java Cryptography Extension (JCE) Unlimited Strength
-        Jurisdiction Policy Files" appropriate for your JDK in order to get Kerberos support working. </para>
+    <section xml:id="Java-Broker-Security-Kerberos-Provider-Spnego">
+        <title>SPNEGO Authentication</title>
+        <para>
+            SPNEGO (Simple and Protected GSSAPI Negotiation Mechanism) based authentication can be configured
+            for Web Management Console and REST API.
+        </para>
+        <para>A special JAAS login configuration needs to be provided for
+            Service Principal Name (SPN) <emphasis>HTTP/{FQDN}@REALM</emphasis> in addition to configuration
+            provided for broker service principal in scope <emphasis>com.sun.security.jgss.accept</emphasis>.
+            An example of such SPNEGO configuration is provided below, </para>
+        <programlisting>
+spnego {
+    com.sun.security.auth.module.Krb5LoginModule required
+    useKeyTab=true
+    storeKey=true
+    doNotPrompt=true
+    realm="EXAMPLE.COM"
+    useSubjectCredsOnly=false
+    kdc="kerberos.example.com"
+    keyTab="/path/to/keytab-file-for-HTTP-principal"
+    principal="HTTP/broker.org";
+};</programlisting>
+
+        <important>
+            <para>Please, note that in the example above a principal name is specified as
+            <emphasis>HTTP/broker.org</emphasis> where <emphasis>broker.org</emphasis> is supposed to be
+            a fully qualified name of the host where broker is running. The FQDN used to access the Broker
+            must match the host name in the SPN exactly otherwise the authentication will fail.</para>
+        </important>
+        <para>
+            A name of configuration module in the example above is <emphasis>spnego</emphasis>. It can be
+            communicated to the Kerberos authentication provider via context variable or JVM system property
+            <emphasis>qpid.auth.gssapi.spnegoConfigScope</emphasis>. For example,
+
+    <programlisting>
+        export QPID_OPTS=-Dqpid.auth.gssapi.spnegoConfigScope=spnego -Djavax.security.auth.useSubjectCredsOnly=false -Djava.security.auth.login.config=qpid.conf
+    </programlisting>
+        </para>
+        <para>
+            The RELM part in name of authenticated principal logged with SPNEGO mechanism can be stripped by
+            setting context variable <emphasis>qpid.auth.gssapi.spnegoStripRealmFromPrincipalName</emphasis> to
+            <emphasis>true</emphasis>.
+        </para>
+    </section>
 
 </section>
