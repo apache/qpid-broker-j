@@ -140,6 +140,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     public static final String PLUGIN_TYPE = "MANAGEMENT-HTTP";
 
     public static final String DEFAULT_LOGOUT_URL = "/logout.html";
+    public static final String DEFAULT_LOGIN_URL = "/index.html";
 
     private static final String OPERATIONAL_LOGGING_NAME = "Web";
 

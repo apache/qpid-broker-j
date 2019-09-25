@@ -42,6 +42,7 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
+import org.apache.qpid.server.security.TokenCarryingPrincipal;
 import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
@@ -98,6 +99,9 @@ public class AuthenticationCheckFilter implements Filter
                 else
                 {
                     subject = tryPreemptiveAuthentication(httpRequest);
+
+                    subject.getPrincipals(TokenCarryingPrincipal.class)
+                           .forEach(p -> p.getTokens().forEach(((HttpServletResponse) response)::setHeader));
                     isPreemptiveAuthentication = true;
                 }
             }

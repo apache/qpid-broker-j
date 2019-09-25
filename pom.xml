@@ -153,6 +153,7 @@
     <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
     <h2.version>1.4.199</h2.version>
     <apache-directory-version>2.0.0-M23</apache-directory-version>
+    <kerby-version>1.0.1</kerby-version>
   </properties>
 
   <modules>
@@ -741,6 +742,13 @@
             <artifactId>api-ldap-schema-data</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <!-- kerby test dependency -->
+      <dependency>
+        <groupId>org.apache.kerby</groupId>
+        <artifactId>kerb-simplekdc</artifactId>
+        <scope>test</scope>
+        <version>${kerby-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

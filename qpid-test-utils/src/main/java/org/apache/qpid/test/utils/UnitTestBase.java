@@ -20,9 +20,7 @@
 
 package org.apache.qpid.test.utils;
 
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.StandardSystemProperty;
@@ -40,29 +38,15 @@ public class UnitTestBase
     @Rule
     public final TestName _testName = new TestName();
 
-    private final Map<String, String> _propertiesSetForTest = new HashMap<>();
+    @Rule
+    public final SystemPropertySetter _systemPropertySetter = new SystemPropertySetter();
+
     private final Set<Runnable> _tearDownRegistry = new LinkedHashSet<>();
 
     @After
     public void cleanupPostTest()
     {
-        revertSysProps();
-
         _tearDownRegistry.forEach(Runnable::run);
-    }
-
-    private void revertSysProps()
-    {
-        _propertiesSetForTest.forEach((key, value) -> {
-            if (value != null)
-            {
-                System.setProperty(key, value);
-            }
-            else
-            {
-                System.clearProperty(key);
-            }
-        });
     }
 
     public String getTestName()
@@ -72,19 +56,7 @@ public class UnitTestBase
 
     public void setTestSystemProperty(final String property, final String value)
     {
-        if (!_propertiesSetForTest.containsKey(property))
-        {
-            _propertiesSetForTest.put(property, System.getProperty(property));
-        }
-
-        if (value == null)
-        {
-            System.clearProperty(property);
-        }
-        else
-        {
-            System.setProperty(property, value);
-        }
+        _systemPropertySetter.setSystemProperty(property, value);
     }
 
     public int findFreePort()
@@ -103,7 +75,7 @@ public class UnitTestBase
         _tearDownRegistry.add(runnable);
     }
 
-    public JvmVendor getJvmVendor()
+    public static JvmVendor getJvmVendor()
     {
         final String property = String.valueOf(System.getProperty(StandardSystemProperty.JAVA_VENDOR.key())).toUpperCase();
         if (property.contains("IBM"))
