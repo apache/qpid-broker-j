@@ -1439,7 +1439,7 @@
             <!-- version specified in pluginManagement -->
             <configuration>
               <failIfWarning>true</failIfWarning>
-              <excludedScopes>provided</excludedScopes>
+              <excludedScopes>provided,test</excludedScopes>
               <outputDirectory>${license-maven-plugin-output-dir}</outputDirectory>
               <!-- Exclude logback from being checked, it is dual licensed and lists both licenses in META-INF Bundle-License   -->
               <!-- Exclude BCEL from being checked, it is ALv2 but doesnt have the necessary metadata -->
