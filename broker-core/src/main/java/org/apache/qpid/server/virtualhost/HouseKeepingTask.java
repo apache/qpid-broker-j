@@ -25,10 +25,15 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.concurrent.ScheduledFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public abstract class HouseKeepingTask implements Runnable
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HouseKeepingTask.class);
     private final String _name;
     private final AccessControlContext _accessControlContext;
     private ScheduledFuture<?> _future;
@@ -53,7 +58,14 @@ public abstract class HouseKeepingTask implements Runnable
                 @Override
                 public Object run()
                 {
-                    execute();
+                    try
+                    {
+                        execute();
+                    }
+                    catch (ConnectionScopedRuntimeException e)
+                    {
+                        LOGGER.warn("Execution of housekeeping task failed", e);
+                    }
                     return null;
                 }
             }, _accessControlContext);

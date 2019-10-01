@@ -274,7 +274,7 @@ public class AMQPConnection_0_8Impl
                 {
                     exception = exceptionForThisChannel;
                 }
-                LOGGER.error("Error informing channel that receiving is complete. Channel: " + channel,
+                LOGGER.info("Error informing channel that receiving is complete. Channel: " + channel,
                               exceptionForThisChannel);
             }
         }
