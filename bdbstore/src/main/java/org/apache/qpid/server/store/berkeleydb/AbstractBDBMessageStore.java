@@ -382,7 +382,10 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
         catch (RuntimeException e)
         {
-            getLogger().error("Unexpected BDB exception", e);
+            if (getLogger().isDebugEnabled())
+            {
+                getLogger().debug("Unexpected BDB exception", e);
+            }
 
             try
             {
@@ -630,7 +633,10 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
         catch (RuntimeException e)
         {
-            getLogger().error("Failed to enqueue: {}", e.getMessage(), e);
+            if (getLogger().isDebugEnabled())
+            {
+                getLogger().debug("Failed to enqueue: {}", e.getMessage(), e);
+            }
             throw getEnvironmentFacade().handleDatabaseException("Error writing enqueued message with id "
                                                                  + messageId
                                                                  + " for queue "
@@ -679,8 +685,10 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
         catch (RuntimeException e)
         {
-
-            getLogger().error("Failed to dequeue message " + messageId + " in transaction " + tx, e);
+            if (getLogger().isDebugEnabled())
+            {
+                getLogger().debug("Failed to dequeue message {} in transaction {}", messageId, tx, e);
+            }
 
             throw getEnvironmentFacade().handleDatabaseException("Error accessing database while dequeuing message: "
                                                                  + e.getMessage(), e);
@@ -718,7 +726,10 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
         catch (RuntimeException e)
         {
-            getLogger().error("Failed to write xid: " + e.getMessage(), e);
+            if (getLogger().isDebugEnabled())
+            {
+                getLogger().debug("Failed to write xid: {}", e.getMessage(), e);
+            }
             throw getEnvironmentFacade().handleDatabaseException("Error writing xid to database", e);
         }
     }
@@ -749,8 +760,10 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
         catch (RuntimeException e)
         {
-
-            getLogger().error("Failed to remove xid in transaction " + txn, e);
+            if (getLogger().isDebugEnabled())
+            {
+                getLogger().error("Failed to remove xid in transaction {}", e);
+            }
 
             throw getEnvironmentFacade().handleDatabaseException("Error accessing database while removing xid: "
                                                                  + e.getMessage(), e);
