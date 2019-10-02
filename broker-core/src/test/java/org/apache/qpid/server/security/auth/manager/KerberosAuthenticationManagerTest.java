@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
+import static org.apache.commons.codec.CharEncoding.UTF_8;
 import static org.apache.qpid.server.security.auth.manager.KerberosAuthenticationManager.GSSAPI_MECHANISM;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Base64;
@@ -98,7 +100,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         final URL resource = KerberosAuthenticationManagerTest.class.getClassLoader().getResource(LOGIN_CONFIG);
         LOGGER.debug("JAAS config:" + resource);
         assertNotNull(resource);
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", resource.getPath());
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", URLDecoder.decode(resource.getPath(), UTF_8));
         SYSTEM_PROPERTY_SETTER.setSystemProperty("javax.security.auth.useSubjectCredsOnly", "false");
     }
 

@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.security.Principal;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
 
+import org.apache.commons.codec.CharEncoding;
 import org.apache.directory.api.ldap.model.constants.SupportedSaslMechanisms;
 import org.apache.directory.api.ldap.model.entry.DefaultEntry;
 import org.apache.directory.api.ldap.model.entry.Entry;
@@ -398,7 +400,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         final URL resource = SimpleLDAPAuthenticationManagerTest.class.getClassLoader().getResource(LOGIN_CONFIG);
         LOGGER.debug("JAAS config:" + resource);
         assertNotNull(resource);
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", resource.getPath());
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", URLDecoder.decode(resource.getPath(), CharEncoding.UTF_8));
         SYSTEM_PROPERTY_SETTER.setSystemProperty("sun.security.krb5.debug", "true");
     }
 
