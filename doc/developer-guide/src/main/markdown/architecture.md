@@ -34,6 +34,7 @@ This article provides a high level description of the architecture of Qpid Broke
   * [HTTP management](#http-management)
 - [Pluggable Architecture](#pluggable-architecture)
 - [Logging](#logging)
+- [ACL](#acl)
 
 <!-- tocstop -->
 
