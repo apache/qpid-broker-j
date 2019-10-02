@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
+import static org.apache.commons.codec.CharEncoding.UTF_8;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.URL;
+import java.net.URLDecoder;
 import java.security.Principal;
 import java.util.Base64;
 import java.util.Map;
@@ -77,7 +79,7 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
         final URL resource = KerberosAuthenticationManagerTest.class.getClassLoader().getResource(LOGIN_CONFIG);
         LOGGER.debug("JAAS config:" + resource);
         assertNotNull(resource);
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", resource.getPath());
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", URLDecoder.decode(resource.getPath(), UTF_8));
         SYSTEM_PROPERTY_SETTER.setSystemProperty("javax.security.auth.useSubjectCredsOnly", "false");
     }
 
