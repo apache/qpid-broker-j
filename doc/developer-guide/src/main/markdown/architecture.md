@@ -599,3 +599,59 @@ Both `Broker` and `VirtualHost` support the following inclusion rules
    container id and remote connection address
 
 All existing logback-based Logger implementations (for both `Broker` and `VirtualHost`) extend `AbstractLogger`.
+
+## ACL
+
+Authorization of operations performed by users is implemented in special `AccessControl` objects.
+The authorization check for user operation can result in the following outcomes:
+ * `ALLOWED`
+ * `DENIED`
+ * `DEFERRED`
+
+The `DEFERRED` outcome means that `AccessControl` cannot `ALLOW` or `DENY` the operation and the check needs to be
+delegated to another `AccessControl`.
+
+The authorization checks are implemented for the operations of following types
+
+ * `CREATE` when any type of `ConfiguredObject` is created
+ * `UPDATE` when instance of `ConfiguredObject` is updated
+ * `DELETE` when instance of `ConfiguredObject` is deleted
+ * `READ` when attribute values of `ConfiguredObject` needs to be accessed
+ * `DISCOVER` when `ConfiguredObject` metadata (like `ConfiguredObject` hierarchy, supported attributes,
+    supported operations, etc) needs to be accessed
+ * `INVOKE_METHOD` when a method on `ConfiguredObject` needs to be executed
+ * `PERFORM_ACTION` used to check required permissions for the following actions:
+    * "connect" when new messaging connection is established
+    * "publish" when message is published
+    * "manage"  when user access management interfaces
+
+The `AccessControl` objects lives on `Broker` or `VirtualHost` levels. The `VirtualHost` `AccessControl` can defer
+authorization check to `Broker` `AccessControl`.
+
+The following methods are defined in `AccessControl` interface to perform the authorization checks
+
+ * ``Result authorise(T token, Operation operation, PermissionedObject configuredObject)``
+ * ``Result authorise(T token, Operation operation, PermissionedObject configuredObject, Map<String,Object> arguments)``
+
+Special object of type `SecurityToken` can be passed into `authorize` methods. For example, "publish"
+authorization check leverages `SecurityToken` for caching purposes. The results of "publish" authorization check are kept
+in token and utilized on the following check for performance optimization.
+
+The class diagram below illustrates the authorization model.
+
+![ACL](images/acl.png)
+
+
+The ACL rules can be defined by end-users in special `ConfiguredObjects` of type `AccessControlProvider`.
+The rules are defined in terms of legacy `LegacyAccessControl` model. When authorization check is performed the entities
+of new ACL models are converted into legacy ACL entities.
+
+The class diagram below illustrates legacy ACL model.
+
+![Legacy ACL](images/acl-legacy.png)
+
+The legacy ACL model defines a number of `LegacyOperations`, `ObjectTypes` and `Properties` . The ACL rules are written
+using legacy ACL concepts.
+
+The User Documentation illustrates how those rules can be defined. The links to Qpid Broker-J documentation are available
+under [Qpid Broker-J Component page](http://qpid.apache.org/components/broker-j/index.html)
