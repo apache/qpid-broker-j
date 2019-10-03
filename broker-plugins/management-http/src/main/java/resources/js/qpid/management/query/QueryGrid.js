@@ -33,7 +33,8 @@ define(["dojo/_base/declare",
         "dgrid/extensions/DijitRegistry",
         "qpid/management/query/QueryStore",
         "qpid/management/query/StoreUpdater",
-        "dojo/keys"],
+        "dojo/keys",
+        "qpid/common/util"],
     function (declare,
               lang,
               domConstruct,
@@ -49,7 +50,8 @@ define(["dojo/_base/declare",
               DijitRegistry,
               QueryStore,
               StoreUpdater,
-              keys)
+              keys,
+              util)
     {
 
         return declare("qpid.management.query.QueryGrid",
@@ -74,6 +76,7 @@ define(["dojo/_base/declare",
                             });
                         this._store = new Store(args);
                         this._store.on("updateCompleted", lang.hitch(this, this._onFetchCompleted));
+                        this._store.on("unexpected", util.xhrErrorHandler);
                     }
                     else
                     {

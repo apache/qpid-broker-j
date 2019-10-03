@@ -95,9 +95,13 @@ define(["dojo/_base/declare",
                     var handler = lang.hitch(this, function (data)
                     {
                         this._processResults(data, methodName, args);
+                        if (!data.hasOwnProperty("results"))
+                        {
+                            this.emit("unexpected", data);
+                        }
                     });
                     all({results: queryResults, totalLength: queryResults.totalLength})
-                        .then(handler);
+                        .always(handler);
                 },
                 _processResults: function (data, methodName, args)
                 {
@@ -117,9 +121,9 @@ define(["dojo/_base/declare",
                     }
                     else
                     {
-                        var results = data.results.slice(0);
-                        this._currentResults = results;
-                        this._currentResultsIdToIndexMap = createIdToIndexMap(results, this.idProperty);
+                        var hasResults = data.hasOwnProperty("results");
+                        this._currentResults = hasResults ? data.results.slice(0) : [];
+                        this._currentResultsIdToIndexMap = hasResults ? createIdToIndexMap(this._currentResults, this.idProperty) : {};
                         this["_" + methodName + "CapturedArguments"] = capturedArguments;
                     }
                 },

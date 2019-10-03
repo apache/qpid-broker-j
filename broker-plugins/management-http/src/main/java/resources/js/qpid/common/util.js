@@ -380,6 +380,11 @@ define(["dojo/_base/xhr",
                     else if (status == 403)
                     {
                         message = "Access Forbidden";
+                        var m = util.getErrorMessage(error, "");
+                        if (m)
+                        {
+                            message += ": " + m;
+                        }
                     }
                     else
                     {

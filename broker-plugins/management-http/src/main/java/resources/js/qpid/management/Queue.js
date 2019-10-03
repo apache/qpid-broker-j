@@ -452,6 +452,8 @@ define(["dojo/_base/declare",
                 management: this.management
             });
 
+            this._messagesStore.on("unexpected", util.xhrErrorHandler);
+
             var userPreferences = this.management.userPreferences;
             var MessagesGrid = declare([Grid,
                                         Keyboard,
