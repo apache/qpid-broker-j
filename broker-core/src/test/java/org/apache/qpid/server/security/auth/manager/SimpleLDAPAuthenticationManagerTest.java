@@ -387,8 +387,13 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         ldapServer.setSaslPrincipal(servicePrincipalName);
         ldapServer.setSearchBaseDn(USERS_DN);
 
-        final String krb5confPath = createKrb5Conf(kdcServer.getTransports()[0].getPort());
+        System.getProperties().forEach((k,v)-> LOGGER.debug("System property: {}={}", k,v));
+
+        final int port = kdcServer.getTransports()[0].getPort();
+        final String krb5confPath = createKrb5Conf(port);
         SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.conf", krb5confPath);
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.realm", null);
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.kdc", null);
 
         createPrincipal("KDC", "KDC", "krbtgt", UUID.randomUUID().toString(), "krbtgt/" + REALM + "@" + REALM);
         createPrincipal("Service", "LDAP Service", "ldap", UUID.randomUUID().toString(), servicePrincipalName);
