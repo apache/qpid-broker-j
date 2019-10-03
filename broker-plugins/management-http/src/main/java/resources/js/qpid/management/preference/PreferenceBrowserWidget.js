@@ -270,6 +270,7 @@ define(["dojo/_base/declare",
                         preferenceRoot: this.preferenceRoot,
                         preferenceType: this.preferenceType
                     });
+                    preferencesStore.on("unexpected", util.xhrErrorHandler);
                     return preferencesStore;
                 },
                 _openPreference: function (event)
