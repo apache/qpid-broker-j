@@ -125,6 +125,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
                 {
                         @CreateTransport(protocol = "TCP", port = 0)
                 },
+        kdcPrincipal="krbtgt/QPID.ORG@QPID.ORG",
+        primaryRealm="QPID.ORG",
         searchBaseDn = "ou=users,dc=qpid,dc=org")
 @ApplyLdifFiles("users.ldif")
 public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
@@ -378,6 +380,13 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         final KdcServer kdcServer =
                 ServerAnnotationProcessor.getKdcServer(LDAP.getDirectoryService(), ldapServer.getPort() + 1);
         kdcServer.getConfig().setPaEncTimestampRequired(false);
+
+        final int port = kdcServer.getTransports()[0].getPort();
+        final String krb5confPath = createKrb5Conf(port);
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.conf", krb5confPath);
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.realm", null);
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.kdc", null);
+
         final KerberosPrincipal servicePrincipal =
                 new KerberosPrincipal(LDAP_SERVICE_NAME + "/" + HOSTNAME + "@" + REALM,
                                       KerberosPrincipal.KRB_NT_SRV_HST);
@@ -386,9 +395,6 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
                                                               servicePrincipalName.indexOf("@")));
         ldapServer.setSaslPrincipal(servicePrincipalName);
         ldapServer.setSearchBaseDn(USERS_DN);
-
-        final String krb5confPath = createKrb5Conf(kdcServer.getTransports()[0].getPort());
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.conf", krb5confPath);
 
         createPrincipal("KDC", "KDC", "krbtgt", UUID.randomUUID().toString(), "krbtgt/" + REALM + "@" + REALM);
         createPrincipal("Service", "LDAP Service", "ldap", UUID.randomUUID().toString(), servicePrincipalName);
@@ -410,6 +416,9 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         final String config = String.format("[libdefaults]%1$s"
                                             + "    default_realm = %2$s%1$s"
                                             + "    udp_preference_limit = 1%1$s"
+                                            + "    default_tkt_enctypes = aes128-cts-hmac-sha1-96 rc4-hmac%1$s"
+                                            + "    default_tgs_enctypes = aes128-cts-hmac-sha1-96  rc4-hmac%1$s"
+                                            + "    permitted_enctypes = aes128-cts-hmac-sha1-96 rc4-hmac%1$s"
                                             + "[realms]%1$s"
                                             + "    %2$s = {%1$s"
                                             + "    kdc = %3$s%1$s"
