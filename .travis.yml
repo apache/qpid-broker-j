@@ -1,7 +1,8 @@
 language: java
 jdk:
   - openjdk8
+  - openjdk11
 env:
-  - phase="test" pl="" additionalprops="-Dskip.systests=true"
-  - phase="verify" pl="-pl systests/protocol-tests-amqp-1-0,systests/protocol-tests-amqp-0-8,systests/protocol-tests-amqp-0-10" additionalprops="-Dskip.unittests=true"
-script: "mvn --fail-at-end ${phase} ${pl} ${additionalprops} -Dtest.overridden.properties=${TRAVIS_BUILD_DIR}/test-profiles/apache-ci.test.overridden.properties"
+  - phase="test" pl="" additionalprops=""
+  - phase="verify" pl="-pl systests/qpid-systests-jms_1.1,systests/qpid-systests-jms_2.0,systests/qpid-systests-http-management" additionalprops="-DskipTests -DskipITs=false"
+script: "mvn --fail-at-end ${phase} ${pl} ${additionalprops}"
