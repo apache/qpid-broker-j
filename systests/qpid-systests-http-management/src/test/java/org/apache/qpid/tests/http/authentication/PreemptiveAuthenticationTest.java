@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.http.HttpServletResponse;
 
@@ -135,6 +136,19 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
         catch (SSLHandshakeException e)
         {
             // PASS
+        }
+        catch (SSLException e)
+        {
+            // PASS
+            //
+            // TLS 1.3 seems has an issue with handshake (some sort of race):
+            // after the socket being closed on server side due to unknown certificate,
+            // the client is trying to flush output stream and gets "broken pipe".
+            //
+            // The issue seems related to https://bugs.openjdk.java.net/browse/JDK-8207009
+            // There is still a problem with handshake in 11.0.4 and above
+            //
+            // Ignoring this issue... due to low impact of the issue on client applications...
         }
         catch (SocketException e)
         {
