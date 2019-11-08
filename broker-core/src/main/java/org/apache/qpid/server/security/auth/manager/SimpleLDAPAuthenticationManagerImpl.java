@@ -40,12 +40,7 @@ import javax.naming.AuthenticationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.InitialDirContext;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
+import javax.naming.directory.*;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
@@ -430,7 +425,7 @@ public class SimpleLDAPAuthenticationManagerImpl
 
     private boolean isSpecified(String value)
     {
-        return !"".equals(value);
+        return value != null && !value.isEmpty();
     }
 
     private Set<Principal> findGroups(DirContext context, String userDN, final Subject gssapiIdentity)
