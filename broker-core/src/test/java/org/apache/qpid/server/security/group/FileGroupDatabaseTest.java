@@ -30,6 +30,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.junit.After;
 import org.junit.Before;
@@ -112,6 +113,24 @@ public class FileGroupDatabaseTest extends UnitTestBase
     }
 
     @Test
+    public void testGetUsersInGroupCaseInsensitive() throws Exception
+    {
+        writeGroupFile("myGroup.users", "user1,user2,user3");
+
+        _groupDatabase.setGroupFile(_groupFile);
+
+        Set<String> users = _groupDatabase.getUsersInGroup(MY_GROUP);
+        assertNotNull(users);
+        assertEquals((long) 3, (long) users.size());
+        Set<String> users2 = _groupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
+        assertNotNull(users2);
+        assertEquals((long) 3, (long) users2.size());
+        Set<String> users3 = _groupDatabase.getUsersInGroup("MyGrouP");
+        assertNotNull(users3);
+        assertEquals((long) 3, (long) users3.size());
+    }
+
+    @Test
     public void testDuplicateUsersInGroupAreConflated() throws Exception
     {
         writeAndSetGroupFile("myGroup.users", "user1,user1,user3,user1");
@@ -158,6 +177,20 @@ public class FileGroupDatabaseTest extends UnitTestBase
     }
 
     @Test
+    public void testGetGroupPrincipalsForUserWhenUserBelongsToOneGroupCaseInsensitive() throws Exception
+    {
+        writeAndSetGroupFile("myGroup.users", "user1,user2");
+
+        Set<String> groups = _groupDatabase.getGroupsForUser(USER1.toUpperCase());
+        assertEquals((long) 1, (long) groups.size());
+        assertTrue(groups.contains(MY_GROUP));
+
+        Set<String> groups2 = _groupDatabase.getGroupsForUser("User2");
+        assertEquals((long) 1, (long) groups2.size());
+        assertTrue(groups2.contains(MY_GROUP));
+    }
+
+    @Test
     public void testGetGroupPrincipalsForUserWhenUserBelongsToTwoGroup() throws Exception
     {
         writeAndSetGroupFile("myGroup1.users", "user1,user2",
@@ -166,6 +199,23 @@ public class FileGroupDatabaseTest extends UnitTestBase
         assertEquals((long) 2, (long) groups.size());
         assertTrue(groups.contains(MY_GROUP1));
         assertTrue(groups.contains(MY_GROUP2));
+    }
+
+    @Test
+    public void testGetGroupPrincipalsForUserWhenUserBelongsToTwoGroupCaseInsensitive() throws Exception
+    {
+        writeAndSetGroupFile("myGroup.users", "user1,user2",
+                "myGroup1.users", "user1,user3", "myGroup2.users", "user2,user3");
+
+        Set<String> groups = _groupDatabase.getGroupsForUser(USER1.toUpperCase());
+        assertEquals((long) 2, (long) groups.size());
+        assertTrue(groups.contains(MY_GROUP));
+        assertTrue(groups.contains(MY_GROUP1));
+
+        Set<String> groups2 = _groupDatabase.getGroupsForUser("User2");
+        assertEquals((long) 2, (long) groups2.size());
+        assertTrue(groups2.contains(MY_GROUP));
+        assertTrue(groups2.contains(MY_GROUP2));
     }
 
     @Test

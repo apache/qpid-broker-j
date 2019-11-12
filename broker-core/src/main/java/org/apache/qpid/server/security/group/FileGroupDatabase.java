@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import com.google.common.base.Joiner;
@@ -50,8 +51,8 @@ public class FileGroupDatabase implements GroupDatabase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileGroupDatabase.class);
 
-    private Map<String, Set<String>> _groupToUserMap = new ConcurrentHashMap<String, Set<String>>();
-    private Map<String, Set<String>> _userToGroupMap = new ConcurrentHashMap<String, Set<String>>();
+    private Map<String, Set<String>> _groupToUserMap = new ConcurrentSkipListMap<String, Set<String>>(String.CASE_INSENSITIVE_ORDER);
+    private Map<String, Set<String>> _userToGroupMap = new ConcurrentSkipListMap<String, Set<String>>(String.CASE_INSENSITIVE_ORDER);
     private String _groupFile;
 
     @Override

@@ -66,7 +66,7 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
         {
             for(GroupMember<?> member : group.getChildren(GroupMember.class))
             {
-                if(member.getName().equals(userPrincipal.getName()))
+                if(member.getName().equalsIgnoreCase(userPrincipal.getName()))
                 {
                     principals.add(new GroupPrincipal(group.getName(), this));
                 }
