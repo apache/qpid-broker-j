@@ -322,6 +322,18 @@ public class SimpleLDAPAuthenticationManagerImpl
         return getOrLoadAuthenticationResult(username, password);
     }
 
+    private AuthenticationResult getOrLoadAuthenticationResult(final String userId, final String password)
+    {
+        return _authenticationResultCacher.getOrLoad(new String[]{userId, password}, new Callable<AuthenticationResult>()
+        {
+            @Override
+            public AuthenticationResult call()
+            {
+                return doLDAPNameAuthentication(userId, password);
+            }
+        });
+    }
+
     private AuthenticationResult doLDAPNameAuthentication(String userId, String password)
     {
         Subject gssapiIdentity = null;
@@ -401,18 +413,6 @@ public class SimpleLDAPAuthenticationManagerImpl
         }
     }
 
-    private AuthenticationResult getOrLoadAuthenticationResult(final String userId, final String password)
-    {
-        return _authenticationResultCacher.getOrLoad(new String[]{userId, password}, new Callable<AuthenticationResult>()
-        {
-            @Override
-            public AuthenticationResult call()
-            {
-                return doLDAPNameAuthentication(userId, password);
-            }
-        });
-    }
-
     private boolean isGroupSearchRequired()
     {
         if (isSpecified(getGroupAttributeName()))
@@ -432,7 +432,7 @@ public class SimpleLDAPAuthenticationManagerImpl
             throws NamingException
     {
         Set<Principal> groupPrincipals = new HashSet<>();
-        if (!"".equals(getGroupAttributeName()))
+        if (getGroupAttributeName() != null && !getGroupAttributeName().isEmpty())
         {
             Attributes attributes = context.getAttributes(userDN, new String[]{getGroupAttributeName()});
             NamingEnumeration<? extends Attribute> namingEnum = attributes.getAll();
@@ -455,7 +455,8 @@ public class SimpleLDAPAuthenticationManagerImpl
             }
         }
 
-        if (!"".equals(getGroupSearchContext()) && !"".equals(getGroupSearchFilter()))
+        if (getGroupSearchContext() != null && !getGroupSearchContext().isEmpty() &&
+                getGroupSearchFilter() != null && !getGroupSearchFilter().isEmpty())
         {
             SearchControls searchControls = new SearchControls();
             searchControls.setReturningAttributes(new String[]{});
