@@ -18,12 +18,10 @@
  * under the License.
  *
  */
-define(["dojo/dom",
-        "dojo/query",
-        "dojo/_base/array",
+define(["dojo/query",
         "dijit/registry",
         "qpid/common/util",
-        "dojo/text!groupprovider/groupfile/add.html"], function (dom, query, array, registry, util, template)
+        "dojo/text!groupprovider/groupfile/add.html"], function (query, registry, util, template)
 {
 
     return {
@@ -33,8 +31,13 @@ define(["dojo/dom",
             util.parse(data.containerNode, template, function ()
             {
                 var pathWidget = registry.byNode(query(".addGroupProviderPath", data.containerNode)[0]);
-                pathWidget.set("disabled", data.data && data.data.id ? true : false);
-                pathWidget.set("value",  data.data ? data.data.path : "");
+                pathWidget.set("disabled", !!(data.data && data.data.id));
+                pathWidget.set("value", data.data ? data.data.path : "");
+
+                var caseSensitiveWidget = registry.byNode(query(".caseSensitive", data.containerNode)[0]);
+                caseSensitiveWidget.set("checked", data.data && data.data.caseSensitive);
+
+                util.applyToWidgets(data.containerNode, "GroupProvider", "GroupFile", data.data, data.metadata);
             });
         }
     };

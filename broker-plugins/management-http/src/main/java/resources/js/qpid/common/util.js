@@ -528,7 +528,7 @@ define(["dojo/_base/xhr",
                 }
             }
             return object1 === object2;
-        }
+        };
 
         util.parseHtmlIntoDiv = function (containerNode, htmlTemplateLocation, postParseCallback)
         {
@@ -586,6 +586,7 @@ define(["dojo/_base/xhr",
                 var fieldNode = obj[fieldName];
                 if (fieldNode)
                 {
+                    var formatter = null;
                     if (formatters && fieldNode.className)
                     {
                         var clazzes = fieldNode.className.split(" ");
@@ -593,15 +594,39 @@ define(["dojo/_base/xhr",
                         {
                             var clazz = clazzes[idx];
                             var fmt = formatters[clazz];
-                            if (fmt && value)
+                            if (!!fmt)
                             {
-                                value = fmt(value);
+                                formatter = fmt;
+                                break;
                             }
                         }
                     }
-                    fieldNode.innerHTML = (value == undefined || value == null) ? "" : entities.encode(String(value));
+                    var innerHtml = "";
+                    if (value !== undefined && value !== null)
+                    {
+                        innerHtml = formatter === null ? entities.encode(String(value)) : formatter(value);
+                    }
+                    fieldNode.innerHTML = innerHtml;
                 }
             }
+        };
+
+        util.getTypeFields = function (metadata, category, type)
+        {
+            var fields = [];
+            var typeMeta = metadata.getMetaData(category, type);
+            if (!!typeMeta)
+            {
+                var attributes = typeMeta.attributes;
+                for (var name in attributes)
+                {
+                    if (attributes.hasOwnProperty(name))
+                    {
+                        fields.push(name);
+                    }
+                }
+            }
+            return fields;
         };
 
         util.applyMetadataToWidgets = function (domRoot, category, type, meta)
@@ -776,7 +801,7 @@ define(["dojo/_base/xhr",
         util.setMultiSelectOptions = function (multiSelectWidget, options)
         {
             util.addMultiSelectOptions(multiSelectWidget, options, true);
-        }
+        };
 
         util.addMultiSelectOptions = function (multiSelectWidget, options, clearExistingOptions)
         {

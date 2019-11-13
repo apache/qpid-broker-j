@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.AbstractCaseAwareGroupProvider;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
@@ -53,7 +54,7 @@ import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.util.FileHelper;
 
 public class FileBasedGroupProviderImpl
-        extends AbstractConfiguredObject<FileBasedGroupProviderImpl> implements FileBasedGroupProvider<FileBasedGroupProviderImpl>
+        extends AbstractCaseAwareGroupProvider<FileBasedGroupProviderImpl> implements FileBasedGroupProvider<FileBasedGroupProviderImpl>
 {
     public static final String GROUP_FILE_PROVIDER_TYPE = "GroupFile";
     private static Logger LOGGER = LoggerFactory.getLogger(FileBasedGroupProviderImpl.class);
@@ -63,9 +64,6 @@ public class FileBasedGroupProviderImpl
     private FileGroupDatabase _groupDatabase;
 
     @ManagedAttributeField
-    private boolean _caseSensitive;
-
-    @ManagedAttributeField
     private String _path;
 
     @ManagedObjectFactoryConstructor
@@ -73,8 +71,6 @@ public class FileBasedGroupProviderImpl
                                       Container<?> container)
     {
         super(container, attributes);
-
-
         _container = container;
     }
 
@@ -310,12 +306,6 @@ public class FileBasedGroupProviderImpl
             }
             return principals;
         }
-    }
-
-    @Override
-    public boolean isCaseSensitive()
-    {
-        return _caseSensitive;
     }
 
     private class GroupAdapter extends AbstractConfiguredObject<GroupAdapter> implements Group<GroupAdapter>

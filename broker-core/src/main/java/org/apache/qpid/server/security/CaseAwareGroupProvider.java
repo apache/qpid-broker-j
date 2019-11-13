@@ -18,21 +18,20 @@
  * under the License.
  *
  */
-define(["qpid/common/util", "dijit/form/CheckBox", "dojo/domReady!"], function (util)
+package org.apache.qpid.server.security;
+
+import org.apache.qpid.server.model.GroupProvider;
+import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
+
+public interface CaseAwareGroupProvider<X extends GroupProvider<X>> extends GroupProvider<X>
 {
+    String GROUP_PROVIDER_CASE_SENSITIVE = "qpid.groupProvider.caseSensitive";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = GROUP_PROVIDER_CASE_SENSITIVE)
+    String DEFAULT_GROUP_PROVIDER_CASE_SENSITIVE = "true";
 
-    var fieldNames;
-
-    function ManagedGroupProvider(data)
-    {
-        fieldNames = util.getTypeFields(data.parent.management.metadata, "GroupProvider", "ManagedGroupProvider");
-        util.buildUI(data.containerNode, data.parent, "groupprovider/managedgroupprovider/show.html", fieldNames, this);
-    }
-
-    ManagedGroupProvider.prototype.update = function (data)
-    {
-        util.updateUI(data, fieldNames, this, {"caseSensitive": util.buildCheckboxMarkup});
-    };
-
-    return ManagedGroupProvider;
-});
+    @ManagedAttribute(defaultValue = "${" + GROUP_PROVIDER_CASE_SENSITIVE + "}",
+            description = "Allow to choose CaseSensitive or CaseInsensitive search of Groups and Users")
+    boolean isCaseSensitive();
+}

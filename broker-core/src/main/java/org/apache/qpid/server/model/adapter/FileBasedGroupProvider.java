@@ -21,12 +21,12 @@
 package org.apache.qpid.server.model.adapter;
 
 import org.apache.qpid.server.model.GroupManagingGroupProvider;
-import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.security.CaseAwareGroupProvider;
 
 @ManagedObject( category = false, type = "GroupFile", managesChildren = true )
-public interface FileBasedGroupProvider<X extends FileBasedGroupProvider<X>> extends GroupProvider<X>, GroupManagingGroupProvider
+public interface FileBasedGroupProvider<X extends FileBasedGroupProvider<X>> extends CaseAwareGroupProvider<X>, GroupManagingGroupProvider
 {
     String PATH="path";
 

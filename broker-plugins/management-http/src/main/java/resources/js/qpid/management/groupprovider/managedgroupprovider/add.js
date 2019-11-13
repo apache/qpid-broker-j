@@ -18,11 +18,23 @@
  * under the License.
  *
  */
-define([], function ()
+define(["dojo/query",
+        "dijit/registry",
+        "qpid/common/util",
+        "dojo/text!groupprovider/managedgroupprovider/add.html"], function (query, registry, util, template)
 {
+
     return {
         show: function (data)
-        { /* nothing to do */
+        {
+            var that = this;
+            util.parse(data.containerNode, template, function ()
+            {
+                var caseSensitiveWidget = registry.byNode(query(".caseSensitive", data.containerNode)[0]);
+                caseSensitiveWidget.set("checked", data.data && data.data.caseSensitive);
+
+                util.applyToWidgets(data.containerNode, "GroupProvider", "ManagedGroupProvider", data.data, data.metadata);
+            });
         }
     };
 });
