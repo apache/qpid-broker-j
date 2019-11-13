@@ -327,6 +327,18 @@ public class SimpleLDAPAuthenticationManagerImpl
         return getOrLoadAuthenticationResult(username, password);
     }
 
+    private AuthenticationResult getOrLoadAuthenticationResult(final String userId, final String password)
+    {
+        return _authenticationResultCacher.getOrLoad(new String[]{userId, password}, new Callable<AuthenticationResult>()
+        {
+            @Override
+            public AuthenticationResult call()
+            {
+                return doLDAPNameAuthentication(userId, password);
+            }
+        });
+    }
+
     private AuthenticationResult doLDAPNameAuthentication(String userId, String password)
     {
         Subject gssapiIdentity = null;
@@ -406,18 +418,6 @@ public class SimpleLDAPAuthenticationManagerImpl
         }
     }
 
-    private AuthenticationResult getOrLoadAuthenticationResult(final String userId, final String password)
-    {
-        return _authenticationResultCacher.getOrLoad(new String[]{userId, password}, new Callable<AuthenticationResult>()
-        {
-            @Override
-            public AuthenticationResult call()
-            {
-                return doLDAPNameAuthentication(userId, password);
-            }
-        });
-    }
-
     private boolean isGroupSearchRequired()
     {
         if (isSpecified(getGroupAttributeName()))
@@ -425,24 +425,19 @@ public class SimpleLDAPAuthenticationManagerImpl
             return true;
         }
 
-        if (isSpecified(getGroupSearchContext()) && isSpecified(getGroupSearchFilter()))
-        {
-            return true;
-        }
-
-        return false;
+        return (isSpecified(getGroupSearchContext()) && isSpecified(getGroupSearchFilter()));
     }
 
     private boolean isSpecified(String value)
     {
-        return value != null && !"".equals(value);
+        return (value != null && !value.isEmpty());
     }
 
     private Set<Principal> findGroups(DirContext context, String userDN, final Subject gssapiIdentity)
             throws NamingException
     {
         Set<Principal> groupPrincipals = new HashSet<>();
-        if (getGroupAttributeName() != null && !"".equals(getGroupAttributeName()))
+        if (getGroupAttributeName() != null && !getGroupAttributeName().isEmpty())
         {
             Attributes attributes = context.getAttributes(userDN, new String[]{getGroupAttributeName()});
             NamingEnumeration<? extends Attribute> namingEnum = attributes.getAll();
@@ -465,8 +460,8 @@ public class SimpleLDAPAuthenticationManagerImpl
             }
         }
 
-        if (getGroupSearchContext() != null && !"".equals(getGroupSearchContext()) &&
-            getGroupSearchFilter() != null && !"".equals(getGroupSearchFilter()))
+        if (getGroupSearchContext() != null && !getGroupSearchContext().isEmpty() &&
+                getGroupSearchFilter() != null && !getGroupSearchFilter().isEmpty())
         {
             SearchControls searchControls = new SearchControls();
             searchControls.setReturningAttributes(new String[]{});
@@ -493,11 +488,8 @@ public class SimpleLDAPAuthenticationManagerImpl
     {
         StringBuilder encoded = new StringBuilder(value.length());
         char[] chars = value.toCharArray();
-        for (int i = 0; i < chars.length; i++)
-        {
-            char ch = chars[i];
-            switch (ch)
-            {
+        for (char ch : chars) {
+            switch (ch) {
                 case '\0':
                     encoded.append("\\00");
                     break;
@@ -687,12 +679,11 @@ public class SimpleLDAPAuthenticationManagerImpl
             {
                 SearchControls searchControls = new SearchControls();
                 searchControls.setReturningAttributes(new String[]{});
-                searchControls.setCountLimit(1l);
+                searchControls.setCountLimit(1L);
                 searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-                NamingEnumeration<?> namingEnum = null;
 
                 LOGGER.debug("Searching for '{}'", id);
-                namingEnum = invokeContextOperationAs(gssapiIdentity,
+                NamingEnumeration<?> namingEnum = invokeContextOperationAs(gssapiIdentity,
                                                       (PrivilegedExceptionAction<NamingEnumeration<?>>) () -> ctx.search(
                                                               _searchContext,
                                                               _searchFilter,
@@ -800,7 +791,6 @@ public class SimpleLDAPAuthenticationManagerImpl
             if (ctx != null)
             {
                 ctx.close();
-                ctx = null;
             }
         }
         catch (Exception e)

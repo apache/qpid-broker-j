@@ -79,6 +79,8 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
 
     private static final boolean IS_AVAILABLE;
 
+    private static final String ILLEGAL_ARG_EXCEPTION = "Unable to determine a mechanism to protect access to the key file on this filesystem";
+
     static
     {
         boolean isAvailable;
@@ -88,9 +90,9 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
             isAvailable = allowedKeyLength >=AES_KEY_SIZE_BITS;
             if(!isAvailable)
             {
-                LOGGER.warn("The " + TYPE + " configuration encryption encryption mechanism is not available. "
-                            + "Maximum available AES key length is " + allowedKeyLength + " but " + AES_KEY_SIZE_BITS + " is required."
-                            +"Ensure the full strength JCE policy has been installed into your JVM.");
+                LOGGER.warn("The {} configuration encryption encryption mechanism is not available. "
+                            + "Maximum available AES key length is {}  but {} is required."
+                            +"Ensure the full strength JCE policy has been installed into your JVM.", TYPE, allowedKeyLength, AES_KEY_SIZE_BITS );
             }
         }
         catch (NoSuchAlgorithmException e)
@@ -217,7 +219,7 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
         }
         else
         {
-            throw new IllegalArgumentException("Unable to determine a mechanism to protect access to the key file on this filesystem");
+            throw new IllegalArgumentException(ILLEGAL_ARG_EXCEPTION);
         }
     }
 
@@ -291,7 +293,7 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
         }
         else
         {
-            throw new IllegalArgumentException("Unable to determine a mechanism to protect access to the key file on this filesystem");
+            throw new IllegalArgumentException(ILLEGAL_ARG_EXCEPTION);
         }
     }
 
@@ -364,7 +366,7 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
         }
         else
         {
-            throw new IllegalArgumentException("Unable to determine a mechanism to protect access to the key file on this filesystem");
+            throw new IllegalArgumentException(ILLEGAL_ARG_EXCEPTION);
         }
     }
 

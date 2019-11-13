@@ -22,6 +22,7 @@ package org.apache.qpid.server.security.group;
 
 import java.security.Principal;
 import java.util.Enumeration;
+import java.util.Objects;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.QpidPrincipal;
@@ -39,6 +40,7 @@ public class GroupPrincipal implements QpidPrincipal
     /** Name of the group */
     private final String _groupName;
     private final ConfiguredObject<?> _origin;
+    private static final String msgException = "Not supported";
 
     public GroupPrincipal(final String groupName, final ConfiguredObject<?> origin)
     {
@@ -58,22 +60,22 @@ public class GroupPrincipal implements QpidPrincipal
 
     public boolean addMember(Principal user)
     {
-        throw new UnsupportedOperationException("Not supported");
+        throw new UnsupportedOperationException(msgException);
     }
 
     public boolean removeMember(Principal user)
     {
-        throw new UnsupportedOperationException("Not supported");
+        throw new UnsupportedOperationException(msgException);
     }
 
     public boolean isMember(Principal member)
     {
-        throw new UnsupportedOperationException("Not supported");
+        throw new UnsupportedOperationException(msgException);
     }
 
     public Enumeration<? extends Principal> members()
     {
-        throw new UnsupportedOperationException("Not supported");
+        throw new UnsupportedOperationException(msgException);
     }
 
     @Override
@@ -100,7 +102,7 @@ public class GroupPrincipal implements QpidPrincipal
         {
             return false;
         }
-        return _origin != null ? _origin.equals(that._origin) : that._origin == null;
+        return Objects.equals(_origin, that._origin);
     }
 
     @Override

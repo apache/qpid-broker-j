@@ -84,21 +84,21 @@ public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFile
             byteArray[index++] = (byte) c;
         }
         
-        byte[] MD5byteArray;
+        byte[] md5byteArray;
         try
         {
-            MD5byteArray = HashedUser.getMD5(byteArray);
+            md5byteArray = HashedUser.getMD5(byteArray);
         }
         catch (Exception e1)
         {
-            getLogger().warn("Unable to hash password for user '" + principal + "' for comparison");
+            getLogger().warn("Unable to hash password for user '{}' for comparison", principal);
             return false;
         }
         
-        char[] hashedPassword = new char[MD5byteArray.length];
+        char[] hashedPassword = new char[md5byteArray.length];
 
         index = 0;
-        for (byte c : MD5byteArray)
+        for (byte c : md5byteArray)
         {
             hashedPassword[index++] = (char) c;
         }
