@@ -19,7 +19,7 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -177,7 +177,7 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     }
 
     @Override
-    public void reload() throws IOException
+    public void reload()
     {
     }
 

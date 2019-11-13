@@ -146,7 +146,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource
             }
         }
         InternalMessageHeader header = new InternalMessageHeader(Collections.<String,Object>emptyMap(),
-                                                                 null, 0l, null, null, UUID.randomUUID().toString(),
+                                                                 null, 0L, null, null, UUID.randomUUID().toString(),
                                                                  null, null, (byte)4, System.currentTimeMillis(),
                                                                  0L, null, null, System.currentTimeMillis());
         return InternalMessage.createListMessage(_virtualHost.getMessageStore(), header, messageList);
@@ -157,10 +157,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource
         try
         {
             Set<Certificate> certCache = new HashSet<>();
-            for(Certificate cert : _trustStore.getCertificates())
-            {
-                certCache.add(cert);
-            }
+            Collections.addAll(certCache, _trustStore.getCertificates());
             return certCache;
         }
         catch (GeneralSecurityException e)

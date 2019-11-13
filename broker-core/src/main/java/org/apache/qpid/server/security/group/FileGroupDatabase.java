@@ -197,17 +197,8 @@ public class FileGroupDatabase implements GroupDatabase
         _groupToUserMap.clear();
         _userToGroupMap.clear();
         Properties propertiesFile = new Properties();
-        FileInputStream fileInputStream = new FileInputStream(groupFile);
-        try
-        {
+        try (FileInputStream fileInputStream = new FileInputStream(groupFile)) {
             propertiesFile.load(fileInputStream);
-        }
-        finally
-        {
-            if(fileInputStream != null)
-            {
-                fileInputStream.close();
-            }
         }
 
         for (String propertyName : propertiesFile.stringPropertyNames())

@@ -51,17 +51,17 @@ public class HashedUser implements PasswordPrincipal
 
         _name = data[0];
 
-        byte[] encoded_password;
+        byte[] encodedPassword;
         try
         {
-            encoded_password = data[1].getBytes(Base64MD5PasswordFilePrincipalDatabase.DEFAULT_ENCODING);
+            encodedPassword = data[1].getBytes(Base64MD5PasswordFilePrincipalDatabase.DEFAULT_ENCODING);
         }
         catch (UnsupportedEncodingException e)
         {
             throw new ServerScopedRuntimeException("MD5 encoding not supported, even though the Java standard requires it",e);
         }
 
-        _encodedPassword = encoded_password;
+        _encodedPassword = encodedPassword;
         byte[] decoded = Strings.decodeBase64(data[1]);
         _password = new char[decoded.length];
 
@@ -145,12 +145,12 @@ public class HashedUser implements PasswordPrincipal
                 byteArray[index++] = (byte) c;
             }
             
-            byte[] MD5byteArray = getMD5(byteArray);
+            byte[] md5ByteArray = getMD5(byteArray);
             
-            _password = new char[MD5byteArray.length];
+            _password = new char[md5ByteArray.length];
 
             index = 0;
-            for (byte c : MD5byteArray)
+            for (byte c : md5ByteArray)
             {
                 _password[index++] = (char) c;
             }
