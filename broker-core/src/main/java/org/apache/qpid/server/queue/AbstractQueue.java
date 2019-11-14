@@ -1714,15 +1714,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             QueueEntry node = queueListIterator.getNode();
             MessageReference reference = node.newMessageReference();
-            if(reference != null && !node.isDeleted())
+            if(reference != null)
             {
                 try
                 {
-                    if (!reference.getMessage().checkValid())
-                    {
-                        malformedEntry(node);
-                    }
-                    else if (visitor.visit(node))
+                    if (!node.isDeleted() && reference.getMessage().checkValid() && visitor.visit(node))
                     {
                         break;
                     }

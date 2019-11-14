@@ -34,6 +34,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
@@ -1255,6 +1256,58 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         assertEquals("Unexpected number of messages on the queue",
                      1,
                      _queue.getQueueDepthMessages());
+    }
+
+    @Test
+    public void testVisit()
+    {
+        final ServerMessage message = createMessage(1L, 2, 3);
+        _queue.enqueue(message, null, null);
+
+        final QueueEntryVisitor visitor = mock(QueueEntryVisitor.class);
+        _queue.visit(visitor);
+
+        final ArgumentCaptor<QueueEntry> argument = ArgumentCaptor.forClass(QueueEntry.class);
+        verify(visitor).visit(argument.capture());
+
+        final QueueEntry queueEntry = argument.getValue();
+        assertEquals(message, queueEntry.getMessage());
+        verify(message.newReference()).release();
+    }
+
+    @Test
+    public void testVisitWhenNodeDeletedAfterAdvance()
+    {
+        final QueueEntryList list = mock(QueueEntryList.class);
+
+        final Map<String,Object> attributes = new HashMap<>();
+        attributes.put(Queue.NAME, _qname);
+        attributes.put(Queue.OWNER, _owner);
+
+        @SuppressWarnings("unchecked")
+        final Queue queue = new AbstractQueue(attributes, _virtualHost)
+        {
+            @Override
+            QueueEntryList getEntries()
+            {
+                return list;
+            }
+
+        };
+
+        final MessageReference reference = mock(MessageReference.class);
+        final QueueEntry entry = mock(QueueEntry.class);
+        when(entry.isDeleted()).thenReturn(true);
+        when(entry.newMessageReference()).thenReturn(reference);
+        final QueueEntryIterator iterator = mock(QueueEntryIterator.class);
+        when(iterator.advance()).thenReturn(true, false);
+        when(iterator.getNode()).thenReturn(entry);
+        when(list.iterator()).thenReturn(iterator);
+
+        final QueueEntryVisitor visitor = mock(QueueEntryVisitor.class);
+        queue.visit(visitor);
+        verifyNoMoreInteractions(visitor);
+        verify(reference).release();
     }
 
     private void makeVirtualHostTargetSizeExceeded()
