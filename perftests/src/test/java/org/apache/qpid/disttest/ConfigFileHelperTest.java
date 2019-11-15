@@ -25,41 +25,29 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Assert;
 
 import org.apache.qpid.test.utils.TestFileUtils;
 
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.After;
 import org.junit.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
-public class ConfigFileHelperTest extends UnitTestBase
-{
+
+public class ConfigFileHelperTest extends UnitTestBase {
     private File _testDir;
     private ConfigFileHelper _configFileHelper = new ConfigFileHelper();
 
     @Before
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         _testDir = TestFileUtils.createTestDirectory();
     }
 
     @Test
-    public void testGetTestConfigFilesForDirectory() throws Exception
-    {
+    public void testGetTestConfigFilesForDirectory() throws Exception {
         String jsFile = createFile("file1.js");
         String jsonFile = createFile("file2.json");
         createFile("file.txt");
@@ -75,14 +63,12 @@ public class ConfigFileHelperTest extends UnitTestBase
         assertEquals(expectedFiles, actualFiles);
     }
 
-    private void createDir(String dirName)
-    {
+    private void createDir(String dirName) {
         File dir = new File(_testDir, dirName);
         dir.mkdir();
     }
 
-    private String createFile(String fileName) throws IOException
-    {
+    private String createFile(String fileName) throws IOException {
         File file = new File(_testDir, fileName);
         file.createNewFile();
         return file.getAbsolutePath();

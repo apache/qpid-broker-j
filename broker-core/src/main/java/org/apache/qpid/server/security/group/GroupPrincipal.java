@@ -102,7 +102,7 @@ public class GroupPrincipal implements QpidPrincipal
         {
             return false;
         }
-        return Objects.equals(_origin, that._origin);
+        return _origin != null ? _origin.equals(that._origin) : that._origin == null;
     }
 
     @Override

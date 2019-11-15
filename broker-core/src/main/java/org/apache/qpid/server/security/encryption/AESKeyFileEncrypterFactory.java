@@ -91,8 +91,8 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
             if(!isAvailable)
             {
                 LOGGER.warn("The {} configuration encryption encryption mechanism is not available. "
-                            + "Maximum available AES key length is {}  but {} is required."
-                            +"Ensure the full strength JCE policy has been installed into your JVM.", TYPE, allowedKeyLength, AES_KEY_SIZE_BITS );
+                            + "Maximum available AES key length is {} but {} is required. "
+                            + "Ensure the full strength JCE policy has been installed into your JVM.", TYPE, allowedKeyLength, AES_KEY_SIZE_BITS);
             }
         }
         catch (NoSuchAlgorithmException e)
