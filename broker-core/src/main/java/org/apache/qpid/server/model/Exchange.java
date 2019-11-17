@@ -52,6 +52,17 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
         REJECT, DISCARD
     }
 
+    enum BehaviourOnUnknownDeclareArgument
+    {
+        IGNORE, LOG, FAIL
+    }
+
+    String UNKNOWN_EXCHANGE_DECLARE_ARGUMENT_BEHAVIOUR_NAME = "exchange.behaviourOnUnknownDeclareArgument";
+    @ManagedContextDefault(name= UNKNOWN_EXCHANGE_DECLARE_ARGUMENT_BEHAVIOUR_NAME)
+    BehaviourOnUnknownDeclareArgument
+            ON_UNKNOWN_EXCHANGE_DECLARE_OPTION = BehaviourOnUnknownDeclareArgument.FAIL;
+
+
     // Attributes
 
     @ManagedAttribute(description = "Provides an alternate destination that, depending on behaviour requested by the "

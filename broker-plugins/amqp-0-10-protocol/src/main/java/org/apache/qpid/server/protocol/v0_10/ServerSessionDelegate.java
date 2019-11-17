@@ -938,7 +938,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                         attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_BINDING,
                                        Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchangeName));
                     }
-                    validateExchangeDeclareArguments(attributes, session.getAMQPConnection().getModel());
+                    validateAndSanitizeExchangeDeclareArguments(attributes, session.getAMQPConnection());
                     addressSpace.createMessageDestination(Exchange.class, attributes);;
                 }
                 catch(ReservedExchangeNameException e)
@@ -997,8 +997,9 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         }
     }
 
-    private void validateExchangeDeclareArguments(final Map<String, Object> attributes, final Model model)
+    private void validateAndSanitizeExchangeDeclareArguments(final Map<String, Object> attributes, final AMQPConnection_0_10 connection)
     {
+        final Model model = connection.getModel();
         final ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
         final List<ConfiguredObjectAttribute<?, ?>> types = new ArrayList<>(typeRegistry.getAttributeTypes(Exchange.class).values());
         typeRegistry.getTypeSpecialisations(Exchange.class).forEach(type -> types.addAll(typeRegistry.getTypeSpecificAttributes(type)));
@@ -1007,11 +1008,24 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                                                   .filter(name -> types.stream().noneMatch(a -> Objects.equals(name, a.getName())
                                                                                                 && !a.isDerived()))
                                                   .collect(Collectors.toSet());
-
         if (!unsupported.isEmpty())
         {
-            throw new IllegalArgumentException(String.format(
-                    "Unsupported exchange declare arguments : %s", String.join(",", unsupported)));
+            Exchange.BehaviourOnUnknownDeclareArgument unknownArgumentBehaviour =
+                    connection.getContextValue(Exchange.BehaviourOnUnknownDeclareArgument.class,
+                                               Exchange.UNKNOWN_EXCHANGE_DECLARE_ARGUMENT_BEHAVIOUR_NAME);
+            switch(unknownArgumentBehaviour)
+            {
+                case LOG:
+                    LOGGER.warn("Unsupported exchange declare arguments : {}", String.join(",", unsupported));
+                    // fall through
+                case IGNORE:
+                    attributes.keySet().removeAll(unsupported);
+                    break;
+                case FAIL:
+                default:
+                    throw new IllegalArgumentException(String.format(
+                            "Unsupported exchange declare arguments : %s", String.join(",", unsupported)));
+            }
         }
     }
 
