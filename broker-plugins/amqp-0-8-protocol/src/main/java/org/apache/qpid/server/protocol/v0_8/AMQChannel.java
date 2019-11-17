@@ -2641,7 +2641,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         attributes.put(Exchange.ALTERNATE_BINDING,
                                        Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchangeName));
                     }
-                    validateExchangeDeclareArguments(attributes);
+                    validateAndSanitizeExchangeDeclareArguments(attributes);
                     exchange = virtualHost.createMessageDestination(Exchange.class, attributes);
 
                     if (!nowait)
@@ -2718,7 +2718,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     }
 
-    private void validateExchangeDeclareArguments(final Map<String, Object> attributes)
+    private void validateAndSanitizeExchangeDeclareArguments(final Map<String, Object> attributes)
     {
         final ConfiguredObjectTypeRegistry typeRegistry = getModel().getTypeRegistry();
         final List<ConfiguredObjectAttribute<?, ?>> types = new ArrayList<>(typeRegistry.getAttributeTypes(Exchange.class).values());
@@ -2731,8 +2731,22 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         if (!unsupported.isEmpty())
         {
-            throw new IllegalArgumentException(String.format(
-                    "Unsupported exchange declare arguments : %s", String.join(",", unsupported)));
+            Exchange.BehaviourOnUnknownDeclareArgument unknownArgumentBehaviour =
+                    getConnection().getContextValue(Exchange.BehaviourOnUnknownDeclareArgument.class,
+                                                    Exchange.UNKNOWN_EXCHANGE_DECLARE_ARGUMENT_BEHAVIOUR_NAME);
+            switch(unknownArgumentBehaviour)
+            {
+                case LOG:
+                    LOGGER.warn("Unsupported exchange declare arguments : {}", String.join(",", unsupported));
+                    // fall through
+                case IGNORE:
+                    attributes.keySet().removeAll(unsupported);
+                    break;
+                case FAIL:
+                default:
+                    throw new IllegalArgumentException(String.format(
+                        "Unsupported exchange declare arguments : %s", String.join(",", unsupported)));
+            }
         }
     }
 
