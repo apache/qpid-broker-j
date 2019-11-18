@@ -38,7 +38,6 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -64,11 +63,11 @@ public class HttpTestHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpTestHelper.class);
 
-    private static final TypeReference<List<LinkedHashMap<String, Object>>> TYPE_LIST_OF_LINKED_HASH_MAPS = new TypeReference<List<LinkedHashMap<String, Object>>>()
+    private static final TypeReference<List<Map<String, Object>>> TYPE_LIST_OF_MAPS = new TypeReference<List<Map<String, Object>>>()
     {
     };
 
-    private static final TypeReference<LinkedHashMap<String, Object>> TYPE_LINKED_HASH_MAPS = new TypeReference<LinkedHashMap<String, Object>>()
+    private static final TypeReference<Map<String, Object>> TYPE_MAP = new TypeReference<Map<String, Object>>()
     {
     };
 
@@ -191,7 +190,7 @@ public class HttpTestHelper
         byte[] data = readConnectionInputStream(connection);
 
         ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> providedObject = mapper.readValue(new ByteArrayInputStream(data), TYPE_LINKED_HASH_MAPS);
+        Map<String, Object> providedObject = mapper.readValue(new ByteArrayInputStream(data), TYPE_MAP);
         return providedObject;
     }
 
@@ -225,15 +224,15 @@ public class HttpTestHelper
 
     public List<Map<String, Object>> getJsonAsList(String path) throws IOException
     {
-        return getJson(path, TYPE_LIST_OF_LINKED_HASH_MAPS, HttpServletResponse.SC_OK);
+        return getJson(path, TYPE_LIST_OF_MAPS, HttpServletResponse.SC_OK);
     }
 
     public Map<String, Object> getJsonAsMap(String path) throws IOException
     {
-        return getJson(path, TYPE_LINKED_HASH_MAPS, HttpServletResponse.SC_OK);
+        return getJson(path, TYPE_MAP, HttpServletResponse.SC_OK);
     }
 
-    public <T> T getJson(String path, final TypeReference valueTypeRef, int expectedResponseCode) throws IOException
+    public <T> T getJson(String path, final TypeReference<T> valueTypeRef, int expectedResponseCode) throws IOException
     {
         int responseCode = -1;
         HttpURLConnection connection = openManagementConnection(path, "GET");
@@ -255,7 +254,7 @@ public class HttpTestHelper
         }
     }
 
-    public <T> T postJson(String path, final Object data, final TypeReference valueTypeRef, int expectedResponseCode) throws IOException
+    public <T> T postJson(String path, final Object data, final TypeReference<T> valueTypeRef, int expectedResponseCode) throws IOException
     {
         int responseCode = -1;
         HttpURLConnection connection = openManagementConnection(path, "POST");
