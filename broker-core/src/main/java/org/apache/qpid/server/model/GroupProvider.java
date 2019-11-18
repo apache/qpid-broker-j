@@ -26,4 +26,7 @@ import java.util.Set;
 public interface GroupProvider<X extends GroupProvider<X>> extends ConfiguredObject<X>
 {
     Set<Principal> getGroupPrincipalsForUser(Principal userPrincipal);
+
+    @ManagedAttribute(description = "Allow to choose CaseSensitive or CaseInsensitive search of LDAP Groups and Users", defaultValue = "true")
+    boolean isCaseSensitive();
 }

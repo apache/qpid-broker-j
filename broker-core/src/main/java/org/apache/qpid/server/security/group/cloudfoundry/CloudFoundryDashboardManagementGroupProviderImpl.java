@@ -86,6 +86,9 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     private TrustStore _trustStore;
 
     @ManagedAttributeField
+    private boolean _caseSensitive;
+
+    @ManagedAttributeField
     private Map<String, String> _serviceToManagementGroupMapping;
 
     private List<String> _tlsProtocolWhiteList;
@@ -187,6 +190,12 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
             }
         }
         return groupPrincipals;
+    }
+
+    @Override
+    public boolean isCaseSensitive()
+    {
+        return _caseSensitive;
     }
 
     private boolean mayManageServiceInstance(final String serviceInstanceId, final String accessToken)
