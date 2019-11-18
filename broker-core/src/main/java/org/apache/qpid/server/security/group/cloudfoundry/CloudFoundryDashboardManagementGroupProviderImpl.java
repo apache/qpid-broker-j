@@ -49,7 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.AbstractGroupProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -70,14 +70,13 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
  * See the CloudFoundry docs for more information:
  * http://docs.cloudfoundry.org/services/dashboard-sso.html#checking-user-permissions
  */
-public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractConfiguredObject<CloudFoundryDashboardManagementGroupProviderImpl>
+public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractGroupProvider<CloudFoundryDashboardManagementGroupProviderImpl>
         implements CloudFoundryDashboardManagementGroupProvider<CloudFoundryDashboardManagementGroupProviderImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudFoundryDashboardManagementGroupProviderImpl.class);
     private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private final ObjectMapper _objectMapper = new ObjectMapper();
-    private final Container<?> _container;
 
     @ManagedAttributeField
     private URI _cloudFoundryEndpointURI;
@@ -99,7 +98,6 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     public CloudFoundryDashboardManagementGroupProviderImpl(Map<String, Object> attributes, Container<?> container)
     {
         super(container, attributes);
-        _container = container;
     }
 
     @Override

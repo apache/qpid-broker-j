@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,14 +20,25 @@
  */
 package org.apache.qpid.server.model;
 
-import java.security.Principal;
-import java.util.Set;
+import java.util.Map;
 
-@ManagedObject
-public interface GroupProvider<X extends GroupProvider<X>> extends ConfiguredObject<X>
+public abstract class AbstractGroupProvider<X extends AbstractGroupProvider<X>>
+        extends AbstractConfiguredObject<X> implements GroupProvider<X>
 {
-    Set<Principal> getGroupPrincipalsForUser(Principal userPrincipal);
+    private final Container<?> _container;
 
-    @ManagedAttribute(defaultValue = "true", description = "Allow to choose CaseSensitive or CaseInsensitive search of Groups and Users")
-    boolean isCaseSensitive();
+    @ManagedAttributeField
+    private boolean _caseSensitive;
+
+    protected AbstractGroupProvider(Container<?> container, Map<String, Object> attributes)
+    {
+        super(container, attributes);
+        _container = container;
+    }
+
+    @Override
+    public boolean isCaseSensitive()
+    {
+        return _caseSensitive;
+    }
 }

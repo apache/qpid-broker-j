@@ -29,7 +29,7 @@ import java.util.Set;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.AbstractGroupProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Group;
@@ -42,17 +42,16 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 
 @ManagedObject(category = false, type = GroupProviderImpl.CONFIG_TYPE)
-public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImpl> implements GroupProvider<GroupProviderImpl>, GroupManagingGroupProvider
+public class GroupProviderImpl extends AbstractGroupProvider<GroupProviderImpl>
+        implements GroupProvider<GroupProviderImpl>, GroupManagingGroupProvider
 {
 
     public static final String CONFIG_TYPE = "ManagedGroupProvider";
-    private final Container<?> _container;
 
     @ManagedObjectFactoryConstructor
     public GroupProviderImpl(Map<String, Object> attributes, Container<?> container)
     {
         super(container, attributes);
-        _container = container;
     }
 
 
@@ -62,11 +61,11 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
         Set<Principal> principals = new HashSet<>();
 
         final Collection<Group> groups = getChildren(Group.class);
-        for(Group<?> group : groups)
+        for (Group<?> group : groups)
         {
-            for(GroupMember<?> member : group.getChildren(GroupMember.class))
+            for (GroupMember<?> member : group.getChildren(GroupMember.class))
             {
-                if(member.getName().equals(userPrincipal.getName()))
+                if (member.getName().equals(userPrincipal.getName()))
                 {
                     principals.add(new GroupPrincipal(group.getName(), this));
                 }
@@ -79,10 +78,9 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
                                                                              final Map<String, Object> attributes)
     {
-        if(childClass == Group.class)
+        if (childClass == Group.class)
         {
             return getObjectFactory().createAsync(childClass, attributes, this);
-
         }
         else
         {
@@ -90,7 +88,7 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
         }
     }
 
-    @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )
+    @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
     private ListenableFuture<Void> activate()
     {
         setState(State.ACTIVE);

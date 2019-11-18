@@ -32,7 +32,7 @@
                               placeHolder: 'group provider name',
                               required: true,
                               promptMessage: 'Name of group provider, must be unique',
-                              title: 'Enter a unique group provider name per broker'" />
+                              title: 'Enter a unique group provider name per broker'"/>
                         </div>
                     </div>
                     <div class="clear">
@@ -47,6 +47,20 @@
                                     title: 'Select type',
                                     searchAttr: 'name'">
                             </select>
+                        </div>
+                    </div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Case Sensitive Group Search:</div>
+                        <div class="tableContainer-valueCell formLabel-controlCell">
+                            <input type="checkbox" id="addGroupProvider.caseSensitive" checked="checked" value="on"
+                                   data-dojo-type="dijit/form/CheckBox"
+                                   data-dojo-props="
+                            name: 'caseSensitive',
+                            checked: true,
+                            required: false,
+                            placeHolder: 'group provider caseSensitive',
+                            searchAttr: 'caseSensitive',
+                            title: 'Case Sensitive/Insensitive Search'"/>
                         </div>
                     </div>
                     <div class="clear">
@@ -66,8 +80,10 @@
         </div>
 
         <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
-            <button data-dojo-type="dijit/form/Button" id="addGroupProvider.addButton" data-dojo-props="label: 'Save'" type="submit"></button>
-            <button data-dojo-type="dijit/form/Button" id="addGroupProvider.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
+            <button data-dojo-type="dijit/form/Button" id="addGroupProvider.addButton" data-dojo-props="label: 'Save'"
+                    type="submit"></button>
+            <button data-dojo-type="dijit/form/Button" id="addGroupProvider.cancelButton"
+                    data-dojo-props="label: 'Cancel'"></button>
         </div>
     </div>
 </div>

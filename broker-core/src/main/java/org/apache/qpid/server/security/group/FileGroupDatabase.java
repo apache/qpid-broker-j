@@ -42,7 +42,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 /**
  * A group database that reads/writes the following file format:
- *
+ * <p>
  * group1.users=user1,user2
  * group2.users=user2,user3
  */
@@ -50,9 +50,20 @@ public class FileGroupDatabase implements GroupDatabase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileGroupDatabase.class);
 
-    private Map<String, Set<String>> _groupToUserMap = new ConcurrentHashMap<String, Set<String>>();
-    private Map<String, Set<String>> _userToGroupMap = new ConcurrentHashMap<String, Set<String>>();
+    private final Map<String, Set<String>> _groupToUserMap;
+    private final Map<String, Set<String>> _userToGroupMap;
     private String _groupFile;
+    private final boolean _caseSensitive;
+
+    /**
+     * @param caseSensitive provides information if search of Users and Groups is CaseSensitive or CaseInsensitive;
+     */
+    public FileGroupDatabase(boolean caseSensitive)
+    {
+        this._caseSensitive = caseSensitive;
+        _groupToUserMap = new ConcurrentHashMap<>();
+        _userToGroupMap = new ConcurrentHashMap<>();
+    }
 
     @Override
     public Set<String> getAllGroups()
@@ -66,8 +77,7 @@ public class FileGroupDatabase implements GroupDatabase
 
         if (!file.canRead())
         {
-            throw new FileNotFoundException(groupFile
-                    + " cannot be found or is not readable");
+            throw new FileNotFoundException(groupFile + " cannot be found or is not readable");
         }
 
         readGroupFile(groupFile);
@@ -82,7 +92,7 @@ public class FileGroupDatabase implements GroupDatabase
             return Collections.emptySet();
         }
 
-        Set<String> set = _groupToUserMap.get(group);
+        Set<String> set = _groupToUserMap.get(keySearch(_groupToUserMap.keySet(), group));
         if (set == null)
         {
             return Collections.emptySet();
@@ -96,21 +106,25 @@ public class FileGroupDatabase implements GroupDatabase
     @Override
     public synchronized void addUserToGroup(String user, String group)
     {
-        Set<String> users = _groupToUserMap.get(group);
+        Set<String> users = _groupToUserMap.get(keySearch(_groupToUserMap.keySet(), group));
         if (users == null)
         {
-            throw new IllegalArgumentException("Group " + group + " does not exist so could not add " + user + " to it");
+            throw new IllegalArgumentException("Group "
+                                               + group
+                                               + " does not exist so could not add "
+                                               + user
+                                               + " to it");
         }
 
-        users.add(user);
+        users.add(keySearch(users, user));
 
-        Set<String> groups = _userToGroupMap.get(user);
+        Set<String> groups = _userToGroupMap.get(keySearch(_userToGroupMap.keySet(), user));
         if (groups == null)
         {
             groups = new ConcurrentSkipListSet<String>();
             _userToGroupMap.put(user, groups);
         }
-        groups.add(group);
+        groups.add(keySearch(_groupToUserMap.keySet(), group));
 
         update();
     }
@@ -118,18 +132,22 @@ public class FileGroupDatabase implements GroupDatabase
     @Override
     public synchronized void removeUserFromGroup(String user, String group)
     {
-        Set<String> users = _groupToUserMap.get(group);
+        Set<String> users = _groupToUserMap.get(keySearch(_groupToUserMap.keySet(), group));
         if (users == null)
         {
-            throw new IllegalArgumentException("Group " + group + " does not exist so could not remove " + user + " from it");
+            throw new IllegalArgumentException("Group "
+                                               + group
+                                               + " does not exist so could not remove "
+                                               + user
+                                               + " from it");
         }
 
-        users.remove(user);
+        users.remove(keySearch(users, user));
 
-        Set<String> groups = _userToGroupMap.get(user);
+        Set<String> groups = _userToGroupMap.get(keySearch(_userToGroupMap.keySet(), user));
         if (groups != null)
         {
-            groups.remove(group);
+            groups.remove(keySearch(groups, group));
         }
 
         update();
@@ -138,13 +156,13 @@ public class FileGroupDatabase implements GroupDatabase
     @Override
     public Set<String> getGroupsForUser(String user)
     {
-        if(user == null)
+        if (user == null)
         {
             LOGGER.warn("Requested group set for null user. Returning empty set.");
             return Collections.emptySet();
         }
 
-        Set<String> groups = _userToGroupMap.get(user);
+        Set<String> groups = _userToGroupMap.get(keySearch(_userToGroupMap.keySet(), user));
         if (groups == null)
         {
             return Collections.emptySet();
@@ -167,10 +185,10 @@ public class FileGroupDatabase implements GroupDatabase
     @Override
     public synchronized void removeGroup(String group)
     {
-        _groupToUserMap.remove(group);
+        _groupToUserMap.remove(keySearch(_groupToUserMap.keySet(), group));
         for (Set<String> groupsForUser : _userToGroupMap.values())
         {
-            groupsForUser.remove(group);
+            groupsForUser.remove(keySearch(groupsForUser, group));
         }
 
         update();
@@ -186,7 +204,7 @@ public class FileGroupDatabase implements GroupDatabase
             }
             catch (IOException e)
             {
-                throw new ServerScopedRuntimeException("Unable to persist change to file " + _groupFile,e);
+                throw new ServerScopedRuntimeException("Unable to persist change to file " + _groupFile, e);
             }
         }
     }
@@ -197,7 +215,8 @@ public class FileGroupDatabase implements GroupDatabase
         _groupToUserMap.clear();
         _userToGroupMap.clear();
         Properties propertiesFile = new Properties();
-        try (FileInputStream fileInputStream = new FileInputStream(groupFile)) {
+        try (FileInputStream fileInputStream = new FileInputStream(groupFile))
+        {
             propertiesFile.load(fileInputStream);
         }
 
@@ -214,7 +233,7 @@ public class FileGroupDatabase implements GroupDatabase
 
             for (String userName : userSet)
             {
-                Set<String> groupsForThisUser = _userToGroupMap.get(userName);
+                Set<String> groupsForThisUser = _userToGroupMap.get(keySearch(_userToGroupMap.keySet(), userName));
 
                 if (groupsForThisUser == null)
                 {
@@ -233,12 +252,11 @@ public class FileGroupDatabase implements GroupDatabase
 
         for (String group : _groupToUserMap.keySet())
         {
-            Set<String> users = _groupToUserMap.get(group);
+            Set<String> users = _groupToUserMap.get(keySearch(_groupToUserMap.keySet(), group));
             final String userList = Joiner.on(",").useForNull("").join(users);
 
             propertiesFile.setProperty(group + ".users", userList);
         }
-
 
         new FileHelper().writeFileSafely(new File(groupFile).toPath(), new BaseAction<File, IOException>()
         {
@@ -246,7 +264,7 @@ public class FileGroupDatabase implements GroupDatabase
             public void performAction(File file) throws IOException
             {
                 String comment = "Written " + new Date();
-                try(FileOutputStream fileOutputStream = new FileOutputStream(file))
+                try (FileOutputStream fileOutputStream = new FileOutputStream(file))
                 {
                     propertiesFile.store(fileOutputStream, comment);
                 }
@@ -258,10 +276,9 @@ public class FileGroupDatabase implements GroupDatabase
     {
         if (!propertyName.endsWith(".users"))
         {
-            throw new IllegalArgumentException(
-                    "Invalid definition with name '"
-                            + propertyName
-                            + "'. Group definitions must end with suffix '.users'");
+            throw new IllegalArgumentException("Invalid definition with name '"
+                                               + propertyName
+                                               + "'. Group definitions must end with suffix '.users'");
         }
     }
 
@@ -280,4 +297,18 @@ public class FileGroupDatabase implements GroupDatabase
         return userSet;
     }
 
+    private String keySearch(Set<String> set, String requiredKey)
+    {
+        if (!_caseSensitive)
+        {
+            for (String key : set)
+            {
+                if (key.equalsIgnoreCase(requiredKey))
+                {
+                    return key;
+                }
+            }
+        }
+        return requiredKey;
+    }
 }
