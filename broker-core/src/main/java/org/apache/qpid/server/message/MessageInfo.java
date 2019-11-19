@@ -49,6 +49,7 @@ public interface MessageInfo extends ManagedAttributeValue
     Date getTimestamp();
     String getType();
     String getUserId();
+    String getGroupId();
     Map<String,Object> getHeaders();
     Date getNotValidBefore();
     String getInitialRoutingAddress();
