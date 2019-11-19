@@ -90,7 +90,7 @@ public class MessageTest extends HttpTestBase
     }
 
     @Test
-    public void getJmsMessage() throws Exception
+    public void getJmsMessageWithProperty() throws Exception
     {
         final String messageProperty = "myProp";
         final String messagePropertyValue = "myValue";
@@ -120,6 +120,37 @@ public class MessageTest extends HttpTestBase
         Map<String, Object> headers = (Map<String, Object>) message.get("headers");
         assertThat(headers.get(messageProperty), is(equalTo(messagePropertyValue)));
     }
+
+    @Test
+    public void getJmsMessageWithGroupId() throws Exception
+    {
+        final String groupIdValue = "mygroup";
+
+        Connection connection = getConnection();
+        try
+        {
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            MessageProducer producer = session.createProducer(session.createQueue(QUEUE_NAME));
+            Message message = session.createMessage();
+            message.setStringProperty("JMSXGroupID", groupIdValue);
+            producer.send(message);
+        }
+        finally
+        {
+            connection.close();
+        }
+
+        List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
+                                                                  Collections.singletonMap("includeHeaders",
+                                                                                           Boolean.FALSE),
+                                                                  LIST_MAP_TYPE_REF, SC_OK);
+        assertThat(messages.size(), is(equalTo(1)));
+
+        Map<String, Object> message = messages.get(0);
+
+        assertThat(message.get("groupId"), is(groupIdValue));
+    }
+
 
     @Test
     public void getJmsMapMessage() throws Exception
