@@ -23,13 +23,18 @@ package org.apache.qpid.server.model;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.PlatformManagedObject;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.ToLongFunction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -197,6 +202,95 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                 LOGGER.warn("Failed to inject statistic '{}'", jvmGCCollectionCountStatisticName, e);
             }
         }
+
+        OperatingSystemMXBean osMXBean = ManagementFactory.getOperatingSystemMXBean();
+        try
+        {
+            Method method = osMXBean.getClass().getDeclaredMethod("getProcessCpuTime");
+            method.setAccessible(true);
+            ToLongFunction<Broker> supplier  = broker -> {
+                try
+                {
+                    final Object returnValue = method.invoke(osMXBean);
+
+                    if(returnValue instanceof Number)
+                    {
+                        return ((Number)returnValue).longValue();
+                    }
+                }
+                catch (IllegalAccessException | InvocationTargetException e)
+                {
+                    LOGGER.warn("Unable to get cumulative process CPU time");
+                }
+                return -1L;
+            };
+
+            Method getLongValue = BrokerAttributeInjector.class.getDeclaredMethod("getLongValue",
+                                                                                  Broker.class,
+                                                                                  ToLongFunction.class);
+
+            final ConfiguredObjectInjectedStatistic<?, ?> injectedStatistic =
+                    new ConfiguredObjectInjectedStatistic<>("processCpuTime",
+                                                            getLongValue,
+                                                            new Object[]{supplier},
+                                                            "Cumulative process CPU time",
+                                                            _typeValidator,
+                                                            StatisticUnit.TIME_DURATION,
+                                                            StatisticType.CUMULATIVE,
+                                                            osMXBean.getName()
+                                                            + " Process CPU Time");
+            statistics.add(injectedStatistic);
+
+        }
+        catch (NoSuchMethodException e)
+        {
+            LOGGER.warn("Failed to inject statistic 'getProcessCpuTime'", e);
+        }
+
+        try
+        {
+            Method method = osMXBean.getClass().getDeclaredMethod("getProcessCpuLoad");
+            method.setAccessible(true);
+            Function<Broker, BigDecimal> supplier  = broker -> {
+                try
+                {
+                    final Object returnValue = method.invoke(osMXBean);
+
+                    if(returnValue instanceof Number)
+                    {
+                        return BigDecimal.valueOf(((Number) returnValue).doubleValue()).setScale(4,
+                                                                                                 RoundingMode.HALF_UP);
+                    }
+                }
+                catch (IllegalAccessException | InvocationTargetException e)
+                {
+                    LOGGER.warn("Unable to get current process CPU load");
+                }
+                return BigDecimal.valueOf(Double.NaN);
+            };
+
+            Method getBigDecimalValue = BrokerAttributeInjector.class.getDeclaredMethod("getBigDecimalValue",
+                                                                                      Broker.class,
+                                                                                      Function.class);
+
+            final ConfiguredObjectInjectedStatistic<?, ?> injectedStatistic =
+                    new ConfiguredObjectInjectedStatistic<>("processCpuLoad",
+                                                            getBigDecimalValue,
+                                                            new Object[]{supplier},
+                                                            "Current process CPU load",
+                                                            _typeValidator,
+                                                            StatisticUnit.COUNT,
+                                                            StatisticType.POINT_IN_TIME,
+                                                            osMXBean.getName()
+                                                            + " Process CPU Load");
+            statistics.add(injectedStatistic);
+
+        }
+        catch (NoSuchMethodException e)
+        {
+            LOGGER.warn("Failed to inject statistic 'getProcessCpuLoad'", e);
+        }
+
         return statistics;
     }
 
@@ -364,6 +458,17 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
             }
         }
     }
+
+    private static long getLongValue(Broker broker, ToLongFunction<Broker> supplier)
+    {
+        return supplier.applyAsLong(broker);
+    }
+
+    private static BigDecimal getBigDecimalValue(Broker broker, Function<Broker, BigDecimal> supplier)
+    {
+        return supplier.apply(broker);
+    }
+
 
     public static void dumpHeap(Broker<?> broker,
                                 PlatformManagedObject hotSpotDiagnosticMXBean,
