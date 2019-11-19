@@ -51,6 +51,7 @@ public class MessageInfoImpl implements MessageInfo
     private final String _to;
     private final Date _notValidBefore;
     private final String _messageType;
+    private final String _groupId;
 
     public MessageInfoImpl(final MessageInstance instance, final boolean includeHeaders)
     {
@@ -73,6 +74,7 @@ public class MessageInfoImpl implements MessageInfo
         _timestamp = messageHeader.getTimestamp() == 0L ? null : new Date(messageHeader.getTimestamp());
         _type = messageHeader.getType();
         _userId = messageHeader.getUserId();
+        _groupId = messageHeader.getGroupId();
         if (instance.isAvailable())
         {
             _state = instance.isHeld() ? "Held" : "Available";
@@ -223,6 +225,12 @@ public class MessageInfoImpl implements MessageInfo
     public String getUserId()
     {
         return _userId;
+    }
+
+    @Override
+    public String getGroupId()
+    {
+        return _groupId;
     }
 
     @Override
