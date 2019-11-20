@@ -36,6 +36,7 @@ public interface MessageInfo extends ManagedAttributeValue
     int getDeliveryCount();
     String getState();
     String getDeliveredTo();
+    String getDeliveredToConsumerId();
     Date getArrivalTime();
     boolean isPersistent();
     String getMessageId();

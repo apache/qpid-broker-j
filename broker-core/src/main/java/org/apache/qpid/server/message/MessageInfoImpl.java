@@ -25,6 +25,8 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.qpid.server.model.Consumer;
+
 public class MessageInfoImpl implements MessageInfo
 {
     private final String _deliveredTo;
@@ -52,6 +54,7 @@ public class MessageInfoImpl implements MessageInfo
     private final Date _notValidBefore;
     private final String _messageType;
     private final String _groupId;
+    private final String _deliveredToConsumerId;
 
     public MessageInfoImpl(final MessageInstance instance, final boolean includeHeaders)
     {
@@ -60,6 +63,7 @@ public class MessageInfoImpl implements MessageInfo
 
         MessageInstanceConsumer<?> acquiringConsumer = instance.getAcquiringConsumer();
         _deliveredTo = acquiringConsumer == null ? null : String.valueOf(acquiringConsumer.getIdentifier());
+        _deliveredToConsumerId = (acquiringConsumer instanceof Consumer) ?  String.valueOf(((Consumer<?,?>)acquiringConsumer).getId()) : null;
         _arrivalTime = message.getArrivalTime() == 0L ? null : new Date(message.getArrivalTime());
         _messageType = message.getMessageType();
         _persistent = message.isPersistent();
@@ -147,6 +151,12 @@ public class MessageInfoImpl implements MessageInfo
     public String getDeliveredTo()
     {
         return _deliveredTo;
+    }
+
+    @Override
+    public String getDeliveredToConsumerId()
+    {
+        return _deliveredToConsumerId;
     }
 
     @Override
