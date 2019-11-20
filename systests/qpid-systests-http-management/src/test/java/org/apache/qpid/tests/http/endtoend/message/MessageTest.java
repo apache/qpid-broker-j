@@ -32,8 +32,6 @@ import static org.hamcrest.Matchers.typeCompatibleWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
-import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -57,7 +55,6 @@ import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
-import com.google.common.io.ByteStreams;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -150,6 +147,52 @@ public class MessageTest extends HttpTestBase
 
         assertThat(message.get("groupId"), is(groupIdValue));
     }
+
+
+    @Test
+    public void getAcquiredMessage() throws Exception
+    {
+
+        Connection connection = getConnection();
+        try
+        {
+            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+            Queue queue = session.createQueue(QUEUE_NAME);
+
+            MessageProducer producer = session.createProducer(queue);
+            Message jmsMessage = session.createMessage();
+            producer.send(jmsMessage);
+
+            List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
+                                                                      Collections.singletonMap("includeHeaders",
+                                                                                               Boolean.FALSE),
+                                                                      LIST_MAP_TYPE_REF, SC_OK);
+            assertThat(messages.size(), is(equalTo(1)));
+            Map<String, Object> message = messages.get(0);
+
+            assertThat(message.get("deliveredToConsumerId"), is(nullValue()));
+            connection.start();
+            MessageConsumer consumer = session.createConsumer(queue);
+            jmsMessage = consumer.receive(5000);
+            assertThat(jmsMessage, is(notNullValue()));
+
+            messages = getHelper().postJson("queue/myqueue/getMessageInfo",
+                                                                      Collections.singletonMap("includeHeaders",
+                                                                                               Boolean.FALSE),
+                                                                      LIST_MAP_TYPE_REF, SC_OK);
+            assertThat(messages.size(), is(equalTo(1)));
+
+            message = messages.get(0);
+
+            assertThat(message.get("deliveredToConsumerId"), is(notNullValue()));
+        }
+        finally
+        {
+            connection.close();
+        }
+
+    }
+
 
 
     @Test
