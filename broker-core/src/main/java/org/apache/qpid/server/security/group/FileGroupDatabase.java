@@ -50,17 +50,17 @@ public class FileGroupDatabase implements GroupDatabase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileGroupDatabase.class);
 
-    private Map<String, Set<String>> _groupToUserMap;
-    private Map<String, Set<String>> _userToGroupMap;
+    private final Map<String, Set<String>> _groupToUserMap;
+    private final Map<String, Set<String>> _userToGroupMap;
     private String _groupFile;
-    private boolean _caseSensitive;
+    private final boolean _caseSensitive;
 
     /**
-     * @param _caseSensitive provides information if search of LDAP Users and Groups is CaseSensitive or CaseInsensitive;
+     * @param caseSensitive provides information if search of Users and Groups is CaseSensitive or CaseInsensitive;
      */
-    public FileGroupDatabase(boolean _caseSensitive)
+    public FileGroupDatabase(boolean caseSensitive)
     {
-        this._caseSensitive = _caseSensitive;
+        this._caseSensitive = caseSensitive;
         _groupToUserMap = new ConcurrentHashMap<>();
         _userToGroupMap = new ConcurrentHashMap<>();
     }
@@ -92,7 +92,7 @@ public class FileGroupDatabase implements GroupDatabase
             return Collections.emptySet();
         }
 
-        Set<String> set =_groupToUserMap.get(keySearch(_groupToUserMap.keySet(), group));
+        Set<String> set = _groupToUserMap.get(keySearch(_groupToUserMap.keySet(), group));
         if (set == null)
         {
             return Collections.emptySet();
@@ -142,7 +142,7 @@ public class FileGroupDatabase implements GroupDatabase
                                                + " from it");
         }
 
-        users.remove(keySearch(users,user));
+        users.remove(keySearch(users, user));
 
         Set<String> groups = _userToGroupMap.get(keySearch(_userToGroupMap.keySet(), user));
         if (groups != null)
@@ -303,7 +303,7 @@ public class FileGroupDatabase implements GroupDatabase
         {
             for (String key : set)
             {
-                if(key.equalsIgnoreCase(requiredKey))
+                if (key.equalsIgnoreCase(requiredKey))
                 {
                     return key;
                 }
@@ -311,5 +311,4 @@ public class FileGroupDatabase implements GroupDatabase
         }
         return requiredKey;
     }
-
 }

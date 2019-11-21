@@ -820,11 +820,19 @@ define(["dojo/parser",
                 }, {
                     name: "State",
                     field: "state",
-                    width: "30%"
+                    width: "20%"
                 }, {
                     name: "Type",
                     field: "type",
-                    width: "30%"
+                    width: "20%"
+                }, {
+                    name: "Case Sensitive",
+                    field: "caseSensitive",
+                    width: "20%",
+                    formatter: function (val)
+                    {
+                        return "<input type='checkbox' " + (val ? "checked='checked'" : "") + " />";
+                    }
                 }], function (obj)
                 {
                     connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
