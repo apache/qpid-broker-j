@@ -815,27 +815,30 @@ public class ConfiguredObjectTypeRegistry
 
         for (ConfiguredObjectAttributeInjector injector : _attributeInjectors)
         {
-            for (ConfiguredObjectInjectedAttribute<?, ?> attr : injector.getInjectedAttributes())
+            if (injector.getTypeValidator().appliesToType((Class<? extends ConfiguredObject<?>>) clazz))
             {
-                if (attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                for (ConfiguredObjectInjectedAttribute<?, ?> attr : injector.getInjectedAttributes())
                 {
-                    attributeSet.add(attr);
+                    if (attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                    {
+                        attributeSet.add(attr);
+                    }
                 }
-            }
 
-            for (ConfiguredObjectInjectedStatistic<?, ?> attr : injector.getInjectedStatistics())
-            {
-                if (attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                for (ConfiguredObjectInjectedStatistic<?, ?> attr : injector.getInjectedStatistics())
                 {
-                    statisticSet.add(attr);
+                    if (attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                    {
+                        statisticSet.add(attr);
+                    }
                 }
-            }
 
-            for (ConfiguredObjectInjectedOperation<?> operation : injector.getInjectedOperations())
-            {
-                if (operation.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                for (ConfiguredObjectInjectedOperation<?> operation : injector.getInjectedOperations())
                 {
-                    operationsSet.add(operation);
+                    if (operation.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                    {
+                        operationsSet.add(operation);
+                    }
                 }
             }
         }
