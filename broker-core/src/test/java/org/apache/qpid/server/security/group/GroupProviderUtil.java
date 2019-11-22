@@ -17,11 +17,6 @@ class GroupProviderUtil
         this._groupFile = createEmptyTestGroupFile();
     }
 
-    String setUp() throws Exception
-    {
-        return createEmptyTestGroupFile();
-    }
-
     void writeAndSetGroupFile(String... groupAndUsers)
             throws Exception
     {
@@ -50,7 +45,7 @@ class GroupProviderUtil
         }
     }
 
-    private String createEmptyTestGroupFile() throws IOException
+    String createEmptyTestGroupFile() throws IOException
     {
         File tmpGroupFile = File.createTempFile("groups", "grp");
         tmpGroupFile.deleteOnExit();
