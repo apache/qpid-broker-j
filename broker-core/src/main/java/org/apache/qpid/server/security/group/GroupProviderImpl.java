@@ -29,35 +29,29 @@ import java.util.Set;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.AbstractGroupProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupManagingGroupProvider;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.GroupProvider;
-import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 
 @ManagedObject(category = false, type = GroupProviderImpl.CONFIG_TYPE)
-public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImpl>
+public class GroupProviderImpl extends AbstractGroupProvider<GroupProviderImpl>
         implements GroupProvider<GroupProviderImpl>, GroupManagingGroupProvider
 {
 
     public static final String CONFIG_TYPE = "ManagedGroupProvider";
-    private final Container<?> _container;
-
-    @ManagedAttributeField
-    private boolean _caseSensitive;
 
     @ManagedObjectFactoryConstructor
     public GroupProviderImpl(Map<String, Object> attributes, Container<?> container)
     {
         super(container, attributes);
-        _container = container;
     }
 
 
@@ -78,12 +72,6 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
             }
         }
         return principals;
-    }
-
-    @Override
-    public boolean isCaseSensitive()
-    {
-        return _caseSensitive;
     }
 
     @Override
