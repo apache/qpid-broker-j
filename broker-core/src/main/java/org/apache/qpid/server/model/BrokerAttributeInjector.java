@@ -50,15 +50,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerAttributeInjector.class);
 
-    private final InjectedAttributeOrStatistic.TypeValidator _typeValidator =
-            new InjectedAttributeOrStatistic.TypeValidator()
-            {
-                @Override
-                public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
-                {
-                    return Broker.class.isAssignableFrom(type);
-                }
-            };
+    private final InjectedAttributeOrStatistic.TypeValidator _typeValidator = Broker.class::isAssignableFrom;
 
     private final Class<?> _hotSpotDiagnosticMXBeanClass;
     private final PlatformManagedObject _hotSpotDiagnosticMXBean;
@@ -83,6 +75,12 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
 
         _hotSpotDiagnosticMXBeanClass = hotSpotDiagnosticMXBeanClass;
         _hotSpotDiagnosticMXBean = hotSpotDiagnosticMXBean;
+    }
+
+    @Override
+    public InjectedAttributeStatisticOrOperation.TypeValidator getTypeValidator()
+    {
+        return _typeValidator;
     }
 
     @Override

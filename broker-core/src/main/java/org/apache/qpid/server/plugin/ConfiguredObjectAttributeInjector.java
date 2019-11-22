@@ -25,10 +25,16 @@ import java.util.Collection;
 import org.apache.qpid.server.model.ConfiguredObjectInjectedAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectInjectedOperation;
 import org.apache.qpid.server.model.ConfiguredObjectInjectedStatistic;
+import org.apache.qpid.server.model.InjectedAttributeStatisticOrOperation;
 
 public interface ConfiguredObjectAttributeInjector extends Pluggable
 {
     Collection<ConfiguredObjectInjectedAttribute<?,?>> getInjectedAttributes();
     Collection<ConfiguredObjectInjectedStatistic<?,?>> getInjectedStatistics();
     Collection<ConfiguredObjectInjectedOperation<?>> getInjectedOperations();
+
+    default InjectedAttributeStatisticOrOperation.TypeValidator getTypeValidator()
+    {
+        return type -> true;
+    }
 }
