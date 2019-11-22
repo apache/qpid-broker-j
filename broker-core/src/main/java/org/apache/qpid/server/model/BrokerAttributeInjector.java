@@ -62,14 +62,16 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
 
     private final Class<?> _hotSpotDiagnosticMXBeanClass;
     private final PlatformManagedObject _hotSpotDiagnosticMXBean;
+    private final Class<?> _operatingSystemMXBeanClass;
+    private final OperatingSystemMXBean _operatingSystemMXBean;
 
     public BrokerAttributeInjector()
     {
+        ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
         Class<?> hotSpotDiagnosticMXBeanClass = null;
         PlatformManagedObject hotSpotDiagnosticMXBean = null;
         try
         {
-            ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
             hotSpotDiagnosticMXBeanClass =
                     Class.forName("com.sun.management.HotSpotDiagnosticMXBean", true, systemClassLoader);
             hotSpotDiagnosticMXBean =
@@ -83,6 +85,26 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
 
         _hotSpotDiagnosticMXBeanClass = hotSpotDiagnosticMXBeanClass;
         _hotSpotDiagnosticMXBean = hotSpotDiagnosticMXBean;
+
+
+        Class<?> operatingSystemMXBeanClass = null;
+        PlatformManagedObject operatingSystemMXBean = null;
+        try
+        {
+            operatingSystemMXBeanClass =
+                    Class.forName("com.sun.management.OperatingSystemMXBean", true, systemClassLoader);
+            operatingSystemMXBean =
+                    ManagementFactory.getPlatformMXBean((Class<? extends PlatformManagedObject>) operatingSystemMXBeanClass);
+
+        }
+        catch (IllegalArgumentException | ClassNotFoundException e)
+        {
+            LOGGER.debug("com.sun.management.OperatingSystemMXBean MXBean: " + e);
+        }
+
+        _operatingSystemMXBeanClass = operatingSystemMXBeanClass;
+        _operatingSystemMXBean = (OperatingSystemMXBean) operatingSystemMXBean;
+
     }
 
     @Override
@@ -167,7 +189,8 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                         new ConfiguredObjectInjectedStatistic<>(jvmGCCollectionTimeStatisticName,
                                                                 getGCCollectionTime,
                                                                 new Object[]{garbageCollectorMXBean},
-                                                                "Cumulative time in ms taken to perform collections for GC " + garbageCollectorMXBean.getName(),
+                                                                "Cumulative time in ms taken to perform collections for GC "
+                                                                + garbageCollectorMXBean.getName(),
                                                                 _typeValidator,
                                                                 StatisticUnit.COUNT,
                                                                 StatisticType.CUMULATIVE,
@@ -189,7 +212,8 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                         new ConfiguredObjectInjectedStatistic<>(jvmGCCollectionCountStatisticName,
                                                                 getGCCollectionCount,
                                                                 new Object[]{garbageCollectorMXBean},
-                                                                "Cumulative number of collections for GC " + garbageCollectorMXBean.getName(),
+                                                                "Cumulative number of collections for GC "
+                                                                + garbageCollectorMXBean.getName(),
                                                                 _typeValidator,
                                                                 StatisticUnit.COUNT,
                                                                 StatisticType.CUMULATIVE,
@@ -203,94 +227,97 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
             }
         }
 
-        OperatingSystemMXBean osMXBean = ManagementFactory.getOperatingSystemMXBean();
-        try
+        if (_operatingSystemMXBean != null)
         {
-            Method method = osMXBean.getClass().getDeclaredMethod("getProcessCpuTime");
-            method.setAccessible(true);
-            ToLongFunction<Broker> supplier  = broker -> {
-                try
-                {
-                    final Object returnValue = method.invoke(osMXBean);
+            try
+            {
+                Method method = _operatingSystemMXBeanClass.getDeclaredMethod("getProcessCpuTime");
 
-                    if(returnValue instanceof Number)
+                ToLongFunction<Broker> supplier = broker -> {
+                    try
                     {
-                        return ((Number)returnValue).longValue();
+                        final Object returnValue = method.invoke(_operatingSystemMXBean);
+
+                        if (returnValue instanceof Number)
+                        {
+                            return ((Number) returnValue).longValue();
+                        }
                     }
-                }
-                catch (IllegalAccessException | InvocationTargetException e)
-                {
-                    LOGGER.warn("Unable to get cumulative process CPU time");
-                }
-                return -1L;
-            };
-
-            Method getLongValue = BrokerAttributeInjector.class.getDeclaredMethod("getLongValue",
-                                                                                  Broker.class,
-                                                                                  ToLongFunction.class);
-
-            final ConfiguredObjectInjectedStatistic<?, ?> injectedStatistic =
-                    new ConfiguredObjectInjectedStatistic<>("processCpuTime",
-                                                            getLongValue,
-                                                            new Object[]{supplier},
-                                                            "Cumulative process CPU time",
-                                                            _typeValidator,
-                                                            StatisticUnit.TIME_DURATION,
-                                                            StatisticType.CUMULATIVE,
-                                                            osMXBean.getName()
-                                                            + " Process CPU Time");
-            statistics.add(injectedStatistic);
-
-        }
-        catch (NoSuchMethodException e)
-        {
-            LOGGER.warn("Failed to inject statistic 'getProcessCpuTime'", e);
-        }
-
-        try
-        {
-            Method method = osMXBean.getClass().getDeclaredMethod("getProcessCpuLoad");
-            method.setAccessible(true);
-            Function<Broker, BigDecimal> supplier  = broker -> {
-                try
-                {
-                    final Object returnValue = method.invoke(osMXBean);
-
-                    if(returnValue instanceof Number)
+                    catch (IllegalAccessException | InvocationTargetException e)
                     {
-                        return BigDecimal.valueOf(((Number) returnValue).doubleValue()).setScale(4,
-                                                                                                 RoundingMode.HALF_UP);
+                        LOGGER.warn("Unable to get cumulative process CPU time");
                     }
-                }
-                catch (IllegalAccessException | InvocationTargetException e)
-                {
-                    LOGGER.warn("Unable to get current process CPU load");
-                }
-                return BigDecimal.valueOf(Double.NaN);
-            };
+                    return -1L;
+                };
 
-            Method getBigDecimalValue = BrokerAttributeInjector.class.getDeclaredMethod("getBigDecimalValue",
+                Method getLongValue = BrokerAttributeInjector.class.getDeclaredMethod("getLongValue",
                                                                                       Broker.class,
-                                                                                      Function.class);
+                                                                                      ToLongFunction.class);
 
-            final ConfiguredObjectInjectedStatistic<?, ?> injectedStatistic =
-                    new ConfiguredObjectInjectedStatistic<>("processCpuLoad",
-                                                            getBigDecimalValue,
-                                                            new Object[]{supplier},
-                                                            "Current process CPU load",
-                                                            _typeValidator,
-                                                            StatisticUnit.COUNT,
-                                                            StatisticType.POINT_IN_TIME,
-                                                            osMXBean.getName()
-                                                            + " Process CPU Load");
-            statistics.add(injectedStatistic);
+                final ConfiguredObjectInjectedStatistic<?, ?> injectedStatistic =
+                        new ConfiguredObjectInjectedStatistic<>("processCpuTime",
+                                                                getLongValue,
+                                                                new Object[]{supplier},
+                                                                "Cumulative process CPU time",
+                                                                _typeValidator,
+                                                                StatisticUnit.TIME_DURATION,
+                                                                StatisticType.CUMULATIVE,
+                                                                _operatingSystemMXBeanClass.getName()
+                                                                + " Process CPU Time");
+                statistics.add(injectedStatistic);
 
+            }
+            catch (NoSuchMethodException | SecurityException e)
+            {
+                LOGGER.warn("Failed to inject statistic 'getProcessCpuTime'");
+                LOGGER.debug("Exception:",e);
+            }
+
+            try
+            {
+                Method method = _operatingSystemMXBeanClass.getDeclaredMethod("getProcessCpuLoad");
+                method.setAccessible(true);
+                Function<Broker, BigDecimal> supplier = broker -> {
+                    try
+                    {
+                        final Object returnValue = method.invoke(_operatingSystemMXBean);
+
+                        if (returnValue instanceof Number)
+                        {
+                            return BigDecimal.valueOf(((Number) returnValue).doubleValue()).setScale(4,
+                                                                                                     RoundingMode.HALF_UP);
+                        }
+                    }
+                    catch (IllegalAccessException | InvocationTargetException e)
+                    {
+                        LOGGER.warn("Unable to get current process CPU load", e);
+                    }
+                    return BigDecimal.valueOf(-1L);
+                };
+
+                Method getBigDecimalValue = BrokerAttributeInjector.class.getDeclaredMethod("getBigDecimalValue",
+                                                                                            Broker.class,
+                                                                                            Function.class);
+
+                final ConfiguredObjectInjectedStatistic<?, ?> injectedStatistic =
+                        new ConfiguredObjectInjectedStatistic<>("processCpuLoad",
+                                                                getBigDecimalValue,
+                                                                new Object[]{supplier},
+                                                                "Current process CPU load",
+                                                                _typeValidator,
+                                                                StatisticUnit.COUNT,
+                                                                StatisticType.POINT_IN_TIME,
+                                                                _operatingSystemMXBean.getName()
+                                                                + " Process CPU Load");
+                statistics.add(injectedStatistic);
+
+            }
+            catch (NoSuchMethodException e)
+            {
+                LOGGER.warn("Failed to inject statistic 'getProcessCpuLoad'");
+                LOGGER.debug("Exception:",e);
+            }
         }
-        catch (NoSuchMethodException e)
-        {
-            LOGGER.warn("Failed to inject statistic 'getProcessCpuLoad'", e);
-        }
-
         return statistics;
     }
 
