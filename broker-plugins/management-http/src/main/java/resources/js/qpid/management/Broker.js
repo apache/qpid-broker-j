@@ -826,12 +826,12 @@ define(["dojo/parser",
                     field: "type",
                     width: "20%"
                 }, {
-                    name: "Case Sensitive",
+                    name: "Case Sensitive Group Search",
                     field: "caseSensitive",
                     width: "20%",
                     formatter: function (val)
                     {
-                        return "<input type='checkbox' " + (val ? "checked='checked'" : "") + " />";
+                        return "<input type='checkbox' disabled='disabled'" + (val ? "checked='checked'" : "") + " />";
                     }
                 }], function (obj)
                 {
@@ -942,7 +942,6 @@ define(["dojo/parser",
             }
         };
 
-        
         BrokerUpdater.prototype.update = function (callback)
         {
             if (!this.contentPane.selected && !callback)

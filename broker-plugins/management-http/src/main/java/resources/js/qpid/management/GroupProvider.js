@@ -146,8 +146,8 @@ define(["dojo/parser",
         GroupProvider.prototype.deleteGroupProvider = function ()
         {
             var warnMessage = "";
-            if (this.groupProviderUpdater.groupProviderData && this.groupProviderUpdater.groupProviderData.type.indexOf(
-                    "File") != -1)
+            if (this.groupProviderUpdater.groupProviderData &&
+                this.groupProviderUpdater.groupProviderData.type.indexOf("File") !== -1)
             {
                 warnMessage = "NOTE: provider deletion will also remove the group file on disk.\n\n";
             }
@@ -195,13 +195,9 @@ define(["dojo/parser",
             this.name.innerHTML = entities.encode(String(this.groupProviderData["name"]));
             this.type.innerHTML = entities.encode(String(this.groupProviderData["type"]));
             this.state.innerHTML = entities.encode(String(this.groupProviderData["state"]));
-            this.caseSensitive.innerHTML = showCheckBox(this.groupProviderData["caseSensitive"]);
+            this.caseSensitive.innerHTML = "<input type='checkbox' disabled='disabled'" +
+                                           (this.groupProviderData["caseSensitive"] ? "checked='checked'" : "") + " />";
         };
-
-        function showCheckBox(val)
-        {
-            return "<input type='checkbox' " + (val ? "checked='checked'" : "") + " />";
-        }
 
         GroupProviderUpdater.prototype.update = function (callback)
         {
