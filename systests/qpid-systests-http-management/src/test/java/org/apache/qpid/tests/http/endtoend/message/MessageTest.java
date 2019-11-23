@@ -44,6 +44,7 @@ import java.util.stream.IntStream;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
+import javax.jms.DeliveryMode;
 import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -160,6 +161,7 @@ public class MessageTest extends HttpTestBase
             Queue queue = session.createQueue(QUEUE_NAME);
 
             MessageProducer producer = session.createProducer(queue);
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
             Message jmsMessage = session.createMessage();
             producer.send(jmsMessage);
 
