@@ -241,12 +241,21 @@ public class LastValueQueueList extends OrderedQueueEntryList
                 Object key = getMessage().getMessageHeader().getHeader(_conflationKey);
                 _latestValuesMap.remove(key,_latestValueReference);
             }
-
         }
 
-        public void setLatestValueReference(final AtomicReference<ConflationQueueEntry> latestValueReference)
+        void setLatestValueReference(final AtomicReference<ConflationQueueEntry> latestValueReference)
         {
             _latestValueReference = latestValueReference;
+
+            // When being added entry is deleted before setting #_latestValueReference (due to some unfortunate thread
+            // scheduling), the entry can be left in #_latestValuesMap and cause OOM errors due to heap consumption
+            // by deleted LVQ entries linked with leaked one.
+            // Thus, in order to avoid memory leaks, the entry (which gets deleted before #_latestValueReference is set)
+            // needs to be attempted to remove from #_latestValuesMap.
+            if (isDeleted())
+            {
+                onDelete();
+            }
         }
 
         private void discardIfReleasedEntryIsNoLongerLatest()
