@@ -101,7 +101,7 @@
     <dollar.sign>$</dollar.sign>
     <at.sign>@</at.sign>
 
-    <bdb-version>7.4.5</bdb-version>
+    <bdb-version>7.5.11</bdb-version>
     <derby-version>10.13.1.1</derby-version>
     <logback-version>1.2.3</logback-version>
     <guava-version>27.0-jre</guava-version>
