@@ -44,6 +44,7 @@ import java.util.stream.IntStream;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
+import javax.jms.DeliveryMode;
 import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -152,14 +153,14 @@ public class MessageTest extends HttpTestBase
     @Test
     public void getAcquiredMessage() throws Exception
     {
-
-        Connection connection = getConnection();
+        Connection connection = getConnectionBuilder().setSyncPublish(true).build();
         try
         {
             Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
             Queue queue = session.createQueue(QUEUE_NAME);
 
             MessageProducer producer = session.createProducer(queue);
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
             Message jmsMessage = session.createMessage();
             producer.send(jmsMessage);
 
@@ -173,7 +174,7 @@ public class MessageTest extends HttpTestBase
             assertThat(message.get("deliveredToConsumerId"), is(nullValue()));
             connection.start();
             MessageConsumer consumer = session.createConsumer(queue);
-            jmsMessage = consumer.receive(5000);
+            jmsMessage = consumer.receive(getReceiveTimeout());
             assertThat(jmsMessage, is(notNullValue()));
 
             messages = getHelper().postJson("queue/myqueue/getMessageInfo",
@@ -190,10 +191,7 @@ public class MessageTest extends HttpTestBase
         {
             connection.close();
         }
-
     }
-
-
 
     @Test
     public void getJmsMapMessage() throws Exception
