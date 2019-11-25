@@ -407,9 +407,8 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     }
 
     @AfterClass
-    public void tearDown() throws Exception
+    public static void tearDown()
     {
-
         if (GROUP_FILE != null)
         {
             File groupFile = new File(GROUP_FILE);
