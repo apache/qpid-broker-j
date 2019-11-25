@@ -29,28 +29,41 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Set;
 
-import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class FileGroupDatabaseTest extends UnitTestBase
 {
-    private static final String USER1 = "user1";
-    private static final String USER2 = "user2";
-    private static final String USER3 = "user3";
+    private static String USER1;
+    private static String USER2;
+    private static String USER3;
 
-    private static final String MY_GROUP = "myGroup";
-    private static final String MY_GROUP2 = "myGroup2";
-    private static final String MY_GROUP1 = "myGroup1";
+    private static String MY_GROUP;
+    private static String MY_GROUP2;
+    private static String MY_GROUP1;
 
-    private static final boolean CASE_SENSITIVE = true;
-    private static final FileGroupDatabase FILE_GROUP_DATABASE = new FileGroupDatabase(CASE_SENSITIVE);
-    private static final GroupProviderUtil UTIL;
-    private static final String GROUP_FILE;
+    private static boolean CASE_SENSITIVE;
+    private static FileGroupDatabase FILE_GROUP_DATABASE;
+    private static GroupProviderUtil UTIL;
+    private static String GROUP_FILE;
 
-    static
+    @BeforeClass
+    public static void onlyOnce()
     {
+        USER1 = "user1";
+        USER2 = "user2";
+        USER3 = "user3";
+
+        MY_GROUP = "myGroup";
+        MY_GROUP2 = "myGroup2";
+        MY_GROUP1 = "myGroup1";
+
+        CASE_SENSITIVE = true;
+        FILE_GROUP_DATABASE = new FileGroupDatabase(CASE_SENSITIVE);
+
         try
         {
             UTIL = new GroupProviderUtil(FILE_GROUP_DATABASE);
@@ -445,7 +458,7 @@ public class FileGroupDatabaseTest extends UnitTestBase
         assertTrue(newGroupsForUser1.contains(MY_GROUP2));
     }
 
-    @After
+    @AfterClass
     public void tearDown() throws Exception
     {
 
