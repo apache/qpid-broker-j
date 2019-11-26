@@ -64,9 +64,6 @@ public class FileBasedGroupProviderImpl
     private FileGroupDatabase _groupDatabase;
 
     @ManagedAttributeField
-    private boolean _caseSensitive;
-
-    @ManagedAttributeField
     private String _path;
 
     @ManagedObjectFactoryConstructor
@@ -309,12 +306,6 @@ public class FileBasedGroupProviderImpl
             }
             return principals;
         }
-    }
-
-    @Override
-    public boolean isCaseSensitive()
-    {
-        return _caseSensitive;
     }
 
     private class GroupAdapter extends AbstractConfiguredObject<GroupAdapter> implements Group<GroupAdapter>
