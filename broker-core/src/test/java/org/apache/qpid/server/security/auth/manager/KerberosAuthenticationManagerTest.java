@@ -62,6 +62,8 @@ import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.test.EmbeddedKdcResource;
 import org.apache.qpid.server.test.KerberosUtilities;
+import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.test.utils.JvmVendor;
 import org.apache.qpid.test.utils.SystemPropertySetter;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -117,6 +119,28 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         _kerberosAuthenticationProvider.create();
         when(_broker.getChildren(AuthenticationProvider.class))
                 .thenReturn(Collections.singleton(_kerberosAuthenticationProvider));
+
+        if (LOGGER.isDebugEnabled())
+        {
+            final String krb5Conf = System.getProperty("java.security.krb5.conf");
+            if (krb5Conf != null)
+            {
+                final File file = new File(krb5Conf);
+                if (file.exists())
+                {
+                    String config = FileUtils.readFileAsString(file);
+                    debug("Kerberos config: {}", config);
+                }
+                else
+                {
+                    LOGGER.warn("Kerberos config file was not found in the expected location at '{}'", krb5Conf);
+                }
+            }
+            else
+            {
+                LOGGER.warn("JVM system property 'java.security.krb5.conf' is not set");
+            }
+        }
     }
 
     @Test
@@ -200,13 +224,24 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         try
         {
             lc.login();
+
             final Subject clientSubject = lc.getSubject();
+            debug("LoginContext subject {}", clientSubject);
             final SaslClient saslClient = createSaslClient(clientSubject);
             return performNegotiation(clientSubject, saslClient, negotiator);
         }
         finally
         {
             lc.logout();
+        }
+    }
+
+    private void debug(String message, Object... args)
+    {
+        LOGGER.debug(message, args);
+        if (Boolean.TRUE.toString().equalsIgnoreCase(System.getProperty("sun.security.krb5.debug")))
+        {
+            System.out.println(String.format(message.replace("{}", "%s"), args));
         }
     }
 
@@ -223,6 +258,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
             if (!initiated)
             {
                 initiated = true;
+                debug("Sending initial challenge");
                 response = Subject.doAs(clientSubject, (PrivilegedExceptionAction<byte[]>) () -> {
                     if (saslClient.hasInitialResponse())
                     {
@@ -230,19 +266,25 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
                     }
                     return null;
                 });
+                debug("Initial challenge sent");
             }
 
+            debug("Handling response: {}", StringUtil.toHex(response));
             result = negotiator.handleResponse(response);
 
             byte[] challenge = result.getChallenge();
+
             if (challenge != null)
             {
+                debug("Challenge: {}", StringUtil.toHex(challenge));
                 response = Subject.doAs(clientSubject,
                                         (PrivilegedExceptionAction<byte[]>) () -> saslClient.evaluateChallenge(
                                                 challenge));
             }
         }
         while (result.getStatus() == AuthenticationResult.AuthenticationStatus.CONTINUE);
+
+        debug("Result {}", result.getStatus());
         return result;
     }
 
