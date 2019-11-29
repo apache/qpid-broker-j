@@ -20,7 +20,7 @@ package org.apache.qpid.server.security.auth.manager;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvider.AUTHENTICATION_CACHE_MAX_SIZE;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -31,8 +31,6 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.security.Principal;
@@ -49,7 +47,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
 
-import org.apache.commons.codec.CharEncoding;
 import org.apache.directory.api.ldap.model.constants.SupportedSaslMechanisms;
 import org.apache.directory.api.ldap.model.entry.DefaultEntry;
 import org.apache.directory.api.ldap.model.entry.Entry;
@@ -91,6 +88,7 @@ import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.test.utils.JvmVendor;
+import org.apache.qpid.server.test.KerberosUtilities;
 import org.apache.qpid.test.utils.SystemPropertySetter;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -147,9 +145,9 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     private static final String HOSTNAME = "localhost";
     private static final String BROKER_PRINCIPAL = "service/" + HOSTNAME;
     private static final String LINE_SEPARATOR = System.lineSeparator();
-    private static final String LOGIN_CONFIG = "login.config";
     private static final String LOGIN_SCOPE = "ldap-gssapi-bind";
     private static final AtomicBoolean KERBEROS_SETUP = new AtomicBoolean();
+    private static final KerberosUtilities UTILS = new KerberosUtilities();
 
     @ClassRule
     public static CreateLdapServerRule LDAP = new CreateLdapServerRule();
@@ -400,14 +398,11 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         createPrincipal("Service", "LDAP Service", "ldap", UUID.randomUUID().toString(), servicePrincipalName);
     }
 
-    private void setUpJaas() throws LdapException, IOException
+    private void setUpJaas() throws Exception
     {
         createKeyTab(BROKER_PRINCIPAL);
-        final URL resource = SimpleLDAPAuthenticationManagerTest.class.getClassLoader().getResource(LOGIN_CONFIG);
-        LOGGER.debug("JAAS config:" + resource);
-        assertNotNull(resource);
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", URLDecoder.decode(resource.getPath(), CharEncoding.UTF_8));
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("sun.security.krb5.debug", "true");
+
+        UTILS.prepareConfiguration(KerberosUtilities.HOST_NAME, SYSTEM_PROPERTY_SETTER);
     }
 
     private String createKrb5Conf(final int port) throws IOException

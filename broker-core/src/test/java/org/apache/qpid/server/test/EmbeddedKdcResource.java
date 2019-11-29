@@ -21,11 +21,11 @@ package org.apache.qpid.server.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -45,11 +45,6 @@ public class EmbeddedKdcResource extends ExternalResource
     private final String _realm;
     private final List<File> _createdFiles = new ArrayList<>();
     private volatile File _kdcDirectory;
-
-    public EmbeddedKdcResource(final String realm)
-    {
-        this(InetAddress.getLoopbackAddress().getCanonicalHostName(), 0, "QpidTestKerberosServer", realm);
-    }
 
     public EmbeddedKdcResource(final String host, final int port, final String serviceName, final String realm)
     {
@@ -80,6 +75,7 @@ public class EmbeddedKdcResource extends ExternalResource
         _simpleKdcServer.setWorkDir(_kdcDirectory);
         _simpleKdcServer.init();
         _simpleKdcServer.start();
+        LOGGER.info("SimpleKdcServer started on port {}, realm '{}'", getPort(), getRealm());
     }
 
     @Override
@@ -149,7 +145,8 @@ public class EmbeddedKdcResource extends ExternalResource
     public File createPrincipal(String keyTabFileName, String... principals)
             throws Exception
     {
-        final File ketTabFile = createFile(keyTabFileName);
+        final Path ketTabPath = Paths.get("target", keyTabFileName);
+        final File ketTabFile = ketTabPath.toFile();
         _createdFiles.add(ketTabFile);
         createPrincipal(ketTabFile, principals);
         return ketTabFile;
@@ -173,24 +170,6 @@ public class EmbeddedKdcResource extends ExternalResource
         {
             _simpleKdcServer.getKadmin().exportKeytab(keyTabFile, principal);
         }
-    }
-
-    private static File createFile(final String keyTabFile) throws IOException
-    {
-        final File target = FileSystems.getDefault().getPath("target").toFile();
-        final File file = new File(target, keyTabFile);
-        if (file.exists())
-        {
-            if (!file.delete())
-            {
-                throw new IOException(String.format("Cannot delete existing file '%s'", keyTabFile));
-            }
-        }
-        if (!file.createNewFile())
-        {
-            throw new IOException(String.format("Cannot create file '%s'", keyTabFile));
-        }
-        return file;
     }
 
 }
