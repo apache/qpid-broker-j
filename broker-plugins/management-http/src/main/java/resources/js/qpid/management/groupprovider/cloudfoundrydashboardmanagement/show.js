@@ -42,13 +42,16 @@ define(["qpid/common/util", "dojo/query", "dojo/_base/lang", "dojox/html/entitie
                 for (var serviceInstanceId in data.serviceToManagementGroupMapping)
                 {
                     tableContent += "<tr><td>" + entities.encode(serviceInstanceId) + "</td><td>: " + entities.encode(
-                            data.serviceToManagementGroupMapping[serviceInstanceId]) + "</td></tr>\n";
+                        data.serviceToManagementGroupMapping[serviceInstanceId]) + "</td></tr>\n";
                 }
                 var table = query(".serviceToManagementGroupMappingTable", this.containerNode)[0];
-                table.innerHTML = tableContent;
+                if (typeof table != "undefined")
+                {
+                    table.innerHTML = tableContent;
+                }
             }
             util.updateUI(data, fieldNames, this);
-        }
+        };
 
         return GroupProvider;
     });
