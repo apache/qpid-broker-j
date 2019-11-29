@@ -18,18 +18,20 @@
  * under the License.
  *
  */
-define(["qpid/common/util", "dojo/domReady!"], function (util)
+define(["qpid/common/util", "dijit/form/CheckBox", "dojo/domReady!"], function (util)
 {
+
+    var fieldNames = ["path", "caseSensitive"];
 
     function GroupFile(data)
     {
-        util.buildUI(data.containerNode, data.parent, "groupprovider/groupfile/show.html", ["path"], this);
+        util.buildUI(data.containerNode, data.parent, "groupprovider/groupfile/show.html", fieldNames, this);
     }
 
     GroupFile.prototype.update = function (data)
     {
-        util.updateUI(data, ["path"], this);
-    }
+        util.updateUI(data, fieldNames, this, {"caseSensitive": util.buildCheckboxMarkup});
+    };
 
     return GroupFile;
 });

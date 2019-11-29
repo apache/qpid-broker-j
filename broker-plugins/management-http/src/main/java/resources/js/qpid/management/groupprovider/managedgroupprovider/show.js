@@ -18,16 +18,20 @@
  * under the License.
  *
  */
-define([], function ()
+define(["qpid/common/util", "dijit/form/CheckBox", "dojo/domReady!"], function (util)
 {
+
+    var fieldNames = ["caseSensitive"];
 
     function ManagedGroupProvider(data)
     {
+        util.buildUI(data.containerNode, data.parent, "groupprovider/managedgroupprovider/show.html", fieldNames, this);
     }
 
     ManagedGroupProvider.prototype.update = function (data)
     {
-    }
+        util.updateUI(data, fieldNames, this, {"caseSensitive": util.buildCheckboxMarkup});
+    };
 
     return ManagedGroupProvider;
 });

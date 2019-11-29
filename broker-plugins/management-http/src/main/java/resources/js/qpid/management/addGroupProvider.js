@@ -200,11 +200,13 @@ define(["dojo/dom",
                         typeUI.show({
                             containerNode: that.groupProviderTypeFieldsContainer,
                             parent: that,
-                            data: that.initialData
+                            data: that.initialData,
+                            metadata: that.management.metadata
                         });
-                        util.applyMetadataToWidgets(that.groupProviderTypeFieldsContainer,
+                        util.applyToWidgets(that.groupProviderTypeFieldsContainer,
                             "GroupProvider",
                             type,
+                            that.initialData,
                             that.management.metadata);
                     }
                     catch (e)

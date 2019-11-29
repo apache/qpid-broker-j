@@ -586,6 +586,7 @@ define(["dojo/_base/xhr",
                 var fieldNode = obj[fieldName];
                 if (fieldNode)
                 {
+                    var formatter = null;
                     if (formatters && fieldNode.className)
                     {
                         var clazzes = fieldNode.className.split(" ");
@@ -593,13 +594,19 @@ define(["dojo/_base/xhr",
                         {
                             var clazz = clazzes[idx];
                             var fmt = formatters[clazz];
-                            if (fmt && value)
+                            if (!!fmt)
                             {
-                                value = fmt(value);
+                                formatter = fmt;
+                                break;
                             }
                         }
                     }
-                    fieldNode.innerHTML = (value == undefined || value == null) ? "" : entities.encode(String(value));
+                    var innerHtml = "";
+                    if (value !== undefined && value !== null)
+                    {
+                        innerHtml = formatter === null ? entities.encode(String(value)) : formatter(value);
+                    }
+                    fieldNode.innerHTML = innerHtml;
                 }
             }
         };

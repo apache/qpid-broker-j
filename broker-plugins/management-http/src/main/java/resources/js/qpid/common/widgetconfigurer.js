@@ -109,12 +109,12 @@ define(["dojo/_base/xhr",
                 // Stash the default value and initial value so we can later differentiate
                 // when sending updates to the server
 
-                if (defaultValue)
+                if (defaultValue !== null && defaultValue !== undefined)
                 {
                     widget.defaultValue = defaultValue;
                 }
 
-                if (dataValue)
+                if (dataValue !== null && dataValue !== undefined)
                 {
                     widget.initialValue = dataValue;
                 }
@@ -180,12 +180,31 @@ define(["dojo/_base/xhr",
                 }
             }
         },
+        _setDefaults: function (widget, category, type, data, meta, effectiveData)
+        {
+            if (!!widget.name)
+            {
+                var defaultValue = meta.getDefaultValueForAttribute(category, type, widget.name);
+                if (defaultValue !== null && defaultValue !== undefined)
+                {
+                    widget.defaultValue = defaultValue;
+                    if ( widget instanceof dijit.form.CheckBox)
+                    {
+                        widget.set("checked", defaultValue);
+                    }
+                }
+            }
+        },
         config: function (widget, category, type, data, meta, effectiveData)
         {
             this._processWidgetPrompt(widget, category, type, meta);
             if (data != null)
             {
                 this._processWidgetValue(widget, category, type, data, meta, effectiveData);
+            }
+            else
+            {
+                this._setDefaults(widget, category, type, data, meta);
             }
         },
         disableIfImmutable: function (widget, category, type, meta)

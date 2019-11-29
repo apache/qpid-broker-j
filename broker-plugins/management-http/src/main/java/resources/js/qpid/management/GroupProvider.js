@@ -185,7 +185,6 @@ define(["dojo/parser",
             this.name = query(".name", node)[0];
             this.type = query(".type", node)[0];
             this.state = query(".state", node)[0];
-            this.caseSensitive = query(".caseSensitive", node)[0];
             this.managedInterfaces = {};
             this.details = null;
         }
@@ -195,8 +194,6 @@ define(["dojo/parser",
             this.name.innerHTML = entities.encode(String(this.groupProviderData["name"]));
             this.type.innerHTML = entities.encode(String(this.groupProviderData["type"]));
             this.state.innerHTML = entities.encode(String(this.groupProviderData["state"]));
-            this.caseSensitive.innerHTML = "<input type='checkbox' disabled='disabled'" +
-                                           (this.groupProviderData["caseSensitive"] ? "checked='checked'" : "") + " />";
         };
 
         GroupProviderUpdater.prototype.update = function (callback)
