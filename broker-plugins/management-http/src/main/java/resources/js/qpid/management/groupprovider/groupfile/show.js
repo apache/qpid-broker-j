@@ -20,11 +20,11 @@
  */
 define(["qpid/common/util", "dijit/form/CheckBox", "dojo/domReady!"], function (util)
 {
-
-    var fieldNames = ["path", "caseSensitive"];
+    var fieldNames;
 
     function GroupFile(data)
     {
+        fieldNames = util.getTypeFields(data.parent.management.metadata, "GroupProvider", "GroupFile");
         util.buildUI(data.containerNode, data.parent, "groupprovider/groupfile/show.html", fieldNames, this);
     }
 

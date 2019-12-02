@@ -21,10 +21,11 @@
 define(["qpid/common/util", "dijit/form/CheckBox", "dojo/domReady!"], function (util)
 {
 
-    var fieldNames = ["caseSensitive"];
+    var fieldNames;
 
     function ManagedGroupProvider(data)
     {
+        fieldNames = util.getTypeFields(data.parent.management.metadata, "GroupProvider", "ManagedGroupProvider");
         util.buildUI(data.containerNode, data.parent, "groupprovider/managedgroupprovider/show.html", fieldNames, this);
     }
 
