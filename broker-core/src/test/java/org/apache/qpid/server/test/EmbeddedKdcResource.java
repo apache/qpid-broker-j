@@ -80,6 +80,7 @@ public class EmbeddedKdcResource extends ExternalResource
         _simpleKdcServer.setWorkDir(_kdcDirectory);
         _simpleKdcServer.init();
         _simpleKdcServer.start();
+        LOGGER.info("SimpleKdcServer started on port {}, realm '{}'", getPort(), getRealm());
     }
 
     @Override

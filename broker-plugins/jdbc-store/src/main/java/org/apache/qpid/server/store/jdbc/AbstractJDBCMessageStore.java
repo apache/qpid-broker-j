@@ -38,8 +38,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -90,6 +92,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private static final int EXECUTOR_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
     private static final String EXECUTOR_THREADS = "qpid.jdbcstore.executorThreads";
+    private static final String EXECUTOR_SHUTDOWN_TIMEOUT = "qpid.jdbcstore.executorShutdownTimeoutInSeconds";
+    private static final int EXECUTOR_SHUTDOWN_TIMEOUT_DEFAULT = 5;
 
     private static final int DB_VERSION = 8;
 
@@ -108,15 +112,18 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private final Set<StoredJDBCMessage<?>> _messages = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<MessageDeleteListener> _messageDeleteListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<Action<Connection>> _deleteActions = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Thread.UncaughtExceptionHandler _uncaughtExceptionHandler;
 
     protected abstract boolean isMessageStoreOpen();
 
     protected abstract void checkMessageStoreOpen();
     private ScheduledThreadPoolExecutor _executor;
     private volatile int _inClauseMaxSize;
+    private volatile int _executorShutdownTimeOut;
 
     public AbstractJDBCMessageStore()
     {
+        _uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     }
 
     protected void setMaximumMessageId()
@@ -227,6 +234,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         int corePoolSize = getContextValue(Integer.class, EXECUTOR_THREADS, EXECUTOR_THREADS_DEFAULT);
 
+        _executorShutdownTimeOut = getContextValue(Integer.class, EXECUTOR_SHUTDOWN_TIMEOUT, EXECUTOR_SHUTDOWN_TIMEOUT_DEFAULT);
+
         _executor = new ScheduledThreadPoolExecutor(corePoolSize, new ThreadFactory()
         {
             private final AtomicInteger _count = new AtomicInteger();
@@ -256,6 +265,21 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         if(_executor != null)
         {
             _executor.shutdown();
+            if (_executorShutdownTimeOut > 0)
+            {
+                try
+                {
+                    if (!_executor.awaitTermination(_executorShutdownTimeOut, TimeUnit.SECONDS))
+                    {
+                        _executor.shutdownNow();
+                    }
+                }
+                catch (InterruptedException e)
+                {
+                    getLogger().warn("Interrupted during store executor shutdown:", e);
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
 
     }
@@ -453,21 +477,67 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         if(_messageRemovalScheduled.compareAndSet(false, true))
         {
-            _executor.submit(() -> {
-                List<Long> messageIds;
-                do
-                {
-                    messageIds = _messagesToDelete.getAndSet(EMPTY_LIST);
-                    removeMessages(messageIds);
-                } while(!messageIds.isEmpty());
-
+            try
+            {
+                _executor.submit(this::removeScheduledMessages);
+            }
+            catch (RejectedExecutionException e)
+            {
                 _messageRemovalScheduled.set(false);
-                if(!_messagesToDelete.get().isEmpty())
-                {
-                    scheduleMessageRemoval();
-                }
+                throw new IllegalStateException("Cannot schedule removal of messages", e);
+            }
+        }
+    }
 
-            });
+    private void removeScheduledMessages()
+    {
+        try
+        {
+            removeScheduledMessagesAndRescheduleIfRequired();
+        }
+        catch (RuntimeException e)
+        {
+            handleExceptionOnScheduledMessageRemoval(e);
+        }
+    }
+
+    private void removeScheduledMessagesAndRescheduleIfRequired()
+    {
+        List<Long> messageIds;
+        try
+        {
+            do
+            {
+                messageIds = _messagesToDelete.getAndSet(EMPTY_LIST);
+                removeMessages(messageIds);
+            } while (!messageIds.isEmpty());
+        }
+        finally
+        {
+            _messageRemovalScheduled.set(false);
+        }
+        if (!_messagesToDelete.get().isEmpty() && isMessageStoreOpen())
+        {
+            scheduleMessageRemoval();
+        }
+    }
+
+    private void handleExceptionOnScheduledMessageRemoval(final RuntimeException e)
+    {
+        if (isMessageStoreOpen())
+        {
+            if (_uncaughtExceptionHandler == null)
+            {
+                getLogger().error("Unexpected exception on asynchronous message removal", e);
+            }
+            else
+            {
+                _uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
+            }
+        }
+        else
+        {
+            getLogger().warn("Ignoring unexpected exception on asynchronous message removal as store is not open", e);
         }
     }
 
