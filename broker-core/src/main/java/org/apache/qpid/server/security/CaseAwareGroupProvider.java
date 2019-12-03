@@ -18,18 +18,20 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model.adapter;
+package org.apache.qpid.server.security;
 
-import org.apache.qpid.server.model.GroupManagingGroupProvider;
+import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.security.CaseAwareGroupProvider;
+import org.apache.qpid.server.model.ManagedContextDefault;
 
-@ManagedObject( category = false, type = "GroupFile", managesChildren = true )
-public interface FileBasedGroupProvider<X extends FileBasedGroupProvider<X>> extends CaseAwareGroupProvider<X>, GroupManagingGroupProvider
+public interface CaseAwareGroupProvider<X extends GroupProvider<X>> extends GroupProvider<X>
 {
-    String PATH="path";
+    String GROUP_PROVIDER_CASE_SENSITIVE = "qpid.groupProvider.caseSensitive";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = GROUP_PROVIDER_CASE_SENSITIVE)
+    String DEFAULT_GROUP_PROVIDER_CASE_SENSITIVE = "true";
 
-    @ManagedAttribute( mandatory = true, description = "File location", immutable = true)
-    String getPath();
+    @ManagedAttribute(defaultValue = "${" + GROUP_PROVIDER_CASE_SENSITIVE + "}",
+            description = "Allow to choose CaseSensitive or CaseInsensitive search of Groups and Users")
+    boolean isCaseSensitive();
 }

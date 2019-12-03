@@ -29,21 +29,21 @@ import java.util.Set;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.model.AbstractGroupProvider;
+import org.apache.qpid.server.model.AbstractCaseAwareGroupProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupManagingGroupProvider;
 import org.apache.qpid.server.model.GroupMember;
-import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.security.CaseAwareGroupProvider;
 
 @ManagedObject(category = false, type = GroupProviderImpl.CONFIG_TYPE)
-public class GroupProviderImpl extends AbstractGroupProvider<GroupProviderImpl>
-        implements GroupProvider<GroupProviderImpl>, GroupManagingGroupProvider
+public class GroupProviderImpl extends AbstractCaseAwareGroupProvider<GroupProviderImpl>
+        implements CaseAwareGroupProvider<GroupProviderImpl>, GroupManagingGroupProvider
 {
 
     public static final String CONFIG_TYPE = "ManagedGroupProvider";

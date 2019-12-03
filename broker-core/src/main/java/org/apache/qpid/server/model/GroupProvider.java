@@ -27,12 +27,4 @@ public interface GroupProvider<X extends GroupProvider<X>> extends ConfiguredObj
 {
     Set<Principal> getGroupPrincipalsForUser(Principal userPrincipal);
 
-    String GROUP_PROVIDER_CASE_SENSITIVE = "qpid.groupProvider.caseSensitive";
-    @SuppressWarnings("unused")
-    @ManagedContextDefault(name = GROUP_PROVIDER_CASE_SENSITIVE)
-    String DEFAULT_GROUP_PROVIDER_CASE_SENSITIVE = "true";
-
-    @ManagedAttribute(defaultValue = "${" + GROUP_PROVIDER_CASE_SENSITIVE + "}",
-            description = "Allow to choose CaseSensitive or CaseInsensitive search of Groups and Users")
-    boolean isCaseSensitive();
 }

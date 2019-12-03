@@ -22,21 +22,17 @@ package org.apache.qpid.server.model;
 
 import java.util.Map;
 
-public abstract class AbstractGroupProvider<X extends AbstractGroupProvider<X>>
+public abstract class AbstractCaseAwareGroupProvider<X extends AbstractCaseAwareGroupProvider<X>>
         extends AbstractConfiguredObject<X> implements GroupProvider<X>
 {
-    private final Container<?> _container;
-
     @ManagedAttributeField
     private boolean _caseSensitive;
 
-    protected AbstractGroupProvider(Container<?> container, Map<String, Object> attributes)
+    protected AbstractCaseAwareGroupProvider(Container<?> container, Map<String, Object> attributes)
     {
         super(container, attributes);
-        _container = container;
     }
 
-    @Override
     public boolean isCaseSensitive()
     {
         return _caseSensitive;
