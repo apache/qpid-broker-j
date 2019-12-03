@@ -26,71 +26,51 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Set;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class FileGroupDatabaseTest extends UnitTestBase
 {
-    private static String USER1;
-    private static String USER2;
-    private static String USER3;
+    private static final String USER1 = "user1";
+    private static final String USER2 = "user2";
+    private static final String USER3 = "user3";
 
-    private static String MY_GROUP;
-    private static String MY_GROUP2;
-    private static String MY_GROUP1;
+    private static final String MY_GROUP = "myGroup";
+    private static final String MY_GROUP2 = "myGroup2";
+    private static final String MY_GROUP1 = "myGroup1";
 
-    private static boolean CASE_SENSITIVE;
-    private static FileGroupDatabase FILE_GROUP_DATABASE;
-    private static GroupProviderUtil UTIL;
-    private static String GROUP_FILE;
+    private static final boolean CASE_SENSITIVE = true;
+    private FileGroupDatabase _fileGroupDatabase;
+    private GroupProviderUtil _util;
+    private String _groupFile;
 
-    @BeforeClass
-    public static void onlyOnce()
+    @Before
+    public void setUp() throws Exception
     {
-        USER1 = "user1";
-        USER2 = "user2";
-        USER3 = "user3";
-
-        MY_GROUP = "myGroup";
-        MY_GROUP2 = "myGroup2";
-        MY_GROUP1 = "myGroup1";
-
-        CASE_SENSITIVE = true;
-        FILE_GROUP_DATABASE = new FileGroupDatabase(CASE_SENSITIVE);
-
-        try
-        {
-            UTIL = new GroupProviderUtil(FILE_GROUP_DATABASE);
-            GROUP_FILE = UTIL.getGroupFile();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        _fileGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
+        _util = new GroupProviderUtil(_fileGroupDatabase);
+        _groupFile = _util.getGroupFile();
     }
 
     @Test
     public void testGetAllGroups() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", USER1);
+        _util.writeAndSetGroupFile("myGroup.users", USER1);
 
-        Set<String> groups = FILE_GROUP_DATABASE.getAllGroups();
+        Set<String> groups = _fileGroupDatabase.getAllGroups();
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP));
     }
 
     @Test
-    public void testGetAllGroupsWhenGroupFileEmpty() throws Exception
+    public void testGetAllGroupsWhenGroupFileEmpty()
     {
-        FILE_GROUP_DATABASE.setGroupFile(UTIL.createEmptyTestGroupFile());
-
-        Set<String> groups = FILE_GROUP_DATABASE.getAllGroups();
+        Set<String> groups = _fileGroupDatabase.getAllGroups();
         assertTrue(groups.isEmpty());
     }
 
@@ -99,7 +79,7 @@ public class FileGroupDatabaseTest extends UnitTestBase
     {
         try
         {
-            FILE_GROUP_DATABASE.setGroupFile("/not/a/file");
+            _fileGroupDatabase.setGroupFile("/not/a/file");
             fail("Exception not thrown");
         }
         catch (FileNotFoundException fnfe)
@@ -111,11 +91,11 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testInvalidFormat() throws Exception
     {
-        UTIL.writeGroupFile("name.notvalid", USER1);
+        _util.writeGroupFile("name.notvalid", USER1);
 
         try
         {
-            FILE_GROUP_DATABASE.setGroupFile(GROUP_FILE);
+            _fileGroupDatabase.setGroupFile(_groupFile);
             fail("Exception not thrown");
         }
         catch (IllegalArgumentException gde)
@@ -127,11 +107,9 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testGetUsersInGroup() throws Exception
     {
-        UTIL.writeGroupFile("myGroup.users", "user1,user2,user3");
+        _util.writeAndSetGroupFile("myGroup.users", "user1,user2,user3");
 
-        FILE_GROUP_DATABASE.setGroupFile(GROUP_FILE);
-
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertEquals(3, users.size());
     }
@@ -139,9 +117,9 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testDuplicateUsersInGroupAreConflated() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "user1,user1,user3,user1");
+        _util.writeAndSetGroupFile("myGroup.users", "user1,user1,user3,user1");
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertEquals(2, users.size());
     }
@@ -149,9 +127,9 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testGetUsersWithEmptyGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "");
+        _util.writeAndSetGroupFile("myGroup.users", "");
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertTrue(users.isEmpty());
     }
@@ -159,9 +137,9 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testGetUsersInNonExistentGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "user1,user2,user3");
+        _util.writeAndSetGroupFile("myGroup.users", "user1,user2,user3");
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup("groupDoesntExist");
+        Set<String> users = _fileGroupDatabase.getUsersInGroup("groupDoesntExist");
         assertNotNull(users);
         assertTrue(users.isEmpty());
     }
@@ -169,15 +147,15 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testGetUsersInNullGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile();
-        assertTrue(FILE_GROUP_DATABASE.getUsersInGroup(null).isEmpty());
+        _util.writeAndSetGroupFile();
+        assertTrue(_fileGroupDatabase.getUsersInGroup(null).isEmpty());
     }
 
     @Test
     public void testGetGroupPrincipalsForUserWhenUserBelongsToOneGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "user1,user2");
-        Set<String> groups = FILE_GROUP_DATABASE.getGroupsForUser(USER1);
+        _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
+        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1);
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP));
     }
@@ -185,8 +163,8 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testGetGroupPrincipalsForUserWhenUserBelongsToTwoGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup1.users", "user1,user2", "myGroup2.users", "user1,user3");
-        Set<String> groups = FILE_GROUP_DATABASE.getGroupsForUser(USER1);
+        _util.writeAndSetGroupFile("myGroup1.users", "user1,user2", "myGroup2.users", "user1,user3");
+        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1);
         assertEquals(2, groups.size());
         assertTrue(groups.contains(MY_GROUP1));
         assertTrue(groups.contains(MY_GROUP2));
@@ -195,20 +173,20 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testGetGroupPrincipalsForUserWhenUserAddedToGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup1.users", "user1,user2", "myGroup2.users", USER2);
-        Set<String> groups = FILE_GROUP_DATABASE.getGroupsForUser(USER1);
+        _util.writeAndSetGroupFile("myGroup1.users", "user1,user2", "myGroup2.users", USER2);
+        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1);
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP1));
 
-        FILE_GROUP_DATABASE.addUserToGroup(USER1, MY_GROUP2);
+        _fileGroupDatabase.addUserToGroup(USER1, MY_GROUP2);
 
-        groups = FILE_GROUP_DATABASE.getGroupsForUser(USER1);
+        groups = _fileGroupDatabase.getGroupsForUser(USER1);
         assertEquals(2, groups.size());
-        assertTrue(FILE_GROUP_DATABASE.getGroupsForUser(USER1.toUpperCase()).isEmpty());
+        assertTrue(_fileGroupDatabase.getGroupsForUser(USER1.toUpperCase()).isEmpty());
         assertTrue(groups.contains(MY_GROUP1));
         assertTrue(groups.contains(MY_GROUP2));
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP2);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP2);
         assertEquals(2, users.size());
         assertTrue(users.contains(USER1));
         assertTrue(users.contains(USER2));
@@ -217,98 +195,98 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testGetGroupPrincipalsForUserWhenUserRemovedFromGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup1.users", "user1,user2", "myGroup2.users", "user1,user2");
-        Set<String> groups = FILE_GROUP_DATABASE.getGroupsForUser(USER1);
+        _util.writeAndSetGroupFile("myGroup1.users", "user1,user2", "myGroup2.users", "user1,user2");
+        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1);
         assertEquals(2, groups.size());
         assertTrue(groups.contains(MY_GROUP1));
         assertTrue(groups.contains(MY_GROUP2));
 
-        FILE_GROUP_DATABASE.removeUserFromGroup(USER1, MY_GROUP2);
+        _fileGroupDatabase.removeUserFromGroup(USER1, MY_GROUP2);
 
-        groups = FILE_GROUP_DATABASE.getGroupsForUser(USER1);
+        groups = _fileGroupDatabase.getGroupsForUser(USER1);
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP1));
-        assertTrue(FILE_GROUP_DATABASE.getGroupsForUser(USER1.toUpperCase()).isEmpty());
+        assertTrue(_fileGroupDatabase.getGroupsForUser(USER1.toUpperCase()).isEmpty());
     }
 
     @Test
     public void testGetGroupPrincipalsForUserWhenUserAddedToGroupTheyAreAlreadyIn() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", USER1);
-        FILE_GROUP_DATABASE.addUserToGroup(USER1, MY_GROUP);
+        _util.writeAndSetGroupFile("myGroup.users", USER1);
+        _fileGroupDatabase.addUserToGroup(USER1, MY_GROUP);
 
-        Set<String> groups = FILE_GROUP_DATABASE.getGroupsForUser(USER1);
+        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1);
 
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP));
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertEquals(1, users.size());
         assertTrue(users.contains(USER1));
-        assertTrue(FILE_GROUP_DATABASE.getGroupsForUser(MY_GROUP.toUpperCase()).isEmpty());
+        assertTrue(_fileGroupDatabase.getGroupsForUser(MY_GROUP.toUpperCase()).isEmpty());
     }
 
     @Test
     public void testGetGroupPrincipalsForUserWhenUserNotKnown() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "user1,user2");
-        Set<String> groups = FILE_GROUP_DATABASE.getGroupsForUser(USER3);
+        _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
+        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER3);
         assertTrue(groups.isEmpty());
     }
 
     @Test
     public void testGetGroupPrincipalsForNullUser() throws Exception
     {
-        UTIL.writeAndSetGroupFile();
-        assertTrue(FILE_GROUP_DATABASE.getGroupsForUser(null).isEmpty());
+        _util.writeAndSetGroupFile();
+        assertTrue(_fileGroupDatabase.getGroupsForUser(null).isEmpty());
     }
 
     @Test
     public void testAddUserToExistingGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "user1,user2");
+        _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertEquals(2, users.size());
 
-        FILE_GROUP_DATABASE.addUserToGroup(USER3, MY_GROUP);
+        _fileGroupDatabase.addUserToGroup(USER3, MY_GROUP);
 
-        users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertEquals(3, users.size());
-        assertTrue(FILE_GROUP_DATABASE.getGroupsForUser(MY_GROUP.toUpperCase()).isEmpty());
+        assertTrue(_fileGroupDatabase.getGroupsForUser(MY_GROUP.toUpperCase()).isEmpty());
     }
 
     @Test
     public void testAddUserToEmptyGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "");
+        _util.writeAndSetGroupFile("myGroup.users", "");
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertTrue(users.isEmpty());
 
-        FILE_GROUP_DATABASE.addUserToGroup(USER3, MY_GROUP);
+        _fileGroupDatabase.addUserToGroup(USER3, MY_GROUP);
 
-        users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertEquals(1, users.size());
-        assertTrue(FILE_GROUP_DATABASE.getGroupsForUser(MY_GROUP.toUpperCase()).isEmpty());
+        assertTrue(_fileGroupDatabase.getGroupsForUser(MY_GROUP.toUpperCase()).isEmpty());
     }
 
     @Test
     public void testAddUserToNonExistentGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile();
+        _util.writeAndSetGroupFile();
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertTrue(users.isEmpty());
 
         try
         {
-            FILE_GROUP_DATABASE.addUserToGroup(USER3, MY_GROUP);
+            _fileGroupDatabase.addUserToGroup(USER3, MY_GROUP);
             fail("Expected exception not thrown");
         }
         catch (IllegalArgumentException e)
@@ -316,7 +294,7 @@ public class FileGroupDatabaseTest extends UnitTestBase
             // pass
         }
 
-        users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertTrue(users.isEmpty());
     }
@@ -324,15 +302,15 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testRemoveUserFromExistingGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "user1,user2");
+        _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertEquals(2, users.size());
 
-        FILE_GROUP_DATABASE.removeUserFromGroup(USER2, MY_GROUP);
+        _fileGroupDatabase.removeUserFromGroup(USER2, MY_GROUP);
 
-        users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertEquals(1, users.size());
     }
@@ -340,11 +318,11 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testRemoveUserFromNonexistentGroup() throws Exception
     {
-        UTIL.writeAndSetGroupFile();
+        _util.writeAndSetGroupFile();
 
         try
         {
-            FILE_GROUP_DATABASE.removeUserFromGroup(USER1, MY_GROUP);
+            _fileGroupDatabase.removeUserFromGroup(USER1, MY_GROUP);
             fail("Expected exception not thrown");
         }
         catch (IllegalArgumentException e)
@@ -352,35 +330,35 @@ public class FileGroupDatabaseTest extends UnitTestBase
             // pass
         }
 
-        assertTrue(FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP).isEmpty());
+        assertTrue(_fileGroupDatabase.getUsersInGroup(MY_GROUP).isEmpty());
     }
 
     @Test
     public void testRemoveUserFromGroupTwice() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", USER1);
-        assertTrue(FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP).contains(USER1));
+        _util.writeAndSetGroupFile("myGroup.users", USER1);
+        assertTrue(_fileGroupDatabase.getUsersInGroup(MY_GROUP).contains(USER1));
 
-        FILE_GROUP_DATABASE.removeUserFromGroup(USER1, MY_GROUP);
-        assertTrue(FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP).isEmpty());
+        _fileGroupDatabase.removeUserFromGroup(USER1, MY_GROUP);
+        assertTrue(_fileGroupDatabase.getUsersInGroup(MY_GROUP).isEmpty());
 
-        FILE_GROUP_DATABASE.removeUserFromGroup(USER1, MY_GROUP);
-        assertTrue(FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP).isEmpty());
+        _fileGroupDatabase.removeUserFromGroup(USER1, MY_GROUP);
+        assertTrue(_fileGroupDatabase.getUsersInGroup(MY_GROUP).isEmpty());
     }
 
     @Test
     public void testAddUserPersistedToFile() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "user1,user2");
+        _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertEquals(2, users.size());
 
-        FILE_GROUP_DATABASE.addUserToGroup(USER3, MY_GROUP);
+        _fileGroupDatabase.addUserToGroup(USER3, MY_GROUP);
         assertEquals(3, users.size());
 
         FileGroupDatabase newGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
-        newGroupDatabase.setGroupFile(GROUP_FILE);
+        newGroupDatabase.setGroupFile(_groupFile);
 
         Set<String> newUsers = newGroupDatabase.getUsersInGroup(MY_GROUP);
         assertEquals(users.size(), newUsers.size());
@@ -389,16 +367,16 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testRemoveUserPersistedToFile() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup.users", "user1,user2");
+        _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
 
-        Set<String> users = FILE_GROUP_DATABASE.getUsersInGroup(MY_GROUP);
+        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertEquals(2, users.size());
 
-        FILE_GROUP_DATABASE.removeUserFromGroup(USER2, MY_GROUP);
+        _fileGroupDatabase.removeUserFromGroup(USER2, MY_GROUP);
         assertEquals(1, users.size());
 
         FileGroupDatabase newGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
-        newGroupDatabase.setGroupFile(GROUP_FILE);
+        newGroupDatabase.setGroupFile(_groupFile);
 
         Set<String> newUsers = newGroupDatabase.getUsersInGroup(MY_GROUP);
         assertEquals(users.size(), newUsers.size());
@@ -407,19 +385,19 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testCreateGroupPersistedToFile() throws Exception
     {
-        UTIL.writeAndSetGroupFile();
+        _util.writeAndSetGroupFile();
 
-        Set<String> groups = FILE_GROUP_DATABASE.getAllGroups();
+        Set<String> groups = _fileGroupDatabase.getAllGroups();
         assertTrue(groups.isEmpty());
 
-        FILE_GROUP_DATABASE.createGroup(MY_GROUP);
+        _fileGroupDatabase.createGroup(MY_GROUP);
 
-        groups = FILE_GROUP_DATABASE.getAllGroups();
+        groups = _fileGroupDatabase.getAllGroups();
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP));
 
         FileGroupDatabase newGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
-        newGroupDatabase.setGroupFile(GROUP_FILE);
+        newGroupDatabase.setGroupFile(_groupFile);
 
         Set<String> newGroups = newGroupDatabase.getAllGroups();
         assertEquals(1, newGroups.size());
@@ -429,25 +407,25 @@ public class FileGroupDatabaseTest extends UnitTestBase
     @Test
     public void testRemoveGroupPersistedToFile() throws Exception
     {
-        UTIL.writeAndSetGroupFile("myGroup1.users", "user1,user2", "myGroup2.users", "user1,user2");
+        _util.writeAndSetGroupFile("myGroup1.users", "user1,user2", "myGroup2.users", "user1,user2");
 
-        Set<String> groups = FILE_GROUP_DATABASE.getAllGroups();
+        Set<String> groups = _fileGroupDatabase.getAllGroups();
         assertEquals(2, groups.size());
 
-        Set<String> groupsForUser1 = FILE_GROUP_DATABASE.getGroupsForUser(USER1);
+        Set<String> groupsForUser1 = _fileGroupDatabase.getGroupsForUser(USER1);
         assertEquals(2, groupsForUser1.size());
 
-        FILE_GROUP_DATABASE.removeGroup(MY_GROUP1);
+        _fileGroupDatabase.removeGroup(MY_GROUP1);
 
-        groups = FILE_GROUP_DATABASE.getAllGroups();
+        groups = _fileGroupDatabase.getAllGroups();
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP2));
 
-        groupsForUser1 = FILE_GROUP_DATABASE.getGroupsForUser(USER1);
+        groupsForUser1 = _fileGroupDatabase.getGroupsForUser(USER1);
         assertEquals(1, groupsForUser1.size());
 
         FileGroupDatabase newGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
-        newGroupDatabase.setGroupFile(GROUP_FILE);
+        newGroupDatabase.setGroupFile(_groupFile);
 
         Set<String> newGroups = newGroupDatabase.getAllGroups();
         assertEquals(1, newGroups.size());
@@ -458,12 +436,12 @@ public class FileGroupDatabaseTest extends UnitTestBase
         assertTrue(newGroupsForUser1.contains(MY_GROUP2));
     }
 
-    @AfterClass
-    public static void tearDown()
+    @After
+    public void tearDown()
     {
-        if (GROUP_FILE != null)
+        if (_groupFile != null)
         {
-            File groupFile = new File(GROUP_FILE);
+            File groupFile = new File(_groupFile);
             if (groupFile.exists())
             {
                 groupFile.delete();
