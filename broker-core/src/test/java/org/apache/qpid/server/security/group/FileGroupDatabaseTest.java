@@ -23,6 +23,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -32,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class FileGroupDatabaseTest extends UnitTestBase
@@ -48,11 +51,14 @@ public class FileGroupDatabaseTest extends UnitTestBase
     private FileGroupDatabase _fileGroupDatabase;
     private GroupProviderUtil _util;
     private String _groupFile;
+    private FileBasedGroupProvider<?> _groupProvider;
 
     @Before
     public void setUp() throws Exception
     {
-        _fileGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
+        _groupProvider = mock(FileBasedGroupProvider.class);
+        when(_groupProvider.isCaseSensitive()).thenReturn(CASE_SENSITIVE);
+        _fileGroupDatabase = new FileGroupDatabase(_groupProvider);
         _util = new GroupProviderUtil(_fileGroupDatabase);
         _groupFile = _util.getGroupFile();
     }
@@ -357,7 +363,7 @@ public class FileGroupDatabaseTest extends UnitTestBase
         _fileGroupDatabase.addUserToGroup(USER3, MY_GROUP);
         assertEquals(3, users.size());
 
-        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
+        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
         newGroupDatabase.setGroupFile(_groupFile);
 
         Set<String> newUsers = newGroupDatabase.getUsersInGroup(MY_GROUP);
@@ -375,7 +381,7 @@ public class FileGroupDatabaseTest extends UnitTestBase
         _fileGroupDatabase.removeUserFromGroup(USER2, MY_GROUP);
         assertEquals(1, users.size());
 
-        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
+        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
         newGroupDatabase.setGroupFile(_groupFile);
 
         Set<String> newUsers = newGroupDatabase.getUsersInGroup(MY_GROUP);
@@ -396,7 +402,7 @@ public class FileGroupDatabaseTest extends UnitTestBase
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP));
 
-        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
+        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
         newGroupDatabase.setGroupFile(_groupFile);
 
         Set<String> newGroups = newGroupDatabase.getAllGroups();
@@ -424,7 +430,7 @@ public class FileGroupDatabaseTest extends UnitTestBase
         groupsForUser1 = _fileGroupDatabase.getGroupsForUser(USER1);
         assertEquals(1, groupsForUser1.size());
 
-        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(CASE_SENSITIVE);
+        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
         newGroupDatabase.setGroupFile(_groupFile);
 
         Set<String> newGroups = newGroupDatabase.getAllGroups();

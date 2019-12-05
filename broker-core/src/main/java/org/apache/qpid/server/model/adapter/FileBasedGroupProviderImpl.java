@@ -105,7 +105,7 @@ public class FileBasedGroupProviderImpl
     protected void onOpen()
     {
         super.onOpen();
-        FileGroupDatabase groupDatabase = new FileGroupDatabase(isCaseSensitive());
+        FileGroupDatabase groupDatabase = new FileGroupDatabase(this);
         try
         {
             groupDatabase.setGroupFile(getPath());
@@ -175,7 +175,7 @@ public class FileBasedGroupProviderImpl
                 throw new IllegalConfigurationException(String.format("Cannot read groups file '%s'. Please check permissions.", _path));
             }
 
-            FileGroupDatabase groupDatabase = new FileGroupDatabase(isCaseSensitive());
+            FileGroupDatabase groupDatabase = new FileGroupDatabase(this);
             try
             {
                 groupDatabase.setGroupFile(_path);

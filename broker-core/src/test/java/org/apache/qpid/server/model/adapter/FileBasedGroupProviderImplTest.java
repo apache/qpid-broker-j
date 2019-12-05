@@ -21,8 +21,10 @@
 package org.apache.qpid.server.model.adapter;
 
 import static org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl.GROUP_FILE_PROVIDER_TYPE;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -164,6 +166,39 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
         assertThat(members.size(), is(equalTo(1)));
         GroupMember rootMember = members.iterator().next();
         assertThat(rootMember.getName(), is(equalTo("root")));
+    }
+
+
+    @Test
+    public void testGetGroupPrincipalsForUserCaseAware() throws Exception
+    {
+        Map<String, Set<String>> input = new HashMap<>();
+        input.put("super", Sets.newHashSet("root"));
+
+        _groupFile = createTemporaryGroupFile(input);
+
+        Map<String, Object> providerAttrs = new HashMap<>();
+        String groupsFile = _groupFile.getAbsolutePath();
+        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
+        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
+        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
+
+        @SuppressWarnings("unchecked")
+        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+        assertThat(provider, is(instanceOf(FileBasedGroupProvider.class)));
+        assertThat(((FileBasedGroupProvider)provider).isCaseSensitive(), is(true));
+
+        Set<Principal> adminGroups = provider.getGroupPrincipalsForUser(() -> "Root");
+        assertThat("No group should be found when caseSensitive=true",
+                   adminGroups.stream().map(Principal::getName).collect(Collectors.toSet()),
+                  is(empty()));
+
+        provider.setAttributes(Collections.singletonMap("caseSensitive", false));
+        assertThat(((FileBasedGroupProvider)provider).isCaseSensitive(), is(false));
+        Set<Principal> adminGroups2 = provider.getGroupPrincipalsForUser(() -> "Root");
+        assertThat("root has unexpected group membership",
+                   adminGroups2.stream().map(Principal::getName).collect(Collectors.toSet()),
+                   containsInAnyOrder("super"));
     }
 
     @Test

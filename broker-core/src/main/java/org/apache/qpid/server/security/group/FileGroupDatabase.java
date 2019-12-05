@@ -36,6 +36,7 @@ import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.util.BaseAction;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -52,15 +53,12 @@ public class FileGroupDatabase implements GroupDatabase
 
     private final Map<String, Set<String>> _groupToUserMap;
     private final Map<String, Set<String>> _userToGroupMap;
+    private final FileBasedGroupProvider<?>  _groupProvider;
     private String _groupFile;
-    private final boolean _caseSensitive;
 
-    /**
-     * @param caseSensitive provides information if search of Users and Groups is CaseSensitive or CaseInsensitive;
-     */
-    public FileGroupDatabase(boolean caseSensitive)
+    public FileGroupDatabase(FileBasedGroupProvider<?> groupProvider)
     {
-        this._caseSensitive = caseSensitive;
+        this._groupProvider = groupProvider;
         _groupToUserMap = new ConcurrentHashMap<>();
         _userToGroupMap = new ConcurrentHashMap<>();
     }
@@ -299,7 +297,7 @@ public class FileGroupDatabase implements GroupDatabase
 
     private String keySearch(Set<String> set, String requiredKey)
     {
-        if (!_caseSensitive)
+        if (!_groupProvider.isCaseSensitive())
         {
             for (String key : set)
             {
