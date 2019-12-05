@@ -47,6 +47,8 @@ import org.ietf.jgss.Oid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.util.FileUtils;
+
 public class KerberosUtilities
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(KerberosUtilities.class);
@@ -57,6 +59,12 @@ public class KerberosUtilities
 
     public byte[] buildToken(String clientPrincipalName, String targetServerPrincipalName) throws GSSException
     {
+        debugConfig();
+
+        debug("Building token for client principal '{}' and server principal '{}'",
+              clientPrincipalName,
+              targetServerPrincipalName);
+
         final GSSManager manager = GSSManager.getInstance();
         final GSSName clientName = manager.createName(clientPrincipalName, GSSName.NT_USER_NAME);
         final GSSCredential credential = manager.createCredential(clientName,
@@ -64,16 +72,27 @@ public class KerberosUtilities
                                                                   new Oid("1.2.840.113554.1.2.2"),
                                                                   GSSCredential.INITIATE_ONLY);
 
+        debug("Client credential '{}'", credential);
+
         final GSSName serverName = manager.createName(targetServerPrincipalName, GSSName.NT_USER_NAME);
         final Oid spnegoMechOid = new Oid("1.3.6.1.5.5.2");
         final GSSContext clientContext = manager.createContext(serverName.canonicalize(spnegoMechOid),
                                                                spnegoMechOid,
                                                                credential,
                                                                GSSContext.DEFAULT_LIFETIME);
+
+        debug("Requesting ticket using initiator's credentials");
+
         try
         {
             clientContext.requestCredDeleg(true);
+            debug("Requesting ticket");
             return clientContext.initSecContext(new byte[]{}, 0, 0);
+        }
+        catch (GSSException e)
+        {
+            debug("Failure to request token", e);
+            throw e;
         }
         finally
         {
@@ -186,4 +205,39 @@ public class KerberosUtilities
             return new AppConfigurationEntry[0];
         }
     }
+
+    public static void debugConfig()
+    {
+        if (LOGGER.isDebugEnabled())
+        {
+            final String krb5Conf = System.getProperty("java.security.krb5.conf");
+            if (krb5Conf != null)
+            {
+                final File file = new File(krb5Conf);
+                if (file.exists())
+                {
+                    String config = FileUtils.readFileAsString(file);
+                    debug("Kerberos config: {}", config);
+                }
+                else
+                {
+                    LOGGER.warn("Kerberos config file was not found in the expected location at '{}'", krb5Conf);
+                }
+            }
+            else
+            {
+                LOGGER.warn("JVM system property 'java.security.krb5.conf' is not set");
+            }
+        }
+    }
+
+    public static void debug(String message, Object... args)
+    {
+        LOGGER.debug(message, args);
+        if (Boolean.TRUE.toString().equalsIgnoreCase(System.getProperty("sun.security.krb5.debug")))
+        {
+            System.out.println(String.format(message.replace("{}", "%s"), args));
+        }
+    }
+
 }
