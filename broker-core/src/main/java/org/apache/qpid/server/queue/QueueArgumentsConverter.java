@@ -139,7 +139,8 @@ public class QueueArgumentsConverter
 
     public static Map<String,Object> convertWireArgsToModel(final String queueName,
                                                             final Map<String, Object> wireArguments,
-                                                            final Model model)
+                                                            final Model model,
+                                                            final Queue.BehaviourOnUnknownDeclareArgument unknownArgumentBehaviour)
     {
         Map<String,Object> modelArguments = new HashMap<>();
         if(wireArguments != null)
@@ -251,8 +252,19 @@ public class QueueArgumentsConverter
 
             if (!wireArgumentNames.isEmpty())
             {
-                throw new IllegalArgumentException(String.format("Unsupported queue declare argument(s) : %s",
-                                                                 String.join(",", wireArgumentNames)));
+
+                switch(unknownArgumentBehaviour)
+                {
+                    case LOG:
+                        LOGGER.warn("Unsupported queue declare argument(s) : {}", String.join(",", wireArgumentNames));
+                        break;
+                    case IGNORE:
+                        break;
+                    case FAIL:
+                    default:
+                        throw new IllegalArgumentException(String.format("Unsupported queue declare argument(s) : %s",
+                                                                         String.join(",", wireArgumentNames)));
+                }
             }
         }
         return modelArguments;
