@@ -3034,8 +3034,12 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     validateAlternateExchangeIsNotQueue(virtualHost, alternateExchangeName);
                 }
 
+                Queue.BehaviourOnUnknownDeclareArgument unknownArgumentBehaviour =
+                        getConnection().getContextValue(Queue.BehaviourOnUnknownDeclareArgument.class,
+                                                        Queue.UNKNOWN_QUEUE_DECLARE_ARGUMENT_BEHAVIOUR_NAME);
+
                 Map<String, Object> attributes =
-                        QueueArgumentsConverter.convertWireArgsToModel(queueNameString, wireArguments, getModel());
+                        QueueArgumentsConverter.convertWireArgsToModel(queueNameString, wireArguments, getModel(), unknownArgumentBehaviour);
 
                 attributes.put(Queue.NAME, queueNameString);
                 attributes.put(Queue.DURABLE, durable);

@@ -1588,10 +1588,16 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         {
             try
             {
+
+                Queue.BehaviourOnUnknownDeclareArgument unknownArgumentBehaviour =
+                        session.getAMQPConnection().getContextValue(Queue.BehaviourOnUnknownDeclareArgument.class,
+                                                   Queue.UNKNOWN_QUEUE_DECLARE_ARGUMENT_BEHAVIOUR_NAME);
+
                 final Map<String, Object> arguments = QueueArgumentsConverter.convertWireArgsToModel(queueName,
                                                                                                      method.getArguments(),
                                                                                                      session.getAMQPConnection()
-                                                                                                            .getModel());
+                                                                                                            .getModel(),
+                                                                                                     unknownArgumentBehaviour);
                 final String alternateExchangeName = method.getAlternateExchange();
                 if (method.hasAlternateExchange() && !nameNullOrEmpty(alternateExchangeName))
                 {

@@ -131,6 +131,17 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
             description = "The behaviour of consumer if it tries to consumer a messages that it cannot convert.")
     MessageConversionExceptionHandlingPolicy DEFAULT_MESSAGE_CONVERSION_EXCEPTION_HANDLING_POLICY = MessageConversionExceptionHandlingPolicy.REJECT;
 
+    enum BehaviourOnUnknownDeclareArgument
+    {
+        IGNORE, LOG, FAIL
+    }
+
+    String UNKNOWN_QUEUE_DECLARE_ARGUMENT_BEHAVIOUR_NAME = "queue.behaviourOnUnknownDeclareArgument";
+    @ManagedContextDefault(name= UNKNOWN_QUEUE_DECLARE_ARGUMENT_BEHAVIOUR_NAME)
+    Queue.BehaviourOnUnknownDeclareArgument
+            ON_UNKNOWN_QUEUE_DECLARE_OPTION = Queue.BehaviourOnUnknownDeclareArgument.FAIL;
+
+
     @SuppressWarnings("unused")
     @ManagedAttribute( defaultValue = "${queue.defaultEnsureNonDestructiveConsumers}" )
     boolean isEnsureNondestructiveConsumers();
