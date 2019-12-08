@@ -102,6 +102,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
     private final String _linkName;
 
     private volatile QueueConsumerNode _queueConsumerNode;
+    private volatile boolean _nonLive;
 
     QueueConsumerImpl(final AbstractQueue<?> queue,
                       T target,
@@ -193,7 +194,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
     @Override
     public boolean isNotifyWorkDesired()
     {
-        return _target.isNotifyWorkDesired();
+        return !isNonLive() && _target.isNotifyWorkDesired();
     }
 
     @Override
@@ -544,6 +545,16 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         return _selector;
     }
 
+    @Override
+    public boolean isNonLive()
+    {
+        return _nonLive;
+    }
+
+    public void setNonLive(final boolean nonLive)
+    {
+        _nonLive = nonLive;
+    }
 
     @Override
     public String toLogString()

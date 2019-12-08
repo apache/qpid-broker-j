@@ -49,6 +49,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -257,6 +258,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @ManagedAttributeField
     private ExpiryPolicy _expiryPolicy;
 
+    @ManagedAttributeField
+    private volatile int _maximumLiveConsumers;
+
+    private static final AtomicIntegerFieldUpdater<AbstractQueue> LIVE_CONSUMERS_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(AbstractQueue.class, "_liveConsumers");
+    private volatile int _liveConsumers;
+
     private static final int RECOVERING = 1;
     private static final int COMPLETING_RECOVERY = 2;
     private static final int RECOVERED = 3;
@@ -266,7 +274,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final ConcurrentLinkedQueue<EnqueueRequest> _postRecoveryQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
-    private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<DestinationReferrer,Boolean>());
+    private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<LocalTransaction> _transactions = ConcurrentHashMap.newKeySet();
     private final LocalTransaction.LocalTransactionListener _localTransactionListener = _transactions::remove;
 
@@ -282,7 +290,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private interface HoldMethod
     {
-        boolean isHeld(MessageReference<?> message, long evalutaionTime);
+        boolean isHeld(MessageReference<?> message, long evaluationTime);
     }
 
     protected AbstractQueue(Map<String, Object> attributes, QueueManagingVirtualHost<?> virtualHost)
@@ -302,30 +310,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             || getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END))
         {
             Subject.doAs(getSubjectWithAddedSystemRights(),
-                         new PrivilegedAction<Object>()
-                         {
-                             @Override
-                             public Object run()
-                             {
-                                 setAttributes(Collections.<String, Object>singletonMap(AbstractConfiguredObject.DURABLE,
-                                                                                        false));
-                                 return null;
-                             }
+                         (PrivilegedAction<Object>) () -> {
+                             setAttributes(Collections.<String, Object>singletonMap(AbstractConfiguredObject.DURABLE,
+                                                                                    false));
+                             return null;
                          });
         }
 
         if(!isDurable() && getMessageDurability() != MessageDurability.NEVER)
         {
             Subject.doAs(getSubjectWithAddedSystemRights(),
-                         new PrivilegedAction<Object>()
-                         {
-                             @Override
-                             public Object run()
-                             {
-                                 setAttributes(Collections.<String, Object>singletonMap(Queue.MESSAGE_DURABILITY,
-                                                                                        MessageDurability.NEVER));
-                                 return null;
-                             }
+                         (PrivilegedAction<Object>) () -> {
+                             setAttributes(Collections.<String, Object>singletonMap(Queue.MESSAGE_DURABILITY,
+                                                                                    MessageDurability.NEVER));
+                             return null;
                          });
         }
 
@@ -372,7 +370,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
-        Set<SessionPrincipal> sessionPrincipals = activeSubject == null ? Collections.<SessionPrincipal>emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
+        Set<SessionPrincipal> sessionPrincipals = activeSubject == null ? Collections.emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
         AMQPSession<?, ?> session;
         if(sessionPrincipals.isEmpty())
         {
@@ -774,7 +772,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public Collection<String> getAvailableAttributes()
     {
-        return new ArrayList<String>(_arguments.keySet());
+        return new ArrayList<>(_arguments.keySet());
     }
 
     @Override
@@ -849,7 +847,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             });
 
             target.consumerAdded(queueConsumer);
-            if(isEmpty())
+            if(isEmpty() || queueConsumer.isNonLive())
             {
                 target.noMessagesAvailable();
             }
@@ -1041,6 +1039,31 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         consumer.setQueueContext(queueContext);
 
+        // this level of care over concurrency in maintaining the correct value for live consumers is probable not
+        // necessary, as all this should take place serially in the configuration thread
+        int maximumLiveConsumers = _maximumLiveConsumers;
+        if(maximumLiveConsumers > 0)
+        {
+            boolean added = false;
+            int liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+            while(liveConsumers < maximumLiveConsumers)
+            {
+                if(LIVE_CONSUMERS_UPDATER.compareAndSet(this, liveConsumers, liveConsumers+1))
+                {
+                    added = true;
+
+                    break;
+                }
+                liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+            }
+
+            if(!added)
+            {
+                consumer.setNonLive(true);
+            }
+
+        }
+
         _queueConsumerManager.addConsumer(consumer);
         if (consumer.isNotifyWorkDesired())
         {
@@ -1089,7 +1112,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             consumer.closeAsync();
             // No longer can the queue have an exclusive consumer
-            setExclusiveSubscriber(null);
+            clearExclusiveSubscriber();
 
             consumer.setQueueContext(null);
 
@@ -1103,6 +1126,47 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 resetSubPointersForGroups(consumer);
             }
 
+            // this level of care over concurrency in maintaining the correct value for live consumers is probable not
+            // necessary, as all this should take place serially in the configuration thread
+            int maximumLiveConsumers = _maximumLiveConsumers;
+            if(maximumLiveConsumers > 0 && !consumer.isNonLive())
+            {
+                boolean updated = false;
+                int liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+                while(liveConsumers > 0)
+                {
+                    if(LIVE_CONSUMERS_UPDATER.compareAndSet(this, liveConsumers, liveConsumers-1))
+                    {
+                        updated = true;
+
+                        break;
+                    }
+                    liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+                }
+
+                liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+
+                consumer.setNonLive(true);
+
+                Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
+
+                QueueConsumerImpl<?> otherConsumer;
+                while(consumerIterator.hasNext() && liveConsumers < maximumLiveConsumers)
+                {
+                    otherConsumer = (QueueConsumerImpl<?>) consumerIterator.next();
+
+                    if(otherConsumer != null && otherConsumer.isNonLive() && LIVE_CONSUMERS_UPDATER.compareAndSet(this, liveConsumers, liveConsumers+1))
+                    {
+                        otherConsumer.setNonLive(false);
+                        otherConsumer.setNotifyWorkDesired(true);
+                        break;
+                    }
+                    liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+                    maximumLiveConsumers = _maximumLiveConsumers;
+                }
+
+            }
+
             // auto-delete queues must be deleted if there are no remaining subscribers
 
             if(!consumer.isTransient()
@@ -1114,15 +1178,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 LOGGER.debug("Auto-deleting queue: {}", this);
 
-                Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
-                             {
-                                 @Override
-                                 public Object run()
-                                 {
-                                     AbstractQueue.this.delete();
-                                     return null;
-                                 }
-                             });
+                Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () -> {
+                    AbstractQueue.this.delete();
+                    return null;
+                });
 
 
                 // we need to manually fire the event to the removed consumer (which was the last one left for this
@@ -1583,6 +1642,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _deleted.get();
     }
 
+    @Override
+    public int getMaximumLiveConsumers()
+    {
+        return _maximumLiveConsumers;
+    }
+
     boolean wouldExpire(final ServerMessage message)
     {
         long expiration = calculateExpiration(message);
@@ -1592,7 +1657,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public List<QueueEntry> getMessagesOnTheQueue()
     {
-        ArrayList<QueueEntry> entryList = new ArrayList<QueueEntry>();
+        ArrayList<QueueEntry> entryList = new ArrayList<>();
         QueueEntryIterator queueListIterator = getEntries().iterator();
         while (queueListIterator.advance())
         {
@@ -1623,9 +1688,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _exclusiveSubscriber != null;
     }
 
-    private void setExclusiveSubscriber(QueueConsumer<?,?> exclusiveSubscriber)
+    private void clearExclusiveSubscriber()
     {
-        _exclusiveSubscriber = exclusiveSubscriber;
+        _exclusiveSubscriber = null;
     }
 
     /** Used to track bindings to exchanges so that on deletion they can easily be cancelled. */
@@ -1679,7 +1744,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     List<QueueEntry> getMessagesOnTheQueue(QueueEntryFilter filter)
     {
-        ArrayList<QueueEntry> entryList = new ArrayList<QueueEntry>();
+        ArrayList<QueueEntry> entryList = new ArrayList<>();
         QueueEntryIterator queueListIterator = getEntries().iterator();
         while (queueListIterator.advance() && !filter.filterComplete())
         {
@@ -2077,14 +2142,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         boolean queueEmpty = false;
         MessageContainer messageContainer = null;
-
         _queueConsumerManager.setNotified(consumer, false);
         try
         {
 
             if (!consumer.isSuspended())
             {
-                messageContainer = attemptDelivery(consumer);
+                if(consumer.isNonLive())
+                {
+                    messageContainer = NO_MESSAGES;
+                }
+                else
+                {
+                    messageContainer = attemptDelivery(consumer);
+                }
 
                 if(messageContainer.getMessageInstance() == null)
                 {
@@ -2138,7 +2209,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         // avoid referring old deleted queue entry in sub._queueContext._lastSeen
         QueueEntry node = getNextAvailableEntry(sub);
-        boolean subActive = sub.isActive() && !sub.isSuspended();
+        boolean subActive = sub.isActive() && !sub.isSuspended() && !sub.isNonLive();
 
         if (node != null && subActive
             && (sub.getPriority() == Integer.MAX_VALUE || noHigherPriorityWithCredit(sub, node)))

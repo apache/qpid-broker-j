@@ -170,6 +170,17 @@ my-queue; {create: always, node: {x-declare: {arguments:{'x-qpid-capacity': 1024
                         and assigned as this queue's <literal>alternateBinding</literal>.</para>
                     </entry>
                 </row>
+                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-X-Single-Active-Consumer">
+                    <entry>
+                        <para>x-single-active-consumer</para>
+                    </entry>
+                    <entry>
+                        <para>If set <literal>true</literal>, then of all consumers attached to a queue, only one will
+                            be designated as <emphasis>active</emphasis>, and eligible to receive messages.  If the active
+                            consumer is detached, and other consumers are attached, one of these other consumers is selected
+                            to become the single active consumer.</para>
+                    </entry>
+                </row>
             </tbody>
         </tgroup>
     </table>

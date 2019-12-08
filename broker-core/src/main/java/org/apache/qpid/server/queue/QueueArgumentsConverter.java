@@ -63,6 +63,8 @@ public class QueueArgumentsConverter
 
     public static final String X_QPID_DESCRIPTION = "x-qpid-description";
 
+    public static final String X_SINGLE_ACTIVE_CONSUMER = "x-single-active-consumer";
+
     private static final String QPID_LAST_VALUE_QUEUE_KEY = "qpid.last_value_queue_key";
 
     private static final String QPID_QUEUE_SORT_KEY = "qpid.queue_sort_key";
@@ -247,6 +249,17 @@ public class QueueArgumentsConverter
                     modelArguments.put(Queue.ALTERNATE_BINDING,
                                        Collections.singletonMap(AlternateBinding.DESTINATION,
                                                                 getDeadLetterQueueName(queueName)));
+                }
+            }
+
+            if(wireArguments.containsKey(X_SINGLE_ACTIVE_CONSUMER))
+            {
+                wireArgumentNames.remove(X_SINGLE_ACTIVE_CONSUMER);
+                Object argument = wireArguments.get(X_SINGLE_ACTIVE_CONSUMER);
+                if ((argument instanceof Boolean && ((Boolean) argument).booleanValue())
+                    || (argument instanceof String && Boolean.parseBoolean((String)argument)))
+                {
+                    modelArguments.putIfAbsent(Queue.MAXIMUM_LIVE_CONSUMERS, 1);
                 }
             }
 

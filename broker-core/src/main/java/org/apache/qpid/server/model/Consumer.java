@@ -90,4 +90,5 @@ public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> ext
 
     boolean isActive();
 
+    boolean isNonLive();
 }

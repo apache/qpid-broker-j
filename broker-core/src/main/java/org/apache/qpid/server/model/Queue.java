@@ -88,6 +88,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String MAXIMUM_QUEUE_DEPTH_MESSAGES = "maximumQueueDepthMessages";
     String MAXIMUM_QUEUE_DEPTH_BYTES = "maximumQueueDepthBytes";
     String EXPIRY_POLICY = "expiryPolicy";
+    String MAXIMUM_LIVE_CONSUMERS = "maximumLiveConsumers";
 
     String QUEUE_SCAVANGE_COUNT = "qpid.queue.scavenge_count";
     @SuppressWarnings("unused")
@@ -348,6 +349,18 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                           + " queue, if present, or deleted if there is no alternate destination.",
             mandatory = true)
     ExpiryPolicy getExpiryPolicy();
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = "queue.defaultMaximumLiveConsumers",
+            description = "Specifies the default value for maximum live consumers. ")
+    int DEFAULT_MAXIMUM_LIVE_CONSUMERS = 0;
+
+    @ManagedAttribute(defaultValue = "${queue.defaultMaximumLiveConsumers}",
+            description = "Maximum live consumers. If the maximum number of live consumers is set to a number greater "
+                          + "than zero, then consumers in excess of this limit are held in reserve and will only become "
+                          + "eligible to receive messages if a live consumer is removed")
+    int getMaximumLiveConsumers();
+
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false, skipAclCheck = true)
     Collection<PublishingLink> getPublishingLinks();
