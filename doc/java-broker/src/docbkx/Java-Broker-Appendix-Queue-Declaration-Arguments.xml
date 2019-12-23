@@ -161,15 +161,6 @@ my-queue; {create: always, node: {x-declare: {arguments:{'x-qpid-capacity': 1024
                         <para>Specifies this queue's maximum delivery count.</para>
                     </entry>
                 </row>
-                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-X-Qpid-DLQ-Enabled">
-                    <entry>
-                        <para>x-qpid-dlq-enabled</para>
-                    </entry>
-                    <entry>
-                        <para>If set <literal>true</literal>, a dead letter queue will be automatically created
-                        and assigned as this queue's <literal>alternateBinding</literal>.</para>
-                    </entry>
-                </row>
                 <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-X-Single-Active-Consumer">
                     <entry>
                         <para>x-single-active-consumer</para>

@@ -2701,7 +2701,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 }
                 catch (UnknownAlternateBindingException e)
                 {
-                    final String message = String.format("Unknown alternate exchange '%s'", e.getAlternateBindingName());
+                    final String message = String.format("Unknown alternate destination '%s'", e.getAlternateBindingName());
                     _connection.sendConnectionClose(ErrorCodes.NOT_FOUND, message, getChannelId());
 
                 }
@@ -3155,7 +3155,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             }
             catch (UnknownAlternateBindingException e)
             {
-                final String message = String.format("Unknown alternate exchange: '%s'", e.getAlternateBindingName());
+                final String message = String.format("Unknown alternate destination: '%s'", e.getAlternateBindingName());
                 _connection.sendConnectionClose(ErrorCodes.NOT_FOUND, message, getChannelId());
             }
             catch (IllegalArgumentException | IllegalConfigurationException e)
