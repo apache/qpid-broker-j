@@ -18,9 +18,7 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import java.net.InetAddress;
-
-import org.apache.qpid.server.security.access.firewall.FirewallRule;
+import javax.security.auth.Subject;
 
 /**
  * I represent an {@link Action} taken by a client from a known address. The address is used to
@@ -30,7 +28,7 @@ public class ClientAction
 {
     private Action _clientAction;
 
-    public ClientAction(Action clientAction)
+    ClientAction(Action clientAction)
     {
         _clientAction = clientAction;
     }
@@ -40,23 +38,15 @@ public class ClientAction
         _clientAction = new Action(operation, objectType, properties);
     }
 
-    public boolean matches(AclAction ruleAction, InetAddress addressOfClient)
+    public boolean matches(AclAction ruleAction, final Subject subject)
     {
         return _clientAction.matches(ruleAction.getAction())
-                && addressOfClientMatches(ruleAction, addressOfClient);
+               && dynamicMatches(ruleAction.getDynamicRule(), subject);
     }
 
-    private boolean addressOfClientMatches(AclAction ruleAction, InetAddress addressOfClient)
+    private boolean dynamicMatches(final DynamicRule dynamicRule, final Subject subject)
     {
-        FirewallRule firewallRule = ruleAction.getFirewallRule();
-        if(firewallRule == null || addressOfClient == null)
-        {
-            return true;
-        }
-        else
-        {
-            return firewallRule.matches(addressOfClient);
-        }
+        return dynamicRule == null || dynamicRule.matches(subject);
     }
 
     public LegacyOperation getOperation()

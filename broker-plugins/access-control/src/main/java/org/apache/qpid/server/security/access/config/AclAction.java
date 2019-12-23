@@ -18,21 +18,18 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.qpid.server.security.access.firewall.FirewallRule;
+import java.util.Objects;
 
 public class AclAction
 {
     private Action _action;
-    private FirewallRule _firewallRule;
+    private AclRulePredicates _predicates;
 
     public AclAction(LegacyOperation operation, ObjectType object, AclRulePredicates predicates)
     {
         _action = new Action(operation, object, predicates.getObjectProperties());
-        _firewallRule = predicates.getFirewallRule();
+        _predicates = predicates;
     }
 
     public AclAction(LegacyOperation operation)
@@ -45,9 +42,9 @@ public class AclAction
         _action = new Action(operation, object, properties);
     }
 
-    public FirewallRule getFirewallRule()
+    public DynamicRule getDynamicRule()
     {
-        return _firewallRule;
+        return _predicates == null ? null : _predicates.getDynamicRule();
     }
 
     public Action getAction()
@@ -78,9 +75,7 @@ public class AclAction
         {
             return false;
         }
-        return !(getFirewallRule() != null
-                ? !getFirewallRule().equals(aclAction.getFirewallRule())
-                : aclAction.getFirewallRule() != null);
+        return Objects.equals(_predicates, aclAction._predicates);
 
     }
 
@@ -88,7 +83,7 @@ public class AclAction
     public int hashCode()
     {
         int result = getAction() != null ? getAction().hashCode() : 0;
-        result = 31 * result + (getFirewallRule() != null ? getFirewallRule().hashCode() : 0);
+        result = 31 * result + (_predicates != null ? _predicates.hashCode() : 0);
         return result;
     }
 
@@ -97,24 +92,13 @@ public class AclAction
     {
         return "AclAction[" +
                "action=" + _action +
-               ", firewallRule=" + _firewallRule +
+               ", predicates=" + _predicates +
                ']';
     }
 
     public Map<ObjectProperties.Property, String> getAttributes()
     {
-        final ObjectProperties properties = _action.getProperties();
-        final Map<ObjectProperties.Property, String> attributes = new HashMap<>(properties.asPropertyMap());
-        final Set<String> attributeNames = properties.getAttributeNames();
-        if (attributeNames != null && !attributeNames.isEmpty())
-        {
-            attributes.put(ObjectProperties.Property.ATTRIBUTES, String.join(",", attributeNames));
-        }
-        final FirewallRule firewallRule = getFirewallRule();
-        if (firewallRule != null)
-        {
-            attributes.put(firewallRule.getPropertyName(), firewallRule.getPropertyValue());
-        }
-        return attributes;
+        return _predicates.getParsedProperties();
     }
+
 }

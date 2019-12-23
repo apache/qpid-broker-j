@@ -39,6 +39,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.Deletable;
+import org.apache.qpid.server.virtualhost.ConnectionPrincipalStatistics;
 
 public interface AMQPConnection<C extends AMQPConnection<C>>
         extends Connection<C>, Deletable<C>, EventLoggerProvider
@@ -146,5 +147,11 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
 
     @Override
     AmqpPort<?> getPort();
+
+    void registered(ConnectionPrincipalStatistics connectionPrincipalStatistics);
+
+    int getAuthenticatedPrincipalConnectionCount();
+
+    int getAuthenticatedPrincipalConnectionFrequency();
 
 }

@@ -104,6 +104,11 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
                                          + " link detaches. This is to avoid leaking links with the Qpid JMS client.")
     boolean DEFAULT_DISCARD_GLOBAL_SHARED_SUBSCRIPTION_LINKS_ON_DETACH = true;
 
+    String CONNECTION_FREQUENCY_PERIOD = "qpid.virtualhost.connectionFrequencyPeriodInMillis";
+    @ManagedContextDefault(name = CONNECTION_FREQUENCY_PERIOD, description = "Interval (in milliseconds) to evaluate connection frequency")
+    @SuppressWarnings("unused")
+    long DEFAULT_CONNECTION_FREQUENCY_PERIOD = 60 * 1000;
+
     @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_STATISTICS_REPORING_PERIOD + "}", description = "Period (in seconds) of the statistic report.")
     int getStatisticsReportingPeriod();
 

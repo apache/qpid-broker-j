@@ -89,7 +89,7 @@ public class AclActionTest extends UnitTestBase
     private AclRulePredicates createAclRulePredicates()
     {
         AclRulePredicates predicates = mock(AclRulePredicates.class);
-        when(predicates.getFirewallRule()).thenReturn(mock(FirewallRule.class));
+        when(predicates.getDynamicRule()).thenReturn(mock(FirewallRule.class));
         when(predicates.getObjectProperties()).thenReturn(mock(ObjectProperties.class));
         return predicates;
     }

@@ -283,7 +283,7 @@
           <entry> <command>VIRTUALHOST</command> </entry>
           <entry> <para>A virtualhost</para> </entry>
           <entry><para>ALL, CREATE, UPDATE, DELETE, ACCESS, ACCESS_LOGS, INVOKE</para> </entry>
-          <entry><para>name</para> </entry>
+          <entry><para>name, connection_limit, connection_frequency_limit</para> </entry>
           <entry><para>No</para> </entry>
         </row>
         <row>
@@ -415,6 +415,36 @@
           </entry>
         </row>
         <row>
+          <entry><command>connection_limit</command></entry>
+          <entry>
+            <para>
+              A maximum number of connections the users belonging to the given identity can establish to the Virtual Host
+            </para>
+            <para>
+              Intended for use in ACCESS VIRTUALHOST rules to restrict the number of connections which can be made
+              by the messaging user.
+            </para>
+          </entry>
+        </row>
+        <row>
+          <entry><command>connection_frequency_limit</command></entry>
+          <entry>
+            <para>
+              A maximum number of connections the user belonging to the given identity can establish to the Virtual Host
+              within pre-defined period of time, which is 1 minute by default.
+            </para>
+            <para>
+              Intended for use in ACCESS VIRTUALHOST rules to restrict the frequency of connections which can be made
+              by the messaging user.
+            </para>
+            <para>If required, the frequency period can be changed using context variable
+              <emphasis>qpid.virtualhost.connectionFrequencyPeriodInMillis</emphasis>. As name suggests, its value needs
+              to be specified in milliseconds. Setting it to zero or negative value turns off the
+              <command>connection_frequency</command> evaluation.
+            </para>
+          </entry>
+        </row>
+        <row>
           <entry><command>virtualhost_name</command></entry>
           <entry>
             <para>
@@ -477,6 +507,28 @@
         </programlisting>
 
       </example>
+    </section>
+    <section role="h4" xml:id="Java-Broker-Security-AccessControlProviders-ResourceRestrictions">
+      <title>
+        Resource restrictions
+      </title>
+      <para>
+        The number of Virtual Host connections and frequency of connections can be restricted with
+        <emphasis>ACCESS</emphasis> rule.
+      </para>
+      <example>
+        <title>Restricting user connections to virtual host</title>
+        <programlisting><![CDATA[
+          ACL ALLOW-LOG guest ACCESS VIRTUALHOST connection_limit=1
+          ACL ALLOW-LOG messaging-users ACCESS VIRTUALHOST connection_frequency_limit=100
+          ...]]>
+        </programlisting>
+      </example>
+      <para>In the example above the maximum number of connections allowed to establish to the Virtual Host by user
+        <emphasis>guest</emphasis> is set to <emphasis>1</emphasis>. The maximum connection frequency for every user
+        belonging to the user group <emphasis>messaging-users</emphasis> is set to <emphasis>100</emphasis> (per minute,
+        by default).
+      </para>
     </section>
     <section role="h4" xml:id="Java-Broker-Security-AccessControlProviders-WorkedExample2">
       <title>

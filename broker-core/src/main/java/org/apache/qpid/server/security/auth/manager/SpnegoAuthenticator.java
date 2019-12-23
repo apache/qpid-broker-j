@@ -215,11 +215,15 @@ public class SpnegoAuthenticator
             {
                 TokenCarryingPrincipal principal = new TokenCarryingPrincipal()
                 {
+
+                    private Map<String, String> _tokens = Collections.singletonMap(RESPONSE_AUTH_HEADER_NAME,
+                                                                                   NEGOTIATE_PREFIX + Base64.getEncoder()
+                                                                                                            .encodeToString(outToken));
+
                     @Override
                     public Map<String, String> getTokens()
                     {
-                        return Collections.singletonMap(RESPONSE_AUTH_HEADER_NAME,
-                                                        NEGOTIATE_PREFIX + Base64.getEncoder().encodeToString(outToken));
+                        return _tokens;
                     }
 
                     @Override
@@ -233,6 +237,42 @@ public class SpnegoAuthenticator
                     {
                         return principalName;
                     }
+
+                    @Override
+                    public boolean equals(final Object o)
+                    {
+                        if (this == o)
+                        {
+                            return true;
+                        }
+                        if (!(o instanceof TokenCarryingPrincipal))
+                        {
+                            return false;
+                        }
+
+                        final TokenCarryingPrincipal that = (TokenCarryingPrincipal) o;
+
+                        if (!getName().equals(that.getName()))
+                        {
+                            return false;
+                        }
+
+                        if (!getTokens().equals(that.getTokens()))
+                        {
+                            return false;
+                        }
+                        return getOrigin() != null ? getOrigin().equals(that.getOrigin()) : that.getOrigin() == null;
+                    }
+
+                    @Override
+                    public int hashCode()
+                    {
+                        int result = getName().hashCode();
+                        result = 31 * result + (getOrigin() != null ? getOrigin().hashCode() : 0);
+                        result = 31 * result + getTokens().hashCode();
+                        return result;
+                    }
+
                 };
                 return new AuthenticationResult(principal);
             }
