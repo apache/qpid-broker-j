@@ -959,7 +959,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     exception(session,
                               method,
                               ExecutionErrorCode.NOT_FOUND,
-                              String.format("Unknown alternate exchange '%s'", e.getAlternateBindingName()));
+                              String.format("Unknown alternate destination '%s'", e.getAlternateBindingName()));
                 }
                 catch(NoFactoryForTypeException e)
                 {
@@ -1658,7 +1658,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 exception(session,
                           method,
                           ExecutionErrorCode.NOT_FOUND,
-                          String.format("Unknown alternate exchange '%s'", e.getAlternateBindingName()));
+                          String.format("Unknown alternate destination '%s'", e.getAlternateBindingName()));
             }
             catch (IllegalArgumentException | IllegalConfigurationException e)
             {
