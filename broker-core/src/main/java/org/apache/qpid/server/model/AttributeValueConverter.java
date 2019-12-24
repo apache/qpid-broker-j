@@ -1418,6 +1418,10 @@ abstract class AttributeValueConverter<T>
             else if(value instanceof String)
             {
                 String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
+                if(interpolated.trim().isEmpty())
+                {
+                    return null;
+                }
                 ObjectMapper objectMapper = new ObjectMapper();
                 try
                 {

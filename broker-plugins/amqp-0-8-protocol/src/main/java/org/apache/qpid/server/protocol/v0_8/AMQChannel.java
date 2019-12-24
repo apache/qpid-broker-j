@@ -1987,7 +1987,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             }
             else
             {
-                destination = vHost.getAttainedMessageDestination(exchangeName.toString());
+                destination = vHost.getAttainedMessageDestination(exchangeName.toString(), true);
             }
 
             // if the exchange does not exist we raise a channel exception
@@ -2420,14 +2420,14 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             {
                 if (queueName == null)
                 {
-                    replyCode = virtualHost.getAttainedMessageDestination(routingKey.toString()) instanceof Queue
+                    replyCode = virtualHost.getAttainedMessageDestination(routingKey.toString(), false) instanceof Queue
                             ? ExchangeBoundOkBody.OK
                             : ExchangeBoundOkBody.NO_QUEUE_BOUND_WITH_RK;
                     replyText = null;
                 }
                 else
                 {
-                    MessageDestination destination = virtualHost.getAttainedMessageDestination(queueName.toString());
+                    MessageDestination destination = virtualHost.getAttainedMessageDestination(queueName.toString(), false);
                     Queue<?> queue = destination instanceof Queue ? (Queue) destination : null;
                     if (queue == null)
                     {
@@ -2447,15 +2447,16 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
         else
         {
-            Exchange<?> exchange = getExchange(exchangeName.toString());
-            if (exchange == null)
+            MessageDestination destination =
+                    getAddressSpace().getAttainedMessageDestination(exchangeName.toString(), true);
+            if (!(destination instanceof Exchange))
             {
-
                 replyCode = ExchangeBoundOkBody.EXCHANGE_NOT_FOUND;
                 replyText = "Exchange '" + exchangeName + "' not found";
             }
             else if (routingKey == null)
             {
+                Exchange<?> exchange = (Exchange<?>) destination;
                 if (queueName == null)
                 {
                     if (exchange.hasBindings())
@@ -2498,6 +2499,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             }
             else if (queueName != null)
             {
+                Exchange<?> exchange = (Exchange<?>) destination;
                 Queue<?> queue = getQueue(queueName.toString());
                 if (queue == null)
                 {
@@ -2524,6 +2526,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             }
             else
             {
+                Exchange<?> exchange = (Exchange<?>) destination;
                 if (exchange.isBound(routingKey == null ? "" : routingKey.toString()))
                 {
 
@@ -3549,7 +3552,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private Exchange<?> getExchange(String name)
     {
-        MessageDestination destination = getAddressSpace().getAttainedMessageDestination(name);
+        MessageDestination destination = getAddressSpace().getAttainedMessageDestination(name, false);
         return destination instanceof Exchange ? (Exchange<?>) destination : null;
     }
 

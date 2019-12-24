@@ -586,6 +586,10 @@ public abstract class QueueEntryImpl implements QueueEntry
 
         final Queue<?> currentQueue = getQueue();
         MessageDestination alternateBindingDestination = currentQueue.getAlternateBindingDestination();
+        if(alternateBindingDestination == null && currentQueue.getAlternateBinding() != null)
+        {
+            alternateBindingDestination = currentQueue.getAddressSpace().getAttainedMessageDestination(currentQueue.getAlternateBinding().getDestination(), true);
+        }
         boolean autocommit =  txn == null;
 
         if(autocommit)

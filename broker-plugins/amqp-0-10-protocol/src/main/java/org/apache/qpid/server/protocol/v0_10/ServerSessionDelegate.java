@@ -900,7 +900,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             if(method.getPassive())
             {
 
-                Exchange<?> exchange = getExchange(session, exchangeName);
+                Exchange<?> exchange = getExchange(session, exchangeName, false);
 
                 if(exchange == null)
                 {
@@ -943,7 +943,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 }
                 catch(ReservedExchangeNameException e)
                 {
-                    Exchange<?> existingExchange = getExchange(session, exchangeName);
+                    Exchange<?> existingExchange = getExchange(session, exchangeName, false);
                     if(existingExchange == null
                        || !existingExchange.getType().equals(method.getType())
                        || (method.hasAlternateExchange() && (existingExchange.getAlternateBinding() == null ||
@@ -1041,14 +1041,14 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         session.close(errorCode.getValue(), description);
     }
 
-    private Exchange<?> getExchange(ServerSession session, String exchangeName)
+    private Exchange<?> getExchange(ServerSession session, String exchangeName, boolean mayCreate)
     {
-        return getExchange(getAddressSpace(session),exchangeName);
+        return getExchange(getAddressSpace(session),exchangeName, mayCreate);
     }
 
-    private Exchange<?> getExchange(NamedAddressSpace addressSpace, String exchangeName)
+    private Exchange<?> getExchange(NamedAddressSpace addressSpace, String exchangeName, boolean mayCreate)
     {
-        MessageDestination destination = addressSpace.getAttainedMessageDestination(exchangeName);
+        MessageDestination destination = addressSpace.getAttainedMessageDestination(exchangeName, mayCreate);
         return destination instanceof Exchange ? (Exchange<?>) destination : null;
     }
 
@@ -1066,7 +1066,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         MessageDestination destination;
         if(xfr.hasDestination())
         {
-            destination = addressSpace.getAttainedMessageDestination(xfr.getDestination());
+            destination = xfr.getDestination().trim().isEmpty() ? null : addressSpace.getAttainedMessageDestination(xfr.getDestination(), true);
             if(destination == null)
             {
                 destination = addressSpace.getDefaultDestination();
@@ -1101,7 +1101,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 && xfr.getHeader().getDeliveryProperties() != null
                 && xfr.getHeader().getDeliveryProperties().getExchange() != null)
         {
-            destination = addressSpace.getAttainedMessageDestination(xfr.getHeader().getDeliveryProperties().getExchange());
+            destination = addressSpace.getAttainedMessageDestination(xfr.getHeader().getDeliveryProperties().getExchange(), true);
         }
         else
         {
@@ -1140,7 +1140,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             return;
         }
 
-        Exchange<?> exchange = getExchange(session, method.getExchange());
+        Exchange<?> exchange = getExchange(session, method.getExchange(), false);
 
         if(exchange == null)
         {
@@ -1202,7 +1202,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         }
         else
         {
-            Exchange<?> exchange = getExchange(session, exchangeName);
+            Exchange<?> exchange = getExchange(session, exchangeName, true);
 
             if(exchange != null)
             {
@@ -1244,7 +1244,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     method.setBindingKey(method.getQueue());
                 }
                 Queue<?> queue = getQueue(addressSpace, method.getQueue());
-                Exchange<?> exchange = getExchange(addressSpace, exchangeName);
+                Exchange<?> exchange = getExchange(addressSpace, exchangeName, false);
                 if(queue == null)
                 {
                     exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1315,7 +1315,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         else
         {
             Queue<?> queue = getQueue(addressSpace, method.getQueue());
-            Exchange<?> exchange = getExchange(addressSpace, method.getExchange());
+            Exchange<?> exchange = getExchange(addressSpace, method.getExchange(), false);
             if(queue == null)
             {
                 exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1354,7 +1354,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         if(!nameNullOrEmpty(method.getExchange()))
         {
             isDefaultExchange = false;
-            exchange = getExchange(addressSpace, method.getExchange());
+            exchange = getExchange(addressSpace, method.getExchange(), false);
 
             if(exchange == null)
             {

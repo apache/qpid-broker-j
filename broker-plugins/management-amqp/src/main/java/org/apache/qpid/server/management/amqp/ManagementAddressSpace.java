@@ -154,7 +154,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
     }
 
     @Override
-    public MessageDestination getAttainedMessageDestination(final String name)
+    public MessageDestination getAttainedMessageDestination(final String name, final boolean mayCreate)
     {
         if(_managementNode.getName().equals(name))
         {
@@ -167,12 +167,6 @@ public class ManagementAddressSpace implements NamedAddressSpace
         }
 
         return null;
-    }
-
-    @Override
-    public MessageDestination getAttainedMessageDestination(final String name, final boolean mayCreate)
-    {
-        return getAttainedMessageDestination(name);
     }
 
     ProxyMessageSource getProxyNode(final String name)
@@ -412,7 +406,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
                                                                                                    final String routingAddress,
                                                                                                    final InstanceProperties instanceProperties)
         {
-            MessageDestination destination = getAttainedMessageDestination(routingAddress);
+            MessageDestination destination = getAttainedMessageDestination(routingAddress, false);
             if(destination == null || destination == this)
             {
                 return new RoutingResult<>(message);

@@ -22,7 +22,6 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.BIND;
-import static org.apache.qpid.server.security.access.config.LegacyOperation.CREATE;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.INVOKE;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.PUBLISH;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.PURGE;
@@ -535,7 +534,7 @@ class LegacyAccessControlAdapter
         properties.put(ObjectProperties.Property.ROUTING_KEY, (String)arguments.get("bindingKey"));
         properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualhost.getName());
 
-        MessageDestination dest = virtualhost.getAttainedMessageDestination(destination);
+        MessageDestination dest = virtualhost.getAttainedMessageDestination(destination, false);
         if (dest != null)
         {
             // The temporary attribute (inherited from the binding's queue) seems to exist to allow the user to

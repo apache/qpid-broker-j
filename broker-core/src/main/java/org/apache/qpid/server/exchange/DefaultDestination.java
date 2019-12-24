@@ -99,7 +99,7 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
     {
         RoutingResult<M> result = new RoutingResult<>(message);
 
-        DestinationAddress destinationAddress = new DestinationAddress(_virtualHost, routingAddress);
+        DestinationAddress destinationAddress = new DestinationAddress(_virtualHost, routingAddress, true);
         MessageDestination messageDestination = destinationAddress.getMessageDestination();
         if (messageDestination != null)
         {

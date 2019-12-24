@@ -51,7 +51,7 @@
    message via the queue's <emphasis>alternate binding</emphasis> (if one has been defined), or will
    discard the message.</para>
   <para>When using AMQP 1.0 the current delivery count of a message is available to the consuming
-   application via the<literal>message-count</literal> message header (exposed via the
+   application via the <literal>message-count</literal> message header (exposed via the
    <literal>JMSXDeliveryCount</literal> JMS message property when using JMS).  When using the
    AMQP 0-8..0-10 protocols this information is not available.</para>
   <note>
@@ -73,6 +73,25 @@
     specified, the Broker automatically routes the message via the alternate binding.  The alternate binding
     would normally specify a queue designated for that purpose of receiving the undeliverable messages.
     By convention such queues are known as dead-letter queues or simply DLQs.</para>
+  <para>It is possible to configure the broker to automatically default a DLQ for every queue created.  To do this
+    one can set the context variable <varname>queue.defaultAlternateBinding</varname> at the Virtual Host (or above)
+    level.  For example, by setting the value to <literal>{\"destination\": \"$${this:name}_DLQ\"}</literal>
+    a new queue <emphasis>exampleQueue</emphasis> will default to having an alternate binding to
+    <emphasis>exampleQueue_DLQ</emphasis>.  To avoid error this should be combined with setting a node auto creation
+    policy on the VirtualHost, so that such DLQs are automatically created, e.g. </para>
+  <screen>
+   "nodeAutoCreationPolicies" : [ {
+   "pattern" : ".*_DLQ",
+   "nodeType" : "Queue",
+   "attributes" : {
+   "alternateBinding" : ""
+   },
+   "createdOnPublish" : true,
+   "createdOnConsume" : true
+   } ]
+  </screen>
+  <note>For the autocreated DLQs it is important to override the default alternate binding, as above, else the creation of an
+    infinite chain of DLQs for DLQs will be attempted.</note>
   <caution>
    <title>Avoid excessive queue depth</title>
    <para>Applications making use of DLQs <emphasis>should</emphasis> make provision for the frequent

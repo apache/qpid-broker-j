@@ -25,7 +25,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -392,7 +395,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
         final String replyTo = "myTestQueue";
         final Queue queue = mock(Queue.class);
         when(queue.getName()).thenReturn(replyTo);
-        when(_namedAddressSpace.getAttainedMessageDestination(replyTo)).thenReturn(queue);
+        doReturn(queue).when(_namedAddressSpace).getAttainedMessageDestination(eq(replyTo), anyBoolean());
 
         Properties properties = new Properties();
         properties.setReplyTo(replyTo);
@@ -412,7 +415,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
         final String replyTo = "myTestExchange";
         final Exchange exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(replyTo);
-        when(_namedAddressSpace.getAttainedMessageDestination(replyTo)).thenReturn(exchange);
+        doReturn(exchange).when(_namedAddressSpace).getAttainedMessageDestination(eq(replyTo), anyBoolean());
 
         Properties properties = new Properties();
         properties.setReplyTo(replyTo);
@@ -434,7 +437,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
         final String replyTo = String.format("%s/%s", exchangeName, routingKey);
         final Exchange exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(exchangeName);
-        when(_namedAddressSpace.getAttainedMessageDestination(exchangeName)).thenReturn(exchange);
+        doReturn(exchange).when(_namedAddressSpace).getAttainedMessageDestination(eq(exchangeName), anyBoolean());
 
         Properties properties = new Properties();
         properties.setReplyTo(replyTo);
@@ -458,7 +461,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
         when(_namedAddressSpace.getLocalAddress(replyTo)).thenReturn(exchangeName + "/" + routingKey);
         final Exchange exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(exchangeName);
-        when(_namedAddressSpace.getAttainedMessageDestination(exchangeName)).thenReturn(exchange);
+        doReturn(exchange).when(_namedAddressSpace).getAttainedMessageDestination(eq(exchangeName), anyBoolean());
 
         Properties properties = new Properties();
         properties.setReplyTo(replyTo);
@@ -878,7 +881,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
 
         final Exchange<?> exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(testExchange);
-        when(_namedAddressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+        doReturn(exchange).when(_namedAddressSpace).getAttainedMessageDestination(eq(testExchange), anyBoolean());
 
         final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -898,7 +901,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
 
         final Exchange<?> exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(testExchange);
-        when(_namedAddressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+        doReturn(exchange).when(_namedAddressSpace).getAttainedMessageDestination(eq(testExchange), anyBoolean());
 
         final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -920,7 +923,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
 
         final Exchange<?> exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(testExchange);
-        when(_namedAddressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+        doReturn(exchange).when(_namedAddressSpace).getAttainedMessageDestination(eq(testExchange), anyBoolean());
 
         final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -940,7 +943,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
 
         final Queue<?> queue = mock(Queue.class);
         when(queue.getName()).thenReturn(testQueue);
-        when(_namedAddressSpace.getAttainedMessageDestination(testQueue)).thenReturn(queue);
+        doReturn(queue).when(_namedAddressSpace).getAttainedMessageDestination(eq(testQueue), anyBoolean());
 
         final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -962,7 +965,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
 
         final Queue<?> queue = mock(Queue.class);
         when(queue.getName()).thenReturn(queueName);
-        when(_namedAddressSpace.getAttainedMessageDestination(queueName)).thenReturn(queue);
+        doReturn(queue).when(_namedAddressSpace).getAttainedMessageDestination(eq(queueName), anyBoolean());
 
         final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -985,7 +988,7 @@ public class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
         final Queue<?> queue = mock(Queue.class);
         when(queue.getName()).thenReturn(queueName);
         when(_namedAddressSpace.getLocalAddress(globalAddress)).thenReturn(queueName);
-        when(_namedAddressSpace.getAttainedMessageDestination(queueName)).thenReturn(queue);
+        doReturn(queue).when(_namedAddressSpace).getAttainedMessageDestination(eq(queueName), anyBoolean());
         final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         final DeliveryProperties deliveryProperties =

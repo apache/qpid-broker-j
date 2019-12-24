@@ -28,8 +28,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -313,7 +316,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
         when(header.getReplyTo()).thenReturn(replyTo);
         Queue queue = mock(Queue.class);
         when(queue.getName()).thenReturn(replyTo);
-        when(_addressSpace.getAttainedMessageDestination(replyTo)).thenReturn(queue);
+        doReturn(queue).when(_addressSpace).getAttainedMessageDestination(eq(replyTo), anyBoolean());
 
         InternalMessage originalMessage = createTestMessage(header);
 
@@ -334,7 +337,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
         when(exchange.getName()).thenReturn(replyTo);
         when(exchange.getType()).thenReturn(ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
 
-        when(_addressSpace.getAttainedMessageDestination(replyTo)).thenReturn(exchange);
+        doReturn(exchange).when(_addressSpace).getAttainedMessageDestination(eq(replyTo), anyBoolean());
 
         InternalMessage originalMessage = createTestMessage(header);
 
@@ -357,7 +360,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
         when(exchange.getName()).thenReturn(exchangeName);
         when(exchange.getType()).thenReturn(ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
 
-        when(_addressSpace.getAttainedMessageDestination(exchangeName)).thenReturn(exchange);
+        doReturn(exchange).when(_addressSpace).getAttainedMessageDestination(eq(exchangeName), anyBoolean());
 
         InternalMessage originalMessage = createTestMessage(header);
 
@@ -398,7 +401,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
 
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(testExchange);
-        when(_addressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+        doReturn(exchange).when(_addressSpace).getAttainedMessageDestination(eq(testExchange), anyBoolean());
 
         final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
 
@@ -416,7 +419,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
 
         final Exchange exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(testExchange);
-        when(_addressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+        doReturn(exchange).when(_addressSpace).getAttainedMessageDestination(eq(testExchange), anyBoolean());
 
         final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
 
@@ -438,7 +441,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
 
         final Exchange exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(testExchange);
-        when(_addressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+        doReturn(exchange).when(_addressSpace).getAttainedMessageDestination(eq(testExchange), anyBoolean());
 
         final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
 
@@ -456,7 +459,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
 
         final Queue queue = mock(Queue.class);
         when(queue.getName()).thenReturn(testQueue);
-        when(_addressSpace.getAttainedMessageDestination(testQueue)).thenReturn(queue);
+        doReturn(queue).when(_addressSpace).getAttainedMessageDestination(eq(testQueue), anyBoolean());
 
         final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
 
@@ -477,7 +480,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
 
         Queue<?> queue = mock(Queue.class);
         when(queue.getName()).thenReturn(queueName);
-        when(_addressSpace.getAttainedMessageDestination(queueName)).thenReturn(queue);
+        doReturn(queue).when(_addressSpace).getAttainedMessageDestination(eq(queueName), anyBoolean());
 
         final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
 
@@ -498,7 +501,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
 
         Queue<?> queue = mock(Queue.class);
         when(queue.getName()).thenReturn(queueName);
-        when(_addressSpace.getAttainedMessageDestination(queueName)).thenReturn(queue);
+        doReturn(queue).when(_addressSpace).getAttainedMessageDestination(eq(queueName), anyBoolean());
         when(_addressSpace.getLocalAddress(globalAddress)).thenReturn(queueName);
 
         final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);

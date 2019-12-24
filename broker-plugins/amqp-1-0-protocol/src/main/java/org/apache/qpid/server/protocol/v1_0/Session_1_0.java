@@ -679,7 +679,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             else
             {
-                DestinationAddress destinationAddress = new DestinationAddress(getAddressSpace(), addr);
+                DestinationAddress destinationAddress = new DestinationAddress(getAddressSpace(), addr, true);
                 MessageDestination messageDestination = destinationAddress.getMessageDestination();
 
                 if (messageDestination != null)
@@ -1314,7 +1314,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private Exchange<?> getExchange(String name)
     {
-        MessageDestination destination = getAddressSpace().getAttainedMessageDestination(name);
+        MessageDestination destination = getAddressSpace().getAttainedMessageDestination(name, false);
         return destination instanceof Exchange ? (Exchange<?>) destination : null;
     }
 

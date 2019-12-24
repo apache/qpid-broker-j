@@ -765,7 +765,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public int publishMessage(@Param(name = "message") final ManageableMessage message)
     {
         final String address = message.getAddress();
-        MessageDestination destination = address == null ? getDefaultDestination() : getAttainedMessageDestination(address);
+        MessageDestination destination = address == null ? getDefaultDestination() : getAttainedMessageDestination(address, true);
         if(destination == null)
         {
             destination = getDefaultDestination();
@@ -1383,12 +1383,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public Broker<?> getBroker()
     {
         return _broker;
-    }
-
-    @Override
-    public MessageDestination getAttainedMessageDestination(final String name)
-    {
-        return getAttainedMessageDestination(name, true);
     }
 
     @Override

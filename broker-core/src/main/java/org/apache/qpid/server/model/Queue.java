@@ -106,16 +106,23 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                                  + "\"image/tiff\":\".tiff\","
                                                  + "\"text/plain\":\".txt\"}";
 
+    String QUEUE_DEFAULT_ALTERNATE_BINDING = "queue.defaultAlternateBinding";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = QUEUE_DEFAULT_ALTERNATE_BINDING,
+            description = "the ExclusivityPolicy to apply to queues where none is explicitly set")
+    String DEFAULT_ALTERNATE_BINDING = "";
+
+    @ManagedAttribute(defaultValue = "${queue.defaultAlternateBinding}", initialization = Initialization.materialize,
+                      description = "Provides an alternate destination that will be used when the number of delivery "
+                                    + "attempts exceeds the maximumDeliveryAttempt configured on this queue.  Messages "
+                                    + "are also routed to this destination if this queue is deleted.")
+    AlternateBinding getAlternateBinding();
+
     String QUEUE_DEFAULT_EXCLUSIVITY_POLICY = "queue.defaultExclusivityPolicy";
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = QUEUE_DEFAULT_EXCLUSIVITY_POLICY,
             description = "the ExclusivityPolicy to apply to queues where none is explicitly set")
     String DEFAULT_EXCLUSIVITY = "NONE";
-
-    @ManagedAttribute(description = "Provides an alternate destination that will be used when the number of delivery "
-                                    + "attempts exceeds the maximumDeliveryAttempt configured on this queue.  Messages "
-                                    + "are also routed to this destination if this queue is deleted.")
-    AlternateBinding getAlternateBinding();
 
     @ManagedAttribute( defaultValue = "${queue.defaultExclusivityPolicy}")
     ExclusivityPolicy getExclusive();

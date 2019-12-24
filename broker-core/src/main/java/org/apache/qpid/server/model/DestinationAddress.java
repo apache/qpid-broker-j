@@ -30,6 +30,11 @@ public class DestinationAddress
 
     public DestinationAddress(NamedAddressSpace addressSpace, String routingAddress)
     {
+        this(addressSpace, routingAddress, false);
+    }
+
+    public DestinationAddress(NamedAddressSpace addressSpace, String routingAddress, boolean mayCreate)
+    {
         MessageDestination destination = null;
         String routingKey = routingAddress;
         if (routingAddress != null && !routingAddress.trim().equals(""))
@@ -37,7 +42,7 @@ public class DestinationAddress
             String localRoutingAddress = addressSpace.getLocalAddress(routingAddress);
             if (!localRoutingAddress.contains("/"))
             {
-                destination = addressSpace.getAttainedMessageDestination(localRoutingAddress);
+                destination = addressSpace.getAttainedMessageDestination(localRoutingAddress, mayCreate);
                 if (destination != null)
                 {
                     routingKey = "";
@@ -46,7 +51,7 @@ public class DestinationAddress
             else if (!localRoutingAddress.startsWith("/"))
             {
                 String[] parts = localRoutingAddress.split("/", 2);
-                destination = addressSpace.getAttainedMessageDestination(parts[0]);
+                destination = addressSpace.getAttainedMessageDestination(parts[0], mayCreate);
                 if (destination instanceof Exchange)
                 {
                     routingKey = parts[1];

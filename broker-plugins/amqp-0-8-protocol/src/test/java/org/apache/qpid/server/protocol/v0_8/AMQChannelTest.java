@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -142,7 +143,7 @@ public class AMQChannelTest extends UnitTestBase
         String testExchangeName = getTestName();
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(true);
-        doReturn(exchange).when(_virtualHost).getAttainedMessageDestination(testExchangeName);
+        doReturn(exchange).when(_virtualHost).getAttainedMessageDestination(eq(testExchangeName), anyBoolean());
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
 
@@ -158,7 +159,7 @@ public class AMQChannelTest extends UnitTestBase
     {
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
-        doReturn(exchange).when(_virtualHost).getAttainedMessageDestination(getTestName());
+        doReturn(exchange).when(_virtualHost).getAttainedMessageDestination(eq(getTestName()), anyBoolean());
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
         channel.receiveExchangeDelete(AMQShortString.valueOf(getTestName()), true, false);

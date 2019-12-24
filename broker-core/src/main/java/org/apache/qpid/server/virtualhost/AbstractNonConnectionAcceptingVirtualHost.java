@@ -213,12 +213,6 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
-    public MessageDestination getAttainedMessageDestination(final String name)
-    {
-        return null;
-    }
-
-    @Override
     public MessageDestination getAttainedMessageDestination(final String name, final boolean mayCreate)
     {
         return null;

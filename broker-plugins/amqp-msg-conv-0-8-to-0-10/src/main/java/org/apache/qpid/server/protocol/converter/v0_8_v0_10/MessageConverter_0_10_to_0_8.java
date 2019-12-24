@@ -143,7 +143,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
 
                 if (!"".equals(exchangeName) || (routingKey != null && !"".equals(routingKey)))
                 {
-                    MessageDestination destination = addressSpace.getAttainedMessageDestination(exchangeName);
+                    MessageDestination destination = addressSpace.getAttainedMessageDestination(exchangeName, false);
                     Exchange<?> exchange = destination instanceof Exchange ? (Exchange<?>) destination : null;
 
                     String exchangeClass = exchange == null

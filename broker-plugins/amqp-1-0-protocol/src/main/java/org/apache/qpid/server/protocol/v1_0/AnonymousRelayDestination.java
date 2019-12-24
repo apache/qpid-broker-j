@@ -66,7 +66,7 @@ public class AnonymousRelayDestination implements ReceivingDestination
     {
         final ReceivingDestination destination;
         final String routingAddress = message.getTo();
-        DestinationAddress destinationAddress = new DestinationAddress(_addressSpace, routingAddress);
+        DestinationAddress destinationAddress = new DestinationAddress(_addressSpace, routingAddress, true);
         MessageDestination messageDestination = destinationAddress.getMessageDestination();
         if (messageDestination != null)
         {

@@ -794,7 +794,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     private MessageDestination getAttainedMessageDestination(final String name)
     {
         MessageDestination destination = getVirtualHost().getAttainedQueue(name);
-        return destination == null ? getVirtualHost().getAttainedMessageDestination(name) : destination;
+        return destination == null ? getVirtualHost().getAttainedMessageDestination(name, false) : destination;
     }
 
     private MessageDestination getOpenedMessageDestination(final String name)

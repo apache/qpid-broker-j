@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -64,7 +66,7 @@ public class ServerSessionDelegateTest extends UnitTestBase
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(true);
 
-        doReturn(exchange).when(_host).getAttainedMessageDestination(getTestName());
+        doReturn(exchange).when(_host).getAttainedMessageDestination(eq(getTestName()), anyBoolean());
 
         final ExchangeDelete method = new ExchangeDelete(getTestName(), Option.IF_UNUSED);
         _delegate.exchangeDelete(_session, method);
@@ -81,7 +83,7 @@ public class ServerSessionDelegateTest extends UnitTestBase
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
 
-        doReturn(exchange).when(_host).getAttainedMessageDestination(getTestName());
+        doReturn(exchange).when(_host).getAttainedMessageDestination(eq(getTestName()), anyBoolean());
 
         final ExchangeDelete method = new ExchangeDelete(getTestName(), Option.IF_UNUSED);
         _delegate.exchangeDelete(_session, method);
