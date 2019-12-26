@@ -1760,36 +1760,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private void dequeueEntry(final QueueEntry node)
     {
-        ServerTransaction txn = new AsyncAutoCommitTransaction(getVirtualHost().getMessageStore(), this::onEntryDequeue);
+        ServerTransaction txn = new AsyncAutoCommitTransaction(getVirtualHost().getMessageStore(), (future, action) -> action.postCommit());
         dequeueEntry(node, txn);
-    }
-
-    private void onEntryDequeue(final ListenableFuture<Void> future,
-                                final ServerTransaction.Action action)
-    {
-        Futures.addCallback(future,
-                            new FutureCallback<Void>()
-                            {
-                                @Override
-                                public void onSuccess(
-                                        final Void result)
-                                {
-                                    executeTask(String.format("Dequeue-PostCommit:%s", getName()), action::postCommit);
-                                }
-
-                                @Override
-                                public void onFailure(
-                                        final Throwable t)
-                                {
-                                    executeTask(String.format("Dequeue-OnRollback:%s", getName()), action::onRollback);
-                                }
-                            }, MoreExecutors.directExecutor());
-
-    }
-
-    private void executeTask(final String name, final Runnable runnable)
-    {
-        getVirtualHost().executeTask(name, runnable, getSystemTaskControllerContext(name, _virtualHost.getPrincipal()));
     }
 
     private void dequeueEntry(final QueueEntry node, ServerTransaction txn)
@@ -3863,7 +3835,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if (getState() == State.ACTIVE)
         {
             String taskName = String.format("Queue Housekeeping : %s : TTL Update", getName());
-            executeTask(taskName, this::updateQueueEntryExpiration);
+            getVirtualHost().executeTask(taskName,
+                                         this::updateQueueEntryExpiration,
+                                         getSystemTaskControllerContext(taskName, _virtualHost.getPrincipal()));
         }
     }
 
