@@ -56,8 +56,10 @@ import javax.security.auth.Subject;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +111,7 @@ import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.txn.AutoCommitTransaction;
+import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
@@ -1706,7 +1708,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         while (queueListIterator.advance())
         {
             final QueueEntry node = queueListIterator.getNode();
-            boolean acquired = node.acquireOrSteal(() -> dequeueEntry(node));
+            boolean acquired = node.acquireOrSteal(new DequeueEntryTask(node, null));
 
             if (acquired)
             {
@@ -1722,7 +1724,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private void dequeueEntry(final QueueEntry node)
     {
-        ServerTransaction txn = new AutoCommitTransaction(getVirtualHost().getMessageStore());
+        ServerTransaction txn = new AsyncAutoCommitTransaction(getVirtualHost().getMessageStore(), (future, action) -> action.postCommit());
         dequeueEntry(node, txn);
     }
 
@@ -1752,17 +1754,54 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         deleteEntry(entry, null);
     }
 
+    private final class DequeueEntryTask implements Runnable
+    {
+        private final QueueEntry _entry;
+        private final Runnable _postDequeueTask;
+
+        public DequeueEntryTask(final QueueEntry entry, final Runnable postDequeueTask)
+        {
+            _entry = entry;
+            _postDequeueTask = postDequeueTask;
+        }
+
+        @Override
+        public void run()
+        {
+            LOGGER.debug("Dequeuing stolen node {}", _entry);
+            dequeueEntry(_entry);
+            if (_postDequeueTask != null)
+            {
+                _postDequeueTask.run();
+            }
+        }
+
+        @Override
+        public boolean equals(final Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+            final DequeueEntryTask that = (DequeueEntryTask) o;
+            return _entry == that._entry &&
+                   Objects.equals(_postDequeueTask, that._postDequeueTask);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(_entry, _postDequeueTask);
+        }
+    }
+
     private void deleteEntry(final QueueEntry entry, final Runnable postDequeueTask)
     {
-        boolean acquiredForDequeueing = entry.acquireOrSteal(() ->
-                                                             {
-                                                                 LOGGER.debug("Dequeuing stolen node {}", entry);
-                                                                 dequeueEntry(entry);
-                                                                 if (postDequeueTask != null)
-                                                                 {
-                                                                     postDequeueTask.run();
-                                                                 }
-                                                             });
+        boolean acquiredForDequeueing = entry.acquireOrSteal(new DequeueEntryTask(entry, postDequeueTask));
 
         if (acquiredForDequeueing)
         {

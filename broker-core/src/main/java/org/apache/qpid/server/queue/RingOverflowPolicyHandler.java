@@ -45,6 +45,7 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
     {
         private final Queue<?> _queue;
         private final EventLogger _eventLogger;
+        private final ThreadLocal<Boolean> _recursionTracker = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
         public Handler(final Queue<?> queue, final EventLogger eventLogger)
         {
@@ -61,52 +62,68 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
 
         private void checkOverflow()
         {
-            final long maximumQueueDepthMessages = _queue.getMaximumQueueDepthMessages();
-            final long maximumQueueDepthBytes = _queue.getMaximumQueueDepthBytes();
-
-            boolean bytesOverflow, messagesOverflow, overflow = false;
-            int counter = 0;
-            int queueDepthMessages;
-            long queueDepthBytes;
-            do
+            // When this method causes an entry to be deleted, the size of the queue is changed, leading to
+            // checkOverflow being called again (because for other policies this may trigger relaxation of flow control,
+            // for instance.  This needless recursion is avoided by using this ThreadLocal to track if the method is
+            // being called (indirectly) from itself
+            if (!_recursionTracker.get())
             {
-                queueDepthMessages = _queue.getQueueDepthMessages();
-                queueDepthBytes = _queue.getQueueDepthBytes();
-
-                messagesOverflow = maximumQueueDepthMessages >= 0 && queueDepthMessages > maximumQueueDepthMessages;
-                bytesOverflow = maximumQueueDepthBytes >= 0 && queueDepthBytes > maximumQueueDepthBytes;
-
-                if (bytesOverflow || messagesOverflow)
+                _recursionTracker.set(Boolean.TRUE);
+                try
                 {
-                    if (!overflow)
-                    {
-                        overflow = true;
-                    }
+                    final long maximumQueueDepthMessages = _queue.getMaximumQueueDepthMessages();
+                    final long maximumQueueDepthBytes = _queue.getMaximumQueueDepthBytes();
 
-                    QueueEntry entry = _queue.getLeastSignificantOldestEntry();
-
-                    if (entry != null)
-                    {
-                        counter++;
-                        _queue.deleteEntry(entry);
-                    }
-                    else
+                    boolean bytesOverflow, messagesOverflow, overflow = false;
+                    int counter = 0;
+                    int queueDepthMessages;
+                    long queueDepthBytes;
+                    do
                     {
                         queueDepthMessages = _queue.getQueueDepthMessages();
                         queueDepthBytes = _queue.getQueueDepthBytes();
-                        break;
+
+                        messagesOverflow =
+                                maximumQueueDepthMessages >= 0 && queueDepthMessages > maximumQueueDepthMessages;
+                        bytesOverflow = maximumQueueDepthBytes >= 0 && queueDepthBytes > maximumQueueDepthBytes;
+
+                        if (bytesOverflow || messagesOverflow)
+                        {
+                            if (!overflow)
+                            {
+                                overflow = true;
+                            }
+
+                            QueueEntry entry = _queue.getLeastSignificantOldestEntry();
+
+                            if (entry != null)
+                            {
+                                counter++;
+                                _queue.deleteEntry(entry);
+                            }
+                            else
+                            {
+                                queueDepthMessages = _queue.getQueueDepthMessages();
+                                queueDepthBytes = _queue.getQueueDepthBytes();
+                                break;
+                            }
+                        }
+                    }
+                    while (bytesOverflow || messagesOverflow);
+
+                    if (overflow)
+                    {
+                        _eventLogger.message(_queue.getLogSubject(), QueueMessages.DROPPED(counter,
+                                                                                           queueDepthBytes,
+                                                                                           queueDepthMessages,
+                                                                                           maximumQueueDepthBytes,
+                                                                                           maximumQueueDepthMessages));
                     }
                 }
-            }
-            while (bytesOverflow || messagesOverflow);
-
-            if (overflow)
-            {
-                _eventLogger.message(_queue.getLogSubject(), QueueMessages.DROPPED(counter,
-                                                                                   queueDepthBytes,
-                                                                                   queueDepthMessages,
-                                                                                   maximumQueueDepthBytes,
-                                                                                   maximumQueueDepthMessages));
+                finally
+                {
+                    _recursionTracker.set(Boolean.FALSE);
+                }
             }
         }
     }

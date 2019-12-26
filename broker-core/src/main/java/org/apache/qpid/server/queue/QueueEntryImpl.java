@@ -21,6 +21,7 @@
 package org.apache.qpid.server.queue;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -241,6 +242,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     {
         return acquire(NON_CONSUMER_ACQUIRED_STATE);
     }
+
     private class DelayedAcquisitionStateListener implements StateChangeListener<MessageInstance, EntryState>
     {
         private final Runnable _task;
@@ -271,6 +273,27 @@ public abstract class QueueEntryImpl implements QueueEntry
             {
                 _task.run();
             }
+        }
+
+        @Override
+        public boolean equals(final Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+            final DelayedAcquisitionStateListener that = (DelayedAcquisitionStateListener) o;
+            return Objects.equals(_task, that._task);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(_task);
         }
     }
 
