@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -80,6 +81,7 @@ import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
+import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
@@ -1309,6 +1311,44 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         verifyNoMoreInteractions(visitor);
         verify(reference).release();
     }
+    @Test
+    public void testDeleteEntryNotPersistent() throws Exception
+    {
+        deleteEntry(1L, null);
+    }
+
+    @Test
+    public void testDeleteEntryPersistent() throws Exception
+    {
+        long messageNumber = 1L;
+        final MessageEnqueueRecord record = mock(MessageEnqueueRecord.class);
+        when(record.getMessageNumber()).thenReturn(messageNumber);
+        when(record.getQueueId()).thenReturn(_queue.getId());
+
+        deleteEntry(messageNumber, record);
+    }
+
+    private void deleteEntry(final long messageNumber, final MessageEnqueueRecord record) throws InterruptedException
+    {
+        final CountDownLatch messageDeleteDetector = new CountDownLatch(1);
+        final ServerMessage message = createMessage(messageNumber, 2, 3);
+        final MessageReference reference = message.newReference();
+        doAnswer((Answer<Void>) invocationOnMock -> {
+            messageDeleteDetector.countDown();
+            return null;
+        }).when(reference).release();
+
+        _queue.enqueue(message, null, record);
+
+        _queue.visit(entry -> {
+            _queue.deleteEntry(entry);
+            return false;
+        });
+
+        assertTrue("Message reference is not released withing given timeout interval",
+                   messageDeleteDetector.await(2000L, TimeUnit.MILLISECONDS));
+    }
+
 
     private void makeVirtualHostTargetSizeExceeded()
     {
