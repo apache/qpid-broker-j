@@ -69,6 +69,7 @@ public class MemoryMessageStore implements MessageStore
         @Override
         public <X> ListenableFuture<X> commitTranAsync(final X val)
         {
+            commitTran();
             return Futures.immediateFuture(val);
         }
 

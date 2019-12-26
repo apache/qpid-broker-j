@@ -22,7 +22,7 @@ package org.apache.qpid.server.util;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-public class StateChangeListenerEntry<T, E>
+public final class StateChangeListenerEntry<T, E>
 {
     private static final AtomicReferenceFieldUpdater<StateChangeListenerEntry, StateChangeListenerEntry> NEXT =
             AtomicReferenceFieldUpdater.newUpdater(StateChangeListenerEntry.class, StateChangeListenerEntry.class, "_next");
@@ -45,6 +45,11 @@ public class StateChangeListenerEntry<T, E>
         return (StateChangeListenerEntry<T, E>) NEXT.get(this);
     }
 
+    private boolean append(StateChangeListenerEntry<T, E> entry)
+    {
+        return NEXT.compareAndSet(this, null, entry);
+    }
+
     public void add(StateChangeListener<T,E> listener)
     {
         add(new StateChangeListenerEntry<>(listener));
@@ -52,9 +57,10 @@ public class StateChangeListenerEntry<T, E>
 
     public void add(final StateChangeListenerEntry<T, E> entry)
     {
-        if(!entry.getListener().equals(_listener) && !NEXT.compareAndSet(this, null, entry))
+        StateChangeListenerEntry<T, E> tail = this;
+        while(!entry.getListener().equals(tail.getListener()) && !tail.append(entry))
         {
-            NEXT.get(this).add(entry);
+            tail = tail.next();
         }
     }
 
