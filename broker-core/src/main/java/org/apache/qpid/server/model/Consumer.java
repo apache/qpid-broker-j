@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
-import org.apache.qpid.server.session.AMQPSession;
 
 @ManagedObject(creatable = false, amqpName = "org.apache.qpid.Consumer")
 public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> extends ConfiguredObject<X>, MessageInstanceConsumer<T>
@@ -90,5 +89,6 @@ public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> ext
 
     boolean isActive();
 
+    @DerivedAttribute(description = "Indicates whether the consumer is held in reserve after reaching the maximum number of live consumers")
     boolean isNonLive();
 }

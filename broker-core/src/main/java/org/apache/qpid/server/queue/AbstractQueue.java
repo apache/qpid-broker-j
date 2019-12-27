@@ -1038,30 +1038,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             queueContext = new QueueContext(getEntries().getTail());
         }
         consumer.setQueueContext(queueContext);
-
-        // this level of care over concurrency in maintaining the correct value for live consumers is probable not
-        // necessary, as all this should take place serially in the configuration thread
-        int maximumLiveConsumers = _maximumLiveConsumers;
-        if(maximumLiveConsumers > 0)
+        if (_maximumLiveConsumers > 0 && !incrementNumberOfLiveConsumersIfApplicable())
         {
-            boolean added = false;
-            int liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
-            while(liveConsumers < maximumLiveConsumers)
-            {
-                if(LIVE_CONSUMERS_UPDATER.compareAndSet(this, liveConsumers, liveConsumers+1))
-                {
-                    added = true;
-
-                    break;
-                }
-                liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
-            }
-
-            if(!added)
-            {
-                consumer.setNonLive(true);
-            }
-
+            consumer.setNonLive(true);
         }
 
         _queueConsumerManager.addConsumer(consumer);
@@ -1099,7 +1078,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
 
 
-    void unregisterConsumer(final QueueConsumerImpl consumer)
+    <T extends ConsumerTarget<T>> void unregisterConsumer(final QueueConsumerImpl<T> consumer)
     {
         if (consumer == null)
         {
@@ -1126,45 +1105,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 resetSubPointersForGroups(consumer);
             }
 
-            // this level of care over concurrency in maintaining the correct value for live consumers is probable not
-            // necessary, as all this should take place serially in the configuration thread
-            int maximumLiveConsumers = _maximumLiveConsumers;
-            if(maximumLiveConsumers > 0 && !consumer.isNonLive())
+            if (_maximumLiveConsumers > 0 && !consumer.isNonLive())
             {
-                boolean updated = false;
-                int liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
-                while(liveConsumers > 0)
-                {
-                    if(LIVE_CONSUMERS_UPDATER.compareAndSet(this, liveConsumers, liveConsumers-1))
-                    {
-                        updated = true;
-
-                        break;
-                    }
-                    liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
-                }
-
-                liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
-
+                decrementNumberOfLiveConsumersIfApplicable();
                 consumer.setNonLive(true);
-
-                Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
-
-                QueueConsumerImpl<?> otherConsumer;
-                while(consumerIterator.hasNext() && liveConsumers < maximumLiveConsumers)
-                {
-                    otherConsumer = (QueueConsumerImpl<?>) consumerIterator.next();
-
-                    if(otherConsumer != null && otherConsumer.isNonLive() && LIVE_CONSUMERS_UPDATER.compareAndSet(this, liveConsumers, liveConsumers+1))
-                    {
-                        otherConsumer.setNonLive(false);
-                        otherConsumer.setNotifyWorkDesired(true);
-                        break;
-                    }
-                    liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
-                    maximumLiveConsumers = _maximumLiveConsumers;
-                }
-
+                assignNextLiveConsumerIfApplicable();
             }
 
             // auto-delete queues must be deleted if there are no remaining subscribers
@@ -1191,6 +1136,68 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
+    }
+
+    private boolean incrementNumberOfLiveConsumersIfApplicable()
+    {
+        // this level of care over concurrency in maintaining the correct value for live consumers is probable not
+        // necessary, as all this should take place serially in the configuration thread
+        int maximumLiveConsumers = _maximumLiveConsumers;
+        boolean added = false;
+        int liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+        while (liveConsumers < maximumLiveConsumers)
+        {
+            if (LIVE_CONSUMERS_UPDATER.compareAndSet(this, liveConsumers, liveConsumers + 1))
+            {
+                added = true;
+                break;
+            }
+            liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+        }
+
+        return added;
+    }
+
+    private boolean decrementNumberOfLiveConsumersIfApplicable()
+    {
+        // this level of care over concurrency in maintaining the correct value for live consumers is probable not
+        // necessary, as all this should take place serially in the configuration thread
+        boolean updated = false;
+        int liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+        while (liveConsumers > 0)
+        {
+            if (LIVE_CONSUMERS_UPDATER.compareAndSet(this, liveConsumers, liveConsumers - 1))
+            {
+                updated = true;
+                break;
+            }
+            liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+        }
+        return updated;
+    }
+
+    private void assignNextLiveConsumerIfApplicable()
+    {
+        int maximumLiveConsumers = _maximumLiveConsumers;
+        int liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+        final Iterator<QueueConsumer<?, ?>> consumerIterator = _queueConsumerManager.getAllIterator();
+
+        QueueConsumerImpl<?> otherConsumer;
+        while (consumerIterator.hasNext() && liveConsumers < maximumLiveConsumers)
+        {
+            otherConsumer = (QueueConsumerImpl<?>) consumerIterator.next();
+
+            if (otherConsumer != null
+                && otherConsumer.isNonLive()
+                && LIVE_CONSUMERS_UPDATER.compareAndSet(this, liveConsumers, liveConsumers + 1))
+            {
+                otherConsumer.setNonLive(false);
+                otherConsumer.setNotifyWorkDesired(true);
+                break;
+            }
+            liveConsumers = LIVE_CONSUMERS_UPDATER.get(this);
+            maximumLiveConsumers = _maximumLiveConsumers;
+        }
     }
 
     @Override

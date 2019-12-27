@@ -44,6 +44,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
+
 public class StandardQueueTest extends AbstractQueueTestBase
 {
 
