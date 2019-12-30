@@ -65,7 +65,8 @@ public class DefaultAlternateBindingTest extends JmsTestBase
     {
         createAndBindQueueWithMaxDeliveryAttempts();
 
-        final Connection connection = getConnectionBuilder().setMessageRedelivery(true).setSyncPublish(true).build();
+        final Connection connection =
+                getConnectionBuilder().setMessageRedelivery(true).setSyncPublish(true).setPrefetch(0).build();
         try
         {
             final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
