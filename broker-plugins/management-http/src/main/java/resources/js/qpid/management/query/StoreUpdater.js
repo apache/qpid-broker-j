@@ -60,16 +60,26 @@ define(["dojo/_base/declare",
                 _currentResultsIdToIndexMap: null,
                 _updating: false,
                 _fetchRangeCapturedArguments: null,
+                _inProgressfetchRange: null,
+                _inProgressfetch: null,
 
                 fetch: function ()
                 {
-                    var queryResults = this.inherited(arguments);
+                    if (this._inProgressfetch === null || this._inProgressfetch === undefined)
+                    {
+                        this._inProgressfetch = this.inherited(arguments);
+                    }
                     this._captureResults(queryResults, "fetch");
                     return queryResults;
                 },
                 fetchRange: function (args)
                 {
-                    var queryResults = this.inherited(arguments);
+                    if (this._inProgressfetchRange === null || this._inProgressfetchRange === undefined)
+                    {
+                        this._inProgressfetchRange = this.inherited(arguments);
+                    }
+                    var queryResults = this._inProgressfetchRange;
+
                     this._captureResults(queryResults, "fetchRange", args);
                     return queryResults;
                 },
@@ -94,7 +104,14 @@ define(["dojo/_base/declare",
                 {
                     var handler = lang.hitch(this, function (data)
                     {
-                        this._processResults(data, methodName, args);
+                        try
+                        {
+                            this._processResults(data, methodName, args);
+                        }
+                        finally
+                        {
+                            this["_inProgress" + methodName ] = null;
+                        }
                         if (!data.hasOwnProperty("results"))
                         {
                             this.emit("unexpected", data);
@@ -143,8 +160,8 @@ define(["dojo/_base/declare",
                             for (var i = currentResults.length - 1; i >= 0; i--)
                             {
                                 var currentResult = currentResults[i];
-                                var id = currentResult[idProperty];
-                                var newResultIndex = newResultsIdToIndexMap[id];
+                                var currentId = currentResult[idProperty];
+                                var newResultIndex = newResultsIdToIndexMap[currentId];
                                 if (newResultIndex === undefined)
                                 {
                                     this._pushChange("delete", currentResult, offset + i, offset + i, total);
@@ -153,7 +170,7 @@ define(["dojo/_base/declare",
                                         idProperty,
                                         this._currentResultsIdToIndexMap,
                                         i);
-                                    delete this._currentResultsIdToIndexMap[id];
+                                    delete this._currentResultsIdToIndexMap[currentId];
                                 }
                             }
 
@@ -174,11 +191,11 @@ define(["dojo/_base/declare",
                                 }
                                 else
                                 {
-                                    var currentResult = currentResults[previousIndex];
+                                    var current = currentResults[previousIndex];
                                     if (previousIndex === j)
                                     {
                                         currentResults[j] = newResult;
-                                        if (!util.equals(newResult, currentResult))
+                                        if (!util.equals(newResult, current))
                                         {
                                             this._pushChange("update", newResult, offset + j, previousIndex + offset, total);
                                         }
@@ -187,7 +204,7 @@ define(["dojo/_base/declare",
                                     {
                                         this._pushChange("update", newResult, offset + j, previousIndex + offset, total);
                                         currentResults.splice(previousIndex, 1);
-                                        currentResults.splice(j, 0, currentResult);
+                                        currentResults.splice(j, 0, current);
                                         updateIdToIndexMap(currentResults,
                                             idProperty,
                                             this._currentResultsIdToIndexMap,
@@ -198,9 +215,9 @@ define(["dojo/_base/declare",
                         }
                         else
                         {
-                            for (var j = 0; j < newResults.length; j++)
+                            for (var k = 0; k < newResults.length; k++)
                             {
-                                this._pushChange("add", newResults[j], offset + j, -1,  total);
+                                this._pushChange("add", newResults[k], offset + k, -1,  total);
                             }
                         }
 

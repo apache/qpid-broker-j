@@ -56,7 +56,7 @@ define([
             }
             if (kwArgs && kwArgs.hasOwnProperty("end"))
             {
-                query.last = kwArgs.end;
+                query.last = kwArgs.end - 1;
             }
             var headers = lang.mixin({Accept: "application/javascript, application/json"}, kwArgs.headers);
             var messages = this.management.invoke(modelObj, query, {headers: headers}, true);
