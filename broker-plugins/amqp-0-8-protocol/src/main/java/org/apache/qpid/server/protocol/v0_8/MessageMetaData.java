@@ -286,17 +286,16 @@ public class MessageMetaData implements StorableMessageMetaData
         @Override
         public Object getHeader(String name)
         {
-            FieldTable ft = getProperties().getHeaders();
-            return ft.get(name);
+            return getProperties().getHeader(name);
         }
 
         @Override
         public boolean containsHeaders(Set<String> names)
         {
-            FieldTable ft = getProperties().getHeaders();
+            final BasicContentHeaderProperties properties = getProperties();
             for(String name : names)
             {
-                if(!ft.containsKey(name))
+                if(!properties.containsHeader(name))
                 {
                     return false;
                 }
@@ -307,14 +306,13 @@ public class MessageMetaData implements StorableMessageMetaData
         @Override
         public Collection<String> getHeaderNames()
         {
-            return getProperties().getHeaders().keys();
+            return getProperties().getHeaderNames();
         }
 
         @Override
         public boolean containsHeader(String name)
         {
-            FieldTable ft = getProperties().getHeaders();
-            return ft.containsKey(name);
+            return getProperties().containsHeader(name);
         }
 
 

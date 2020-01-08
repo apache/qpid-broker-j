@@ -50,7 +50,6 @@ import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.store.StoredMessage;
@@ -110,7 +109,7 @@ public class PropertyConverter_0_10_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties properties = convertedMessage.getContentHeaderBody().getProperties();
-        Map<String, Object> applicationProperties = FieldTable.convertToMap(properties.getHeaders());
+        Map<String, Object> applicationProperties = properties.getHeadersAsMap();
         assertEquals("Unexpected headers", headers, new HashMap<>(applicationProperties));
     }
 
@@ -127,7 +126,7 @@ public class PropertyConverter_0_10_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties properties = convertedMessage.getContentHeaderBody().getProperties();
-        Map<String, Object> applicationProperties = FieldTable.convertToMap(properties.getHeaders());
+        Map<String, Object> applicationProperties = properties.getHeadersAsMap();
         assertEquals("Unexpected subject in application properties",
                             testSubject,
                             applicationProperties.get("qpid.subject"));
@@ -408,7 +407,7 @@ public class PropertyConverter_0_10_to_0_8Test extends UnitTestBase
         BasicContentHeaderProperties properties = convertedMessage.getContentHeaderBody().getProperties();
 
         assertEquals("Unexpected subject", type, properties.getType().toString());
-        Map<String, Object> applicationProperties = FieldTable.convertToMap(properties.getHeaders());
+        Map<String, Object> applicationProperties = properties.getHeadersAsMap();
         assertFalse("Unexpected x-jms-type in application properties",
                            applicationProperties.containsKey("x-jms-type"));
 

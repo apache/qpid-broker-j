@@ -37,7 +37,6 @@ import org.junit.Test;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicConsumeOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicDeliverBody;
@@ -128,7 +127,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
 
             assertThat(header.getBodySize(), is(equalTo((long) content2.length())));
             BasicContentHeaderProperties properties = header.getProperties();
-            Map<String, Object> receivedHeaders = new HashMap<>(FieldTable.convertToMap(properties.getHeaders()));
+            Map<String, Object> receivedHeaders = new HashMap<>(properties.getHeadersAsMap());
             assertThat(receivedHeaders, is(equalTo(new HashMap<>(messageHeaders2))));
             assertThat(properties.getContentTypeAsString(), is(equalTo(contentType)));
 

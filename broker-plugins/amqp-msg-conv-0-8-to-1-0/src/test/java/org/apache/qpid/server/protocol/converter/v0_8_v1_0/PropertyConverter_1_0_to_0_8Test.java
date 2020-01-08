@@ -51,7 +51,6 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
@@ -133,7 +132,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        final Map<String, Object> headers = FieldTable.convertToMap(convertedProperties.getHeaders());
+        final Map<String, Object> headers = convertedProperties.getHeadersAsMap();
         assertEquals("Unexpected headers", properties, new HashMap<>(headers));
     }
 
@@ -149,7 +148,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        final Map<String, Object> headers = FieldTable.convertToMap(convertedProperties.getHeaders());
+        final Map<String, Object> headers = convertedProperties.getHeadersAsMap();
         assertEquals("Unexpected headers size", (long) properties.size(), (long) headers.size());
         assertEquals("Unexpected headers", properties.get(key), UUID.fromString((String) headers.get(key)));
     }
@@ -166,7 +165,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        final Map<String, Object> headers = FieldTable.convertToMap(convertedProperties.getHeaders());
+        final Map<String, Object> headers = convertedProperties.getHeadersAsMap();
         assertEquals("Unexpected headers size", (long) properties.size(), (long) headers.size());
         assertEquals("Unexpected headers", properties.get(key), new Date((Long) headers.get(key)));
     }
@@ -182,7 +181,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        final Map<String, Object> headers = FieldTable.convertToMap(convertedProperties.getHeaders());
+        final Map<String, Object> headers = convertedProperties.getHeadersAsMap();
         assertEquals("Unexpected qpid.subject is missing from headers", subject, headers.get("qpid.subject"));
         assertEquals("Unexpected type", subject, convertedProperties.getType().toString());
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
@@ -727,7 +726,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        Map<String, Object> headers = FieldTable.convertToMap(convertedProperties.getHeaders());
+        Map<String, Object> headers = convertedProperties.getHeadersAsMap();
         assertEquals("Unexpected group-id", testGroupId, headers.get("JMSXGroupID"));
     }
 
@@ -742,7 +741,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        Map<String, Object> headers = FieldTable.convertToMap(convertedProperties.getHeaders());
+        Map<String, Object> headers = convertedProperties.getHeadersAsMap();
         assertEquals("Unexpected group-id", testGroupSequence, headers.get("JMSXGroupSeq"));
     }
 

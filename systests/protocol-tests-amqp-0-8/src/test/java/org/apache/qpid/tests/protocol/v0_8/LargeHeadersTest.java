@@ -22,10 +22,8 @@ package org.apache.qpid.tests.protocol.v0_8;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +32,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicConsumeOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicDeliverBody;
@@ -42,7 +39,6 @@ import org.apache.qpid.server.protocol.v0_8.transport.BasicQosOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelFlowOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionOpenOkBody;
-import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -104,7 +100,7 @@ public class LargeHeadersTest extends BrokerAdminUsingTestBase
             assertThat(header.getBodySize(), is(equalTo(0L)));
 
             BasicContentHeaderProperties properties = header.getProperties();
-            Map<String, Object> receivedHeaders = new HashMap<>(FieldTable.convertToMap(properties.getHeaders()));
+            Map<String, Object> receivedHeaders = new HashMap<>(properties.getHeadersAsMap());
             assertThat(receivedHeaders, is(equalTo(new HashMap<>(messageHeaders))));
         }
     }

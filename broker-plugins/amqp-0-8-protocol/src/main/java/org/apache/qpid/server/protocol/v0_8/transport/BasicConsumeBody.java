@@ -203,13 +203,19 @@ public class BasicConsumeBody extends AMQMethodBodyImpl implements EncodableAMQD
         boolean exclusive = (bitfield & 0x04) == 0x04;
         boolean nowait = (bitfield & 0x08) == 0x08;
         FieldTable arguments = EncodingUtils.readFieldTable(buffer);
-        if(!dispatcher.ignoreAllButCloseOk())
+        if (!dispatcher.ignoreAllButCloseOk())
         {
-            dispatcher.receiveBasicConsume(queue, consumerTag, noLocal, noAck, exclusive, nowait, arguments);
+            dispatcher.receiveBasicConsume(queue,
+                                           consumerTag,
+                                           noLocal,
+                                           noAck,
+                                           exclusive,
+                                           nowait,
+                                           FieldTable.convertToDecodedFieldTable(arguments));
         }
         if (arguments != null)
         {
-            arguments.clearEncodedForm();
+            arguments.dispose();
         }
     }
 }

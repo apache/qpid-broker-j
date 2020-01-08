@@ -155,11 +155,11 @@ public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDa
         FieldTable arguments = EncodingUtils.readFieldTable(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
-            dispatcher.receiveQueueUnbind(queue, exchange, routingKey, arguments);
+            dispatcher.receiveQueueUnbind(queue, exchange, routingKey, FieldTable.convertToDecodedFieldTable(arguments));
         }
         if (arguments != null)
         {
-            arguments.clearEncodedForm();
+            arguments.dispose();
         }
 
     }

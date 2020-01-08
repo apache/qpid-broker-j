@@ -205,11 +205,11 @@ public class QueueDeclareBody extends AMQMethodBodyImpl implements EncodableAMQD
         FieldTable arguments = EncodingUtils.readFieldTable(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
-            dispatcher.receiveQueueDeclare(queue, passive, durable, exclusive, autoDelete, nowait, arguments);
+            dispatcher.receiveQueueDeclare(queue, passive, durable, exclusive, autoDelete, nowait, FieldTable.convertToDecodedFieldTable(arguments));
         }
         if (arguments != null)
         {
-            arguments.clearEncodedForm();
+            arguments.dispose();
         }
     }
 }

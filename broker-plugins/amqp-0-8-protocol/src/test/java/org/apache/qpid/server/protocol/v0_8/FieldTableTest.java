@@ -417,7 +417,7 @@ public class FieldTableTest extends UnitTestBase
      * Additional test checkPropertyName doesn't accept Null
      */
     @Test
-    public void testCheckPropertyNameaIsNull()
+    public void testCheckPropertyNameIsNull()
     {
         try
         {
@@ -434,7 +434,7 @@ public class FieldTableTest extends UnitTestBase
      * Additional test checkPropertyName doesn't accept an empty String
      */
     @Test
-    public void testCheckPropertyNameaIsEmptyString()
+    public void testCheckPropertyNameIsEmptyString()
     {
         try
         {
@@ -460,14 +460,20 @@ public class FieldTableTest extends UnitTestBase
             longPropertyName.append("x");
         }
 
+        boolean strictAMQP = FieldTable._strictAMQP;
         try
         {
-            new FieldTable(Collections.singletonMap(longPropertyName.toString(), "String"), true);
+            FieldTable._strictAMQP = true;
+            new FieldTable(Collections.singletonMap(longPropertyName.toString(), "String"));
             fail("property name must be < 128 characters");
         }
         catch (IllegalArgumentException iae)
         {
             // normal path
+        }
+        finally
+        {
+            FieldTable._strictAMQP = strictAMQP;
         }
     }
 
@@ -477,15 +483,22 @@ public class FieldTableTest extends UnitTestBase
     @Test
     public void testCheckPropertyNameStartCharacterIsLetter()
     {
+        boolean strictAMQP = FieldTable._strictAMQP;
+
         // Try a name that starts with a number
         try
         {
-            new FieldTable(Collections.singletonMap("1", "String"), true);
+            FieldTable._strictAMQP = true;
+            new FieldTable(Collections.singletonMap("1", "String"));
             fail("property name must start with a letter");
         }
         catch (IllegalArgumentException iae)
         {
             // normal path
+        }
+        finally
+        {
+            FieldTable._strictAMQP = strictAMQP;
         }
     }
 

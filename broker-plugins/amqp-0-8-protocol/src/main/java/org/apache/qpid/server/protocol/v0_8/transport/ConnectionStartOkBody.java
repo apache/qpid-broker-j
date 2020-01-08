@@ -141,13 +141,16 @@ public class ConnectionStartOkBody extends AMQMethodBodyImpl implements Encodabl
         AMQShortString mechanism = AMQShortString.readAMQShortString(in);
         byte[] response = EncodingUtils.readBytes(in);
         AMQShortString locale = AMQShortString.readAMQShortString(in);
-        if(!dispatcher.ignoreAllButCloseOk())
+        if (!dispatcher.ignoreAllButCloseOk())
         {
-            dispatcher.receiveConnectionStartOk(clientProperties, mechanism, response, locale);
+            dispatcher.receiveConnectionStartOk(FieldTable.convertToDecodedFieldTable(clientProperties),
+                                                mechanism,
+                                                response,
+                                                locale);
         }
         if (clientProperties != null)
         {
-            clientProperties.clearEncodedForm();
+            clientProperties.dispose();
         }
     }
 }

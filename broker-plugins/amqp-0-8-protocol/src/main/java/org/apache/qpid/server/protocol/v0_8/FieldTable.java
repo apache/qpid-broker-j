@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import java.lang.ref.SoftReference;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,130 +43,50 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 public class FieldTable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FieldTable.class);
-    private static final String STRICT_AMQP_NAME = "STRICT_AMQP";
-    private static final boolean STRICT_AMQP = Boolean.valueOf(System.getProperty(STRICT_AMQP_NAME, "false"));
-    private static final AMQTypedValue NOT_PRESENT = AMQType.VOID.asTypedValue(null);
+    private static final String STRICT_AMQP_NAME = "_strictAMQP";
+    static boolean _strictAMQP = Boolean.valueOf(System.getProperty(STRICT_AMQP_NAME, "false"));
 
-    public static final FieldTable EMPTY = FieldTable.convertToFieldTable(Collections.emptyMap());
-
-    private QpidByteBuffer _encodedForm;
-    private boolean _decoded;
-    private final Map<String, AMQTypedValue> _properties;
-    private final long _encodedSize;
-    private final boolean _strictAMQP;
+    private final FieldTableSupport _fieldTableSupport;
 
     FieldTable(QpidByteBuffer input, int len)
     {
-        _strictAMQP = STRICT_AMQP;
-        _encodedForm = input.view(0,len);
-        input.position(input.position()+len);
-        _encodedSize = len;
-        _properties = new LinkedHashMap<>();
+        final QpidByteBuffer encodedForm = input.view(0, len);
+        input.position(input.position() + len);
+        _fieldTableSupport = new ByteBufferFieldTableSupport(encodedForm);
     }
 
     FieldTable(QpidByteBuffer buffer)
     {
-        _strictAMQP = STRICT_AMQP;
-        _encodedForm = buffer.duplicate();
-        _encodedSize = buffer.remaining();
-        _properties = new LinkedHashMap<>();
+        _fieldTableSupport = new ByteBufferFieldTableSupport(buffer.duplicate());
     }
 
     FieldTable(Map<String, Object> properties)
     {
-        this(properties, STRICT_AMQP);
-    }
-
-    FieldTable(Map<String, Object> properties, boolean strictAMQP)
-    {
-        _strictAMQP = strictAMQP;
-        long size = 0;
-        Map<String, AMQTypedValue> m = new LinkedHashMap<>();
+        final Map<String, AMQTypedValue> m;
         if (properties != null && !properties.isEmpty())
         {
-            m = new LinkedHashMap<>();
-            for (Map.Entry<String, Object> e : properties.entrySet())
-            {
-                String key = e.getKey();
-                Object val = e.getValue();
-                checkPropertyName(key);
-                AMQTypedValue value = getAMQTypeValue(val);
-                size += EncodingUtils.encodedShortStringLength(e.getKey()) + 1 + value.getEncodingSize();
-                m.put(e.getKey(), value);
-            }
+            m = properties.entrySet()
+                          .stream()
+                          .peek(e -> checkPropertyName(e.getKey()))
+                          .collect(Collectors.toMap(Map.Entry::getKey,
+                                                    e -> getAMQTypeValue(e.getValue()),
+                                                    (x, y) -> y,
+                                                    LinkedHashMap::new));
         }
-        _properties = m;
-        _encodedSize = size;
-        _decoded = true;
-    }
-
-    private synchronized AMQTypedValue getProperty(String key)
-    {
-        AMQTypedValue value = _properties.get(key);
-        if (value == null && !_decoded)
+        else
         {
-            value = findValueForKey(key);
-            _properties.put(key, value);
+            m = Collections.emptyMap();
         }
-        return value;
+
+        _fieldTableSupport = new MapFieldTableSupport(m);
     }
 
-    private Map<String, AMQTypedValue> decode()
+    FieldTable(FieldTableSupport fieldTableSupport)
     {
-        final Map<String, AMQTypedValue> properties = new HashMap<>();
-        if (_encodedSize > 0 && _encodedForm != null)
-        {
-            _encodedForm.mark();
-            try
-            {
-                do
-                {
-                    final String key = AMQShortString.readAMQShortStringAsString(_encodedForm);
-
-                    checkPropertyName(key);
-                    AMQTypedValue value = AMQTypedValue.readFromBuffer(_encodedForm);
-                    properties.put(key, value);
-                }
-                while (_encodedForm.hasRemaining());
-            }
-            finally
-            {
-                _encodedForm.reset();
-            }
-
-            final long recalculateEncodedSize = recalculateEncodedSize(properties);
-            if (_encodedSize != recalculateEncodedSize)
-            {
-                throw new IllegalStateException(String.format(
-                        "Malformed field table detected: provided encoded size '%d' does not equal calculated size '%d'",
-                        _encodedSize,
-                        recalculateEncodedSize));
-            }
-        }
-        return properties;
+        _fieldTableSupport = new MapFieldTableSupport(fieldTableSupport.getAsMap());
     }
 
-    private void decodeIfNecessary()
-    {
-        if (!_decoded)
-        {
-            try
-            {
-                final Map<String, AMQTypedValue> properties = decode();
-                if (!_properties.isEmpty())
-                {
-                    _properties.clear();
-                }
-                _properties.putAll(properties);
-            }
-            finally
-            {
-                _decoded = true;
-            }
-        }
-    }
-
-    private AMQTypedValue getAMQTypeValue(final Object object) throws AMQPInvalidClassException
+    private static AMQTypedValue getAMQTypeValue(final Object object) throws AMQPInvalidClassException
     {
         if (object == null)
         {
@@ -254,15 +176,13 @@ public class FieldTable
         throw new AMQPInvalidClassException(AMQPInvalidClassException.INVALID_OBJECT_MSG + object.getClass());
     }
 
-    // ***** Methods
-
     @Override
     public String toString()
     {
-        return getProperties().toString();
+        return _fieldTableSupport.toString();
     }
 
-    private void checkPropertyName(String propertyName)
+    private static void checkPropertyName(String propertyName)
     {
         if (propertyName == null)
         {
@@ -307,47 +227,33 @@ public class FieldTable
         }
     }
 
-    // *************************  Byte Buffer Processing
-
-    public synchronized void writeToBuffer(QpidByteBuffer buffer)
+    public void writeToBuffer(QpidByteBuffer buffer)
     {
         if (LOGGER.isDebugEnabled())
         {
             LOGGER.debug("FieldTable::writeToBuffer: Writing encoded length of " + getEncodedSize() + "...");
-            if (_decoded)
+            if (_fieldTableSupport instanceof MapFieldTableSupport)
             {
-                LOGGER.debug(getProperties().toString());
+                LOGGER.debug(_fieldTableSupport.toString());
             }
         }
 
         buffer.putUnsignedInt(getEncodedSize());
 
-        putDataInBuffer(buffer);
+        _fieldTableSupport.writeToBuffer(buffer);
     }
 
-    public synchronized byte[] getDataAsBytes()
+    public byte[] getDataAsBytes()
     {
-        if (_encodedForm == null)
-        {
-            byte[] data = new byte[(int) getEncodedSize()];
-            QpidByteBuffer buf = QpidByteBuffer.wrap(data);
-            putDataInBuffer(buf);
-            return data;
-        }
-        else
-        {
-            byte[] encodedCopy = new byte[_encodedForm.remaining()];
-            _encodedForm.copyTo(encodedCopy);
-            return encodedCopy;
-        }
+        return _fieldTableSupport.getAsBytes();
     }
 
     public long getEncodedSize()
     {
-        return _encodedSize;
+        return _fieldTableSupport.getEncodedSize();
     }
 
-    private synchronized long recalculateEncodedSize(final Map<String, AMQTypedValue> properties)
+    private static long recalculateEncodedSize(final Map<String, AMQTypedValue> properties)
     {
         long size = 0L;
         for (Map.Entry<String, AMQTypedValue> e : properties.entrySet())
@@ -361,10 +267,9 @@ public class FieldTable
 
     public static Map<String, Object> convertToMap(final FieldTable fieldTable)
     {
-        final Map<String, Object> map = new HashMap<>();
-
         if (fieldTable != null)
         {
+            final Map<String, Object> map = new LinkedHashMap<>();
             Map<String, AMQTypedValue> properties = fieldTable.getProperties();
             if (properties != null)
             {
@@ -382,34 +287,14 @@ public class FieldTable
                     map.put(e.getKey(), val);
                 }
             }
+            return map;
         }
-        return map;
+        return Collections.emptyMap();
     }
 
-    public synchronized void clearEncodedForm()
+    public void dispose()
     {
-        try
-        {
-            decodeIfNecessary();
-        }
-        finally
-        {
-            if (_encodedForm != null)
-            {
-                _encodedForm.dispose();
-                _encodedForm = null;
-            }
-        }
-    }
-
-    public synchronized void dispose()
-    {
-        if (_encodedForm != null)
-        {
-            _encodedForm.dispose();
-            _encodedForm = null;
-        }
-        _properties.clear();
+        _fieldTableSupport.dispose();
     }
 
     public int size()
@@ -419,12 +304,12 @@ public class FieldTable
 
     public boolean isEmpty()
     {
-        return size() == 0;
+        return getEncodedSize() > 0;
     }
 
     public boolean containsKey(String key)
     {
-        return getProperties().containsKey(key);
+        return _fieldTableSupport.containsKey(key);
     }
 
     public Set<String> keys()
@@ -435,91 +320,35 @@ public class FieldTable
     public Object get(String key)
     {
         checkPropertyName(key);
-        AMQTypedValue value = getProperty(key);
-        if (value != null && value != NOT_PRESENT)
-        {
-            return value.getValue();
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    private void putDataInBuffer(QpidByteBuffer buffer)
-    {
-        if (_encodedForm != null)
-        {
-            byte[] encodedCopy = new byte[_encodedForm.remaining()];
-            _encodedForm.copyTo(encodedCopy);
-
-            buffer.put(encodedCopy);
-        }
-        else if (!_properties.isEmpty())
-        {
-            for (final Map.Entry<String, AMQTypedValue> me : _properties.entrySet())
-            {
-                EncodingUtils.writeShortStringBytes(buffer, me.getKey());
-                me.getValue().writeToBuffer(buffer);
-            }
-        }
-    }
-
-
-    @Override
-    public int hashCode()
-    {
-        return getProperties().hashCode();
+        return _fieldTableSupport.get(key);
     }
 
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
-        if (o == this)
+        if (this == o)
         {
             return true;
         }
-
         if (o == null || getClass() != o.getClass())
         {
             return false;
         }
 
-        FieldTable f = (FieldTable) o;
-        return getProperties().equals(f.getProperties());
+        final FieldTable that = (FieldTable) o;
+
+        return _fieldTableSupport.equals(that._fieldTableSupport);
     }
 
-    private synchronized Map<String, AMQTypedValue> getProperties()
+    @Override
+    public int hashCode()
     {
-        decodeIfNecessary();
-        return _properties;
+        return _fieldTableSupport.hashCode();
     }
 
-    private AMQTypedValue findValueForKey(String key)
+    private Map<String, AMQTypedValue> getProperties()
     {
-        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-        _encodedForm.mark();
-        try
-        {
-            while (_encodedForm.hasRemaining())
-            {
-                final byte[] bytes = AMQShortString.readAMQShortStringAsBytes(_encodedForm);
-                if (Arrays.equals(keyBytes, bytes))
-                {
-                    return AMQTypedValue.readFromBuffer(_encodedForm);
-                }
-                else
-                {
-                    AMQType type = AMQTypeMap.getType(_encodedForm.get());
-                    type.skip(_encodedForm);
-                }
-            }
-        }
-        finally
-        {
-            _encodedForm.reset();
-        }
-        return NOT_PRESENT;
+        return _fieldTableSupport.getAsMap();
     }
 
     public static FieldTable convertToFieldTable(Map<String, Object> map)
@@ -534,11 +363,345 @@ public class FieldTable
         }
     }
 
-    public synchronized void validate()
+    public static FieldTable convertToDecodedFieldTable(final FieldTable fieldTable)
     {
-        if (!_decoded)
+        if (fieldTable == null)
+        {
+            return null;
+        }
+
+        return new FieldTable(fieldTable._fieldTableSupport);
+    }
+
+    public void validate()
+    {
+        _fieldTableSupport.validate();
+    }
+
+    interface FieldTableSupport
+    {
+        Object get(String key);
+
+        boolean containsKey(String key);
+
+        long getEncodedSize();
+
+        void writeToBuffer(QpidByteBuffer buffer);
+
+        byte[] getAsBytes();
+
+        Map<String, AMQTypedValue> getAsMap();
+
+        void dispose();
+
+        void validate();
+    }
+
+    static class ByteBufferFieldTableSupport implements FieldTableSupport
+    {
+        private static final AMQTypedValue NOT_PRESENT = AMQType.VOID.asTypedValue(null);
+
+        private final QpidByteBuffer _encodedForm;
+        private volatile SoftReference<Map<String, AMQTypedValue>> _cache;
+
+        ByteBufferFieldTableSupport(final QpidByteBuffer encodedForm)
+        {
+            _encodedForm = encodedForm;
+            _cache = new SoftReference<>(new LinkedHashMap<>());
+        }
+
+        @Override
+        public synchronized long getEncodedSize()
+        {
+            return _encodedForm.remaining();
+        }
+
+        @Override
+        public synchronized Object get(final String key)
+        {
+            final AMQTypedValue value = getValue(key);
+            if (value != null && value != NOT_PRESENT)
+            {
+                return value.getValue();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        @Override
+        public boolean containsKey(final String key)
+        {
+            final AMQTypedValue value = getValue(key);
+            return value != null && value != NOT_PRESENT;
+        }
+
+        @Override
+        public synchronized void writeToBuffer(final QpidByteBuffer buffer)
+        {
+            byte[] encodedCopy = new byte[_encodedForm.remaining()];
+            _encodedForm.copyTo(encodedCopy);
+            buffer.put(encodedCopy);
+        }
+
+        @Override
+        public synchronized byte[] getAsBytes()
+        {
+            byte[] encodedCopy = new byte[_encodedForm.remaining()];
+            _encodedForm.copyTo(encodedCopy);
+            return encodedCopy;
+        }
+
+        @Override
+        public Map<String, AMQTypedValue> getAsMap()
+        {
+            return decode();
+        }
+
+        @Override
+        public synchronized void dispose()
+        {
+            if (_encodedForm != null)
+            {
+                _encodedForm.dispose();
+               _cache.clear();
+            }
+        }
+
+        @Override
+        public void validate()
         {
             decode();
         }
+
+        @Override
+        public boolean equals(final Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+
+            final ByteBufferFieldTableSupport that = (ByteBufferFieldTableSupport) o;
+
+            return _encodedForm.equals(that._encodedForm);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return _encodedForm.hashCode();
+        }
+
+        @Override
+        public String toString()
+        {
+            return getAsMap().toString();
+        }
+
+
+        private synchronized AMQTypedValue getValue(final String key)
+        {
+            AMQTypedValue value = null;
+            Map<String, AMQTypedValue> properties = _cache.get();
+            if (properties == null)
+            {
+                _cache = new SoftReference<>(new LinkedHashMap<>());
+                properties = _cache.get();
+            }
+            if (properties != null)
+            {
+                value = properties.get(key);
+            }
+            if (value == null)
+            {
+                value = findValueForKey(key);
+                if (value == null)
+                {
+                    value = NOT_PRESENT;
+                }
+                if (properties != null)
+                {
+                    properties.put(key, value);
+                }
+            }
+            return value;
+        }
+
+        private AMQTypedValue findValueForKey(String key)
+        {
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            _encodedForm.mark();
+            try
+            {
+                while (_encodedForm.hasRemaining())
+                {
+                    final byte[] bytes = AMQShortString.readAMQShortStringAsBytes(_encodedForm);
+                    if (Arrays.equals(keyBytes, bytes))
+                    {
+                        return AMQTypedValue.readFromBuffer(_encodedForm);
+                    }
+                    else
+                    {
+                        AMQType type = AMQTypeMap.getType(_encodedForm.get());
+                        type.skip(_encodedForm);
+                    }
+                }
+            }
+            finally
+            {
+                _encodedForm.reset();
+            }
+            return null;
+        }
+
+        private synchronized Map<String, AMQTypedValue> decode()
+        {
+            final Map<String, AMQTypedValue> properties = new HashMap<>();
+            final long encodedSize = getEncodedSize();
+            if (encodedSize > 0)
+            {
+                _encodedForm.mark();
+                try
+                {
+                    do
+                    {
+                        final String key = AMQShortString.readAMQShortStringAsString(_encodedForm);
+
+                        checkPropertyName(key);
+                        AMQTypedValue value = AMQTypedValue.readFromBuffer(_encodedForm);
+                        properties.put(key, value);
+                    }
+                    while (_encodedForm.hasRemaining());
+                }
+                finally
+                {
+                    _encodedForm.reset();
+                }
+
+                final long recalculateEncodedSize = recalculateEncodedSize(properties);
+                if (encodedSize != recalculateEncodedSize)
+                {
+                    throw new IllegalStateException(String.format(
+                            "Malformed field table detected: provided encoded size '%d' does not equal calculated size '%d'",
+                            encodedSize,
+                            recalculateEncodedSize));
+                }
+            }
+            return properties;
+        }
     }
+
+    static class MapFieldTableSupport implements FieldTableSupport
+    {
+        private final Map<String, AMQTypedValue> _properties;
+        private final long _encodedSize;
+
+        MapFieldTableSupport(final Map<String, AMQTypedValue> properties)
+        {
+            _properties = Collections.unmodifiableMap(new LinkedHashMap<>(properties));
+            _encodedSize = recalculateEncodedSize(properties);
+        }
+
+        @Override
+        public long getEncodedSize()
+        {
+            return _encodedSize;
+        }
+
+        @Override
+        public Object get(final String key)
+        {
+            final AMQTypedValue value = _properties.get(key);
+            if (value == null)
+            {
+                return null;
+            }
+            return value.getValue();
+        }
+
+        @Override
+        public boolean containsKey(final String key)
+        {
+            return _properties.containsKey(key);
+        }
+
+        @Override
+        public void writeToBuffer(final QpidByteBuffer buffer)
+        {
+            for (final Map.Entry<String, AMQTypedValue> me : _properties.entrySet())
+            {
+                EncodingUtils.writeShortStringBytes(buffer, me.getKey());
+                me.getValue().writeToBuffer(buffer);
+            }
+        }
+
+        @Override
+        public byte[] getAsBytes()
+        {
+            byte[] data = new byte[(int) getEncodedSize()];
+            QpidByteBuffer buf = QpidByteBuffer.wrap(data);
+            writeToBuffer(buf);
+            return data;
+        }
+
+        @Override
+        public Map<String, AMQTypedValue> getAsMap()
+        {
+            return _properties;
+        }
+
+        @Override
+        public void dispose()
+        {
+            // noop
+        }
+
+        @Override
+        public void validate()
+        {
+            // noop
+        }
+
+        @Override
+        public boolean equals(final Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+
+            final MapFieldTableSupport that = (MapFieldTableSupport) o;
+
+            if (_encodedSize != that._encodedSize)
+            {
+                return false;
+            }
+            return _properties.equals(that._properties);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = _properties.hashCode();
+            result = 31 * result + (int) (_encodedSize ^ (_encodedSize >>> 32));
+            return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return _properties.toString();
+        }
+    }
+
 }

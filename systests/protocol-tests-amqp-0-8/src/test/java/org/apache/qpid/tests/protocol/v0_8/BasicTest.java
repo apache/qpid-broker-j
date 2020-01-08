@@ -40,7 +40,6 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicConsumeOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicDeliverBody;
@@ -217,7 +216,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
 
             assertThat(receivedContent, is(equalTo(messageContent)));
 
-            Map<String, Object> receivedHeaders = new HashMap<>(FieldTable.convertToMap(properties.getHeaders()));
+            Map<String, Object> receivedHeaders = new HashMap<>(properties.getHeadersAsMap());
             assertThat(receivedHeaders, is(equalTo(new HashMap<>(messageHeaders))));
             assertThat(properties.getContentTypeAsString(), is(equalTo(messageContentType)));
             assertThat(properties.getDeliveryMode(), is(equalTo(deliveryMode)));
@@ -276,7 +275,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
 
             assertThat(header.getBodySize(), is(equalTo((long)messageContent.length())));
             BasicContentHeaderProperties properties = header.getProperties();
-            Map<String, Object> receivedHeaders = new HashMap<>(FieldTable.convertToMap(properties.getHeaders()));
+            Map<String, Object> receivedHeaders = new HashMap<>(properties.getHeadersAsMap());
             assertThat(receivedHeaders, is(equalTo(new HashMap<>(messageHeaders))));
             assertThat(properties.getContentTypeAsString(), is(equalTo(messageContentType)));
             assertThat(properties.getPriority(), is(equalTo(priority)));

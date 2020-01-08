@@ -204,7 +204,7 @@ public class EncodingUtils
         }
     }
 
-    public static FieldTable readFieldTable(QpidByteBuffer input) throws AMQFrameDecodingException
+    public static FieldTable readFieldTable(QpidByteBuffer input)
     {
         long length = input.getUnsignedInt();
         if (length == 0)
