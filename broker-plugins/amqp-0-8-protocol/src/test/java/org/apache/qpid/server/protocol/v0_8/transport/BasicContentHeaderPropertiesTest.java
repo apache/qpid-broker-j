@@ -41,7 +41,6 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
     private BasicContentHeaderProperties _testProperties;
     private FieldTable _testTable;
     private String _testString = "This is a test string";
-    private int _testint = 666;
 
     /**
      * Currently only test setting/getting String, int and boolean props
@@ -56,7 +55,7 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
     {
         Map<String, Object> headers = new LinkedHashMap<>();
         headers.put("TestString", _testString);
-        headers.put("Testint", _testint);
+        headers.put("Testint", Integer.MAX_VALUE);
         _testTable = FieldTableFactory.createFieldTable(headers);
 
         _testProperties = new BasicContentHeaderProperties();
@@ -119,7 +118,7 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
     public void testSetGetHeaders()
     {
         _testProperties.setHeaders(_testTable);
-        assertEquals(_testTable, _testProperties.getHeaders());
+        assertEquals(FieldTable.convertToMap(_testTable), _testProperties.getHeadersAsMap());
     }
 
     @Test
@@ -218,7 +217,7 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
     private static final double SPARSITY_FRACTION = 0.5;
 
     @Test
-    public void testRellocate() throws Exception
+    public void testReallocate() throws Exception
     {
         try
         {
@@ -229,7 +228,7 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
                 // set some test fields
                 _testProperties.setContentType("text/plain");
                 _testProperties.setUserId("test");
-                final Map<String, Object> headers = FieldTable.convertToMap(_testProperties.getHeaders());
+                final Map<String, Object> headers = _testProperties.getHeadersAsMap();
                 final int propertyListSize = _testProperties.getPropertyListSize();
                 final int flags = _testProperties.getPropertyFlags();
 
@@ -243,21 +242,16 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
                     propertiesBuffer.flip();
 
                     BasicContentHeaderProperties testProperties = new BasicContentHeaderProperties(propertiesBuffer, flags, propertyListSize);
-                    FieldTable headersBeforeReallocation = testProperties.getHeaders();
-                    assertEquals("Unexpected headers",
-                                 headers,
-                                 FieldTable.convertToMap(headersBeforeReallocation));
+                    final Map<String, Object> headersBeforeReallocation = testProperties.getHeadersAsMap();
+                    assertEquals("Unexpected headers", headers, headersBeforeReallocation);
 
                     buffer.dispose();
 
                     assertTrue("Properties buffer should be sparse", propertiesBuffer.isSparse());
                     testProperties.reallocate();
 
-                    FieldTable headersAfterReallocation = testProperties.getHeaders();
-
-                    assertEquals("Unexpected headers after re-allocation",
-                                 headers,
-                                 FieldTable.convertToMap(headersAfterReallocation));
+                    final Map<String, Object> headersAfterReallocation = testProperties.getHeadersAsMap();
+                    assertEquals("Unexpected headers after re-allocation", headers, headersAfterReallocation);
                 }
             }
         }

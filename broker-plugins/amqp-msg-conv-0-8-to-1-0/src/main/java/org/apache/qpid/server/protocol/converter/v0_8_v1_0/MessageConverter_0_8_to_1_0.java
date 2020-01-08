@@ -32,7 +32,6 @@ import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.protocol.v1_0.MessageConverter_to_1_0;
@@ -133,7 +132,7 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             props.setSubject(contentHeader.getType().toString());
         }
 
-        Map<String, Object> applicationPropertiesMap = new LinkedHashMap<>(FieldTable.convertToMap(contentHeader.getHeaders()));
+        Map<String, Object> applicationPropertiesMap = new LinkedHashMap<>(contentHeader.getHeadersAsMap());
 
         if(applicationPropertiesMap.containsKey("qpid.subject"))
         {

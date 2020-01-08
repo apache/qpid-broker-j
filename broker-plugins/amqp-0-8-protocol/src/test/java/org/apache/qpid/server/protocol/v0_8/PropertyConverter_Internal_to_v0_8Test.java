@@ -117,7 +117,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testExpirationConversion() throws InterruptedException
+    public void testExpirationConversion()
     {
         long ttl = 10000;
         long expiryTime = System.currentTimeMillis() + ttl;
@@ -276,8 +276,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends UnitTestBase
 
         final AMQMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Map<String, Object> convertedHeaders =
-                FieldTable.convertToMap(convertedMessage.getContentHeaderBody().getProperties().getHeaders());
+        Map<String, Object> convertedHeaders = convertedMessage.getContentHeaderBody().getProperties().getHeadersAsMap();
         assertEquals("Unexpected application properties", properties, new HashMap<>(convertedHeaders));
     }
 

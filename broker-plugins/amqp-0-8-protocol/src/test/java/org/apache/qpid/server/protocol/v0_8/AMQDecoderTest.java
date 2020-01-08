@@ -117,7 +117,7 @@ public class AMQDecoderTest extends UnitTestBase
             assertEquals((long) ContentHeaderBody.TYPE,
                                 (long) ((AMQFrame) firstFrame).getBodyFrame().getFrameType());
             BasicContentHeaderProperties decodedProps = ((ContentHeaderBody)((AMQFrame)firstFrame).getBodyFrame()).getProperties();
-            final FieldTable headers = decodedProps.getHeaders();
+            final Map<String, Object> headers = decodedProps.getHeadersAsMap();
             assertEquals("world", headers.get("hello"));
         }
         else

@@ -224,11 +224,11 @@ public class ExchangeDeclareBody extends AMQMethodBodyImpl implements EncodableA
                                               autoDelete,
                                               internal,
                                               nowait,
-                                              arguments);
+                                              FieldTable.convertToDecodedFieldTable(arguments));
         }
         if (arguments != null)
         {
-            arguments.clearEncodedForm();
+            arguments.dispose();
         }
     }
 }

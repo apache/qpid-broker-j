@@ -130,11 +130,11 @@ public class ChannelAlertBody extends AMQMethodBodyImpl implements EncodableAMQD
         FieldTable details = EncodingUtils.readFieldTable(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
-            dispatcher.receiveChannelAlert(replyCode, replyText, details);
+            dispatcher.receiveChannelAlert(replyCode, replyText, FieldTable.convertToDecodedFieldTable(details));
         }
         if (details != null)
         {
-            details.clearEncodedForm();
+            details.dispose();
         }
     }
 }

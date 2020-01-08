@@ -173,11 +173,11 @@ public class QueueBindBody extends AMQMethodBodyImpl implements EncodableAMQData
         FieldTable arguments = EncodingUtils.readFieldTable(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
-            dispatcher.receiveQueueBind(queue, exchange, bindingKey, nowait, arguments);
+            dispatcher.receiveQueueBind(queue, exchange, bindingKey, nowait, FieldTable.convertToDecodedFieldTable(arguments));
         }
         if (arguments != null)
         {
-            arguments.clearEncodedForm();
+            arguments.dispose();
         }
     }
 }

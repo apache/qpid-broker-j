@@ -212,7 +212,7 @@ public class MalformedMessage extends BrokerAdminUsingTestBase
 
             assertThat(header.getBodySize(), is(equalTo((long) content2Bytes.length)));
             BasicContentHeaderProperties properties = header.getProperties();
-            Map<String, Object> receivedHeaders = new HashMap<>(FieldTable.convertToMap(properties.getHeaders()));
+            Map<String, Object> receivedHeaders = new HashMap<>(properties.getHeadersAsMap());
             assertThat(receivedHeaders.isEmpty(), is(equalTo(true)));
 
             String receivedContent =

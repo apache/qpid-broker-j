@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.converter.v0_8_v0_10;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.net.URISyntaxException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,7 +41,6 @@ import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.url.AMQBindingURL;
@@ -242,9 +242,7 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
             messageProps.setUserId(properties.getUserId().getBytes());
         }
 
-        FieldTable fieldTable = properties.getHeaders();
-
-        Map<String, Object> appHeaders = FieldTable.convertToMap(fieldTable);
+        final Map<String, Object> appHeaders = new LinkedHashMap<>(properties.getHeadersAsMap());
 
         if(properties.getType() != null)
         {

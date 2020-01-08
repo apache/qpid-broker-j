@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8.transport;
 
+import java.util.Collection;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +48,7 @@ public class BasicContentHeaderProperties
 
     private AMQShortString _encoding;
 
-    private FieldTable _headers = FieldTable.EMPTY;
+    private FieldTable _headers;
 
     private byte _deliveryMode;
 
@@ -85,12 +88,12 @@ public class BasicContentHeaderProperties
     private static final int APPLICATION_ID_MASK = 1 << 3;
     private static final int CLUSTER_ID_MASK = 1 << 2;
 
-    private QpidByteBuffer _encodedForm;
+    private volatile QpidByteBuffer _encodedForm;
 
 
     public BasicContentHeaderProperties(BasicContentHeaderProperties other)
     {
-        _headers = FieldTableFactory.createFieldTable(FieldTable.convertToMap(other.getHeaders()));
+        _headers = FieldTableFactory.createFieldTable(other.getHeadersAsMap());
 
         _contentType = other._contentType;
 
@@ -375,13 +378,7 @@ public class BasicContentHeaderProperties
 
         if ((_propertyFlags & HEADERS_MASK) != 0)
         {
-            long length = buffer.getUnsignedInt();
-
-            try (QpidByteBuffer buf = buffer.view(0, (int) length))
-            {
-                _headers = FieldTableFactory.createFieldTable(buf);
-            }
-            buffer.position(buffer.position()+(int)length);
+            _headers = EncodingUtils.readFieldTable(buffer);
         }
 
         if ((_propertyFlags & DELIVERY_MODE_MASK) != 0)
@@ -502,9 +499,24 @@ public class BasicContentHeaderProperties
         nullEncodedForm();
     }
 
-    public FieldTable getHeaders()
+    public synchronized Object getHeader(String name)
     {
-        return _headers;
+        return _headers == null ? null : _headers.get(name);
+    }
+
+    public synchronized Collection<String> getHeaderNames()
+    {
+        return getHeadersAsMap().keySet();
+    }
+
+    public synchronized boolean containsHeader(String name)
+    {
+        return _headers != null && _headers.containsKey(name);
+    }
+
+    public synchronized Map<String, Object> getHeadersAsMap()
+    {
+        return FieldTable.convertToMap(_headers);
     }
 
     public synchronized void setHeaders(FieldTable headers)
@@ -517,7 +529,7 @@ public class BasicContentHeaderProperties
         {
             _propertyFlags |= HEADERS_MASK;
         }
-        _headers = headers == null ? FieldTable.EMPTY : headers;
+        _headers = headers;
         nullEncodedForm();
     }
 
@@ -809,13 +821,21 @@ public class BasicContentHeaderProperties
     public synchronized void dispose()
     {
         nullEncodedForm();
-        _headers.dispose();
+        if (_headers != null)
+        {
+            _headers.dispose();
+        }
     }
 
     public synchronized void clearEncodedForm()
     {
         nullEncodedForm();
-        _headers.clearEncodedForm();
+        if (_headers != null)
+        {
+            final FieldTable headers = FieldTable.convertToDecodedFieldTable(_headers);
+            _headers.dispose();
+            _headers = headers;
+        }
     }
 
     private synchronized void nullEncodedForm()
@@ -832,13 +852,45 @@ public class BasicContentHeaderProperties
         if (_encodedForm != null)
         {
             _encodedForm = QpidByteBuffer.reallocateIfNecessary(_encodedForm);
+
+            if (_headers != null)
+            {
+                _headers.dispose();
+                _headers = null;
+            }
+            rebuildHeadersIfHeadersMaskIsSet();
         }
-        _headers.clearEncodedForm();
+    }
+
+    private void rebuildHeadersIfHeadersMaskIsSet()
+    {
+        try (QpidByteBuffer byteBuffer = _encodedForm.slice())
+        {
+            if ((_propertyFlags & (CONTENT_TYPE_MASK)) != 0)
+            {
+                int contentTypeSize = byteBuffer.getUnsignedByte();
+                byteBuffer.position(byteBuffer.position() + contentTypeSize);
+            }
+
+            if ((_propertyFlags & ENCODING_MASK) != 0)
+            {
+                int encodingSize = byteBuffer.getUnsignedByte();
+                byteBuffer.position(byteBuffer.position() + encodingSize);
+            }
+
+            if ((_propertyFlags & HEADERS_MASK) != 0)
+            {
+                _headers = EncodingUtils.readFieldTable(byteBuffer);
+            }
+        }
     }
 
     public synchronized void validate()
     {
-        _headers.validate();
+        if (_headers != null)
+        {
+            _headers.validate();
+        }
     }
 
     public boolean checkValid()

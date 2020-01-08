@@ -304,15 +304,7 @@ public enum AMQType
         @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
-            try
-            {
-                // Read size of field table then all name/value pairs.
-                return EncodingUtils.readFieldTable(buffer);
-            }
-            catch (AMQFrameDecodingException e)
-            {
-                throw new IllegalArgumentException("Unable to read field table from buffer.", e);
-            }
+            return EncodingUtils.readFieldTable(buffer);
         }
 
         @Override
