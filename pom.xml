@@ -105,8 +105,8 @@
     <derby-version>10.13.1.1</derby-version>
     <logback-version>1.2.3</logback-version>
     <guava-version>27.0-jre</guava-version>
-    <fasterxml-jackson-version>2.10.1</fasterxml-jackson-version>
-    <fasterxml-jackson-databind-version>2.10.1</fasterxml-jackson-databind-version>
+    <fasterxml-jackson-version>2.10.2</fasterxml-jackson-version>
+    <fasterxml-jackson-databind-version>2.10.2</fasterxml-jackson-databind-version>
     <slf4j-version>1.7.26</slf4j-version>
     <jetty-version>9.4.19.v20190610</jetty-version>
 
