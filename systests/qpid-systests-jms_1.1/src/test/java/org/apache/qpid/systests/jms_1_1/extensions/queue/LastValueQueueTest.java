@@ -325,7 +325,7 @@ public class LastValueQueueTest extends JmsTestBase
     public void testParallelProductionAndConsumption() throws Exception
     {
         final String queueName = getTestName();
-        final Queue queue = createConflationQueue(queueName, KEY_PROPERTY, true);
+        final Queue queue = createConflationQueue(queueName, KEY_PROPERTY, false);
 
         int numberOfUniqueKeyValues = 2;
         final ExecutorService executorService = Executors.newFixedThreadPool(2);
