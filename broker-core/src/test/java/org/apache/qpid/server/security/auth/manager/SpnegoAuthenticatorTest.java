@@ -32,7 +32,9 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.security.Principal;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import org.ietf.jgss.GSSException;
 import org.junit.Before;
@@ -81,6 +83,8 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
         assertNotNull(resource);
         SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", URLDecoder.decode(resource.getPath(), UTF_8));
         SYSTEM_PROPERTY_SETTER.setSystemProperty("javax.security.auth.useSubjectCredsOnly", "false");
+
+        KerberosUtilities.debugConfig();
     }
 
     @Before

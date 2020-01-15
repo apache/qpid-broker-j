@@ -24,7 +24,9 @@ import static java.lang.Boolean.TRUE;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Subject;
@@ -228,6 +230,12 @@ public class KerberosUtilities
             {
                 LOGGER.warn("JVM system property 'java.security.krb5.conf' is not set");
             }
+
+            Map<String, String> env = new LinkedHashMap<>(System.getenv());
+            env.forEach((k, v) -> debug("Environment setting: {}={}", k ,v));
+
+            Properties properties = new Properties(System.getProperties());
+            properties.forEach((k, v) -> debug("JVM setting: {}={}", k ,v));
         }
     }
 

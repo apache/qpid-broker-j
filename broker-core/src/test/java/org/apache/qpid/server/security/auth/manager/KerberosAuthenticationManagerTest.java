@@ -120,7 +120,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         when(_broker.getChildren(AuthenticationProvider.class))
                 .thenReturn(Collections.singleton(_kerberosAuthenticationProvider));
 
-        UTILS.debugConfig();
+        KerberosUtilities.debugConfig();
     }
 
     @Test
@@ -201,18 +201,22 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         final LoginContext lc = UTILS.createKerberosKeyTabLoginContext(getTestName(),
                                                                        CLIENT_PRINCIPAL_FULL_NAME,
                                                                        _clientKeyTabFile);
+
+        Subject clientSubject = null;
         try
         {
             lc.login();
-
-            final Subject clientSubject = lc.getSubject();
+            clientSubject = lc.getSubject();
             debug("LoginContext subject {}", clientSubject);
             final SaslClient saslClient = createSaslClient(clientSubject);
             return performNegotiation(clientSubject, saslClient, negotiator);
         }
         finally
         {
-            lc.logout();
+            if (clientSubject != null)
+            {
+                lc.logout();
+            }
         }
     }
 
