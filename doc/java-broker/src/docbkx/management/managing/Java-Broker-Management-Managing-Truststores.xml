@@ -78,12 +78,44 @@
                 </listitem>
                 <listitem>
                     <para><emphasis>Exposed as Message Source</emphasis>. If enabled, the Broker
-                        will distribute certificates contained within the trustore to clients.
+                        will distribute certificates contained within the truststore to clients.
                         Used by the end to end message encryption feature.</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>Trust Anchor Validity Enforced</emphasis>. If enabled, authentications will
                         fail if the trust anchor's validity date has not yet been reached or already expired.</para>
+                </listitem>
+            </itemizedlist>
+        </para>
+        <para>Revocation attributes.</para>
+        <para>
+            <itemizedlist>
+                <listitem>
+                    <para><emphasis>Enabled</emphasis>. If set to true certificate revocation check is performed when
+                        client tries to connect.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Only End Entity</emphasis>. If enabled, check only the revocation status of
+                        end-entity certificates.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Prefer CRLs</emphasis>. If enabled, prefer CRL (specified in certificate
+                        distribution points) to OCSP, if disabled prefer OCSP to CRL.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>No Fallback</emphasis>. If enabled, disable fallback to CRL/OCSP (if
+                        <emphasis>Prefer CRLs</emphasis> set to true, disable fallback to OCSP,
+                        otherwise disable fallback to CRL in certificate distribution points).</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Ignore Soft Failures</emphasis>. If enabled, revocation check will succeed
+                        if CRL/OCSP response cannot be obtained because of network error or OCSP responder returns
+                        internalError or tryLater.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Server CRL Path Or Upload</emphasis>. Path to Certificate Revocation List file.
+                        If set, certificate revocation check uses only set CRL file and ignores CRL Distribution Points
+                        in certificate.</para>
                 </listitem>
             </itemizedlist>
         </para>

@@ -28,15 +28,10 @@ import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -51,7 +46,6 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
@@ -66,7 +60,7 @@ public class NonJavaTrustStoreImpl
         Handler.register();
     }
 
-    @ManagedAttributeField( afterSet = "updateTrustManagers" )
+    @ManagedAttributeField( afterSet = "initialize" )
     private String _certificatesUrl;
 
     private volatile TrustManager[] _trustManagers = new TrustManager[0];
@@ -139,7 +133,7 @@ public class NonJavaTrustStoreImpl
     }
 
     @SuppressWarnings("unused")
-    private void updateTrustManagers()
+    protected void initialize()
     {
         try
         {
@@ -155,11 +149,7 @@ public class NonJavaTrustStoreImpl
                     inMemoryKeyStore.setCertificateEntry(String.valueOf(i++), cert);
                 }
 
-
-
-                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                tmf.init(inMemoryKeyStore);
-                _trustManagers = tmf.getTrustManagers();
+                _trustManagers = getTrustManagers(inMemoryKeyStore);
                 _certificates = certs;
             }
 
@@ -168,22 +158,5 @@ public class NonJavaTrustStoreImpl
         {
             throw new IllegalConfigurationException("Cannot load certificate(s) :" + e, e);
         }
-    }
-
-    private URL getUrlFromString(String urlString) throws MalformedURLException
-    {
-        URL url;
-
-        try
-        {
-            url = new URL(urlString);
-        }
-        catch (MalformedURLException e)
-        {
-            File file = new File(urlString);
-            url = file.toURI().toURL();
-
-        }
-        return url;
     }
 }

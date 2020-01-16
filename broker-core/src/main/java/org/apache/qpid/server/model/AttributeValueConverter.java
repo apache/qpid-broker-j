@@ -35,7 +35,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -64,6 +63,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Defaults;
 
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.Strings;
 
@@ -192,19 +192,6 @@ abstract class AttributeValueConverter<T>
 
     static final AttributeValueConverter<Certificate> CERTIFICATE_CONVERTER = new AttributeValueConverter<Certificate>()
     {
-        private final CertificateFactory _certFactory;
-
-        {
-            try
-            {
-                _certFactory = CertificateFactory.getInstance("X.509");
-            }
-            catch (CertificateException e)
-            {
-                throw new ServerScopedRuntimeException(e);
-            }
-        }
-
         @Override
         public Certificate convert(final Object value, final ConfiguredObject object)
         {
@@ -216,7 +203,7 @@ abstract class AttributeValueConverter<T>
             {
                 try(ByteArrayInputStream is = new ByteArrayInputStream((byte[])value))
                 {
-                    return _certFactory.generateCertificate(is);
+                    return SSLUtil.getCertificateFactory().generateCertificate(is);
                 }
                 catch (IOException | CertificateException e)
                 {

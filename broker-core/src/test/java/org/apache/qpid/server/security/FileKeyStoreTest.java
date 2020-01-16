@@ -20,9 +20,7 @@
 package org.apache.qpid.server.security;
 
 
-import static org.apache.qpid.server.security.FileTrustStoreTest.SYMMETRIC_KEY_KEYSTORE_RESOURCE;
 import static org.apache.qpid.server.security.FileTrustStoreTest.createDataUrlForFile;
-import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -31,80 +29,47 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.net.URL;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.KeyManager;
 
-import org.junit.Before;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.ConfiguredObjectFactory;
+import org.apache.qpid.test.utils.UnitTestBase;
 import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.KeyStore;
-import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.TestSSLConstants;
-import org.apache.qpid.test.utils.UnitTestBase;
 
 public class FileKeyStoreTest extends UnitTestBase
 {
-    static final String EMPTY_KEYSTORE_RESOURCE = "/ssl/test_empty_keystore.jks";
-    private static final String KEYSTORE_CERTIFICATE_ONLY_RESOURCE = "/ssl/test_cert_only_keystore.pkcs12";
-    private static final String BROKER_KEYSTORE = "ssl/java_broker_keystore.pkcs12";
-    private static final String BROKER_KEYSTORE_PATH = "classpath:" + BROKER_KEYSTORE;
-    private static final String BROKER_KEYSTORE_PASSWORD = TestSSLConstants.BROKER_KEYSTORE_PASSWORD;
-    private static final String CLIENT_KEYSTORE_PATH = "classpath:ssl/java_client_keystore.pkcs12";
-    private static final String CLIENT_KEYSTORE_PASSWORD = TestSSLConstants.KEYSTORE_PASSWORD;
-    private static final String BROKER_KEYSTORE_ALIAS = TestSSLConstants.BROKER_KEYSTORE_ALIAS;
-
-    private final Broker _broker = mock(Broker.class);
-    private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-    private final Model _model = BrokerModel.getInstance();
-    private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
-
-
-    @Before
-    public void setUp() throws Exception
-    {
-
-        when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getModel()).thenReturn(_model);
-        when(_broker.getCategoryClass()).thenReturn(Broker.class);
-        when(_broker.getEventLogger()).thenReturn(new EventLogger());
-        when(_broker.getTypeClass()).thenReturn(Broker.class);
-    }
+    private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
+    private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
 
     @Test
     public void testCreateKeyStoreFromFile_Success() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         KeyManager[] keyManager = fileKeyStore.getKeyManagers();
         assertNotNull(keyManager);
-        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManager.length);
+        assertEquals("Unexpected number of key managers", 1, keyManager.length);
         assertNotNull("Key manager unexpected null", keyManager[0]);
     }
 
@@ -113,272 +78,192 @@ public class FileKeyStoreTest extends UnitTestBase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, BROKER_KEYSTORE_ALIAS);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
+        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.BROKER_KEYSTORE_ALIAS);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         KeyManager[] keyManager = fileKeyStore.getKeyManagers();
         assertNotNull(keyManager);
-        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManager.length);
+        assertEquals("Unexpected number of key managers", 1, keyManager.length);
         assertNotNull("Key manager unexpected null", keyManager[0]);
     }
 
     @Test
-    public void testCreateKeyStoreFromFile_WrongPassword() throws Exception
+    public void testCreateKeyStoreFromFile_WrongPassword()
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
         attributes.put(FileKeyStore.PASSWORD, "wrong");
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        try
-        {
-            _factory.create(KeyStore.class, attributes,  _broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                              message.contains("Check key store password"));
-
-        }
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Check key store password");
     }
 
     @Test
-    public void testCreateKeyStoreFromFile_UnknownAlias() throws Exception
+    public void testCreateKeyStoreFromFile_UnknownAlias()
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, CLIENT_KEYSTORE_PATH);
-        attributes.put(FileKeyStore.PASSWORD, CLIENT_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.CLIENT_KEYSTORE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "notknown");
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        try
-        {
-            _factory.create(KeyStore.class, attributes,  _broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                              message.contains("Cannot find a certificate with alias 'notknown' in key store"));
-        }
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Cannot find a certificate with alias 'notknown' in key store");
     }
 
     @Test
-    public void testCreateKeyStoreFromFile_NonKeyAlias() throws Exception
+    public void testCreateKeyStoreFromFile_NonKeyAlias()
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, CLIENT_KEYSTORE_PATH);
-        attributes.put(FileKeyStore.PASSWORD, CLIENT_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "rootca");
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.CLIENT_KEYSTORE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
+        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.CERT_ALIAS_ROOT_CA);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        try
-        {
-            _factory.create(KeyStore.class, attributes,  _broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                              message.contains("does not identify a private key"));
-        }
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "does not identify a private key");
     }
 
     @Test
     public void testCreateKeyStoreFromDataUrl_Success() throws Exception
     {
-        String trustStoreAsDataUrl = createDataUrlForFile(BROKER_KEYSTORE);
+        String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.STORE_URL, trustStoreAsDataUrl);
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         KeyManager[] keyManagers = fileKeyStore.getKeyManagers();
         assertNotNull(keyManagers);
-        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManagers.length);
+        assertEquals("Unexpected number of key managers", 1, keyManagers.length);
         assertNotNull("Key manager unexpected null", keyManagers[0]);
     }
 
     @Test
     public void testCreateKeyStoreWithAliasFromDataUrl_Success() throws Exception
     {
-        String trustStoreAsDataUrl = createDataUrlForFile(BROKER_KEYSTORE);
+        String trustStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.STORE_URL, trustStoreAsDataUrl);
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, BROKER_KEYSTORE_ALIAS);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
+        attributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.BROKER_KEYSTORE_ALIAS);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         KeyManager[] keyManagers = fileKeyStore.getKeyManagers();
         assertNotNull(keyManagers);
-        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManagers.length);
+        assertEquals("Unexpected number of key managers", 1, keyManagers.length);
         assertNotNull("Key manager unexpected null", keyManagers[0]);
     }
 
     @Test
     public void testCreateKeyStoreFromDataUrl_WrongPassword() throws Exception
     {
-        String keyStoreAsDataUrl = createDataUrlForFile(BROKER_KEYSTORE);
+        String keyStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
         attributes.put(FileKeyStore.PASSWORD, "wrong");
         attributes.put(FileKeyStore.STORE_URL, keyStoreAsDataUrl);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        try
-        {
-            _factory.create(KeyStore.class, attributes,  _broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                              message.contains("Check key store password"));
-        }
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Check key store password");
     }
 
     @Test
-    public void testCreateKeyStoreFromDataUrl_BadKeystoreBytes() throws Exception
+    public void testCreateKeyStoreFromDataUrl_BadKeystoreBytes()
     {
         String keyStoreAsDataUrl = DataUrlUtils.getDataUrlForBytes("notatruststore".getBytes());
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keyStoreAsDataUrl);
 
-        try
-        {
-            _factory.create(KeyStore.class, attributes,  _broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                              message.contains("Cannot instantiate key store"));
-        }
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Cannot instantiate key store");
     }
 
     @Test
     public void testCreateKeyStoreFromDataUrl_UnknownAlias() throws Exception
     {
-        String keyStoreAsDataUrl = createDataUrlForFile(BROKER_KEYSTORE);
+        String keyStoreAsDataUrl = createDataUrlForFile(TestSSLConstants.BROKER_KEYSTORE);
 
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keyStoreAsDataUrl);
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "notknown");
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        try
-        {
-            _factory.create(KeyStore.class, attributes,  _broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                              message.contains("Cannot find a certificate with alias 'notknown' in key store"));
-        }
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Cannot find a certificate with alias 'notknown' in key store");
     }
 
     @Test
-    public void testEmptyKeystoreRejected() throws Exception
+    public void testEmptyKeystoreRejected()
     {
-        final URL emptyKeystore = getClass().getResource(EMPTY_KEYSTORE_RESOURCE);
-        assertNotNull("Empty keystore not found", emptyKeystore);
-
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.STORE_URL, emptyKeystore);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.TEST_EMPTY_KEYSTORE);
 
-        try
-        {
-            _factory.create(KeyStore.class, attributes,  _broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            // pass
-        }
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "must contain at least one private key");
     }
 
     @Test
     public void testKeystoreWithNoPrivateKeyRejected()
     {
-        final URL keystoreUrl = getClass().getResource(KEYSTORE_CERTIFICATE_ONLY_RESOURCE);
-        assertNotNull("Keystore not found", keystoreUrl);
-
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, getTestName());
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.STORE_URL, keystoreUrl);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.TEST_CERT_ONLY_KEYSTORE);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        try
-        {
-            _factory.create(KeyStore.class, attributes,  _broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            String message = ice.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                              message.contains("must contain at least one private key"));
-        }
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "must contain at least one private key");
     }
 
     @Test
     public void testSymmetricKeysIgnored()
     {
-        final URL keystoreUrl = getClass().getResource(SYMMETRIC_KEY_KEYSTORE_RESOURCE);
-        assertNotNull("Keystore not found", keystoreUrl);
-
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.STORE_URL, keystoreUrl);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.TEST_SYMMETRIC_KEY_KEYSTORE);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        KeyStore keyStore = _factory.create(KeyStore.class, attributes,  _broker);
+        KeyStore keyStore = (KeyStore) FACTORY.create(KeyStore.class, attributes, BROKER);
         assertNotNull(keyStore);
     }
 
     @Test
-    public void testUpdateKeyStore_Success() throws Exception
+    public void testUpdateKeyStore_Success()
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(FileKeyStore.NAME, "myFileKeyStore");
-        attributes.put(FileKeyStore.STORE_URL, BROKER_KEYSTORE_PATH);
-        attributes.put(FileKeyStore.PASSWORD, BROKER_KEYSTORE_PASSWORD);
-        attributes.put(FileKeyStore.KEY_STORE_TYPE, JAVA_KEYSTORE_TYPE);
+        attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.BROKER_KEYSTORE);
+        attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
+        attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(KeyStore.class, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         assertNull("Unexpected alias value before change", fileKeyStore.getCertificateAlias());
 
@@ -390,9 +275,9 @@ public class FileKeyStoreTest extends UnitTestBase
             fileKeyStore.setAttributes(unacceptableAttributes);
             fail("Exception not thrown");
         }
-        catch (IllegalConfigurationException ice)
+        catch (IllegalConfigurationException e)
         {
-            String message = ice.getMessage();
+            String message = e.getMessage();
             assertTrue("Exception text not as unexpected:" + message,
                               message.contains("Cannot find a certificate with alias 'notknown' in key store"));
         }
@@ -400,13 +285,12 @@ public class FileKeyStoreTest extends UnitTestBase
         assertNull("Unexpected alias value after failed change", fileKeyStore.getCertificateAlias());
 
         Map<String,Object> changedAttributes = new HashMap<>();
-        changedAttributes.put(FileKeyStore.CERTIFICATE_ALIAS, BROKER_KEYSTORE_ALIAS);
+        changedAttributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.BROKER_KEYSTORE_ALIAS);
 
         fileKeyStore.setAttributes(changedAttributes);
 
         assertEquals("Unexpected alias value after change that is expected to be successful",
-                     BROKER_KEYSTORE_ALIAS,
-                            fileKeyStore.getCertificateAlias());
+                TestSSLConstants.BROKER_KEYSTORE_ALIAS, fileKeyStore.getCertificateAlias());
 
     }
 
@@ -415,8 +299,8 @@ public class FileKeyStoreTest extends UnitTestBase
     {
         assumeThat(SSLUtil.canGenerateCerts(), is(equalTo(true)));
 
-        final SSLUtil.KeyCertPair selfSigned1 = KeystoreTestHelper.generateSelfSigned("CN=foo");
-        final SSLUtil.KeyCertPair selfSigned2 = KeystoreTestHelper.generateSelfSigned("CN=bar");
+        final SSLUtil.KeyCertPair selfSigned1 = KeyStoreTestHelper.generateSelfSigned("CN=foo");
+        final SSLUtil.KeyCertPair selfSigned2 = KeyStoreTestHelper.generateSelfSigned("CN=bar");
 
         final File keyStoreFile = TestFileUtils.createTempFile(this, ".ks");
         final String dummy = "changit";
@@ -426,7 +310,7 @@ public class FileKeyStoreTest extends UnitTestBase
         try
         {
             final java.security.KeyStore keyStore =
-                    KeystoreTestHelper.saveKeyStore(selfSigned1, certificateAlias, keyAlias, pass, keyStoreFile);
+                    KeyStoreTestHelper.saveKeyStore(selfSigned1, certificateAlias, keyAlias, pass, keyStoreFile);
 
             final Map<String, Object> attributes = new HashMap<>();
             attributes.put(FileKeyStore.NAME, getTestName());
@@ -434,14 +318,14 @@ public class FileKeyStoreTest extends UnitTestBase
             attributes.put(FileKeyStore.PASSWORD, dummy);
             attributes.put(FileKeyStore.KEY_STORE_TYPE, keyStore.getType());
 
-            final FileKeyStore keyStoreObject = (FileKeyStore) _factory.create(KeyStore.class, attributes, _broker);
+            final FileKeyStore keyStoreObject = (FileKeyStore) FACTORY.create(KeyStore.class, attributes, BROKER);
 
             final CertificateDetails certificate = getCertificate(keyStoreObject);
             assertEquals("CN=foo", certificate.getIssuerName());
 
             assertTrue(keyStoreFile.delete());
             assertTrue(keyStoreFile.createNewFile());keyStoreFile.deleteOnExit();
-            KeystoreTestHelper.saveKeyStore(selfSigned2, certificateAlias, keyAlias, pass, keyStoreFile);
+            KeyStoreTestHelper.saveKeyStore(selfSigned2, certificateAlias, keyAlias, pass, keyStoreFile);
 
             keyStoreObject.reload();
 
@@ -454,7 +338,7 @@ public class FileKeyStoreTest extends UnitTestBase
         }
     }
 
-    public CertificateDetails getCertificate(final FileKeyStore keyStore) throws java.security.GeneralSecurityException
+    public CertificateDetails getCertificate(final FileKeyStore keyStore)
     {
         final List<CertificateDetails> certificates = keyStore.getCertificateDetails();
 

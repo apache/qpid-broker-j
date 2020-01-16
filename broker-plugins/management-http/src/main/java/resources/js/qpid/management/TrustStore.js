@@ -126,7 +126,11 @@ define(["dojo/_base/lang",
                 }
             }
 
-            storeNodes(["name", "type", "state", "exposedAsMessageSource", "trustAnchorValidityEnforced"]);
+            storeNodes(["name", "type", "state", "exposedAsMessageSource", "trustAnchorValidityEnforced",
+                "certificateRevocationCheckEnabled", "certificateRevocationCheckOfOnlyEndEntityCertificates",
+                "certificateRevocationCheckWithPreferringCertificateRevocationList",
+                "certificateRevocationCheckWithNoFallback", "certificateRevocationCheckWithIgnoringSoftFailures",
+                "certificateRevocationListUrl"]);
 
         }
 
@@ -139,6 +143,18 @@ define(["dojo/_base/lang",
                 entities.encode(String(this.trustStoreData["exposedAsMessageSource"]));
             this.trustAnchorValidityEnforced.innerHTML =
                 entities.encode(String(this.trustStoreData["trustAnchorValidityEnforced"]));
+            this.certificateRevocationCheckEnabled.innerHTML =
+                entities.encode(String(this.trustStoreData["certificateRevocationCheckEnabled"]));
+            this.certificateRevocationCheckOfOnlyEndEntityCertificates.innerHTML =
+                entities.encode(String(this.trustStoreData["certificateRevocationCheckOfOnlyEndEntityCertificates"]));
+            this.certificateRevocationCheckWithPreferringCertificateRevocationList.innerHTML =
+                entities.encode(String(this.trustStoreData["certificateRevocationCheckWithPreferringCertificateRevocationList"]));
+            this.certificateRevocationCheckWithNoFallback.innerHTML =
+                entities.encode(String(this.trustStoreData["certificateRevocationCheckWithNoFallback"]));
+            this.certificateRevocationCheckWithIgnoringSoftFailures.innerHTML =
+                entities.encode(String(this.trustStoreData["certificateRevocationCheckWithIgnoringSoftFailures"]));
+            this.certificateRevocationListUrl.innerHTML = this.trustStoreData["certificateRevocationListUrl"] ?
+                entities.encode(String(this.trustStoreData["certificateRevocationListUrl"])) : "";
         };
 
         KeyStoreUpdater.prototype.update = function (callback)

@@ -75,6 +75,7 @@ import javax.net.ssl.StandardConstants;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,11 +107,10 @@ public class SSLUtil
     private static final Method SET_EXTENSION_METHOD;
     private static final Method EXTENSION_GET_NAME_METHOD;
     private static final boolean CAN_GENERATE_CERTS;
-
+    private static final CertificateFactory CERTIFICATE_FACTORY;
 
     static
     {
-
         Constructor<?> constructor = null;
         Method generateMethod = null;
         Method getPrivateKeyMethod = null;
@@ -125,7 +125,8 @@ public class SSLUtil
         Constructor<?> certificateExtensionsConstructor = null;
         Method setExtensionMethod = null;
         Method extensionGetNameMethod = null;
-        boolean canGenerateCerrts = false;
+        boolean canGenerateCerts = false;
+        CertificateFactory certificateFactory = null;
 
         try
         {
@@ -160,10 +161,10 @@ public class SSLUtil
             certificateExtensionsConstructor = certificateExtensionsClass.getConstructor();
             setExtensionMethod = certificateExtensionsClass.getMethod("set", String.class, Object.class);
             extensionGetNameMethod = extensionClass.getMethod("getName");
-            canGenerateCerrts = true;
-
+            canGenerateCerts = true;
+            certificateFactory = CertificateFactory.getInstance("X.509");
         }
-        catch (ClassNotFoundException | LinkageError | NoSuchMethodException e)
+        catch (ClassNotFoundException | LinkageError | CertificateException | NoSuchMethodException e)
         {
             // ignore
         }
@@ -181,12 +182,21 @@ public class SSLUtil
         CERTIFICATE_EXTENSIONS_CONSTRUCTOR = certificateExtensionsConstructor;
         SET_EXTENSION_METHOD = setExtensionMethod;
         EXTENSION_GET_NAME_METHOD = extensionGetNameMethod;
-        CAN_GENERATE_CERTS = canGenerateCerrts;
+        CAN_GENERATE_CERTS = canGenerateCerts;
+        CERTIFICATE_FACTORY = certificateFactory;
     }
-
 
     private SSLUtil()
     {
+    }
+
+    public static CertificateFactory getCertificateFactory()
+    {
+        if (CERTIFICATE_FACTORY == null)
+        {
+            throw new ServerScopedRuntimeException("Certificate factory is null");
+        }
+        return CERTIFICATE_FACTORY;
     }
 
     public static void verifyHostname(SSLEngine engine,String hostnameExpected)
@@ -456,8 +466,7 @@ public class SSLUtil
         {
             do
             {
-                CertificateFactory cf = CertificateFactory.getInstance("X.509");
-                crt.add( (X509Certificate) cf.generateCertificate(input));
+                crt.add( (X509Certificate) getCertificateFactory().generateCertificate(input));
             } while(input.available() != 0);
         }
         catch(CertificateException e)

@@ -114,6 +114,7 @@ define(["dojo/_base/lang",
                 this.storeType.set("disabled", !!initialData);
                 if (!effectiveData)
                 {
+                    this.initialData = {};
                     this.dialog.set("title", "Add " + this.category);
                 }
                 else
@@ -164,7 +165,7 @@ define(["dojo/_base/lang",
 
                     var storeData = util.getFormWidgetValues(this.storeForm, this.initialData);
 
-                    if (this.initialData)
+                    if (this.initialData && this.initialData.id)
                     {
                         // update request
                         this.management.update(this.modelObj, storeData)

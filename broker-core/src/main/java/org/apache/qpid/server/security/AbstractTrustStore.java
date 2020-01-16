@@ -19,16 +19,35 @@
  */
 package org.apache.qpid.server.security;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.security.cert.CRL;
+import java.security.cert.CRLException;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.CertPathParameters;
+import java.security.cert.CertStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.CollectionCertStoreParameters;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.PKIXRevocationChecker;
 import java.security.cert.TrustAnchor;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -39,12 +58,15 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +100,19 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     private List<VirtualHostNode<?>> _excludedVirtualHostNodeMessageSources;
     @ManagedAttributeField
     private boolean _trustAnchorValidityEnforced;
+    @ManagedAttributeField
+    private boolean _certificateRevocationCheckEnabled;
+    @ManagedAttributeField
+    private boolean _certificateRevocationCheckOfOnlyEndEntityCertificates;
+    @ManagedAttributeField
+    private boolean _certificateRevocationCheckWithPreferringCertificateRevocationList;
+    @ManagedAttributeField
+    private boolean _certificateRevocationCheckWithNoFallback;
+    @ManagedAttributeField
+    private boolean _certificateRevocationCheckWithIgnoringSoftFailures;
+    @ManagedAttributeField(afterSet = "postSetCertificateRevocationListUrl")
+    private volatile String _certificateRevocationListUrl;
+    private volatile String _certificateRevocationListPath;
 
     private ScheduledFuture<?> _checkExpiryTaskFuture;
 
@@ -98,6 +133,34 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     final EventLogger getEventLogger()
     {
         return _eventLogger;
+    }
+
+    protected abstract void initialize();
+
+    @Override
+    protected void changeAttributes(final Map<String, Object> attributes)
+    {
+        super.changeAttributes(attributes);
+        if (attributes.containsKey(CERTIFICATE_REVOCATION_LIST_URL))
+        {
+            initialize();
+        }
+    }
+
+    @Override
+    public void onValidate()
+    {
+        super.onValidate();
+        getCRLs();
+    }
+
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        if (changedAttributes.contains(CERTIFICATE_REVOCATION_LIST_URL))
+        {
+            getCRLs((String) proxyForValidation.getAttribute(CERTIFICATE_REVOCATION_LIST_URL));
+        }
     }
 
     @Override
@@ -252,6 +315,106 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
 
     protected abstract TrustManager[] getTrustManagersInternal() throws GeneralSecurityException;
 
+    protected TrustManager[] getTrustManagers(KeyStore ts)
+    {
+        try
+        {
+            final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(new CertPathTrustManagerParameters(getParameters(ts)));
+            return tmf.getTrustManagers();
+        }
+        catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e)
+        {
+            throw new IllegalConfigurationException("Cannot create trust manager factory for truststore '" +
+                    getName() + "' :" + e, e);
+        }
+    }
+
+    private CertPathParameters getParameters(KeyStore trustStore)
+    {
+        try
+        {
+            final PKIXBuilderParameters parameters = new PKIXBuilderParameters(trustStore, new X509CertSelector());
+            parameters.setRevocationEnabled(_certificateRevocationCheckEnabled);
+            if (_certificateRevocationCheckEnabled)
+            {
+                if (_certificateRevocationListUrl != null)
+                {
+                    parameters.addCertStore(
+                            CertStore.getInstance("Collection", new CollectionCertStoreParameters(getCRLs())));
+                }
+                final PKIXRevocationChecker revocationChecker = (PKIXRevocationChecker) CertPathBuilder
+                        .getInstance(TrustManagerFactory.getDefaultAlgorithm()).getRevocationChecker();
+                final Set<PKIXRevocationChecker.Option> options = new HashSet<>();
+                if (_certificateRevocationCheckOfOnlyEndEntityCertificates)
+                {
+                    options.add(PKIXRevocationChecker.Option.ONLY_END_ENTITY);
+                }
+                if (_certificateRevocationCheckWithPreferringCertificateRevocationList)
+                {
+                    options.add(PKIXRevocationChecker.Option.PREFER_CRLS);
+                }
+                if (_certificateRevocationCheckWithNoFallback)
+                {
+                    options.add(PKIXRevocationChecker.Option.NO_FALLBACK);
+                }
+                if (_certificateRevocationCheckWithIgnoringSoftFailures)
+                {
+                    options.add(PKIXRevocationChecker.Option.SOFT_FAIL);
+                }
+                revocationChecker.setOptions(options);
+                parameters.addCertPathChecker(revocationChecker);
+            }
+            return parameters;
+        }
+        catch (NoSuchAlgorithmException | KeyStoreException | InvalidAlgorithmParameterException e)
+        {
+            throw new IllegalConfigurationException("Cannot create trust manager factory parameters for truststore '" +
+                    getName() + "' :" + e, e);
+        }
+    }
+
+    private Collection<? extends CRL> getCRLs()
+    {
+        return getCRLs(_certificateRevocationListUrl);
+    }
+
+    /**
+     * Load the collection of CRLs.
+     */
+    private Collection<? extends CRL> getCRLs(String crlUrl)
+    {
+        Collection<? extends CRL> crls = Collections.emptyList();
+        if (crlUrl != null)
+        {
+            try (InputStream is = getUrlFromString(crlUrl).openStream())
+            {
+                crls = SSLUtil.getCertificateFactory().generateCRLs(is);
+            }
+            catch (IOException | CRLException e)
+            {
+                throw new IllegalConfigurationException("Unable to load certificate revocation list '" + crlUrl +
+                        "' for truststore '" + getName() + "' :" + e, e);
+            }
+        }
+        return crls;
+    }
+
+    protected static URL getUrlFromString(String urlString) throws MalformedURLException
+    {
+        URL url;
+        try
+        {
+            url = new URL(urlString);
+        }
+        catch (MalformedURLException e)
+        {
+            final File file = new File(urlString);
+            url = file.toURI().toURL();
+        }
+        return url;
+    }
+
     @Override
     public final int getCertificateExpiryWarnPeriod()
     {
@@ -286,6 +449,61 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     public boolean isTrustAnchorValidityEnforced()
     {
         return _trustAnchorValidityEnforced;
+    }
+
+    @Override
+    public boolean isCertificateRevocationCheckEnabled()
+    {
+        return _certificateRevocationCheckEnabled;
+    }
+
+    @Override
+    public boolean isCertificateRevocationCheckOfOnlyEndEntityCertificates()
+    {
+        return _certificateRevocationCheckOfOnlyEndEntityCertificates;
+    }
+
+    @Override
+    public boolean isCertificateRevocationCheckWithPreferringCertificateRevocationList()
+    {
+        return _certificateRevocationCheckWithPreferringCertificateRevocationList;
+    }
+
+    @Override
+    public boolean isCertificateRevocationCheckWithNoFallback()
+    {
+        return _certificateRevocationCheckWithNoFallback;
+    }
+
+    @Override
+    public boolean isCertificateRevocationCheckWithIgnoringSoftFailures()
+    {
+        return _certificateRevocationCheckWithIgnoringSoftFailures;
+    }
+
+    @Override
+    public String getCertificateRevocationListUrl()
+    {
+        return _certificateRevocationListUrl;
+    }
+
+    @Override
+    public String getCertificateRevocationListPath()
+    {
+        return _certificateRevocationListPath;
+    }
+
+    @SuppressWarnings(value = "unused")
+    private void postSetCertificateRevocationListUrl()
+    {
+        if (_certificateRevocationListUrl != null && !_certificateRevocationListUrl.startsWith("data:"))
+        {
+            _certificateRevocationListPath = _certificateRevocationListUrl;
+        }
+        else
+        {
+            _certificateRevocationListPath = null;
+        }
     }
 
     @Override

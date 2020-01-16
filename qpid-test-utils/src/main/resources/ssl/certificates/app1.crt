@@ -1,0 +1,74 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 4660 (0x1234)
+        Signature Algorithm: sha512WithRSAEncryption
+        Issuer: C=CA, ST=Ontario, O=ACME, CN=MyRootCA
+        Validity
+            Not Before: Jan 17 12:13:51 2020 GMT
+            Not After : Jan 17 12:13:51 2024 GMT
+        Subject: C=CA, ST=ON, L=Toronto, O=acme, OU=art, CN=app1@acme.org
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                RSA Public-Key: (2048 bit)
+                Modulus:
+                    00:d9:72:36:d1:3a:19:ce:4a:c0:58:95:21:1a:9f:
+                    90:e5:48:b9:06:e5:47:0c:8c:59:7d:45:9b:df:a7:
+                    5f:5d:42:e9:62:c6:95:d6:63:e2:03:ae:29:1c:3f:
+                    a2:c5:89:32:72:b7:34:22:c8:fa:b5:c8:e4:59:47:
+                    3d:3c:4d:cf:c6:00:bd:76:69:d7:b7:a0:1f:4c:ea:
+                    a3:fa:54:4d:cb:d8:c4:af:2c:57:5e:bf:c0:5a:a6:
+                    58:bb:4d:c5:46:41:e3:ec:c8:0e:f3:2c:28:ce:37:
+                    66:b9:7c:02:a1:7c:cd:95:16:96:b6:0d:9a:50:ed:
+                    e7:a0:25:c7:88:59:bb:46:dc:9e:61:8c:46:5f:8e:
+                    6b:e4:ac:b2:4f:95:b2:b3:71:e5:5a:b9:2c:52:24:
+                    15:d8:57:98:aa:b5:17:2c:58:61:9f:cb:79:83:1d:
+                    2f:1f:73:37:b9:7a:ce:7d:f6:0c:74:26:24:fd:40:
+                    7e:a9:4d:69:21:30:8f:1d:5d:40:98:54:33:44:4c:
+                    ae:14:f2:94:ab:d8:9f:93:9b:43:c4:12:96:0a:89:
+                    65:b7:de:37:0c:69:16:96:89:91:45:85:20:b3:50:
+                    44:89:29:ae:c9:8b:04:4b:a8:85:cd:6b:e6:7b:94:
+                    44:2b:02:ad:8e:42:c3:3a:41:2d:60:d4:13:0c:6a:
+                    47:73
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature, Non Repudiation, Key Encipherment
+    Signature Algorithm: sha512WithRSAEncryption
+         48:74:83:6d:ee:96:77:ec:05:03:0d:63:9f:a7:4b:61:f9:c2:
+         c7:06:3e:ca:5f:db:1d:2b:0f:d2:06:5d:13:e7:a6:9b:9c:28:
+         9a:d9:7b:e2:70:00:6b:f1:7c:a3:ce:82:84:c8:a8:cf:15:0c:
+         b2:03:8e:ab:c1:47:4c:c4:d2:6e:2f:e6:f7:60:f1:f9:92:d2:
+         f7:a5:60:a3:86:6b:a5:3f:95:ba:25:7a:2f:5c:b3:b2:30:44:
+         c5:df:e4:fd:74:c0:44:f3:c6:43:a7:fd:06:ed:b9:ab:a5:fb:
+         ce:9b:f2:5e:64:52:bc:bf:88:df:ca:d4:d5:e2:07:e9:86:15:
+         ea:40:01:4f:6d:e4:ed:5b:25:dc:30:28:c5:e4:98:e3:ba:e5:
+         90:7a:4c:b5:d4:7c:ee:31:4d:64:bf:e9:c7:94:bb:87:88:3d:
+         c5:e3:6c:ab:96:26:de:a9:a3:af:fa:ca:e0:04:e0:50:d1:a0:
+         40:79:26:8a:8e:bd:cd:f8:8d:58:14:2f:cf:17:48:5c:62:14:
+         02:c4:5f:61:18:1a:b3:6e:c4:a0:03:5d:33:00:5a:e7:09:74:
+         25:c9:9d:4a:cf:d3:5d:fe:4a:33:06:d7:ab:37:02:4f:5e:f3:
+         8e:82:cc:1a:5b:6e:99:b6:96:0e:b7:f9:d8:03:91:04:a6:f3:
+         22:84:85:b9
+-----BEGIN CERTIFICATE-----
+MIIDODCCAiCgAwIBAgICEjQwDQYJKoZIhvcNAQENBQAwQTELMAkGA1UEBhMCQ0Ex
+EDAOBgNVBAgMB09udGFyaW8xDTALBgNVBAoMBEFDTUUxETAPBgNVBAMMCE15Um9v
+dENBMB4XDTIwMDExNzEyMTM1MVoXDTI0MDExNzEyMTM1MVowYTELMAkGA1UEBhMC
+Q0ExCzAJBgNVBAgMAk9OMRAwDgYDVQQHDAdUb3JvbnRvMQ0wCwYDVQQKDARhY21l
+MQwwCgYDVQQLDANhcnQxFjAUBgNVBAMMDWFwcDFAYWNtZS5vcmcwggEiMA0GCSqG
+SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDZcjbROhnOSsBYlSEan5DlSLkG5UcMjFl9
+RZvfp19dQulixpXWY+IDrikcP6LFiTJytzQiyPq1yORZRz08Tc/GAL12ade3oB9M
+6qP6VE3L2MSvLFdev8Bapli7TcVGQePsyA7zLCjON2a5fAKhfM2VFpa2DZpQ7eeg
+JceIWbtG3J5hjEZfjmvkrLJPlbKzceVauSxSJBXYV5iqtRcsWGGfy3mDHS8fcze5
+es599gx0JiT9QH6pTWkhMI8dXUCYVDNETK4U8pSr2J+Tm0PEEpYKiWW33jcMaRaW
+iZFFhSCzUESJKa7JiwRLqIXNa+Z7lEQrAq2OQsM6QS1g1BMMakdzAgMBAAGjGjAY
+MAkGA1UdEwQCMAAwCwYDVR0PBAQDAgXgMA0GCSqGSIb3DQEBDQUAA4IBAQBIdINt
+7pZ37AUDDWOfp0th+cLHBj7KX9sdKw/SBl0T56abnCia2XvicABr8XyjzoKEyKjP
+FQyyA46rwUdMxNJuL+b3YPH5ktL3pWCjhmulP5W6JXovXLOyMETF3+T9dMBE88ZD
+p/0G7bmrpfvOm/JeZFK8v4jfytTV4gfphhXqQAFPbeTtWyXcMCjF5JjjuuWQeky1
+1HzuMU1kv+nHlLuHiD3F42yrlibeqaOv+srgBOBQ0aBAeSaKjr3N+I1YFC/PF0hc
+YhQCxF9hGBqzbsSgA10zAFrnCXQlyZ1Kz9Nd/kozBterNwJPXvOOgswaW26ZtpYO
+t/nYA5EEpvMihIW5
+-----END CERTIFICATE-----

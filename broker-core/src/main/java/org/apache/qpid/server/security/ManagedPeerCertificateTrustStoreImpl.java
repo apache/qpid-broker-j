@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import com.google.common.util.concurrent.Futures;
@@ -64,7 +63,7 @@ public class ManagedPeerCertificateTrustStoreImpl
 
     private volatile TrustManager[] _trustManagers = new TrustManager[0];
 
-    @ManagedAttributeField( afterSet = "updateTrustManagers")
+    @ManagedAttributeField(afterSet = "initialize")
     private final List<Certificate> _storedCertificates = new ArrayList<>();
 
     @ManagedObjectFactoryConstructor
@@ -100,7 +99,7 @@ public class ManagedPeerCertificateTrustStoreImpl
     }
 
     @SuppressWarnings("unused")
-    private void updateTrustManagers()
+    protected void initialize()
     {
         try
         {
@@ -114,14 +113,10 @@ public class ManagedPeerCertificateTrustStoreImpl
                 inMemoryKeyStore.setCertificateEntry(String.valueOf(i++), cert);
             }
 
-
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            tmf.init(inMemoryKeyStore);
-
             final Collection<TrustManager> trustManagersCol = new ArrayList<>();
             final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
-            TrustManager[] delegateManagers = tmf.getTrustManagers();
-            for (TrustManager tm : delegateManagers)
+            final TrustManager[] delegateManagers = getTrustManagers(inMemoryKeyStore);
+            for (final TrustManager tm : delegateManagers)
             {
                 if (tm instanceof X509TrustManager)
                 {

@@ -19,13 +19,10 @@
 
 package org.apache.qpid.server.security;
 
-import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.security.KeyStore;
 import java.security.cert.CertificateException;
@@ -37,56 +34,78 @@ import java.util.Map;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.Model;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.junit.Test;
+
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.test.utils.TestSSLConstants;
-import org.apache.qpid.test.utils.UnitTestBase;
 
 public class NonJavaTrustStoreTest extends UnitTestBase
 {
-    private static final String EXPIRED_KEYSTORE = "ssl/java_client_expired_keystore.pkcs12";
-    private static final String KEYSTORE_PASSWORD = TestSSLConstants.KEYSTORE_PASSWORD;
-    private final Broker<?> _broker = mock(Broker.class);
-    private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-    private final Model _model = BrokerModel.getInstance();
-    private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
-
-    @Before
-    public void setUp() throws Exception
-    {
-
-        when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getModel()).thenReturn(_model);
-        when(_broker.getEventLogger()).thenReturn(new EventLogger());
-        when(((Broker) _broker).getCategoryClass()).thenReturn(Broker.class);
-    }
+    private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
+    private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
 
     @Test
     public void testCreationOfTrustStoreFromValidCertificate() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/ssl/java_broker.crt").toExternalForm());
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.BROKER_CRT);
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
 
-        TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
+        TrustStore trustStore = (TrustStore) FACTORY.create(TrustStore.class, attributes, BROKER);
 
         TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", (long) 1, (long) trustManagers.length);
+        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
         assertNotNull("Trust manager unexpected null", trustManagers[0]);
+    }
+
+    @Test
+    public void testChangeOfCrlInTrustStoreFromValidCertificate()
+    {
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.BROKER_CRT);
+        attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
+
+        TrustStore trustStore = (TrustStore) FACTORY.create(TrustStore.class, attributes, BROKER);
+
+        try
+        {
+            Map<String,Object> unacceptableAttributes = new HashMap<>();
+            unacceptableAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, "/not/a/crl");
+
+            trustStore.setAttributes(unacceptableAttributes);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            String message = e.getMessage();
+            assertTrue("Exception text not as unexpected:" + message,
+                    message.contains("Unable to load certificate revocation list '/not/a/crl' for truststore 'myTestTrustStore'"));
+        }
+
+        assertEquals("Unexpected CRL path value after failed change",
+                TestSSLConstants.CA_CRL, trustStore.getCertificateRevocationListUrl());
+
+        Map<String,Object> changedAttributes = new HashMap<>();
+        changedAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL_EMPTY);
+
+        trustStore.setAttributes(changedAttributes);
+
+        assertEquals("Unexpected CRL path value after change that is expected to be successful",
+                TestSSLConstants.CA_CRL_EMPTY, trustStore.getCertificateRevocationListUrl());
     }
 
     @Test
@@ -95,21 +114,21 @@ public class NonJavaTrustStoreTest extends UnitTestBase
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
         attributes.put(NonJavaTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/ssl/expired.crt").toExternalForm());
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.CLIENT_EXPIRED_CRT);
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
 
-        TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
+        TrustStore trustStore = (TrustStore) FACTORY.create(TrustStore.class, attributes, BROKER);
 
         TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", (long) 1, (long) trustManagers.length);
+        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
         final boolean condition = trustManagers[0] instanceof X509TrustManager;
         assertTrue("Unexpected trust manager type", condition);
         X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
-        KeyStore clientStore = SSLUtil.getInitializedKeyStore(EXPIRED_KEYSTORE,
-                                                              KEYSTORE_PASSWORD,
-                                                              JAVA_KEYSTORE_TYPE);
+        KeyStore clientStore = SSLUtil.getInitializedKeyStore(TestSSLConstants.CLIENT_EXPIRED_KEYSTORE,
+                                                              TestSSLConstants.PASSWORD,
+                                                              TestSSLConstants.JAVA_KEYSTORE_TYPE);
         String alias = clientStore.aliases().nextElement();
         X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
@@ -134,22 +153,28 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreationOfTrustStoreFromNonCertificate() throws Exception
+    public void testCreationOfTrustStoreFromNonCertificate()
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/ssl/java_broker.req").toExternalForm());
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.BROKER_CSR);
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
 
-        try
-        {
-            _factory.create(TrustStore.class, attributes, _broker);
-            fail("Trust store is created from certificate request file");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
+                "Cannot load certificate(s)");
     }
 
+    @Test
+    public void testCreationOfTrustStoreFromValidCertificate_MissingCrlFile()
+    {
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.BROKER_CRT);
+        attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, "/not/a/crl");
+
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
+                "Unable to load certificate revocation list '/not/a/crl' for truststore 'myTestTrustStore'");
+    }
 }
