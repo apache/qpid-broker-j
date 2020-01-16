@@ -29,7 +29,6 @@ import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;
@@ -42,7 +41,6 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import com.google.common.util.concurrent.FutureCallback;
@@ -83,6 +81,11 @@ public class SiteSpecificTrustStoreImpl
     public SiteSpecificTrustStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
         super(attributes, broker);
+    }
+
+    protected void initialize()
+    {
+        generateTrustManagers();
     }
 
     @Override
@@ -287,8 +290,7 @@ public class SiteSpecificTrustStoreImpl
 
         try(ByteArrayInputStream input = new ByteArrayInputStream(certificateEncoded))
         {
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            _x509Certificate = (X509Certificate) cf.generateCertificate(input);
+            _x509Certificate = (X509Certificate) SSLUtil.getCertificateFactory().generateCertificate(input);
         }
         catch (CertificateException | IOException e)
         {
@@ -306,9 +308,7 @@ public class SiteSpecificTrustStoreImpl
             inMemoryKeyStore.load(null, null);
             inMemoryKeyStore.setCertificateEntry("1", _x509Certificate);
 
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            tmf.init(inMemoryKeyStore);
-            _trustManagers = tmf.getTrustManagers();
+            _trustManagers = getTrustManagers(inMemoryKeyStore);;
 
         }
         catch (IOException | GeneralSecurityException e)

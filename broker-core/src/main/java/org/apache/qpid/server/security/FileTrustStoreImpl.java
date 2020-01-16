@@ -288,7 +288,7 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
         }
     }
 
-    private void initialize()
+    protected void initialize()
     {
         try
         {
@@ -304,12 +304,9 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
         }
     }
 
-    private TrustManager[] createTrustManagers(final KeyStore ts) throws NoSuchAlgorithmException, KeyStoreException
+    private TrustManager[] createTrustManagers(final KeyStore ts) throws KeyStoreException
     {
-        final TrustManagerFactory tmf = TrustManagerFactory.getInstance(_trustManagerFactoryAlgorithm);
-        tmf.init(ts);
-
-        TrustManager[] delegateManagers = tmf.getTrustManagers();
+        final TrustManager[] delegateManagers = getTrustManagers(ts);
         if (delegateManagers.length == 0)
         {
             throw new IllegalStateException("Truststore " + this + " defines no trust managers");

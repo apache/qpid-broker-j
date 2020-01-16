@@ -126,7 +126,8 @@ define(["dojo/_base/lang",
                 }
             }
 
-            storeNodes(["name", "type", "state", "exposedAsMessageSource", "trustAnchorValidityEnforced"]);
+            storeNodes(["name", "type", "state", "exposedAsMessageSource", "trustAnchorValidityEnforced",
+                "revocation", "onlyEndEntity", "preferCrls", "noFallback", "softFail", "crlUrl"]);
 
         }
 
@@ -139,6 +140,19 @@ define(["dojo/_base/lang",
                 entities.encode(String(this.trustStoreData["exposedAsMessageSource"]));
             this.trustAnchorValidityEnforced.innerHTML =
                 entities.encode(String(this.trustStoreData["trustAnchorValidityEnforced"]));
+            this.revocation.innerHTML = entities.encode(String(this.trustStoreData["revocation"]));
+            this.onlyEndEntity.innerHTML = entities.encode(String(this.trustStoreData["onlyEndEntity"]));
+            this.preferCrls.innerHTML = entities.encode(String(this.trustStoreData["preferCrls"]));
+            this.noFallback.innerHTML = entities.encode(String(this.trustStoreData["noFallback"]));
+            this.softFail.innerHTML = entities.encode(String(this.trustStoreData["softFail"]));
+            if (this.trustStoreData["crlUrl"])
+            {
+                this.crlUrl.innerHTML = entities.encode(String(this.trustStoreData["crlUrl"]));
+            }
+            else
+            {
+                this.crlUrl.innerHTML = "";
+            }
         };
 
         KeyStoreUpdater.prototype.update = function (callback)

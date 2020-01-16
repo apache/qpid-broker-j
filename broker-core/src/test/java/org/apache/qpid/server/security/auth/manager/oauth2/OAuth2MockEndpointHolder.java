@@ -21,7 +21,6 @@
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -37,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.TestSSLConstants;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -49,18 +49,16 @@ import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 class OAuth2MockEndpointHolder
 {
-    private static final String KEYSTORE_PASSWORD = "password";
-    private static final String KEYSTORE_RESOURCE = "ssl/test_keystore.jks";
     private final Server _server;
     private final ServerConnector _connector;
     private volatile Map<String, OAuth2MockEndpoint> _endpoints;
 
-    OAuth2MockEndpointHolder()
+    OAuth2MockEndpointHolder() throws IOException
     {
         this(Collections.<String, OAuth2MockEndpoint>emptyMap());
     }
 
-    OAuth2MockEndpointHolder(final Map<String, OAuth2MockEndpoint> endpoints)
+    OAuth2MockEndpointHolder(final Map<String, OAuth2MockEndpoint> endpoints) throws IOException
     {
         _endpoints = endpoints;
         final List<String> protocolWhiteList =
@@ -87,9 +85,9 @@ class OAuth2MockEndpointHolder
                                                       SSLUtil.updateEnabledTlsProtocols(sslEngine, protocolWhiteList, protocolBlackList);
                                                   }
                                               };
-        sslContextFactory.setKeyStorePassword(KEYSTORE_PASSWORD);
-        sslContextFactory.setKeyStoreResource(Resource.newClassPathResource(KEYSTORE_RESOURCE));
-        sslContextFactory.setKeyStoreType(JAVA_KEYSTORE_TYPE);
+        sslContextFactory.setKeyStorePassword(TestSSLConstants.PASSWORD);
+        sslContextFactory.setKeyStoreResource(Resource.newResource(TestSSLConstants.TEST_KEYSTORE));
+        sslContextFactory.setKeyStoreType(TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
         // override default jetty excludes as valid IBM JDK are excluded
         // causing SSL handshake failure (due to default exclude '^SSL_.*$')

@@ -333,7 +333,7 @@ public class PortTest extends HttpTestBase
         final java.security.KeyStore ks = java.security.KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
         ks.load(null);
         ks.setCertificateEntry("certificate", certificate);
-        final File storeFile = File.createTempFile(getTestName(), ".pkcs12");
+        final File storeFile = File.createTempFile(getTestName(), ".jks");
         try (FileOutputStream fos = new FileOutputStream(storeFile))
         {
             ks.store(fos, PASS.toCharArray());

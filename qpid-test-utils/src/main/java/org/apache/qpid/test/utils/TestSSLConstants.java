@@ -18,27 +18,56 @@
  */
 package org.apache.qpid.test.utils;
 
-public interface TestSSLConstants
+public final class TestSSLConstants
 {
-    String KEYSTORE = "test-profiles/test_resources/ssl/java_client_keystore.jks";
-    String EXPIRED_KEYSTORE = "test-profiles/test_resources/ssl/java_client_expired_keystore.jks";
-    String KEYSTORE_PASSWORD = "password";
-    String TRUSTSTORE = "test-profiles/test_resources/ssl/java_client_truststore.jks";
-    String TRUSTSTORE_PASSWORD = "password";
+    public static final String JAVA_KEYSTORE_TYPE = "pkcs12";
+    public static final String PASSWORD = "password";
+    private static final String TEST_RESOURCES;
+    static
+    {
+        if (System.getProperty("user.dir").contains("systests"))
+        {
+            TEST_RESOURCES = System.getProperty("user.dir") + "/../../test-profiles/test_resources/";
+        }
+        else if (System.getProperty("user.dir").contains(".."))
+        {
+            TEST_RESOURCES = System.getProperty("user.dir") + "/test-profiles/test_resources/";
+        }
+        else
+        {
+            TEST_RESOURCES = System.getProperty("user.dir") + "/../test-profiles/test_resources/";
+        }
+    }
+    public static final String CLIENT_KEYSTORE = TEST_RESOURCES + "ssl/certificates/client_keystore.jks";
+    public static final String CLIENT_TRUSTSTORE = TEST_RESOURCES + "ssl/certificates/client_truststore.jks";
+    public static final String CLIENT_EXPIRED_KEYSTORE = TEST_RESOURCES + "ssl/certificates/client_expired_keystore.jks";
+    public static final String CLIENT_EXPIRED_CRT = TEST_RESOURCES + "ssl/certificates/client_expired.crt";
+    public static final String CLIENT_UNTRUSTED_KEYSTORE = TEST_RESOURCES + "ssl/certificates/client_untrusted_keystore.jks";
 
-    String CERT_ALIAS_APP1 = "app1";
-    String CERT_ALIAS_APP2 = "app2";
-    String CERT_ALIAS_UNTRUSTED_CLIENT = "untrusted_client";
+    public static final String CERT_ALIAS_ROOT_CA = "rootca";
+    public static final String CERT_ALIAS_APP1 = "app1";
+    public static final String CERT_ALIAS_APP2 = "app2";
+    public static final String CERT_ALIAS_ALLOWED = "allowed_by_ca";
+    public static final String CERT_ALIAS_REVOKED = "revoked_by_ca";
+    public static final String CERT_ALIAS_REVOKED_EMPTY_CRL = "revoked_by_ca_empty_crl";
+    public static final String CERT_ALIAS_REVOKED_INVALID_CRL_PATH = "revoked_by_ca_invalid_crl_path";
+    public static final String CERT_ALIAS_ALLOWED_WITH_INTERMEDIATE = "allowed_by_ca_with_intermediate";
+    public static final String CERT_ALIAS_UNTRUSTED_CLIENT = "untrusted_client";
 
-    String BROKER_KEYSTORE = "test-profiles/test_resources/ssl/java_broker_keystore.jks";
-    String BROKER_KEYSTORE_PASSWORD = "password";
-    String BROKER_KEYSTORE_ALIAS = "java-broker";
+    public static final String BROKER_KEYSTORE = TEST_RESOURCES + "ssl/certificates/broker_keystore.jks";
+    public static final String BROKER_CRT = TEST_RESOURCES + "ssl/certificates/broker.crt";
+    public static final String BROKER_CSR = TEST_RESOURCES + "ssl/certificates/broker.csr";
+    public static final String BROKER_TRUSTSTORE = TEST_RESOURCES + "ssl/certificates/broker_truststore.jks";
+    public static final String BROKER_PEERSTORE = TEST_RESOURCES + "ssl/certificates/broker_peerstore.jks";
+    public static final String BROKER_EXPIRED_TRUSTSTORE = TEST_RESOURCES + "ssl/certificates/broker_expired_truststore.jks";
+    public static final String BROKER_KEYSTORE_ALIAS = "broker";
 
-    String BROKER_PEERSTORE = "test-profiles/test_resources/ssl/java_broker_peerstore.jks";
-    String BROKER_PEERSTORE_PASSWORD = "password";
+    public static final String TEST_EMPTY_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_empty_keystore.jks";
+    public static final String TEST_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_keystore.jks";
+    public static final String TEST_CERT_ONLY_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_cert_only_keystore.jks";
+    public static final String TEST_PK_ONLY_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_pk_only_keystore.jks";
+    public static final String TEST_SYMMETRIC_KEY_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_symmetric_key_keystore.jks";
 
-    String BROKER_TRUSTSTORE = "test-profiles/test_resources/ssl/java_broker_truststore.jks";
-    String BROKER_TRUSTSTORE_PASSWORD = "password";
-
-    String JAVA_KEYSTORE_TYPE = "pkcs12";
+    public static final String CA_CRL_EMPTY = TEST_RESOURCES + "ssl/certificates/MyRootCA.empty.crl";
+    public static final String CA_CRL = TEST_RESOURCES + "ssl/certificates/MyRootCA.crl";
 }

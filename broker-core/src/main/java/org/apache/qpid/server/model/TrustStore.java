@@ -48,22 +48,50 @@ public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
     @ManagedContextDefault(name = "qpid.truststore.trustAnchorValidityEnforced")
     boolean DEFAULT_TRUST_ANCHOR_VALIDITY_ENFORCED = false;
 
+    String REVOCATION = "revocation";
+    String SOFT_FAIL = "softFail";
+    String PREFER_CRLS = "preferCrls";
+    String NO_FALLBACK = "noFallback";
+    String ONLY_END_ENTITY = "onlyEndEntity";
+    String CRL_URL = "crlUrl";
+
     @Override
     @ManagedAttribute(immutable = true)
     String getName();
 
-    @ManagedAttribute( defaultValue = "false", description = "If true the Trust Store will expose its certificates as a special artificial message source.")
+    @ManagedAttribute(defaultValue = "false", description = "If true the Trust Store will expose its certificates as a special artificial message source.")
     boolean isExposedAsMessageSource();
 
-    @ManagedAttribute( defaultValue = "[]", description = "If 'exposedAsMessageSource' is true, the trust store will expose its certificates only to VirtualHostNodes in this list or if this list is empty to all VirtualHostNodes who are not in the 'excludedVirtualHostNodeMessageSources' list." )
+    @ManagedAttribute(defaultValue = "[]", description = "If 'exposedAsMessageSource' is true, the trust store will expose its certificates only to VirtualHostNodes in this list or if this list is empty to all VirtualHostNodes who are not in the 'excludedVirtualHostNodeMessageSources' list." )
     List<VirtualHostNode<?>> getIncludedVirtualHostNodeMessageSources();
 
-    @ManagedAttribute( defaultValue = "[]", description = "If 'exposedAsMessageSource' is true and 'includedVirtualHostNodeMessageSources' is empty, the trust store will expose its certificates only to VirtualHostNodes who are not in this list." )
+    @ManagedAttribute(defaultValue = "[]", description = "If 'exposedAsMessageSource' is true and 'includedVirtualHostNodeMessageSources' is empty, the trust store will expose its certificates only to VirtualHostNodes who are not in this list." )
     List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources();
 
-    @ManagedAttribute( defaultValue = "${qpid.truststore.trustAnchorValidityEnforced}",
+    @ManagedAttribute(defaultValue = "${qpid.truststore.trustAnchorValidityEnforced}",
                        description = "If true, the trust anchor's validity dates will be enforced.")
     boolean isTrustAnchorValidityEnforced();
+
+    @ManagedAttribute(defaultValue = "false", description = "If true, enable certificates revocation.")
+    boolean isRevocation();
+
+    @ManagedAttribute(defaultValue = "false", description = "If true, only check the revocation status of end-entity certificates.")
+    boolean isOnlyEndEntity();
+
+    @ManagedAttribute(defaultValue = "true", description = "If true, prefer CRL (specified in certificate distribution points) to OCSP, if false prefer OCSP to CRL.")
+    boolean isPreferCrls();
+
+    @ManagedAttribute(defaultValue = "true", description = "If true, disable fallback to CRL/OCSP (if preferCrl is set to true, disable fallback to OCSP, otherwise disable fallback to CRL in certificate distribution points).")
+    boolean isNoFallback();
+
+    @ManagedAttribute(defaultValue = "false", description = "If true, revocation check will succeed if CRL/OCSP response cannot be obtained because of network error or OCSP responder returns internalError or tryLater.")
+    boolean isSoftFail();
+
+    @ManagedAttribute(oversize = true, description = "If set, certificates will be validated only against CRL file (CRL in distribution points and OCSP will be ignored).", oversizedAltText = OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT)
+    String getCrlUrl();
+
+    @DerivedAttribute
+    String getCrlPath();
 
     @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")
     List<CertificateDetails> getCertificateDetails();

@@ -24,8 +24,7 @@
         <div class="formLabel-controlCell tableContainer-valueCell">
             <input type="text" id="addStore.exposedAsMessageSource"
                    data-dojo-type="dijit/form/CheckBox"
-                   data-dojo-props="
-                              name: 'exposedAsMessageSource'" />
+                   data-dojo-props="name: 'exposedAsMessageSource'" />
             <div data-dojo-type="dijit/Tooltip"
                  data-dojo-props="connectId: ['addStore.exposedAsMessageSource'],
                                       label: 'Expose trust store as message source'">
@@ -36,12 +35,89 @@
         <div class="formLabel-controlCell tableContainer-valueCell">
             <input type="text" id="addStore.trustAnchorValidityEnforced"
                    data-dojo-type="dijit/form/CheckBox"
-                   data-dojo-props="
-                              name: 'trustAnchorValidityEnforced'" />
+                   data-dojo-props="name: 'trustAnchorValidityEnforced'" />
             <div data-dojo-type="dijit/Tooltip"
                  data-dojo-props="connectId: ['addStore.trustAnchorValidityEnforced'],
                                       label: 'If true, trust anchor validity dates will be enforced'">
             </div>
         </div>
+    </div>
+    <div class="clear formBox">
+        <fieldset>
+            <legend>Revocation</legend>
+            <div class="clear">
+                <div id="addStore.revocationLabel" class="formLabel-labelCell tableContainer-labelCell">Revocation:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addStore.revocation"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="name: 'revocation'" />
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addStore.revocation'],
+                                      label: 'If true, enable certificates revocation'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div id="addStore.onlyEndEntityLabel" class="formLabel-labelCell tableContainer-labelCell">Only end entity:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addStore.onlyEndEntity"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="name: 'onlyEndEntity'" />
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addStore.onlyEndEntity'],
+                                      label: 'If true, only check the revocation status of end-entity certificates'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div id="addStore.preferCrlsLabel" class="formLabel-labelCell tableContainer-labelCell">Prefer CRLs:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addStore.preferCrls" checked="checked"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="name: 'preferCrls'" />
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addStore.preferCrls'],
+                                      label: 'If true, prefer CRL (specified in certificate distribution points) to OCSP, if false prefer OCSP to CRL'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div id="addStore.noFallbackLabel" class="formLabel-labelCell tableContainer-labelCell">No fallback:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addStore.noFallback" checked="checked"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="name: 'noFallback'" />
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addStore.noFallback'],
+                                      label: 'If true, disable fallback to CRL/OCSP (if preferCrl is set to true, disable fallback to OCSP, otherwise disable fallback to CRL in certificate distribution points)'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div id="addStore.softFailLabel" class="formLabel-labelCell tableContainer-labelCell">Soft fail:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addStore.softFail"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="name: 'softFail'" />
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addStore.softFail'],
+                                      label: 'If true, revocation check will succeed if CRL/OCSP response cannot be obtained because of network error or OCSP responder returns internalError or tryLater'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div id="addStore.serverCrlPathLabel" class="formLabel-labelCell tableContainer-labelCell">Server CRL path or upload:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addStore.crlUrl"
+                           data-dojo-type="qpid/common/ResourceWidget"
+                           data-dojo-props="
+                          name: 'crlUrl',
+                          placeHolder: 'crl file server path',
+                          promptMessage: 'Location of the certificate revocation list file on the server (overrides revocation done by CRL distribution points and OCSP)',
+                          title: 'Enter the crl file path'" />
+                </div>
+            </div>
+        </fieldset>
+        <div class="clear"></div>
     </div>
 </div>

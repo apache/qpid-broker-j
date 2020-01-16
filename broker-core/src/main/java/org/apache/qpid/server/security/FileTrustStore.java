@@ -22,7 +22,7 @@ package org.apache.qpid.server.security;
 
 import static org.apache.qpid.server.model.Initialization.materialize;
 
-import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
@@ -42,7 +42,7 @@ public interface FileTrustStore<X extends FileTrustStore<X>> extends TrustStore<
     String DEFAULT_TRUSTSTORE_TYPE = java.security.KeyStore.getDefaultType();
 
     @ManagedContextDefault(name = "trustStoreFile.trustManagerFactoryAlgorithm")
-    String DEFAULT_TRUST_MANAGER_FACTORY_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
+    String DEFAULT_TRUST_MANAGER_FACTORY_ALGORITHM = TrustManagerFactory.getDefaultAlgorithm();
     String PEERS_ONLY = "peersOnly";
 
     @Override

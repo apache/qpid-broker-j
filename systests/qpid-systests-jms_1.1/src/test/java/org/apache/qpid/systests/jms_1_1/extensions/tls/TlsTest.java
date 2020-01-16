@@ -21,11 +21,6 @@
 package org.apache.qpid.systests.jms_1_1.extensions.tls;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
-import static org.apache.qpid.test.utils.TestSSLConstants.BROKER_KEYSTORE_PASSWORD;
-import static org.apache.qpid.test.utils.TestSSLConstants.BROKER_TRUSTSTORE_PASSWORD;
-import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
-import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -72,18 +67,8 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class TlsTest extends JmsTestBase
 {
-    public static final String TEST_PROFILE_RESOURCE_BASE = System.getProperty("java.io.tmpdir") + "/";
-    public static final String BROKER_KEYSTORE =
-            TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.BROKER_KEYSTORE;
-    public static final String BROKER_TRUSTSTORE =
-            TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.BROKER_TRUSTSTORE;
-    public static final String KEYSTORE =
-            TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE;
-    public static final String TRUSTSTORE =
-            TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
-
     @BeforeClass
-    public static void setUp() throws Exception
+    public static void setUp()
     {
         System.setProperty("javax.net.debug", "ssl");
 
@@ -96,13 +81,13 @@ public class TlsTest extends JmsTestBase
         // legacy client keystore/truststore types can only be configured with JVM settings
         if (getProtocol() != Protocol.AMQP_1_0)
         {
-            System.setProperty("javax.net.ssl.trustStoreType", JAVA_KEYSTORE_TYPE);
-            System.setProperty("javax.net.ssl.keyStoreType", JAVA_KEYSTORE_TYPE);
+            System.setProperty("javax.net.ssl.trustStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
+            System.setProperty("javax.net.ssl.keyStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
         }
     }
 
     @AfterClass
-    public static void tearDown() throws Exception
+    public static void tearDown()
     {
         System.clearProperty("javax.net.debug");
         if (getProtocol() != Protocol.AMQP_1_0)
@@ -127,10 +112,10 @@ public class TlsTest extends JmsTestBase
         Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
-                                                      .setKeyStoreLocation(KEYSTORE)
-                                                      .setKeyStorePassword(KEYSTORE_PASSWORD)
-                                                      .setTrustStoreLocation(TRUSTSTORE)
-                                                      .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                                      .setKeyStoreLocation(TestSSLConstants.CLIENT_KEYSTORE)
+                                                      .setKeyStorePassword(TestSSLConstants.PASSWORD)
+                                                      .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                                      .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                                       .build();
         try
         {
@@ -208,10 +193,10 @@ public class TlsTest extends JmsTestBase
             getConnectionBuilder().setPort(port)
                                   .setHost("127.0.0.1")
                                   .setTls(true)
-                                  .setKeyStoreLocation(KEYSTORE)
-                                  .setKeyStorePassword(KEYSTORE_PASSWORD)
-                                  .setTrustStoreLocation(TRUSTSTORE)
-                                  .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                  .setKeyStoreLocation(TestSSLConstants.CLIENT_KEYSTORE)
+                                  .setKeyStorePassword(TestSSLConstants.PASSWORD)
+                                  .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                  .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                   .build();
             fail("Exception not thrown");
         }
@@ -223,10 +208,10 @@ public class TlsTest extends JmsTestBase
         Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost("127.0.0.1")
                                                       .setTls(true)
-                                                      .setKeyStoreLocation(KEYSTORE)
-                                                      .setKeyStorePassword(KEYSTORE_PASSWORD)
-                                                      .setTrustStoreLocation(TRUSTSTORE)
-                                                      .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                                      .setKeyStoreLocation(TestSSLConstants.CLIENT_KEYSTORE)
+                                                      .setKeyStorePassword(TestSSLConstants.PASSWORD)
+                                                      .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                                      .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                                       .setVerifyHostName(false)
                                                       .build();
         try
@@ -372,8 +357,8 @@ public class TlsTest extends JmsTestBase
         Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
-                                                      .setTrustStoreLocation(TRUSTSTORE)
-                                                      .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                                      .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                                      .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                                       .build();
         try
         {
@@ -398,8 +383,8 @@ public class TlsTest extends JmsTestBase
             getConnectionBuilder().setPort(port)
                                   .setHost(getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getHostName())
                                   .setTls(true)
-                                  .setTrustStoreLocation(TRUSTSTORE)
-                                  .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                  .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                  .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                   .build();
             fail("Connection was established successfully");
         }
@@ -419,8 +404,8 @@ public class TlsTest extends JmsTestBase
         Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
-                                                      .setTrustStoreLocation(TRUSTSTORE)
-                                                      .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                                      .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                                      .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                                       .build();
         try
         {
@@ -444,8 +429,8 @@ public class TlsTest extends JmsTestBase
             getConnectionBuilder().setPort(port)
                                   .setHost(getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getHostName())
                                   .setTls(true)
-                                  .setTrustStoreLocation(TRUSTSTORE)
-                                  .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                  .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                  .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                   .build();
             fail("Connection was established successfully");
         }
@@ -466,10 +451,10 @@ public class TlsTest extends JmsTestBase
         Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
-                                                      .setKeyStoreLocation(KEYSTORE)
-                                                      .setKeyStorePassword(KEYSTORE_PASSWORD)
-                                                      .setTrustStoreLocation(TRUSTSTORE)
-                                                      .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                                      .setKeyStoreLocation(TestSSLConstants.CLIENT_KEYSTORE)
+                                                      .setKeyStorePassword(TestSSLConstants.PASSWORD)
+                                                      .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                                      .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                                       .build();
         try
         {
@@ -516,8 +501,8 @@ public class TlsTest extends JmsTestBase
         Connection connection = getConnectionBuilder().setPort(port)
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
-                                                      .setTrustStoreLocation(TRUSTSTORE)
-                                                      .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                                      .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                                      .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                                       .setVerifyHostName(false)
                                                       .setOptions(options)
                                                       .build();
@@ -600,9 +585,9 @@ public class TlsTest extends JmsTestBase
             try
             {
                 final Map<String, Object> keyStoreAttributes = new HashMap<>();
-                keyStoreAttributes.put("storeUrl", BROKER_KEYSTORE);
-                keyStoreAttributes.put("password", BROKER_KEYSTORE_PASSWORD);
-                keyStoreAttributes.put("keyStoreType", JAVA_KEYSTORE_TYPE);
+                keyStoreAttributes.put("storeUrl", TestSSLConstants.BROKER_KEYSTORE);
+                keyStoreAttributes.put("password", TestSSLConstants.PASSWORD);
+                keyStoreAttributes.put("keyStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
                 managementFacade.createEntityAndAssertResponse(keyStoreName,
                                                                FileKeyStore.class.getName(),
                                                                keyStoreAttributes,
@@ -617,9 +602,9 @@ public class TlsTest extends JmsTestBase
             try
             {
                 final Map<String, Object> trustStoreAttributes = new HashMap<>();
-                trustStoreAttributes.put("storeUrl", BROKER_TRUSTSTORE);
-                trustStoreAttributes.put("password", BROKER_TRUSTSTORE_PASSWORD);
-                trustStoreAttributes.put("trustStoreType", JAVA_KEYSTORE_TYPE);
+                trustStoreAttributes.put("storeUrl", TestSSLConstants.BROKER_TRUSTSTORE);
+                trustStoreAttributes.put("password", TestSSLConstants.PASSWORD);
+                trustStoreAttributes.put("trustStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
                 managementFacade.createEntityAndAssertResponse(trustStoreName,
                                                                FileTrustStore.class.getName(),
                                                                trustStoreAttributes,
@@ -680,10 +665,10 @@ public class TlsTest extends JmsTestBase
 
     private void setSslStoreSystemProperties()
     {
-        System.setProperty("javax.net.ssl.keyStore", KEYSTORE);
-        System.setProperty("javax.net.ssl.keyStorePassword", KEYSTORE_PASSWORD);
-        System.setProperty("javax.net.ssl.trustStore", TRUSTSTORE);
-        System.setProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
+        System.setProperty("javax.net.ssl.keyStore", TestSSLConstants.CLIENT_KEYSTORE);
+        System.setProperty("javax.net.ssl.keyStorePassword", TestSSLConstants.PASSWORD);
+        System.setProperty("javax.net.ssl.trustStore", TestSSLConstants.CLIENT_TRUSTSTORE);
+        System.setProperty("javax.net.ssl.trustStorePassword", TestSSLConstants.PASSWORD);
     }
 
     private void clearSslStoreSystemProperties()
@@ -696,16 +681,16 @@ public class TlsTest extends JmsTestBase
 
     private File[] extractResourcesFromTestKeyStore() throws Exception
     {
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
-        try (InputStream is = new FileInputStream(KEYSTORE))
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(TestSSLConstants.JAVA_KEYSTORE_TYPE);
+        try (InputStream is = new FileInputStream(TestSSLConstants.CLIENT_KEYSTORE))
         {
-            ks.load(is, KEYSTORE_PASSWORD.toCharArray());
+            ks.load(is, TestSSLConstants.PASSWORD.toCharArray());
         }
 
         File privateKeyFile = Files.createTempFile(getTestName(), ".private-key.der").toFile();
         try (FileOutputStream kos = new FileOutputStream(privateKeyFile))
         {
-            Key pvt = ks.getKey(TestSSLConstants.CERT_ALIAS_APP1, KEYSTORE_PASSWORD.toCharArray());
+            Key pvt = ks.getKey(TestSSLConstants.CERT_ALIAS_APP1, TestSSLConstants.PASSWORD.toCharArray());
             kos.write(TestSSLUtils.privateKeyToPEM(pvt).getBytes(UTF_8));
         }
 
@@ -725,10 +710,10 @@ public class TlsTest extends JmsTestBase
 
     private File extractCertFileFromTestTrustStore() throws Exception
     {
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(JAVA_KEYSTORE_TYPE);
-        try (InputStream is = new FileInputStream(TRUSTSTORE))
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(TestSSLConstants.JAVA_KEYSTORE_TYPE);
+        try (InputStream is = new FileInputStream(TestSSLConstants.CLIENT_TRUSTSTORE))
         {
-            ks.load(is, TRUSTSTORE_PASSWORD.toCharArray());
+            ks.load(is, TestSSLConstants.PASSWORD.toCharArray());
         }
 
         File certificateFile = Files.createTempFile(getTestName(), ".crt").toFile();

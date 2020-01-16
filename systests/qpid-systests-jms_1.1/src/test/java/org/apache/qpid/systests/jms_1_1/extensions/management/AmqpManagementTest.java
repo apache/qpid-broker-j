@@ -22,9 +22,6 @@ package org.apache.qpid.systests.jms_1_1.extensions.management;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.model.Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES;
-import static org.apache.qpid.systests.jms_1_1.extensions.tls.TlsTest.TRUSTSTORE;
-import static org.apache.qpid.test.utils.TestSSLConstants.JAVA_KEYSTORE_TYPE;
-import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -55,6 +52,7 @@ import javax.jms.Session;
 import javax.naming.NamingException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.qpid.test.utils.TestSSLConstants;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -81,8 +79,8 @@ public class AmqpManagementTest extends JmsTestBase
         // legacy client keystore/truststore types can only be configured with JVM settings
         if (getProtocol() != Protocol.AMQP_1_0)
         {
-            System.setProperty("javax.net.ssl.trustStoreType", JAVA_KEYSTORE_TYPE);
-            System.setProperty("javax.net.ssl.keyStoreType", JAVA_KEYSTORE_TYPE);
+            System.setProperty("javax.net.ssl.trustStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
+            System.setProperty("javax.net.ssl.keyStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
         }
     }
 
@@ -693,8 +691,8 @@ public class AmqpManagementTest extends JmsTestBase
 
         Connection connection = getConnectionBuilder().setTls(true)
                                                       .setPort(tlsPort)
-                                                      .setTrustStoreLocation(TRUSTSTORE)
-                                                      .setTrustStorePassword(TRUSTSTORE_PASSWORD)
+                                                      .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
+                                                      .setTrustStorePassword(TestSSLConstants.PASSWORD)
                                                       .build();
         try
         {
