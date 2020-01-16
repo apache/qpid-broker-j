@@ -111,7 +111,7 @@ public class AuthenticationTest extends JmsTestBase
                    getProtocol(),
                    is(not(equalTo(Protocol.AMQP_1_0))));
 
-        int port = createAuthenticationProviderAndUserAndPort(getTestName(), "MD5", USER, USER_PASSWORD);
+        final int port = createAuthenticationProviderAndUserAndPort(getTestName(), "MD5", USER, USER_PASSWORD);
 
         assertPlainConnectivity(port, USER, USER_PASSWORD, CramMd5HashedNegotiator.MECHANISM);
     }
@@ -119,7 +119,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void sha256() throws Exception
     {
-        int port = createAuthenticationProviderAndUserAndPort(getTestName(),
+        final int port = createAuthenticationProviderAndUserAndPort(getTestName(),
                                                               ScramSHA256AuthenticationManager.PROVIDER_TYPE,
                                                               USER,
                                                               USER_PASSWORD);
@@ -130,7 +130,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void sha1() throws Exception
     {
-        int port = createAuthenticationProviderAndUserAndPort(getTestName(),
+        final int port = createAuthenticationProviderAndUserAndPort(getTestName(),
                                                               ScramSHA1AuthenticationManager.PROVIDER_TYPE,
                                                               USER,
                                                               USER_PASSWORD);
@@ -141,7 +141,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void external() throws Exception
     {
-        int port = createExternalProviderAndTlsPort();
+        final int port = createExternalProviderAndTlsPort();
 
         Connection connection = getConnectionBuilder().setPort(port)
                                                       .setTls(true)
@@ -153,7 +153,7 @@ public class AuthenticationTest extends JmsTestBase
                                                       .build();
         try
         {
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             assertNotNull("Temporary queue was not created", session.createTemporaryQueue());
         }
         finally
@@ -165,155 +165,129 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationWithCrlFileAndAllowedCertificate() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
         trustStoreAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
 
     @Test
     public void externalWithRevocationWithCrlFileAndRevokedCertificate() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
         trustStoreAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED);
     }
 
     @Test
     public void externalWithRevocationWithEmptyCrlFileAndRevokedCertificate() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
         trustStoreAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL_EMPTY);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
 
     @Test
     public void externalWithRevocationAndAllowedCertificateWithCrlUrl() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
 
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrl() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED);
     }
 
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithEmptyCrl() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED_EMPTY_CRL);
     }
 
     @Test
     public void externalWithRevocationDisabledWithCrlFileAndRevokedCertificate() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, false);
         trustStoreAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED);
     }
 
     @Test
     public void externalWithRevocationDisabledWithCrlUrlInRevokedCertificate() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, false);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED);
     }
 
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithSoftFail() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
         trustStoreAttributes.put(FileTrustStore.SOFT_FAIL, true);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED_INVALID_CRL_PATH);
     }
 
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithoutPreferCrls() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
         trustStoreAttributes.put(FileTrustStore.PREFER_CRLS, false);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
 
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithoutPreferCrlsWithFallback() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
         trustStoreAttributes.put(FileTrustStore.PREFER_CRLS, false);
         trustStoreAttributes.put(FileTrustStore.NO_FALLBACK, false);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
 
     @Test
     public void externalWithRevocationAndRevokedIntermediateCertificateWithCrlUrl() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
         trustStoreAttributes.put(FileTrustStore.ONLY_END_ENTITY, false);
         trustStoreAttributes.put(FileTrustStore.SOFT_FAIL, true);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED_WITH_INTERMEDIATE);
     }
 
     @Test
     public void externalWithRevocationAndRevokedIntermediateCertificateWithCrlUrlOnlyEndEntity() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
         trustStoreAttributes.put(FileTrustStore.ONLY_END_ENTITY, true);
         trustStoreAttributes.put(FileTrustStore.SOFT_FAIL, true);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED_WITH_INTERMEDIATE);
     }
 
@@ -321,7 +295,7 @@ public class AuthenticationTest extends JmsTestBase
     public void externalDeniesUntrustedClientCert() throws Exception
     {
         assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
-        int port = createExternalProviderAndTlsPort();
+        final int port = createExternalProviderAndTlsPort();
         assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_UNTRUSTED_CLIENT);
     }
 
@@ -330,11 +304,11 @@ public class AuthenticationTest extends JmsTestBase
     {
         assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
 
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
+        final Map<String, Object> trustStoreAttributes = new HashMap<>();
         trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_PEERSTORE);
         trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
         trustStoreAttributes.put(FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
 
         try
         {
@@ -357,11 +331,11 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithPeersOnlyTrustStore() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
+        final Map<String, Object> trustStoreAttributes = new HashMap<>();
         trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_PEERSTORE);
         trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
         trustStoreAttributes.put(FileTrustStore.PEERS_ONLY, true);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_APP1);
 
         assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
@@ -371,15 +345,13 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRegularAndPeersOnlyTrustStores() throws Exception
     {
-        String trustStoreName = getTestName() + "RegularTrustStore";
-        Connection brokerConnection = getConnectionBuilder().setVirtualHost("$management").build();
+        final String trustStoreName = getTestName() + "RegularTrustStore";
+        final Connection brokerConnection = getConnectionBuilder().setVirtualHost("$management").build();
         try
         {
             brokerConnection.start();
 
-            Map<String, Object> trustStoreAttributes = new HashMap<>();
-            trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-            trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+            final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
             trustStoreAttributes.put(FileTrustStore.TRUST_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
             createEntity(trustStoreName,
@@ -393,11 +365,11 @@ public class AuthenticationTest extends JmsTestBase
             brokerConnection.close();
         }
 
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
+        final Map<String, Object> trustStoreAttributes = new HashMap<>();
         trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_PEERSTORE);
         trustStoreAttributes.put(FileTrustStore.PASSWORD,TestSSLConstants.PASSWORD);
         trustStoreAttributes.put(FileTrustStore.PEERS_ONLY, true);
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes, trustStoreName, false);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes, trustStoreName, false);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_APP1);
 
         //use the app2 cert, which is NOT in the peerstore (but is signed by the same CA as app1)
@@ -407,13 +379,11 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalUsernameAsDN() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
 
-        String clientId = getTestName();
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, true);
-        Connection connection = getConnectionBuilder().setPort(port)
+        final String clientId = getTestName();
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, true);
+        final Connection connection = getConnectionBuilder().setPort(port)
                                                       .setTls(true)
                                                       .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                                       .setKeyStoreLocation(TestSSLConstants.CLIENT_KEYSTORE)
@@ -440,13 +410,11 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalUsernameAsCN() throws Exception
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
 
-        String clientId = getTestName();
-        int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
-        Connection connection = getConnectionBuilder().setPort(port)
+        final String clientId = getTestName();
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
+        final Connection connection = getConnectionBuilder().setPort(port)
                                                       .setTls(true)
                                                       .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                                       .setKeyStoreLocation(TestSSLConstants.CLIENT_KEYSTORE)
@@ -472,17 +440,17 @@ public class AuthenticationTest extends JmsTestBase
 
     private void assertConnectionPrincipal(final String clientId, final String expectedPrincipal) throws Exception
     {
-        Connection brokerConnection = getConnectionBuilder().setVirtualHost("$management").build();
+        final Connection brokerConnection = getConnectionBuilder().setVirtualHost("$management").build();
         try
         {
             brokerConnection.start();
 
             String principal = null;
-            List<Map<String, Object>> connections = queryEntitiesUsingAmqpManagement("org.apache.qpid.Connection", brokerConnection);
-            for (Map<String, Object> connection : connections)
+            final List<Map<String, Object>> connections = queryEntitiesUsingAmqpManagement("org.apache.qpid.Connection", brokerConnection);
+            for (final Map<String, Object> connection : connections)
             {
-                String name = String.valueOf(connection.get(ConfiguredObject.NAME));
-                Map<String, Object> attributes;
+                final String name = String.valueOf(connection.get(ConfiguredObject.NAME));
+                final Map<String, Object> attributes;
                 try
                 {
                     attributes = readEntityUsingAmqpManagement(
@@ -514,12 +482,17 @@ public class AuthenticationTest extends JmsTestBase
         }
     }
 
-    private int createExternalProviderAndTlsPort() throws Exception
+    private Map<String, Object> getBrokerTrustStoreAttributes()
     {
-        Map<String, Object> trustStoreAttributes = new HashMap<>();
+        final Map<String, Object> trustStoreAttributes = new HashMap<>();
         trustStoreAttributes.put(FileTrustStore.STORE_URL, TestSSLConstants.BROKER_TRUSTSTORE);
         trustStoreAttributes.put(FileTrustStore.PASSWORD, TestSSLConstants.PASSWORD);
-        return createExternalProviderAndTlsPort(trustStoreAttributes);
+        return trustStoreAttributes;
+    }
+
+    private int createExternalProviderAndTlsPort() throws Exception
+    {
+        return createExternalProviderAndTlsPort(getBrokerTrustStoreAttributes());
     }
 
     private int createExternalProviderAndTlsPort(final Map<String, Object> trustStoreAttributes) throws Exception
@@ -532,12 +505,12 @@ public class AuthenticationTest extends JmsTestBase
                                                  final boolean useFullDN) throws Exception
     {
         final String providerName = getTestName();
-        Connection connection = getConnectionBuilder().setVirtualHost("$management").build();
+        final Connection connection = getConnectionBuilder().setVirtualHost("$management").build();
         try
         {
             connection.start();
 
-            Map<String, Object> providerAttributes = new HashMap<>();
+            final Map<String, Object> providerAttributes = new HashMap<>();
             providerAttributes.put("qpid-type", ExternalAuthenticationManager.PROVIDER_TYPE);
             providerAttributes.put(ExternalAuthenticationManager.ATTRIBUTE_USE_FULL_DN, useFullDN);
             createEntity(providerName,
@@ -556,7 +529,7 @@ public class AuthenticationTest extends JmsTestBase
                          keyStoreAttributes,
                          connection);
 
-            Map<String, Object> trustStoreSettings = new HashMap<>(trustStoreAttributes);
+            final Map<String, Object> trustStoreSettings = new HashMap<>(trustStoreAttributes);
             trustStoreSettings.put("trustStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
             final String trustStoreName = providerName + "TrustStore";
             createEntity(trustStoreName,
@@ -564,8 +537,8 @@ public class AuthenticationTest extends JmsTestBase
                          trustStoreSettings,
                          connection);
 
-            String portName = getPortName();
-            Map<String, Object> sslPortAttributes = new HashMap<>();
+            final String portName = getPortName();
+            final Map<String, Object> sslPortAttributes = new HashMap<>();
             sslPortAttributes.put(Port.TRANSPORTS, "[\"SSL\"]");
             sslPortAttributes.put(Port.PORT, 0);
             sslPortAttributes.put(Port.AUTHENTICATION_PROVIDER, providerName);
@@ -573,7 +546,7 @@ public class AuthenticationTest extends JmsTestBase
             sslPortAttributes.put(Port.WANT_CLIENT_AUTH, false);
             sslPortAttributes.put(Port.NAME, portName);
             sslPortAttributes.put(Port.KEY_STORE, keyStoreName);
-            String trustStores = additionalTrustStore == null
+            final String trustStores = additionalTrustStore == null
                     ? "[\"" + trustStoreName + "\"]"
                     : "[\"" + trustStoreName + "\",\"" + additionalTrustStore + "\"]";
             sslPortAttributes.put(Port.TRUST_STORES, trustStores);
@@ -583,7 +556,7 @@ public class AuthenticationTest extends JmsTestBase
                          sslPortAttributes,
                          connection);
 
-            Map<String, Object> portEffectiveAttributes =
+            final Map<String, Object> portEffectiveAttributes =
                     readEntityUsingAmqpManagement(portName, "org.apache.qpid.AmqpPort", false, connection);
             if (portEffectiveAttributes.containsKey("boundPort"))
             {
@@ -607,7 +580,7 @@ public class AuthenticationTest extends JmsTestBase
                                                            final String userName,
                                                            final String userPassword) throws Exception
     {
-        Connection connection = getConnectionBuilder().setVirtualHost("$management").build();
+        final Connection connection = getConnectionBuilder().setVirtualHost("$management").build();
         try
         {
             connection.start();
@@ -622,13 +595,13 @@ public class AuthenticationTest extends JmsTestBase
             userAttributes.put("object-path", providerName);
             createEntity(userName, User.class.getName(), userAttributes, connection);
 
-            String portName = providerName + "Port";
+            final String portName = providerName + "Port";
             final Map<String, Object> portAttributes = new HashMap<>();
             portAttributes.put(Port.AUTHENTICATION_PROVIDER, providerName);
             portAttributes.put(Port.PORT, 0);
             createEntity(portName, "org.apache.qpid.AmqpPort", portAttributes, connection);
 
-            Map<String, Object> portEffectiveAttributes =
+            final Map<String, Object> portEffectiveAttributes =
                     readEntityUsingAmqpManagement(portName, "org.apache.qpid.AmqpPort", false, connection);
             if (portEffectiveAttributes.containsKey("boundPort"))
             {
@@ -642,9 +615,9 @@ public class AuthenticationTest extends JmsTestBase
         }
     }
 
-    private void assertTlsConnectivity(int port, String certificateAlias) throws NamingException, JMSException
+    private Connection getConnection(int port, String certificateAlias) throws NamingException, JMSException
     {
-        Connection connection = getConnectionBuilder().setPort(port)
+        return getConnectionBuilder().setPort(port)
                 .setTls(true)
                 .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                 .setKeyStoreLocation(TestSSLConstants.CLIENT_KEYSTORE)
@@ -653,6 +626,11 @@ public class AuthenticationTest extends JmsTestBase
                 .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
                 .setTrustStorePassword(TestSSLConstants.PASSWORD)
                 .build();
+    }
+
+    private void assertTlsConnectivity(int port, String certificateAlias) throws NamingException, JMSException
+    {
+        final Connection connection = getConnection(port, certificateAlias);
         try
         {
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -668,15 +646,7 @@ public class AuthenticationTest extends JmsTestBase
     {
         try
         {
-            getConnectionBuilder().setPort(port)
-                    .setTls(true)
-                    .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
-                    .setKeyStoreLocation(TestSSLConstants.CLIENT_KEYSTORE)
-                    .setKeyStorePassword(TestSSLConstants.PASSWORD)
-                    .setKeyAlias(certificateAlias)
-                    .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
-                    .setTrustStorePassword(TestSSLConstants.PASSWORD)
-                    .build();
+            getConnection(port, certificateAlias);
             fail("Connection should not succeed");
         }
         catch (JMSException e)
@@ -690,15 +660,15 @@ public class AuthenticationTest extends JmsTestBase
                                          final String userPassword,
                                          final String mechanism) throws Exception
     {
-        Connection connection = getConnectionBuilder().setPort(port)
+        final Connection connection = getConnectionBuilder().setPort(port)
                                                       .setUsername(userName)
                                                       .setPassword(userPassword)
                                                       .setSaslMechanisms(mechanism)
                                                       .build();
         try
         {
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            TemporaryQueue queue = session.createTemporaryQueue();
+            final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final TemporaryQueue queue = session.createTemporaryQueue();
             assertNotNull("Temporary queue was not created", queue);
         }
         finally

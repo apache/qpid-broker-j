@@ -86,9 +86,9 @@ public class NonJavaTrustStoreTest extends KeyStoreTestBase
             trustStore.setAttributes(unacceptableAttributes);
             fail("Exception not thrown");
         }
-        catch (IllegalConfigurationException ice)
+        catch (IllegalConfigurationException e)
         {
-            String message = ice.getMessage();
+            String message = e.getMessage();
             assertTrue("Exception text not as unexpected:" + message,
                     message.contains("Unable to load certificate revocation list '/not/a/crl' for truststore 'myTestTrustStore'"));
         }

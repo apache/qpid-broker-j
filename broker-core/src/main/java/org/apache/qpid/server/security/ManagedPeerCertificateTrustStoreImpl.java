@@ -63,7 +63,7 @@ public class ManagedPeerCertificateTrustStoreImpl
 
     private volatile TrustManager[] _trustManagers = new TrustManager[0];
 
-    @ManagedAttributeField( afterSet = "initialize")
+    @ManagedAttributeField(afterSet = "initialize")
     private final List<Certificate> _storedCertificates = new ArrayList<>();
 
     @ManagedObjectFactoryConstructor

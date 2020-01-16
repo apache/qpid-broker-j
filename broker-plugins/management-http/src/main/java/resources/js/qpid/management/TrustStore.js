@@ -145,14 +145,8 @@ define(["dojo/_base/lang",
             this.preferCrls.innerHTML = entities.encode(String(this.trustStoreData["preferCrls"]));
             this.noFallback.innerHTML = entities.encode(String(this.trustStoreData["noFallback"]));
             this.softFail.innerHTML = entities.encode(String(this.trustStoreData["softFail"]));
-            if (this.trustStoreData["crlUrl"])
-            {
-                this.crlUrl.innerHTML = entities.encode(String(this.trustStoreData["crlUrl"]));
-            }
-            else
-            {
-                this.crlUrl.innerHTML = "";
-            }
+            this.crlUrl.innerHTML =
+                this.trustStoreData["crlUrl"] ? entities.encode(String(this.trustStoreData["crlUrl"])) : "";
         };
 
         KeyStoreUpdater.prototype.update = function (callback)

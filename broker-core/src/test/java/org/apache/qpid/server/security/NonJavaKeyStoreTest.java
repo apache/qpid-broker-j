@@ -112,7 +112,7 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
         java.security.KeyStore ks = java.security.KeyStore.getInstance(TestSSLConstants.JAVA_KEYSTORE_TYPE);
         try(InputStream is = new FileInputStream(storeResource))
         {
-            ks.load(is, TestSSLConstants.PASSWORD.toCharArray() );
+            ks.load(is, TestSSLConstants.PASSWORD.toCharArray());
         }
 
 
@@ -174,11 +174,11 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
         attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
 
         NonJavaKeyStoreImpl fileTrustStore =
-                (NonJavaKeyStoreImpl) _factory.create(_keystoreClass, attributes,  _broker);
+                (NonJavaKeyStoreImpl) _factory.create(_keystoreClass, attributes, _broker);
 
         KeyManager[] keyManagers = fileTrustStore.getKeyManagers();
         assertNotNull(keyManagers);
-        assertEquals("Unexpected number of key managers", (long) 1, (long) keyManagers.length);
+        assertEquals("Unexpected number of key managers", 1, keyManagers.length);
         assertNotNull("Key manager is null", keyManagers[0]);
     }
 
@@ -246,7 +246,7 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
         final String storeLocation = TestSSLConstants.BROKER_KEYSTORE;
         try(InputStream is = new FileInputStream(storeLocation))
         {
-            ks.load(is, TestSSLConstants.PASSWORD.toCharArray() );
+            ks.load(is, TestSSLConstants.PASSWORD.toCharArray());
         }
         X509Certificate cert = (X509Certificate) ks.getCertificate(TestSSLConstants.CERT_ALIAS_ROOT_CA);
         int expiryDays = (int)((cert.getNotAfter().getTime() - System.currentTimeMillis()) / (24l * 60l * 60l * 1000l));

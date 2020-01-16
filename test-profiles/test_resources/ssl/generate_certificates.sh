@@ -233,8 +233,8 @@ set_certificate_crl_distribution_point_to_intermediate_ca()
 
 set_certificate_crl_distribution_point_to_empty_crl()
 {
-   # change only first occurence (v3_req), commented line changes all occurences
-#   sed -i "s|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.crl|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.empty.crl|" "$OPENSSL_CONF"
+    # change only first occurence (v3_req), commented line changes all occurences
+    # sed -i "s|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.crl|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.empty.crl|" "$OPENSSL_CONF"
     echo "Setting CRL distribution point to empty CRL"
     sed -i -z "s|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$INTERMEDIATE_CA.crl|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.empty.crl|" "$OPENSSL_CONF"
     local _rc=$?

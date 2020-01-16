@@ -283,9 +283,9 @@ public class FileTrustStoreTest extends KeyStoreTestBase
             fileTrustStore.setAttributes(unacceptableAttributes);
             fail("Exception not thrown");
         }
-        catch (IllegalConfigurationException ice)
+        catch (IllegalConfigurationException e)
         {
-            String message = ice.getMessage();
+            String message = e.getMessage();
             assertTrue("Exception text not as unexpected:" + message,
                               message.contains("Cannot instantiate trust store"));
         }
@@ -302,9 +302,9 @@ public class FileTrustStoreTest extends KeyStoreTestBase
             fileTrustStore.setAttributes(unacceptableAttributes);
             fail("Exception not thrown");
         }
-        catch (IllegalConfigurationException ice)
+        catch (IllegalConfigurationException e)
         {
-            String message = ice.getMessage();
+            String message = e.getMessage();
             assertTrue("Exception text not as unexpected:" + message,
                     message.contains("Unable to load certificate revocation list '/not/a/crl' for truststore " +
                             "'myFileTrustStore' :java.io.FileNotFoundException: /not/a/crl (No such file or directory)"));

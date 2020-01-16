@@ -266,9 +266,9 @@ public class FileKeyStoreTest extends KeyStoreTestBase
             fileKeyStore.setAttributes(unacceptableAttributes);
             fail("Exception not thrown");
         }
-        catch (IllegalConfigurationException ice)
+        catch (IllegalConfigurationException e)
         {
-            String message = ice.getMessage();
+            String message = e.getMessage();
             assertTrue("Exception text not as unexpected:" + message,
                               message.contains("Cannot find a certificate with alias 'notknown' in key store"));
         }

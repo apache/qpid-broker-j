@@ -52,9 +52,9 @@ public abstract class KeyStoreTestBase extends UnitTestBase
             _factory.create(_keystoreClass, attributes, _broker);
             fail("Exception not thrown");
         }
-        catch (IllegalConfigurationException ice)
+        catch (IllegalConfigurationException e)
         {
-            String message = ice.getMessage();
+            final String message = e.getMessage();
             assertTrue("Exception text not as expected:" + message,
                     message.contains(expectedExceptionMessage));
 

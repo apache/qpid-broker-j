@@ -186,7 +186,6 @@ public class SSLUtil
         CERTIFICATE_FACTORY = certificateFactory;
     }
 
-
     private SSLUtil()
     {
     }
