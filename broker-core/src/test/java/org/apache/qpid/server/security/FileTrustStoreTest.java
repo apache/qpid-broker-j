@@ -307,7 +307,7 @@ public class FileTrustStoreTest extends KeyStoreTestBase
             String message = e.getMessage();
             assertTrue("Exception text not as unexpected:" + message,
                     message.contains("Unable to load certificate revocation list '/not/a/crl' for truststore " +
-                            "'myFileTrustStore' :java.io.FileNotFoundException: /not/a/crl (No such file or directory)"));
+                            "'myFileTrustStore'"));
         }
 
         assertEquals("Unexpected CRL path value after failed change",
