@@ -1,0 +1,82 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 4667 (0x123b)
+        Signature Algorithm: sha512WithRSAEncryption
+        Issuer: C=CA, ST=Ontario, O=ACME, CN=MyRootCA
+        Validity
+            Not Before: Jan 17 09:11:35 2020 GMT
+            Not After : Jan 17 09:11:35 2024 GMT
+        Subject: C=CA, ST=ON, L=Toronto, O=acme, OU=art, CN=revoked_by_ca_empty_crl@acme.org
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                RSA Public-Key: (2048 bit)
+                Modulus:
+                    00:cc:4b:bd:41:e1:37:89:94:f3:93:51:f9:7e:9f:
+                    52:4e:c5:bd:8e:b0:6d:74:88:05:f9:36:fd:a3:7e:
+                    83:bc:bf:f9:8f:bb:b1:a0:c4:94:74:9c:e8:bc:15:
+                    14:6c:d5:87:60:7a:18:c5:4d:c0:37:ab:bd:7a:e4:
+                    ba:53:67:d2:0b:64:98:7f:65:2a:0c:86:92:3f:96:
+                    03:7e:8b:60:18:a4:d0:af:08:47:9b:b9:20:2b:53:
+                    ac:b9:ce:d8:04:32:e9:d0:20:74:45:df:58:8c:1f:
+                    bb:f1:2d:de:37:1a:c9:bd:f2:d4:e9:eb:3e:49:f1:
+                    97:99:ae:3e:96:27:ce:a0:a5:39:87:fb:98:a5:70:
+                    92:79:5d:e7:75:af:97:c9:f5:ea:26:ce:19:38:9c:
+                    5d:d4:d5:28:c2:72:eb:9c:b4:f3:85:7b:cd:d1:c6:
+                    10:11:87:1c:56:b7:cf:14:f8:72:79:62:41:ea:29:
+                    c2:d8:a2:73:0c:98:7f:0e:90:23:84:e3:af:a7:58:
+                    fb:9d:2c:1b:1f:16:a5:75:75:2d:98:fe:44:99:48:
+                    41:b8:2f:22:2a:f8:89:04:d1:fd:8d:68:8c:55:84:
+                    ec:c9:ef:24:11:45:54:4c:15:38:18:c4:f0:52:04:
+                    75:75:64:60:76:23:d5:7d:4b:a5:01:22:dd:bc:3d:
+                    d3:b5
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 CRL Distribution Points: 
+
+                Full Name:
+                  URI:file:///home/vavrtom/git/dbg/vavrtom/qpid-broker-j/test-profiles/test_resources/ssl/certificates/MyRootCA.empty.crl
+
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature, Non Repudiation, Key Encipherment
+    Signature Algorithm: sha512WithRSAEncryption
+         52:d8:24:3b:bb:a9:29:e3:25:9e:db:b7:c1:34:e6:c7:d4:ff:
+         0a:b9:9c:13:ca:21:4c:9d:fa:79:f2:8b:7a:e7:da:1a:f7:90:
+         62:6b:df:26:0b:4a:4b:6c:01:50:1b:7c:b1:9e:c3:2d:84:5c:
+         24:4c:5c:6a:9f:d9:29:9f:0e:09:80:18:69:85:8f:8c:2a:66:
+         9e:4c:66:85:a1:1f:61:7b:a7:28:6c:2b:71:e6:a2:bd:03:0d:
+         23:e9:50:b6:25:8d:6b:4b:23:f9:af:fa:3e:75:5a:33:71:b8:
+         43:bc:5c:c9:08:6a:be:0f:68:b9:49:b8:6f:2c:cf:32:ae:6a:
+         b9:20:bc:eb:22:28:23:a3:3e:dd:9c:31:e2:90:74:ae:76:e9:
+         00:1d:07:de:22:10:c4:b0:e3:25:d0:1e:2f:bd:00:8a:63:fb:
+         d0:fd:f8:da:42:36:42:70:40:f9:9f:30:7e:57:b4:cf:48:75:
+         5e:4a:9f:92:80:8f:dd:f0:6c:40:5d:01:a8:b8:d3:1e:e4:83:
+         4b:02:02:9f:6b:1e:90:a7:80:c4:2e:ef:48:26:62:d1:ea:09:
+         b3:4b:8c:7a:86:f1:0f:6d:d1:33:95:0c:30:41:39:00:74:2f:
+         97:31:48:d9:02:54:e0:89:33:5f:16:98:6c:2c:4a:cc:66:81:
+         c3:9d:37:b3
+-----BEGIN CERTIFICATE-----
+MIID1DCCArygAwIBAgICEjswDQYJKoZIhvcNAQENBQAwQTELMAkGA1UEBhMCQ0Ex
+EDAOBgNVBAgMB09udGFyaW8xDTALBgNVBAoMBEFDTUUxETAPBgNVBAMMCE15Um9v
+dENBMB4XDTIwMDExNzA5MTEzNVoXDTI0MDExNzA5MTEzNVowdDELMAkGA1UEBhMC
+Q0ExCzAJBgNVBAgMAk9OMRAwDgYDVQQHDAdUb3JvbnRvMQ0wCwYDVQQKDARhY21l
+MQwwCgYDVQQLDANhcnQxKTAnBgNVBAMMIHJldm9rZWRfYnlfY2FfZW1wdHlfY3Js
+QGFjbWUub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzEu9QeE3
+iZTzk1H5fp9STsW9jrBtdIgF+Tb9o36DvL/5j7uxoMSUdJzovBUUbNWHYHoYxU3A
+N6u9euS6U2fSC2SYf2UqDIaSP5YDfotgGKTQrwhHm7kgK1Osuc7YBDLp0CB0Rd9Y
+jB+78S3eNxrJvfLU6es+SfGXma4+lifOoKU5h/uYpXCSeV3nda+XyfXqJs4ZOJxd
+1NUownLrnLTzhXvN0cYQEYccVrfPFPhyeWJB6inC2KJzDJh/DpAjhOOvp1j7nSwb
+HxaldXUtmP5EmUhBuC8iKviJBNH9jWiMVYTsye8kEUVUTBU4GMTwUgR1dWRgdiPV
+fUulASLdvD3TtQIDAQABo4GiMIGfMIGEBgNVHR8EfTB7MHmgd6B1hnNmaWxlOi8v
+L2hvbWUvdmF2cnRvbS9naXQvZGJnL3ZhdnJ0b20vcXBpZC1icm9rZXItai90ZXN0
+LXByb2ZpbGVzL3Rlc3RfcmVzb3VyY2VzL3NzbC9jZXJ0aWZpY2F0ZXMvTXlSb290
+Q0EuZW1wdHkuY3JsMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgXgMA0GCSqGSIb3DQEB
+DQUAA4IBAQBS2CQ7u6kp4yWe27fBNObH1P8KuZwTyiFMnfp58ot659oa95Bia98m
+C0pLbAFQG3yxnsMthFwkTFxqn9kpnw4JgBhphY+MKmaeTGaFoR9he6cobCtx5qK9
+Aw0j6VC2JY1rSyP5r/o+dVozcbhDvFzJCGq+D2i5SbhvLM8yrmq5ILzrIigjoz7d
+nDHikHSudukAHQfeIhDEsOMl0B4vvQCKY/vQ/fjaQjZCcED5nzB+V7TPSHVeSp+S
+gI/d8GxAXQGouNMe5INLAgKfax6Qp4DELu9IJmLR6gmzS4x6hvEPbdEzlQwwQTkA
+dC+XMUjZAlTgiTNfFphsLErMZoHDnTez
+-----END CERTIFICATE-----

@@ -1,0 +1,74 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 4661 (0x1235)
+        Signature Algorithm: sha512WithRSAEncryption
+        Issuer: C=CA, ST=Ontario, O=ACME, CN=MyRootCA
+        Validity
+            Not Before: Jan 17 09:11:30 2020 GMT
+            Not After : Jan 17 09:11:30 2024 GMT
+        Subject: C=CA, ST=ON, L=Toronto, O=acme, OU=art, CN=app2@acme.org
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                RSA Public-Key: (2048 bit)
+                Modulus:
+                    00:d4:46:2c:27:d1:69:0a:89:24:a3:dd:88:f4:a4:
+                    b6:f5:2f:8d:df:e9:73:bc:d1:e4:6e:09:ee:b2:4d:
+                    f7:86:41:b7:c6:9a:6d:5e:ca:6c:f2:dc:42:e3:9a:
+                    a8:1f:d8:7f:55:94:67:b3:ef:e3:13:bd:2f:ba:97:
+                    91:14:76:54:4f:2f:e5:e3:f7:6f:0a:36:28:da:25:
+                    dc:38:6f:65:a6:09:18:31:9a:fb:de:c5:46:b8:a0:
+                    4d:ab:2a:a2:91:36:81:6e:4c:19:b9:03:7c:d8:f7:
+                    6c:8e:46:d3:31:3a:43:ef:5d:5a:16:f0:69:f4:11:
+                    27:a2:a7:5d:7e:c5:22:46:7b:36:ce:5f:50:b9:25:
+                    f1:9d:e6:36:2c:32:fb:2e:91:20:a6:0a:0a:af:d0:
+                    2f:eb:87:7b:d1:cf:dc:1a:53:dd:86:66:47:3e:44:
+                    f8:36:a8:3d:a3:ef:a2:37:6a:99:64:86:23:d1:c1:
+                    8b:8b:5c:59:30:55:de:1c:37:49:2f:f7:b5:1a:8c:
+                    ca:bb:f8:86:b9:c3:26:c0:28:4e:c2:05:23:de:96:
+                    32:02:2f:25:19:12:4d:a2:84:7b:5a:2f:c4:65:74:
+                    09:f6:54:95:40:4d:3d:12:91:ad:ac:2b:b2:f6:69:
+                    e7:84:2a:35:51:29:67:49:9f:8a:14:de:da:44:dd:
+                    4f:55
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature, Non Repudiation, Key Encipherment
+    Signature Algorithm: sha512WithRSAEncryption
+         78:c0:91:81:43:a0:d9:05:47:a6:fe:20:a6:7c:05:66:39:62:
+         47:54:d5:d2:03:fc:cf:23:e8:80:20:d2:e1:74:07:cf:1d:6d:
+         db:3e:db:7f:29:d6:f6:9c:f8:14:36:ff:e5:41:18:05:7a:e7:
+         b2:bd:31:d0:9b:18:46:58:f9:fe:a8:f8:6a:0d:01:19:dd:ab:
+         4e:92:a8:fb:3a:53:b6:21:43:b0:3f:c0:bf:14:7c:b0:56:04:
+         7e:0c:58:c2:05:6f:21:13:31:36:5e:38:9f:bc:b4:79:cd:7f:
+         3a:62:e6:23:47:52:25:a0:40:5e:cf:03:3f:ef:50:0c:7e:6a:
+         e6:6e:25:28:26:51:b0:82:d8:df:e8:8d:4a:4f:ae:df:d0:3d:
+         36:52:92:d0:85:d7:d6:29:86:94:b1:77:8e:f7:ef:50:02:3a:
+         2d:7a:10:b6:96:14:6e:73:ae:31:84:d9:c4:06:64:e8:f9:8e:
+         cf:9e:43:ee:6d:62:7f:de:f2:c5:28:cc:d0:cf:4b:1b:04:b1:
+         ea:ea:d7:33:68:b9:f0:c1:24:89:75:84:57:4d:eb:99:64:93:
+         0e:77:0f:ba:65:35:aa:1a:31:cc:19:51:3f:3f:16:21:78:8c:
+         2c:65:69:2d:97:10:12:4c:54:5b:57:26:58:11:71:4a:43:5f:
+         3e:bb:c7:eb
+-----BEGIN CERTIFICATE-----
+MIIDODCCAiCgAwIBAgICEjUwDQYJKoZIhvcNAQENBQAwQTELMAkGA1UEBhMCQ0Ex
+EDAOBgNVBAgMB09udGFyaW8xDTALBgNVBAoMBEFDTUUxETAPBgNVBAMMCE15Um9v
+dENBMB4XDTIwMDExNzA5MTEzMFoXDTI0MDExNzA5MTEzMFowYTELMAkGA1UEBhMC
+Q0ExCzAJBgNVBAgMAk9OMRAwDgYDVQQHDAdUb3JvbnRvMQ0wCwYDVQQKDARhY21l
+MQwwCgYDVQQLDANhcnQxFjAUBgNVBAMMDWFwcDJAYWNtZS5vcmcwggEiMA0GCSqG
+SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDURiwn0WkKiSSj3Yj0pLb1L43f6XO80eRu
+Ce6yTfeGQbfGmm1eymzy3ELjmqgf2H9VlGez7+MTvS+6l5EUdlRPL+Xj928KNija
+Jdw4b2WmCRgxmvvexUa4oE2rKqKRNoFuTBm5A3zY92yORtMxOkPvXVoW8Gn0ESei
+p11+xSJGezbOX1C5JfGd5jYsMvsukSCmCgqv0C/rh3vRz9waU92GZkc+RPg2qD2j
+76I3aplkhiPRwYuLXFkwVd4cN0kv97UajMq7+Ia5wybAKE7CBSPeljICLyUZEk2i
+hHtaL8RldAn2VJVATT0Ska2sK7L2aeeEKjVRKWdJn4oU3tpE3U9VAgMBAAGjGjAY
+MAkGA1UdEwQCMAAwCwYDVR0PBAQDAgXgMA0GCSqGSIb3DQEBDQUAA4IBAQB4wJGB
+Q6DZBUem/iCmfAVmOWJHVNXSA/zPI+iAINLhdAfPHW3bPtt/Kdb2nPgUNv/lQRgF
+eueyvTHQmxhGWPn+qPhqDQEZ3atOkqj7OlO2IUOwP8C/FHywVgR+DFjCBW8hEzE2
+XjifvLR5zX86YuYjR1IloEBezwM/71AMfmrmbiUoJlGwgtjf6I1KT67f0D02UpLQ
+hdfWKYaUsXeO9+9QAjotehC2lhRuc64xhNnEBmTo+Y7PnkPubWJ/3vLFKMzQz0sb
+BLHq6tczaLnwwSSJdYRXTeuZZJMOdw+6ZTWqGjHMGVE/PxYheIwsZWktlxASTFRb
+VyZYEXFKQ18+u8fr
+-----END CERTIFICATE-----

@@ -1,0 +1,80 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 4668 (0x123c)
+        Signature Algorithm: sha512WithRSAEncryption
+        Issuer: C=CA, ST=Ontario, O=ACME, CN=MyRootCA
+        Validity
+            Not Before: Jan 17 09:11:36 2020 GMT
+            Not After : Jan 17 09:11:36 2024 GMT
+        Subject: C=CA, ST=ON, L=Toronto, O=acme, OU=art, CN=revoked_by_ca_invalid_crl_path@acme.org
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                RSA Public-Key: (2048 bit)
+                Modulus:
+                    00:a3:39:a4:fb:75:24:cb:be:48:a1:7f:08:ca:83:
+                    88:b0:a5:93:7c:28:37:b2:ac:2f:34:ab:b5:8e:76:
+                    40:ea:6f:64:1f:ae:74:9a:31:c2:53:15:96:23:33:
+                    74:d8:d2:8c:13:a0:4c:20:ef:29:6a:fd:b9:70:f3:
+                    15:02:4f:bb:8f:c8:42:59:b6:19:c7:0e:67:25:69:
+                    55:ad:f8:9d:fa:60:b1:d5:a9:c3:aa:a7:5c:75:04:
+                    5e:8a:70:ca:74:a2:ea:4f:eb:37:91:96:33:e1:9f:
+                    40:0d:ea:d5:67:f8:1b:c2:ae:f5:44:71:fa:85:86:
+                    9a:6a:2c:6b:6a:93:09:84:5c:91:35:08:37:dd:1a:
+                    1a:4a:1b:d7:27:4e:9a:6e:b9:41:bb:05:e0:d8:80:
+                    f6:e7:5c:3f:cc:1d:38:b5:70:c2:42:07:10:1e:69:
+                    30:48:74:f3:9f:cb:2c:4d:d0:48:7e:88:f0:f1:4a:
+                    80:ec:39:d6:4b:d6:ca:06:84:5c:6c:ed:9b:ee:88:
+                    e6:08:b4:65:10:71:86:d2:46:38:18:f9:bc:61:01:
+                    ff:66:7e:b6:a1:d2:e7:d8:4f:e3:2f:8b:b2:e3:75:
+                    9f:4e:f6:47:72:9b:48:d0:e0:ef:cb:1e:6a:5a:7f:
+                    64:e3:b1:b4:16:48:b1:59:69:18:49:e1:a1:f4:ee:
+                    af:c9
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 CRL Distribution Points: 
+
+                Full Name:
+                  URI:file:///not/a/crl
+
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature, Non Repudiation, Key Encipherment
+    Signature Algorithm: sha512WithRSAEncryption
+         58:55:45:95:a7:d9:11:7b:44:f0:29:8a:c6:07:6d:0e:1f:95:
+         66:71:c4:f9:a7:91:60:f5:97:2f:8a:5f:9b:68:3d:5c:25:cb:
+         9f:db:c6:f2:e9:7e:db:cf:17:17:e8:7b:c6:f7:8b:81:93:42:
+         65:a3:6a:2f:7b:04:a8:70:51:7a:73:73:90:49:74:ef:ee:f8:
+         3f:fe:98:e4:75:1f:44:a1:ab:57:d1:a4:cc:f7:8a:62:a5:89:
+         c7:23:28:29:0f:19:e4:2d:32:4c:89:db:6b:20:13:38:bd:06:
+         f9:d2:4c:21:ab:ca:60:bd:60:cd:b5:fb:6f:db:6c:86:db:60:
+         a7:c4:ad:41:22:b6:bc:2e:bb:57:8e:5e:c0:48:e4:bf:d5:1c:
+         bb:cd:a1:1a:48:54:27:9d:66:1c:4a:5c:c1:1c:58:ea:ff:d0:
+         6f:c4:e9:94:69:5d:d4:ec:d5:39:fe:29:b4:55:60:07:89:05:
+         bd:d6:ad:19:ef:5e:30:55:9c:13:d4:fc:21:5d:c1:6d:94:f6:
+         fa:67:f6:b6:35:ff:31:53:68:cb:04:a9:ac:59:f6:8a:7e:e3:
+         08:12:8e:3a:40:a6:d4:c7:40:3b:8d:3e:d9:87:25:d0:e0:8e:
+         34:c6:62:25:87:5e:ae:e6:64:55:18:97:0a:e1:6c:c8:56:ca:
+         d2:26:b2:02
+-----BEGIN CERTIFICATE-----
+MIIDdjCCAl6gAwIBAgICEjwwDQYJKoZIhvcNAQENBQAwQTELMAkGA1UEBhMCQ0Ex
+EDAOBgNVBAgMB09udGFyaW8xDTALBgNVBAoMBEFDTUUxETAPBgNVBAMMCE15Um9v
+dENBMB4XDTIwMDExNzA5MTEzNloXDTI0MDExNzA5MTEzNlowezELMAkGA1UEBhMC
+Q0ExCzAJBgNVBAgMAk9OMRAwDgYDVQQHDAdUb3JvbnRvMQ0wCwYDVQQKDARhY21l
+MQwwCgYDVQQLDANhcnQxMDAuBgNVBAMMJ3Jldm9rZWRfYnlfY2FfaW52YWxpZF9j
+cmxfcGF0aEBhY21lLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+AKM5pPt1JMu+SKF/CMqDiLClk3woN7KsLzSrtY52QOpvZB+udJoxwlMVliMzdNjS
+jBOgTCDvKWr9uXDzFQJPu4/IQlm2GccOZyVpVa34nfpgsdWpw6qnXHUEXopwynSi
+6k/rN5GWM+GfQA3q1Wf4G8Ku9URx+oWGmmosa2qTCYRckTUIN90aGkob1ydOmm65
+QbsF4NiA9udcP8wdOLVwwkIHEB5pMEh085/LLE3QSH6I8PFKgOw51kvWygaEXGzt
+m+6I5gi0ZRBxhtJGOBj5vGEB/2Z+tqHS59hP4y+LsuN1n072R3KbSNDg78sealp/
+ZOOxtBZIsVlpGEnhofTur8kCAwEAAaM+MDwwIgYDVR0fBBswGTAXoBWgE4YRZmls
+ZTovLy9ub3QvYS9jcmwwCQYDVR0TBAIwADALBgNVHQ8EBAMCBeAwDQYJKoZIhvcN
+AQENBQADggEBAFhVRZWn2RF7RPApisYHbQ4flWZxxPmnkWD1ly+KX5toPVwly5/b
+xvLpftvPFxfoe8b3i4GTQmWjai97BKhwUXpzc5BJdO/u+D/+mOR1H0Shq1fRpMz3
+imKliccjKCkPGeQtMkyJ22sgEzi9BvnSTCGrymC9YM21+2/bbIbbYKfErUEitrwu
+u1eOXsBI5L/VHLvNoRpIVCedZhxKXMEcWOr/0G/E6ZRpXdTs1Tn+KbRVYAeJBb3W
+rRnvXjBVnBPU/CFdwW2U9vpn9rY1/zFTaMsEqaxZ9op+4wgSjjpAptTHQDuNPtmH
+JdDgjjTGYiWHXq7mZFUYlwrhbMhWytImsgI=
+-----END CERTIFICATE-----
