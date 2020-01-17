@@ -70,4 +70,5 @@ public final class TestSSLConstants
 
     public static final String CA_CRL_EMPTY = TEST_RESOURCES + "ssl/certificates/MyRootCA.empty.crl";
     public static final String CA_CRL = TEST_RESOURCES + "ssl/certificates/MyRootCA.crl";
+    public static final String INTERMEDIATE_CA_CRL = TEST_RESOURCES + "ssl/certificates/intermediate_ca.crl";
 }

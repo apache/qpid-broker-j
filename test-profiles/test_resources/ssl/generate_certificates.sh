@@ -19,6 +19,7 @@
 #
 
 MY_PATH="$(dirname "$(readlink -f "$0")")"
+CRL_HTTP_PORT=8186
 PASSWORD=password
 ROOT_CA=MyRootCA
 INTERMEDIATE_CA=intermediate_ca
@@ -207,8 +208,8 @@ generate_untrusted_client_certificate()
 add_certificate_crl_distribution_point()
 {
     echo "Add CRL distribution points to openssl configuration"
-    sed -i "/\[ v3_req \]/a crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.crl" "$OPENSSL_CONF" && \
-    sed -i "/\[ v3_ca \]/a crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.crl" "$OPENSSL_CONF"
+    sed -i "/\[ v3_req \]/a crlDistributionPoints=URI:http://localhost:$CRL_HTTP_PORT/$ROOT_CA.crl" "$OPENSSL_CONF" && \
+    sed -i "/\[ v3_ca \]/a crlDistributionPoints=URI:http://localhost:$CRL_HTTP_PORT/$ROOT_CA.crl" "$OPENSSL_CONF"
     _rc=$?
     if [ $_rc -eq 0 ]; then
         echo "CRL distribution points successfully addded"
@@ -221,7 +222,7 @@ add_certificate_crl_distribution_point()
 set_certificate_crl_distribution_point_to_intermediate_ca()
 {
     echo "Setting CRL distribution point for intermediate CA certificate '$INTERMEDIATE_CA'"
-    sed -i -z "s|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.crl|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$INTERMEDIATE_CA.crl|" "$OPENSSL_CONF"
+    sed -i -z "s|crlDistributionPoints=URI:http://localhost:$CRL_HTTP_PORT/$ROOT_CA.crl|crlDistributionPoints=URI:http://localhost:$CRL_HTTP_PORT/$INTERMEDIATE_CA.crl|" "$OPENSSL_CONF"
     _rc=$?
     if [ $_rc -eq 0 ]; then
         echo "CRL distribution point for intermediate CA certificate '$INTERMEDIATE_CA' successfully set"
@@ -233,10 +234,8 @@ set_certificate_crl_distribution_point_to_intermediate_ca()
 
 set_certificate_crl_distribution_point_to_empty_crl()
 {
-    # change only first occurence (v3_req), commented line changes all occurences
-    # sed -i "s|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.crl|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.empty.crl|" "$OPENSSL_CONF"
     echo "Setting CRL distribution point to empty CRL"
-    sed -i -z "s|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$INTERMEDIATE_CA.crl|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.empty.crl|" "$OPENSSL_CONF"
+    sed -i -z "s|crlDistributionPoints=URI:http://localhost:$CRL_HTTP_PORT/$INTERMEDIATE_CA.crl|crlDistributionPoints=URI:http://localhost:$CRL_HTTP_PORT/$ROOT_CA.empty.crl|" "$OPENSSL_CONF"
     _rc=$?
     if [ $_rc -eq 0 ]; then
         echo "CRL distribution point to empty CRL successfully set"
@@ -249,7 +248,7 @@ set_certificate_crl_distribution_point_to_empty_crl()
 set_certificate_crl_distribution_point_to_invalid_crl_path()
 {
     echo "Setting CRL distribution point to invalid CRL path"
-    sed -i "s|crlDistributionPoints=URI:file://$CERTIFICATES_DIR/$ROOT_CA.empty.crl|crlDistributionPoints=URI:file:///not/a/crl|" "$OPENSSL_CONF"
+    sed -i "s|crlDistributionPoints=URI:http://localhost:$CRL_HTTP_PORT/$ROOT_CA.empty.crl|crlDistributionPoints=URI:http://localhost:$CRL_HTTP_PORT/not/a/crl|" "$OPENSSL_CONF"
     _rc=$?
     if [ $_rc -eq 0 ]; then
         echo "CRL distribution point to invalid CRL path successfully set"

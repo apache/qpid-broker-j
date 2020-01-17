@@ -29,6 +29,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +46,9 @@ import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 import javax.naming.NamingException;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -67,9 +76,13 @@ public class AuthenticationTest extends JmsTestBase
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationTest.class);
     private static final String USER = "user";
     private static final String USER_PASSWORD = "user";
+    // see how port is specified when certificates are generated in script
+    // test-profiles/test_resources/ssl/generate_certificates.sh
+    private static final int CRL_HTTP_PORT = 8186;
+    private static HttpServer _server;
 
     @BeforeClass
-    public static void setUp()
+    public static void setUp() throws IOException
     {
         System.setProperty("javax.net.debug", "ssl");
 
@@ -85,6 +98,12 @@ public class AuthenticationTest extends JmsTestBase
             System.setProperty("javax.net.ssl.trustStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
             System.setProperty("javax.net.ssl.keyStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
         }
+        _server = HttpServer.create(new InetSocketAddress(CRL_HTTP_PORT), 0);
+        createContext(Paths.get(TestSSLConstants.CA_CRL));
+        createContext(Paths.get(TestSSLConstants.CA_CRL_EMPTY));
+        createContext(Paths.get(TestSSLConstants.INTERMEDIATE_CA_CRL));
+        _server.setExecutor(null);
+        _server.start();
     }
 
     @AfterClass
@@ -101,6 +120,7 @@ public class AuthenticationTest extends JmsTestBase
             System.clearProperty("javax.net.ssl.trustStoreType");
             System.clearProperty("javax.net.ssl.keyStoreType");
         }
+        _server.stop(0);
     }
 
 
@@ -702,6 +722,30 @@ public class AuthenticationTest extends JmsTestBase
         catch (JMSException e)
         {
             // pass
+        }
+    }
+
+    private static void createContext(Path crlPath)
+    {
+        _server.createContext("/" + crlPath.getFileName(), new Handler(crlPath));
+    }
+
+    private static class Handler implements HttpHandler
+    {
+        final Path crlPath;
+        public Handler(Path crlPath)
+        {
+            this.crlPath = crlPath;
+        }
+
+        @Override
+        public void handle(HttpExchange t) throws IOException
+        {
+            byte[] bytes = Files.readAllBytes(crlPath);
+            t.sendResponseHeaders(200, bytes.length);
+            OutputStream os = t.getResponseBody();
+            os.write(bytes);
+            os.close();
         }
     }
 }
