@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +40,7 @@ import javax.net.ssl.X509TrustManager;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -53,10 +55,14 @@ import org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvide
 import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFoundryOAuth2IdentityResolverService;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.oauth2.OAuth2Negotiator;
+import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
 {
+    @ClassRule
+    public static final TlsResource TLS_RESOURCE = new TlsResource();
+
     static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private static final String TEST_ENDPOINT_HOST = "localhost";
@@ -90,7 +96,10 @@ public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
     @Before
     public void setUp() throws Exception
     {
-        _server = new OAuth2MockEndpointHolder();
+        Path keyStore = TLS_RESOURCE.createSelfSignedKeyStore("CN=foo");
+        _server = new OAuth2MockEndpointHolder(keyStore.toFile().getAbsolutePath(),
+                                               TLS_RESOURCE.getSecret(),
+                                               TLS_RESOURCE.getKeyStoreType());
         _server.start();
 
         Broker broker = BrokerTestHelper.createBrokerMock();

@@ -21,11 +21,9 @@ package org.apache.qpid.server.security;
 
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -35,35 +33,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.security.Key;
-import java.security.cert.Certificate;
+import java.nio.file.Path;
+import java.security.PrivateKey;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManager;
 
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.test.utils.TestSSLConstants;
-import org.apache.qpid.test.utils.UnitTestBase;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
@@ -72,111 +57,64 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.logging.messages.KeyStoreMessages;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.KeyStore;
-import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.test.utils.tls.KeyCertificatePair;
+import org.apache.qpid.test.utils.tls.TlsResource;
+import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
 import org.apache.qpid.server.util.DataUrlUtils;
-import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.test.utils.TestSSLUtils;
+import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.tls.TlsResourceHelper;
 
 public class NonJavaKeyStoreTest extends UnitTestBase
 {
+    @ClassRule
+    public static final TlsResource TLS_RESOURCE = new TlsResource();
+
+    private static final String DN_FOO = "CN=foo";
+    private static final String NAME = "myTestTrustStore";
+    private static final String NON_JAVA_KEY_STORE = "NonJavaKeyStore";
     private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
     private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
-    private List<File> _testResources;
     private MessageLogger _messageLogger;
+    private KeyCertificatePair _keyCertPair;
 
     @Before
     public void setUp() throws Exception
     {
         _messageLogger = mock(MessageLogger.class);
         when(BROKER.getEventLogger()).thenReturn(new EventLogger(_messageLogger));
-        _testResources = new ArrayList<>();
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        for (File resource: _testResources)
-        {
-            try
-            {
-                resource.delete();
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private File[] extractResourcesFromTestKeyStore(boolean pem, final String storeResource) throws Exception
-    {
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(TestSSLConstants.JAVA_KEYSTORE_TYPE);
-        try(InputStream is = new FileInputStream(storeResource))
-        {
-            ks.load(is, TestSSLConstants.PASSWORD.toCharArray());
-        }
-
-
-        File privateKeyFile = TestFileUtils.createTempFile(this, ".private-key.der");
-        try(FileOutputStream kos = new FileOutputStream(privateKeyFile))
-        {
-            Key pvt = ks.getKey(TestSSLConstants.BROKER_KEYSTORE_ALIAS, TestSSLConstants.PASSWORD.toCharArray());
-            if (pem)
-            {
-                kos.write(TestSSLUtils.privateKeyToPEM(pvt).getBytes(UTF_8));
-            }
-            else
-            {
-                kos.write(pvt.getEncoded());
-            }
-            kos.flush();
-        }
-
-        File certificateFile = TestFileUtils.createTempFile(this, ".certificate.der");
-
-        try(FileOutputStream cos = new FileOutputStream(certificateFile))
-        {
-            Certificate pub = ks.getCertificate(TestSSLConstants.BROKER_KEYSTORE_ALIAS);
-            if (pem)
-            {
-                cos.write(TestSSLUtils.certificateToPEM(pub).getBytes(UTF_8));
-            }
-            else
-            {
-                cos.write(pub.getEncoded());
-            }
-            cos.flush();
-        }
-
-        return new File[]{privateKeyFile,certificateFile};
+        _keyCertPair = generateSelfSignedCertificate();
     }
 
     @Test
     public void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDERFormat() throws Exception
     {
-        runTestCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDerFormat(false);
+        final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsDer(_keyCertPair.getPrivateKey());
+        final Path certificateFile = TLS_RESOURCE.saveCertificateAsDer(_keyCertPair.getCertificate());
+        assertCreationOfTrustStoreFromValidPrivateKeyAndCertificate(privateKeyFile, certificateFile);
     }
 
     @Test
     public void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInPEMFormat() throws Exception
     {
-        runTestCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDerFormat(true);
+        final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsPem(_keyCertPair.getPrivateKey());
+        final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(_keyCertPair.getCertificate());
+        assertCreationOfTrustStoreFromValidPrivateKeyAndCertificate(privateKeyFile, certificateFile);
     }
 
-    private void runTestCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDerFormat(boolean isPEM)throws Exception
+    private void assertCreationOfTrustStoreFromValidPrivateKeyAndCertificate(Path privateKeyFile, Path certificateFile) throws Exception
     {
-        File[] resources = extractResourcesFromTestKeyStore(isPEM, TestSSLConstants.BROKER_KEYSTORE);
-        _testResources.addAll(Arrays.asList(resources));
-
         Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, "myTestTrustStore");
-        attributes.put("privateKeyUrl", resources[0].toURI().toURL().toExternalForm());
-        attributes.put("certificateUrl", resources[1].toURI().toURL().toExternalForm());
-        attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+        attributes.put(NonJavaKeyStore.NAME, NAME);
+        attributes.put("privateKeyUrl", privateKeyFile.toFile().getAbsolutePath());
+        attributes.put("certificateUrl", certificateFile.toFile().getAbsolutePath());
+        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
-        NonJavaKeyStoreImpl fileTrustStore =
-                (NonJavaKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
+        final NonJavaKeyStore<?> fileTrustStore = (NonJavaKeyStore<?>)  createTestKeyStore(attributes);
 
         KeyManager[] keyManagers = fileTrustStore.getKeyManagers();
         assertNotNull(keyManagers);
@@ -187,17 +125,14 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     @Test
     public void testCreationOfTrustStoreFromValidPrivateKeyAndInvalidCertificate()throws Exception
     {
-        File[] resources = extractResourcesFromTestKeyStore(true, TestSSLConstants.BROKER_KEYSTORE);
-        _testResources.addAll(Arrays.asList(resources));
-
-        File invalidCertificate = TestFileUtils.createTempFile(this, ".invalid.cert", "content");
-        _testResources.add(invalidCertificate);
+        final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsPem(_keyCertPair.getPrivateKey());
+        final Path certificateFile = TLS_RESOURCE.createFile(".cer");
 
         Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, "myTestTrustStore");
-        attributes.put("privateKeyUrl", resources[0].toURI().toURL().toExternalForm());
-        attributes.put("certificateUrl", invalidCertificate.toURI().toURL().toExternalForm());
-        attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+        attributes.put(NonJavaKeyStore.NAME, NAME);
+        attributes.put("privateKeyUrl", privateKeyFile.toFile().getAbsolutePath());
+        attributes.put("certificateUrl", certificateFile.toFile().getAbsolutePath());
+        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "Cannot load private key or certificate(s): java.security.cert.CertificateException: " +
@@ -207,17 +142,14 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     @Test
     public void testCreationOfTrustStoreFromInvalidPrivateKeyAndValidCertificate()throws Exception
     {
-        File[] resources = extractResourcesFromTestKeyStore(true, TestSSLConstants.BROKER_KEYSTORE);
-        _testResources.addAll(Arrays.asList(resources));
-
-        File invalidPrivateKey = TestFileUtils.createTempFile(this, ".invalid.pk", "content");
-        _testResources.add(invalidPrivateKey);
+        final Path privateKeyFile =  TLS_RESOURCE.createFile(".pk");
+        final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(_keyCertPair.getCertificate());
 
         Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, "myTestTrustStore");
-        attributes.put("privateKeyUrl", invalidPrivateKey.toURI().toURL().toExternalForm());
-        attributes.put("certificateUrl", resources[1].toURI().toURL().toExternalForm());
-        attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+        attributes.put(NonJavaKeyStore.NAME, NAME);
+        attributes.put("privateKeyUrl", privateKeyFile.toFile().getAbsolutePath());
+        attributes.put("certificateUrl", certificateFile.toFile().getAbsolutePath());
+        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "Cannot load private key or certificate(s): java.security.spec.InvalidKeySpecException: " +
@@ -246,42 +178,29 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     {
         when(BROKER.scheduleHouseKeepingTask(anyLong(), any(TimeUnit.class), any(Runnable.class))).thenReturn(mock(ScheduledFuture.class));
 
-        java.security.KeyStore ks = java.security.KeyStore.getInstance(TestSSLConstants.JAVA_KEYSTORE_TYPE);
-        final String storeLocation = TestSSLConstants.BROKER_KEYSTORE;
-        try(InputStream is = new FileInputStream(storeLocation))
-        {
-            ks.load(is, TestSSLConstants.PASSWORD.toCharArray());
-        }
-        X509Certificate cert = (X509Certificate) ks.getCertificate(TestSSLConstants.CERT_ALIAS_ROOT_CA);
-        int expiryDays = (int)((cert.getNotAfter().getTime() - System.currentTimeMillis()) / (24l * 60l * 60l * 1000l));
-
-        File[] resources = extractResourcesFromTestKeyStore(false, storeLocation);
-        _testResources.addAll(Arrays.asList(resources));
+        final Path privateKeyFile =  TLS_RESOURCE.savePrivateKeyAsDer(_keyCertPair.getPrivateKey());
+        final Path certificateFile = TLS_RESOURCE.saveCertificateAsDer(_keyCertPair.getCertificate());
+        final long expiryDays = ChronoUnit.DAYS.between(Instant.now(), _keyCertPair.getCertificate().getNotAfter().toInstant());
 
         Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, "myTestTrustStore");
-        attributes.put("privateKeyUrl", resources[0].toURI().toURL().toExternalForm());
-        attributes.put("certificateUrl", resources[1].toURI().toURL().toExternalForm());
+        attributes.put(NonJavaKeyStore.NAME, NAME);
+        attributes.put("privateKeyUrl", privateKeyFile.toFile().getAbsolutePath());
+        attributes.put("certificateUrl", certificateFile.toFile().getAbsolutePath());
         attributes.put("context", Collections.singletonMap(KeyStore.CERTIFICATE_EXPIRY_WARN_PERIOD, expiryDays + expiryOffset));
-        attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
-        FACTORY.create(KeyStore.class, attributes, BROKER);
+        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
+        createTestKeyStore(attributes);
     }
 
     @Test
     public void testCreationOfKeyStoreWithNonMatchingPrivateKeyAndCertificate()throws Exception
     {
-        assumeThat(SSLUtil.canGenerateCerts(), is(true));
-
-        final SSLUtil.KeyCertPair keyCertPair = generateSelfSignedCertificate();
-        final SSLUtil.KeyCertPair keyCertPair2 = generateSelfSignedCertificate();
+        final KeyCertificatePair keyCertPair2 = generateSelfSignedCertificate();
 
         final Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, "myTestTrustStore");
-        attributes.put(NonJavaKeyStore.PRIVATE_KEY_URL,
-                       DataUrlUtils.getDataUrlForBytes(TestSSLUtils.privateKeyToPEM(keyCertPair.getPrivateKey()).getBytes(UTF_8)));
-        attributes.put(NonJavaKeyStore.CERTIFICATE_URL,
-                       DataUrlUtils.getDataUrlForBytes(TestSSLUtils.certificateToPEM(keyCertPair2.getCertificate()).getBytes(UTF_8)));
-        attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+        attributes.put(NonJavaKeyStore.NAME, NAME);
+        attributes.put(NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()));
+        attributes.put(NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(keyCertPair2.getCertificate()));
+        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "Private key does not match certificate");
@@ -290,23 +209,18 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     @Test
     public void testUpdateKeyStoreToNonMatchingCertificate()throws Exception
     {
-        assumeThat(SSLUtil.canGenerateCerts(), is(true));
-
-        final SSLUtil.KeyCertPair keyCertPair = generateSelfSignedCertificate();
-        final SSLUtil.KeyCertPair keyCertPair2 = generateSelfSignedCertificate();
-
         final Map<String,Object> attributes = new HashMap<>();
         attributes.put(NonJavaKeyStore.NAME, getTestName());
-        attributes.put(NonJavaKeyStore.PRIVATE_KEY_URL,
-                       DataUrlUtils.getDataUrlForBytes(TestSSLUtils.privateKeyToPEM(keyCertPair.getPrivateKey()).getBytes(UTF_8)));
-        attributes.put(NonJavaKeyStore.CERTIFICATE_URL,
-                       DataUrlUtils.getDataUrlForBytes(TestSSLUtils.certificateToPEM(keyCertPair.getCertificate()).getBytes(UTF_8)));
-        attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+        attributes.put(NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()));
+        attributes.put(NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(_keyCertPair.getCertificate()));
+        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
-        final KeyStore trustStore = (KeyStore) FACTORY.create(KeyStore.class, attributes, BROKER);
+        final KeyStore<?> trustStore = createTestKeyStore(attributes);
+
+        final KeyCertificatePair keyCertPair2 = generateSelfSignedCertificate();
         try
         {
-            final String certUrl = DataUrlUtils.getDataUrlForBytes(TestSSLUtils.certificateToPEM(keyCertPair2.getCertificate()).getBytes(UTF_8));
+            final String certUrl = getCertificateAsDataUrl(keyCertPair2.getCertificate());
             trustStore.setAttributes(Collections.singletonMap("certificateUrl", certUrl));
             fail("Created key store from invalid certificate");
         }
@@ -316,19 +230,25 @@ public class NonJavaKeyStoreTest extends UnitTestBase
         }
     }
 
-    private SSLUtil.KeyCertPair generateSelfSignedCertificate() throws Exception
+    @SuppressWarnings("unchecked")
+    private KeyStore<?> createTestKeyStore(final Map<String, Object> attributes)
     {
-        return SSLUtil.generateSelfSignedCertificate("RSA",
-                                                     "SHA256WithRSA",
-                                                     2048,
-                                                     Instant.now()
-                                                            .minus(1, ChronoUnit.DAYS)
-                                                            .toEpochMilli(),
-                                                     Duration.of(365, ChronoUnit.DAYS)
-                                                             .getSeconds(),
-                                                     "CN=foo",
-                                                     Collections.emptySet(),
-                                                     Collections.emptySet());
+        return (KeyStore<?>) FACTORY.create(KeyStore.class, attributes, BROKER);
+    }
+
+    private String getCertificateAsDataUrl(final X509Certificate certificate) throws CertificateEncodingException
+    {
+        return DataUrlUtils.getDataUrlForBytes(TlsResourceHelper.toPEM(certificate).getBytes(UTF_8));
+    }
+
+    private String getPrivateKeyAsDataUrl(final PrivateKey privateKey)
+    {
+        return DataUrlUtils.getDataUrlForBytes(TlsResourceHelper.toPEM(privateKey).getBytes(UTF_8));
+    }
+
+    private KeyCertificatePair generateSelfSignedCertificate() throws Exception
+    {
+        return TlsResourceBuilder.createSelfSigned(DN_FOO);
     }
 
     private static class LogMessageArgumentMatcher implements ArgumentMatcher<LogMessage>

@@ -23,11 +23,9 @@ package org.apache.qpid.server.transport;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -46,6 +44,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.apache.qpid.server.SystemLauncher;
@@ -62,19 +61,26 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.server.transport.network.security.ssl.SSLUtil.KeyCertPair;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.tls.AltNameType;
+import org.apache.qpid.test.utils.tls.AlternativeName;
+import org.apache.qpid.test.utils.tls.KeyCertificatePair;
+import org.apache.qpid.test.utils.tls.PrivateKeyEntry;
+import org.apache.qpid.test.utils.tls.TlsResource;
+import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
 
 public class SNITest extends UnitTestBase
 {
+    @ClassRule
+    public static final TlsResource TLS_RESOURCE = new TlsResource();
+
     private static final int SOCKET_TIMEOUT = 10000;
-    private static final String KEYSTORE_PASSWORD = "password";
 
     private File _keyStoreFile;
-    private KeyCertPair _fooValid;
-    private KeyCertPair _fooInvalid;
-    private KeyCertPair _barInvalid;
+    private KeyCertificatePair _fooValid;
+    private KeyCertificatePair _fooInvalid;
+    private KeyCertificatePair _barInvalid;
     private SystemLauncher _systemLauncher;
     private Broker<?> _broker;
     private int _boundPort;
@@ -83,85 +89,47 @@ public class SNITest extends UnitTestBase
     @Before
     public void setUp() throws Exception
     {
-        if(SSLUtil.canGenerateCerts())
-        {
+        final Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
+        final Instant inOneHour = Instant.now().plus(1, ChronoUnit.HOURS);
+        _fooValid = TlsResourceBuilder.createSelfSigned("CN=foo",
+                                                        yesterday,
+                                                        yesterday.plus(365, ChronoUnit.DAYS));
+        _fooInvalid = TlsResourceBuilder.createSelfSigned("CN=foo",
+                                                          inOneHour,
+                                                          inOneHour.plus(365, ChronoUnit.DAYS));
 
-            _fooValid = SSLUtil.generateSelfSignedCertificate("RSA",
-                                                              "SHA256WithRSA",
-                                                              2048,
-                                                              Instant.now().minus(1, ChronoUnit.DAYS).toEpochMilli(),
-                                                              Duration.of(365, ChronoUnit.DAYS).getSeconds(),
-                                                              "CN=foo",
-                                                              Collections.emptySet(),
-                                                              Collections.emptySet());
-            _fooInvalid = SSLUtil.generateSelfSignedCertificate("RSA",
-                                                                "SHA256WithRSA",
-                                                                2048,
-                                                                Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli(),
-                                                                Duration.of(365, ChronoUnit.DAYS).getSeconds(),
-                                                                "CN=foo",
-                                                                Collections.emptySet(),
-                                                                Collections.emptySet());
+        _barInvalid = TlsResourceBuilder.createSelfSigned("CN=Qpid",
+                                                          inOneHour,
+                                                          inOneHour.plus(365, ChronoUnit.DAYS),
+                                                          new AlternativeName(
+                                                                  AltNameType.DNS_NAME, "bar"));
 
-            _barInvalid = SSLUtil.generateSelfSignedCertificate("RSA",
-                                                                "SHA256WithRSA",
-                                                                2048,
-                                                                Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli(),
-                                                                Duration.of(365, ChronoUnit.DAYS).getSeconds(),
-                                                                "CN=Qpid",
-                                                                Collections.singleton("bar"),
-                                                                Collections.emptySet());
 
-            java.security.KeyStore inMemoryKeyStore =
-                    java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
 
-            inMemoryKeyStore.load(null, KEYSTORE_PASSWORD.toCharArray());
-            inMemoryKeyStore.setKeyEntry("foovalid",
-                                         _fooValid.getPrivateKey(),
-                                         KEYSTORE_PASSWORD.toCharArray(),
-                                         new X509Certificate[]{_fooValid.getCertificate()});
 
-            inMemoryKeyStore.setKeyEntry("fooinvalid",
-                                         _fooInvalid.getPrivateKey(),
-                                         KEYSTORE_PASSWORD.toCharArray(),
-                                         new X509Certificate[]{_fooInvalid.getCertificate()});
-
-            inMemoryKeyStore.setKeyEntry("barinvalid",
-                                         _barInvalid.getPrivateKey(),
-                                         KEYSTORE_PASSWORD.toCharArray(),
-                                         new X509Certificate[]{_barInvalid.getCertificate()});
-
-            _keyStoreFile = File.createTempFile("keyStore", "jks");
-            try (FileOutputStream os = new FileOutputStream(_keyStoreFile))
-            {
-                inMemoryKeyStore.store(os, KEYSTORE_PASSWORD.toCharArray());
-            }
-        }
+        _keyStoreFile = TLS_RESOURCE.createKeyStore(new PrivateKeyEntry("foovalid",
+                                                                        _fooValid.getPrivateKey(),
+                                                                        _fooValid.getCertificate()),
+                                                    new PrivateKeyEntry("fooinvalid",
+                                                                        _fooInvalid.getPrivateKey(),
+                                                                        _fooInvalid.getCertificate()),
+                                                    new PrivateKeyEntry("barinvalid",
+                                                                        _barInvalid.getPrivateKey(),
+                                                                        _barInvalid.getCertificate())).toFile();
     }
 
     @After
     public void tearDown() throws Exception
     {
-        try
+        if (_systemLauncher != null)
         {
-            if (_systemLauncher != null)
-            {
-                _systemLauncher.shutdown();
-            }
-
-            if (_brokerWork != null)
-            {
-                _brokerWork.delete();
-            }
-            if (_keyStoreFile != null)
-            {
-                _keyStoreFile.delete();
-            }
-        }
-        finally
-        {
+            _systemLauncher.shutdown();
         }
 
+        if (_brokerWork != null)
+        {
+            _brokerWork.delete();
+        }
     }
 
     @Test
@@ -192,10 +160,8 @@ public class SNITest extends UnitTestBase
     private void performTest(final boolean useMatching,
                              final String defaultAlias,
                              final String sniHostName,
-                             final KeyCertPair expectedCert) throws Exception
+                             final KeyCertificatePair expectedCert) throws Exception
     {
-        if (SSLUtil.canGenerateCerts())
-        {
             doBrokerStartup(useMatching, defaultAlias);
             SSLContext context = SSLUtil.tryGetSSLContext();
             context.init(null,
@@ -238,7 +204,6 @@ public class SNITest extends UnitTestBase
                 assertEquals((long) 1, (long) certs.length);
                 assertEquals(expectedCert.getCertificate(), certs[0]);
             }
-        }
     }
 
     private void doBrokerStartup(boolean useMatching, String defaultAlias) throws Exception
@@ -272,7 +237,7 @@ public class SNITest extends UnitTestBase
         Map<String, Object> keyStoreAttr = new HashMap<>();
         keyStoreAttr.put(FileKeyStore.NAME, "myKeyStore");
         keyStoreAttr.put(FileKeyStore.STORE_URL, _keyStoreFile.toURI().toURL().toString());
-        keyStoreAttr.put(FileKeyStore.PASSWORD, KEYSTORE_PASSWORD);
+        keyStoreAttr.put(FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret());
         keyStoreAttr.put(FileKeyStore.USE_HOST_NAME_MATCHING, useMatching);
         keyStoreAttr.put(FileKeyStore.CERTIFICATE_ALIAS, defaultAlias);
 

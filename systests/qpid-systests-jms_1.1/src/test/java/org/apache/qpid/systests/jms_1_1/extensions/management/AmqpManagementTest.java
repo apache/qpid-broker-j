@@ -52,9 +52,8 @@ import javax.jms.Session;
 import javax.naming.NamingException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.qpid.test.utils.TestSSLConstants;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
@@ -63,11 +62,18 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.systests.JmsTestBase;
-import org.apache.qpid.systests.jms_1_1.extensions.tls.TlsTest;
+import org.apache.qpid.systests.jms_1_1.extensions.BrokerManagementHelper;
+import org.apache.qpid.systests.jms_1_1.extensions.TlsHelper;
+import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class AmqpManagementTest extends JmsTestBase
 {
+    @ClassRule
+    public static final TlsResource TLS_RESOURCE = new TlsResource();
+
+    private static TlsHelper _tlsHelper;
+
     private Session _session;
     private Queue _replyAddress;
     private MessageConsumer _consumer;
@@ -76,22 +82,7 @@ public class AmqpManagementTest extends JmsTestBase
     @BeforeClass
     public static void setUp() throws Exception
     {
-        // legacy client keystore/truststore types can only be configured with JVM settings
-        if (getProtocol() != Protocol.AMQP_1_0)
-        {
-            System.setProperty("javax.net.ssl.trustStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
-            System.setProperty("javax.net.ssl.keyStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
-        }
-    }
-
-    @AfterClass
-    public static void tearDown() throws Exception
-    {
-        if (getProtocol() != Protocol.AMQP_1_0)
-        {
-            System.clearProperty("javax.net.ssl.trustStoreType");
-            System.clearProperty("javax.net.ssl.keyStoreType");
-        }
+        _tlsHelper = new TlsHelper(TLS_RESOURCE);
     }
 
     private void setUp(final Connection connection) throws Exception
@@ -681,18 +672,36 @@ public class AmqpManagementTest extends JmsTestBase
             unsecuredConnection.close();
         }
 
-        int tlsPort = TlsTest.createTlsPort(getTestName() + "TlsPort",
-                                            false,
-                                            false,
-                                            false,
-                                            getConnectionBuilder(),
-                                            new AmqpManagementFacade(getProtocol()),
-                                            getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getPort());
+        int tlsPort = 0;
+        final String portName = getTestName() + "TlsPort";
+        final String keyStoreName = portName + "KeyStore";
+        final String trustStoreName = portName + "TrustStore";
+        try (final BrokerManagementHelper helper = new BrokerManagementHelper(getConnectionBuilder(),
+                                                                              new AmqpManagementFacade(getProtocol())))
+        {
+            helper.openManagementConnection();
+
+            final String authenticationManager =
+                    helper.getAuthenticationProviderNameForAmqpPort(getBrokerAdmin().getBrokerAddress(
+                            BrokerAdmin.PortType.AMQP)
+                                                                                    .getPort());
+            tlsPort = helper.createKeyStore(keyStoreName, _tlsHelper.getBrokerKeyStore(), TLS_RESOURCE.getSecret())
+                            .createTrustStore(trustStoreName,
+                                              _tlsHelper.getBrokerTrustStore(),
+                                              TLS_RESOURCE.getSecret())
+                            .createAmqpTlsPort(portName,
+                                               authenticationManager,
+                                               keyStoreName,
+                                               false,
+                                               false,
+                                               false,
+                                               trustStoreName).getAmqpBoundPort(portName);
+        }
 
         Connection connection = getConnectionBuilder().setTls(true)
                                                       .setPort(tlsPort)
-                                                      .setTrustStoreLocation(TestSSLConstants.CLIENT_TRUSTSTORE)
-                                                      .setTrustStorePassword(TestSSLConstants.PASSWORD)
+                                                      .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
+                                                      .setTrustStorePassword(TLS_RESOURCE.getSecret())
                                                       .build();
         try
         {

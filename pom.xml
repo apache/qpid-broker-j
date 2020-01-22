@@ -154,6 +154,8 @@
     <h2.version>1.4.199</h2.version>
     <apache-directory-version>2.0.0-M23</apache-directory-version>
     <kerby-version>1.0.1</kerby-version>
+    <bcprov-version>1.64</bcprov-version>
+    <bcpkix-version>1.64</bcpkix-version>
   </properties>
 
   <modules>
@@ -726,29 +728,103 @@
         <artifactId>maven-resolver-transport-http</artifactId>
         <version>${maven-resolver-version}</version>
       </dependency>
-      <!-- apacheds test dependency -->
+
+      <!-- apacheds test dependencies -->
       <dependency>
         <groupId>org.apache.directory.server</groupId>
-        <artifactId>apacheds-all</artifactId>
+        <artifactId>apacheds-core</artifactId>
         <version>${apache-directory-version}</version>
         <scope>test</scope>
-        <exclusions>
-           <exclusion>
-            <groupId>org.apache.directory.shared</groupId>
-            <artifactId>shared-ldap-schema</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.apache.directory.api</groupId>
-            <artifactId>api-ldap-schema-data</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-core-annotations</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-core-api</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-interceptor-kerberos</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-kerberos-codec</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-protocol-kerberos</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-protocol-ldap</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-protocol-shared</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-server-annotations</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-server-config</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.directory.server</groupId>
+        <artifactId>apacheds-test-framework</artifactId>
+        <version>${apache-directory-version}</version>
+        <scope>test</scope>
+      </dependency>
+
       <!-- kerby test dependency -->
       <dependency>
         <groupId>org.apache.kerby</groupId>
         <artifactId>kerb-simplekdc</artifactId>
         <scope>test</scope>
         <version>${kerby-version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15on</artifactId>
+        <version>${bcprov-version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk15on</artifactId>
+        <version>${bcpkix-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -31,13 +31,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.oneOf;
-import static org.junit.Assume.assumeThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -56,10 +52,10 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.NonJavaKeyStore;
 import org.apache.qpid.server.security.NonJavaTrustStore;
-import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.server.transport.network.security.ssl.SSLUtil.KeyCertPair;
+import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.tests.http.HttpRequestConfig;
 import org.apache.qpid.tests.http.HttpTestBase;
 
@@ -240,9 +236,8 @@ public class ReadTest extends HttpTestBase
     @HttpRequestConfig(useVirtualHostAsHost = false)
     public void valueFilteredSecureAttributes() throws Exception
     {
-        assumeThat(SSLUtil.canGenerateCerts(), is(equalTo(true)));
 
-        final KeyCertPair keyCertPair = generateCertKeyPair();
+        final KeyCertificatePair keyCertPair = generateCertKeyPair();
         final byte[] privateKey = keyCertPair.getPrivateKey().getEncoded();
         final byte[] cert = keyCertPair.getCertificate().getEncoded();
         final String privateKeyUrl = DataUrlUtils.getDataUrlForBytes(privateKey);
@@ -295,7 +290,6 @@ public class ReadTest extends HttpTestBase
     @HttpRequestConfig(useVirtualHostAsHost = false)
     public void oversizeAttribute() throws Exception
     {
-        assumeThat(SSLUtil.canGenerateCerts(), is(equalTo(true)));
 
         final byte[] encodedCert = generateCertKeyPair().getCertificate().getEncoded();
         final String dataUrl = DataUrlUtils.getDataUrlForBytes(encodedCert);
@@ -337,13 +331,8 @@ public class ReadTest extends HttpTestBase
         return ((String) object.get(ConfiguredObject.ID));
     }
 
-    private KeyCertPair generateCertKeyPair() throws Exception
+    private KeyCertificatePair generateCertKeyPair() throws Exception
     {
-        return SSLUtil.generateSelfSignedCertificate("RSA", "SHA256WithRSA",
-                                                     2048, Instant.now().toEpochMilli(),
-                                                     Duration.of(365, ChronoUnit.DAYS).getSeconds(),
-                                                     "CN=foo",
-                                                     Collections.emptySet(),
-                                                     Collections.emptySet());
+        return TlsResourceBuilder.createSelfSigned("CN=foo");
     }
 }

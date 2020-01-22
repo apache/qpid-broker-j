@@ -22,6 +22,7 @@ package org.apache.qpid.systests;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -38,8 +39,6 @@ import javax.jms.JMSException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-
-import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
 {
@@ -165,7 +164,7 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
         _enableTls = enableTls;
         if (enableTls)
         {
-            _options.put("transport.storeType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
+            _options.put("transport.storeType", KeyStore.getDefaultType());
         }
         else
         {
