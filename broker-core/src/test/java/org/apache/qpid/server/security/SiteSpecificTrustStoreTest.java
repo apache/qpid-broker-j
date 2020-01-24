@@ -46,23 +46,25 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.ConfiguredObjectFactory;
+import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.test.utils.UnitTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.test.utils.TestSSLConstants;
 
-public class SiteSpecificTrustStoreTest extends KeyStoreTestBase
+public class SiteSpecificTrustStoreTest extends UnitTestBase
 {
+    private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
+    private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
     private static final String EXPECTED_SUBJECT = "CN=localhost,OU=Unknown,O=Unknown,L=Unknown,ST=Unknown,C=CA";
     private static final String EXPECTED_ISSUER = "CN=MyRootCA,O=ACME,ST=Ontario,C=CA";
     private TestPeer _testPeer;
-
-    public SiteSpecificTrustStoreTest()
-    {
-        super(TrustStore.class);
-    }
 
     @Before
     public void setUpSiteSpecificTrustStore()
@@ -96,7 +98,8 @@ public class SiteSpecificTrustStoreTest extends KeyStoreTestBase
         attributes.put(SiteSpecificTrustStore.TYPE, "SiteSpecificTrustStore");
         attributes.put("siteUrl", "notaurl:541");
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "'notaurl:541' is not a valid URL");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
+                "'notaurl:541' is not a valid URL");
     }
 
     @Test
@@ -107,7 +110,7 @@ public class SiteSpecificTrustStoreTest extends KeyStoreTestBase
         attributes.put(SiteSpecificTrustStore.TYPE, "SiteSpecificTrustStore");
         attributes.put("siteUrl", "file:/not/a/host");
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes,
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
                 "URL 'file:/not/a/host' does not provide a hostname and port number");
     }
 
@@ -119,7 +122,7 @@ public class SiteSpecificTrustStoreTest extends KeyStoreTestBase
         int listeningPort = _testPeer.start();
         Map<String, Object> attributes = getTrustStoreAttributes(listeningPort);
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes,
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
                 "Unable to get certificate for 'mySiteSpecificTrustStore' from");
     }
 
@@ -130,11 +133,11 @@ public class SiteSpecificTrustStoreTest extends KeyStoreTestBase
         int listeningPort = _testPeer.start();
 
         Map<String, Object> attributes = getTrustStoreAttributes(listeningPort);
-        attributes.put(SiteSpecificTrustStore.REVOCATION, true);
-        attributes.put(SiteSpecificTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
 
         final SiteSpecificTrustStore trustStore =
-                (SiteSpecificTrustStore) _factory.create(_keystoreClass, attributes, _broker);
+                (SiteSpecificTrustStore) FACTORY.create(TrustStore.class, attributes, BROKER);
 
         List<CertificateDetails> certDetails = trustStore.getCertificateDetails();
         assertEquals("Unexpected number of certificates", 1, certDetails.size());
@@ -151,16 +154,16 @@ public class SiteSpecificTrustStoreTest extends KeyStoreTestBase
         int listeningPort = _testPeer.start();
 
         Map<String, Object> attributes = getTrustStoreAttributes(listeningPort);
-        attributes.put(SiteSpecificTrustStore.REVOCATION, true);
-        attributes.put(SiteSpecificTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
 
         final SiteSpecificTrustStore trustStore =
-                (SiteSpecificTrustStore) _factory.create(_keystoreClass, attributes, _broker);
+                (SiteSpecificTrustStore) FACTORY.create(TrustStore.class, attributes, BROKER);
 
         try
         {
             Map<String,Object> unacceptableAttributes = new HashMap<>();
-            unacceptableAttributes.put(FileTrustStore.CRL_URL, "/not/a/crl");
+            unacceptableAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, "/not/a/crl");
 
             trustStore.setAttributes(unacceptableAttributes);
             fail("Exception not thrown");
@@ -173,15 +176,15 @@ public class SiteSpecificTrustStoreTest extends KeyStoreTestBase
         }
 
         assertEquals("Unexpected CRL path value after failed change",
-                TestSSLConstants.CA_CRL, trustStore.getCrlUrl());
+                TestSSLConstants.CA_CRL, trustStore.getCertificateRevocationListUrl());
 
         Map<String,Object> changedAttributes = new HashMap<>();
-        changedAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL_EMPTY);
+        changedAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL_EMPTY);
 
         trustStore.setAttributes(changedAttributes);
 
         assertEquals("Unexpected CRL path value after change that is expected to be successful",
-                TestSSLConstants.CA_CRL_EMPTY, trustStore.getCrlUrl());
+                TestSSLConstants.CA_CRL_EMPTY, trustStore.getCertificateRevocationListUrl());
     }
 
     @Test
@@ -190,10 +193,11 @@ public class SiteSpecificTrustStoreTest extends KeyStoreTestBase
         _testPeer = new TestPeer();
         int listeningPort = _testPeer.start();
         Map<String, Object> attributes = getTrustStoreAttributes(listeningPort);
-        attributes.put(SiteSpecificTrustStore.REVOCATION, true);
-        attributes.put(SiteSpecificTrustStore.CRL_URL, "/not/a/crl");
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_LIST_URL, "/not/a/crl");
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "Unable to load certificate revocation list");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
+                "Unable to load certificate revocation list '/not/a/crl' for truststore 'mySiteSpecificTrustStore'");
     }
 
     @Test
@@ -205,7 +209,7 @@ public class SiteSpecificTrustStoreTest extends KeyStoreTestBase
         Map<String, Object> attributes = getTrustStoreAttributes(listeningPort);
 
         final SiteSpecificTrustStore trustStore =
-                (SiteSpecificTrustStore) _factory.create(_keystoreClass, attributes, _broker);
+                (SiteSpecificTrustStore) FACTORY.create(TrustStore.class, attributes, BROKER);
 
         List<CertificateDetails> certDetails = trustStore.getCertificateDetails();
         assertEquals("Unexpected number of certificates", 1, certDetails.size());

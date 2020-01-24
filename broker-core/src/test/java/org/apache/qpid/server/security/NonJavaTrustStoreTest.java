@@ -35,18 +35,21 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.ConfiguredObjectFactory;
+import org.apache.qpid.test.utils.UnitTestBase;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.test.utils.TestSSLConstants;
 
-public class NonJavaTrustStoreTest extends KeyStoreTestBase
+public class NonJavaTrustStoreTest extends UnitTestBase
 {
-    public NonJavaTrustStoreTest()
-    {
-        super(TrustStore.class);
-    }
+    private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
+    private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
 
     @Test
     public void testCreationOfTrustStoreFromValidCertificate() throws Exception
@@ -55,10 +58,10 @@ public class NonJavaTrustStoreTest extends KeyStoreTestBase
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
         attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.BROKER_CRT);
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
-        attributes.put(NonJavaTrustStore.REVOCATION, true);
-        attributes.put(NonJavaTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
 
-        TrustStore trustStore = (TrustStore) _factory.create(_keystoreClass, attributes, _broker);
+        TrustStore trustStore = (TrustStore) FACTORY.create(TrustStore.class, attributes, BROKER);
 
         TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
@@ -73,15 +76,15 @@ public class NonJavaTrustStoreTest extends KeyStoreTestBase
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
         attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.BROKER_CRT);
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
-        attributes.put(NonJavaTrustStore.REVOCATION, true);
-        attributes.put(NonJavaTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
 
-        TrustStore trustStore = (TrustStore) _factory.create(_keystoreClass, attributes, _broker);
+        TrustStore trustStore = (TrustStore) FACTORY.create(TrustStore.class, attributes, BROKER);
 
         try
         {
             Map<String,Object> unacceptableAttributes = new HashMap<>();
-            unacceptableAttributes.put(FileTrustStore.CRL_URL, "/not/a/crl");
+            unacceptableAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, "/not/a/crl");
 
             trustStore.setAttributes(unacceptableAttributes);
             fail("Exception not thrown");
@@ -94,15 +97,15 @@ public class NonJavaTrustStoreTest extends KeyStoreTestBase
         }
 
         assertEquals("Unexpected CRL path value after failed change",
-                TestSSLConstants.CA_CRL, trustStore.getCrlUrl());
+                TestSSLConstants.CA_CRL, trustStore.getCertificateRevocationListUrl());
 
         Map<String,Object> changedAttributes = new HashMap<>();
-        changedAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL_EMPTY);
+        changedAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL_EMPTY);
 
         trustStore.setAttributes(changedAttributes);
 
         assertEquals("Unexpected CRL path value after change that is expected to be successful",
-                TestSSLConstants.CA_CRL_EMPTY, trustStore.getCrlUrl());
+                TestSSLConstants.CA_CRL_EMPTY, trustStore.getCertificateRevocationListUrl());
     }
 
     @Test
@@ -114,7 +117,7 @@ public class NonJavaTrustStoreTest extends KeyStoreTestBase
         attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.CLIENT_EXPIRED_CRT);
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
 
-        TrustStore trustStore = (TrustStore) _factory.create(_keystoreClass, attributes, _broker);
+        TrustStore trustStore = (TrustStore) FACTORY.create(TrustStore.class, attributes, BROKER);
 
         TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
@@ -157,7 +160,8 @@ public class NonJavaTrustStoreTest extends KeyStoreTestBase
         attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.BROKER_CSR);
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "Cannot load certificate(s)");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
+                "Cannot load certificate(s)");
     }
 
     @Test
@@ -167,9 +171,10 @@ public class NonJavaTrustStoreTest extends KeyStoreTestBase
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
         attributes.put(NonJavaTrustStore.CERTIFICATES_URL, TestSSLConstants.BROKER_CRT);
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
-        attributes.put(NonJavaTrustStore.REVOCATION, true);
-        attributes.put(NonJavaTrustStore.CRL_URL, "/not/a/crl");
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, "/not/a/crl");
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "Unable to load certificate revocation list");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
+                "Unable to load certificate revocation list '/not/a/crl' for truststore 'myTestTrustStore'");
     }
 }

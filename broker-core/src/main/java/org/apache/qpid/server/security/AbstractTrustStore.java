@@ -20,9 +20,10 @@
 package org.apache.qpid.server.security;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -100,18 +101,18 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     @ManagedAttributeField
     private boolean _trustAnchorValidityEnforced;
     @ManagedAttributeField
-    private boolean _revocation;
+    private boolean _certificateRevocationCheckEnabled;
     @ManagedAttributeField
-    private boolean _onlyEndEntity;
+    private boolean _certificateRevocationCheckOfOnlyEndEntityCertificates;
     @ManagedAttributeField
-    private boolean _preferCrls;
+    private boolean _certificateRevocationCheckWithPreferringCertificateRevocationList;
     @ManagedAttributeField
-    private boolean _noFallback;
+    private boolean _certificateRevocationCheckWithNoFallback;
     @ManagedAttributeField
-    private boolean _softFail;
-    @ManagedAttributeField(afterSet = "postSetCrlUrl")
-    private volatile String _crlUrl;
-    private volatile String _crlPath;
+    private boolean _certificateRevocationCheckWithIgnoringSoftFailures;
+    @ManagedAttributeField(afterSet = "postSetCertificateRevocationListUrl")
+    private volatile String _certificateRevocationListUrl;
+    private volatile String _certificateRevocationListPath;
 
     private ScheduledFuture<?> _checkExpiryTaskFuture;
 
@@ -140,7 +141,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     protected void changeAttributes(final Map<String, Object> attributes)
     {
         super.changeAttributes(attributes);
-        if (attributes.containsKey(CRL_URL))
+        if (attributes.containsKey(CERTIFICATE_REVOCATION_LIST_URL))
         {
             initialize();
         }
@@ -156,9 +157,9 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        if (changedAttributes.contains(CRL_URL))
+        if (changedAttributes.contains(CERTIFICATE_REVOCATION_LIST_URL))
         {
-            getCRLs((String) proxyForValidation.getAttribute(CRL_URL));
+            getCRLs((String) proxyForValidation.getAttribute(CERTIFICATE_REVOCATION_LIST_URL));
         }
     }
 
@@ -334,10 +335,10 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         try
         {
             final PKIXBuilderParameters parameters = new PKIXBuilderParameters(trustStore, new X509CertSelector());
-            parameters.setRevocationEnabled(_revocation);
-            if (_revocation)
+            parameters.setRevocationEnabled(_certificateRevocationCheckEnabled);
+            if (_certificateRevocationCheckEnabled)
             {
-                if (_crlPath != null)
+                if (_certificateRevocationListUrl != null)
                 {
                     parameters.addCertStore(
                             CertStore.getInstance("Collection", new CollectionCertStoreParameters(getCRLs())));
@@ -347,19 +348,19 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
                     final PKIXRevocationChecker revocationChecker = (PKIXRevocationChecker) CertPathBuilder
                             .getInstance(TrustManagerFactory.getDefaultAlgorithm()).getRevocationChecker();
                     final Set<PKIXRevocationChecker.Option> options = new HashSet<>();
-                    if (_onlyEndEntity)
+                    if (_certificateRevocationCheckOfOnlyEndEntityCertificates)
                     {
                         options.add(PKIXRevocationChecker.Option.ONLY_END_ENTITY);
                     }
-                    if (_preferCrls)
+                    if (_certificateRevocationCheckWithPreferringCertificateRevocationList)
                     {
                         options.add(PKIXRevocationChecker.Option.PREFER_CRLS);
                     }
-                    if (_noFallback)
+                    if (_certificateRevocationCheckWithNoFallback)
                     {
                         options.add(PKIXRevocationChecker.Option.NO_FALLBACK);
                     }
-                    if (_softFail)
+                    if (_certificateRevocationCheckWithIgnoringSoftFailures)
                     {
                         options.add(PKIXRevocationChecker.Option.SOFT_FAIL);
                     }
@@ -378,28 +379,43 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
 
     private Collection<? extends CRL> getCRLs()
     {
-        return getCRLs(_crlPath);
+        return getCRLs(_certificateRevocationListUrl);
     }
 
     /**
      * Load the collection of CRLs.
      */
-    private Collection<? extends CRL> getCRLs(String crlPath)
+    private Collection<? extends CRL> getCRLs(String crlUrl)
     {
         Collection<? extends CRL> crls = Collections.emptyList();
-        if (crlPath != null)
+        if (crlUrl != null)
         {
-            try (InputStream is = new FileInputStream(new File(crlPath)))
+            try (InputStream is = getUrlFromString(crlUrl).openStream())
             {
                 crls = SSLUtil.getCertificateFactory().generateCRLs(is);
             }
             catch (IOException | CRLException e)
             {
-                throw new IllegalConfigurationException("Unable to load certificate revocation list '" + crlPath +
+                throw new IllegalConfigurationException("Unable to load certificate revocation list '" + crlUrl +
                         "' for truststore '" + getName() + "' :" + e, e);
             }
         }
         return crls;
+    }
+
+    protected static URL getUrlFromString(String urlString) throws MalformedURLException
+    {
+        URL url;
+        try
+        {
+            url = new URL(urlString);
+        }
+        catch (MalformedURLException e)
+        {
+            final File file = new File(urlString);
+            url = file.toURI().toURL();
+        }
+        return url;
     }
 
     @Override
@@ -439,57 +455,57 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     }
 
     @Override
-    public boolean isRevocation()
+    public boolean isCertificateRevocationCheckEnabled()
     {
-        return _revocation;
+        return _certificateRevocationCheckEnabled;
     }
 
     @Override
-    public boolean isOnlyEndEntity()
+    public boolean isCertificateRevocationCheckOfOnlyEndEntityCertificates()
     {
-        return _onlyEndEntity;
+        return _certificateRevocationCheckOfOnlyEndEntityCertificates;
     }
 
     @Override
-    public boolean isPreferCrls()
+    public boolean isCertificateRevocationCheckWithPreferringCertificateRevocationList()
     {
-        return _preferCrls;
+        return _certificateRevocationCheckWithPreferringCertificateRevocationList;
     }
 
     @Override
-    public boolean isNoFallback()
+    public boolean isCertificateRevocationCheckWithNoFallback()
     {
-        return _noFallback;
+        return _certificateRevocationCheckWithNoFallback;
     }
 
     @Override
-    public boolean isSoftFail()
+    public boolean isCertificateRevocationCheckWithIgnoringSoftFailures()
     {
-        return _softFail;
+        return _certificateRevocationCheckWithIgnoringSoftFailures;
     }
 
     @Override
-    public String getCrlUrl()
+    public String getCertificateRevocationListUrl()
     {
-        return _crlUrl;
+        return _certificateRevocationListUrl;
     }
 
     @Override
-    public String getCrlPath()
+    public String getCertificateRevocationListPath()
     {
-        return _crlPath;
+        return _certificateRevocationListPath;
     }
 
     @SuppressWarnings(value = "unused")
-    private void postSetCrlUrl()
+    private void postSetCertificateRevocationListUrl()
     {
-        if (_crlUrl != null && !_crlUrl.startsWith("data:"))
+        if (_certificateRevocationListUrl != null && !_certificateRevocationListUrl.startsWith("data:"))
         {
-            _crlPath = _crlUrl;
+            _certificateRevocationListPath = _certificateRevocationListUrl;
         }
         else
         {
-            _crlPath = null;
+            _certificateRevocationListPath = null;
         }
     }
 

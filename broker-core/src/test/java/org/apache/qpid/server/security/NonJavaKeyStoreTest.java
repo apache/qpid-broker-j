@@ -56,7 +56,12 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManager;
 
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.test.utils.TestSSLConstants;
+import org.apache.qpid.test.utils.UnitTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,21 +78,18 @@ import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.TestSSLUtils;
 
-public class NonJavaKeyStoreTest extends KeyStoreTestBase
+public class NonJavaKeyStoreTest extends UnitTestBase
 {
+    private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
+    private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
     private List<File> _testResources;
     private MessageLogger _messageLogger;
-
-    public NonJavaKeyStoreTest()
-    {
-        super(KeyStore.class);
-    }
 
     @Before
     public void setUp() throws Exception
     {
         _messageLogger = mock(MessageLogger.class);
-        when(_broker.getEventLogger()).thenReturn(new EventLogger(_messageLogger));
+        when(BROKER.getEventLogger()).thenReturn(new EventLogger(_messageLogger));
         _testResources = new ArrayList<>();
     }
 
@@ -174,7 +176,7 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
         attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
 
         NonJavaKeyStoreImpl fileTrustStore =
-                (NonJavaKeyStoreImpl) _factory.create(_keystoreClass, attributes, _broker);
+                (NonJavaKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         KeyManager[] keyManagers = fileTrustStore.getKeyManagers();
         assertNotNull(keyManagers);
@@ -197,8 +199,9 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
         attributes.put("certificateUrl", invalidCertificate.toURI().toURL().toExternalForm());
         attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "Cannot load private key or certificate(s): " +
-                "java.security.cert.CertificateException: Could not parse certificate: java.io.IOException: Empty input");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Cannot load private key or certificate(s): java.security.cert.CertificateException: " +
+                        "Could not parse certificate: java.io.IOException: Empty input");
     }
 
     @Test
@@ -216,8 +219,9 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
         attributes.put("certificateUrl", resources[1].toURI().toURL().toExternalForm());
         attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "Cannot load private key or certificate(s): " +
-                "java.security.spec.InvalidKeySpecException: Unable to parse key as PKCS#1 format");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Cannot load private key or certificate(s): java.security.spec.InvalidKeySpecException: " +
+                        "Unable to parse key as PKCS#1 format");
     }
 
     @Test
@@ -240,7 +244,7 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
 
     private void doCertExpiryChecking(final int expiryOffset) throws Exception
     {
-        when(_broker.scheduleHouseKeepingTask(anyLong(), any(TimeUnit.class), any(Runnable.class))).thenReturn(mock(ScheduledFuture.class));
+        when(BROKER.scheduleHouseKeepingTask(anyLong(), any(TimeUnit.class), any(Runnable.class))).thenReturn(mock(ScheduledFuture.class));
 
         java.security.KeyStore ks = java.security.KeyStore.getInstance(TestSSLConstants.JAVA_KEYSTORE_TYPE);
         final String storeLocation = TestSSLConstants.BROKER_KEYSTORE;
@@ -260,7 +264,7 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
         attributes.put("certificateUrl", resources[1].toURI().toURL().toExternalForm());
         attributes.put("context", Collections.singletonMap(KeyStore.CERTIFICATE_EXPIRY_WARN_PERIOD, expiryDays + expiryOffset));
         attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
-        _factory.create(_keystoreClass, attributes, _broker);
+        FACTORY.create(KeyStore.class, attributes, BROKER);
     }
 
     @Test
@@ -279,7 +283,8 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
                        DataUrlUtils.getDataUrlForBytes(TestSSLUtils.certificateToPEM(keyCertPair2.getCertificate()).getBytes(UTF_8)));
         attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "Private key does not match certificate");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Private key does not match certificate");
     }
 
     @Test
@@ -298,7 +303,7 @@ public class NonJavaKeyStoreTest extends KeyStoreTestBase
                        DataUrlUtils.getDataUrlForBytes(TestSSLUtils.certificateToPEM(keyCertPair.getCertificate()).getBytes(UTF_8)));
         attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
 
-        final KeyStore trustStore = (KeyStore) _factory.create(_keystoreClass, attributes, _broker);
+        final KeyStore trustStore = (KeyStore) FACTORY.create(KeyStore.class, attributes, BROKER);
         try
         {
             final String certUrl = DataUrlUtils.getDataUrlForBytes(TestSSLUtils.certificateToPEM(keyCertPair2.getCertificate()).getBytes(UTF_8));

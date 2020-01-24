@@ -159,21 +159,4 @@ public class NonJavaTrustStoreImpl
             throw new IllegalConfigurationException("Cannot load certificate(s) :" + e, e);
         }
     }
-
-    private URL getUrlFromString(String urlString) throws MalformedURLException
-    {
-        URL url;
-
-        try
-        {
-            url = new URL(urlString);
-        }
-        catch (MalformedURLException e)
-        {
-            File file = new File(urlString);
-            url = file.toURI().toURL();
-
-        }
-        return url;
-    }
 }

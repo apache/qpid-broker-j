@@ -18,31 +18,42 @@
  */
 package org.apache.qpid.test.utils;
 
+import java.nio.file.Paths;
+
 public final class TestSSLConstants
 {
     public static final String JAVA_KEYSTORE_TYPE = "pkcs12";
     public static final String PASSWORD = "password";
-    private static final String TEST_RESOURCES;
+    private static final String TEST_CERTIFICATES_DIRECTORY;
     static
     {
+        final String testCertificatesDirectoryPrefix;
         if (System.getProperty("user.dir").contains("systests"))
         {
-            TEST_RESOURCES = System.getProperty("user.dir") + "/../../test-profiles/test_resources/";
+            testCertificatesDirectoryPrefix = Paths.get(System.getProperty("user.dir"), "..", "..").toString();
         }
         else if (System.getProperty("user.dir").contains(".."))
         {
-            TEST_RESOURCES = System.getProperty("user.dir") + "/test-profiles/test_resources/";
+            testCertificatesDirectoryPrefix = System.getProperty("user.dir");
         }
         else
         {
-            TEST_RESOURCES = System.getProperty("user.dir") + "/../test-profiles/test_resources/";
+            testCertificatesDirectoryPrefix = Paths.get(System.getProperty("user.dir"), "..").toString();
         }
+        TEST_CERTIFICATES_DIRECTORY =
+                Paths.get(testCertificatesDirectoryPrefix,
+                        "qpid-test-utils", "src", "main", "resources", "ssl", "certificates").toString();
     }
-    public static final String CLIENT_KEYSTORE = TEST_RESOURCES + "ssl/certificates/client_keystore.jks";
-    public static final String CLIENT_TRUSTSTORE = TEST_RESOURCES + "ssl/certificates/client_truststore.jks";
-    public static final String CLIENT_EXPIRED_KEYSTORE = TEST_RESOURCES + "ssl/certificates/client_expired_keystore.jks";
-    public static final String CLIENT_EXPIRED_CRT = TEST_RESOURCES + "ssl/certificates/client_expired.crt";
-    public static final String CLIENT_UNTRUSTED_KEYSTORE = TEST_RESOURCES + "ssl/certificates/client_untrusted_keystore.jks";
+    public static final String CLIENT_KEYSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "client_keystore.jks").toString();
+    public static final String CLIENT_TRUSTSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "client_truststore.jks").toString();
+    public static final String CLIENT_EXPIRED_KEYSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "client_expired_keystore.jks").toString();
+    public static final String CLIENT_EXPIRED_CRT =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "client_expired.crt").toString();
+    public static final String CLIENT_UNTRUSTED_KEYSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "client_untrusted_keystore.jks").toString();
 
     public static final String CERT_ALIAS_ROOT_CA = "rootca";
     public static final String CERT_ALIAS_APP1 = "app1";
@@ -54,21 +65,35 @@ public final class TestSSLConstants
     public static final String CERT_ALIAS_ALLOWED_WITH_INTERMEDIATE = "allowed_by_ca_with_intermediate";
     public static final String CERT_ALIAS_UNTRUSTED_CLIENT = "untrusted_client";
 
-    public static final String BROKER_KEYSTORE = TEST_RESOURCES + "ssl/certificates/broker_keystore.jks";
-    public static final String BROKER_CRT = TEST_RESOURCES + "ssl/certificates/broker.crt";
-    public static final String BROKER_CSR = TEST_RESOURCES + "ssl/certificates/broker.csr";
-    public static final String BROKER_TRUSTSTORE = TEST_RESOURCES + "ssl/certificates/broker_truststore.jks";
-    public static final String BROKER_PEERSTORE = TEST_RESOURCES + "ssl/certificates/broker_peerstore.jks";
-    public static final String BROKER_EXPIRED_TRUSTSTORE = TEST_RESOURCES + "ssl/certificates/broker_expired_truststore.jks";
+    public static final String BROKER_KEYSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "broker_keystore.jks").toString();
+    public static final String BROKER_CRT =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "broker.crt").toString();
+    public static final String BROKER_CSR =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "broker.csr").toString();
+    public static final String BROKER_TRUSTSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "broker_truststore.jks").toString();
+    public static final String BROKER_PEERSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "broker_peerstore.jks").toString();
+    public static final String BROKER_EXPIRED_TRUSTSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "broker_expired_truststore.jks").toString();
     public static final String BROKER_KEYSTORE_ALIAS = "broker";
 
-    public static final String TEST_EMPTY_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_empty_keystore.jks";
-    public static final String TEST_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_keystore.jks";
-    public static final String TEST_CERT_ONLY_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_cert_only_keystore.jks";
-    public static final String TEST_PK_ONLY_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_pk_only_keystore.jks";
-    public static final String TEST_SYMMETRIC_KEY_KEYSTORE = TEST_RESOURCES + "ssl/certificates/test_symmetric_key_keystore.jks";
+    public static final String TEST_EMPTY_KEYSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "test_empty_keystore.jks").toString();
+    public static final String TEST_KEYSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "test_keystore.jks").toString();
+    public static final String TEST_CERT_ONLY_KEYSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "test_cert_only_keystore.jks").toString();
+    public static final String TEST_PK_ONLY_KEYSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "test_pk_only_keystore.jks").toString();
+    public static final String TEST_SYMMETRIC_KEY_KEYSTORE =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "test_symmetric_key_keystore.jks").toString();
 
-    public static final String CA_CRL_EMPTY = TEST_RESOURCES + "ssl/certificates/MyRootCA.empty.crl";
-    public static final String CA_CRL = TEST_RESOURCES + "ssl/certificates/MyRootCA.crl";
-    public static final String INTERMEDIATE_CA_CRL = TEST_RESOURCES + "ssl/certificates/intermediate_ca.crl";
+    public static final String CA_CRL_EMPTY =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "MyRootCA.empty.crl").toString();
+    public static final String CA_CRL =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "MyRootCA.crl").toString();
+    public static final String INTERMEDIATE_CA_CRL =
+            Paths.get(TEST_CERTIFICATES_DIRECTORY, "intermediate_ca.crl").toString();
 }

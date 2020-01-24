@@ -29,7 +29,7 @@ target
 classes
 derby.log
 velocity.timestamp
-test-profiles/test_resources/ssl/openssl
+qpid-test-utils/src/main/resources/ssl/openssl
 
 # Intellij Project files
 .idea/

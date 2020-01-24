@@ -259,22 +259,6 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
         return certificates == null ? new Certificate[0] : Arrays.copyOf(certificates, certificates.length);
     }
 
-    private static URL getUrlFromString(String urlString) throws MalformedURLException
-    {
-        URL url;
-        try
-        {
-            url = new URL(urlString);
-        }
-        catch (MalformedURLException e)
-        {
-            File file = new File(urlString);
-            url = file.toURI().toURL();
-
-        }
-        return url;
-    }
-
     @SuppressWarnings(value = "unused")
     private void postSetStoreUrl()
     {

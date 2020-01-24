@@ -32,10 +32,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.Map;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
-public class KeystoreTestHelper
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+public class KeyStoreTestHelper
 {
     public static KeyStore saveKeyStore(final String alias,
                                         final X509Certificate certificate,
@@ -76,6 +83,24 @@ public class KeystoreTestHelper
                                                      cn,
                                                      Collections.emptySet(),
                                                      Collections.emptySet());
+    }
+
+    public static void checkExceptionThrownDuringKeyStoreCreation(ConfiguredObjectFactory factory, Broker broker,
+                                                              Class keystoreClass, Map<String, Object> attributes,
+                                                              String expectedExceptionMessage)
+    {
+        try
+        {
+            factory.create(keystoreClass, attributes, broker);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            final String message = e.getMessage();
+            assertTrue("Exception text not as expected:" + message,
+                    message.contains(expectedExceptionMessage));
+
+        }
     }
 
 

@@ -46,75 +46,81 @@
         <fieldset>
             <legend>Revocation</legend>
             <div class="clear">
-                <div id="addStore.revocationLabel" class="formLabel-labelCell tableContainer-labelCell">Revocation:</div>
+                <div id="addStore.certificateRevocationCheckEnabledLabel"
+                     class="formLabel-labelCell tableContainer-labelCell">Enabled:</div>
                 <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" id="addStore.revocation"
+                    <input type="text" id="addStore.certificateRevocationCheckEnabled"
                            data-dojo-type="dijit/form/CheckBox"
-                           data-dojo-props="name: 'revocation'" />
+                           data-dojo-props="name: 'certificateRevocationCheckEnabled'" />
                     <div data-dojo-type="dijit/Tooltip"
-                         data-dojo-props="connectId: ['addStore.revocation'],
-                                      label: 'If true, enable certificates revocation'">
+                         data-dojo-props="connectId: ['addStore.certificateRevocationCheckEnabled'],
+                                      label: 'If enabled, enable certificates revocation check'">
                     </div>
                 </div>
             </div>
             <div class="clear">
-                <div id="addStore.onlyEndEntityLabel" class="formLabel-labelCell tableContainer-labelCell">Only end entity:</div>
+                <div id="addStore.certificateRevocationCheckOfOnlyEndEntityCertificatesLabel"
+                     class="formLabel-labelCell tableContainer-labelCell">Only End Entity:</div>
                 <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" id="addStore.onlyEndEntity"
+                    <input type="text" id="addStore.certificateRevocationCheckOfOnlyEndEntityCertificates"
                            data-dojo-type="dijit/form/CheckBox"
-                           data-dojo-props="name: 'onlyEndEntity'" />
+                           data-dojo-props="name: 'certificateRevocationCheckOfOnlyEndEntityCertificates'" />
                     <div data-dojo-type="dijit/Tooltip"
-                         data-dojo-props="connectId: ['addStore.onlyEndEntity'],
-                                      label: 'If true, only check the revocation status of end-entity certificates'">
+                         data-dojo-props="connectId: ['addStore.certificateRevocationCheckOfOnlyEndEntityCertificates'],
+                                      label: 'If enabled, only check the revocation status of end-entity certificates'">
                     </div>
                 </div>
             </div>
             <div class="clear">
-                <div id="addStore.preferCrlsLabel" class="formLabel-labelCell tableContainer-labelCell">Prefer CRLs:</div>
+                <div id="addStore.certificateRevocationCheckWithPreferringCertificateRevocationListLabel"
+                     class="formLabel-labelCell tableContainer-labelCell">Prefer CRLs:</div>
                 <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" id="addStore.preferCrls" checked="checked"
+                    <input type="text" id="addStore.certificateRevocationCheckWithPreferringCertificateRevocationList"
                            data-dojo-type="dijit/form/CheckBox"
-                           data-dojo-props="name: 'preferCrls'" />
+                           data-dojo-props="name: 'certificateRevocationCheckWithPreferringCertificateRevocationList'" />
                     <div data-dojo-type="dijit/Tooltip"
-                         data-dojo-props="connectId: ['addStore.preferCrls'],
-                                      label: 'If true, prefer CRL (specified in certificate distribution points) to OCSP, if false prefer OCSP to CRL'">
+                         data-dojo-props="connectId: ['addStore.certificateRevocationCheckWithPreferringCertificateRevocationList'],
+                                      label: 'If enabled, prefer CRL (specified in certificate distribution points) to OCSP, if false prefer OCSP to CRL'">
                     </div>
                 </div>
             </div>
             <div class="clear">
-                <div id="addStore.noFallbackLabel" class="formLabel-labelCell tableContainer-labelCell">No fallback:</div>
+                <div id="addStore.certificateRevocationCheckWithNoFallbackLabel"
+                     class="formLabel-labelCell tableContainer-labelCell">No Fallback:</div>
                 <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" id="addStore.noFallback" checked="checked"
+                    <input type="text" id="addStore.certificateRevocationCheckWithNoFallback"
                            data-dojo-type="dijit/form/CheckBox"
-                           data-dojo-props="name: 'noFallback'" />
+                           data-dojo-props="name: 'certificateRevocationCheckWithNoFallback'" />
                     <div data-dojo-type="dijit/Tooltip"
-                         data-dojo-props="connectId: ['addStore.noFallback'],
-                                      label: 'If true, disable fallback to CRL/OCSP (if preferCrl is set to true, disable fallback to OCSP, otherwise disable fallback to CRL in certificate distribution points)'">
+                         data-dojo-props="connectId: ['addStore.certificateRevocationCheckWithNoFallback'],
+                                      label: 'If enabled, disable fallback to CRL/OCSP (if 'Prefer CRLs' set to true, disable fallback to OCSP, otherwise disable fallback to CRL in certificate distribution points)'">
                     </div>
                 </div>
             </div>
             <div class="clear">
-                <div id="addStore.softFailLabel" class="formLabel-labelCell tableContainer-labelCell">Soft fail:</div>
+                <div id="addStore.certificateRevocationCheckWithIgnoringSoftFailuresLabel"
+                     class="formLabel-labelCell tableContainer-labelCell">Ignore Soft Failures:</div>
                 <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" id="addStore.softFail"
+                    <input type="text" id="addStore.certificateRevocationCheckWithIgnoringSoftFailures"
                            data-dojo-type="dijit/form/CheckBox"
-                           data-dojo-props="name: 'softFail'" />
+                           data-dojo-props="name: 'certificateRevocationCheckWithIgnoringSoftFailures'" />
                     <div data-dojo-type="dijit/Tooltip"
-                         data-dojo-props="connectId: ['addStore.softFail'],
-                                      label: 'If true, revocation check will succeed if CRL/OCSP response cannot be obtained because of network error or OCSP responder returns internalError or tryLater'">
+                         data-dojo-props="connectId: ['addStore.certificateRevocationCheckWithIgnoringSoftFailures'],
+                                      label: 'If enabled, revocation check will succeed if CRL/OCSP response cannot be obtained because of network error or OCSP responder returns internalError or tryLater'">
                     </div>
                 </div>
             </div>
             <div class="clear">
-                <div id="addStore.serverCrlPathLabel" class="formLabel-labelCell tableContainer-labelCell">Server CRL path or upload:</div>
+                <div id="addStore.certificateRevocationListUrlLabel"
+                     class="formLabel-labelCell tableContainer-labelCell">Server CRL Path Or Upload:</div>
                 <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" id="addStore.crlUrl"
+                    <input type="text" id="addStore.certificateRevocationListUrl"
                            data-dojo-type="qpid/common/ResourceWidget"
                            data-dojo-props="
-                          name: 'crlUrl',
-                          placeHolder: 'crl file server path',
+                          name: 'certificateRevocationListUrl',
+                          placeHolder: 'certificate revocation list file server path',
                           promptMessage: 'Location of the certificate revocation list file on the server (overrides revocation done by CRL distribution points and OCSP)',
-                          title: 'Enter the crl file path'" />
+                          title: 'Enter the certificate revocation list file path'" />
                 </div>
             </div>
         </fieldset>

@@ -37,6 +37,11 @@ import java.util.Map;
 
 import javax.net.ssl.KeyManager;
 
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.ConfiguredObjectFactory;
+import org.apache.qpid.test.utils.UnitTestBase;
 import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -46,12 +51,10 @@ import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.TestSSLConstants;
 
-public class FileKeyStoreTest extends KeyStoreTestBase
+public class FileKeyStoreTest extends UnitTestBase
 {
-    public FileKeyStoreTest()
-    {
-        super(KeyStore.class);
-    }
+    private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
+    private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
 
     @Test
     public void testCreateKeyStoreFromFile_Success() throws Exception
@@ -62,7 +65,7 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(_keystoreClass, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         KeyManager[] keyManager = fileKeyStore.getKeyManagers();
         assertNotNull(keyManager);
@@ -80,7 +83,7 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.BROKER_KEYSTORE_ALIAS);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(_keystoreClass, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         KeyManager[] keyManager = fileKeyStore.getKeyManagers();
         assertNotNull(keyManager);
@@ -97,7 +100,8 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.PASSWORD, "wrong");
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "Check key store password");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Check key store password");
     }
 
     @Test
@@ -110,7 +114,7 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "notknown");
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes,
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "Cannot find a certificate with alias 'notknown' in key store");
     }
 
@@ -124,7 +128,8 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.CERT_ALIAS_ROOT_CA);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "does not identify a private key");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "does not identify a private key");
     }
 
     @Test
@@ -138,7 +143,7 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(_keystoreClass, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         KeyManager[] keyManagers = fileKeyStore.getKeyManagers();
         assertNotNull(keyManagers);
@@ -158,7 +163,7 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, TestSSLConstants.BROKER_KEYSTORE_ALIAS);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(_keystoreClass, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         KeyManager[] keyManagers = fileKeyStore.getKeyManagers();
         assertNotNull(keyManagers);
@@ -177,7 +182,8 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.STORE_URL, keyStoreAsDataUrl);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "Check key store password");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Check key store password");
     }
 
     @Test
@@ -190,7 +196,8 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, keyStoreAsDataUrl);
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "Cannot instantiate key store");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "Cannot instantiate key store");
     }
 
     @Test
@@ -205,7 +212,7 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.CERTIFICATE_ALIAS, "notknown");
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes,
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "Cannot find a certificate with alias 'notknown' in key store");
     }
 
@@ -217,7 +224,8 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
         attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.TEST_EMPTY_KEYSTORE);
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "must contain at least one private key");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "must contain at least one private key");
     }
 
     @Test
@@ -229,7 +237,8 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.TEST_CERT_ONLY_KEYSTORE);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        checkExceptionThrownDuringKeyStoreCreation(attributes, "must contain at least one private key");
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
+                "must contain at least one private key");
     }
 
     @Test
@@ -241,7 +250,7 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.STORE_URL, TestSSLConstants.TEST_SYMMETRIC_KEY_KEYSTORE);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        KeyStore keyStore = (KeyStore) _factory.create(_keystoreClass, attributes,  _broker);
+        KeyStore keyStore = (KeyStore) FACTORY.create(KeyStore.class, attributes, BROKER);
         assertNotNull(keyStore);
     }
 
@@ -254,7 +263,7 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         attributes.put(FileKeyStore.PASSWORD, TestSSLConstants.PASSWORD);
         attributes.put(FileKeyStore.KEY_STORE_TYPE, TestSSLConstants.JAVA_KEYSTORE_TYPE);
 
-        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) _factory.create(_keystoreClass, attributes,  _broker);
+        FileKeyStoreImpl fileKeyStore = (FileKeyStoreImpl) FACTORY.create(KeyStore.class, attributes, BROKER);
 
         assertNull("Unexpected alias value before change", fileKeyStore.getCertificateAlias());
 
@@ -290,8 +299,8 @@ public class FileKeyStoreTest extends KeyStoreTestBase
     {
         assumeThat(SSLUtil.canGenerateCerts(), is(equalTo(true)));
 
-        final SSLUtil.KeyCertPair selfSigned1 = KeystoreTestHelper.generateSelfSigned("CN=foo");
-        final SSLUtil.KeyCertPair selfSigned2 = KeystoreTestHelper.generateSelfSigned("CN=bar");
+        final SSLUtil.KeyCertPair selfSigned1 = KeyStoreTestHelper.generateSelfSigned("CN=foo");
+        final SSLUtil.KeyCertPair selfSigned2 = KeyStoreTestHelper.generateSelfSigned("CN=bar");
 
         final File keyStoreFile = TestFileUtils.createTempFile(this, ".ks");
         final String dummy = "changit";
@@ -301,7 +310,7 @@ public class FileKeyStoreTest extends KeyStoreTestBase
         try
         {
             final java.security.KeyStore keyStore =
-                    KeystoreTestHelper.saveKeyStore(selfSigned1, certificateAlias, keyAlias, pass, keyStoreFile);
+                    KeyStoreTestHelper.saveKeyStore(selfSigned1, certificateAlias, keyAlias, pass, keyStoreFile);
 
             final Map<String, Object> attributes = new HashMap<>();
             attributes.put(FileKeyStore.NAME, getTestName());
@@ -309,14 +318,14 @@ public class FileKeyStoreTest extends KeyStoreTestBase
             attributes.put(FileKeyStore.PASSWORD, dummy);
             attributes.put(FileKeyStore.KEY_STORE_TYPE, keyStore.getType());
 
-            final FileKeyStore keyStoreObject = (FileKeyStore) _factory.create(_keystoreClass, attributes, _broker);
+            final FileKeyStore keyStoreObject = (FileKeyStore) FACTORY.create(KeyStore.class, attributes, BROKER);
 
             final CertificateDetails certificate = getCertificate(keyStoreObject);
             assertEquals("CN=foo", certificate.getIssuerName());
 
             assertTrue(keyStoreFile.delete());
             assertTrue(keyStoreFile.createNewFile());keyStoreFile.deleteOnExit();
-            KeystoreTestHelper.saveKeyStore(selfSigned2, certificateAlias, keyAlias, pass, keyStoreFile);
+            KeyStoreTestHelper.saveKeyStore(selfSigned2, certificateAlias, keyAlias, pass, keyStoreFile);
 
             keyStoreObject.reload();
 

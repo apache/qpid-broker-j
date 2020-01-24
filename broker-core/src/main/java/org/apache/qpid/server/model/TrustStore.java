@@ -48,12 +48,15 @@ public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
     @ManagedContextDefault(name = "qpid.truststore.trustAnchorValidityEnforced")
     boolean DEFAULT_TRUST_ANCHOR_VALIDITY_ENFORCED = false;
 
-    String REVOCATION = "revocation";
-    String SOFT_FAIL = "softFail";
-    String PREFER_CRLS = "preferCrls";
-    String NO_FALLBACK = "noFallback";
-    String ONLY_END_ENTITY = "onlyEndEntity";
-    String CRL_URL = "crlUrl";
+    String CERTIFICATE_REVOCATION_CHECK_ENABLED = "certificateRevocationCheckEnabled";
+    String CERTIFICATE_REVOCATION_CHECK_WITH_IGNORING_SOFT_FAILURES =
+            "certificateRevocationCheckWithIgnoringSoftFailures";
+    String CERTIFICATE_REVOCATION_CHECK_WITH_PREFERRING_CERTIFICATE_REVOCATION_LIST =
+            "certificateRevocationCheckWithPreferringCertificateRevocationList";
+    String CERTIFICATE_REVOCATION_CHECK_WITH_NO_FALLBACK = "certificateRevocationCheckWithNoFallback";
+    String CERTIFICATE_REVOCATION_CHECK_OF_ONLY_END_ENTITY_CERTIFICATES =
+            "certificateRevocationCheckOfOnlyEndEntityCertificates";
+    String CERTIFICATE_REVOCATION_LIST_URL = "certificateRevocationListUrl";
 
     @Override
     @ManagedAttribute(immutable = true)
@@ -73,25 +76,25 @@ public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
     boolean isTrustAnchorValidityEnforced();
 
     @ManagedAttribute(defaultValue = "false", description = "If true, enable certificates revocation.")
-    boolean isRevocation();
+    boolean isCertificateRevocationCheckEnabled();
 
-    @ManagedAttribute(defaultValue = "false", description = "If true, only check the revocation status of end-entity certificates.")
-    boolean isOnlyEndEntity();
+    @ManagedAttribute(defaultValue = "false", description = "If true, check the revocation status of only end-entity certificates.")
+    boolean isCertificateRevocationCheckOfOnlyEndEntityCertificates();
 
     @ManagedAttribute(defaultValue = "true", description = "If true, prefer CRL (specified in certificate distribution points) to OCSP, if false prefer OCSP to CRL.")
-    boolean isPreferCrls();
+    boolean isCertificateRevocationCheckWithPreferringCertificateRevocationList();
 
-    @ManagedAttribute(defaultValue = "true", description = "If true, disable fallback to CRL/OCSP (if preferCrl is set to true, disable fallback to OCSP, otherwise disable fallback to CRL in certificate distribution points).")
-    boolean isNoFallback();
+    @ManagedAttribute(defaultValue = "true", description = "If true, disable fallback to CRL/OCSP (if 'certificateRevocationCheckWithPreferringCertificateRevocationList' set to true, disable fallback to OCSP, otherwise disable fallback to CRL in certificate distribution points).")
+    boolean isCertificateRevocationCheckWithNoFallback();
 
     @ManagedAttribute(defaultValue = "false", description = "If true, revocation check will succeed if CRL/OCSP response cannot be obtained because of network error or OCSP responder returns internalError or tryLater.")
-    boolean isSoftFail();
+    boolean isCertificateRevocationCheckWithIgnoringSoftFailures();
 
     @ManagedAttribute(oversize = true, description = "If set, certificates will be validated only against CRL file (CRL in distribution points and OCSP will be ignored).", oversizedAltText = OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT)
-    String getCrlUrl();
+    String getCertificateRevocationListUrl();
 
     @DerivedAttribute
-    String getCrlPath();
+    String getCertificateRevocationListPath();
 
     @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")
     List<CertificateDetails> getCertificateDetails();

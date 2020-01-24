@@ -31,8 +31,6 @@ import static org.junit.Assume.assumeThat;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,10 +44,16 @@ import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 import javax.naming.NamingException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
+import org.apache.qpid.server.security.FileTrustStoreTest;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,10 +84,11 @@ public class AuthenticationTest extends JmsTestBase
     // see how port is specified when certificates are generated in script
     // test-profiles/test_resources/ssl/generate_certificates.sh
     private static final int CRL_HTTP_PORT = 8186;
-    private static HttpServer _crlServer;
+    private static final Server CRL_SERVER = new Server();
+    private static final HandlerCollection HANDLERS = new HandlerCollection();
 
     @BeforeClass
-    public static void setUp() throws IOException
+    public static void setUp() throws Exception
     {
         System.setProperty("javax.net.debug", "ssl");
 
@@ -99,16 +104,19 @@ public class AuthenticationTest extends JmsTestBase
             System.setProperty("javax.net.ssl.trustStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
             System.setProperty("javax.net.ssl.keyStoreType", TestSSLConstants.JAVA_KEYSTORE_TYPE);
         }
-        _crlServer = HttpServer.create(new InetSocketAddress(CRL_HTTP_PORT), 0);
+        final ServerConnector connector = new ServerConnector(CRL_SERVER);
+        connector.setPort(CRL_HTTP_PORT);
+        connector.setHost("localhost");
+        CRL_SERVER.addConnector(connector);
         createContext(Paths.get(TestSSLConstants.CA_CRL));
         createContext(Paths.get(TestSSLConstants.CA_CRL_EMPTY));
         createContext(Paths.get(TestSSLConstants.INTERMEDIATE_CA_CRL));
-        _crlServer.setExecutor(null);
-        _crlServer.start();
+        CRL_SERVER.setHandler(HANDLERS);
+        CRL_SERVER.start();
     }
 
     @AfterClass
-    public static void tearDown()
+    public static void tearDown() throws Exception
     {
         System.clearProperty("javax.net.debug");
         if (getProtocol() != Protocol.AMQP_1_0)
@@ -121,7 +129,7 @@ public class AuthenticationTest extends JmsTestBase
             System.clearProperty("javax.net.ssl.trustStoreType");
             System.clearProperty("javax.net.ssl.keyStoreType");
         }
-        _crlServer.stop(0);
+        CRL_SERVER.stop();
     }
 
 
@@ -183,12 +191,33 @@ public class AuthenticationTest extends JmsTestBase
         }
     }
 
+    public void externalWithRevocationWithDataUrlCrlFileAndAllowedCertificate() throws Exception
+    {
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL,
+                FileTrustStoreTest.createDataUrlForFile(TestSSLConstants.CA_CRL));
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
+    }
+
+    @Test
+    public void externalWithRevocationWithDataUrlCrlFileAndRevokedCertificate() throws Exception
+    {
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL,
+                FileTrustStoreTest.createDataUrlForFile(TestSSLConstants.CA_CRL));
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED);
+    }
+
     @Test
     public void externalWithRevocationWithCrlFileAndAllowedCertificate() throws Exception
     {
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        trustStoreAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
@@ -197,8 +226,8 @@ public class AuthenticationTest extends JmsTestBase
     public void externalWithRevocationWithCrlFileAndRevokedCertificate() throws Exception
     {
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        trustStoreAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED);
     }
@@ -207,8 +236,8 @@ public class AuthenticationTest extends JmsTestBase
     public void externalWithRevocationWithEmptyCrlFileAndRevokedCertificate() throws Exception
     {
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        trustStoreAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL_EMPTY);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL_EMPTY);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
@@ -216,8 +245,10 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndAllowedCertificateWithCrlUrl() throws Exception
     {
+        assumeThat("HTTP server failed to bind to port '" + CRL_HTTP_PORT + "'",
+                CRL_SERVER, is(not(equalTo(null))));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
@@ -225,8 +256,10 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrl() throws Exception
     {
+        assumeThat("HTTP server failed to bind to port '" + CRL_HTTP_PORT + "'",
+                CRL_SERVER, is(not(equalTo(null))));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED);
     }
@@ -234,8 +267,10 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithEmptyCrl() throws Exception
     {
+        assumeThat("HTTP server failed to bind to port '" + CRL_HTTP_PORT + "'",
+                CRL_SERVER, is(not(equalTo(null))));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED_EMPTY_CRL);
     }
@@ -244,8 +279,8 @@ public class AuthenticationTest extends JmsTestBase
     public void externalWithRevocationDisabledWithCrlFileAndRevokedCertificate() throws Exception
     {
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, false);
-        trustStoreAttributes.put(FileTrustStore.CRL_URL, TestSSLConstants.CA_CRL);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, false);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED);
     }
@@ -253,8 +288,10 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationDisabledWithCrlUrlInRevokedCertificate() throws Exception
     {
+        assumeThat("HTTP server failed to bind to port '" + CRL_HTTP_PORT + "'",
+                CRL_SERVER, is(not(equalTo(null))));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, false);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, false);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED);
     }
@@ -262,9 +299,11 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithSoftFail() throws Exception
     {
+        assumeThat("HTTP server failed to bind to port '" + CRL_HTTP_PORT + "'",
+                CRL_SERVER, is(not(equalTo(null))));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        trustStoreAttributes.put(FileTrustStore.SOFT_FAIL, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_IGNORING_SOFT_FAILURES, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_REVOKED_INVALID_CRL_PATH);
     }
@@ -272,9 +311,11 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithoutPreferCrls() throws Exception
     {
+        assumeThat("HTTP server failed to bind to port '" + CRL_HTTP_PORT + "'",
+                CRL_SERVER, is(not(equalTo(null))));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        trustStoreAttributes.put(FileTrustStore.PREFER_CRLS, false);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_PREFERRING_CERTIFICATE_REVOCATION_LIST, false);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
@@ -282,10 +323,12 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithoutPreferCrlsWithFallback() throws Exception
     {
+        assumeThat("HTTP server failed to bind to port '" + CRL_HTTP_PORT + "'",
+                CRL_SERVER, is(not(equalTo(null))));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        trustStoreAttributes.put(FileTrustStore.PREFER_CRLS, false);
-        trustStoreAttributes.put(FileTrustStore.NO_FALLBACK, false);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_PREFERRING_CERTIFICATE_REVOCATION_LIST, false);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_NO_FALLBACK, false);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
     }
@@ -293,10 +336,12 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedIntermediateCertificateWithCrlUrl() throws Exception
     {
+        assumeThat("HTTP server failed to bind to port '" + CRL_HTTP_PORT + "'",
+                CRL_SERVER, is(not(equalTo(null))));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        trustStoreAttributes.put(FileTrustStore.ONLY_END_ENTITY, false);
-        trustStoreAttributes.put(FileTrustStore.SOFT_FAIL, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_OF_ONLY_END_ENTITY_CERTIFICATES, false);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_IGNORING_SOFT_FAILURES, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED_WITH_INTERMEDIATE);
     }
@@ -304,10 +349,12 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedIntermediateCertificateWithCrlUrlOnlyEndEntity() throws Exception
     {
+        assumeThat("HTTP server failed to bind to port '" + CRL_HTTP_PORT + "'",
+                CRL_SERVER, is(not(equalTo(null))));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
-        trustStoreAttributes.put(FileTrustStore.REVOCATION, true);
-        trustStoreAttributes.put(FileTrustStore.ONLY_END_ENTITY, true);
-        trustStoreAttributes.put(FileTrustStore.SOFT_FAIL, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_OF_ONLY_END_ENTITY_CERTIFICATES, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_IGNORING_SOFT_FAILURES, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
         assertTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED_WITH_INTERMEDIATE);
     }
@@ -728,10 +775,13 @@ public class AuthenticationTest extends JmsTestBase
 
     private static void createContext(Path crlPath)
     {
-        _crlServer.createContext("/" + crlPath.getFileName(), new CrlServerHandler(crlPath));
+        final ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/" + crlPath.getFileName());
+        contextHandler.setHandler(new CrlServerHandler(crlPath));
+        HANDLERS.addHandler(contextHandler);
     }
 
-    private static class CrlServerHandler implements HttpHandler
+    private static class CrlServerHandler extends AbstractHandler
     {
         final Path crlPath;
         public CrlServerHandler(Path crlPath)
@@ -740,11 +790,12 @@ public class AuthenticationTest extends JmsTestBase
         }
 
         @Override
-        public void handle(HttpExchange httpExchange) throws IOException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
         {
             final byte[] crlBytes = Files.readAllBytes(crlPath);
-            httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, crlBytes.length);
-            final OutputStream responseBody = httpExchange.getResponseBody();
+            response.setStatus(HttpServletResponse.SC_OK);
+            final OutputStream responseBody = response.getOutputStream();
             responseBody.write(crlBytes);
             responseBody.close();
         }
