@@ -643,7 +643,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private SslContextFactory createSslContextFactory(final HttpPort<?> port)
     {
-        SslContextFactory factory = new SslContextFactory()
+        SslContextFactory.Server factory = new SslContextFactory.Server()
         {
             @Override
             public void customize(final SSLEngine sslEngine)
