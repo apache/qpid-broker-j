@@ -223,6 +223,17 @@ public class AuthenticationTest extends JmsTestBase
     }
 
     @Test
+    public void externalWithRevocationWithCrlFileAndAllowedCertificateWithoutPreferCrls() throws Exception
+    {
+        final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, TestSSLConstants.CA_CRL);
+        trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_PREFERRING_CERTIFICATE_REVOCATION_LIST, false);
+        final int port = createExternalProviderAndTlsPort(trustStoreAttributes);
+        assertNoTlsConnectivity(port, TestSSLConstants.CERT_ALIAS_ALLOWED);
+    }
+
+    @Test
     public void externalWithRevocationWithCrlFileAndRevokedCertificate() throws Exception
     {
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();

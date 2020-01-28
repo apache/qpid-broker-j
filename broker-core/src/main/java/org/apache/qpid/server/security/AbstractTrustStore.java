@@ -343,30 +343,27 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
                     parameters.addCertStore(
                             CertStore.getInstance("Collection", new CollectionCertStoreParameters(getCRLs())));
                 }
-                else
+                final PKIXRevocationChecker revocationChecker = (PKIXRevocationChecker) CertPathBuilder
+                        .getInstance(TrustManagerFactory.getDefaultAlgorithm()).getRevocationChecker();
+                final Set<PKIXRevocationChecker.Option> options = new HashSet<>();
+                if (_certificateRevocationCheckOfOnlyEndEntityCertificates)
                 {
-                    final PKIXRevocationChecker revocationChecker = (PKIXRevocationChecker) CertPathBuilder
-                            .getInstance(TrustManagerFactory.getDefaultAlgorithm()).getRevocationChecker();
-                    final Set<PKIXRevocationChecker.Option> options = new HashSet<>();
-                    if (_certificateRevocationCheckOfOnlyEndEntityCertificates)
-                    {
-                        options.add(PKIXRevocationChecker.Option.ONLY_END_ENTITY);
-                    }
-                    if (_certificateRevocationCheckWithPreferringCertificateRevocationList)
-                    {
-                        options.add(PKIXRevocationChecker.Option.PREFER_CRLS);
-                    }
-                    if (_certificateRevocationCheckWithNoFallback)
-                    {
-                        options.add(PKIXRevocationChecker.Option.NO_FALLBACK);
-                    }
-                    if (_certificateRevocationCheckWithIgnoringSoftFailures)
-                    {
-                        options.add(PKIXRevocationChecker.Option.SOFT_FAIL);
-                    }
-                    revocationChecker.setOptions(options);
-                    parameters.addCertPathChecker(revocationChecker);
+                    options.add(PKIXRevocationChecker.Option.ONLY_END_ENTITY);
                 }
+                if (_certificateRevocationCheckWithPreferringCertificateRevocationList)
+                {
+                    options.add(PKIXRevocationChecker.Option.PREFER_CRLS);
+                }
+                if (_certificateRevocationCheckWithNoFallback)
+                {
+                    options.add(PKIXRevocationChecker.Option.NO_FALLBACK);
+                }
+                if (_certificateRevocationCheckWithIgnoringSoftFailures)
+                {
+                    options.add(PKIXRevocationChecker.Option.SOFT_FAIL);
+                }
+                revocationChecker.setOptions(options);
+                parameters.addCertPathChecker(revocationChecker);
             }
             return parameters;
         }
