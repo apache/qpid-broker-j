@@ -1561,8 +1561,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             final List<QueueEntryKey> entries = new ArrayList<>();
             try(Cursor cursor = getDeliveryDb().openCursor(null, null))
             {
-                boolean searchCompletedSuccessfully = false;
-
                 DatabaseEntry key = new DatabaseEntry();
                 DatabaseEntry value = new DatabaseEntry();
                 value.setPartial(0, 0, true);
@@ -1570,19 +1568,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 CachingUUIDFactory uuidFactory = new CachingUUIDFactory();
                 QueueEntryBinding.objectToEntry(new QueueEntryKey(queue.getId(), 0L), key);
 
-                if (!searchCompletedSuccessfully && (searchCompletedSuccessfully =
-                        cursor.getSearchKeyRange(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS))
+                if (cursor.getSearchKeyRange(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
                 {
-                    QueueEntryKey entry = QueueEntryBinding.entryToObject(uuidFactory, key);
-                    if (entry.getQueueId().equals(queue.getId()))
-                    {
-                        entries.add(entry);
-                    }
-                }
-
-                if (searchCompletedSuccessfully)
-                {
-                    while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
+                    do
                     {
                         QueueEntryKey entry = QueueEntryBinding.entryToObject(uuidFactory, key);
                         if (entry.getQueueId().equals(queue.getId()))
@@ -1594,6 +1582,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                             break;
                         }
                     }
+                    while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS);
                 }
             }
             catch (RuntimeException e)

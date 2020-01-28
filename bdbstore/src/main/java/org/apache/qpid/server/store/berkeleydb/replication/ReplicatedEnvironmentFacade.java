@@ -996,6 +996,10 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                     LOGGER.info("The environment facade is in open state for node " + _prettyGroupNodeName);
                     _joinTime = System.currentTimeMillis();
                 }
+                if (state == ReplicatedEnvironment.State.MASTER)
+                {
+                    closeSequencesAndDatabasesSafely();
+                }
             }
 
             StateChangeListener listener = _stateChangeListener.get();
@@ -1366,24 +1370,28 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         ReplicatedEnvironment environment = _environment.getAndSet(null);
         if (environment != null)
         {
+            closeSequencesAndDatabasesSafely();
             try
             {
-                try
-                {
-                    closeSequences();
-                    closeDatabases();
-                }
-                catch(Exception e)
-                {
-                    LOGGER.warn("Ignoring an exception whilst closing databases", e);
-                }
-
                 environment.close();
             }
             catch (EnvironmentFailureException efe)
             {
                 LOGGER.warn("Ignoring an exception whilst closing environment", efe);
             }
+        }
+    }
+
+    private void closeSequencesAndDatabasesSafely()
+    {
+        try
+        {
+            closeSequences();
+            closeDatabases();
+        }
+        catch(Exception e)
+        {
+            LOGGER.warn("Ignoring an exception whilst closing databases", e);
         }
     }
 
