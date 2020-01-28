@@ -40,18 +40,17 @@ import java.io.ByteArrayOutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.URL;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 import javax.net.ssl.SSLException;
@@ -117,6 +116,29 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
 
         String userId = helper.getJson("broker/getUser", STRING_TYPE_REF, SC_OK);
         assertThat(userId, startsWith("foo@"));
+    }
+
+    @Test
+    public void clientAuthenticationWebManagementConsole() throws Exception
+    {
+        assumeThat(canGenerateCerts(), is(true));
+        HttpTestHelper helper = configForClientAuth("CN=foo");
+
+        HttpURLConnection authenticateConnection = helper.openManagementConnection("/index.html", "GET");
+        authenticateConnection.setInstanceFollowRedirects(false);
+
+        int status = authenticateConnection.getResponseCode();
+        final String cookies = authenticateConnection.getHeaderField("Set-Cookie");
+        authenticateConnection.disconnect();
+
+        assertThat(status, is(equalTo(HttpURLConnection.HTTP_MOVED_TEMP)));
+
+        authenticateConnection = helper.openManagementConnection("/index.html", "GET");
+        authenticateConnection.setRequestProperty("Cookie", cookies);
+        status = authenticateConnection.getResponseCode();
+        authenticateConnection.disconnect();
+
+        assertThat(status, is(equalTo(HttpURLConnection.HTTP_OK)));
     }
 
     @Test
