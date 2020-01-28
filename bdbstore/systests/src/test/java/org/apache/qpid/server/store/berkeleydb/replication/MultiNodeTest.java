@@ -23,6 +23,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.apache.qpid.systests.Utils.INDEX;
 import static org.apache.qpid.systests.Utils.getReceiveTimeout;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertNotNull;
@@ -311,23 +312,29 @@ public class MultiNodeTest extends GroupJmsTestBase
                                              final int inactiveBrokerPort,
                                              final int activeBrokerPort) throws Exception
     {
+        transferMasterToNodeWithAmqpPort(connection, inactiveBrokerPort);
+
+        assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
+
+        getBrokerAdmin().awaitNodeRole(activeBrokerPort, "REPLICA");
+    }
+
+    private void transferMasterToNodeWithAmqpPort(final Connection connection, final int nodeAmqpPort)
+            throws InterruptedException
+    {
         _failoverListener = new FailoverAwaitingListener();
         getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
-        Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
+        Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(nodeAmqpPort);
         assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
-        getBrokerAdmin().setNodeAttributes(inactiveBrokerPort,
+        getBrokerAdmin().setNodeAttributes(nodeAmqpPort,
                                            Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
 
         _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Listener has finished");
 
-        attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
+        attributes = getBrokerAdmin().getNodeAttributes(nodeAmqpPort);
         assertEquals("Inactive broker has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
-
-        assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
-
-        getBrokerAdmin().awaitNodeRole(activeBrokerPort, "REPLICA");
     }
 
     @Test
@@ -867,6 +874,83 @@ public class MultiNodeTest extends GroupJmsTestBase
         finally
         {
             FileUtils.delete(environmentPathFile, true);
+        }
+    }
+
+    @Test
+    public void testAsynchronousRecoverer() throws Exception
+    {
+        configureAsynchronousRecoveryOnAllNodes();
+
+        final Connection connection = getConnectionBuilder().build();
+        try
+        {
+            getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
+            final Destination queue = createTestQueue(connection);
+            int brokerPort = getJmsProvider().getConnectedURI(connection).getPort();
+            LOGGER.info("Sending message 'A' to the node with port {}", brokerPort);
+            Utils.sendTextMessage(connection, queue, "A");
+
+            final int anotherNodePort = getBrokerAdmin().getAmqpPort(brokerPort);
+            LOGGER.info("Changing mastership to the node with port {}", anotherNodePort);
+            transferMasterToNodeWithAmqpPort(connection, anotherNodePort);
+            getBrokerAdmin().awaitNodeRole(brokerPort, "REPLICA", "MASTER");
+
+            LOGGER.info("Sending message 'B' to the node with port {}", anotherNodePort);
+            Utils.sendTextMessage(connection, queue, "B");
+
+            LOGGER.info("Transfer mastership back to broker with port {}", brokerPort);
+            transferMasterToNodeWithAmqpPort(connection, brokerPort);
+            getBrokerAdmin().awaitNodeRole(anotherNodePort, "REPLICA", "MASTER");
+
+            LOGGER.info("Sending message 'C' to the node with port {}", anotherNodePort);
+            Utils.sendTextMessage(connection, queue, "C");
+
+            consumeTextMessages(connection, queue, "A", "B", "C");
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    private void configureAsynchronousRecoveryOnAllNodes()
+    {
+        final GroupBrokerAdmin brokerAdmin = getBrokerAdmin();
+        for (int port : brokerAdmin.getGroupAmqpPorts())
+        {
+            brokerAdmin.setNodeAttributes(port, Collections.singletonMap(BDBHAVirtualHostNode.CONTEXT,
+                                                                         Collections.singletonMap(
+                                                                                 "use_async_message_store_recovery",
+                                                                                 "true")));
+            brokerAdmin.stopNode(port);
+            brokerAdmin.startNode(port);
+            brokerAdmin.awaitNodeRole(port, BDBHARemoteReplicationNode.ROLE, "REPLICA", "MASTER");
+        }
+
+        LOGGER.info("Asynchronous recoverer is configured on all group nodes");
+    }
+
+    private void consumeTextMessages(final Connection connection, final Destination queue, final String... expected)
+            throws JMSException
+    {
+        LOGGER.info("Trying to consume messages: {}", String.join(",", expected));
+        connection.start();
+        final Session session = connection.createSession(true, Session.AUTO_ACKNOWLEDGE);
+        try
+        {
+            final MessageConsumer consumer = session.createConsumer(queue);
+
+            for (String m : expected)
+            {
+                final Message message = consumer.receive(getReceiveTimeout());
+                assertThat(message, is(instanceOf(TextMessage.class)));
+                assertThat(((TextMessage) message).getText(), is(equalTo(m)));
+            }
+        }
+        finally
+        {
+            session.close();
         }
     }
 
