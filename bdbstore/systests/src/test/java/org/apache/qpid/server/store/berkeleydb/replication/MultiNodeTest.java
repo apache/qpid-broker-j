@@ -59,6 +59,7 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.TransactionRolledBackException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.je.Durability;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
@@ -914,15 +915,16 @@ public class MultiNodeTest extends GroupJmsTestBase
         }
     }
 
-    private void configureAsynchronousRecoveryOnAllNodes()
+    private void configureAsynchronousRecoveryOnAllNodes() throws Exception
     {
         final GroupBrokerAdmin brokerAdmin = getBrokerAdmin();
+        final String contextValue = new ObjectMapper().writeValueAsString(Collections.singletonMap(
+                "use_async_message_store_recovery",
+                "true"));
         for (int port : brokerAdmin.getGroupAmqpPorts())
         {
             brokerAdmin.setNodeAttributes(port, Collections.singletonMap(BDBHAVirtualHostNode.CONTEXT,
-                                                                         Collections.singletonMap(
-                                                                                 "use_async_message_store_recovery",
-                                                                                 "true")));
+                                                                         contextValue));
             brokerAdmin.stopNode(port);
             brokerAdmin.startNode(port);
             brokerAdmin.awaitNodeRole(port, BDBHARemoteReplicationNode.ROLE, "REPLICA", "MASTER");
