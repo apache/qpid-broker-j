@@ -72,6 +72,8 @@ public abstract class JDBCDetails
                 false, true);
         private static final JDBCDetails MARIA_DB = new KnownJDBCDetails("mariadb", "longblob", "", "varbinary(%d)", "bigint", "timestamp",
                 false, true);
+        private static final JDBCDetails SQL_SERVER = new KnownJDBCDetails("sqlserver", "varbinary(max)", "", "varbinary(%d)", "bigint", "datetime2",
+                false, true);
 
         static
         {
@@ -85,6 +87,7 @@ public abstract class JDBCDetails
                 map.put(DERBY.getVendor(), DERBY);
                 map.put(MYSQL.getVendor(), MYSQL);
                 map.put(MARIA_DB.getVendor(), MARIA_DB);
+                map.put(SQL_SERVER.getVendor(), SQL_SERVER);
                 map.put(FALLBACK.getVendor(), FALLBACK);
             }
             finally
