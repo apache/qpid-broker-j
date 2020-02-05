@@ -135,8 +135,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
         attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
-                "Cannot load private key or certificate(s): java.security.cert.CertificateException: " +
-                        "Could not parse certificate: java.io.IOException: Empty input");
+                "Cannot load private key or certificate(s)");
     }
 
     @Test

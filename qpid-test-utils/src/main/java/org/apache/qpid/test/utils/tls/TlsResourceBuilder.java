@@ -43,6 +43,7 @@ import org.bouncycastle.asn1.x500.style.RFC4519Style;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.CRLDistPoint;
 import org.bouncycastle.asn1.x509.CRLNumber;
+import org.bouncycastle.asn1.x509.CRLReason;
 import org.bouncycastle.asn1.x509.DistributionPoint;
 import org.bouncycastle.asn1.x509.DistributionPointName;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
@@ -270,8 +271,7 @@ public class TlsResourceBuilder
 
             for (X509Certificate c : certificate)
             {
-                // crlBuilder.addCRLEntry(c.getSerialNumber(), now, CRLReason.privilegeWithdrawn);
-                crlBuilder.addCRLEntry(c.getSerialNumber(), now, 0);
+                crlBuilder.addCRLEntry(c.getSerialNumber(), now, CRLReason.privilegeWithdrawn);
             }
 
             crlBuilder.addExtension(createAuthorityKeyExtension(ca.getCertificate().getPublicKey()));
@@ -281,23 +281,6 @@ public class TlsResourceBuilder
             final X509CRLHolder crl = crlBuilder.build(contentSigner);
 
             return new JcaX509CRLConverter().getCRL(crl);
-
-
-            /*
-
-            JcaContentSignerBuilder contentSignerBuilder =
-                    new JcaContentSignerBuilder(SIGNATURE_ALGORITHM_SHA_512_WITH_RSA); //"SHA256WithRSAEncryption"
-
-            contentSignerBuilder.setProvider("BC");
-
-            X509CRLHolder crlHolder = crlBuilder.build(contentSignerBuilder.build(ca.getPrivateKey()));
-
-            JcaX509CRLConverter converter = new JcaX509CRLConverter();
-
-            converter.setProvider("BC");
-
-            return converter.getCRL(crlHolder);
-            */
         }
         catch (OperatorException | IOException | CertificateException e)
         {

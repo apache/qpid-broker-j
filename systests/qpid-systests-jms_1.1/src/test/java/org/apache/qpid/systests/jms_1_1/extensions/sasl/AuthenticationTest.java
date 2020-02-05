@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.sasl;
 
+import static org.apache.qpid.test.utils.UnitTestBase.getJvmVendor;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -72,6 +74,7 @@ import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.jms_1_1.extensions.BrokerManagementHelper;
+import org.apache.qpid.test.utils.JvmVendor;
 import org.apache.qpid.test.utils.tls.CertificateEntry;
 import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.test.utils.tls.PrivateKeyEntry;
@@ -421,6 +424,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndAllowedCertificateWithCrlUrl() throws Exception
     {
+        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
@@ -439,6 +443,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithEmptyCrl() throws Exception
     {
+        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
@@ -467,6 +472,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithSoftFail() throws Exception
     {
+        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_IGNORING_SOFT_FAILURES, true);
@@ -488,6 +494,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithoutPreferCrlsWithFallback() throws Exception
     {
+        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_PREFERRING_CERTIFICATE_REVOCATION_LIST,
@@ -511,6 +518,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedIntermediateCertificateWithCrlUrlOnlyEndEntity() throws Exception
     {
+        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_OF_ONLY_END_ENTITY_CERTIFICATES, true);

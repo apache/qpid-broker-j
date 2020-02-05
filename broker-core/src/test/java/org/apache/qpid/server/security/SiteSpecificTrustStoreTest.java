@@ -56,6 +56,7 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.test.utils.tls.PrivateKeyEntry;
@@ -327,7 +328,7 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             kmf.init(inMemoryKeyStore, secret);
             KeyManager[] keyManagers = kmf.getKeyManagers();
-            SSLContext sslContext = SSLContext.getInstance("TLS");
+            SSLContext sslContext = SSLUtil.tryGetSSLContext();
             sslContext.init(keyManagers, null, new SecureRandom());
             SSLServerSocketFactory socketFactory = sslContext.getServerSocketFactory();
             ServerSocket serverSocket = socketFactory.createServerSocket(0);

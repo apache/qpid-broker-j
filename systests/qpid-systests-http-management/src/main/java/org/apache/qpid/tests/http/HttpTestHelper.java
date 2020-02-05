@@ -142,7 +142,7 @@ public class HttpTestHelper
             HttpsURLConnection httpsCon = (HttpsURLConnection) httpCon;
             try
             {
-                SSLContext sslContext = SSLContext.getInstance("TLS");
+                SSLContext sslContext = SSLUtil.tryGetSSLContext();
                 TrustManager[] trustAllCerts = new TrustManager[] {new TrustAllTrustManager()};
 
                 KeyManager[] keyManagers = null;
