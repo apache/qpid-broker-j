@@ -53,7 +53,7 @@ public class TlsOrPlainConnectionFactory extends AbstractConnectionFactory
                                        @Name("nextProtocol") final String nextProtocol)
     {
         super("SSL");
-        _sslContextFactory = factory == null ? new SslContextFactory() : factory;
+        _sslContextFactory = factory == null ? new SslContextFactory.Server() : factory;
         _nextProtocol = nextProtocol;
         this.addBean(this._sslContextFactory);
     }

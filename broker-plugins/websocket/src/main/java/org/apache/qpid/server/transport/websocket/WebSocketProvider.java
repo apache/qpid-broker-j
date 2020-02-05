@@ -251,7 +251,7 @@ class WebSocketProvider implements AcceptingTransport
 
     private SslContextFactory createSslContextFactory(final AmqpPort<?> port)
     {
-        SslContextFactory sslContextFactory = new SslContextFactory()
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server()
         {
             @Override
             public void customize(final SSLEngine sslEngine)
