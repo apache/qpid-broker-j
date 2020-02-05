@@ -130,6 +130,15 @@ public class SSLUtil
 
         try
         {
+            certificateFactory = CertificateFactory.getInstance("X.509");
+        }
+        catch (CertificateException e)
+        {
+            // ignore
+        }
+
+        try
+        {
             Class<?> certAndKeyGenClass;
             try
             {
@@ -162,9 +171,8 @@ public class SSLUtil
             setExtensionMethod = certificateExtensionsClass.getMethod("set", String.class, Object.class);
             extensionGetNameMethod = extensionClass.getMethod("getName");
             canGenerateCerts = true;
-            certificateFactory = CertificateFactory.getInstance("X.509");
         }
-        catch (ClassNotFoundException | LinkageError | CertificateException | NoSuchMethodException e)
+        catch (ClassNotFoundException | LinkageError | NoSuchMethodException e)
         {
             // ignore
         }
