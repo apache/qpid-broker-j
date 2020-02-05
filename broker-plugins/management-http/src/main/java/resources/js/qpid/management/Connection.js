@@ -133,6 +133,8 @@ define(["dojo/parser",
                         "protocol",
                         "remoteProcessPid",
                         "createdTime",
+                        "transportInfo",
+                        "transportInfoContainer",
                         "sessionCountLimit"]);
 
             var userPreferences = this.management.userPreferences;
@@ -276,6 +278,9 @@ define(["dojo/parser",
             this.port.innerHTML = entities.encode(String(this.connectionData["port"]));
             this.transport.innerHTML = entities.encode(String(this.connectionData["transport"]));
             this.protocol.innerHTML = entities.encode(String(this.connectionData["protocol"]));
+            var transportInfo = entities.encode(String(this.connectionData["transportInfo"]));
+            this.transportInfo.innerHTML = transportInfo;
+            this.transportInfoContainer.style.display = transportInfo === "" ? "none": "";
             var remoteProcessPid = this.connectionData["remoteProcessPid"];
             this.remoteProcessPid.innerHTML = entities.encode(String(remoteProcessPid ? remoteProcessPid : "N/A"));
             this.sessionCountLimit.innerHTML = entities.encode(String(this.connectionData["sessionCountLimit"]));
