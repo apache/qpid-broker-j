@@ -20,11 +20,13 @@
  */
 package org.apache.qpid.tests.http.rest.model;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet.SC_UNPROCESSABLE_ENTITY;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -125,6 +127,17 @@ public class OperationTest extends HttpTestBase
         {
             //pass
         }
+
+    }
+
+    @Test
+    public void invokeOperationWithReservedParameter() throws Exception
+    {
+        final HttpTestHelper brokerHelper = new HttpTestHelper(getBrokerAdmin());
+        final byte[] response = brokerHelper.getBytes(
+                "broker/getThreadStackTraces?contentDispositionAttachmentFilename=stack-traces.txt&appendToLog=false");
+        assertThat(response, is(notNullValue()));
+        assertThat(new String(response, UTF_8).contains("Full thread dump captured"), is(equalTo(true)));
 
     }
 }

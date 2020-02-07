@@ -325,8 +325,14 @@ public class HttpTestHelper
     public byte[] getBytes(String path) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(path, "GET");
-        connection.connect();
-        return readConnectionInputStream(connection);
+        try
+        {
+            return readConnectionInputStream(connection);
+        }
+        finally
+        {
+            connection.disconnect();
+        }
     }
 
     public String getAcceptEncoding()
