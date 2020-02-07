@@ -66,6 +66,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.OperationParameter;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 
@@ -336,7 +337,25 @@ public class LatestManagementController extends AbstractManagementController
                                                                       category));
             }
 
-            if (operation.isSecure(target, operationArguments) && !isSecureOrAllowedOnInsecureChannel)
+            final Map<String, Object> arguments;
+            if (isPost)
+            {
+                arguments = operationArguments;
+            }
+            else
+            {
+                final Set<String> supported = ((List<OperationParameter>) operation.getParameters()).stream()
+                                                                                                    .map(OperationParameter::getName)
+                                                                                                    .collect(Collectors.toSet());
+                arguments = operationArguments.entrySet()
+                                              .stream()
+                                              .filter(e -> !RESERVED_PARAMS.contains(e.getKey())
+                                                           || supported.contains(e.getKey()))
+                                              .collect(Collectors.toMap(Map.Entry::getKey,
+                                                                        Map.Entry::getValue));
+            }
+
+            if (operation.isSecure(target, arguments) && !isSecureOrAllowedOnInsecureChannel)
             {
                 throw createForbiddenManagementException(String.format(
                         "Operation '%s' can only be performed over a secure (HTTPS) connection",
@@ -350,7 +369,7 @@ public class LatestManagementController extends AbstractManagementController
                         operationName), Collections.singletonMap("Allow", "POST"));
             }
 
-            returnValue = operation.perform(target, operationArguments);
+            returnValue = operation.perform(target, arguments);
 
             if (ConfiguredObject.class.isAssignableFrom(operation.getReturnType())
                 || returnsCollectionOfConfiguredObjects(operation))
