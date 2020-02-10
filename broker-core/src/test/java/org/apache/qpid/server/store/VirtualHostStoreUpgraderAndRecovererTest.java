@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -86,8 +87,11 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
 
         assertEquals("Unexpected maximumQueueDepthBytes", 1000, upgradedAttributes.get("maximumQueueDepthBytes"));
 
+        NumberFormat formatter = NumberFormat.getInstance();
+        formatter.setMinimumFractionDigits(2);
+
         assertEquals("Unexpected queue.queueFlowResumeLimit",
-                            "70.00",
+                            formatter.format(70L),
                             ((Map<String, String>) upgradedAttributes.get("context")).get("queue.queueFlowResumeLimit"));
 
         assertEquals("Unexpected overflowPolicy",

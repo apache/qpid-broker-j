@@ -28,6 +28,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -156,6 +157,8 @@ public class QueueControllerTest extends UnitTestBase
         assertThat(contextObject, is(instanceOf(Map.class)));
 
         final Map<?,?> context =(Map<?,?>)contextObject;
-        assertThat(context.get("queue.queueFlowResumeLimit"), is(equalTo("70.00")));
+        NumberFormat formatter = NumberFormat.getInstance();
+        formatter.setMinimumFractionDigits(2);
+        assertThat(context.get("queue.queueFlowResumeLimit"), is(equalTo(formatter.format(70L))));
     }
 }

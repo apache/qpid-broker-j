@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Map;
 
@@ -102,9 +103,13 @@ public class FormattingStatisticsResolverTest extends UnitTestBase
     @Test
     public void testIEC80000BinaryPrefixed() throws Exception
     {
-        assertEquals("1.0 MiB",
+        NumberFormat formatter = NumberFormat.getInstance();
+        formatter.setMinimumFractionDigits(1);
+        String ONE_POINT_ZERO = formatter.format(1L);
+
+        assertEquals(ONE_POINT_ZERO + " MiB",
                             _resolver.resolve(LARGEST_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
-        assertEquals("1.0 KiB",
+        assertEquals(ONE_POINT_ZERO + " KiB",
                             _resolver.resolve(LARGER_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals("10 B",
                             _resolver.resolve(POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
@@ -112,9 +117,9 @@ public class FormattingStatisticsResolverTest extends UnitTestBase
                             _resolver.resolve(ZERO_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals("-1 B",
                             _resolver.resolve(NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
-        assertEquals("-1.0 KiB",
+        assertEquals("-"+ ONE_POINT_ZERO + " KiB",
                             _resolver.resolve(SMALLER_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
-        assertEquals("-1.0 MiB",
+        assertEquals("-" + ONE_POINT_ZERO + " MiB",
                             _resolver.resolve(SMALLEST_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
     }
 

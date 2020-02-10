@@ -22,6 +22,7 @@ package org.apache.qpid.server.logging.messages;
 
 import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.Test;
 
@@ -139,9 +140,12 @@ public class BrokerMessagesTest extends AbstractTestMessages
         _logMessage = BrokerMessages.MAX_MEMORY(oneGiga, twoGiga);
         List<Object> log = performLog();
 
+        // Log messages always use US Locale format for numbers
+        NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
+
         String[] expected = {"Maximum Memory :",
-                             "Heap", NumberFormat.getNumberInstance().format(oneGiga), "bytes",
-                             "Direct", NumberFormat.getNumberInstance().format(twoGiga), "bytes"
+                             "Heap", numberFormat.format(oneGiga), "bytes",
+                             "Direct", numberFormat.format(twoGiga), "bytes"
         };
 
         validateLogMessage(log, "BRK-1011", expected);
