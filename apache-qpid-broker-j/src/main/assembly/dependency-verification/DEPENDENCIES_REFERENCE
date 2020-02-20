@@ -25,8 +25,10 @@ Apache Qpid Broker-J Bundles
 
 
 From: 'an unknown organization'
-  - Guava: Google Core Libraries for Java (https://github.com/google/guava/guava) com.google.guava:guava:bundle:27.0-jre
+  - Guava InternalFutureFailureAccess and InternalFutures (https://github.com/google/guava/failureaccess) com.google.guava:failureaccess:bundle:1.0.1
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Guava: Google Core Libraries for Java (https://github.com/google/guava/guava) com.google.guava:guava:bundle:28.2-jre
+    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - dgrid (http://webjars.org) org.webjars.bower:dgrid:jar:1.2.1
     License: BSD 3-Clause  (https://spdx.org/licenses/BSD 3-Clause#licenseText)
   - dstore (http://webjars.org) org.webjars.bower:dstore:jar:1.1.2

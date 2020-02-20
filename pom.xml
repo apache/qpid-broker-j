@@ -104,7 +104,7 @@
     <bdb-version>7.4.5</bdb-version>
     <derby-version>10.14.2.0</derby-version>
     <logback-version>1.2.3</logback-version>
-    <guava-version>27.0-jre</guava-version>
+    <guava-version>28.2-jre</guava-version>
     <fasterxml-jackson-version>2.10.2</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>2.10.2</fasterxml-jackson-databind-version>
     <slf4j-version>1.7.30</slf4j-version>
@@ -522,16 +522,8 @@
             <artifactId>error_prone_annotations</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>animal-sniffer-annotations</artifactId>
-          </exclusion>
-          <exclusion>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.guava</groupId>
-            <artifactId>failureaccess</artifactId>
           </exclusion>
           <exclusion>
             <groupId>com.google.guava</groupId>
