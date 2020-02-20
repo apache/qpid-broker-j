@@ -25,8 +25,17 @@ define(["dojo/query", "dijit/registry", "qpid/common/util"], function (query, re
         {
             util.parseHtmlIntoDiv(data.containerNode, "authenticationprovider/filebased/add.html", function ()
             {
+                if (!!data.data)
+                {
+                    util.applyToWidgets(data.containerNode,
+                        "AuthenticationProvider",
+                        "Base64MD5PasswordFile",
+                        data.data,
+                        data.metadata);
+                }
+
                 var pathWidget = registry.byNode(query(".path", data.containerNode)[0]);
-                pathWidget.set("disabled", data.data && data.data.id ? true : false);
+                pathWidget.set("disabled", !!(data.data && data.data.id));
                 pathWidget.set("value", data.data ? data.data.path : "");
             });
         }

@@ -237,7 +237,6 @@ define(["dojo/dom",
                                 effectiveData: that.effectiveData,
                                 metadata: that.management.metadata
                             });
-                            util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
                             that.typeUI = typeUI;
                         }
                         catch (e)

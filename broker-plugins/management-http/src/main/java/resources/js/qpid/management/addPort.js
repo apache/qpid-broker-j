@@ -143,8 +143,6 @@ define(["dojo/dom",
             util.setMultiSelectOptions(transportsMultiSelect, transportsValues.sort());
 
             addPort._toggleSslWidgets(newValue, transportsMultiSelect.value);
-
-            util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", newValue, meta);
         };
 
         addPort._isSecure = function (currentTransport)
@@ -582,10 +580,12 @@ define(["dojo/dom",
                         managedCertificateStoreWidget.set("value", port.clientCertRecorder);
                         managedCertificateStoreWidget.initialValue = port.clientCertRecorder;
 
-                        util.applyMetadataToWidgets(registry.byId("addPort").domNode,
+                        util.applyToWidgets(registry.byId("addPort").domNode,
                             "Port",
                             portType,
-                            management.metadata);
+                            data.actual,
+                            management.metadata,
+                            data.effective);
 
                         addPort._initContextEditorAndShowDialog(data);
 

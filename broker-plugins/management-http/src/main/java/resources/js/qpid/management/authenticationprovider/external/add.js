@@ -27,6 +27,12 @@ define(["dojo/query", "dijit/registry", "qpid/common/util"], function (query, re
             {
                 if (data.data)
                 {
+                    util.applyToWidgets(data.containerNode,
+                        "AuthenticationProvider",
+                        "External",
+                        data.data,
+                        data.metadata);
+
                     var useFullDN = registry.byNode(query(".useFullDN", data.containerNode)[0]);
                     useFullDN.set("value", data.data.useFullDN);
                     useFullDN.set("checked", data.data.useFullDN);

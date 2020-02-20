@@ -169,7 +169,6 @@ define(["dojo/_base/lang",
                             category: category,
                             type: type
                         });
-                        util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
                     }
                     catch (e)
                     {

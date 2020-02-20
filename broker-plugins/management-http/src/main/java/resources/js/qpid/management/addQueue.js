@@ -121,7 +121,13 @@ define(["dojo/dom",
                                     node.style.display = "block";
                                     if (addQueue.management)
                                     {
-                                        util.applyMetadataToWidgets(node, "Queue", value, addQueue.management.metadata);
+                                        util.applyToWidgets(node,
+                                            "Queue",
+                                            value,
+                                            addQueue.initialData,
+                                            addQueue.management.metadata,
+                                            addQueue.effectiveData
+                                        );
                                     }
                                 }
                                 else
