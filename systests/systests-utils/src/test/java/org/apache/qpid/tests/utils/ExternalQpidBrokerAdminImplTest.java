@@ -23,7 +23,7 @@ package org.apache.qpid.tests.utils;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -97,7 +97,7 @@ public class ExternalQpidBrokerAdminImplTest extends UnitTestBase
     public void beforeTestMethod()
     {
         _admin.beforeTestMethod(null, null);
-        verifyZeroInteractions(_queueAdmin);
+        verifyNoInteractions(_queueAdmin);
     }
 
 }

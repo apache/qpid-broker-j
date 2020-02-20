@@ -23,7 +23,7 @@ import static org.apache.qpid.server.store.Event.PERSISTENT_MESSAGE_SIZE_OVERFUL
 import static org.apache.qpid.server.store.Event.PERSISTENT_MESSAGE_SIZE_UNDERFULL;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import org.junit.Test;
 
@@ -47,7 +47,7 @@ public class EventManagerTest extends UnitTestBase
     {
         _eventManager.addEventListener(_mockListener, PERSISTENT_MESSAGE_SIZE_OVERFULL);
         _eventManager.notifyEvent(Event.PERSISTENT_MESSAGE_SIZE_UNDERFULL);
-        verifyZeroInteractions(_mockListener);
+        verifyNoInteractions(_mockListener);
     }
 
     @Test

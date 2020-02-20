@@ -22,7 +22,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
@@ -78,7 +78,7 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
 
         verify(_storeTransaction).enqueueMessage(_queue, _message);
         verify(_futureRecorder).recordFuture(eq(_future), any(Action.class));
-        verifyZeroInteractions(_postTransactionAction);
+        verifyNoInteractions(_postTransactionAction);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
 
         verify(_storeTransaction).enqueueMessage(_queue, _message);
         verify(_futureRecorder).recordFuture(eq(_future), any(Action.class));
-        verifyZeroInteractions(_postTransactionAction);
+        verifyNoInteractions(_postTransactionAction);
     }
 
     @Test
@@ -114,7 +114,7 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
 
         verify(_storeTransaction).enqueueMessage(_queue, _message);
         verify(_futureRecorder).recordFuture(eq(_future), any(Action.class));
-        verifyZeroInteractions(_postTransactionAction);
+        verifyNoInteractions(_postTransactionAction);
     }
 
     @Test
@@ -129,9 +129,9 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
 
         asyncAutoCommitTransaction.enqueue(_queue, _message, _postTransactionAction);
 
-        verifyZeroInteractions(_storeTransaction);
+        verifyNoInteractions(_storeTransaction);
         verify(_postTransactionAction).postCommit((MessageEnqueueRecord)null);
-        verifyZeroInteractions(_futureRecorder);
+        verifyNoInteractions(_futureRecorder);
     }
 
     @Test
@@ -146,8 +146,8 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
 
         asyncAutoCommitTransaction.enqueue(_queue, _message, _postTransactionAction);
 
-        verifyZeroInteractions(_storeTransaction);
+        verifyNoInteractions(_storeTransaction);
         verify(_futureRecorder).recordFuture(any(ListenableFuture.class), any(Action.class));
-        verifyZeroInteractions(_postTransactionAction);
+        verifyNoInteractions(_postTransactionAction);
     }
 }

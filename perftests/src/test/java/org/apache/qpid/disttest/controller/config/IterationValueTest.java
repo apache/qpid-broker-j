@@ -20,7 +20,7 @@ package org.apache.qpid.disttest.controller.config;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -83,7 +83,7 @@ public class IterationValueTest extends UnitTestBase
         CreateConnectionCommand createConnectionCommand = mock(CreateConnectionCommand.class);
         iterationValue.applyToCommand(createConnectionCommand);
 
-        verifyZeroInteractions(createConnectionCommand);
+        verifyNoInteractions(createConnectionCommand);
     }
 
     @Test
@@ -93,7 +93,7 @@ public class IterationValueTest extends UnitTestBase
 
         iterationValue.applyToCommand(_createConsumerCommand);
 
-        verifyZeroInteractions(_createConsumerCommand);
+        verifyNoInteractions(_createConsumerCommand);
     }
 
 }

@@ -36,7 +36,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -781,7 +781,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
                                                                       Integer.valueOf(2)));
 
         _queue.enqueue(createMessage(new Long(24)), null, null);
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
 
         _queue.enqueue(createMessage(new Long(25)), null, null);
 
@@ -801,7 +801,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         _queue.setAttributes(Collections.<String, Object>singletonMap(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,
                                                                       Integer.valueOf(2)));
 
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
 
         _queue.checkMessageStatus();
 

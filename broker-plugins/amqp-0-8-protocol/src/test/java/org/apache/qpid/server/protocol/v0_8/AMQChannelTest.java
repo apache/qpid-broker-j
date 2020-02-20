@@ -29,7 +29,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.security.AccessControlException;
@@ -212,7 +212,7 @@ public class AMQChannelTest extends UnitTestBase
         channel.receiveMessageHeader(properties, 0);
 
         verify(_amqConnection).sendConnectionClose(eq(ErrorCodes.ACCESS_REFUSED), anyString(), eq(channelId));
-        verifyZeroInteractions(_messageDestination);
+        verifyNoInteractions(_messageDestination);
     }
 
     @Test

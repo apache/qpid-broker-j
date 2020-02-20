@@ -22,7 +22,7 @@ package org.apache.qpid.systests.jms_1_1.extensions.autocreation;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Collections;
 import java.util.HashMap;

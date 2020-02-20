@@ -22,7 +22,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
@@ -87,7 +87,7 @@ public class ClientActionTest extends UnitTestBase
 
         assertTrue(_clientAction.matches(_ruleAction, null));
 
-        verifyZeroInteractions(firewallRule);
+        verifyNoInteractions(firewallRule);
     }
 
 }

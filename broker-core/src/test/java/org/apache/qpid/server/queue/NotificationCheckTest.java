@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import org.junit.Test;
@@ -52,7 +52,7 @@ public class NotificationCheckTest extends UnitTestBase
         when(_queue.getQueueDepthMessages()).thenReturn(999, 1000, 1001);
 
         MESSAGE_COUNT_ALERT.notifyIfNecessary(_message, _queue, _listener);
-        verifyZeroInteractions(_listener);
+        verifyNoInteractions(_listener);
 
         MESSAGE_COUNT_ALERT.notifyIfNecessary(_message, _queue, _listener);
         verify(_listener).notifyClients(eq(MESSAGE_COUNT_ALERT), eq(_queue), eq("1000: Maximum count on queue threshold (1000) breached."));
@@ -68,7 +68,7 @@ public class NotificationCheckTest extends UnitTestBase
         when(_message.getSizeIncludingHeader()).thenReturn(1023l, 1024l, 1025l);
 
         MESSAGE_SIZE_ALERT.notifyIfNecessary(_message, _queue, _listener);
-        verifyZeroInteractions(_listener);
+        verifyNoInteractions(_listener);
 
         MESSAGE_SIZE_ALERT.notifyIfNecessary(_message, _queue, _listener);
         verify(_listener).notifyClients(eq(MESSAGE_SIZE_ALERT), eq(_queue), contains("1024b : Maximum message size threshold (1024) breached."));
@@ -85,7 +85,7 @@ public class NotificationCheckTest extends UnitTestBase
         when(_queue.getOldestMessageArrivalTime()).thenReturn(now, now - 15000);
 
         MESSAGE_AGE_ALERT.notifyIfNecessary(_message, _queue, _listener);
-        verifyZeroInteractions(_listener);
+        verifyNoInteractions(_listener);
 
         MESSAGE_AGE_ALERT.notifyIfNecessary(_message, _queue, _listener);
         // Uses contains as first part of message is non-deterministic
@@ -99,7 +99,7 @@ public class NotificationCheckTest extends UnitTestBase
         when(_queue.getQueueDepthBytes()).thenReturn(1023l, 1024l, 2048l);
 
         QUEUE_DEPTH_ALERT.notifyIfNecessary(_message, _queue, _listener);
-        verifyZeroInteractions(_listener);
+        verifyNoInteractions(_listener);
 
         QUEUE_DEPTH_ALERT.notifyIfNecessary(_message, _queue, _listener);
         verify(_listener).notifyClients(eq(QUEUE_DEPTH_ALERT), eq(_queue), eq("1Kb : Maximum queue depth threshold (1Kb) breached."));

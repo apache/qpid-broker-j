@@ -23,7 +23,7 @@ package org.apache.qpid.tests.utils;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -47,21 +47,21 @@ public class NoOpQueueAdminTest extends UnitTestBase
     public void createQueue()
     {
         _admin.createQueue(_brokerAdmin, getTestName());
-        verifyZeroInteractions(_brokerAdmin);
+        verifyNoInteractions(_brokerAdmin);
     }
 
     @Test
     public void deleteQueue()
     {
         _admin.deleteQueue(_brokerAdmin, getTestName());
-        verifyZeroInteractions(_brokerAdmin);
+        verifyNoInteractions(_brokerAdmin);
     }
 
     @Test
     public void putMessageOnQueue()
     {
         _admin.putMessageOnQueue(_brokerAdmin, getTestName());
-        verifyZeroInteractions(_brokerAdmin);
+        verifyNoInteractions(_brokerAdmin);
     }
 
     @Test

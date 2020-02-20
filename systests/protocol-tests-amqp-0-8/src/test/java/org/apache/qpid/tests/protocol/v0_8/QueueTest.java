@@ -25,7 +25,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isEmptyString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.junit.Assume.assumeThat;
 
 import java.util.Collections;
@@ -298,7 +298,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                                      .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
 
             String serverAssignedQueueName = response.getQueue().toString();
-            assertThat(serverAssignedQueueName, is(not(isEmptyString())));
+            assertThat(serverAssignedQueueName, is(not(emptyString())));
 
             QueueDeclareOkBody passive = interaction.queue()
                                                     .declareName(serverAssignedQueueName)

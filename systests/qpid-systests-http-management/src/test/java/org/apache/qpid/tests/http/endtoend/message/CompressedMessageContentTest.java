@@ -23,7 +23,7 @@ import static org.apache.qpid.server.model.Broker.BROKER_MESSAGE_COMPRESSION_ENA
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeThat;
 
 import java.io.ByteArrayOutputStream;
