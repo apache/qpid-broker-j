@@ -107,7 +107,7 @@
     <guava-version>27.0-jre</guava-version>
     <fasterxml-jackson-version>2.10.2</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>2.10.2</fasterxml-jackson-databind-version>
-    <slf4j-version>1.7.26</slf4j-version>
+    <slf4j-version>1.7.30</slf4j-version>
     <jetty-version>9.4.22.v20191022</jetty-version>
 
     <!-- dependency version numbers -->
