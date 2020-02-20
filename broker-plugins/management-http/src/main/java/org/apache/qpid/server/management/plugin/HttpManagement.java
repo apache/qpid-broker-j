@@ -934,11 +934,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         public QBBTrackingThreadPool(@Name("maxThreads") final int maxThreads, @Name("minThreads") final int minThreads)
         {
             super(maxThreads, minThreads);
-            _threadFactory = QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(r -> QBBTrackingThreadPool.super.newThread(r));
+            _threadFactory = QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(QBBTrackingThreadPool.super::newThread);
         }
 
         @Override
-        protected Thread newThread(final Runnable runnable)
+        public Thread newThread(final Runnable runnable)
         {
             return _threadFactory.newThread(runnable);
         }
