@@ -134,7 +134,7 @@
     <maven-core-version>3.5.4</maven-core-version>
     <maven-resolver-version>1.1.1</maven-resolver-version>
     <httpclient-version>4.5.3</httpclient-version>
-    <qpid-jms-client-version>0.47.0</qpid-jms-client-version>
+    <qpid-jms-client-version>0.48.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.3.4</qpid-jms-client-amqp-0-x-version>
     <jaxb-api-version>2.3.1</jaxb-api-version>
 
@@ -151,9 +151,9 @@
     <buildnumber-maven-plugin-version>1.4</buildnumber-maven-plugin-version>
     <maven-jar-plugin-version>3.1.0</maven-jar-plugin-version>
     <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
-    <h2.version>1.4.199</h2.version>
-    <apache-directory-version>2.0.0-M23</apache-directory-version>
-    <kerby-version>1.0.1</kerby-version>
+    <h2.version>1.4.200</h2.version>
+    <apache-directory-version>2.0.0.AM25</apache-directory-version>
+    <kerby-version>2.0.0</kerby-version>
     <bcprov-version>1.64</bcprov-version>
     <bcpkix-version>1.64</bcpkix-version>
   </properties>
