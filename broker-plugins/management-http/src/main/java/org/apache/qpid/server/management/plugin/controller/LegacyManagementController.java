@@ -32,8 +32,6 @@ public interface LegacyManagementController extends ManagementController
 
     Collection<String> getChildrenCategories(String category);
 
-    Collection<String> getCategories();
-
     Collection<String> getCategoryHierarchy(String rootCategory, String category);
 
     CategoryController getCategoryController(String category);

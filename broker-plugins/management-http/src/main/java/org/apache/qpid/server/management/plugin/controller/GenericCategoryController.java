@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.ManagementException;
 import org.apache.qpid.server.management.plugin.ManagementResponse;
+import org.apache.qpid.server.management.plugin.controller.latest.LatestManagementControllerAdapter;
+import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 
 public abstract class GenericCategoryController implements CategoryController
@@ -52,7 +54,11 @@ public abstract class GenericCategoryController implements CategoryController
     {
         _name = name;
         _managementController = managementController;
-        _nextVersionManagementController = nextVersionManagementController;
+        boolean isNextLatest = nextVersionManagementController != null &&
+                               BrokerModel.MODEL_VERSION.equalsIgnoreCase(nextVersionManagementController.getVersion());
+        _nextVersionManagementController = isNextLatest ?
+                new LatestManagementControllerAdapter(nextVersionManagementController)
+                : nextVersionManagementController;
         _defaultType = defaultType;
         _typeControllers = typeControllers.stream().collect(Collectors.toMap(TypeController::getTypeName, c -> c));
         _nextVersionTypeControllers =

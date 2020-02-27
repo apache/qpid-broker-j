@@ -20,7 +20,7 @@
  */
 {
   "name": "${broker.name}",
-  "modelVersion" : "7.1",
+  "modelVersion" : "8.0",
   "keystores": [
     {
       "name": "systestsKeyStore",

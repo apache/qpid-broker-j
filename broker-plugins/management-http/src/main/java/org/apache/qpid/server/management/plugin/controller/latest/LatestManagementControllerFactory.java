@@ -44,7 +44,7 @@ public class LatestManagementControllerFactory implements ManagementControllerFa
     @Override
     public String getPreviousVersion()
     {
-        return "7.0";
+        return "7.1";
     }
 
     @Override

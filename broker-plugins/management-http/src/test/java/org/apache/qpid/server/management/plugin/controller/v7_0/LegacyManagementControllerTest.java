@@ -48,7 +48,8 @@ public class LegacyManagementControllerTest extends UnitTestBase
     public void setUp()
     {
         final ManagementController nextVersionManagementController = mock(ManagementController.class);
-        _controller = new LegacyManagementController(nextVersionManagementController);
+        _controller = new LegacyManagementController(nextVersionManagementController,
+                                                     LegacyManagementControllerFactory.MODEL_VERSION);
         _controller.initialize();
     }
 

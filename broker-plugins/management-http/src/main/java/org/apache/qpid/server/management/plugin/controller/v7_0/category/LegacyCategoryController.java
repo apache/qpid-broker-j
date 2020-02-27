@@ -40,7 +40,7 @@ public class LegacyCategoryController extends GenericCategoryController
                              final Set<TypeController> typeControllers)
     {
         super(managementController,
-              new LatestManagementControllerAdapter(managementController.getNextVersionManagementController()),
+              managementController.getNextVersionManagementController(),
               name,
               defaultType,
               typeControllers);

@@ -76,9 +76,13 @@ public final class BrokerModel extends Model
      *     Attribute OAuth2AuthenticationProvider#clientSecret is not mandatory anymore
      *     Introduced statistics QueueManagingVirtualHost#totalConnectionCount and QueueManagingVirtualHost#InboundMessageSizeHighWatermark
      *     BDBHAVirtualHostNode attributes name, groupName, address are made immutable
+     *
+     * 8.0
+     *    Added new broker statistics: processCpuTime, processCpuLoad
+     *    Added new context variables for queues and exchanges to configure behaviour on unknown declared arguments
      */
-    public static final int MODEL_MAJOR_VERSION = 7;
-    public static final int MODEL_MINOR_VERSION = 1;
+    public static final int MODEL_MAJOR_VERSION = 8;
+    public static final int MODEL_MINOR_VERSION = 0;
     public static final String MODEL_VERSION = MODEL_MAJOR_VERSION + "." + MODEL_MINOR_VERSION;
     private static final Model MODEL_INSTANCE = new BrokerModel();
     private final Map<Class<? extends ConfiguredObject>, Class<? extends ConfiguredObject>> _parents =

@@ -23,15 +23,11 @@ package org.apache.qpid.server.management.plugin.controller.v7_0;
 import static org.apache.qpid.server.management.plugin.controller.ConverterHelper.getIntParameterFromRequest;
 import static org.apache.qpid.server.management.plugin.controller.ConverterHelper.getParameter;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.controller.AbstractLegacyConfiguredObjectController;
-import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
 
 public class LegacyManagementController extends AbstractLegacyConfiguredObjectController
 {
@@ -44,9 +40,10 @@ public class LegacyManagementController extends AbstractLegacyConfiguredObjectCo
     private static final int DEFAULT_DEPTH = 0;
     private static final int DEFAULT_OVERSIZE = 120;
 
-    public LegacyManagementController(final ManagementController nextVersionManagementController)
+    public LegacyManagementController(final ManagementController nextVersionManagementController,
+                                      final String modelVersion)
     {
-        super(LegacyManagementControllerFactory.MODEL_VERSION, nextVersionManagementController);
+        super(modelVersion, nextVersionManagementController);
     }
 
     @Override
