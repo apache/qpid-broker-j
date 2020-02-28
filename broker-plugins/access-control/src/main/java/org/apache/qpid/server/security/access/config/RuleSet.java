@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import java.net.InetAddress;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -123,16 +122,6 @@ public class RuleSet implements EventLoggerProvider
     }
 
     /**
-     * Checks for the case when the client's address is not known.
-     *
-     * @see #check(Subject, LegacyOperation, ObjectType, ObjectProperties, InetAddress)
-     */
-    public Result check(Subject subject, LegacyOperation operation, ObjectType objectType, ObjectProperties properties)
-    {
-        return check(subject, operation, objectType, properties, null);
-    }
-
-    /**
      * Check the authorisation granted to a particular identity for an operation on an object type with
      * specific properties.
      *
@@ -141,7 +130,10 @@ public class RuleSet implements EventLoggerProvider
      * the first match found, or denies access if there are no matching rules. Normally, it would be expected
      * to have a default deny or allow rule at the end of an access configuration however.
      */
-    public Result check(Subject subject, LegacyOperation operation, ObjectType objectType, ObjectProperties properties, InetAddress addressOfClient)
+    public Result check(Subject subject,
+                        LegacyOperation operation,
+                        ObjectType objectType,
+                        ObjectProperties properties)
     {
         ClientAction action = new ClientAction(operation, objectType, properties);
 
@@ -186,7 +178,7 @@ public class RuleSet implements EventLoggerProvider
         {
             LOGGER.debug("Checking against rule: {}", rule);
 
-            if (action.matches(rule.getAclAction(), addressOfClient))
+            if (action.matches(rule.getAclAction(), subject))
             {
                 RuleOutcome ruleOutcome = rule.getRuleOutcome();
                 LOGGER.debug("Action matches.  Result: {}", ruleOutcome);

@@ -26,7 +26,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -43,18 +42,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.security.auth.Subject;
+
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -67,6 +68,7 @@ import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.Event;
@@ -75,8 +77,7 @@ import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.AbstractAMQPConnection;
-import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.ConnectionPrincipalStatistics;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -333,13 +334,11 @@ public class VirtualHostTest extends UnitTestBase
         QueueManagingVirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
-        AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
         assertEquals("Unexpected number of connections before connection registered",
                             (long) 0,
                             virtualHost.getConnectionCount());
 
-        AMQPConnection modelConnection = mock(AMQPConnection.class);
-        when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
+        AMQPConnection modelConnection = getMockConnection();
         virtualHost.registerConnection(modelConnection, new NoopConnectionEstablishmentPolicy());
 
         assertEquals("Unexpected number of connections after connection registered",
@@ -364,13 +363,11 @@ public class VirtualHostTest extends UnitTestBase
         QueueManagingVirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
-        AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
         assertEquals("Unexpected number of connections before connection registered",
                             (long) 0,
                             virtualHost.getConnectionCount());
 
-        AMQPConnection modelConnection = mock(AMQPConnection.class);
-        when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
+        AMQPConnection modelConnection = getMockConnection();
         virtualHost.registerConnection(modelConnection, new NoopConnectionEstablishmentPolicy());
 
         assertEquals("Unexpected number of connections after connection registered",
@@ -502,9 +499,9 @@ public class VirtualHostTest extends UnitTestBase
     public void testExistingConnectionBlocking()
     {
         VirtualHost<?> host = createVirtualHost(getTestName());
-        AbstractAMQPConnection connection = mock(AbstractAMQPConnection.class);
+        AMQPConnection connection = getMockConnection();
         host.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
-        ((EventListener)host).event(Event.PERSISTENT_MESSAGE_SIZE_OVERFULL);
+        ((EventListener) host).event(Event.PERSISTENT_MESSAGE_SIZE_OVERFULL);
         verify(connection).block();
     }
 
@@ -587,6 +584,46 @@ public class VirtualHostTest extends UnitTestBase
                             (long) 1,
                             vhost.getConnectionCount());
         assertEquals("unexpected connection object", Collections.singleton(connection), vhost.getConnections());
+    }
+
+    @Test
+    public void testRegisterConnectionCausesUpdateOfAuthenticatedPrincipalConnectionCountAndFrequency()
+    {
+        final NoopConnectionEstablishmentPolicy policy = new NoopConnectionEstablishmentPolicy();
+        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
+        final Principal principal = mockAuthenticatedPrincipal(getTestName());
+        final Principal principal2 = mockAuthenticatedPrincipal(getTestName() + "_2");
+        final AMQPConnection<?> connection1 = mockAmqpConnection(principal);
+        final AMQPConnection<?> connection2 = mockAmqpConnection(principal);
+        final AMQPConnection<?> connection3 = mockAmqpConnection(principal2);
+
+        vhost.registerConnection(connection1, policy);
+        verify(connection1).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(1, 1)));
+
+        vhost.registerConnection(connection2, policy);
+        verify(connection2).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(2, 2)));
+
+        vhost.registerConnection(connection3, policy);
+        verify(connection3).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(1, 1)));
+    }
+
+    @Test
+    public void testDeregisterConnectionAffectsAuthenticatedPrincipalConnectionCountAndFrequency()
+    {
+        final Principal principal = mockAuthenticatedPrincipal(getTestName());
+        final NoopConnectionEstablishmentPolicy policy = new NoopConnectionEstablishmentPolicy();
+        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
+
+        final AMQPConnection<?> connection1 = mockAmqpConnection(principal);
+        final AMQPConnection<?> connection2 = mockAmqpConnection(principal);
+
+        vhost.registerConnection(connection1, policy);
+        verify(connection1).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(1, 1)));
+
+        vhost.deregisterConnection(connection1);
+        vhost.registerConnection(connection2, policy);
+
+        verify(connection2).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(1, 2)));
     }
 
     @Test
@@ -775,10 +812,27 @@ public class VirtualHostTest extends UnitTestBase
 
     private AMQPConnection<?> getMockConnection()
     {
+        return mockAmqpConnection(mockAuthenticatedPrincipal(getTestName()));
+    }
+
+    private AMQPConnection<?> mockAmqpConnection(final Principal principal)
+    {
         AMQPConnection<?> connection = mock(AMQPConnection.class);
+        when(connection.getAuthorizedPrincipal()).thenReturn(principal);
+        final Subject subject =
+                new Subject(true, Collections.singleton(principal), Collections.emptySet(), Collections.emptySet());
+        when(connection.getSubject()).thenReturn(subject);
         final ListenableFuture<Void> listenableFuture = Futures.immediateFuture(null);
         when(connection.closeAsync()).thenReturn(listenableFuture);
+        when(connection.getCreatedTime()).thenReturn(new Date());
         return connection;
+    }
+
+    private Principal mockAuthenticatedPrincipal(final String principalName)
+    {
+        final Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn(principalName);
+        return new AuthenticatedPrincipal(principal);
     }
 
     private QueueManagingVirtualHost<?> createVirtualHost(final String virtualHostName)
@@ -803,37 +857,6 @@ public class VirtualHostTest extends UnitTestBase
         return host;
     }
 
-    private AbstractAMQPConnection createMockProtocolConnection(final VirtualHost<?> virtualHost)
-    {
-        final AbstractAMQPConnection connection = mock(AbstractAMQPConnection.class);
-        final List<Action<?>> tasks = new ArrayList<>();
-        final ArgumentCaptor<Action> deleteTaskCaptor = ArgumentCaptor.forClass(Action.class);
-        Answer answer = new Answer()
-        {
-            @Override
-            public Object answer(final InvocationOnMock invocation)
-            {
-                return tasks.add(deleteTaskCaptor.getValue());
-            }
-        };
-        doAnswer(answer).when(connection).addDeleteTask(deleteTaskCaptor.capture());
-        when(connection.getAddressSpace()).thenReturn(virtualHost);
-        doAnswer(new Answer()
-        {
-            @Override
-            public Object answer(final InvocationOnMock invocation)
-            {
-                for(Action action : tasks)
-                {
-                    action.performAction(connection);
-                }
-                return null;
-            }
-        }).when(connection).sendConnectionCloseAsync(any(AMQPConnection.CloseReason.class), anyString());
-        when(connection.getRemoteAddressString()).thenReturn("peer:1234");
-        return connection;
-    }
-
     private static ConfiguredObjectRecord matchesRecord(UUID id, String type)
     {
         return argThat(new MinimalConfiguredObjectRecordMatcher(id, type));
@@ -854,6 +877,27 @@ public class VirtualHostTest extends UnitTestBase
         public boolean matches(ConfiguredObjectRecord rhs)
         {
             return (_id.equals(rhs.getId()) || _type.equals(rhs.getType()));
+        }
+    }
+
+    private static class ConnectionPrincipalStatisticsArgumentMatcher implements ArgumentMatcher<ConnectionPrincipalStatistics>
+    {
+
+        private final int _expectedConnectionCount;
+        private final int _expectedConnectionFrequency;
+
+        ConnectionPrincipalStatisticsArgumentMatcher(final int expectedConnectionCount,
+                                                     final int expectedConnectionFrequency)
+        {
+            _expectedConnectionCount = expectedConnectionCount;
+            _expectedConnectionFrequency = expectedConnectionFrequency;
+        }
+
+        @Override
+        public boolean matches(final ConnectionPrincipalStatistics connectionPrincipalStatistics)
+        {
+            return connectionPrincipalStatistics.getConnectionFrequency() == _expectedConnectionFrequency
+                    && connectionPrincipalStatistics.getConnectionCount() == _expectedConnectionCount;
         }
     }
 }

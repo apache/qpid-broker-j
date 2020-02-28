@@ -20,16 +20,21 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.ATTRIBUTES;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.CLASS;
+import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.CONNECTION_LIMIT;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.FROM_HOSTNAME;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.FROM_NETWORK;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.NAME;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Before;
@@ -113,5 +118,19 @@ public class AclRulePredicatesTest extends UnitTestBase
                             attributesSet,
                             _aclRulePredicates.getObjectProperties().getAttributeNames());
 
+    }
+
+    @Test
+    public void testGetParsedProperties()
+    {
+        _aclRulePredicates.parse(ATTRIBUTES.name(), "attribute1,attribute2");
+        _aclRulePredicates.parse(FROM_NETWORK.name(), "network1,network2");
+        _aclRulePredicates.parse(CONNECTION_LIMIT.name(), "20");
+
+        final Map<ObjectProperties.Property, String> properties = _aclRulePredicates.getParsedProperties();
+
+        assertThat(properties, allOf(hasEntry(ATTRIBUTES, "attribute1,attribute2"),
+                                     hasEntry(FROM_NETWORK, "network1,network2"),
+                                     hasEntry(CONNECTION_LIMIT, "20")));
     }
 }

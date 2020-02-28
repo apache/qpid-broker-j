@@ -20,21 +20,17 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.security.AccessController;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 import javax.security.auth.Subject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.connection.ConnectionPrincipal;
-import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.PermissionedObject;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.Operation;
@@ -78,7 +74,6 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     @Override
     public Result authorise(LegacyOperation operation, ObjectType objectType, ObjectProperties properties)
     {
-        InetAddress addressOfClient = null;
         final Subject subject = Subject.getSubject(AccessController.getContext());
 
         // Abstain if there is no subject/principal associated with this thread
@@ -87,30 +82,19 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
             return Result.DEFER;
         }
 
-        Set<ConnectionPrincipal> principals = subject.getPrincipals(ConnectionPrincipal.class);
-        if(!principals.isEmpty())
-        {
-            SocketAddress address = principals.iterator().next().getConnection().getRemoteSocketAddress();
-            if(address instanceof InetSocketAddress)
-            {
-                addressOfClient = ((InetSocketAddress) address).getAddress();
-            }
-        }
 
         if(LOGGER.isDebugEnabled())
         {
-            LOGGER.debug("Checking " + operation + " " + objectType + " " +
-                          (addressOfClient == null ? "" : addressOfClient));
+            LOGGER.debug("Checking " + operation + " " + objectType );
         }
 
         try
         {
-            return  _ruleSet.check(subject, operation, objectType, properties, addressOfClient);
+            return  _ruleSet.check(subject, operation, objectType, properties);
         }
         catch(Exception e)
         {
-            LOGGER.error("Unable to check " + operation + " " + objectType + " "
-                          + (addressOfClient == null ? "" : addressOfClient), e);
+            LOGGER.error("Unable to check " + operation + " " + objectType , e);
             return Result.DENIED;
         }
     }

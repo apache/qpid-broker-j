@@ -26,6 +26,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import javax.security.auth.Subject;
@@ -40,6 +42,7 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -54,6 +57,8 @@ import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ServerSessionTest extends UnitTestBase
@@ -120,9 +125,13 @@ public class ServerSessionTest extends UnitTestBase
         when(modelConnection.getModel()).thenReturn(BrokerModel.getInstance());
         when(modelConnection.getPort()).thenReturn(port);
 
-        Subject subject = new Subject();
+        final AuthenticatedPrincipal principal =
+                new AuthenticatedPrincipal(new UsernamePrincipal(getTestName(), mock(AuthenticationProvider.class)));
+        final Subject subject =
+                new Subject(false, Collections.singleton(principal), Collections.emptySet(), Collections.emptySet());
         when(modelConnection.getSubject()).thenReturn(subject);
         when(modelConnection.getMaxMessageSize()).thenReturn(1024l);
+        when(modelConnection.getCreatedTime()).thenReturn(new Date());
         ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP, modelConnection);
         connection.setVirtualHost(_virtualHost);
 

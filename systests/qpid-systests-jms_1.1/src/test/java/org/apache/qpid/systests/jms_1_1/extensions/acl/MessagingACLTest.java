@@ -51,6 +51,7 @@ import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
+import javax.naming.NamingException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
@@ -70,9 +71,6 @@ import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.security.access.config.Rule;
 import org.apache.qpid.server.security.access.config.RuleSet;
-import org.apache.qpid.server.security.access.firewall.FirewallRule;
-import org.apache.qpid.server.security.access.firewall.HostnameFirewallRule;
-import org.apache.qpid.server.security.access.firewall.NetworkFirewallRule;
 import org.apache.qpid.server.security.access.plugins.AclRule;
 import org.apache.qpid.server.security.access.plugins.RuleBasedVirtualHostAccessControlProvider;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
@@ -180,6 +178,125 @@ public class MessagingACLTest extends JmsTestBase
         catch (JMSException e)
         {
             assertAccessDeniedException(e);
+        }
+    }
+
+    @Test
+    public void testAuthorizationWithConnectionLimit() throws Exception
+    {
+        final int connectionLimit = 2;
+        configureACL(String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST connection_limit='%d'",
+                                   USER2,
+                                   connectionLimit));
+
+        final List<Connection> establishedConnections = new ArrayList<>();
+        try
+        {
+            establishConnections(connectionLimit, establishedConnections);
+
+            verifyConnectionEstablishmentFails(connectionLimit);
+
+            establishedConnections.remove(0).close();
+            getConnectionBuilder().setUsername(USER2).setPassword(USER2_PASSWORD).build().close();
+        }
+        finally
+        {
+            closeConnections(establishedConnections);
+        }
+    }
+
+    @Test
+    public void testAuthorizationWithConnectionFrequencyLimit() throws Exception
+    {
+        final int connectionFrequencyLimit = 1;
+        configureACL(String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST connection_frequency_limit='%d'",
+                                   USER2,
+                                   connectionFrequencyLimit));
+
+        final List<Connection> establishedConnections = new ArrayList<>();
+        try
+        {
+            establishConnections(connectionFrequencyLimit, establishedConnections);
+
+            verifyConnectionEstablishmentFails(connectionFrequencyLimit);
+
+            establishedConnections.remove(0).close();
+
+            verifyConnectionEstablishmentFails(connectionFrequencyLimit);
+        }
+        finally
+        {
+            closeConnections(establishedConnections);
+        }
+    }
+
+    @Test
+    public void testAuthorizationWithConnectionLimitAndFrequencyLimit() throws Exception
+    {
+        final int connectionFrequencyLimit = 2;
+        final int connectionLimit = 3;
+        configureACL(String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST connection_limit='%d' connection_frequency_limit='%d'",
+                                   USER2,
+                                   connectionLimit,
+                                   connectionFrequencyLimit));
+
+        final List<Connection> establishedConnections = new ArrayList<>();
+        try
+        {
+            establishConnections(connectionFrequencyLimit, establishedConnections);
+
+            verifyConnectionEstablishmentFails(connectionFrequencyLimit);
+
+            establishedConnections.remove(0).close();
+
+            verifyConnectionEstablishmentFails(connectionFrequencyLimit);
+        }
+        finally
+        {
+            closeConnections(establishedConnections);
+        }
+    }
+
+    private void establishConnections(final int connectionNumber, final List<Connection> establishedConnections)
+            throws NamingException, JMSException
+    {
+        for (int i = 0; i < connectionNumber; i++)
+        {
+            establishedConnections.add(getConnectionBuilder().setUsername(USER2)
+                                                             .setPassword(USER2_PASSWORD)
+                                                             .setClientId(getTestName() + i)
+                                                             .build());
+        }
+    }
+
+    private void closeConnections(final List<Connection> establishedConnections) throws JMSException
+    {
+        for (Connection c : establishedConnections)
+        {
+            c.close();
+        }
+    }
+
+    private void verifyConnectionEstablishmentFails(final int frequencyLimit) throws NamingException
+    {
+        try
+        {
+            final Connection connection = getConnectionBuilder().setUsername(USER2)
+                                                                .setPassword(USER2_PASSWORD)
+                                                                .setClientId(getTestName() + frequencyLimit)
+                                                                .build();
+            try
+            {
+                fail("Connection creation should fail due to exceeding limit");
+            }
+            finally
+            {
+                connection.close();
+            }
+        }
+        catch (JMSException e)
+        {
+            //pass
         }
     }
 
@@ -865,21 +982,7 @@ public class MessagingACLTest extends JmsTestBase
                     @Override
                     public Map<ObjectProperties.Property, String> getAttributes()
                     {
-                        Map<ObjectProperties.Property, String> attributes = new HashMap<>(rule.getAction().getProperties().asPropertyMap());
-                        FirewallRule firewallRule = rule.getAclAction().getFirewallRule();
-                        if (firewallRule != null)
-                        {
-                            if (firewallRule instanceof HostnameFirewallRule)
-                            {
-                                attributes.put(ObjectProperties.Property.FROM_HOSTNAME, "127.0.0.1");
-                            }
-                            else if (firewallRule instanceof NetworkFirewallRule)
-                            {
-                                // tests use only 127.0.0.1 at the moment
-                                attributes.put(ObjectProperties.Property.FROM_NETWORK, "127.0.0.1");
-                            }
-                        }
-                        return attributes;
+                        return rule.getAttributes();
                     }
 
                     @Override

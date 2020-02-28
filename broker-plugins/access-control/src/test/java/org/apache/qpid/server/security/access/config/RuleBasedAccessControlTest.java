@@ -272,7 +272,7 @@ public class RuleBasedAccessControlTest extends UnitTestBase
                 ObjectProperties properties = new ObjectProperties(testVirtualHost);
                 accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
 
-                verify(mockRuleSet).check(subject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties, inetAddress);
+                verify(mockRuleSet).check(subject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
                 return null;
             }
         });
@@ -303,8 +303,7 @@ public class RuleBasedAccessControlTest extends UnitTestBase
                         subject,
                         LegacyOperation.ACCESS,
                         ObjectType.VIRTUALHOST,
-                        ObjectProperties.EMPTY,
-                        inetAddress)).thenThrow(new RuntimeException());
+                        ObjectProperties.EMPTY)).thenThrow(new RuntimeException());
 
                 RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet,
                                                                                   BrokerModel.getInstance());

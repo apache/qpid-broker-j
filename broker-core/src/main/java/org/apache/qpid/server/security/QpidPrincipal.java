@@ -55,8 +55,8 @@ public interface QpidPrincipal extends Principal, Serializable
                                 "Can't find single %s in the authenticated subject. There were %d "
                                 + "%s principals out of a total number of principals of: %s",
                                 principalClazz.getSimpleName(),
-                                principalClazz.getSimpleName(),
                                 numberOfAuthenticatedPrincipals,
+                                principalClazz.getSimpleName(),
                                 authSubject.getPrincipals()));
             }
             return principals.iterator().next();

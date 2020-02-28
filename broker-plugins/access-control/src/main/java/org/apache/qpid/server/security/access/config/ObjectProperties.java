@@ -64,7 +64,9 @@ public class ObjectProperties
         VIRTUALHOST_NAME,
         METHOD_NAME,
         ATTRIBUTES,
-        CREATED_BY;
+        CREATED_BY,
+        CONNECTION_LIMIT,
+        CONNECTION_FREQUENCY_LIMIT;
 
         private static final Map<String, Property> _canonicalNameToPropertyMap = new HashMap<String, ObjectProperties.Property>();
 

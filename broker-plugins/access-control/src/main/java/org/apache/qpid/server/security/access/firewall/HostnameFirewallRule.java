@@ -30,9 +30,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.security.access.config.ObjectProperties;
-
-public class HostnameFirewallRule implements FirewallRule
+public class HostnameFirewallRule extends FirewallRule
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HostnameFirewallRule.class);
 
@@ -58,7 +56,7 @@ public class HostnameFirewallRule implements FirewallRule
     }
 
     @Override
-    public boolean matches(InetAddress remote)
+    protected boolean matches(InetAddress remote)
     {
         String hostname = getHostname(remote);
         if (hostname == null)
@@ -84,23 +82,11 @@ public class HostnameFirewallRule implements FirewallRule
         return false;
     }
 
-    @Override
-    public ObjectProperties.Property getPropertyName()
-    {
-        return ObjectProperties.Property.FROM_HOSTNAME;
-    }
-
-    @Override
-    public String getPropertyValue()
-    {
-        return String.join(",", _hostnames);
-    }
-
     /**
      * @param remote
      *            the InetAddress to look up
      * @return the hostname, null if not found, takes longer than
-     *         {@value #DNS_LOOKUP} to find or otherwise fails
+     *         {@link #DNS_LOOKUP} to find or otherwise fails
      */
     private String getHostname(final InetAddress remote) throws AccessControlFirewallException
     {

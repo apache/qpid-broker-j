@@ -16,46 +16,55 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.security.access.firewall;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.Set;
+package org.apache.qpid.server.security.access.config.connection;
 
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.security.access.config.DynamicRule;
-import org.apache.qpid.server.security.access.config.ObjectProperties;
+import org.apache.qpid.server.transport.AMQPConnection;
 
-public abstract class FirewallRule implements DynamicRule
+public abstract class ConnectionPrincipalStatisticsRule implements DynamicRule
 {
+    private final int _limit;
+
+    ConnectionPrincipalStatisticsRule(final int limit)
+    {
+        _limit = limit;
+    }
+
+    int getLimit()
+    {
+        return _limit;
+    }
+
     @Override
     public boolean matches(final Subject subject)
     {
-        final InetAddress addressOfClient = getAddressOfClient(subject);
-        if (addressOfClient == null)
+        AMQPConnection<?> connection = getConnection(subject);
+        if (connection != null)
         {
-            return true;
+            return matches(connection);
         }
-        return matches(addressOfClient);
+        return false;
     }
 
-    private InetAddress getAddressOfClient(final Subject subject)
+    abstract boolean matches(final AMQPConnection<?> connection);
+
+    private AMQPConnection<?> getConnection(final Subject subject)
     {
-        final Set<ConnectionPrincipal> principals = subject.getPrincipals(ConnectionPrincipal.class);
-        if(!principals.isEmpty())
+        if (subject != null)
         {
-            final SocketAddress address = principals.iterator().next().getConnection().getRemoteSocketAddress();
-            if(address instanceof InetSocketAddress)
+            final ConnectionPrincipal principal = subject.getPrincipals(ConnectionPrincipal.class)
+                                                         .stream()
+                                                         .findFirst()
+                                                         .orElse(null);
+            if (principal != null)
             {
-                return ((InetSocketAddress) address).getAddress();
+                return principal.getConnection();
             }
         }
         return null;
     }
-
-    protected abstract boolean matches(InetAddress addressOfClient);
-
 }

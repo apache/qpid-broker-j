@@ -18,19 +18,23 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.security.access.config.ObjectProperties.Property;
-import org.apache.qpid.server.security.access.firewall.FirewallRule;
+import org.apache.qpid.server.security.access.config.connection.ConnectionPrincipalFrequencyLimitRule;
+import org.apache.qpid.server.security.access.config.connection.ConnectionPrincipalLimitRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 
 /**
  * Represents the predicates on an ACL rule by combining predicates relating to the object being operated on
- * (e.g. name=foo) with firewall rules.
+ * (e.g. name=foo) with dynamic rules.
  */
 public class AclRulePredicates
 {
@@ -38,11 +42,10 @@ public class AclRulePredicates
 
     private static final String SEPARATOR = ",";
 
-    private ObjectProperties _properties = new ObjectProperties();
-
-    private FirewallRule _firewallRule;
-
-    private FirewallRuleFactory _firewallRuleFactory = new FirewallRuleFactory();
+    private final ObjectProperties _properties = new ObjectProperties();
+    private final Map<Property, String> _parsedProperties = new HashMap<>();
+    private volatile DynamicRule _dynamicRule = s -> true;
+    private volatile FirewallRuleFactory _firewallRuleFactory = new FirewallRuleFactory();
 
     public AclRulePredicates()
     {
@@ -50,9 +53,9 @@ public class AclRulePredicates
 
     public AclRulePredicates(Map<Property, String> values)
     {
-        if(values != null)
+        if (values != null)
         {
-            for(Map.Entry<Property, String> entry : values.entrySet())
+            for (Map.Entry<Property, String> entry : values.entrySet())
             {
                 addPropertyValue(entry.getKey(), entry.getValue());
             }
@@ -64,25 +67,38 @@ public class AclRulePredicates
         ObjectProperties.Property property = ObjectProperties.Property.parse(key);
 
         addPropertyValue(property, value);
-
-        LOGGER.debug("Parsed {} with value {}",  property, value);
+        _parsedProperties.put(property, value);
+        LOGGER.debug("Parsed {} with value {}", property, value);
     }
 
     private void addPropertyValue(final Property property, final String value)
     {
-        if(property == Property.FROM_HOSTNAME)
+        final DynamicRule dynamicRule = _dynamicRule;
+        if (property == Property.FROM_HOSTNAME)
         {
-            checkFirewallRuleNotAlreadyDefined(property.name(), value);
-            _firewallRule = _firewallRuleFactory.createForHostname(value.split(SEPARATOR));
+            checkFirewallRuleNotAlreadyDefined(property, value, Property.FROM_NETWORK);
+            _dynamicRule = dynamicRule.and(_firewallRuleFactory.createForHostname(value.split(SEPARATOR)));
         }
-        else if(property == Property.FROM_NETWORK)
+        else if (property == Property.FROM_NETWORK)
         {
-            checkFirewallRuleNotAlreadyDefined(property.name(), value);
-            _firewallRule = _firewallRuleFactory.createForNetwork(value.split(SEPARATOR));
+            checkFirewallRuleNotAlreadyDefined(property, value, Property.FROM_HOSTNAME);
+            _dynamicRule = dynamicRule.and(_firewallRuleFactory.createForNetwork(value.split(SEPARATOR)));
         }
         else if (property == Property.ATTRIBUTES)
         {
             _properties.setAttributeNames(Sets.newHashSet((value.split(SEPARATOR))));
+        }
+        else if (property == Property.CONNECTION_LIMIT)
+        {
+            checkPropertyAlreadyDefined(property);
+            final int limit = getLimit(property, value);
+            _dynamicRule = dynamicRule.and(new ConnectionPrincipalLimitRule(limit));
+        }
+        else if (property == Property.CONNECTION_FREQUENCY_LIMIT)
+        {
+            checkPropertyAlreadyDefined(property);
+            final int limit = getLimit(property, value);
+            _dynamicRule = dynamicRule.and(new ConnectionPrincipalFrequencyLimitRule(limit));
         }
         else
         {
@@ -90,38 +106,90 @@ public class AclRulePredicates
         }
     }
 
-    private void checkFirewallRuleNotAlreadyDefined(String key, String value)
+    private int getLimit(final Property property, final String value)
     {
-        if(_firewallRule != null)
+        int limit;
+        try
         {
-            throw new IllegalStateException(
-                    "Cannot parse " + key + "=" + value
-                    + " because firewall rule " + _firewallRule + " has already been defined");
+            limit = Integer.parseInt(value);
         }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(String.format("Property '%s' value '%s' is not integer", property, value));
+        }
+        return limit;
+    }
+
+    private void checkFirewallRuleNotAlreadyDefined(Property property, String value, Property... exclusiveProperty)
+    {
+        checkPropertyAlreadyDefined(property);
+        for (Property p : exclusiveProperty)
+        {
+            if (_parsedProperties.containsKey(p))
+            {
+                throw new IllegalStateException(
+                        String.format("Cannot parse '%s=%s' because property '%s' has already been defined",
+                                      property.toString().toLowerCase(),
+                                      value,
+                                      p));
+            }
+        }
+    }
+
+    private void checkPropertyAlreadyDefined(Property property)
+    {
+        if (_parsedProperties.containsKey(property))
+        {
+            throw new IllegalStateException(String.format("Property '%s' has already been defined", property.toString().toLowerCase()));
+        }
+    }
+
+    @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final AclRulePredicates that = (AclRulePredicates) o;
+
+        return _parsedProperties.equals(that._parsedProperties);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return _parsedProperties.hashCode();
     }
 
     @Override
     public String toString()
     {
-        return "AclRulePredicates[" +
-               "properties=" + _properties +
-               ", firewallRule=" + _firewallRule +
-               ']';
+        return String.format("AclRulePredicates[%s]",
+                             _parsedProperties.entrySet()
+                                              .stream()
+                                              .map(e -> e.getKey() + "=" + e.getValue())
+                                              .collect(Collectors.joining(" ")));
     }
 
-    public FirewallRule getFirewallRule()
+    DynamicRule getDynamicRule()
     {
-        return _firewallRule;
+        return _dynamicRule;
     }
 
-    public ObjectProperties getObjectProperties()
-    {
-        return _properties;
-    }
-
-    public ObjectProperties getFirewallProperties()
+    ObjectProperties getObjectProperties()
     {
         return _properties;
+    }
+
+    Map<Property, String> getParsedProperties()
+    {
+        return Collections.unmodifiableMap(_parsedProperties);
     }
 
     void setFirewallRuleFactory(FirewallRuleFactory firewallRuleFactory)
