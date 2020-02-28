@@ -347,6 +347,21 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         root.addFilter(new FilterHolder(new ForbiddingTraceFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
 
+        addFiltersAndServletsForRest(root);
+        if (!Boolean.TRUE.equals(getContextValue(Boolean.class, DISABLE_UI_CONTEXT_NAME)))
+        {
+            addFiltersAndServletsForUserInterfaces(root);
+        }
+
+        root.getSessionHandler().getSessionCookieConfig().setName(JSESSIONID_COOKIE_PREFIX + lastPort);
+        root.getSessionHandler().getSessionCookieConfig().setHttpOnly(true);
+        root.getSessionHandler().setMaxInactiveInterval(getSessionTimeout());
+
+        return server;
+    }
+
+    private void addFiltersAndServletsForRest(final ServletContextHandler root)
+    {
         FilterHolder loggingFilter = new FilterHolder(new LoggingFilter());
         root.addFilter(loggingFilter, "/api/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(loggingFilter, "/service/*", EnumSet.of(DispatcherType.REQUEST));
@@ -354,9 +369,27 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         FilterHolder restAuthorizationFilter = new FilterHolder(new AuthenticationCheckFilter());
         restAuthorizationFilter.setInitParameter(AuthenticationCheckFilter.INIT_PARAM_ALLOWED, "/service/sasl");
         root.addFilter(restAuthorizationFilter, "/api/*", EnumSet.of(DispatcherType.REQUEST));
-        root.addFilter(restAuthorizationFilter, "/apidocs/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(restAuthorizationFilter, "/service/*", EnumSet.of(DispatcherType.REQUEST));
 
+        addRestServlet(root);
+
+        ServletHolder queryServlet = new ServletHolder(new BrokerQueryServlet());
+        root.addServlet(queryServlet, "/api/latest/querybroker/*");
+        root.addServlet(queryServlet, "/api/v" + BrokerModel.MODEL_VERSION + "/querybroker/*");
+
+        ServletHolder vhQueryServlet = new ServletHolder(new VirtualHostQueryServlet());
+        root.addServlet(vhQueryServlet, "/api/latest/queryvhost/*");
+        root.addServlet(vhQueryServlet, "/api/v" + BrokerModel.MODEL_VERSION + "/queryvhost/*");
+
+        root.addServlet(new ServletHolder(new StructureServlet()), "/service/structure");
+        root.addServlet(new ServletHolder(new QueueReportServlet()), "/service/queuereport/*");
+        root.addServlet(new ServletHolder(new MetaDataServlet()), "/service/metadata");
+        root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
+    }
+
+    private void addFiltersAndServletsForUserInterfaces(final ServletContextHandler root)
+    {
+        root.addFilter(new FilterHolder(new AuthenticationCheckFilter()), "/apidocs/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(new FilterHolder(new InteractiveAuthenticationFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(new FilterHolder(new InteractiveAuthenticationFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
 
@@ -370,53 +403,45 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             root.addFilter(RewriteRequestForUncompressedJavascript.class, "/dojo/dojox/*", EnumSet.of(DispatcherType.REQUEST));
         }
 
-        addRestServlet(root);
-
-        ServletHolder queryServlet = new ServletHolder(new BrokerQueryServlet());
-        root.addServlet(queryServlet, "/api/latest/querybroker/*");
-        root.addServlet(queryServlet, "/api/v" + BrokerModel.MODEL_VERSION + "/querybroker/*");
-
-        ServletHolder vhQueryServlet = new ServletHolder(new VirtualHostQueryServlet());
-        root.addServlet(vhQueryServlet, "/api/latest/queryvhost/*");
-        root.addServlet(vhQueryServlet, "/api/v" + BrokerModel.MODEL_VERSION + "/queryvhost/*");
-
-
-        ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet());
-        final ServletHolder rewriteSerlvet = new ServletHolder(new RewriteServlet("^(.*)$", "$1/"));
-        for(String path : new String[]{"/apidocs", "/apidocs/latest", "/apidocs/"+getLatestSupportedVersion()})
-        {
-            root.addServlet(rewriteSerlvet, path);
-            root.addServlet(apiDocsServlet, path + "/");
-        }
-
-        root.addServlet(new ServletHolder(new StructureServlet()), "/service/structure");
-        root.addServlet(new ServletHolder(new QueueReportServlet()), "/service/queuereport/*");
-
-        root.addServlet(new ServletHolder(new MetaDataServlet()), "/service/metadata");
+        addApiDocsServlets(root);
 
         root.addServlet(new ServletHolder(new SaslServlet()), "/service/sasl");
-
-        root.addServlet(new ServletHolder(new RootServlet("/","/apidocs/","index.html")), "/");
+        root.addServlet(new ServletHolder(new RootServlet("/", "/apidocs/", "index.html")), "/");
         root.addServlet(new ServletHolder(new LogoutServlet()), "/logout");
-
         root.addServlet(new ServletHolder(new FileServlet(DojoHelper.getDojoPath(), true)), "/dojo/dojo/*");
         root.addServlet(new ServletHolder(new FileServlet(DojoHelper.getDijitPath(), true)), "/dojo/dijit/*");
         root.addServlet(new ServletHolder(new FileServlet(DojoHelper.getDojoxPath(), true)), "/dojo/dojox/*");
         root.addServlet(new ServletHolder(new FileServlet(DojoHelper.getDgridPath(), true)), "/dojo/dgrid/*");
         root.addServlet(new ServletHolder(new FileServlet(DojoHelper.getDstorePath(), true)), "/dojo/dstore/*");
 
-        for(String pattern : STATIC_FILE_TYPES)
+        for (String pattern : STATIC_FILE_TYPES)
         {
             root.addServlet(new ServletHolder(new FileServlet()), pattern);
         }
+    }
 
-        root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
+    private void addApiDocsServlets(final ServletContextHandler root)
+    {
+        final ApiDocsServlet apiDocsServlet = new ApiDocsServlet();
+        final ServletHolder apiDocsServletHolder = new ServletHolder(apiDocsServlet);
+        final ServletHolder rewriteSerlvet = new ServletHolder(new RewriteServlet("^(.*)$", "$1/"));
+        final String version = getLatestSupportedVersion();
+        for (String path : new String[]{"/apidocs", "/apidocs/latest", "/apidocs/v" + version})
+        {
+            root.addServlet(rewriteSerlvet, path);
+            root.addServlet(apiDocsServletHolder, path + "/");
+        }
 
-        root.getSessionHandler().getSessionCookieConfig().setName(JSESSIONID_COOKIE_PREFIX + lastPort);
-        root.getSessionHandler().getSessionCookieConfig().setHttpOnly(true);
-        root.getSessionHandler().setMaxInactiveInterval(getSessionTimeout());
-
-        return server;
+        getModel().getSupportedCategories()
+                  .stream()
+                  .map(Class::getSimpleName)
+                  .map(String::toLowerCase)
+                  .forEach(name -> {
+                      root.addServlet(apiDocsServletHolder, "/apidocs/latest/" + name + "/");
+                      root.addServlet(apiDocsServletHolder, "/apidocs/" + version + "/" + name + "/");
+                      root.addServlet(apiDocsServletHolder, "/apidocs/latest/" + name);
+                      root.addServlet(apiDocsServletHolder, "/apidocs/" + version + "/" + name);
+                  });
     }
 
     @Override
@@ -711,8 +736,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private void addRestServlet(final ServletContextHandler root)
     {
         final Map<String, ManagementControllerFactory> factories = ManagementControllerFactory.loadFactories();
-        final ApiDocsServlet apiDocsServlet = new ApiDocsServlet();
+        final long maxFileSize = getContextValue(Long.class, MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME);
+        final int maxRequestSize = getContextValue(Integer.class, MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME);
         final List<String> supportedVersions = new ArrayList<>();
+        supportedVersions.add("latest");
         String currentVersion = BrokerModel.MODEL_VERSION;
         ManagementController managementController = null;
         ManagementControllerFactory factory;
@@ -732,23 +759,13 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                     servletHolder.setInitParameter("qpid.controller.version", managementController.getVersion());
 
                     servletHolder.getRegistration().setMultipartConfig(
-                            new MultipartConfigElement("",
-                                                       getContextValue(Long.class,
-                                                                       MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME),
-                                                       -1L,
-                                                       getContextValue(Integer.class,
-                                                                       MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)));
+                            new MultipartConfigElement("", maxFileSize, -1L, maxRequestSize));
 
                     root.addServlet(servletHolder, path + (path.endsWith("/") ? "*" : "/*"));
 
                     if (BrokerModel.MODEL_VERSION.equals(managementController.getVersion()))
                     {
                         root.addServlet(servletHolder, "/api/latest/" + name + "/*");
-                        ServletHolder docServletHolder = new ServletHolder(name + "docs", apiDocsServlet);
-                        root.addServlet(docServletHolder, "/apidocs/latest/" + name + "/");
-                        root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name + "/");
-                        root.addServlet(docServletHolder, "/apidocs/latest/" + name);
-                        root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name);
                     }
                 }
                 supportedVersions.add("v" + currentVersion);

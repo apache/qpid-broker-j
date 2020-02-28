@@ -85,6 +85,11 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     @ManagedContextDefault( name = SASL_EXCHANGE_EXPIRY_CONTEXT_NAME)
     long DEFAULT_SASL_EXCHANGE_EXPIRY = 60000L;
 
+    String DISABLE_UI_CONTEXT_NAME = "qpid.httpManagement.disableUserInterface";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = DISABLE_UI_CONTEXT_NAME)
+    boolean DEFAULT_DISABLE_UI = false;
+
     AuthenticationProvider getAuthenticationProvider(HttpServletRequest request);
     Port<?> getPort(HttpServletRequest request);
 }

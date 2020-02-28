@@ -111,11 +111,11 @@ public class LatestManagementController extends AbstractManagementController
         _userPreferenceHandler = new RestUserPreferenceHandler(preferenceOperationTimeout == null
                                                                        ? DEFAULT_PREFERENCE_OPERATION_TIMEOUT
                                                                        : preferenceOperationTimeout);
-        _supportedCategories = Collections.unmodifiableSet(BrokerModel.getInstance()
-                                                                      .getSupportedCategories()
-                                                                      .stream()
-                                                                      .map(Class::getSimpleName)
-                                                                      .collect(Collectors.toSet()));
+        _supportedCategories = Collections.unmodifiableSet(httpManagement.getModel()
+                                                                         .getSupportedCategories()
+                                                                         .stream()
+                                                                         .map(Class::getSimpleName)
+                                                                         .collect(Collectors.toSet()));
     }
 
     @Override

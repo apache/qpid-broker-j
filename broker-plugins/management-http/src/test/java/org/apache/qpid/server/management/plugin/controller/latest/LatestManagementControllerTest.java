@@ -82,6 +82,7 @@ public class LatestManagementControllerTest extends UnitTestBase
     {
         final HttpManagementConfiguration<?> httpManagement = mock(HttpManagementConfiguration.class);
         when(httpManagement.getContextValue(Long.class, PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME)).thenReturn(1000L);
+        when(httpManagement.getModel()).thenReturn(BrokerModel.getInstance());
         _controller = new LatestManagementController(httpManagement);
     }
 
