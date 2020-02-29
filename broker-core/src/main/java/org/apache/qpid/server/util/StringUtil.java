@@ -33,7 +33,7 @@ public class StringUtil
     private static final char[] CHARACTERS = (NUMBERS + LETTERS + LETTERS.toUpperCase() + OTHERS).toCharArray();
     private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
-    private Random _random = new Random();
+    private Random _random = new SecureRandom();
 
     public static String elideDataUrl(final String path)
     {
