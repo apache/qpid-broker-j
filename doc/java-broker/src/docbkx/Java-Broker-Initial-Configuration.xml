@@ -264,12 +264,16 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
             <programlisting>
 {
   "name": "\${broker.name}",
-  "modelVersion" : "7.1",
-  "authenticationproviders" : [ {
-    "name" : "passwordFile",
-    "type" : "PlainPasswordFile",
-    "path" : "\${qpid.home_dir}\${file.separator}etc\${file.separator}passwd"
-  } ],
+  "modelVersion" : "8.0",
+    "authenticationproviders" : [ {
+      "name" : "plain",
+      "type" : "Plain",
+      "users" : [ {
+      "name" : "guest",
+      "type" : "managed",
+      "password" : "guest"
+      } ]
+    } ],
     "brokerloggers" : [ {
     "name" : "logfile",
     "type" : "File",
@@ -323,7 +327,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
   "ports" : [  {
     "name" : "AMQP",
     "port" : "\${qpid.amqp_port}",
-    "authenticationProvider" : "passwordFile",
+    "authenticationProvider" : "plain",
     "virtualhostaliases" : [ {
        "name" : "nameAlias",
        "type" : "nameAlias"
@@ -337,7 +341,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
   }, {
     "name" : "HTTP",
     "port" : "\${qpid.http_port}",
-    "authenticationProvider" : "passwordFile",
+    "authenticationProvider" : "plain",
     "protocols" : [ "HTTP" ]
   }],
   "virtualhostnodes" : [ {
