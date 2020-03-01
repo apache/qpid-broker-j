@@ -1,0 +1,221 @@
+<?xml version="1.0"?>
+<!--
+  ~
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Appendix-BDB-HA-initial-configuration">
+  <title>BDB HA initial configuration</title>
+  <para>The section <xref linkend="Java-Broker-Initial-Configuration-Introduction"/>
+    provides an introduction into Broker-J initial configuration and how broker configuration can be created from
+    initial configuration on first broker start-up. This appendix illustrates how to create a BDB HA group from an
+    initial configuration file. For creation of BDB HA group using Web Management Console please refer <xref linkend="Java-Broker-Management-Channel-Web-Console"/>.
+  </para>
+  <para>The BDB HA group usually consists of two or more nodes hosting a distributed virtual host.</para>
+  <para>When BDB HA node is created the following attributes has to be provided
+    <itemizedlist>
+      <listitem><para><emphasis>groupName</emphasis>; a name of BDB HA group</para></listitem>
+      <listitem><para><emphasis>nodeName</emphasis>; a name of BDB HA node</para></listitem>
+      <listitem><para><emphasis>address</emphasis>; a node address as colon-separated pair of host name and port</para></listitem>
+      <listitem><para><emphasis>helperAddress</emphasis>; an address of existing helper node. It is required when node joins an existing group.</para></listitem>
+      <listitem><para><emphasis>helperNodeName</emphasis>; a name of existing helper node. It is required when node joins an existing group.</para></listitem>
+      <listitem><para><emphasis>permittedNodes</emphasis>; an array containing all addresses of nodes allowed to join the group.</para></listitem>
+    </itemizedlist>
+  </para>
+  <para>
+    A node priority can be optionally specified for the node to influence master election among nodes with the most current set of data.
+    An attribute <emphasis>priority</emphasis> is used to specify a priority as an integer number.
+  </para>
+
+  <para>Apart from a group name and permitted nodes, the rest of node attribute values varies from node to node.</para>
+  <para>In order to use the same initial configuration for creation of BDB HA nodes, the context variable can be used for varying attribute values.</para>
+  <para>In the example of initial configuration illustrated in this apendix, the following context variables are defined.
+    <itemizedlist>
+      <listitem><para><emphasis>\${ha.group_name}</emphasis>; used to pass an HA group name</para></listitem>
+      <listitem><para><emphasis>\${ha.node_name}</emphasis>; used to pass a node name</para></listitem>
+      <listitem><para><emphasis>\${ha.node_address}</emphasis>; used to pass a node address</para></listitem>
+      <listitem><para><emphasis>\${ha.helper_address}</emphasis>; used to pass an address of helper node.</para></listitem>
+      <listitem><para><emphasis>\${ha.helper_node_name}</emphasis>; used to pass an address of helper node.</para></listitem>
+      <listitem><para><emphasis>\${ha.permitted_nodes}</emphasis>; used to pass a stringified json array containing permitted nodes for the group.</para></listitem>
+      <listitem><para><emphasis>\${ha.priority}</emphasis>; used to pass a node priority.</para></listitem>
+    </itemizedlist>
+  </para>
+  <section xml:id="Java-Broker-Appendix-BDB-HA-initial-configuration-example">
+    <title>Example of BDB HA 'Initial Configuration'</title>
+    <para> An example of 'Initial Configuration' for BDB HA:</para>
+    <example>
+      <title>BDB HA 'Initial configuration'</title>
+      <programlisting>
+{
+  "name": "\${broker.name}",
+  "modelVersion" : "8.0",
+  "authenticationproviders" : [ {
+    "name" : "plain",
+    "type" : "Plain",
+    "users" : [ {
+    "name" : "guest",
+    "type" : "managed",
+    "password" : "guest"
+  } ]
+  } ],
+  "brokerloggers" : [ {
+    "name" : "logfile",
+    "type" : "File",
+    "fileName" : "\${qpid.work_dir}\${file.separator}log\${file.separator}qpid.log",
+    "brokerloginclusionrules" : [ {
+      "name" : "Root",
+      "type" : "NameAndLevel",
+      "level" : "WARN",
+      "loggerName" : "ROOT"
+    }, {
+      "name" : "Qpid",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "org.apache.qpid.*"
+    }, {
+      "name" : "Operational",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.message.*"
+    }, {
+      "name" : "Statistics",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.statistics.*"
+    } ]
+  }, {
+    "name" : "memory",
+    "type" : "Memory",
+    "brokerloginclusionrules" : [ {
+      "name" : "Root",
+      "type" : "NameAndLevel",
+      "level" : "WARN",
+      "loggerName" : "ROOT"
+    }, {
+      "name" : "Qpid",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "org.apache.qpid.*"
+    }, {
+      "name" : "Operational",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.message.*"
+    }, {
+      "name" : "Statistics",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.statistics.*"
+    } ]
+  } ],
+  "ports" : [  {
+    "name" : "AMQP",
+    "port" : "\${qpid.amqp_port}",
+    "authenticationProvider" : "plain",
+    "virtualhostaliases" : [ {
+      "name" : "nameAlias",
+      "type" : "nameAlias"
+    }, {
+      "name" : "defaultAlias",
+      "type" : "defaultAlias"
+    }, {
+      "name" : "hostnameAlias",
+      "type" : "hostnameAlias"
+    } ]
+  }, {
+  "name" : "HTTP",
+    "port" : "\${qpid.http_port}",
+    "authenticationProvider" : "plain",
+    "protocols" : [ "HTTP" ]
+  }],
+  "virtualhostnodes" : [ {
+    "name" : "\${ha.node_name}",
+    "type" : "BDB_HA",
+    "address" : "\${ha.node_address}",
+    "groupName" : "\${ha.group_name}",
+    "helperAddress" : "\${ha.helper_address}",
+    "helperNodeName" : "\${ha.helper_node_name}",
+    "permittedNodes" : "\${ha.permitted_nodes}",
+    "priority" : "\${ha.priority}",
+    "defaultVirtualHostNode" : "true",
+    "virtualHostInitialConfiguration" : "\${qpid.initial_config_virtualhost_config}"
+  } ],
+  "plugins" : [ {
+    "type" : "MANAGEMENT-HTTP",
+    "name" : "httpManagement"
+  } ]
+}
+      </programlisting>
+    </example>
+
+  </section>
+  <section xml:id="Java-Broker-Appendix-BDB-HA-initial-configuration-creation">
+    <title>Creation of BDB HA group using an initial configuration.</title>
+    <para>Let's create a BDB HA group with name <literal>weather</literal>
+      consisting of tree nodes <literal>weather1</literal>, <literal>weather2</literal>, and <literal>weather3</literal>
+      using the initial configuration above. We start node <literal>weather1</literal> on host/port
+      <literal>chaac:5000</literal>, node <literal>weather2</literal> on host/port <literal>indra:5000</literal>
+      and node <literal>weather3</literal> on host/port <literal>thor:5000</literal>.</para>
+    <para>The node <literal>weather1</literal> can be created with the following command</para>
+    <screen>
+      $ ./qpid-server -icp ./initial-config.json -prop ha.node_name=weather1 -prop  ha.node_address=chaac:5000 \
+      -prop ha.group_name=weather -prop ha.helper_address=chaac:5000 -prop ha.helper_node_name=weather1 \
+      -prop ha.permitted_nodes="[\"chaac:5000\",\"indra:5000\",\"thor:5000\"]" -prop ha.priority=3 \
+      -prop qpid.amqp_port=10000 -prop qpid.http_port=20000
+    </screen>
+    <para>Please note, the broker is started with initial configuration at file <literal>./initial-config.json</literal>.
+      The context variable for node name <literal>ha.node_name</literal> is set to <literal>weather1</literal>.
+      The node address context variable <literal>ha.node_address</literal> is set to <literal>chaac:5000</literal>.
+      As it is a first node, the helper address is set to the same address as a node address (<literal>ha.helper_address=chaac:5000</literal>)
+      and the helper node name is to itself (<literal>ha.helper_node_name=weather1</literal>). The group name is set to <literal>weather</literal>
+      with <literal>ha.group_name=weather</literal>. The group nodes are listed in <literal>ha.permitted_nodes</literal>.
+      The amqp and http ports are overridden to 10000 and 20000 accordingly. The node priority is set to <literal>3</literal>.
+    </para>
+    <para>The node <literal>weather2</literal> can be created on host<literal>indra</literal> with the following command:</para>
+    <screen>
+      $ ./qpid-server -icp ./initial-config.json -prop ha.node_name=weather2 -prop  ha.node_address=indra:5000 \
+      -prop ha.group_name=weather -prop ha.helper_address=chaac:5000 -prop ha.helper_node_name=weather1 \
+      -prop ha.permitted_nodes="[\"chaac:5000\",\"indra:5000\",\"thor:5000\"]"  -prop ha.priority=2 \
+      -prop qpid.amqp_port=10001 -prop qpid.http_port=20001
+    </screen>
+    <para>
+      The context variable for node name <literal>ha.node_name</literal> is set to <literal>weather2</literal>.
+      The node address context variable <literal>ha.node_address</literal> is set <literal>indra:5000</literal>.
+      The amqp and http ports are overridden to 10001 and 20001 accordingly. The node <literal>weather2</literal>
+      priority is set to <literal>2</literal>. The rest of the context variables have
+      the same values as for node <literal>weather1</literal>. The latter is used as a helper node for creation of
+      <literal>weather2</literal>.
+    </para>
+    <para>The node <literal>weather3</literal> can be created on host<literal>thor</literal> with the following command:</para>
+    <screen>
+      $ ./qpid-server -icp ./initial-config.json -prop ha.node_name=weather3 -prop  ha.node_address=thor:5000 \
+      -prop ha.group_name=weather -prop ha.helper_address=chaac:5000 -prop ha.helper_node_name=weather1 \
+      -prop ha.permitted_nodes="[\"chaac:5000\",\"indra:5000\",\"thor:5000\"]"  -prop ha.priority=1 \
+      -prop qpid.amqp_port=10002 -prop qpid.http_port=20002
+    </screen>
+    <para>
+      The context variable for node name <literal>ha.node_name</literal> is set to <literal>weather3</literal>.
+      The node address context variable <literal>ha.node_address</literal> is set <literal>thor:5000</literal>.
+      The amqp and http ports are overridden to 10002 and 20002 accordingly. The node <literal>weather3</literal>
+      priority is set to <literal>1</literal>. The rest of the context variables have
+      the same values as for node <literal>weather1</literal> which is used as a helper node for creation of
+      <literal>weather3</literal>.
+    </para>
+  </section>
+</appendix>

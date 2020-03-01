@@ -95,8 +95,11 @@
     <para>This section describes how to create a group. At a high level, creating a group involves
       first creating the first node standalone, then creating subsequent nodes referencing the first
       node so the nodes can introduce themselves and gradually the group is built up.</para>
-    <para>A group is created through either <link linkend="Java-Broker-Management-Channel-Web-Console">Web Management</link> or the <link linkend="Java-Broker-Management-Channel-REST-API">REST API</link>. These instructions
-      presume you are using Web Management. To illustrate the example it builds the group
+    <para>A group is created through either <link linkend="Java-Broker-Management-Channel-Web-Console">Web Management</link>
+      or the <link linkend="Java-Broker-Management-Channel-REST-API">REST API</link>
+      or the initial configuration (<xref linkend="Java-Broker-Appendix-BDB-HA-initial-configuration"/>
+      illustrates how to use initial configuration for BDB HA group creation).
+      These instructions presume you are using Web Management. To illustrate the example it builds the group
       illustrated in figure <xref linkend="Java-Broker-High-Availability-OverviewOfHA-Figure"/></para>
     <para><orderedlist>
         <listitem>
@@ -295,39 +298,52 @@
           </listitem>
         </itemizedlist></para>
       <para>It is possible to assign a one policy to the master and a different policy to the
-        replicas. These are configured as <link linkend="Java-Broker-Management-Managing-Virtualhost-Attributes">attributes on the
-          virtualhost</link>. By default the master uses <emphasis>SYNC</emphasis> and replicas use
-          <emphasis>NO_SYNC</emphasis>.</para>
+        replicas. These are configured as <link linkend="Java-Broker-Management-Managing-Virtualhost-Attributes">
+        attributes <emphasis>localTransactionSynchronizationPolicy</emphasis> and
+        <emphasis>remoteTransactionSynchronizationPolicy</emphasis> on the virtualhost</link>.
+        By default the master uses <emphasis>SYNC</emphasis> and replicas use
+        <emphasis>NO_SYNC</emphasis>.</para>
     </section>
     <section xml:id="Java-Broker-High-Availability-Behaviour-NodePriority">
       <title>Node Priority</title>
       <para>Node priority can be used to influence the behaviour of the election algorithm. It is
         useful in the case were you want to favour some nodes over others. For instance, if you wish
         to favour nodes located in a particular data centre over those in a remote site. </para>
-      <para>The following options are available: <itemizedlist>
+      <para>
+        A new master is elected among nodes with the most current set of log files. When there is a tie,
+        the priority is used as a tie-breaker to select amongst these nodes.
+      </para>
+      <para>
+        The node priority is set as an integer value. A priority of zero is used to ensure that a node cannot
+        be elected master, even if it has the most current set of files.
+      </para>
+      <para>For convenience, the Web Management Console uses user friendly names for the priority integer values
+        in range from 0 to 3 inclusive. The following priority options are available: <itemizedlist>
           <listitem>
             <para><emphasis>Highest</emphasis>. Nodes with this priority will be more favoured. In
               the event of two or more nodes having the most recent transaction, the node with this
               priority will be elected master. If two or more nodes have this priority the algorithm
-              will make an arbitrary choice.</para>
+              will make an arbitrary choice. The priority value for option <emphasis>Highest</emphasis> is <emphasis>3</emphasis>.</para>
           </listitem>
           <listitem>
             <para><emphasis>High</emphasis>. Nodes with this priority will be favoured but not as
-              much so as those with Highest.</para>
+              much so as those with Highest. The priority value for this option is <emphasis>2</emphasis>.</para>
           </listitem>
           <listitem>
-            <para><emphasis>Normal</emphasis>. This is default election priority.</para>
+            <para><emphasis>Normal</emphasis>. This is a default election priority.
+              The priority value for this option is <emphasis>1</emphasis>.</para>
           </listitem>
           <listitem>
             <para><emphasis>Never</emphasis>. The node will never be elected <emphasis>even if the
                 node has the most recent transaction</emphasis>. The node will still keep up to date
               with the replication stream and will still vote itself, but can just never be
-              elected.</para>
+              elected. The priority value for this option is <emphasis>0</emphasis>.</para>
           </listitem>
         </itemizedlist>
       </para>
-      <para>Node priority is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
-          virtualhost node</link> and can be changed at runtime and is effective immediately.</para>
+      <para>Node priority is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">
+        attribute <emphasis>priority</emphasis> on the virtualhost node</link> and can be changed
+        at runtime and is effective immediately.</para>
       <important>
         <para>Use of the Never priority can lead to transaction loss. For example, consider a group
           of three where replica-2 is marked as Never. If a transaction were to arrive and it be
@@ -354,8 +370,9 @@
         just this one node?</para>
       <para>In this case, Required Number of Nodes can be reduced to 1 on the remain node, allowing
         the node to elect itself and service to be restored from the singleton. Required minimum
-        number of nodes is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
-          virtualhost node</link> and can be changed at runtime and is effective immediately.</para>
+        number of nodes is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">
+        attribute <emphasis>quorumOverride</emphasis> on the virtualhost node</link> and can be changed
+        at runtime and is effective immediately.</para>
       <important>
         <para>The attribute must be used cautiously. Careless use will lead to lost transactions and
           can lead to a <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://en.wikipedia.org/wiki/Split-brain_(computing)">split-brain</link> in the event of a network partition. If used to temporarily restore
@@ -370,8 +387,9 @@
       <para> In a group of two, if a node were to fail then in default configuration work will cease
         as quorum no longer exists. A single node cannot elect itself master. </para>
       <para>The <literal>allow to operate solo</literal> flag allows a node in a two node group to elect itself master and
-        to operate sole. It is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
-          virtualhost node</link> and can be changed at runtime and is effective immediately.</para>
+        to operate sole. It is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">
+        attribute <emphasis>designatedPrimary</emphasis> on the virtualhost node</link> and can be changed
+        at runtime and is effective immediately.</para>
       <para>For example, consider a group of two where the master fails. Service will be interrupted
         as the remaining node cannot elect itself master. To allow it to become master, apply the
         <literal>allow to operate solo</literal> flag to it. It will elect itself master and work can continue, albeit
