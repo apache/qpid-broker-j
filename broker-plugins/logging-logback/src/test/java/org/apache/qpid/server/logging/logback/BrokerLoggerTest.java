@@ -271,6 +271,33 @@ public class BrokerLoggerTest extends UnitTestBase
         assertLoggedEvent(_loggerAppender, true, "foo message", fooLogger.getName(), Level.WARN);
     }
 
+    @Test
+    public void testExactLoggerRuleSupersedeWildCardLoggerRule()
+    {
+        Map<String, Object> fooRuleAttributes =
+                createBrokerNameAndLevelLogInclusionRuleAttributes("fooRule",
+                                                                   "org.apache.qpid.foo.*",
+                                                                   LogLevel.INFO);
+        Map<String, Object> barRuleAttributes =
+                createBrokerNameAndLevelLogInclusionRuleAttributes("barRule",
+                                                                   "org.apache.qpid.foo.bar",
+                                                                   LogLevel.WARN);
+
+        _brokerLogger.createChild(BrokerLogInclusionRule.class, fooRuleAttributes);
+        _brokerLogger.createChild(BrokerLogInclusionRule.class, barRuleAttributes);
+
+        Logger barLogger = LoggerFactory.getLogger("org.apache.qpid.foo.bar");
+        barLogger.info("info bar message");
+        barLogger.error("error bar message");
+
+        Logger fooLogger = LoggerFactory.getLogger("org.apache.qpid.foo.foo");
+        fooLogger.info("info foo message");
+
+        assertLoggedEvent(_loggerAppender, false, "info bar message", barLogger.getName(), Level.INFO);
+        assertLoggedEvent(_loggerAppender, true, "error bar message", barLogger.getName(), Level.ERROR);
+        assertLoggedEvent(_loggerAppender, true, "info foo message", fooLogger.getName(), Level.INFO);
+    }
+
     private Map<String, Object> createBrokerNameAndLevelLogInclusionRuleAttributes(final String loggerName,
                                                                                    final LogLevel logLevel)
     {
