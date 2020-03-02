@@ -70,7 +70,7 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
                 @Override
                 public FilterReply decide(final ILoggingEvent event)
                 {
-                    return getFilterReply(event.getLevel());
+                    return getWildCardLoggerFilterReply(event.getLevel());
                 }
             };
         }
@@ -84,7 +84,7 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
                 {
                     if (event.getLoggerName().startsWith(prefixName))
                     {
-                        return getFilterReply(event.getLevel());
+                        return getWildCardLoggerFilterReply(event.getLevel());
                     }
                     return FilterReply.NEUTRAL;
                 }
@@ -99,7 +99,7 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
                 {
                     if (event.getLoggerName().equals(loggerName))
                     {
-                        return getFilterReply(event.getLevel());
+                        return getExactLoggerFilterReply(event.getLevel());
                     }
                     return FilterReply.NEUTRAL;
                 }
@@ -107,13 +107,9 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
         }
     }
 
-    private FilterReply getFilterReply(final Level eventLevel)
+    private FilterReply getWildCardLoggerFilterReply(final Level eventLevel)
     {
-        if (_level == Level.OFF)
-        {
-            return FilterReply.DENY;
-        }
-        else if (eventLevel.isGreaterOrEqual(_level))
+        if (eventLevel.isGreaterOrEqual(_level))
         {
             return FilterReply.ACCEPT;
         }
@@ -121,6 +117,11 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
         {
             return FilterReply.NEUTRAL;
         }
+    }
+
+    private FilterReply getExactLoggerFilterReply(final Level eventLevel)
+    {
+        return  eventLevel.isGreaterOrEqual(_level) ? FilterReply.ACCEPT : FilterReply.DENY;
     }
 
     @Override

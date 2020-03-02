@@ -142,7 +142,7 @@ public class LoggerNameAndLevelFilterTest extends UnitTestBase
         when(event.getLevel()).thenReturn(Level.DEBUG);
         when(event.getLoggerName()).thenReturn("org.apache.qpid");
         assertEquals("Unexpected reply for non matching log leve and same logger namel",
-                            FilterReply.NEUTRAL,
+                            FilterReply.DENY,
                             filter.decide(event));
     }
 
