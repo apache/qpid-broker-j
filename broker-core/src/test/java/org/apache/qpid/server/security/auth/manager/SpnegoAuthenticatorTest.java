@@ -28,6 +28,7 @@ import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.security.Principal;
@@ -56,14 +57,15 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpnegoAuthenticatorTest.class);
     private static final String CLIENT_NAME = "client";
-    private static final String SERVER_NAME = "AMQP/localhost";
-    private static final String ANOTHER_SERVICE = "foo/localhost";
+    private static final String HOST_NAME = InetAddress.getLoopbackAddress().getCanonicalHostName();
+    private static final String SERVER_NAME = "AMQP/" + HOST_NAME;
+    private static final String ANOTHER_SERVICE = "foo/" + HOST_NAME;
     private static final String REALM = "QPID.ORG";
     private static final String LOGIN_CONFIG = "login.config";
     private static final KerberosUtilities UTILS = new KerberosUtilities();;
 
     @ClassRule
-    public static final EmbeddedKdcResource KDC = new EmbeddedKdcResource(REALM);
+    public static final EmbeddedKdcResource KDC = new EmbeddedKdcResource(HOST_NAME, 0, "QpidTestKerberosServer", REALM);
 
     @ClassRule
     public static final SystemPropertySetter SYSTEM_PROPERTY_SETTER = new SystemPropertySetter();

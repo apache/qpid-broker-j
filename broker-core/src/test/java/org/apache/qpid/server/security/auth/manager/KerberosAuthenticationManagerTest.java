@@ -29,6 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -72,9 +73,9 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
     private static final Logger LOGGER = LoggerFactory.getLogger(KerberosAuthenticationManagerTest.class);
     private static final String LOGIN_CONFIG = "login.config";
     private static final String REALM = "QPID.ORG";
-    private static final String SERVER_NAME = "localhost";
+    private static final String HOST_NAME = InetAddress.getLoopbackAddress().getCanonicalHostName();
     private static final String SERVER_PROTOCOL = "AMQP";
-    private static final String SERVICE_PRINCIPAL_NAME = SERVER_PROTOCOL + "/" + SERVER_NAME;
+    private static final String SERVICE_PRINCIPAL_NAME = SERVER_PROTOCOL + "/" + HOST_NAME;
     private static final String SERVER_PRINCIPAL_FULL_NAME = SERVICE_PRINCIPAL_NAME + "@" + REALM;
     private static final String CLIENT_PRINCIPAL_NAME = "client";
     private static final String CLIENT_PRINCIPAL_FULL_NAME = CLIENT_PRINCIPAL_NAME + "@" + REALM;
@@ -82,7 +83,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
     private static final KerberosUtilities UTILS = new KerberosUtilities();
 
     @ClassRule
-    public static final EmbeddedKdcResource KDC = new EmbeddedKdcResource(REALM);
+    public static final EmbeddedKdcResource KDC = new EmbeddedKdcResource(HOST_NAME, 0, "QpidTestKerberosServer", REALM);
 
     @ClassRule
     public static final SystemPropertySetter SYSTEM_PROPERTY_SETTER = new SystemPropertySetter();
@@ -127,7 +128,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
     public void testCreateSaslNegotiator() throws Exception
     {
         final SaslSettings saslSettings = mock(SaslSettings.class);
-        when(saslSettings.getLocalFQDN()).thenReturn(SERVER_NAME);
+        when(saslSettings.getLocalFQDN()).thenReturn(HOST_NAME);
         final SaslNegotiator negotiator = _kerberosAuthenticationProvider.createSaslNegotiator(GSSAPI_MECHANISM,
                                                                                                saslSettings,
                                                                                                null);
@@ -278,7 +279,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
             return Sasl.createSaslClient(new String[]{GSSAPI_MECHANISM},
                                          null,
                                          SERVER_PROTOCOL,
-                                         SERVER_NAME,
+                                         HOST_NAME,
                                          props,
                                          null);
         });
