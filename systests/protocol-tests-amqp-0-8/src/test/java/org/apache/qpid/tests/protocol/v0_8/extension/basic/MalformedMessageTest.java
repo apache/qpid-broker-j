@@ -26,6 +26,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assume.assumeThat;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -65,7 +66,7 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @BrokerSpecific(kind = KIND_BROKER_J)
 @ConfigItem(name = "broker.flowToDiskThreshold", value = "1")
 @ConfigItem(name = "connection.maxUncommittedInMemorySize", value = "1")
-public class MalformedMessage extends BrokerAdminUsingTestBase
+public class MalformedMessageTest extends BrokerAdminUsingTestBase
 {
     private static final String CONTENT_TEXT = "Test";
 
@@ -130,6 +131,10 @@ public class MalformedMessage extends BrokerAdminUsingTestBase
     @Test
     public void publishMalformedMessageInTransactionExceedingMaxUncommittedLimit() throws Exception
     {
+        assumeThat("Persistent store is required for the test",
+                   getBrokerAdmin().supportsRestart(),
+                   is(equalTo(true)));
+
         final FieldTable malformedHeader = createMalformedHeadersWithMissingValue("prop");
         final BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
         basicContentHeaderProperties.setHeaders(malformedHeader);
