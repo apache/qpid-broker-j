@@ -35,10 +35,8 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -50,7 +48,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
@@ -70,10 +67,10 @@ import org.apache.qpid.test.utils.TestBrokerConfiguration;
 public class RestTestHelper
 {
 
-    private static final TypeReference<List<LinkedHashMap<String, Object>>> TYPE_LIST_OF_LINKED_HASH_MAPS = new TypeReference<List<LinkedHashMap<String, Object>>>()
+    private static final TypeReference<List<Map<String, Object>>> TYPE_LIST_OF_MAPS = new TypeReference<List<Map<String, Object>>>()
     {
     };
-    private static final TypeReference<LinkedHashMap<String, Object>> TYPE_LINKED_HASH_MAPS = new TypeReference<LinkedHashMap<String, Object>>()
+    private static final TypeReference<Map<String, Object>> TYPE_MAP = new TypeReference<Map<String, Object>>()
     {
     };
     public static final String API_BASE = "/api/latest/";
@@ -276,7 +273,7 @@ public class RestTestHelper
     {
         byte[] data = readConnectionInputStream(connection);
         ObjectMapper mapper = new ObjectMapper();
-        List<Map<String, Object>> providedObject = mapper.readValue(new ByteArrayInputStream(data), TYPE_LIST_OF_LINKED_HASH_MAPS);
+        List<Map<String, Object>> providedObject = mapper.readValue(new ByteArrayInputStream(data), TYPE_LIST_OF_MAPS);
         return providedObject;
     }
 
@@ -285,7 +282,7 @@ public class RestTestHelper
         byte[] data = readConnectionInputStream(connection);
 
         ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> providedObject = mapper.readValue(new ByteArrayInputStream(data), TYPE_LINKED_HASH_MAPS);
+        Map<String, Object> providedObject = mapper.readValue(new ByteArrayInputStream(data), TYPE_MAP);
         return providedObject;
     }
 
