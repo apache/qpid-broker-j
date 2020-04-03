@@ -77,7 +77,7 @@ class OAuth2MockEndpointHolder
                                         CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT);
 
         _server = new Server();
-        SslContextFactory sslContextFactory = new SslContextFactory()
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server()
                                               {
                                                   @Override
                                                   public void customize(final SSLEngine sslEngine)

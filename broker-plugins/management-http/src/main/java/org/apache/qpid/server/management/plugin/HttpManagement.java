@@ -617,7 +617,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             serverSessionContext.setSessionTimeout(port.getTLSSessionTimeout());
         }
 
-        SslContextFactory factory = new SslContextFactory()
+        SslContextFactory.Server factory = new SslContextFactory.Server()
         {
             @Override
             public void customize(final SSLEngine sslEngine)
@@ -871,7 +871,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         @Override
-        protected Thread newThread(final Runnable runnable)
+        public Thread newThread(final Runnable runnable)
         {
             return _threadFactory.newThread(runnable);
         }

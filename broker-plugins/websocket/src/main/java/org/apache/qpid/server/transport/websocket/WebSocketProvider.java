@@ -142,7 +142,7 @@ class WebSocketProvider implements AcceptingTransport
         }
         else if (_transport == Transport.WSS)
         {
-            SslContextFactory sslContextFactory = new SslContextFactory()
+            SslContextFactory sslContextFactory = new SslContextFactory.Server()
                                         {
                                             @Override
                                             public void customize(final SSLEngine sslEngine)
@@ -300,7 +300,7 @@ class WebSocketProvider implements AcceptingTransport
         private final ThreadFactory _threadFactory = QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(r -> QBBTrackingThreadPool.super.newThread(r));
 
         @Override
-        protected Thread newThread(final Runnable runnable)
+        public Thread newThread(final Runnable runnable)
         {
             return _threadFactory.newThread(runnable);
         }
