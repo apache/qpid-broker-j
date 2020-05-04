@@ -20,13 +20,18 @@
 package org.apache.qpid.server.test;
 
 import static java.lang.Boolean.TRUE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Subject;
@@ -56,13 +61,11 @@ public class KerberosUtilities
     private static final Logger LOGGER = LoggerFactory.getLogger(KerberosUtilities.class);
     private static final String IBM_LOGIN_MODULE_CLASS = "com.ibm.security.auth.module.Krb5LoginModule";
     private static final String SUN_LOGIN_MODULE_CLASS = "com.sun.security.auth.module.Krb5LoginModule";
-    public static final String KERBEROS_LOGIN_MODULE_CLASS =
+    private static final String KERBEROS_LOGIN_MODULE_CLASS =
             System.getProperty("java.vendor").contains("IBM") ? IBM_LOGIN_MODULE_CLASS : SUN_LOGIN_MODULE_CLASS;
 
     public byte[] buildToken(String clientPrincipalName, String targetServerPrincipalName) throws GSSException
     {
-        debugConfig();
-
         debug("Building token for client principal '{}' and server principal '{}'",
               clientPrincipalName,
               targetServerPrincipalName);
@@ -208,44 +211,35 @@ public class KerberosUtilities
         }
     }
 
-    public static void debugConfig()
-    {
-        if (LOGGER.isDebugEnabled())
-        {
-            final String krb5Conf = System.getProperty("java.security.krb5.conf");
-            if (krb5Conf != null)
-            {
-                final File file = new File(krb5Conf);
-                if (file.exists())
-                {
-                    String config = FileUtils.readFileAsString(file);
-                    debug("Kerberos config: {}", config);
-                }
-                else
-                {
-                    LOGGER.warn("Kerberos config file was not found in the expected location at '{}'", krb5Conf);
-                }
-            }
-            else
-            {
-                LOGGER.warn("JVM system property 'java.security.krb5.conf' is not set");
-            }
-
-            Map<String, String> env = new LinkedHashMap<>(System.getenv());
-            env.forEach((k, v) -> debug("Environment setting: {}={}", k ,v));
-
-            Properties properties = new Properties(System.getProperties());
-            properties.forEach((k, v) -> debug("JVM setting: {}={}", k ,v));
-        }
-    }
-
-    public static void debug(String message, Object... args)
+    public void debug(String message, Object... args)
     {
         LOGGER.debug(message, args);
         if (Boolean.TRUE.toString().equalsIgnoreCase(System.getProperty("sun.security.krb5.debug")))
         {
             System.out.println(String.format(message.replace("{}", "%s"), args));
         }
+    }
+
+    public Path transformLoginConfig(String resourceName, String hostName) throws IOException
+    {
+        final URL resource = KerberosUtilities.class.getClassLoader().getResource(resourceName);
+        if (resource == null)
+        {
+            throw new IllegalArgumentException(String.format("Unknown resource '%s'", resourceName));
+        }
+        final String config = new String(FileUtils.readFileAsBytes(resource.getFile()), UTF_8);
+        String newConfig = config.replace("AMQP/localhost", "AMQP/" + hostName);
+        if (IBM_LOGIN_MODULE_CLASS.equals(KERBEROS_LOGIN_MODULE_CLASS))
+        {
+            newConfig = newConfig.replace(SUN_LOGIN_MODULE_CLASS, IBM_LOGIN_MODULE_CLASS);
+        }
+        final Path file = Paths.get("target", resourceName);
+        Files.write(file,
+                    newConfig.getBytes(UTF_8),
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
+        return file;
     }
 
 }

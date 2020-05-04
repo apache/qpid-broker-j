@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.security.auth.manager.KerberosAuthenticationManager.GSSAPI_MECHANISM;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -30,9 +31,8 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.net.InetAddress;
-import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Base64;
@@ -51,8 +51,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -70,7 +68,6 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class KerberosAuthenticationManagerTest extends UnitTestBase
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(KerberosAuthenticationManagerTest.class);
     private static final String LOGIN_CONFIG = "login.config";
     private static final String REALM = "QPID.ORG";
     private static final String HOST_NAME = InetAddress.getLoopbackAddress().getCanonicalHostName();
@@ -99,11 +96,9 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         assumeThat(getJvmVendor(), not(JvmVendor.IBM));
         KDC.createPrincipal("broker.keytab", SERVER_PRINCIPAL_FULL_NAME);
         _clientKeyTabFile = KDC.createPrincipal("client.keytab", CLIENT_PRINCIPAL_FULL_NAME);
-        final URL resource = KerberosAuthenticationManagerTest.class.getClassLoader().getResource(LOGIN_CONFIG);
-        LOGGER.debug("JAAS config:" + resource);
-        assertNotNull(resource);
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", URLDecoder.decode(resource.getPath(),
-                                                                                                      StandardCharsets.UTF_8.name()));
+        final Path loginConfig = UTILS.transformLoginConfig(LOGIN_CONFIG, HOST_NAME);
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config",
+                                                 URLDecoder.decode(loginConfig.toFile().getAbsolutePath(), UTF_8.name()));
         SYSTEM_PROPERTY_SETTER.setSystemProperty("javax.security.auth.useSubjectCredsOnly", "false");
     }
 
@@ -120,8 +115,6 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         _kerberosAuthenticationProvider.create();
         when(_broker.getChildren(AuthenticationProvider.class))
                 .thenReturn(Collections.singleton(_kerberosAuthenticationProvider));
-
-        KerberosUtilities.debugConfig();
     }
 
     @Test

@@ -30,8 +30,8 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
 
-import org.apache.commons.codec.CharEncoding;
 import org.apache.directory.api.ldap.model.constants.SupportedSaslMechanisms;
 import org.apache.directory.api.ldap.model.entry.DefaultEntry;
 import org.apache.directory.api.ldap.model.entry.Entry;
@@ -91,6 +90,7 @@ import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.test.utils.JvmVendor;
+import org.apache.qpid.server.test.KerberosUtilities;
 import org.apache.qpid.test.utils.SystemPropertySetter;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -150,6 +150,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     private static final String LOGIN_CONFIG = "login.config";
     private static final String LOGIN_SCOPE = "ldap-gssapi-bind";
     private static final AtomicBoolean KERBEROS_SETUP = new AtomicBoolean();
+    private static final KerberosUtilities UTILS = new KerberosUtilities();
 
     @ClassRule
     public static CreateLdapServerRule LDAP = new CreateLdapServerRule();
@@ -403,10 +404,10 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     private void setUpJaas() throws LdapException, IOException
     {
         createKeyTab(BROKER_PRINCIPAL);
-        final URL resource = SimpleLDAPAuthenticationManagerTest.class.getClassLoader().getResource(LOGIN_CONFIG);
-        LOGGER.debug("JAAS config:" + resource);
-        assertNotNull(resource);
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config", URLDecoder.decode(resource.getPath(), CharEncoding.UTF_8));
+
+        final Path loginConfig = UTILS.transformLoginConfig(LOGIN_CONFIG, InetAddress.getLoopbackAddress().getCanonicalHostName());
+        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config",
+                                                 URLDecoder.decode(loginConfig.toFile().getAbsolutePath(), UTF_8.name()));
         SYSTEM_PROPERTY_SETTER.setSystemProperty("sun.security.krb5.debug", "true");
     }
 
