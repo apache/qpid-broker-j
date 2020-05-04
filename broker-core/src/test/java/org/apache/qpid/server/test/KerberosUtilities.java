@@ -24,6 +24,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,6 +46,7 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import com.google.common.io.ByteStreams;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -53,8 +55,6 @@ import org.ietf.jgss.GSSName;
 import org.ietf.jgss.Oid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.server.util.FileUtils;
 
 public class KerberosUtilities
 {
@@ -227,7 +227,15 @@ public class KerberosUtilities
         {
             throw new IllegalArgumentException(String.format("Unknown resource '%s'", resourceName));
         }
-        final String config = new String(FileUtils.readFileAsBytes(resource.getFile()), UTF_8);
+        final String config;
+        try(InputStream is = resource.openStream())
+        {
+            config = new String(ByteStreams.toByteArray(is), UTF_8);
+        }
+        catch (IOException e)
+        {
+            throw new IOException(String.format("Failed to load resource '%s'", resource.toExternalForm()), e);
+        }
         String newConfig = config.replace("AMQP/localhost", "AMQP/" + hostName);
         if (IBM_LOGIN_MODULE_CLASS.equals(KERBEROS_LOGIN_MODULE_CLASS))
         {
