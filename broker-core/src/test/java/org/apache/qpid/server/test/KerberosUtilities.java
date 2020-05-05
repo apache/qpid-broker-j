@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.file.Files;
@@ -72,12 +71,11 @@ public class KerberosUtilities
     public static final String CLIENT_PRINCIPAL_FULL_NAME = CLIENT_PRINCIPAL_NAME + "@" + REALM;
     public static final String SERVER_PROTOCOL = "AMQP";
     public static final String SERVICE_PRINCIPAL_NAME = SERVER_PROTOCOL + "/" + HOST_NAME;
-    private static final String SUN_ACCEPT_SCOPE = "com.sun.security.jgss.accept";
-    private static final String IBM_ACCEPT_SCOPE = "com.ibm.security.jgss.krb5.accept";
-    public static final String ACCEPT_SCOPE = isIBM() ? IBM_ACCEPT_SCOPE : SUN_ACCEPT_SCOPE;
+    public static final String ACCEPT_SCOPE = isIBM() ? "com.ibm.security.jgss.krb5.accept" : "com.sun.security.jgss.accept";
     private static final String USE_SUBJECT_CREDS_ONLY = "javax.security.auth.useSubjectCredsOnly";
     public static final String LOGIN_CONFIG = "java.security.auth.login.config";
 
+    private static final String INITIATE_SCOPE = isIBM() ? "com.ibm.security.jgss.krb5.initiate" : "com.sun.security.jgss.initiate";
     private static final Logger LOGGER = LoggerFactory.getLogger(KerberosUtilities.class);
     private static final String IBM_LOGIN_MODULE_CLASS = "com.ibm.security.auth.module.Krb5LoginModule";
     private static final String SUN_LOGIN_MODULE_CLASS = "com.sun.security.auth.module.Krb5LoginModule";
@@ -109,7 +107,7 @@ public class KerberosUtilities
     public byte[] buildToken(String clientPrincipalName, File clientKeyTabFile, String targetServerPrincipalName)
             throws Exception
     {
-        final LoginContext lc = createKerberosKeyTabLoginContext("test",
+        final LoginContext lc = createKerberosKeyTabLoginContext(INITIATE_SCOPE,
                                                                  clientPrincipalName,
                                                                  clientKeyTabFile);
 
@@ -117,6 +115,7 @@ public class KerberosUtilities
         String useSubjectCredsOnly = System.getProperty(USE_SUBJECT_CREDS_ONLY);
         try
         {
+            debug("Before login");
             lc.login();
             clientSubject = lc.getSubject();
             debug("LoginContext subject {}", clientSubject);

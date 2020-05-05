@@ -20,9 +20,11 @@ package org.apache.qpid.server.security.auth.manager;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvider.AUTHENTICATION_CACHE_MAX_SIZE;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -85,6 +87,7 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.test.utils.JvmVendor;
 import org.apache.qpid.server.test.KerberosUtilities;
 import org.apache.qpid.test.utils.SystemPropertySetter;
 import org.apache.qpid.test.utils.TestFileUtils;
@@ -361,6 +364,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
 
     private void setUpKerberosAndJaas() throws Exception
     {
+        assumeThat(getJvmVendor(), not(JvmVendor.IBM));
         if (KERBEROS_SETUP.compareAndSet(false, true))
         {
             setUpKerberos();
