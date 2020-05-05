@@ -21,7 +21,7 @@ package org.apache.qpid.server.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +30,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.server.KdcConfigKey;
@@ -41,10 +42,12 @@ import org.slf4j.LoggerFactory;
 public class EmbeddedKdcResource extends ExternalResource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddedKdcResource.class);
+    private static final AtomicInteger COUNTER = new AtomicInteger();
+    private static final boolean CLEAN_UP = Boolean.parseBoolean(System.getProperty("qpid.test.cleanUpKdcArtifacts", "true"));
     private final SimpleKdcServer _simpleKdcServer;
     private final String _realm;
     private final List<File> _createdFiles = new ArrayList<>();
-    private volatile File _kdcDirectory;
+    private volatile Path _kdcDirectory;
 
     public EmbeddedKdcResource(final String host, final int port, final String serviceName, final String realm)
     {
@@ -70,12 +73,17 @@ public class EmbeddedKdcResource extends ExternalResource
     @Override
     public void before() throws Exception
     {
-        final Path targetDir = FileSystems.getDefault().getPath("target");
-        _kdcDirectory = Files.createTempDirectory(targetDir, "simple-kdc-").toFile();
-        _simpleKdcServer.setWorkDir(_kdcDirectory);
+        final Path kdcDir = Paths.get("target", "simple-kdc-" + COUNTER.incrementAndGet());
+        createWorkDirectory(kdcDir);
+        _kdcDirectory = kdcDir;
+        _simpleKdcServer.setWorkDir(_kdcDirectory.toFile());
         _simpleKdcServer.init();
         _simpleKdcServer.start();
-        LOGGER.info("SimpleKdcServer started on port {}, realm '{}'", getPort(), getRealm());
+        LOGGER.info("SimpleKdcServer started on port {}, realm '{}' with work dir '{}'", getPort(), getRealm(), _kdcDirectory);
+        if (!CLEAN_UP)
+        {
+            Files.copy(Paths.get(kdcDir.toString(), "krb5.conf"), Paths.get(kdcDir.toString(), "krb5.conf.copy"));
+        }
     }
 
     @Override
@@ -91,21 +99,11 @@ public class EmbeddedKdcResource extends ExternalResource
         }
         finally
         {
-            try
+            if (CLEAN_UP)
             {
-                delete(_kdcDirectory);
+                cleanUp();
             }
-            catch (IOException e)
-            {
-                LOGGER.warn("Failure to delete KDC directory", e);
-            }
-            for (File f: _createdFiles)
-            {
-                if (!f.delete())
-                {
-                    LOGGER.warn("Failure to delete file {}", f.getAbsolutePath());
-                }
-            }
+
         }
     }
 
@@ -114,9 +112,9 @@ public class EmbeddedKdcResource extends ExternalResource
         return _realm;
     }
 
-    private void delete(File f) throws IOException
+    private void delete(Path f) throws IOException
     {
-        Files.walkFileTree(f.toPath(),
+        Files.walkFileTree(f,
                            new SimpleFileVisitor<Path>()
                            {
                                @Override
@@ -172,4 +170,36 @@ public class EmbeddedKdcResource extends ExternalResource
         }
     }
 
+    private void createWorkDirectory(final Path kdcDir) throws IOException
+    {
+        try
+        {
+            Files.createDirectory(kdcDir);
+        }
+        catch (FileAlreadyExistsException e)
+        {
+            delete(kdcDir);
+            Files.createDirectory(kdcDir);
+        }
+    }
+
+
+    private void cleanUp()
+    {
+        try
+        {
+            delete(_kdcDirectory);
+        }
+        catch (IOException e)
+        {
+            LOGGER.warn("Failure to delete KDC directory", e);
+        }
+        for (File f: _createdFiles)
+        {
+            if (!f.delete())
+            {
+                LOGGER.warn("Failure to delete file {}", f.getAbsolutePath());
+            }
+        }
+    }
 }
