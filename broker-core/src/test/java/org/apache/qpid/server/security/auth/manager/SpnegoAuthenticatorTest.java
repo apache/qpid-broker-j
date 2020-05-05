@@ -19,23 +19,21 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.Matchers.not;
+import static org.apache.qpid.server.test.KerberosUtilities.ACCEPT_SCOPE;
+import static org.apache.qpid.server.test.KerberosUtilities.HOST_NAME;
+import static org.apache.qpid.server.test.KerberosUtilities.REALM;
+import static org.apache.qpid.server.test.KerberosUtilities.SERVICE_PRINCIPAL_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.net.InetAddress;
-import java.net.URLDecoder;
-import java.nio.file.Path;
+import java.io.File;
 import java.security.Principal;
 import java.util.Base64;
 import java.util.Map;
 
-import org.ietf.jgss.GSSException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -45,18 +43,13 @@ import org.apache.qpid.server.security.TokenCarryingPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.test.EmbeddedKdcResource;
 import org.apache.qpid.server.test.KerberosUtilities;
-import org.apache.qpid.test.utils.JvmVendor;
 import org.apache.qpid.test.utils.SystemPropertySetter;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class SpnegoAuthenticatorTest extends UnitTestBase
 {
-    private static final String CLIENT_NAME = "client";
-    private static final String HOST_NAME = InetAddress.getLoopbackAddress().getCanonicalHostName();
-    private static final String SERVER_NAME = "AMQP/" + HOST_NAME;
     private static final String ANOTHER_SERVICE = "foo/" + HOST_NAME;
-    private static final String REALM = "QPID.ORG";
-    private static final String LOGIN_CONFIG = "login.config";
+    private static final String ANOTHER_SERVICE_FULL_NAME = ANOTHER_SERVICE + "@" + REALM;
     private static final KerberosUtilities UTILS = new KerberosUtilities();
 
     @ClassRule
@@ -64,6 +57,7 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
 
     @ClassRule
     public static final SystemPropertySetter SYSTEM_PROPERTY_SETTER = new SystemPropertySetter();
+    private static File _clientKeyTab;
 
     private SpnegoAuthenticator _spnegoAuthenticator;
     private KerberosAuthenticationManager _kerberosAuthenticationManager;
@@ -71,30 +65,25 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
     @BeforeClass
     public static void createKeyTabs() throws Exception
     {
-        assumeThat(getJvmVendor(), not(JvmVendor.IBM));
-        KDC.createPrincipal("broker.keytab", SERVER_NAME + "@" + REALM);
-        KDC.createPrincipal("client.keytab", CLIENT_NAME + "@" + REALM);
-        KDC.createPrincipal("another.keytab", ANOTHER_SERVICE + "@" + REALM);
-        final Path loginConfig = UTILS.transformLoginConfig(LOGIN_CONFIG, HOST_NAME);
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.auth.login.config",
-                                                 URLDecoder.decode(loginConfig.toFile().getAbsolutePath(), UTF_8.name()));
-        SYSTEM_PROPERTY_SETTER.setSystemProperty("javax.security.auth.useSubjectCredsOnly", "false");
+        KDC.createPrincipal("another.keytab", ANOTHER_SERVICE_FULL_NAME);
+        UTILS.prepareConfiguration(HOST_NAME, SYSTEM_PROPERTY_SETTER);
+        _clientKeyTab = UTILS.prepareKeyTabs(KDC);
     }
 
     @Before
     public void setUp()
     {
         _kerberosAuthenticationManager = mock(KerberosAuthenticationManager.class);
-        when(_kerberosAuthenticationManager.getSpnegoLoginConfigScope()).thenReturn("com.sun.security.jgss.accept");
+        when(_kerberosAuthenticationManager.getSpnegoLoginConfigScope()).thenReturn(ACCEPT_SCOPE);
         when(_kerberosAuthenticationManager.isStripRealmFromPrincipalName()).thenReturn(true);
 
         _spnegoAuthenticator = new SpnegoAuthenticator(_kerberosAuthenticationManager);
     }
 
     @Test
-    public void testAuthenticate() throws GSSException
+    public void testAuthenticate() throws Exception
     {
-        final String token = Base64.getEncoder().encodeToString(buildToken(SERVER_NAME));
+        final String token = Base64.getEncoder().encodeToString(buildToken(SERVICE_PRINCIPAL_NAME));
         final String authenticationHeader = SpnegoAuthenticator.NEGOTIATE_PREFIX + token;
 
         final AuthenticationResult result = _spnegoAuthenticator.authenticate(authenticationHeader);
@@ -103,7 +92,7 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
         assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
         final Principal principal = result.getMainPrincipal();
         assertTrue(principal instanceof TokenCarryingPrincipal);
-        assertEquals(CLIENT_NAME, principal.getName());
+        assertEquals(KerberosUtilities.CLIENT_PRINCIPAL_NAME, principal.getName());
 
         final Map<String, String> tokens = ((TokenCarryingPrincipal)principal).getTokens();
         assertNotNull(tokens);
@@ -119,9 +108,9 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
     }
 
     @Test
-    public void testAuthenticateNoNegotiatePrefix() throws GSSException
+    public void testAuthenticateNoNegotiatePrefix() throws Exception
     {
-        final String token = Base64.getEncoder().encodeToString(buildToken(SERVER_NAME));
+        final String token = Base64.getEncoder().encodeToString(buildToken(SERVICE_PRINCIPAL_NAME));
         final AuthenticationResult result = _spnegoAuthenticator.authenticate(token);
         assertNotNull(result);
         assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
@@ -146,10 +135,10 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
     }
 
     @Test
-    public void testAuthenticateWrongConfigName() throws GSSException
+    public void testAuthenticateWrongConfigName() throws Exception
     {
         when(_kerberosAuthenticationManager.getSpnegoLoginConfigScope()).thenReturn("foo");
-        final String token = Base64.getEncoder().encodeToString(buildToken(SERVER_NAME));
+        final String token = Base64.getEncoder().encodeToString(buildToken(SERVICE_PRINCIPAL_NAME));
         final String authenticationHeader = SpnegoAuthenticator.NEGOTIATE_PREFIX + token;
 
         final AuthenticationResult result = _spnegoAuthenticator.authenticate(authenticationHeader);
@@ -158,7 +147,7 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
     }
 
     @Test
-    public void testAuthenticateWrongServer() throws GSSException
+    public void testAuthenticateWrongServer() throws Exception
     {
         final String token = Base64.getEncoder().encodeToString(buildToken(ANOTHER_SERVICE));
         final String authenticationHeader = SpnegoAuthenticator.NEGOTIATE_PREFIX + token;
@@ -168,8 +157,8 @@ public class SpnegoAuthenticatorTest extends UnitTestBase
         assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
     }
 
-    private byte[] buildToken(final String anotherService) throws GSSException
+    private byte[] buildToken(final String anotherService) throws Exception
     {
-        return UTILS.buildToken(CLIENT_NAME, anotherService);
+        return UTILS.buildToken(KerberosUtilities.CLIENT_PRINCIPAL_NAME, _clientKeyTab, anotherService);
     }
 }

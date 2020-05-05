@@ -77,23 +77,7 @@ public class UnitTestBase
 
     public static JvmVendor getJvmVendor()
     {
-        final String property = String.valueOf(System.getProperty(StandardSystemProperty.JAVA_VENDOR.key())).toUpperCase();
-        if (property.contains("IBM"))
-        {
-            return JvmVendor.IBM;
-        }
-        else if (property.contains("ORACLE"))
-        {
-            return JvmVendor.ORACLE;
-        }
-        else if (property.contains("OPENJDK"))
-        {
-            return JvmVendor.OPENJDK;
-        }
-        else
-        {
-            return JvmVendor.UNKNOWN;
-        }
+        return JvmVendor.getJvmVendor();
     }
 
     public VirtualHostNodeStoreType getVirtualHostNodeStoreType()
