@@ -69,6 +69,7 @@ define(["dojo/_base/declare",
                     {
                         this._inProgressfetch = this.inherited(arguments);
                     }
+                    var queryResults = this._inProgressfetch;
                     this._captureResults(queryResults, "fetch");
                     return queryResults;
                 },
