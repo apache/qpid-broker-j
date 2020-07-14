@@ -47,6 +47,11 @@
       <artifactId>logback-classic</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>de.siegmar</groupId>
+      <artifactId>logback-gelf</artifactId>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>org.apache.qpid</groupId>

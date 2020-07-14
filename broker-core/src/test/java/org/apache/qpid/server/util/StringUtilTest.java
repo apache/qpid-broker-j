@@ -21,6 +21,7 @@
 package org.apache.qpid.server.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
@@ -72,4 +73,18 @@ public class StringUtilTest extends UnitTestBase
         assertEquals("d41d8cd98f00b204e9800998ecf8427e", _util.createUniqueJavaName(""));
     }
 
+    @Test
+    public void testTrimToEmpty() {
+        assertEquals("Abc", StringUtil.trimToEmpty("Abc  "));
+        assertEquals("", StringUtil.trimToEmpty(" "));
+        assertEquals("", StringUtil.trimToEmpty(null));
+    }
+
+    @Test
+    public void testIsEmpty() {
+        assertTrue(StringUtil.isEmpty("  "));
+        assertTrue(StringUtil.isEmpty(null));
+        assertFalse(StringUtil.isEmpty("A "));
+        assertFalse(StringUtil.isEmpty("B"));
+    }
 }

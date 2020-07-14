@@ -30,9 +30,9 @@ abstract class ConfiguredObjectMethodAttributeOrStatistic<C extends ConfiguredOb
         implements ConfiguredObjectAttributeOrStatistic<C,T>
 {
 
-    private final String _name;
-    private final Class<T> _type;
-    private final Method _getter;
+    final String _name;
+    final Class<T> _type;
+    final Method _getter;
 
     ConfiguredObjectMethodAttributeOrStatistic(final Method getter)
     {

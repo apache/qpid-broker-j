@@ -134,7 +134,7 @@ public class InjectedAttributeTest extends UnitTestBase
     public void testInjectedSettableAttributeWithDefault()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attrInjector =
-                new ConfiguredSettableInjectedAttribute<TestCar<?>, Integer>("meaningOfLife",
+                new ConfiguredSettableInjectedAttribute<TestStandardCarImpl, Integer>("meaningOfLife",
                                                                              Integer.class,
                                                                              Integer.class,
                                                                              "42",
@@ -171,7 +171,7 @@ public class InjectedAttributeTest extends UnitTestBase
     public void testInjectedSettableAttributeValidValues()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attrInjector =
-                new ConfiguredSettableInjectedAttribute<TestCar<?>, Integer>("meaningOfLife",
+                new ConfiguredSettableInjectedAttribute<TestStandardCarImpl, Integer>("meaningOfLife",
                                                                              Integer.class,
                                                                              Integer.class,
                                                                              "42",
@@ -210,7 +210,7 @@ public class InjectedAttributeTest extends UnitTestBase
     public void testInjectedSettableAttributeEnumValidValues_Unrestricted()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attribute =
-                new ConfiguredSettableInjectedAttribute<TestCar<?>, Colour>("trimColour",
+                new ConfiguredSettableInjectedAttribute<TestStandardCarImpl, Colour>("trimColour",
                                                                             Colour.class,
                                                                             Colour.class,
                                                                             Colour.BLACK.name(),
@@ -234,7 +234,7 @@ public class InjectedAttributeTest extends UnitTestBase
     public void testInjectedSettableAttributeEnumValidValues_RestrictedSet()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attribute =
-                new ConfiguredSettableInjectedAttribute<TestCar<?>, Colour>("trimColour",
+                new ConfiguredSettableInjectedAttribute<TestStandardCarImpl, Colour>("trimColour",
                                                                             Colour.class,
                                                                             Colour.class,
                                                                             Colour.BLACK.name(),

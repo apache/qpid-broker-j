@@ -1,0 +1,305 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>Connection Options</legend>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Remote Host*:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addLogger.remoteHost"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                              name: 'remoteHost',
+                              required: true,
+                              placeHolder: '',
+                              promptMessage: 'Enter the host where the Graylog server is running',
+                              title: 'Enter the host where the Graylog server is running'"/>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Port:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addLogger.port"
+                           data-dojo-type="dijit/form/NumberTextBox"
+                           data-dojo-props="
+                              name: 'port',
+                              placeHolder: '12201',
+                              promptMessage: 'Enter the port number on which the Graylog server runs',
+                              title: 'Port number on which the Graylog server runs',
+                              constraints:{min:1,max:65535,places:0},
+                              invalidMessage:'Please enter a port number in range [1,65535]',
+                              rangeMessage:'Insert a integer in the range [1,65535]'"/>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Reconnection interval [ms]:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addLogger.reconnectionInterval"
+                           data-dojo-type="dijit/form/NumberTextBox"
+                           data-dojo-props="
+                              name: 'reconnectionInterval',
+                              placeHolder: '60000',
+                              promptMessage: 'Enter the time period of connection periodical reset',
+                              title: 'Time period of connection periodical reset',
+                              constraints:{min:0,max:2147483647,places:0},
+                              invalidMessage:'Please enter a reconnection interval',
+                              rangeMessage:'Insert zero or a positive integer'"/>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Connection timeout [ms]:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addLogger.connectionTimeout"
+                           data-dojo-type="dijit/form/NumberTextBox"
+                           data-dojo-props="
+                              name: 'connectionTimeout',
+                              placeHolder: '15000',
+                              promptMessage: 'Enter the connection timeout',
+                              title: 'Connection timeout',
+                              constraints:{min:0,max:2147483647,places:0},
+                              invalidMessage:'Please enter a connection timeout',
+                              rangeMessage:'Insert zero (infinity) or a positive integer'"/>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Maximum reconnection attempts:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addLogger.maximumReconnectionAttempts"
+                           data-dojo-type="dijit/form/NumberTextBox"
+                           data-dojo-props="
+                              name: 'maximumReconnectionAttempts',
+                              placeHolder: '2',
+                              promptMessage: 'Enter how many times can the client try to reconnect',
+                              title: 'Maximum reconnection attempts',
+                              constraints:{min:0,max:2147483647,places:0},
+                              invalidMessage:'Please enter a maximum reconnection attempts',
+                              rangeMessage:'Insert zero or a positive integer'"/>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Retry delay [ms]:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addLogger.retryDelay"
+                           data-dojo-type="dijit/form/NumberTextBox"
+                           data-dojo-props="
+                              name: 'retryDelay',
+                              placeHolder: '3000',
+                              promptMessage: 'Enter delay between reconnection attempts',
+                              title: 'Retry delay',
+                              constraints:{min:0,max:2147483647,places:0},
+                              invalidMessage:'Please enter a retry delay',
+                              rangeMessage:'Insert zero or a positive integer'"/>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>Message Buffer Options</legend>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Capacity:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addLogger.messageBufferCapacity"
+                           data-dojo-type="dijit/form/NumberTextBox"
+                           data-dojo-props="
+                              name: 'messageBufferCapacity',
+                              placeHolder: '256',
+                              promptMessage: 'Enter the capacity of the message buffer',
+                              title: 'Message buffer capacity',
+                              constraints:{min:1,max:2147483647,places:0},
+                              invalidMessage:'Please enter a message buffer capacity',
+                              rangeMessage:'Insert a positive integer'"/>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>Logger Stopping</legend>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Messages flush timeout [ms]:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addLogger.messagesFlushTimeOut"
+                           data-dojo-type="dijit/form/NumberTextBox"
+                           data-dojo-props="
+                              name: 'messagesFlushTimeOut',
+                              placeHolder: '1000',
+                              promptMessage: 'Enter the timeout of the flushing of remaining messages in the buffer at the logger stop',
+                              title: 'Messages flush timeout',
+                              constraints:{min:0,max:2147483647,places:0},
+                              invalidMessage:'Please enter a messages flush timeout',
+                              rangeMessage:'Insert zero (infinity) or a positive integer'"/>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>GELF encoder options</legend>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Message origin host*:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" id="addLogger.messageOriginHost"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                              name: 'messageOriginHost',
+                              required: true,
+                              placeHolder: 'hostname',
+                              promptMessage: 'Enter the origin host of the GELF log message',
+                              title: 'Enter the origin host of the GELF log message'"/>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Include raw message</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="checkbox" id="addLogger.rawMessageIncluded"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="
+                                  name: 'rawMessageIncluded',
+                                  required: false,
+                                  checked: false"/>
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addLogger.rawMessageIncluded'],
+                                      label: 'If selected, the raw text of exception is included in the GELF log message'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Include event marker</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="checkbox" id="addLogger.eventMarkerIncluded"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="
+                                  name: 'eventMarkerIncluded',
+                                  required: false,
+                                  checked: true"/>
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addLogger.eventMarkerIncluded'],
+                                      label: 'If selected, the event marker is included in the GELF log message'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Include MDC properties</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="checkbox" id="addLogger.mdcPropertiesIncluded"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="
+                                  name: 'mdcPropertiesIncluded',
+                                  required: false,
+                                  checked: true"/>
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addLogger.mdcPropertiesIncluded'],
+                                      label: 'If selected, the MDC properties are included in the GELF log message'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Include caller data</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="checkbox" id="addLogger.callerDataIncluded"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="
+                                  name: 'callerDataIncluded',
+                                  required: false,
+                                  checked: false"/>
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addLogger.callerDataIncluded'],
+                                      label: 'If selected, the caller data are included in the GELF log message'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Include root exception data</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="checkbox" id="addLogger.rootExceptionDataIncluded"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="
+                                  name: 'rootExceptionDataIncluded',
+                                  required: false,
+                                  checked: false"/>
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addLogger.rootExceptionDataIncluded'],
+                                      label: 'If selected, the root exception data are included in the GELF log message'">
+                    </div>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Include log level name</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="checkbox" id="addLogger.logLevelNameIncluded"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props="
+                                  name: 'logLevelNameIncluded',
+                                  required: false,
+                                  checked: false"/>
+                    <div data-dojo-type="dijit/Tooltip"
+                         data-dojo-props="connectId: ['addLogger.logLevelNameIncluded'],
+                                      label: 'If selected, the log level name is included in the GELF log message'">
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>GELF Log Message Static Fields</legend>
+            <div class="clear" id="addLogger.staticFields"
+                 data-dojo-type="qpid/common/MapInputWidget"
+                 data-dojo-props="
+                    name: 'staticFields',
+                    keyValueTemplate: 'logger/Graylog/showStaticField.html'">
+                <div class="formLabel-labelCell tableContainer-labelCell">
+                    <label for="addLogger.staticFields.key">Name (Key):</label><br>
+                    <input type="text" id="addLogger.staticFields.key"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                              name: 'staticFields.key',
+                              placeHolder: '',
+                              promptMessage: 'Enter the static field name',
+                              title: 'Name (Key)',
+                              regExp: '[\\w\\.\\-]+',
+                              invalidMessage: 'Name/key has to obey the schema: [\\w\\.\\-]+'"/>
+                </div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <label for="addLogger.staticFields.value">Value:</label><br>
+                    <input type="text" id="addLogger.staticFields.value"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                              name: 'staticFields.value',
+                              placeHolder: '',
+                              promptMessage: 'Enter the static field value',
+                              title: 'Value'"/>
+                </div>
+                <div class="clear">
+                    <button data-dojo-type="dijit/form/Button" id="addLogger.staticFields.insertButton"
+                            data-dojo-props="label: 'Insert'" type="submit">Insert
+                    </button>
+                    <button data-dojo-type="dijit/form/Button" id="addLogger.staticFields.clearButton"
+                            data-dojo-props="label: 'Clear'" type="reset">Clear
+                    </button>
+                </div>
+                <div class="keyValueList clear mapList-scroll-y"></div>
+            </div>
+        </fieldset>
+    </div>
+</div>

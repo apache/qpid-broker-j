@@ -22,6 +22,6 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 import org.apache.qpid.server.model.ManagedObject;
 
 @ManagedObject(category = false)
-public interface TestElecCar<X extends TestElecCar<X>> extends TestCar<X>
+public interface TestElecCar extends TestCar
 {
 }

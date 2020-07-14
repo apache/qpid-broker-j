@@ -135,11 +135,11 @@ public class MetaDataServlet extends AbstractServlet
     {
         final Collection<ManagedContextDefault> contextDependencies =
                 model.getTypeRegistry().getContextDependencies(type);
-        Map<String,String> result = new TreeMap<>();
+        Map<String, String> result = new TreeMap<>();
 
-        if(contextDependencies != null)
+        if (contextDependencies != null)
         {
-            for(ManagedContextDefault contextDefault : contextDependencies)
+            for (ManagedContextDefault contextDefault : contextDependencies)
             {
                 result.put(contextDefault.name(), contextDefault.description());
             }
@@ -217,11 +217,14 @@ public class MetaDataServlet extends AbstractServlet
                     }
                     attrDetails.put("validValues", convertedValues);
                 }
-                else if(!"".equals(automatedAttribute.validValuePattern()))
+                else if (!"".equals(automatedAttribute.validValuePattern()))
                 {
                     attrDetails.put("validValuesPattern", automatedAttribute.validValuePattern());
                 }
-
+                else if (!"".equals(automatedAttribute.validator()))
+                {
+                    attrDetails.put("validator", automatedAttribute.validator());
+                }
             }
             if (attribute.isSecure())
             {

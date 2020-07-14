@@ -499,32 +499,29 @@ public class ApiDocsServlet extends AbstractServlet
     {
         final Class type = attributeOrStatistic.getType();
 
-        Collection<String> validValues;
-        String validValuePattern;
+        Collection<String> validValues = null;
+        String validValuePattern = "";
+        String validator = "";
 
         if(attributeOrStatistic instanceof ConfiguredSettableAttribute)
         {
             ConfiguredSettableAttribute<?,?> settableAttribute = (ConfiguredSettableAttribute<?,?>) attributeOrStatistic;
             validValues = settableAttribute.hasValidValues() ? settableAttribute.validValues() : null;
             validValuePattern = settableAttribute.validValuePattern();
-        }
-        else
-        {
-            validValues = null;
-            validValuePattern = "";
+            validator = settableAttribute.validator();
         }
 
-        return renderType(type, validValues, validValuePattern);
+        return renderType(type, validValues, validValuePattern, validator);
     }
 
     private String renderType(final OperationParameter parameter)
     {
         final Class type = parameter.getType();
         List<String> validValues = parameter.getValidValues();
-        return renderType(type, validValues, "");
+        return renderType(type, validValues, "", "");
     }
 
-    private String renderType(Class type, Collection<String> validValues, final String validValuePattern) {
+    private String renderType(Class type, Collection<String> validValues, String validValuePattern, String validator) {
         if(Enum.class.isAssignableFrom(type))
         {
             return "<div class=\"restriction\" title=\"enum: " + EnumSet.allOf(type) + "\">string</div>";
@@ -549,7 +546,11 @@ public class ApiDocsServlet extends AbstractServlet
             }
             else if(validValuePattern != null && !"".equals(validValuePattern))
             {
-                returnVal.append("<div class=\"restricted\" title=\"Valid value pattern: " + validValuePattern+ "\">");
+                returnVal.append("<div class=\"restricted\" title=\"Valid value pattern: " + validValuePattern + "\">");
+            }
+            else if(validator != null && !"".equals(validator))
+            {
+                returnVal.append("<div class=\"restricted\" title=\"Validator: " + validator + "\">");
             }
 
             if(Number.class.isAssignableFrom(type))

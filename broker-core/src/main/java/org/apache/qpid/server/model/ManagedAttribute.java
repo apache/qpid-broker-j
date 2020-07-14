@@ -20,30 +20,45 @@
  */
 package org.apache.qpid.server.model;
 
-import static org.apache.qpid.server.model.Initialization.none;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import static org.apache.qpid.server.model.Initialization.none;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface ManagedAttribute
 {
     boolean secure() default false;
+
     boolean mandatory() default false;
+
     boolean persist() default true;
+
     String defaultValue() default "";
+
     String description() default "";
+
     String[] validValues() default {};
+
     String validValuePattern() default "";
+
     boolean oversize() default false;
+
     String oversizedAltText() default "";
+
     String secureValueFilter() default "";
-    /** If true, the model attribute value cannot be mutated after construction. */
+
+    /**
+     * If true, the model attribute value cannot be mutated after construction.
+     */
     boolean immutable() default false;
+
     Initialization initialization() default none;
 
     boolean updateAttributeDespiteUnchangedValue() default false;
+
+    String validator() default "";
 }

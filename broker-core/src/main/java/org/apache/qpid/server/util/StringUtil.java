@@ -97,4 +97,16 @@ public class StringUtil
         return builder.toString();
     }
 
+    public static String trimToEmpty(String str) {
+        if (str == null)
+        {
+            return "";
+        }
+        return str.trim();
+    }
+
+    public static boolean isEmpty(String str)
+    {
+        return str == null || str.trim().isEmpty();
+    }
 }

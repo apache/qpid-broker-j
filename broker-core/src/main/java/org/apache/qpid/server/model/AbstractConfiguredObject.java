@@ -20,6 +20,37 @@
  */
 package org.apache.qpid.server.model;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.AbstractFuture;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.configuration.updater.Task;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.logging.OperationLogMessage;
+import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.TaskPrincipal;
+import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
+import org.apache.qpid.server.store.ConfiguredObjectRecord;
+import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
+import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.security.auth.Subject;
+import javax.security.auth.SubjectDomainCombiner;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationHandler;
@@ -46,7 +77,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -58,41 +88,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
-
-import javax.security.auth.Subject;
-import javax.security.auth.SubjectDomainCombiner;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.Task;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.EventLoggerProvider;
-import org.apache.qpid.server.logging.OperationLogMessage;
-import org.apache.qpid.server.model.preferences.UserPreferences;
-import org.apache.qpid.server.security.AccessControl;
-import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
-import org.apache.qpid.server.security.auth.TaskPrincipal;
-import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
-import org.apache.qpid.server.store.ConfiguredObjectRecord;
-import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
-import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.util.Strings;
 
 public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> implements ConfiguredObject<X>
 {
@@ -510,59 +507,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             throw new ServerScopedRuntimeException("Unable to set the automated attribute " + name + " on the configure object type " + getClass().getName(),e);
         }
     }
-
-    private boolean checkValidValues(final ConfiguredSettableAttribute attribute, final Object desiredValue)
-    {
-        for (Object validValue : attribute.validValues())
-        {
-            Object convertedValidValue = attribute.getConverter().convert(validValue, this);
-
-            if (convertedValidValue.equals(desiredValue))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean checkValidValuePattern(final ConfiguredSettableAttribute attribute, final Object desiredValue)
-    {
-        Collection<String> valuesToCheck;
-
-        if(attribute.getType().equals(String.class))
-        {
-            valuesToCheck = Collections.singleton(desiredValue.toString());
-        }
-        else if(Collection.class.isAssignableFrom(attribute.getType()) && attribute.getGenericType() instanceof ParameterizedType)
-        {
-            ParameterizedType paramType = (ParameterizedType)attribute.getGenericType();
-            if(paramType.getActualTypeArguments().length == 1 && paramType.getActualTypeArguments()[0] == String.class)
-            {
-                valuesToCheck = (Collection<String>)desiredValue;
-            }
-            else
-            {
-                valuesToCheck = Collections.emptySet();
-            }
-        }
-        else
-        {
-            valuesToCheck = Collections.emptySet();
-        }
-
-        Pattern pattern = Pattern.compile(attribute.validValuePattern());
-        for (String value : valuesToCheck)
-        {
-            if(!pattern.matcher(value).matches())
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
 
     @Override
     public final void open()
@@ -1327,43 +1271,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         {
             if (!attr.isDerived())
             {
-                ConfiguredSettableAttribute autoAttr = (ConfiguredSettableAttribute) attr;
-                if (autoAttr.hasValidValues())
-                {
-                    Object desiredValueOrDefault = autoAttr.getValue(this);
-
-                    if (desiredValueOrDefault != null && !checkValidValues(autoAttr, desiredValueOrDefault))
-                    {
-                        throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
-                                                                + "' instance of "+ getClass().getName()
-                                                                + " named '" + getName() + "'"
-                                                                + " cannot have value '" + desiredValueOrDefault + "'"
-                                                                + ". Valid values are: "
-                                                                + autoAttr.validValues());
-                    }
-                }
-                else if(!"".equals(autoAttr.validValuePattern()))
-                {
-                    Object desiredValueOrDefault = autoAttr.getValue(this);
-
-                    if (desiredValueOrDefault != null && !checkValidValuePattern(autoAttr, desiredValueOrDefault))
-                    {
-                        throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
-                                                                + "' instance of "+ getClass().getName()
-                                                                + " named '" + getName() + "'"
-                                                                + " cannot have value '" + desiredValueOrDefault + "'"
-                                                                + ". Valid values pattern is: "
-                                                                + autoAttr.validValuePattern());
-                    }
-                }
-                if(autoAttr.isMandatory() && autoAttr.getValue(this) == null)
-                {
-                    throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
-                                                            + "' instance of "+ getClass().getName()
-                                                            + " named '" + getName() + "'"
-                                                            + " cannot be null, as it is mandatory");
-                }
-
+                final ConfiguredSettableAttribute autoAttr = (ConfiguredSettableAttribute) attr;
+                autoAttr.validateValueProvidedBy(this);
             }
         }
     }
@@ -3096,55 +3005,16 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         {
             if (!attr.isDerived() && changedAttributes.contains(attr.getName()))
             {
-                ConfiguredSettableAttribute autoAttr = (ConfiguredSettableAttribute) attr;
+                final ConfiguredSettableAttribute autoAttr = (ConfiguredSettableAttribute) attr;
 
-                if (autoAttr.isImmutable() && !Objects.equals(autoAttr.getValue(this), autoAttr.getValue(proxyForValidation)))
-                {
-                    throw new IllegalConfigurationException("Attribute '" + autoAttr.getName() + "' cannot be changed.");
-                }
-
-                if (autoAttr.hasValidValues())
-                {
-                    Object desiredValue = autoAttr.getValue(proxyForValidation);
-                    if ((autoAttr.isMandatory() || desiredValue != null)
-                        && !checkValidValues(autoAttr, desiredValue))
-                    {
-                        throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
-                                                                + "' instance of "+ getClass().getName()
-                                                                + " named '" + getName() + "'"
-                                                                + " cannot have value '" + desiredValue + "'"
-                                                                + ". Valid values are: "
-                                                                + autoAttr.validValues());
-                    }
-                }
-                else if(!"".equals(autoAttr.validValuePattern()))
-                {
-                    Object desiredValueOrDefault = autoAttr.getValue(proxyForValidation);
-
-                    if (desiredValueOrDefault != null && !checkValidValuePattern(autoAttr, desiredValueOrDefault))
-                    {
-                        throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
-                                                                + "' instance of "+ getClass().getName()
-                                                                + " named '" + getName() + "'"
-                                                                + " cannot have value '" + desiredValueOrDefault + "'"
-                                                                + ". Valid values pattern is: "
-                                                                + autoAttr.validValuePattern());
-                    }
-                }
-
-
-                if(autoAttr.isMandatory() && autoAttr.getValue(proxyForValidation) == null)
-                {
-                    throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
-                                                            + "' instance of "+ getClass().getName()
-                                                            + " named '" + getName() + "'"
-                                                            + " cannot be null, as it is mandatory");
-                }
-
+                final Supplier<?> desiredValueOrDefault = () -> autoAttr.getValue(proxyForValidation);
+                final Supplier<?> currentValue = () -> autoAttr.getValue(this);
+                final Function<Object, ?> validValuesConverter = value -> autoAttr.convert(value, this);
+                autoAttr.validatorResolver()
+                        .validator(validValuesConverter, currentValue)
+                        .validate(desiredValueOrDefault, this, autoAttr.getName());
             }
-
         }
-
     }
 
     private ConfiguredObject<?> createProxyForValidation(final Map<String, Object> attributes)

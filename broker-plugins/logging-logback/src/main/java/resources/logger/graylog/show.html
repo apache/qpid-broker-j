@@ -1,0 +1,127 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+<div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>Connection Options</legend>
+            <div class="alignLeft">
+                <div class="clear">
+                    <div class="formLabel-labelCell">Remote Host:</div>
+                    <div class="remoteHost formValue-valueCell"></div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Port:</div>
+                    <div class="port formValue-valueCell"></div>
+                </div>
+            </div>
+            <div class="alignRight">
+                <div class="clear">
+                    <div class="formLabel-labelCell">Reconnection interval:</div>
+                    <div class="formValue-valueCell">
+                        <span class="reconnectionInterval"></span>
+                        <span>ms</span>
+                    </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Connection Timeout:</div>
+                    <div class="formValue-valueCell">
+                        <span class="connectionTimeout"></span>
+                        <span>ms</span>
+                    </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Maximum connection attempts:</div>
+                    <div class="maximumReconnectionAttempts formValue-valueCell"></div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Connection retry delay:</div>
+                    <div class="formValue-valueCell">
+                        <span class="retryDelay"></span>
+                        <span>ms</span>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>Message Buffer Options</legend>
+            <div class="clear">
+                <div class="formLabel-labelCell">Capacity:</div>
+                <div class="messageBufferCapacity formValue-valueCell"></div>
+            </div>
+        </fieldset>
+    </div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>Logger Stopping</legend>
+            <div class="clear">
+                <div class="formLabel-labelCell">Messages flush time out:</div>
+                <div class="formValue-valueCell">
+                    <span class="messagesFlushTimeOut"></span>
+                    <span>ms</span>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>GELF Log Message Encoder Options</legend>
+            <div class="alignLeft">
+                <div class="clear">
+                    <div class="formLabel-labelCell">Message origin host:</div>
+                    <div class="messageOriginHost formValue-valueCell"></div>
+                </div>
+            </div>
+            <div class="alignRight">
+                <div class="clear">
+                    <div class="formLabel-labelCell">Raw message included:</div>
+                    <div class="rawMessageIncluded formValue-valueCell"></div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Event marker included:</div>
+                    <div class="eventMarkerIncluded formValue-valueCell"></div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">MDC properties included:</div>
+                    <div class="mdcPropertiesIncluded formValue-valueCell"></div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Caller data included:</div>
+                    <div class="callerDataIncluded formValue-valueCell"></div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Root exception data included:</div>
+                    <div class="rootExceptionDataIncluded formValue-valueCell"></div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Log level name included:</div>
+                    <div class="logLevelNameIncluded formValue-valueCell"></div>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+    <div class="formBox clear">
+        <fieldset>
+            <legend>GELF Log Message Static Fields</legend>
+            <div class="staticFields clear"></div>
+        </fieldset>
+    </div>
+</div>

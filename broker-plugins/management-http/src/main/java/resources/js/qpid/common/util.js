@@ -1112,21 +1112,60 @@ define(["dojo/_base/xhr",
             return containerObject;
         };
 
-        util.updateAttributeNodes = function (containerObject, restData) {
+        util.updateBooleanAttributeNode = function (containerObject, restData, util) {
+            containerObject.containerNode.innerHTML = util.buildCheckboxMarkup(restData);
+        }
+
+        util.updateMapAttributeNode = function (containerObject, restData, util, template, key = "key", value = "value") {
+            if (!template)
+            {
+                return;
+            }
+            dom.empty(containerObject.containerNode);
+            for (let [restRecordKey, restRecordValue] of Object.entries(restData))
+            {
+                let newNode = dom.place(template, containerObject.containerNode, "last");
+
+                util.findNode(key, newNode).forEach(node => {
+                    let innerHTML = node.innerHTML;
+                    if (typeof innerHTML === "string")
+                    {
+                        node.innerHTML = entities.encode(String(restRecordKey)) + innerHTML.trim();
+                    } else {
+                        node.innerHTML = entities.encode(String(restRecordKey));
+                    }
+                });
+
+                util.findNode(value, newNode).forEach(node => node.innerHTML = entities.encode(String(restRecordValue)));
+            }
+        }
+
+        util.findNode = function (key, containerNode)
+        {
+            if (containerNode)
+            {
+                return query("." + key, containerNode) || [];
+            }
+            return [];
+        }
+
+        util.updateAttributeNodes = function (containerObject, restData, booleanUpdater = util.updateBooleanAttributeNode, mapUpdater = null) {
             for (var attrName in containerObject)
             {
                 if (containerObject.hasOwnProperty(attrName) && attrName in restData)
                 {
-                    var content = "";
-                    if (containerObject[attrName].attributeType === "Boolean")
+                    if (containerObject[attrName].attributeType === "Boolean" && typeof booleanUpdater === "function")
                     {
-                        content = util.buildCheckboxMarkup(restData[attrName]);
+                        booleanUpdater(containerObject[attrName], restData[attrName], util);
+                    }
+                    else if (containerObject[attrName].attributeType === "Map" && typeof mapUpdater === "function")
+                    {
+                        mapUpdater(containerObject[attrName], restData[attrName], util)
                     }
                     else
                     {
-                        content = entities.encode(String(restData[attrName]));
+                        containerObject[attrName].containerNode.innerHTML = entities.encode(String(restData[attrName]));
                     }
-                    containerObject[attrName].containerNode.innerHTML = content;
                 }
             }
         };

@@ -20,21 +20,67 @@
  */
 package org.apache.qpid.server.model;
 
-import java.util.Collection;
+import org.apache.qpid.server.model.validator.Resolver;
+import org.apache.qpid.server.util.CollectionUtils;
 
-public interface ConfiguredSettableAttribute<C extends ConfiguredObject, T> extends ConfiguredObjectAttribute<C,T>
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+public interface ConfiguredSettableAttribute<C extends ConfiguredObject<C>, T> extends ConfiguredObjectAttribute<C, T>
 {
     String defaultValue();
 
-    boolean isMandatory();
+    default boolean isMandatory()
+    {
+        return validatorResolver().isMandatory();
+    }
 
-    boolean isImmutable();
+    default boolean isImmutable()
+    {
+        return validatorResolver().isImmutable();
+    }
 
-    Collection<String> validValues();
+    default Collection<String> validValues()
+    {
+        final Collection<String> validValues = validatorResolver().validValues();
+        if (validValues.isEmpty() && getType().isEnum())
+        {
+            final Object[] constants = getType().getEnumConstants();
 
-    String validValuePattern();
+            return Arrays.stream(constants)
+                    .map(Enum.class::cast)
+                    .map(Enum::name)
+                    .collect(Collectors.toList());
+        }
+        return validValues;
+    }
 
-    boolean hasValidValues();
+    default String validValuePattern()
+    {
+        return validatorResolver().validValuePattern();
+    }
+
+    default boolean hasValidValues()
+    {
+        return !CollectionUtils.isEmpty(validValues());
+    }
+
+    default String validator()
+    {
+        return validatorResolver().validator();
+    }
+
+    Resolver validatorResolver();
+
+    default void validateValueProvidedBy(final C object)
+    {
+        final Supplier<?> desiredValueOrDefault = () -> getValue(object);
+        validatorResolver()
+                .validator(value -> this.convert(value, object))
+                .validate(desiredValueOrDefault, object, getName());
+    }
 
     AttributeValueConverter<T> getConverter();
 
