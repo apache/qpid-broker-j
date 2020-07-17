@@ -27,7 +27,6 @@ import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,18 +34,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.ManagementModeStoreHandler;
@@ -71,10 +63,7 @@ import org.apache.qpid.server.util.urlstreamhandler.classpath.Handler;
 public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         extends AbstractConfiguredObject<X> implements SystemConfig<X>, DynamicModel
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSystemConfig.class);
-
     private static final UUID SYSTEM_ID = new UUID(0l, 0l);
-    private static final long SHUTDOWN_TIMEOUT = 30000l;
 
     private final Principal _systemPrincipal;
 
@@ -110,8 +99,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
     @ManagedAttributeField
     private String _defaultContainerType;
-
-    private final Thread _shutdownHook = new Thread(new ShutdownService(), "QpidBrokerShutdownHook");
 
     static
     {
@@ -149,22 +136,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     public EventLogger getEventLogger()
     {
         return _eventLogger;
-    }
-
-    @Override
-    protected ListenableFuture<Void> beforeClose()
-    {
-        try
-        {
-            boolean removed = Runtime.getRuntime().removeShutdownHook(_shutdownHook);
-            LOGGER.debug("Removed shutdown hook : {}", removed);
-        }
-        catch(IllegalStateException ise)
-        {
-            //ignore, means the JVM is already shutting down
-        }
-
-        return super.beforeClose();
     }
 
     @Override
@@ -244,11 +215,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     @Override
     protected void onOpen()
     {
-        super.onOpen();
-
-        Runtime.getRuntime().addShutdownHook(_shutdownHook);
-        LOGGER.debug("Added shutdown hook");
-
         _configurationStore = createStoreObject();
 
         if (isManagementMode())
@@ -597,32 +563,4 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
             return null;
         }
     }
-
-    private class ShutdownService implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            Subject.doAs(getSystemTaskSubject("Shutdown"),
-                         new PrivilegedAction<Object>()
-                         {
-                             @Override
-                             public Object run()
-                             {
-                                 LOGGER.debug("Shutdown hook initiating close");
-                                 ListenableFuture<Void> closeResult = closeAsync();
-                                 try
-                                 {
-                                     closeResult.get(SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
-                                 }
-                                 catch (InterruptedException | ExecutionException  | TimeoutException e)
-                                 {
-                                     LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately", e);
-                                 }
-                                 return null;
-                             }
-                         });
-        }
-    }
-
 }

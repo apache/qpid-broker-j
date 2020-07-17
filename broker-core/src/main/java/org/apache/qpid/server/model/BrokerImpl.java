@@ -38,9 +38,11 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
@@ -72,7 +74,6 @@ import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.CompoundAccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SubjectFixedResultAccessControl;
-import org.apache.qpid.server.security.SubjectFixedResultAccessControl.ResultCalculator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
@@ -102,14 +103,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     public static final String MANAGEMENT_MODE_AUTHENTICATION = "MANAGEMENT_MODE_AUTHENTICATION";
 
-    private final AccessControl _systemUserAllowed = new SubjectFixedResultAccessControl(new ResultCalculator()
-    {
-        @Override
-        public Result getResult(final Subject subject)
-        {
-            return isSystemSubject(subject) ? Result.ALLOWED : Result.DEFER;
-        }
-    }, Result.DEFER);
+    private final Thread _shutdownHook = new Thread(new ShutdownService(), "QpidBrokerShutdownHook");
+
+    private final AccessControl _systemUserAllowed = new SubjectFixedResultAccessControl(subject ->
+            isSystemSubject(subject) ? Result.ALLOWED : Result.DEFER, Result.DEFER);
 
     private final BrokerPrincipal _principal;
 
@@ -123,6 +120,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private final AtomicLong _bytesOut = new AtomicLong();
     private final AtomicLong _maximumMessageSize = new AtomicLong();
 
+    @ManagedAttributeField
+    private int _shutdownTimeout;
     @ManagedAttributeField
     private int _statisticsReportingPeriod;
     @ManagedAttributeField
@@ -531,6 +530,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     }
 
     @Override
+    public int getShutdownTimeout()
+    {
+        return _shutdownTimeout;
+    }
+
+    @Override
     public int getStatisticsReportingPeriod()
     {
         return _statisticsReportingPeriod;
@@ -610,6 +615,9 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     protected void onOpen()
     {
         super.onOpen();
+
+        Runtime.getRuntime().addShutdownHook(_shutdownHook);
+        LOGGER.debug("Added shutdown hook");
 
         PreferencesRoot preferencesRoot = (SystemConfig) getParent();
         _preferenceStore = preferencesRoot.createPreferenceStore();
@@ -703,7 +711,16 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     protected ListenableFuture<Void> beforeClose()
     {
-        _brokerLoggersToClose = new ArrayList(getChildren(BrokerLogger.class));
+        try
+        {
+            final boolean removed = Runtime.getRuntime().removeShutdownHook(_shutdownHook);
+            LOGGER.debug("Removed shutdown hook: " + removed);
+        }
+        catch(IllegalStateException ise)
+        {
+            LOGGER.debug("JVM is already shutting down", ise);
+        }
+        _brokerLoggersToClose = new ArrayList<>(getChildren(BrokerLogger.class));
         return super.beforeClose();
     }
 
@@ -1294,4 +1311,37 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
     }
 
+    private class ShutdownService implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            Subject.doAs(getSystemTaskSubject("Shutdown"), (PrivilegedAction<Object>) () ->
+            {
+                LOGGER.debug("Shutdown hook initiating close");
+                waitForBrokerShutdown();
+                return null;
+            });
+        }
+
+        private void waitForBrokerShutdown()
+        {
+            final ListenableFuture<Void> closeResult = _parent.closeAsync();
+            try
+            {
+                if (_shutdownTimeout < 1)
+                {
+                    closeResult.get();
+                }
+                else
+                {
+                    closeResult.get(_shutdownTimeout, TimeUnit.SECONDS);
+                }
+            }
+            catch (InterruptedException | ExecutionException | TimeoutException e)
+            {
+                LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately", e);
+            }
+        }
+    }
 }
