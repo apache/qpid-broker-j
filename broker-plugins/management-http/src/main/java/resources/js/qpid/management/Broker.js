@@ -96,6 +96,7 @@ define(["dojo/parser",
                                     "productVersion",
                                     "processPid",
                                     "modelVersion",
+                                    "shutdownTimeout",
                                     "statisticsReportingPeriod",
                                     "statisticsReportingResetEnabled",
                                     "confidentialConfigurationEncryptionProvider"];

@@ -62,6 +62,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String QPID_AMQP_PORT = "qpid.amqp_port";
     String QPID_HTTP_PORT = "qpid.http_port";
     String QPID_DOCUMENTATION_URL = "qpid.helpURL";
+    String BROKER_SHUTDOWN_TIMEOUT = "broker.shutdownTimeout";
     String BROKER_STATISTICS_REPORING_PERIOD = "broker.statisticsReportingPeriod";
 
     String NETWORK_BUFFER_SIZE = "qpid.broker.networkBufferSize";
@@ -123,6 +124,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = QPID_DOCUMENTATION_URL)
     String DEFAULT_DOCUMENTATION_URL = "http://qpid.apache.org/releases/qpid-broker-j-${qpid.version}/book/";
 
+    @ManagedContextDefault(name = BROKER_SHUTDOWN_TIMEOUT)
+    int DEFAULT_BROKER_SHUTDOWN_TIMEOUT = 30;
+
     @ManagedContextDefault(name = BROKER_STATISTICS_REPORING_PERIOD)
     int DEFAULT_STATISTICS_REPORTING_PERIOD = 0;
 
@@ -146,11 +150,15 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @DerivedAttribute
     int getNumberOfCores();
 
+    @ManagedAttribute( defaultValue = "${" + BROKER_SHUTDOWN_TIMEOUT + "}", description = "Broker shutdown timeout in seconds (disabled if 0)." +
+            " If clean shutdown takes more than shutdown timeout, broker exits immediately.")
+    int getShutdownTimeout();
+
     @ManagedAttribute( defaultValue = "${" + BROKER_STATISTICS_REPORING_PERIOD + "}", description = "Period (in seconds) of the statistic report.")
     int getStatisticsReportingPeriod();
 
     @ManagedContextDefault( name = "broker.housekeepingThreadCount")
-    public static final int DEFAULT_HOUSEKEEPING_THREAD_COUNT = 2;
+    int DEFAULT_HOUSEKEEPING_THREAD_COUNT = 2;
 
     String QPID_BROKER_HOUSEKEEPING_CHECK_PERIOD = "qpid.broker.housekeepingCheckPeriod";
     @ManagedContextDefault(name = QPID_BROKER_HOUSEKEEPING_CHECK_PERIOD)
