@@ -105,15 +105,15 @@ public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticat
     String getLoginConfigScope();
 
     @DerivedAttribute
-    List<String> getTlsProtocolWhiteList();
+    List<String> getTlsProtocolAllowList();
 
     @DerivedAttribute
-    List<String> getTlsProtocolBlackList();
+    List<String> getTlsProtocolDenyList();
 
     @DerivedAttribute
-    List<String> getTlsCipherSuiteWhiteList();
+    List<String> getTlsCipherSuiteAllowList();
 
     @DerivedAttribute
-    List<String> getTlsCipherSuiteBlackList();
+    List<String> getTlsCipherSuiteDenyList();
 
 }

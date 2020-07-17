@@ -36,22 +36,22 @@ import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 public class CipherSuiteAndProtocolRestrictingSSLSocketFactory extends SSLSocketFactory
 {
     private final SSLSocketFactory _wrappedSocketFactory;
-    private final List<String> _tlsCipherSuiteWhiteList;
-    private final List<String> _tlsCipherSuiteBlackList;
-    private final List<String> _tlsProtocolWhiteList;
-    private final List<String> _tlsProtocolBlackList;
+    private final List<String> _tlsCipherSuiteAllowList;
+    private final List<String> _tlsCipherSuiteDenyList;
+    private final List<String> _tlsProtocolAllowList;
+    private final List<String> _tlsProtocolDenyList;
 
     public CipherSuiteAndProtocolRestrictingSSLSocketFactory(final SSLSocketFactory wrappedSocketFactory,
-                                                             final List<String> tlsCipherSuiteWhiteList,
-                                                             final List<String> tlsCipherSuiteBlackList,
-                                                             final List<String> tlsProtocolWhiteList,
-                                                             final List<String> tlsProtocolBlackList)
+                                                             final List<String> tlsCipherSuiteAllowList,
+                                                             final List<String> tlsCipherSuiteDenyList,
+                                                             final List<String> tlsProtocolAllowList,
+                                                             final List<String> tlsProtocolDenyList)
     {
         _wrappedSocketFactory = wrappedSocketFactory;
-        _tlsCipherSuiteWhiteList = tlsCipherSuiteWhiteList == null ? null : new ArrayList<>(tlsCipherSuiteWhiteList);
-        _tlsCipherSuiteBlackList = tlsCipherSuiteBlackList == null ? null : new ArrayList<>(tlsCipherSuiteBlackList);
-        _tlsProtocolWhiteList = tlsProtocolWhiteList == null ? null : new ArrayList<>(tlsProtocolWhiteList);
-        _tlsProtocolBlackList = tlsProtocolBlackList == null ? null : new ArrayList<>(tlsProtocolBlackList);
+        _tlsCipherSuiteAllowList = tlsCipherSuiteAllowList == null ? null : new ArrayList<>(tlsCipherSuiteAllowList);
+        _tlsCipherSuiteDenyList = tlsCipherSuiteDenyList == null ? null : new ArrayList<>(tlsCipherSuiteDenyList);
+        _tlsProtocolAllowList = tlsProtocolAllowList == null ? null : new ArrayList<>(tlsProtocolAllowList);
+        _tlsProtocolDenyList = tlsProtocolDenyList == null ? null : new ArrayList<>(tlsProtocolDenyList);
     }
 
     @Override
@@ -59,8 +59,8 @@ public class CipherSuiteAndProtocolRestrictingSSLSocketFactory extends SSLSocket
     {
         return SSLUtil.filterEnabledCipherSuites(_wrappedSocketFactory.getDefaultCipherSuites(),
                                                  _wrappedSocketFactory.getSupportedCipherSuites(),
-                                                 _tlsCipherSuiteWhiteList,
-                                                 _tlsCipherSuiteBlackList);
+                _tlsCipherSuiteAllowList,
+                _tlsCipherSuiteDenyList);
     }
 
     @Override
@@ -74,8 +74,8 @@ public class CipherSuiteAndProtocolRestrictingSSLSocketFactory extends SSLSocket
             throws IOException
     {
         final SSLSocket newSocket = (SSLSocket) _wrappedSocketFactory.createSocket(socket, host, port, autoClose);
-        SSLUtil.updateEnabledCipherSuites(newSocket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-        SSLUtil.updateEnabledTlsProtocols(newSocket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
+        SSLUtil.updateEnabledCipherSuites(newSocket, _tlsCipherSuiteAllowList, _tlsCipherSuiteDenyList);
+        SSLUtil.updateEnabledTlsProtocols(newSocket, _tlsProtocolAllowList, _tlsProtocolDenyList);
         return newSocket;
     }
 
@@ -83,8 +83,8 @@ public class CipherSuiteAndProtocolRestrictingSSLSocketFactory extends SSLSocket
     public Socket createSocket(final String host, final int port) throws IOException, UnknownHostException
     {
         final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(host, port);
-        SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-        SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
+        SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteAllowList, _tlsCipherSuiteDenyList);
+        SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolAllowList, _tlsProtocolDenyList);
         return socket;
     }
 
@@ -93,8 +93,8 @@ public class CipherSuiteAndProtocolRestrictingSSLSocketFactory extends SSLSocket
             throws IOException, UnknownHostException
     {
         final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(host, port, localhost, localPort);
-        SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-        SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
+        SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteAllowList, _tlsCipherSuiteDenyList);
+        SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolAllowList, _tlsProtocolDenyList);
         return socket;
     }
 
@@ -102,8 +102,8 @@ public class CipherSuiteAndProtocolRestrictingSSLSocketFactory extends SSLSocket
     public Socket createSocket(final InetAddress host, final int port) throws IOException
     {
         final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(host, port);
-        SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-        SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
+        SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteAllowList, _tlsCipherSuiteDenyList);
+        SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolAllowList, _tlsProtocolDenyList);
         return socket;
     }
 
@@ -115,8 +115,8 @@ public class CipherSuiteAndProtocolRestrictingSSLSocketFactory extends SSLSocket
     {
         final SSLSocket socket =
                 (SSLSocket) _wrappedSocketFactory.createSocket(address, port, localAddress, localPort);
-        SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-        SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
+        SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteAllowList, _tlsCipherSuiteDenyList);
+        SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolAllowList, _tlsProtocolDenyList);
         return socket;
     }
 }

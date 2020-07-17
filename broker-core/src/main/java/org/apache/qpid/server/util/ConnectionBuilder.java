@@ -48,10 +48,10 @@ public class ConnectionBuilder
     private int _connectTimeout;
     private int _readTimeout;
     private TrustManager[] _trustMangers;
-    private List<String> _tlsProtocolWhiteList;
-    private List<String> _tlsProtocolBlackList;
-    private List<String> _tlsCipherSuiteWhiteList;
-    private List<String> _tlsCipherSuiteBlackList;
+    private List<String> _tlsProtocolAllowList;
+    private List<String> _tlsProtocolDenyList;
+    private List<String> _tlsCipherSuiteAllowList;
+    private List<String> _tlsCipherSuiteDenyList;
 
 
     public ConnectionBuilder(final URL url)
@@ -77,27 +77,27 @@ public class ConnectionBuilder
         return this;
     }
 
-    public ConnectionBuilder setTlsProtocolWhiteList(final List<String> tlsProtocolWhiteList)
+    public ConnectionBuilder setTlsProtocolAllowList(final List<String> tlsProtocolAllowList)
     {
-        _tlsProtocolWhiteList = tlsProtocolWhiteList;
+        _tlsProtocolAllowList = tlsProtocolAllowList;
         return this;
     }
 
-    public ConnectionBuilder setTlsProtocolBlackList(final List<String> tlsProtocolBlackList)
+    public ConnectionBuilder setTlsProtocolDenyList(final List<String> tlsProtocolDenyList)
     {
-        _tlsProtocolBlackList = tlsProtocolBlackList;
+        _tlsProtocolDenyList = tlsProtocolDenyList;
         return this;
     }
 
-    public ConnectionBuilder setTlsCipherSuiteWhiteList(final List<String> tlsCipherSuiteWhiteList)
+    public ConnectionBuilder setTlsCipherSuiteAllowList(final List<String> tlsCipherSuiteAllowList)
     {
-        _tlsCipherSuiteWhiteList = tlsCipherSuiteWhiteList;
+        _tlsCipherSuiteAllowList = tlsCipherSuiteAllowList;
         return this;
     }
 
-    public ConnectionBuilder setTlsCipherSuiteBlackList(final List<String> tlsCipherSuiteBlackList)
+    public ConnectionBuilder setTlsCipherSuiteDenyList(final List<String> tlsCipherSuiteDenyList)
     {
-        _tlsCipherSuiteBlackList = tlsCipherSuiteBlackList;
+        _tlsCipherSuiteDenyList = tlsCipherSuiteDenyList;
         return this;
     }
 
@@ -153,18 +153,18 @@ public class ConnectionBuilder
             });
         }
 
-        if ((_tlsProtocolWhiteList != null && !_tlsProtocolWhiteList.isEmpty()) ||
-            (_tlsProtocolBlackList != null && !_tlsProtocolBlackList.isEmpty()) ||
-            (_tlsCipherSuiteWhiteList != null && !_tlsCipherSuiteWhiteList.isEmpty()) ||
-            (_tlsCipherSuiteBlackList != null && !_tlsCipherSuiteBlackList.isEmpty()))
+        if ((_tlsProtocolAllowList != null && !_tlsProtocolAllowList.isEmpty()) ||
+            (_tlsProtocolDenyList != null && !_tlsProtocolDenyList.isEmpty()) ||
+            (_tlsCipherSuiteAllowList != null && !_tlsCipherSuiteAllowList.isEmpty()) ||
+            (_tlsCipherSuiteDenyList != null && !_tlsCipherSuiteDenyList.isEmpty()))
         {
             HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
             SSLSocketFactory originalSocketFactory = httpsConnection.getSSLSocketFactory();
             httpsConnection.setSSLSocketFactory(new CipherSuiteAndProtocolRestrictingSSLSocketFactory(originalSocketFactory,
-                                                                                                      _tlsCipherSuiteWhiteList,
-                                                                                                      _tlsCipherSuiteBlackList,
-                                                                                                      _tlsProtocolWhiteList,
-                                                                                                      _tlsProtocolBlackList));
+                    _tlsCipherSuiteAllowList,
+                    _tlsCipherSuiteDenyList,
+                    _tlsProtocolAllowList,
+                    _tlsProtocolDenyList));
         }
         return connection;
     }

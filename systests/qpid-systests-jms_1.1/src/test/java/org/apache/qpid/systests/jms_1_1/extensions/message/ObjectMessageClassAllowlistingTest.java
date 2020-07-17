@@ -42,7 +42,7 @@ import org.junit.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
-public class ObjectMessageClassWhitelistingTest extends JmsTestBase
+public class ObjectMessageClassAllowlistingTest extends JmsTestBase
 {
     private static final int TEST_VALUE = 37;
 
@@ -50,7 +50,7 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
     public void testObjectMessage() throws Exception
     {
         Queue destination = createQueue(getTestName());
-        final Connection c = getConnectionBuilder().setDeserializationPolicyWhiteList("*").build();
+        final Connection c = getConnectionBuilder().setDeserializationPolicyAllowList("*").build();
         try
         {
             c.start();
@@ -77,10 +77,10 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
     }
 
     @Test
-    public void testNotWhiteListedByConnectionUrlObjectMessage() throws Exception
+    public void testNotAllowListedByConnectionUrlObjectMessage() throws Exception
     {
         Queue destination = createQueue(getTestName());
-        final Connection c = getConnectionBuilder().setDeserializationPolicyWhiteList("org.apache.qpid").build();
+        final Connection c = getConnectionBuilder().setDeserializationPolicyAllowList("org.apache.qpid").build();
         try
         {
             c.start();
@@ -110,11 +110,11 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
     }
 
     @Test
-    public void testWhiteListedClassByConnectionUrlObjectMessage() throws Exception
+    public void testAllowListedClassByConnectionUrlObjectMessage() throws Exception
     {
         Queue destination = createQueue(getTestName());
         final Connection c =
-                getConnectionBuilder().setDeserializationPolicyWhiteList("java.util.HashMap,java.lang").build();
+                getConnectionBuilder().setDeserializationPolicyAllowList("java.util.HashMap,java.lang").build();
         try
         {
             c.start();
@@ -139,11 +139,11 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
     }
 
     @Test
-    public void testBlackListedClassByConnectionUrlObjectMessage() throws Exception
+    public void testDenyListedClassByConnectionUrlObjectMessage() throws Exception
     {
         Queue destination = createQueue(getTestName());
-        final Connection c = getConnectionBuilder().setDeserializationPolicyWhiteList("java")
-                                                   .setDeserializationPolicyBlackList("java.lang.Integer")
+        final Connection c = getConnectionBuilder().setDeserializationPolicyAllowList("java")
+                                                   .setDeserializationPolicyDenyList("java.lang.Integer")
                                                    .build();
         try
         {
@@ -175,14 +175,14 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
     }
 
     @Test
-    public void testWhiteListedAnonymousClassByConnectionUrlObjectMessage() throws Exception
+    public void testAllowListedAnonymousClassByConnectionUrlObjectMessage() throws Exception
     {
         final Connection c =
-                getConnectionBuilder().setDeserializationPolicyWhiteList(ObjectMessageClassWhitelistingTest.class.getCanonicalName())
+                getConnectionBuilder().setDeserializationPolicyAllowList(ObjectMessageClassAllowlistingTest.class.getCanonicalName())
                                       .build();
         try
         {
-            doTestWhiteListedEnclosedClassTest(c, createAnonymousObject(TEST_VALUE));
+            doTestAllowListedEnclosedClassTest(c, createAnonymousObject(TEST_VALUE));
         }
         finally
         {
@@ -191,15 +191,15 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
     }
 
     @Test
-    public void testBlackListedAnonymousClassByConnectionUrlObjectMessage() throws Exception
+    public void testDenyListedAnonymousClassByConnectionUrlObjectMessage() throws Exception
     {
         final Connection c = getConnectionBuilder()
-                .setDeserializationPolicyWhiteList(ObjectMessageClassWhitelistingTest.class.getPackage().getName())
-                .setDeserializationPolicyBlackList(ObjectMessageClassWhitelistingTest.class.getCanonicalName())
+                .setDeserializationPolicyAllowList(ObjectMessageClassAllowlistingTest.class.getPackage().getName())
+                .setDeserializationPolicyDenyList(ObjectMessageClassAllowlistingTest.class.getCanonicalName())
                 .build();
         try
         {
-            doTestBlackListedEnclosedClassTest(c, createAnonymousObject(TEST_VALUE));
+            doTestDenyListedEnclosedClassTest(c, createAnonymousObject(TEST_VALUE));
         }
         finally
         {
@@ -208,14 +208,14 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
     }
 
     @Test
-    public void testWhiteListedNestedClassByConnectionUrlObjectMessage() throws Exception
+    public void testAllowListedNestedClassByConnectionUrlObjectMessage() throws Exception
     {
         final Connection c = getConnectionBuilder()
-                .setDeserializationPolicyWhiteList(ObjectMessageClassWhitelistingTest.NestedClass.class.getCanonicalName())
+                .setDeserializationPolicyAllowList(ObjectMessageClassAllowlistingTest.NestedClass.class.getCanonicalName())
                 .build();
         try
         {
-            doTestWhiteListedEnclosedClassTest(c, new NestedClass(TEST_VALUE));
+            doTestAllowListedEnclosedClassTest(c, new NestedClass(TEST_VALUE));
         }
         finally
         {
@@ -224,15 +224,15 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
     }
 
     @Test
-    public void testBlackListedNestedClassByConnectionUrlObjectMessage() throws Exception
+    public void testDenyListedNestedClassByConnectionUrlObjectMessage() throws Exception
     {
         final Connection c = getConnectionBuilder()
-                .setDeserializationPolicyWhiteList(ObjectMessageClassWhitelistingTest.class.getCanonicalName())
-                .setDeserializationPolicyBlackList(NestedClass.class.getCanonicalName())
+                .setDeserializationPolicyAllowList(ObjectMessageClassAllowlistingTest.class.getCanonicalName())
+                .setDeserializationPolicyDenyList(NestedClass.class.getCanonicalName())
                 .build();
         try
         {
-            doTestBlackListedEnclosedClassTest(c, new NestedClass(TEST_VALUE));
+            doTestDenyListedEnclosedClassTest(c, new NestedClass(TEST_VALUE));
         }
         finally
         {
@@ -240,7 +240,7 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
         }
     }
 
-    private void doTestWhiteListedEnclosedClassTest(Connection c, Serializable content) throws Exception
+    private void doTestAllowListedEnclosedClassTest(Connection c, Serializable content) throws Exception
     {
         Queue destination = createQueue(getTestName());
         c.start();
@@ -260,7 +260,7 @@ public class ObjectMessageClassWhitelistingTest extends JmsTestBase
         assertEquals("Received object has unexpected content", content, receivedObject);
     }
 
-    private void doTestBlackListedEnclosedClassTest(final Connection c, final Serializable content) throws Exception
+    private void doTestDenyListedEnclosedClassTest(final Connection c, final Serializable content) throws Exception
     {
         Queue destination = createQueue(getTestName());
         c.start();

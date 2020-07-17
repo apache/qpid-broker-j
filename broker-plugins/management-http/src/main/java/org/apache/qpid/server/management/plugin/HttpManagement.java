@@ -674,19 +674,19 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             public void customize(final SSLEngine sslEngine)
             {
                 super.customize(sslEngine);
-                if (port.getTlsCipherSuiteWhiteList() != null
-                    && !port.getTlsCipherSuiteWhiteList().isEmpty())
+                if (port.getTlsCipherSuiteAllowList() != null
+                    && !port.getTlsCipherSuiteAllowList().isEmpty())
                 {
                     SSLParameters sslParameters = sslEngine.getSSLParameters();
                     sslParameters.setUseCipherSuitesOrder(true);
                     sslEngine.setSSLParameters(sslParameters);
                 }
                 SSLUtil.updateEnabledCipherSuites(sslEngine,
-                                                  port.getTlsCipherSuiteWhiteList(),
-                                                  port.getTlsCipherSuiteBlackList());
+                                                  port.getTlsCipherSuiteAllowList(),
+                                                  port.getTlsCipherSuiteDenyList());
                 SSLUtil.updateEnabledTlsProtocols(sslEngine,
-                                                  port.getTlsProtocolWhiteList(),
-                                                  port.getTlsProtocolBlackList());
+                                                  port.getTlsProtocolAllowList(),
+                                                  port.getTlsProtocolDenyList());
             }
         };
         factory.setSslContext(createSslContext(port));

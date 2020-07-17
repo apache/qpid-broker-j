@@ -31,7 +31,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.security.SubjectCreator;
 
-@ManagedContextDependency({CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST})
+@ManagedContextDependency({CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST})
 @ManagedObject( description = Port.CLASS_DESCRIPTION, amqpName = "org.apache.qpid.Port")
 public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 {
@@ -91,16 +91,16 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     Collection<TrustStore> getTrustStores();
 
     @DerivedAttribute
-    List<String> getTlsProtocolWhiteList();
+    List<String> getTlsProtocolAllowList();
 
     @DerivedAttribute
-    List<String> getTlsProtocolBlackList();
+    List<String> getTlsProtocolDenyList();
 
     @DerivedAttribute
-    List<String> getTlsCipherSuiteWhiteList();
+    List<String> getTlsCipherSuiteAllowList();
 
     @DerivedAttribute
-    List<String> getTlsCipherSuiteBlackList();
+    List<String> getTlsCipherSuiteDenyList();
 
     @ManagedAttribute(defaultValue = "*",
                       description = "The network interface this port binds to expressed as an IP address or a"

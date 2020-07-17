@@ -203,14 +203,14 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
-    public ConnectionBuilder setDeserializationPolicyWhiteList(final String whiteList)
+    public ConnectionBuilder setDeserializationPolicyAllowList(final String allowList)
     {
-        _options.put("jms.deserializationPolicy.whiteList", whiteList);
+        _options.put("jms.deserializationPolicy.whiteList", allowList);
         return this;
     }
 
     @Override
-    public ConnectionBuilder setDeserializationPolicyBlackList(final String blackList)
+    public ConnectionBuilder setDeserializationPolicyDenyList(final String blackList)
     {
         _options.put("jms.deserializationPolicy.blackList", blackList);
         return this;

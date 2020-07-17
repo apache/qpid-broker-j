@@ -187,16 +187,16 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
-    public ConnectionBuilder setDeserializationPolicyWhiteList(final String whiteList)
+    public ConnectionBuilder setDeserializationPolicyAllowList(final String allowList)
     {
-        _options.put("objectMessageClassHierarchyWhiteList", whiteList);
+        _options.put("objectMessageClassHierarchyWhiteList", allowList);
         return this;
     }
 
     @Override
-    public ConnectionBuilder setDeserializationPolicyBlackList(final String blackList)
+    public ConnectionBuilder setDeserializationPolicyDenyList(final String denyList)
     {
-        _options.put("objectMessageClassHierarchyBlackList", blackList);
+        _options.put("objectMessageClassHierarchyBlackList", denyList);
         return this;
     }
 

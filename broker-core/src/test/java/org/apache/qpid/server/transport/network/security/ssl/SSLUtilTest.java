@@ -61,34 +61,34 @@ public class SSLUtilTest extends UnitTestBase
     {
         String[] enabled = {};
         String[] supported = {};
-        List<String> whiteList = Arrays.asList();
-        List<String> blackList = Arrays.asList();
-        String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        List<String> allowList = Arrays.asList();
+        List<String> denyList = Arrays.asList();
+        String[] result = SSLUtil.filterEntries(enabled, supported, allowList, denyList);
         assertEquals("filtered list is not empty", (long) 0, (long) result.length);
     }
 
     @Test
-    public void testFilterEntries_whiteListNotEmpty_blackListEmpty()
+    public void testFilterEntries_allowListNotEmpty_denyListEmpty()
     {
-        List<String> whiteList = Arrays.asList("TLSv1\\.[0-9]+");
-        List<String> blackList = Collections.emptyList();
+        List<String> allowList = Arrays.asList("TLSv1\\.[0-9]+");
+        List<String> denyList = Collections.emptyList();
         String[] enabled = {"TLS", "TLSv1.1", "TLSv1.2", "TLSv1.3"};
         String[] expected = {"TLSv1.1", "TLSv1.2", "TLSv1.3"};
         String[] supported = {"SSLv3", "TLS", "TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"};
-        String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        String[] result = SSLUtil.filterEntries(enabled, supported, allowList, denyList);
         assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
                 result), Arrays.equals(expected, result));
     }
 
     @Test
-    public void testFilterEntries_whiteListEmpty_blackListNotEmpty()
+    public void testFilterEntries_allowListEmpty_denyListNotEmpty()
     {
-        List<String> whiteList = Arrays.asList();
-        List<String> blackList = Arrays.asList("TLSv1\\.[0-9]+");
+        List<String> allowList = Arrays.asList();
+        List<String> denyList = Arrays.asList("TLSv1\\.[0-9]+");
         String[] enabled = {"TLS", "TLSv1.1", "TLSv1.2", "TLSv1.3"};
         String[] expected = {"TLS"};
         String[] supported = {"SSLv3", "TLS", "TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"};
-        String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        String[] result = SSLUtil.filterEntries(enabled, supported, allowList, denyList);
         assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
                 result), Arrays.equals(expected, result));
     }
@@ -96,44 +96,44 @@ public class SSLUtilTest extends UnitTestBase
     @Test
     public void testFilterEntries_respectOrder()
     {
-        List<String> whiteList = Arrays.asList("b", "c", "a");
-        List<String> blackList = Collections.emptyList();
+        List<String> allowList = Arrays.asList("b", "c", "a");
+        List<String> denyList = Collections.emptyList();
         String[] enabled = {"x"};
         String[] expected = {"b", "c", "a"};
         String[] supported = {"x", "c", "a", "xx", "b", "xxx"};
-        String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        String[] result = SSLUtil.filterEntries(enabled, supported, allowList, denyList);
         assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
                 result), Arrays.equals(expected, result));
         // change order to make sure order was not correct by coincidence
-        whiteList = Arrays.asList("c", "b", "a");
+        allowList = Arrays.asList("c", "b", "a");
         expected = new String[]{"c", "b", "a"};
-        result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        result = SSLUtil.filterEntries(enabled, supported, allowList, denyList);
         assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
                 result), Arrays.equals(expected, result));
     }
 
     @Test
-    public void testFilterEntries_blackListAppliesToWhiteList()
+    public void testFilterEntries_denyListAppliesToAllowList()
     {
-        List<String> whiteList = Arrays.asList("a", "b");
-        List<String> blackList = Arrays.asList("a");
+        List<String> allowList = Arrays.asList("a", "b");
+        List<String> denyList = Arrays.asList("a");
         String[] enabled = {"a", "b", "c"};
         String[] expected = {"b"};
         String[] supported = {"a", "b", "c", "x"};
-        String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        String[] result = SSLUtil.filterEntries(enabled, supported, allowList, denyList);
         assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
                 result), Arrays.equals(expected, result));
     }
 
     @Test
-    public void testFilterEntries_whiteListIgnoresEnabled()
+    public void testFilterEntries_allowListIgnoresEnabled()
     {
-        List<String> whiteList = Arrays.asList("b");
-        List<String> blackList = Collections.emptyList();
+        List<String> allowList = Arrays.asList("b");
+        List<String> denyList = Collections.emptyList();
         String[] enabled = {"a"};
         String[] expected = {"b"};
         String[] supported = {"a", "b", "x"};
-        String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        String[] result = SSLUtil.filterEntries(enabled, supported, allowList, denyList);
         assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
                 result), Arrays.equals(expected, result));
     }

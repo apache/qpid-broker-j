@@ -63,18 +63,18 @@ class OAuth2MockEndpointHolder
                                      final String keyStoreType) throws IOException
     {
         _endpoints = endpoints;
-        final List<String> protocolWhiteList =
-                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST,
-                                        CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT);
-        final List<String> protocolBlackList =
-                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST,
-                                        CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST_DEFAULT);
-        final List<String> cipherSuiteWhiteList =
-                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
-                                        CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST_DEFAULT);
-        final List<String> cipherSuiteBlackList =
-                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST,
-                                        CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT);
+        final List<String> protocolAllowList =
+                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST,
+                                        CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST_DEFAULT);
+        final List<String> protocolDenyList =
+                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST,
+                                        CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST_DEFAULT);
+        final List<String> cipherSuiteAllowList =
+                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST,
+                                        CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST_DEFAULT);
+        final List<String> cipherSuiteDenyList =
+                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST,
+                                        CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST_DEFAULT);
 
         _server = new Server();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server()
@@ -83,8 +83,8 @@ class OAuth2MockEndpointHolder
                                                   public void customize(final SSLEngine sslEngine)
                                                   {
                                                       super.customize(sslEngine);
-                                                      SSLUtil.updateEnabledCipherSuites(sslEngine, cipherSuiteWhiteList, cipherSuiteBlackList);
-                                                      SSLUtil.updateEnabledTlsProtocols(sslEngine, protocolWhiteList, protocolBlackList);
+                                                      SSLUtil.updateEnabledCipherSuites(sslEngine, cipherSuiteAllowList, cipherSuiteDenyList);
+                                                      SSLUtil.updateEnabledTlsProtocols(sslEngine, protocolAllowList, protocolDenyList);
                                                   }
                                               };
         sslContextFactory.setKeyStorePassword(keyStorePassword);

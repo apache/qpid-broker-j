@@ -596,15 +596,14 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
         {
             _currentWorkDirectory =
                     Files.createTempDirectory(String.format("qpid-work-%d-%s-%s-",
-                                                            _id,
-                                                            testClass.getSimpleName(),
-                                                            timestamp))
-                         .toString();
+                            _id,
+                            testClass.getSimpleName(),
+                            timestamp))
+                            .toString();
 
             String readyLogPattern = "BRK-1004 : Qpid Broker Ready";
 
             LOGGER.debug("Spawning broker working folder: {}", _currentWorkDirectory);
-
             int startUpTime = Integer.getInteger(SYSTEST_PROPERTY_SPAWN_BROKER_STARTUP_TIME, 30000);
 
             LOGGER.debug("Spawning broker permitted start-up time: {}", startUpTime);
@@ -752,8 +751,8 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
 
         List<String> jvmArguments = new ArrayList<>();
         jvmArguments.add("java");
-        jvmArguments.add("-cp");
-        jvmArguments.add(classpath);
+//        jvmArguments.add("-cp");
+//        jvmArguments.add(classpath);
         jvmArguments.add("-Djava.io.tmpdir=" + escape(System.getProperty("java.io.tmpdir")));
         jvmArguments.add("-Dlogback.configurationFile=default-broker-logback.xml");
         jvmArguments.add("-Dqpid.tests.mms.messagestore.persistence=true");
@@ -791,7 +790,9 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
         String[] cmd = jvmArguments.toArray(new String[jvmArguments.size()]);
 
         LOGGER.debug("command line:" + String.join(" ", jvmArguments));
-        return new ProcessBuilder(cmd);
+        ProcessBuilder ps = new ProcessBuilder(cmd);
+        ps.environment().put("CLASSPATH", classpath);
+        return ps;
     }
 
     private String escape(String value)
@@ -849,16 +850,18 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
 
     private void doWindowsKill()
     {
-        try
+        if (_pid != null)
         {
-
-            Process p;
-            p = Runtime.getRuntime().exec(new String[]{"taskkill", "/PID", Integer.toString(_pid), "/T", "/F"});
-            consumeAllOutput(p);
-        }
-        catch (IOException e)
-        {
-            LOGGER.error("Error whilst killing process " + _pid, e);
+            try
+            {
+                Process p;
+                p = Runtime.getRuntime().exec(new String[]{"taskkill", "/PID", Integer.toString(_pid), "/T", "/F"});
+                consumeAllOutput(p);
+            }
+            catch (IOException e)
+            {
+                LOGGER.error("Error whilst killing process " + _pid, e);
+            }
         }
     }
 
