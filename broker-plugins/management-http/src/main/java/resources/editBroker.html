@@ -37,6 +37,19 @@
                   </div>
               </div>
               <div class="clear">
+                  <div class="formLabel-labelCell tableContainer-labelCell">Shutdown timeout (s):</div>
+                  <div class="formLabel-controlCell tableContainer-valueCell">
+                      <input type="text" id="editBroker.shutdownTimeout"
+                             data-dojo-type="dijit/form/ValidationTextBox"
+                             data-dojo-props="
+                            name: 'shutdownTimeout',
+                            trim: true,
+                            placeholder: 'Time in seconds',
+                            label: 'Shutdown timeout (s):',
+                            promptMessage: 'Broker shutdown timeout in seconds (disabled if 0).<br>If clean shutdown takes more than shutdown timeout, broker exits immediately.'" />
+                  </div>
+              </div>
+              <div class="clear">
                   <div class="formLabel-labelCell tableContainer-labelCell">Statistics reporting period (s):</div>
                   <div class="formLabel-controlCell tableContainer-valueCell">
                       <input type="text" id="editBroker.statisticsReportingPeriod"

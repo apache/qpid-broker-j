@@ -35,6 +35,10 @@
             environments that have many.</para>
         </listitem>
         <listitem>
+          <para><emphasis>Shutdown timeout</emphasis>. Broker shutdown timeout in seconds (disabled if 0). If clean
+            shutdown takes more than shutdown timeout, broker exits immediately.</para>
+        </listitem>
+        <listitem>
           <para><emphasis>Confidential configuration encryption provider</emphasis>. The name of the
             provider used to encrypt passwords and other secrets within the configuration. See <xref linkend="Java-Broker-Security-Configuration-Encryption"/>.</para>
         </listitem>
