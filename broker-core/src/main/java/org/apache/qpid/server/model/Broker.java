@@ -107,19 +107,19 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = BROKER_MSG_AUTH)
     boolean DEFAULT_BROKER_MSG_AUTH = false;
 
-    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST)
-    String DEFAULT_SECURITY_TLS_PROTOCOL_WHITE_LIST =
-            "[\"" + CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT.replace("\\", "\\\\") + "\"]";
+    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST)
+    String DEFAULT_SECURITY_TLS_PROTOCOL_ALLOW_LIST =
+            "[\"" + CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST_DEFAULT.replace("\\", "\\\\") + "\"]";
 
-    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST)
-    String DEFAULT_SECURITY_TLS_PROTOCOL_BLACK_LIST =
-            "[\"" + CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST_DEFAULT.replace("\\", "\\\\") + "\"]";
+    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST)
+    String DEFAULT_SECURITY_TLS_PROTOCOL_DENY_LIST =
+            "[\"" + CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST_DEFAULT.replace("\\", "\\\\") + "\"]";
 
-    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST)
-    String DEFAULT_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST = "[]";
+    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST)
+    String DEFAULT_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST = "[]";
 
-    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST)
-    String DEFAULT_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "[]";
+    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST)
+    String DEFAULT_SECURITY_TLS_CIPHER_SUITE_DENY_LIST = "[]";
 
     @ManagedContextDefault(name = QPID_DOCUMENTATION_URL)
     String DEFAULT_DOCUMENTATION_URL = "http://qpid.apache.org/releases/qpid-broker-j-${qpid.version}/book/";

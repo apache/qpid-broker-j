@@ -648,84 +648,84 @@ public class SSLUtil
     }
 
     public static void updateEnabledTlsProtocols(final SSLEngine engine,
-                                                 final List<String> protocolWhiteList,
-                                                 final List<String> protocolBlackList)
+                                                 final List<String> protocolAllowList,
+                                                 final List<String> protocolDenyList)
     {
         String[] filteredProtocols = filterEnabledProtocols(engine.getEnabledProtocols(),
                                                             engine.getSupportedProtocols(),
-                                                            protocolWhiteList,
-                                                            protocolBlackList);
+                                                            protocolAllowList,
+                                                            protocolDenyList);
         engine.setEnabledProtocols(filteredProtocols);
     }
 
     public static void updateEnabledTlsProtocols(final SSLSocket socket,
-                                             final List<String> protocolWhiteList,
-                                             final List<String> protocolBlackList)
+                                             final List<String> protocolAllowList,
+                                             final List<String> protocolDenyList)
     {
         String[] filteredProtocols = filterEnabledProtocols(socket.getEnabledProtocols(),
                                                             socket.getSupportedProtocols(),
-                                                            protocolWhiteList,
-                                                            protocolBlackList);
+                                                            protocolAllowList,
+                                                            protocolDenyList);
         socket.setEnabledProtocols(filteredProtocols);
     }
 
     public static String[] filterEnabledProtocols(final String[] enabledProtocols,
                                                   final String[] supportedProtocols,
-                                                  final List<String> protocolWhiteList,
-                                                  final List<String> protocolBlackList)
+                                                  final List<String> protocolAllowList,
+                                                  final List<String> protocolDenyList)
     {
-        return filterEntries(enabledProtocols, supportedProtocols, protocolWhiteList, protocolBlackList);
+        return filterEntries(enabledProtocols, supportedProtocols, protocolAllowList, protocolDenyList);
     }
 
     public static String[] filterEnabledCipherSuites(final String[] enabledCipherSuites,
                                                      final String[] supportedCipherSuites,
-                                                     final List<String> cipherSuiteWhiteList,
-                                                     final List<String> cipherSuiteBlackList)
+                                                     final List<String> cipherSuiteAllowList,
+                                                     final List<String> cipherSuiteDenyList)
     {
-        return filterEntries(enabledCipherSuites, supportedCipherSuites, cipherSuiteWhiteList, cipherSuiteBlackList);
+        return filterEntries(enabledCipherSuites, supportedCipherSuites, cipherSuiteAllowList, cipherSuiteDenyList);
     }
 
 
     public static void updateEnabledCipherSuites(final SSLEngine engine,
-                                                 final List<String> cipherSuitesWhiteList,
-                                                 final List<String> cipherSuitesBlackList)
+                                                 final List<String> cipherSuitesAllowList,
+                                                 final List<String> cipherSuitesDenyList)
     {
         String[] filteredCipherSuites = filterEntries(engine.getEnabledCipherSuites(),
                                                       engine.getSupportedCipherSuites(),
-                                                      cipherSuitesWhiteList,
-                                                      cipherSuitesBlackList);
+                                                      cipherSuitesAllowList,
+                                                      cipherSuitesDenyList);
         engine.setEnabledCipherSuites(filteredCipherSuites);
     }
 
     public static void updateEnabledCipherSuites(final SSLSocket socket,
-                                                 final List<String> cipherSuitesWhiteList,
-                                                 final List<String> cipherSuitesBlackList)
+                                                 final List<String> cipherSuitesAllowList,
+                                                 final List<String> cipherSuitesDenyList)
     {
         String[] filteredCipherSuites = filterEntries(socket.getEnabledCipherSuites(),
                                                       socket.getSupportedCipherSuites(),
-                                                      cipherSuitesWhiteList,
-                                                      cipherSuitesBlackList);
+                                                      cipherSuitesAllowList,
+                                                      cipherSuitesDenyList);
         socket.setEnabledCipherSuites(filteredCipherSuites);
     }
 
     static String[] filterEntries(final String[] enabledEntries,
                                   final String[] supportedEntries,
-                                  final List<String> whiteList,
-                                  final List<String> blackList)
+                                  final List<String> allowList,
+                                  final List<String> denyList)
     {
         List<String> filteredList;
-        if (whiteList != null && !whiteList.isEmpty())
+        if (allowList != null && !allowList.isEmpty())
         {
             filteredList = new ArrayList<>();
             List<String> supportedList = new ArrayList<>(Arrays.asList(supportedEntries));
-            // the outer loop must be over the white list to preserve its order
-            for (String whiteListedRegEx : whiteList)
+            // the outer loop must be over the allow list to preserve its order
+            for (String allowListedRegEx : allowList)
             {
                 Iterator<String> supportedIter = supportedList.iterator();
                 while (supportedIter.hasNext())
                 {
                     String supportedEntry = supportedIter.next();
-                    if (supportedEntry.matches(whiteListedRegEx))
+                    if (supportedEntry.matches(allowListedRegEx))
                     {
                         filteredList.add(supportedEntry);
                         supportedIter.remove();
@@ -738,14 +738,14 @@ public class SSLUtil
             filteredList = new ArrayList<>(Arrays.asList(enabledEntries));
         }
 
-        if (blackList != null && !blackList.isEmpty())
+        if (denyList != null && !denyList.isEmpty())
         {
-            for (String blackListedRegEx : blackList)
+            for (String denyListedRegEx : denyList)
             {
                 Iterator<String> entriesIter = filteredList.iterator();
                 while (entriesIter.hasNext())
                 {
-                    if (entriesIter.next().matches(blackListedRegEx))
+                    if (entriesIter.next().matches(denyListedRegEx))
                     {
                         entriesIter.remove();
                     }

@@ -52,11 +52,11 @@ public interface CloudFoundryDashboardManagementGroupProvider<X extends CloudFou
     Map<String, String> getServiceToManagementGroupMapping();
 
     @DerivedAttribute
-    List<String> getTlsProtocolWhiteList();
+    List<String> getTlsProtocolAllowList();
     @DerivedAttribute
-    List<String> getTlsProtocolBlackList();
+    List<String> getTlsProtocolDenyList();
     @DerivedAttribute
-    List<String> getTlsCipherSuiteWhiteList();
+    List<String> getTlsCipherSuiteAllowList();
     @DerivedAttribute
-    List<String> getTlsCipherSuiteBlackList();
+    List<String> getTlsCipherSuiteDenyList();
 }

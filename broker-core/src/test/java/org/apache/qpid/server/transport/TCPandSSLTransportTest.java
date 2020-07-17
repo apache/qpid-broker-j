@@ -274,10 +274,10 @@ public class TCPandSSLTransportTest extends UnitTestBase
         when(port.getProtocolHandshakeTimeout()).thenReturn(AmqpPort.DEFAULT_PROTOCOL_HANDSHAKE_TIMEOUT);
         ObjectMapper mapper = new ObjectMapper();
         JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, String.class);
-        List<String> whiteList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_WHITE_LIST, type);
-        List<String> blackList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_BLACK_LIST, type);
-        when(port.getTlsProtocolBlackList()).thenReturn(blackList);
-        when(port.getTlsProtocolWhiteList()).thenReturn(whiteList);
+        List<String> allowList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_ALLOW_LIST, type);
+        List<String> denyList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_DENY_LIST, type);
+        when(port.getTlsProtocolDenyList()).thenReturn(denyList);
+        when(port.getTlsProtocolAllowList()).thenReturn(allowList);
         final Broker broker = mock(Broker.class);
         when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
         when(port.getParent()).thenReturn(broker);

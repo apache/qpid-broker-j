@@ -96,10 +96,10 @@ public class MicrosoftLiveOAuth2IdentityResolverService implements OAuth2Identit
                 throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
             }
         }
-        connectionBuilder.setTlsProtocolWhiteList(authenticationProvider.getTlsProtocolWhiteList())
-                         .setTlsProtocolBlackList(authenticationProvider.getTlsProtocolBlackList())
-                         .setTlsCipherSuiteWhiteList(authenticationProvider.getTlsCipherSuiteWhiteList())
-                         .setTlsCipherSuiteBlackList(authenticationProvider.getTlsCipherSuiteBlackList());
+        connectionBuilder.setTlsProtocolAllowList(authenticationProvider.getTlsProtocolAllowList())
+                         .setTlsProtocolDenyList(authenticationProvider.getTlsProtocolDenyList())
+                         .setTlsCipherSuiteAllowList(authenticationProvider.getTlsCipherSuiteAllowList())
+                         .setTlsCipherSuiteDenyList(authenticationProvider.getTlsCipherSuiteDenyList());
 
         LOGGER.debug("About to call identity service '{}'", userInfoEndpoint);
         HttpURLConnection connection = connectionBuilder.build();

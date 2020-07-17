@@ -349,9 +349,9 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     {
         SSLEngine sslEngine = port.getSSLContext().createSSLEngine();
         sslEngine.setUseClientMode(false);
-        SSLUtil.updateEnabledTlsProtocols(sslEngine, port.getTlsProtocolWhiteList(), port.getTlsProtocolBlackList());
-        SSLUtil.updateEnabledCipherSuites(sslEngine, port.getTlsCipherSuiteWhiteList(), port.getTlsCipherSuiteBlackList());
-        if(port.getTlsCipherSuiteWhiteList() != null && !port.getTlsCipherSuiteWhiteList().isEmpty())
+        SSLUtil.updateEnabledTlsProtocols(sslEngine, port.getTlsProtocolAllowList(), port.getTlsProtocolDenyList());
+        SSLUtil.updateEnabledCipherSuites(sslEngine, port.getTlsCipherSuiteAllowList(), port.getTlsCipherSuiteDenyList());
+        if(port.getTlsCipherSuiteAllowList() != null && !port.getTlsCipherSuiteAllowList().isEmpty())
         {
             SSLParameters sslParameters = sslEngine.getSSLParameters();
             sslParameters.setUseCipherSuitesOrder(true);

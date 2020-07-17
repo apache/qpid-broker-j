@@ -51,8 +51,8 @@ public interface ConnectionBuilder
     ConnectionBuilder setOptions(Map<String, String> options);
     ConnectionBuilder setPopulateJMSXUserID(boolean populateJMSXUserID);
     ConnectionBuilder setMessageRedelivery(final boolean redelivery);
-    ConnectionBuilder setDeserializationPolicyWhiteList(String whiteList);
-    ConnectionBuilder setDeserializationPolicyBlackList(String blackList);
+    ConnectionBuilder setDeserializationPolicyAllowList(String allowList);
+    ConnectionBuilder setDeserializationPolicyDenyList(String denyList);
     ConnectionBuilder setKeyStoreLocation(String keyStoreLocation);
     ConnectionBuilder setKeyStorePassword(String keyStorePassword);
     ConnectionBuilder setTrustStoreLocation(String trustStoreLocation);

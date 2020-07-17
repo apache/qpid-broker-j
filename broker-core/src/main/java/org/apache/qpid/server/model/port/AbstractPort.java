@@ -83,11 +83,11 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     @ManagedAttributeField
     private String _bindingAddress;
 
-    private List<String> _tlsProtocolBlackList;
-    private List<String> _tlsProtocolWhiteList;
+    private List<String> _tlsProtocolDenyList;
+    private List<String> _tlsProtocolAllowList;
 
-    private List<String> _tlsCipherSuiteWhiteList;
-    private List<String> _tlsCipherSuiteBlackList;
+    private List<String> _tlsCipherSuiteAllowList;
+    private List<String> _tlsCipherSuiteDenyList;
 
     public AbstractPort(Map<String, Object> attributes,
                         Container<?> container)
@@ -109,10 +109,10 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     protected void onOpen()
     {
         super.onOpen();
-        _tlsProtocolWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
-        _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
-        _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
-        _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
+        _tlsProtocolAllowList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST);
+        _tlsProtocolDenyList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST);
+        _tlsCipherSuiteAllowList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST);
+        _tlsCipherSuiteDenyList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST);
     }
 
     @Override
@@ -423,27 +423,27 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     }
 
     @Override
-    public List<String> getTlsProtocolWhiteList()
+    public List<String> getTlsProtocolAllowList()
     {
-        return _tlsProtocolWhiteList;
+        return _tlsProtocolAllowList;
     }
 
     @Override
-    public List<String> getTlsProtocolBlackList()
+    public List<String> getTlsProtocolDenyList()
     {
-        return _tlsProtocolBlackList;
+        return _tlsProtocolDenyList;
     }
 
     @Override
-    public List<String> getTlsCipherSuiteWhiteList()
+    public List<String> getTlsCipherSuiteAllowList()
     {
-        return _tlsCipherSuiteWhiteList;
+        return _tlsCipherSuiteAllowList;
     }
 
     @Override
-    public List<String> getTlsCipherSuiteBlackList()
+    public List<String> getTlsCipherSuiteDenyList()
     {
-        return _tlsCipherSuiteBlackList;
+        return _tlsCipherSuiteDenyList;
     }
 
     @Override

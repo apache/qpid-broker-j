@@ -54,15 +54,15 @@ public class CommonProperties
     public static final String IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME = "qpid.io_network_transport_timeout";
     public static final int IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT = 60000;
 
-    public static final String QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST = "qpid.security.tls.protocolWhiteList";
-    public static final String QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT = "TLSv1\\.[0-9]+";
-    public static final String QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST = "qpid.security.tls.protocolBlackList";
-    public static final String QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST_DEFAULT = "TLSv1\\.[0-1]";
+    public static final String QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST = "qpid.security.tls.protocolAllowList";
+    public static final String QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST_DEFAULT = "TLSv1\\.[0-9]+";
+    public static final String QPID_SECURITY_TLS_PROTOCOL_DENY_LIST = "qpid.security.tls.protocolDenyList";
+    public static final String QPID_SECURITY_TLS_PROTOCOL_DENY_LIST_DEFAULT = "TLSv1\\.[0-1]";
 
-    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST = "qpid.security.tls.cipherSuiteWhiteList";
-    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST_DEFAULT = "";
-    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "qpid.security.tls.cipherSuiteBlackList";
-    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT = "";
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST = "qpid.security.tls.cipherSuiteAllowList";
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST_DEFAULT = "";
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST = "qpid.security.tls.cipherSuiteDenyList";
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST_DEFAULT = "";
 
     private static final String MANIFEST_HEADER_IMPLEMENTATION_BUILD = "Implementation-Build";
 

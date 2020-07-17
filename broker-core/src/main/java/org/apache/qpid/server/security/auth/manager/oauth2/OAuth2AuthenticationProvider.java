@@ -103,16 +103,16 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     String getDefaultScope();
 
     @DerivedAttribute
-    List<String> getTlsProtocolWhiteList();
+    List<String> getTlsProtocolAllowList();
 
     @DerivedAttribute
-    List<String> getTlsProtocolBlackList();
+    List<String> getTlsProtocolDenyList();
 
     @DerivedAttribute
-    List<String> getTlsCipherSuiteWhiteList();
+    List<String> getTlsCipherSuiteAllowList();
 
     @DerivedAttribute
-    List<String> getTlsCipherSuiteBlackList();
+    List<String> getTlsCipherSuiteDenyList();
 
     int getConnectTimeout();
 

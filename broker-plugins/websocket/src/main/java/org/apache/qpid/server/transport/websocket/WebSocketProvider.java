@@ -258,14 +258,14 @@ class WebSocketProvider implements AcceptingTransport
             {
                 super.customize(sslEngine);
                 SSLUtil.updateEnabledCipherSuites(sslEngine,
-                                                  port.getTlsCipherSuiteWhiteList(),
-                                                  port.getTlsCipherSuiteBlackList());
+                                                  port.getTlsCipherSuiteAllowList(),
+                                                  port.getTlsCipherSuiteDenyList());
                 SSLUtil.updateEnabledTlsProtocols(sslEngine,
-                                                  port.getTlsProtocolWhiteList(),
-                                                  port.getTlsProtocolBlackList());
+                                                  port.getTlsProtocolAllowList(),
+                                                  port.getTlsProtocolDenyList());
 
-                if (port.getTlsCipherSuiteWhiteList() != null
-                    && !port.getTlsCipherSuiteWhiteList().isEmpty())
+                if (port.getTlsCipherSuiteAllowList() != null
+                    && !port.getTlsCipherSuiteAllowList().isEmpty())
                 {
                     SSLParameters sslParameters = sslEngine.getSSLParameters();
                     sslParameters.setUseCipherSuitesOrder(true);
