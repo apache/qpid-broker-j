@@ -81,7 +81,7 @@ public final class BrokerModel extends Model
      *    Added new broker statistics: processCpuTime, processCpuLoad
      *    Added new context variables for queues and exchanges to configure behaviour on unknown declared arguments
      */
-    public static final int MODEL_MAJOR_VERSION = 8;
+    public static final int MODEL_MAJOR_VERSION = 9;
     public static final int MODEL_MINOR_VERSION = 0;
     public static final String MODEL_VERSION = MODEL_MAJOR_VERSION + "." + MODEL_MINOR_VERSION;
     private static final Model MODEL_INSTANCE = new BrokerModel();

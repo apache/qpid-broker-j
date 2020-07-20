@@ -20,7 +20,7 @@
  */
 {
   "name" : "${broker.name}",
-  "modelVersion" : "8.0",
+  "modelVersion" : "9.0",
   "authenticationproviders" : [ {
     "name" : "anon",
     "type" : "Anonymous"

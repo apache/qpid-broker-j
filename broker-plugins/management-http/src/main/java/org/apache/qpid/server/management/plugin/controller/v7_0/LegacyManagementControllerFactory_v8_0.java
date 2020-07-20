@@ -18,39 +18,43 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.management.plugin.controller.latest;
+package org.apache.qpid.server.management.plugin.controller.v7_0;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.ManagementControllerFactory;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.plugin.PluggableService;
 
 @PluggableService
-public class LatestManagementControllerFactory implements ManagementControllerFactory
+public class LegacyManagementControllerFactory_v8_0 implements ManagementControllerFactory
 {
+    public static final String MODEL_VERSION = "8.0";
+
     @Override
     public String getType()
     {
-        return "org.apache.qpid.server.management.plugin.model.latest";
+        return "org.apache.qpid.server.management.plugin.model.v8_0";
     }
 
     @Override
     public String getVersion()
     {
-        return BrokerModel.MODEL_VERSION;
+        return MODEL_VERSION;
     }
 
     @Override
     public String getPreviousVersion()
     {
-        return "8.0";
+        return "7.1";
     }
 
     @Override
     public ManagementController createManagementController(final HttpManagementConfiguration<?> httpManagement,
                                                            final ManagementController nextVersionManagementController)
     {
-        return new LatestManagementController(httpManagement);
+
+        LegacyManagementController controller = new LegacyManagementController(nextVersionManagementController, MODEL_VERSION);
+        controller.initialize();
+        return controller;
     }
 }
