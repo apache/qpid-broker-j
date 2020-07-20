@@ -18,30 +18,17 @@
  * under the License.
  *
  */
+package org.apache.qpid.server.management.plugin.controller.v7_0.category;
+
+import org.apache.qpid.server.management.plugin.controller.v7_0.LegacyManagementControllerFactory_v8_0;
+import org.apache.qpid.server.plugin.PluggableService;
+
+@PluggableService
+public class LegacyCategoryControllerFactory_v8_0 extends LegacyCategoryControllerFactory
 {
-  "name" : "${broker.name}",
-  "modelVersion" : "9.0",
-  "authenticationproviders" : [ {
-    "name" : "anon",
-    "type" : "Anonymous"
-  } ],
-  "ports" : [ {
-    "name" : "ANONYMOUS_AMQP",
-    "type" : "AMQP",
-    "authenticationProvider" : "anon",
-    "port" : "0",
-    "virtualhostaliases" : [ {
-      "name" : "defaultAlias",
-      "type" : "defaultAlias",
-      "durable" : true
-    }, {
-      "name": "patternMatchingAlias",
-      "type": "patternMatchingAlias"
-    }, {
-      "name" : "nameAlias",
-      "type" : "nameAlias",
-      "durable" : true
-    } ]
-  } ],
-  "virtualhostnodes" : []
+    @Override
+    public String getModelVersion()
+    {
+        return LegacyManagementControllerFactory_v8_0.MODEL_VERSION;
+    }
 }
