@@ -55,4 +55,31 @@ public abstract class StoreUpgraderPhase extends NonNullUpgrader
         return _toVersion;
     }
 
+    ConfiguredObjectRecord renameContextVariables(final ConfiguredObjectRecord record,
+                                                  final String contextAttributeName,
+                                                  final Map<String, String> oldToNewNameMapping)
+    {
+        final Map<String, Object> attributes = record.getAttributes();
+        if (attributes != null && attributes.containsKey(contextAttributeName))
+        {
+            final Object context = attributes.get(contextAttributeName);
+            if (context instanceof Map)
+            {
+                final Map<String, String> newContext =
+                        UpgraderHelper.renameContextVariables((Map<String, String>) context, oldToNewNameMapping);
+
+                final Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
+                updatedAttributes.put(contextAttributeName, newContext);
+                final ConfiguredObjectRecord updatedRecord = new ConfiguredObjectRecordImpl(record.getId(),
+                                                                                            record.getType(),
+                                                                                            updatedAttributes,
+                                                                                            record.getParents());
+                getUpdateMap().put(updatedRecord.getId(), updatedRecord);
+                return updatedRecord;
+            }
+        }
+        return record;
+    }
+
+
 }

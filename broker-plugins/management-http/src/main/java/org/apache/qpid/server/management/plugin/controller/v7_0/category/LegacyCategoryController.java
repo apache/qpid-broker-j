@@ -33,7 +33,7 @@ public class LegacyCategoryController extends GenericCategoryController
 {
     private final String _parentCategory;
 
-    LegacyCategoryController(final LegacyManagementController managementController,
+    public LegacyCategoryController(final LegacyManagementController managementController,
                              final String name,
                              final String parentCategory,
                              final String defaultType,
@@ -56,8 +56,13 @@ public class LegacyCategoryController extends GenericCategoryController
     @Override
     protected LegacyConfiguredObject convertNextVersionLegacyConfiguredObject(final LegacyConfiguredObject object)
     {
-        return new GenericLegacyConfiguredObject(getManagementController(),
-                                                 object,
-                                                 getCategory());
+        final GenericLegacyConfiguredObject legacyegacyConfiguredObject =
+                new GenericLegacyConfiguredObject(getManagementController(), object, getCategory());
+        if (LegacyCategoryControllerFactory.CATEGORY_VIRTUAL_HOST.equals(getCategory())
+            || LegacyCategoryControllerFactory.CATEGORY_BROKER.equals(getCategory()))
+        {
+            return new ContainerDecorator(legacyegacyConfiguredObject);
+        }
+        return legacyegacyConfiguredObject;
     }
 }

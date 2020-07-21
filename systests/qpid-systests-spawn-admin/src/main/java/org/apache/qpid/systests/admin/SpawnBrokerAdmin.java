@@ -751,8 +751,6 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
 
         List<String> jvmArguments = new ArrayList<>();
         jvmArguments.add("java");
-//        jvmArguments.add("-cp");
-//        jvmArguments.add(classpath);
         jvmArguments.add("-Djava.io.tmpdir=" + escape(System.getProperty("java.io.tmpdir")));
         jvmArguments.add("-Dlogback.configurationFile=default-broker-logback.xml");
         jvmArguments.add("-Dqpid.tests.mms.messagestore.persistence=true");

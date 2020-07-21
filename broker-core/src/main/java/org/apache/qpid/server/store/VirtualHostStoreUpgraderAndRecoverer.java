@@ -1088,20 +1088,23 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         }
     }
 
-    private class Upgrader_8_0_to_9_0 extends StoreUpgraderPhase
+    private static class Upgrader_8_0_to_9_0 extends StoreUpgraderPhase
     {
-        public Upgrader_8_0_to_9_0()
+        Upgrader_8_0_to_9_0()
         {
             super("modelVersion", "8.0", "9.0");
         }
 
         @Override
-        public void configuredObject(final ConfiguredObjectRecord record)
+        public void configuredObject(ConfiguredObjectRecord record)
         {
-            if("VirtualHost".equals(record.getType()))
+            if ("VirtualHost".equals(record.getType()))
             {
-                upgradeRootRecord(record);
+                record = upgradeRootRecord(record);
             }
+            renameContextVariables(record,
+                                   "context",
+                                   UpgraderHelper.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
         }
 
         @Override

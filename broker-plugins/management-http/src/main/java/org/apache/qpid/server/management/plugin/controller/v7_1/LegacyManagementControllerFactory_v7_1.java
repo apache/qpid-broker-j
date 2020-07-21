@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,22 +17,23 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.management.plugin.controller.v7_0;
+package org.apache.qpid.server.management.plugin.controller.v7_1;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.ManagementControllerFactory;
+import org.apache.qpid.server.management.plugin.controller.v7_0.LegacyManagementController;
 import org.apache.qpid.server.plugin.PluggableService;
 
 @PluggableService
-public class LegacyManagementControllerFactory_v8_0 implements ManagementControllerFactory
+public class LegacyManagementControllerFactory_v7_1 implements ManagementControllerFactory
 {
-    public static final String MODEL_VERSION = "8.0";
+    public static final String MODEL_VERSION = "7.1";
 
     @Override
     public String getType()
     {
-        return "org.apache.qpid.server.management.plugin.model.v8_0";
+        return "org.apache.qpid.server.management.plugin.model.v7_1";
     }
 
     @Override
@@ -45,7 +45,7 @@ public class LegacyManagementControllerFactory_v8_0 implements ManagementControl
     @Override
     public String getPreviousVersion()
     {
-        return "7.1";
+        return "7.0";
     }
 
     @Override

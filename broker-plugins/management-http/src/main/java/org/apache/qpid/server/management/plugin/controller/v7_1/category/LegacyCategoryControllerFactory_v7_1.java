@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,9 +17,10 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.management.plugin.controller.v7_0.category;
+package org.apache.qpid.server.management.plugin.controller.v7_1.category;
 
-import org.apache.qpid.server.management.plugin.controller.v7_0.LegacyManagementControllerFactory_v7_1;
+import org.apache.qpid.server.management.plugin.controller.v7_0.category.LegacyCategoryControllerFactory;
+import org.apache.qpid.server.management.plugin.controller.v7_1.LegacyManagementControllerFactory_v7_1;
 import org.apache.qpid.server.plugin.PluggableService;
 
 @PluggableService
