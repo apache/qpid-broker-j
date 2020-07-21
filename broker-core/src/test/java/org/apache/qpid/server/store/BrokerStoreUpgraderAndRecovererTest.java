@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -886,6 +887,118 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
                            upgradedAttributes.containsKey("connection.heartBeatDelay"));
         assertFalse("Close when no route is not removed",
                            upgradedAttributes.containsKey("conection.closeWhenNoRoute"));
+    }
+
+    @Test
+    public void testContextVariableUpgradeForTLSProtocolsSetOnBroker()
+    {
+        final Map<String, String> context = new HashMap<>();
+        context.put("qpid.security.tls.protocolWhiteList", ".*");
+        context.put("qpid.security.tls.protocolBlackList", "Ssl.*");
+
+        _brokerRecord.getAttributes().put("modelVersion", "8.0");
+        _brokerRecord.getAttributes().put("context", context);
+
+        final DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);
+        final BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        final List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        final Map<String, String> contextMap = findContextInSingeltonArray("Broker", records);
+
+        assertEquals(".*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST));
+        assertEquals("Ssl.*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST));
+    }
+
+
+    @Test
+    public void testContextVariableUpgradeForTLSCipherSuiteSetOnBroker()
+    {
+        final Map<String, String> context = new HashMap<>();
+        context.put("qpid.security.tls.cipherSuiteWhiteList", ".*");
+        context.put("qpid.security.tls.cipherSuiteBlackList", "Ssl.*");
+
+        _brokerRecord.getAttributes().put("modelVersion", "8.0");
+        _brokerRecord.getAttributes().put("context", context);
+
+        final DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);
+        final BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        final List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        final Map<String, String> contextMap = findContextInSingeltonArray("Broker", records);
+
+        assertEquals(".*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST));
+        assertEquals("Ssl.*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST));
+    }
+
+    @Test
+    public void testContextVariableUpgradeForTLSProtocolsSetOnPort()
+    {
+        final Map<String, String> context = new HashMap<>();
+        context.put("qpid.security.tls.protocolWhiteList", ".*");
+        context.put("qpid.security.tls.protocolBlackList", "Ssl.*");
+
+        _brokerRecord.getAttributes().put("modelVersion", "8.0");
+
+        ConfiguredObjectRecord portRecord = mock(ConfiguredObjectRecord.class);
+        when(portRecord.getId()).thenReturn(UUID.randomUUID());
+        when(portRecord.getType()).thenReturn("Port");
+        final Map<String, Object> portAttributes = new HashMap<>();
+        portAttributes.put("name", getTestName());
+        portAttributes.put("context", context);
+        when(portRecord.getAttributes()).thenReturn(portAttributes);
+
+        final DurableConfigurationStore dcs = new DurableConfigurationStoreStub(portRecord, _brokerRecord);
+        final BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+
+        final List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        final Map<String, String> contextMap = findContextInSingeltonArray("Port", records);
+
+        assertEquals(".*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST));
+        assertEquals("Ssl.*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST));
+    }
+
+    @Test
+    public void testContextVariableUpgradeForTLSCipherSuiteSetOnAuthenticationProvider()
+    {
+        final Map<String, String> context = new HashMap<>();
+        context.put("qpid.security.tls.cipherSuiteWhiteList", ".*");
+        context.put("qpid.security.tls.cipherSuiteBlackList", "Ssl.*");
+
+        _brokerRecord.getAttributes().put("modelVersion", "8.0");
+
+        ConfiguredObjectRecord authenticationProviderRecord = mock(ConfiguredObjectRecord.class);
+        when(authenticationProviderRecord.getId()).thenReturn(UUID.randomUUID());
+        when(authenticationProviderRecord.getType()).thenReturn("AuthenticationProvider");
+        final Map<String, Object> authenticationProviderAttributes = new HashMap<>();
+        authenticationProviderAttributes.put("name", getTestName());
+        authenticationProviderAttributes.put("context", context);
+        authenticationProviderAttributes.put("type", "OAuth2");
+
+        when(authenticationProviderRecord.getAttributes()).thenReturn(authenticationProviderAttributes);
+
+        final DurableConfigurationStore dcs = new DurableConfigurationStoreStub(authenticationProviderRecord, _brokerRecord);
+        final BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+
+        final List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        final Map<String, String> contextMap = findContextInSingeltonArray("AuthenticationProvider", records);
+
+        assertEquals(".*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST));
+        assertEquals("Ssl.*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST));
+    }
+
+
+    private Map<String, String> findContextInSingeltonArray(String category, List<ConfiguredObjectRecord> records) {
+        final List<ConfiguredObjectRecord> foundRecords = findRecordByType(category, records);
+        assertEquals("Unexpected number of records", 1, foundRecords.size());
+        final Map<String, Object> attributes = foundRecords.get(0).getAttributes();
+        assertNotNull(attributes);
+        final Object context = attributes.get("context");
+        assertTrue(context instanceof Map);
+        @SuppressWarnings("unchecked")
+        Map<String,String> result = (Map<String,String>)context;
+        return result;
     }
 
     private void assertModelVersionUpgraded(final List<ConfiguredObjectRecord> records)

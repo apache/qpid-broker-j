@@ -736,18 +736,29 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 
     private class Upgrader_8_0_to_9_0 extends StoreUpgraderPhase
     {
+
+        private static final String CONTEXT = "context";
+        @SuppressWarnings("unchecked")
+        private final Map<String,String> CONTEXT_VARIABLES= new HashMap(){{
+            put("qpid.security.tls.protocolWhiteList", "qpid.security.tls.protocolAllowList");
+            put("qpid.security.tls.protocolBlackList", "qpid.security.tls.protocolDenyList");
+            put("qpid.security.tls.cipherSuiteWhiteList", "qpid.security.tls.cipherSuiteAllowList");
+            put("qpid.security.tls.cipherSuiteBlackList", "qpid.security.tls.cipherSuiteDenyList");
+        }};
+
         public Upgrader_8_0_to_9_0()
         {
             super("modelVersion", "8.0", "9.0");
         }
 
         @Override
-        public void configuredObject(final ConfiguredObjectRecord record)
+        public void configuredObject(ConfiguredObjectRecord record)
         {
-            if("Broker".equals(record.getType()))
+            if ("Broker".equals(record.getType()))
             {
-                upgradeRootRecord(record);
+                record = upgradeRootRecord(record);
             }
+            upgradeContextForAllowDenyLists(record);
         }
 
         @Override
@@ -755,6 +766,39 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         {
 
         }
+
+        private ConfiguredObjectRecord upgradeContextForAllowDenyLists(final ConfiguredObjectRecord record)
+        {
+            final Map<String, Object> attributes = record.getAttributes();
+            if (attributes != null && attributes.containsKey(CONTEXT))
+            {
+                final Object context = attributes.get(CONTEXT);
+                if (context instanceof Map)
+                {
+                    @SuppressWarnings("unchecked")
+                    final Map<String,String> oldContext = (Map<String, String>)context;
+                    final Map<String, String> newContext = new HashMap<>(oldContext);
+                    CONTEXT_VARIABLES.forEach((oldName,newName)->{
+                        if (newContext.containsKey(oldName))
+                        {
+                            final String value = newContext.remove(oldName);
+                            newContext.put(newName, value);
+                        }
+                    });
+
+                    final Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
+                    updatedAttributes.put(CONTEXT, newContext);
+                    final ConfiguredObjectRecord updatedRecord = new ConfiguredObjectRecordImpl(record.getId(),
+                                                                                                record.getType(),
+                                                                                                updatedAttributes,
+                                                                                                record.getParents());
+                    getUpdateMap().put(updatedRecord.getId(), updatedRecord);
+                    return updatedRecord;
+                }
+            }
+            return record;
+        }
+
     }
 
     private static class VirtualHostEntryUpgrader
