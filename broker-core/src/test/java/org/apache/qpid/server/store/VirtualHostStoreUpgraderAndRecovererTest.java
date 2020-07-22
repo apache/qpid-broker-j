@@ -38,6 +38,7 @@ import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -312,6 +313,56 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
         assertEquals("Unexpected messageGroupType", "STANDARD", upgradedAttributes.get("messageGroupType"));
     }
 
+    @Test
+    public void testContextVariableUpgradeForTLSProtocolsSetOnVirtualHost() throws Exception
+    {
+        final Map<String, String> context = new HashMap<>();
+        context.put("qpid.security.tls.protocolWhiteList", ".*");
+        context.put("qpid.security.tls.protocolBlackList", "Ssl.*");
+
+        final Map<String, Object> rootAttributes = new HashMap<>();
+        rootAttributes.put("modelVersion", "8.0");
+        rootAttributes.put("name", "root");
+        rootAttributes.put("context", context);
+        final ConfiguredObjectRecord rootRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                                 "VirtualHost",
+                                                                                 rootAttributes);
+        final List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store,
+                                              Collections.singletonList(rootRecord),
+                                              "VirtualHost",
+                                              "modelVersion");
+
+        final Map<String, Object> newContext = getContextForRecordWithGivenId(rootRecord.getId(), upgradedRecords);
+        assertEquals(".*", newContext.get(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST));
+        assertEquals("Ssl.*", newContext.get(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST));
+    }
+
+    @Test
+    public void testContextVariableUpgradeForTLSCipherSuitesSetOnVirtualHostAccessControlProvider() throws Exception
+    {
+        final Map<String, Object> rootAttributes = new HashMap<>();
+        rootAttributes.put("modelVersion", "8.0");
+        rootAttributes.put("name", "root");
+        final ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
+
+        final Map<String, String> context = new HashMap<>();
+        context.put("qpid.security.tls.cipherSuiteWhiteList", ".*");
+        context.put("qpid.security.tls.cipherSuiteBlackList", "Ssl.*");
+        final ConfiguredObjectRecord accessControlProviderRecord =
+                createMockRecordForGivenCategoryTypeAndContext("VirtualHostAccessControlProvider", "test", context);
+
+        final List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, accessControlProviderRecord);
+        final List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        final Map<String, Object> newContext =
+                getContextForRecordWithGivenId(accessControlProviderRecord.getId(), upgradedRecords);
+        assertEquals(".*", newContext.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST));
+        assertEquals("Ssl.*", newContext.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST));
+    }
+
     private ConfiguredObjectRecord findRecordById(UUID id, List<ConfiguredObjectRecord> records)
     {
         for (ConfiguredObjectRecord record : records)
@@ -323,4 +374,35 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
         }
         return null;
     }
+
+    private ConfiguredObjectRecord createMockRecordForGivenCategoryTypeAndContext(final String category,
+                                                                                  final String type,
+                                                                                  final Map<String, String> context)
+    {
+        final ConfiguredObjectRecord record = mock(ConfiguredObjectRecord.class);
+        when(record.getId()).thenReturn(UUID.randomUUID());
+        when(record.getType()).thenReturn(category);
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put("name", getTestName());
+        attributes.put("type", type);
+        attributes.put("context", context);
+        when(record.getAttributes()).thenReturn(attributes);
+        return record;
+    }
+
+    private Map<String, Object> getContextForRecordWithGivenId(final UUID rootRecordId,
+                                                               final List<ConfiguredObjectRecord> upgradedRecords)
+    {
+        final ConfiguredObjectRecord upgradedRecord = findRecordById(rootRecordId, upgradedRecords);
+        assertNotNull(upgradedRecord);
+        final Map<String, Object> attributes = upgradedRecord.getAttributes();
+        assertNotNull(attributes);
+
+        final Object context = attributes.get("context");
+        assertTrue(context instanceof Map);
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> contextMap = (Map<String, Object>) context;
+        return contextMap;
+    }
+
 }
