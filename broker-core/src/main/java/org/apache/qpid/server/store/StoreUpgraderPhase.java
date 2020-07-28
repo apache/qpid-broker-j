@@ -65,15 +65,8 @@ public abstract class StoreUpgraderPhase extends NonNullUpgrader
             final Object context = attributes.get(contextAttributeName);
             if (context instanceof Map)
             {
-                @SuppressWarnings("unchecked") final Map<String, String> oldContext = (Map<String, String>) context;
-                final Map<String, String> newContext = new HashMap<>(oldContext);
-                oldToNewNameMapping.forEach((oldName, newName) -> {
-                    if (newContext.containsKey(oldName))
-                    {
-                        final String value = newContext.remove(oldName);
-                        newContext.put(newName, value);
-                    }
-                });
+                final Map<String, String> newContext =
+                        UpgraderHelper.renameContextVariables(oldToNewNameMapping, (Map<String, String>) context);
 
                 final Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
                 updatedAttributes.put(contextAttributeName, newContext);
@@ -87,4 +80,6 @@ public abstract class StoreUpgraderPhase extends NonNullUpgrader
         }
         return record;
     }
+
+
 }

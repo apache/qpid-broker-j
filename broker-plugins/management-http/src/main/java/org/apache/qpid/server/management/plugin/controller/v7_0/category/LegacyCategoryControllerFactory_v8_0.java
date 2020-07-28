@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.management.plugin.controller.v7_0.category;
 
+import org.apache.qpid.server.management.plugin.controller.CategoryController;
+import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
 import org.apache.qpid.server.management.plugin.controller.v7_0.LegacyManagementControllerFactory_v8_0;
 import org.apache.qpid.server.plugin.PluggableService;
 
@@ -30,5 +32,24 @@ public class LegacyCategoryControllerFactory_v8_0 extends LegacyCategoryControll
     public String getModelVersion()
     {
         return LegacyManagementControllerFactory_v8_0.MODEL_VERSION;
+    }
+
+
+    @Override
+    public CategoryController createController(final String type,
+                                               final LegacyManagementController legacyManagementController)
+    {
+        if (SUPPORTED_CATEGORIES.containsKey(type))
+        {
+            return new LegacyCategoryController_v8_0(legacyManagementController,
+                                                     type,
+                                                     SUPPORTED_CATEGORIES.get(type),
+                                                     DEFAULT_TYPES.get(type),
+                                                     legacyManagementController.getTypeControllersByCategory(type));
+        }
+        else
+        {
+            throw new IllegalArgumentException(String.format("Unsupported type '%s'", type));
+        }
     }
 }

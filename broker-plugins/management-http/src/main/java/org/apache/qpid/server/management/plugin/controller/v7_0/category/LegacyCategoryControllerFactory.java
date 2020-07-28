@@ -92,7 +92,7 @@ public class LegacyCategoryControllerFactory implements CategoryControllerFactor
                 }
             });
 
-    private static final Map<String, String> DEFAULT_TYPES = Collections.unmodifiableMap(new HashMap<String, String>()
+    static final Map<String, String> DEFAULT_TYPES = Collections.unmodifiableMap(new HashMap<String, String>()
     {
         {
             put(CATEGORY_BROKER_LOGGER, "Broker");
