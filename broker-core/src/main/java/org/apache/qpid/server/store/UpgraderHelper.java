@@ -22,6 +22,7 @@ package org.apache.qpid.server.store;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class UpgraderHelper
 {
@@ -50,5 +51,10 @@ public class UpgraderHelper
             }
         });
         return newContext;
+    }
+
+    public static Map<String, String> reverse(Map<String, String> map)
+    {
+        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 }

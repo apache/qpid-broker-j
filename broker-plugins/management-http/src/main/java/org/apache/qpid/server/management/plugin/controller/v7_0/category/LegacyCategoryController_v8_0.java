@@ -22,6 +22,7 @@ package org.apache.qpid.server.management.plugin.controller.v7_0.category;
 
 import static org.apache.qpid.server.store.UpgraderHelper.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +38,8 @@ import org.apache.qpid.server.store.UpgraderHelper;
 
 public class LegacyCategoryController_v8_0 extends LegacyCategoryController
 {
-    private static final Map<String, String> NEW_TO_OLD = MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES
-            .entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+    private static final Map<String, String> NEW_TO_OLD =
+            UpgraderHelper.reverse(MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
 
     LegacyCategoryController_v8_0(final LegacyManagementController legacyManagementController,
                                   final String type,
@@ -98,7 +99,18 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
 
     static class LegacyConfiguredObject_v8_0 extends GenericLegacyConfiguredObject
     {
+        private static final Map<String, String> ALLOW_DENY_TO_WHITE_BLACK_MAPPING = new HashMap<>();
 
+        static
+        {
+            ALLOW_DENY_TO_WHITE_BLACK_MAPPING.put("tlsProtocolAllowList", "tlsProtocolWhiteList");
+            ALLOW_DENY_TO_WHITE_BLACK_MAPPING.put("tlsProtocolDenyList", "tlsProtocolBlackList");
+            ALLOW_DENY_TO_WHITE_BLACK_MAPPING.put("tlsCipherSuiteAllowList", "tlsCipherSuiteWhiteList");
+            ALLOW_DENY_TO_WHITE_BLACK_MAPPING.put("tlsCipherSuiteDenyList", "tlsCipherSuiteBlackList");
+        }
+
+        private static final Map<String, String> WHITE_BLACK_TO_ALLOW_DENY_MAPPING =
+                UpgraderHelper.reverse(ALLOW_DENY_TO_WHITE_BLACK_MAPPING);
 
         LegacyConfiguredObject_v8_0(final LegacyManagementController managementController,
                                     final LegacyConfiguredObject nextVersionLegacyConfiguredObject,
@@ -110,14 +122,39 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
         @Override
         public Object getAttribute(final String name)
         {
-            Object value = super.getAttribute(name);
+            Object value;
             if ("context".equals(name))
             {
-                return convertContextToModelVersion(value);
+                return convertContextToModelVersion(super.getAttribute(name));
+            }
+            else if (isPortOrAuthenticationPovider() && WHITE_BLACK_TO_ALLOW_DENY_MAPPING.containsKey(name))
+            {
+                value = super.getAttribute(WHITE_BLACK_TO_ALLOW_DENY_MAPPING.getOrDefault(name, name));
+            }
+            else
+            {
+                value = super.getAttribute(name);
             }
             return value;
         }
 
+        private boolean isPortOrAuthenticationPovider()
+        {
+            return "Port".equals(getCategory()) || "AuthenticationProvider".equals(getCategory());
+        }
+
+        @Override
+        public Collection<String> getAttributeNames()
+        {
+            final Collection<String> attributeNames = super.getAttributeNames();
+            if (isPortOrAuthenticationPovider())
+            {
+                return attributeNames.stream()
+                                     .map(i -> ALLOW_DENY_TO_WHITE_BLACK_MAPPING.getOrDefault(i, i))
+                                     .collect(Collectors.toList());
+            }
+            return attributeNames;
+        }
 
         @Override
         public Object getActualAttribute(final String name)
@@ -146,6 +183,5 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
             }
             return null;
         }
-
     }
 }
