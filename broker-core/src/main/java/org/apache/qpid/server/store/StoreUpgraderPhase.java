@@ -66,7 +66,7 @@ public abstract class StoreUpgraderPhase extends NonNullUpgrader
             if (context instanceof Map)
             {
                 final Map<String, String> newContext =
-                        UpgraderHelper.renameContextVariables(oldToNewNameMapping, (Map<String, String>) context);
+                        UpgraderHelper.renameContextVariables((Map<String, String>) context, oldToNewNameMapping);
 
                 final Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
                 updatedAttributes.put(contextAttributeName, newContext);

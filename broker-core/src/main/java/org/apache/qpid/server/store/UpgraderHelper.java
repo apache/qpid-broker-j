@@ -25,11 +25,23 @@ import java.util.Map;
 
 public class UpgraderHelper
 {
-    public static Map<String, String> renameContextVariables(final Map<String, String> oldToNewNameMapping,
-                                                         final Map<String, String> context)
+    public static final Map<String, String> MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES = new HashMap<>();
+    static
     {
-        final Map<String, String> oldContext = context;
-        final Map<String, String> newContext = new HashMap<>(oldContext);
+        MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.put("qpid.security.tls.protocolWhiteList",
+                                                                                     "qpid.security.tls.protocolAllowList");
+        MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.put("qpid.security.tls.protocolBlackList",
+                                                                                     "qpid.security.tls.protocolDenyList");
+        MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.put("qpid.security.tls.cipherSuiteWhiteList",
+                                                                                     "qpid.security.tls.cipherSuiteAllowList");
+        MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.put("qpid.security.tls.cipherSuiteBlackList",
+                                                                                     "qpid.security.tls.cipherSuiteDenyList");
+    }
+
+    public static Map<String, String> renameContextVariables(final Map<String, String> context,
+                                                             final Map<String, String> oldToNewNameMapping)
+    {
+        final Map<String, String> newContext = new HashMap<>(context);
         oldToNewNameMapping.forEach((oldName, newName) -> {
             if (newContext.containsKey(oldName))
             {

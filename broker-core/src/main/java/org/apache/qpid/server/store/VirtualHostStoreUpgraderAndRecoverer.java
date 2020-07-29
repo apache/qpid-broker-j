@@ -1104,7 +1104,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
             }
             renameContextVariables(record,
                                    "context",
-                                   BrokerStoreUpgraderAndRecoverer.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
+                                   UpgraderHelper.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
         }
 
         @Override

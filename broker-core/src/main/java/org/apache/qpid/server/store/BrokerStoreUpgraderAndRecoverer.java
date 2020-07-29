@@ -48,18 +48,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerStoreUpgraderAndRecoverer.class);
 
-    public static final Map<String, String> MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES = new HashMap<>();
-    static
-    {
-        MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.put("qpid.security.tls.protocolWhiteList",
-                                                                      "qpid.security.tls.protocolAllowList");
-        MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.put("qpid.security.tls.protocolBlackList",
-                                                                      "qpid.security.tls.protocolDenyList");
-        MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.put("qpid.security.tls.cipherSuiteWhiteList",
-                                                                      "qpid.security.tls.cipherSuiteAllowList");
-        MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.put("qpid.security.tls.cipherSuiteBlackList",
-                                                                      "qpid.security.tls.cipherSuiteDenyList");
-    }
+
 
     public static final String VIRTUALHOSTS = "virtualhosts";
     private final SystemConfig<?> _systemConfig;
@@ -762,7 +751,9 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
             {
                 record = upgradeRootRecord(record);
             }
-            renameContextVariables(record, "context", MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
+            renameContextVariables(record,
+                                   "context",
+                                   UpgraderHelper.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
         }
 
         @Override

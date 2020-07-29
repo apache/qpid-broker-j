@@ -20,7 +20,7 @@
 
 package org.apache.qpid.server.management.plugin.controller.v7_0.category;
 
-import static org.apache.qpid.server.store.BrokerStoreUpgraderAndRecoverer.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES;
+import static org.apache.qpid.server.store.UpgraderHelper.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES;
 
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +33,7 @@ import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObjec
 import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
 import org.apache.qpid.server.management.plugin.controller.TypeController;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.store.UpgraderHelper;
 
 public class LegacyCategoryController_v8_0 extends LegacyCategoryController
 {
@@ -71,7 +72,7 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
         Map<String, Object> nextVersionAttributes;
         if (attributes.containsKey("context"))
         {
-            nextVersionAttributes = convertContext(attributes);
+            nextVersionAttributes = convertContextToNextVersion(attributes);
         }
         else
         {
@@ -80,21 +81,15 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
         return super.convertAttributesToNextVersion(root, path, nextVersionAttributes);
     }
 
-    private Map<String, Object> convertContext(final Map<String, Object> attributes)
+    private Map<String, Object> convertContextToNextVersion(final Map<String, Object> attributes)
     {
         final Object context = attributes.get("context");
         if (context instanceof Map)
         {
-            Map<String, Object> nextVersionAttributes = new HashMap<>(attributes);
             @SuppressWarnings("unchecked") final Map<String, String> oldContext = (Map<String, String>) context;
-            final Map<String, String> newContext = new HashMap<>(oldContext);
-            MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.forEach((oldName, newName) -> {
-                if (newContext.containsKey(oldName))
-                {
-                    final String value = newContext.remove(oldName);
-                    newContext.put(newName, value);
-                }
-            });
+            final Map<String, String> newContext = UpgraderHelper.renameContextVariables(oldContext,
+                                                                                         MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
+            final Map<String, Object> nextVersionAttributes = new HashMap<>(attributes);
             nextVersionAttributes.put("context", newContext);
             return nextVersionAttributes;
         }
@@ -118,7 +113,7 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
             Object value = super.getAttribute(name);
             if ("context".equals(name))
             {
-                return convertContext(value);
+                return convertContextToModelVersion(value);
             }
             return value;
         }
@@ -130,7 +125,7 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
             Object value = super.getActualAttribute(name);
             if ("context".equals(name))
             {
-                return convertContext(value);
+                return convertContextToModelVersion(value);
             }
             return value;
         }
@@ -138,26 +133,19 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
         @Override
         public String getContextValue(final String contextKey)
         {
-            String name =
+            final String nextVersionName =
                     MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES.getOrDefault(contextKey, contextKey);
-            return super.getContextValue(name);
+            return super.getContextValue(nextVersionName);
         }
 
-        private Object convertContext(final Object value)
+        private Object convertContextToModelVersion(final Object value)
         {
             if (value instanceof Map)
             {
-                Map<String, String> contextMap = (Map<String, String>) value;
-                return contextMap.entrySet().stream().collect(Collectors.toMap(
-                        e -> renameVariable(e.getKey()),
-                        Map.Entry::getValue));
+                return UpgraderHelper.renameContextVariables((Map<String, String>) value, NEW_TO_OLD);
             }
             return null;
         }
 
-        private String renameVariable(final String name)
-        {
-            return NEW_TO_OLD.getOrDefault(name, name);
-        }
     }
 }
