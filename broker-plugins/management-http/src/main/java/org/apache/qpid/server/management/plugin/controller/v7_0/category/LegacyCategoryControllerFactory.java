@@ -111,22 +111,11 @@ public class LegacyCategoryControllerFactory implements CategoryControllerFactor
     {
         if (SUPPORTED_CATEGORIES.containsKey(type))
         {
-            if (CATEGORY_VIRTUAL_HOST.equals(type) || CATEGORY_BROKER.equals(type))
-            {
-                return new ContainerController(legacyManagementController,
-                                               type,
-                                               SUPPORTED_CATEGORIES.get(type),
-                                               DEFAULT_TYPES.get(type),
-                                               legacyManagementController.getTypeControllersByCategory(type));
-            }
-            else
-            {
-                return new LegacyCategoryController(legacyManagementController,
-                                                    type,
-                                                    SUPPORTED_CATEGORIES.get(type),
-                                                    DEFAULT_TYPES.get(type),
-                                                    legacyManagementController.getTypeControllersByCategory(type));
-            }
+            return new LegacyCategoryController(legacyManagementController,
+                                                type,
+                                                SUPPORTED_CATEGORIES.get(type),
+                                                DEFAULT_TYPES.get(type),
+                                                legacyManagementController.getTypeControllersByCategory(type));
         }
         else
         {
