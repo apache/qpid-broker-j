@@ -18,22 +18,19 @@
  *
  */
 
-package org.apache.qpid.server.management.plugin.controller.v7_0.category;
+package org.apache.qpid.server.management.plugin.controller.v8_0.category;
 
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -62,13 +59,13 @@ public class LegacyCategoryController_v8_0Test
     private static final String PROTOCOL_ALLOW_LIST = "Tls.*";
     private static final String PROTOCOL_DENY_LIST = "Ssl.*";
     private static final String NEW_CONTEXT_TLS_PROTOCOL_ALLOW_LIST = "qpid.security.tls.protocolAllowList";
-    public static final String NEW_CONTEXT_TLS_PROTOCOL_DENY_LIST = "qpid.security.tls.protocolDenyList";
-    public static final String OLD_CONTEXT_TLS_PROTOCOL_WHITE_LIST = "qpid.security.tls.protocolWhiteList";
-    public static final String OLD_CONTEXT_TLS_PROTOCOL_BLACK_LIST = "qpid.security.tls.protocolBlackList";
-    public static final String ATTRIBUTE_NAME = "name";
-    public static final String ATTRIBUTE_CONTEXT = "context";
+    private static final String NEW_CONTEXT_TLS_PROTOCOL_DENY_LIST = "qpid.security.tls.protocolDenyList";
+    private static final String OLD_CONTEXT_TLS_PROTOCOL_WHITE_LIST = "qpid.security.tls.protocolWhiteList";
+    private static final String OLD_CONTEXT_TLS_PROTOCOL_BLACK_LIST = "qpid.security.tls.protocolBlackList";
+    private static final String ATTRIBUTE_NAME = "name";
+    private static final String ATTRIBUTE_CONTEXT = "context";
 
-    private  LegacyCategoryController_v8_0 _controller;
+    private LegacyCategoryController_v8_0 _controller;
     private ConfiguredObject _root;
     private ManagementController _nextVersionManagementController;
 
@@ -131,7 +128,7 @@ public class LegacyCategoryController_v8_0Test
         LegacyConfiguredObject newVersionPort = createNewVersionPortMock();
         when(_nextVersionManagementController.createOrUpdate(eq(_root), eq(TEST_CATEGORY), eq(path), eq(newAttributes), eq(false) )).thenReturn(newVersionPort);
         ManagementException error = ManagementException.createUnprocessableManagementException("unexpected");
-       // when(_nextVersionManagementController.createOrUpdate(any(ConfiguredObject.class), anyString(), anyList(), anyMap(), anyBoolean())).thenThrow(error);
+        when(_nextVersionManagementController.createOrUpdate(any(ConfiguredObject.class), anyString(), eq(path), not(eq(newAttributes)), anyBoolean())).thenThrow(error);
         LegacyConfiguredObject port = _controller.createOrUpdate(_root, path, attributes, false) ;
         assertThat(port, is(notNullValue()));
         assertPortTLSSettings(port);
@@ -142,7 +139,7 @@ public class LegacyCategoryController_v8_0Test
         assertThat(port.getAttribute(ATTRIBUTE_NAME), equalTo(PORT_NAME));
         assertThat(port.getContextValue(OLD_CONTEXT_TLS_PROTOCOL_WHITE_LIST), equalTo(PROTOCOL_ALLOW_LIST));
         assertThat(port.getContextValue(OLD_CONTEXT_TLS_PROTOCOL_BLACK_LIST), equalTo(PROTOCOL_DENY_LIST));
-        final Object context = port.getAttribute("context");
+        final Object context = port.getAttribute(ATTRIBUTE_CONTEXT);
         assertThat(context, instanceOf(Map.class));
         final Map contextMap = (Map) context;
         assertThat(contextMap.get(OLD_CONTEXT_TLS_PROTOCOL_WHITE_LIST), equalTo(PROTOCOL_ALLOW_LIST));

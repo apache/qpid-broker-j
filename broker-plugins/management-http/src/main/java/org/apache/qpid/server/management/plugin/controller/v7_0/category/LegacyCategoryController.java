@@ -33,7 +33,7 @@ public class LegacyCategoryController extends GenericCategoryController
 {
     private final String _parentCategory;
 
-    LegacyCategoryController(final LegacyManagementController managementController,
+    public LegacyCategoryController(final LegacyManagementController managementController,
                              final String name,
                              final String parentCategory,
                              final String defaultType,

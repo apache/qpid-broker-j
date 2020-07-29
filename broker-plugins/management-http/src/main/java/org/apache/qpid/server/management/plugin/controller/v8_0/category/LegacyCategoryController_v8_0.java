@@ -18,8 +18,10 @@
  *
  */
 
-package org.apache.qpid.server.management.plugin.controller.v7_0.category;
+package org.apache.qpid.server.management.plugin.controller.v8_0.category;
 
+import static org.apache.qpid.server.management.plugin.controller.v7_0.category.LegacyCategoryControllerFactory.CATEGORY_AUTHENTICATION_PROVIDER;
+import static org.apache.qpid.server.management.plugin.controller.v7_0.category.LegacyCategoryControllerFactory.CATEGORY_PORT;
 import static org.apache.qpid.server.store.UpgraderHelper.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES;
 
 import java.util.Collection;
@@ -33,6 +35,9 @@ import org.apache.qpid.server.management.plugin.controller.GenericLegacyConfigur
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
 import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
 import org.apache.qpid.server.management.plugin.controller.TypeController;
+import org.apache.qpid.server.management.plugin.controller.v7_0.category.ContainerDecorator;
+import org.apache.qpid.server.management.plugin.controller.v7_0.category.LegacyCategoryController;
+import org.apache.qpid.server.management.plugin.controller.v7_0.category.LegacyCategoryControllerFactory;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.UpgraderHelper;
 
@@ -40,6 +45,7 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
 {
     private static final Map<String, String> NEW_TO_OLD =
             UpgraderHelper.reverse(MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
+
 
     LegacyCategoryController_v8_0(final LegacyManagementController legacyManagementController,
                                   final String type,
@@ -140,7 +146,7 @@ public class LegacyCategoryController_v8_0 extends LegacyCategoryController
 
         private boolean isPortOrAuthenticationPovider()
         {
-            return "Port".equals(getCategory()) || "AuthenticationProvider".equals(getCategory());
+            return CATEGORY_PORT.equals(getCategory()) || CATEGORY_AUTHENTICATION_PROVIDER.equals(getCategory());
         }
 
         @Override
