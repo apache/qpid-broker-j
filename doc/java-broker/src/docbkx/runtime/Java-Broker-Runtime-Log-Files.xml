@@ -168,6 +168,15 @@
         default the circular buffer holds the last 4096 log events. The contents of the buffer can
         be viewed via Management. See <xref linkend="Java-Broker-Runtime-Logging-Management-MemoryLogger"/></para>
     </section>
+    <section xml:id="Java-Broker-Runtime-Logging-Loggers-GraylogLogger">
+      <title>GraylogLogger</title>
+      <para><emphasis>GraylogLogger</emphasis> - sends log messages to a Graylog server in
+        <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://docs.graylog.org/en/3.2/pages/gelf.html">GELF format</link> via TCP.
+        The hostname and port number of the Graylog server has to be configured. The content of the log messages is also configurable.</para>
+      <para>The Broker has to be built using option <code>-Dgraylog</code> to support Graylog logger, please visit
+        <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://github.com/apache/qpid-broker-j/blob/master/doc/developer-guide/src/main/markdown/build-instructions.md#maven-commands">build instructions</link>.
+      </para>
+    </section>
   </section>
   <section xml:id="Java-Broker-Runtime-Logging-InclusionRules">
     <title>Inclusion Rules</title>

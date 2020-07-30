@@ -22,6 +22,7 @@ define(["dojo/_base/lang",
         "dojo/dom",
         "dojo/dom-construct",
         "dojo/dom-style",
+        "dojo/dom-geometry",
         "dijit/registry",
         "dojo/parser",
         "dojo/store/Memory",
@@ -45,12 +46,13 @@ define(["dojo/_base/lang",
         "dijit/layout/ContentPane",
         "dojox/layout/TableContainer",
         "dojo/domReady!"],
-    function (lang, dom, construct, domStyle, registry, parser, memory, array, event, json, util, template)
+    function (lang, dom, construct, domStyle, domGeometry, registry, parser, memory, array, event, json, util, template)
     {
-        var addLogger = {
+        const addLogger = {
             init: function ()
             {
-                var that = this;
+                const that = this;
+                this.initDocument = document.documentElement;
                 this.containerNode = construct.create("div", {innerHTML: template});
                 parser.parse(this.containerNode)
                     .then(function (instances)
@@ -60,7 +62,7 @@ define(["dojo/_base/lang",
             },
             _postParse: function ()
             {
-                var that = this;
+                const that = this;
                 this.name = registry.byId("addLogger.name");
                 this.name.set("regExpGen", util.nameOrContextVarRegexp);
 
@@ -117,8 +119,8 @@ define(["dojo/_base/lang",
                     this._configure(actualData.type);
                 }
 
-                var brokerLoggerEditWarningNode = dom.byId("brokerLoggerEditWarning");
-                var virtualHostlLoggerEditWarningNode = dom.byId("virtualHostlLoggerEditWarning");
+                const brokerLoggerEditWarningNode = dom.byId("brokerLoggerEditWarning");
+                const virtualHostlLoggerEditWarningNode = dom.byId("virtualHostlLoggerEditWarning");
                 domStyle.set(brokerLoggerEditWarningNode,
                     "display",
                     !this.isNew && this.category === "BrokerLogger" ? "block" : "none");
@@ -126,13 +128,15 @@ define(["dojo/_base/lang",
                     "display",
                     !this.isNew && this.category === "VirtualHostLogger" ? "block" : "none");
 
-                util.loadEffectiveAndInheritedActualData(this.management, this.modelObj, lang.hitch(this, function(data)
+                util.loadEffectiveAndInheritedActualData(this.management, this.modelObj, lang.hitch(this, function (data)
                 {
-                    this.context.setData(this.isNew ? {} : this.initialData.context ,
+                    this.context.setData(this.isNew ? {} : this.initialData.context,
                         data.effective.context,
                         data.inheritedActual.context);
                     this._loadCategoryUserInterfacesAndShowDialog(actualData);
                 }));
+                this._resetSize();
+                this.dialog.show();
             },
             hide: function ()
             {
@@ -154,12 +158,12 @@ define(["dojo/_base/lang",
             {
                 if (this.form.validate())
                 {
-                    var excludedData = this.initialData
-                                       || this.management.metadata.getDefaultValueForType(this.category,
+                    const excludedData = this.initialData
+                        || this.management.metadata.getDefaultValueForType(this.category,
                             this.loggerType.get("value"));
-                    var formData = util.getFormWidgetValues(this.form, excludedData);
-                    var context = this.context.get("value");
-                    var oldContext = null;
+                    const formData = util.getFormWidgetValues(this.form, excludedData);
+                    const context = this.context.get("value");
+                    let oldContext = null;
                     if (this.initialData !== null && this.initialData !== undefined)
                     {
                         oldContext = this.initialData.context;
@@ -168,7 +172,7 @@ define(["dojo/_base/lang",
                     {
                         formData["context"] = context;
                     }
-                    var that = this;
+                    const that = this;
                     if (this.isNew)
                     {
                         this.management.create(this.category, this.modelObj, formData)
@@ -193,7 +197,7 @@ define(["dojo/_base/lang",
             },
             _destroyTypeFields: function (typeFieldsContainer)
             {
-                var widgets = registry.findWidgets(typeFieldsContainer);
+                const widgets = registry.findWidgets(typeFieldsContainer);
                 array.forEach(widgets, function (item)
                 {
                     item.destroyRecursive();
@@ -206,14 +210,15 @@ define(["dojo/_base/lang",
 
                 if (type)
                 {
+                    const [maxHeight, maxWidth] = this._calculateMaxHeight(this.dialog, this.form);
                     this._configure(type);
-                    var that = this;
+                    const that = this;
                     require(["qpid/management/logger/" + this.category.toLowerCase() + "/" + type.toLowerCase()
-                             + "/add"], function (typeUI)
+                    + "/add"], function (typeUI)
                     {
                         try
                         {
-                            var promise = typeUI.show({
+                            const promise = typeUI.show({
                                 containerNode: that.typeFieldsContainer,
                                 data: that.initialData,
                                 metadata: that.management.metadata,
@@ -230,6 +235,8 @@ define(["dojo/_base/lang",
                                         type,
                                         that.initialData,
                                         that.management.metadata);
+                                    that._setFormOverflow(maxHeight, maxWidth, typeUI);
+                                    that._setPosition();
                                 });
                             }
                         }
@@ -239,25 +246,30 @@ define(["dojo/_base/lang",
                         }
                     });
                 }
+                else
+                {
+                    this._resetFormOverflow();
+                    this._setPosition();
+                }
             },
             _configure: function (type)
             {
                 if (!this.configured)
                 {
-                    var metadata = this.management.metadata;
+                    const metadata = this.management.metadata;
                     util.applyToWidgets(this.allFieldsContainer, this.category, type, this.initialData, metadata);
                     this.configured = true;
                 }
             },
             _loadCategoryUserInterfacesAndShowDialog: function (actualData)
             {
-                var that = this;
-                var node = construct.create("div", {}, this.categoryFieldsContainer);
+                const that = this;
+                const node = construct.create("div", {}, this.categoryFieldsContainer);
                 require(["qpid/management/logger/" + this.category.toLowerCase() + "/add"], function (categoryUI)
                 {
                     try
                     {
-                        var promise = categoryUI.show({
+                        const promise = categoryUI.show({
                             containerNode: node,
                             data: actualData
                         });
@@ -283,6 +295,53 @@ define(["dojo/_base/lang",
                         console.error(e);
                     }
                 });
+            },
+            _calculateMaxHeight: function ()
+            {
+                const loggerGeometry = domGeometry.getMarginBox(this.dialog.domNode);
+                const formGeometry = domGeometry.getContentBox(this.form.domNode);
+                const documentGeometry = domGeometry.getContentBox(this.initDocument);
+                const maxHeight = documentGeometry.h - (loggerGeometry.h - formGeometry.h) - 7;
+                const maxWidth = documentGeometry.w - (loggerGeometry.w - formGeometry.w) - 7;
+                return [maxHeight, maxWidth];
+            },
+            _setFormOverflow: function (maxHeight, maxWidth, typeUI)
+            {
+                const formNode = this.form.domNode;
+                if (formNode.clientHeight > maxHeight || formNode.clientWidth > maxWidth)
+                {
+                    if (typeUI && typeof typeUI.doNotScroll === "function")
+                    {
+                        typeUI.doNotScroll(this.typeFieldsContainer);
+                    }
+                    domStyle.set(formNode, {
+                        maxWidth: maxWidth + "px",
+                        maxHeight: maxHeight + "px",
+                        overflow: "scroll"
+                    });
+                    domStyle.set(this.dialog.domNode, {height: "initial", weight: "initial"});
+                }
+                else
+                {
+                    this._resetFormOverflow();
+                }
+            },
+            _resetFormOverflow: function ()
+            {
+                domStyle.set(this.form.domNode, {maxWidth: "", maxHeight: "", overflow: "initial"});
+                this._resetSize();
+            },
+            _resetSize: function ()
+            {
+                domStyle.set(this.form.domNode, {height: "initial", weight: "initial"});
+                domStyle.set(this.dialog.domNode, {height: "initial", weight: "initial"});
+            },
+            _setPosition: function ()
+            {
+                const rectangle = this.dialog.domNode.getBoundingClientRect();
+                const top = Math.round((this.initDocument.offsetHeight - rectangle.height) / 2.0);
+                const left = Math.round((this.initDocument.offsetWidth - rectangle.width) / 2.0);
+                domStyle.set(this.dialog.domNode, {position: "fixed", top: top + "px", left: left + "px"});
             }
         };
 
