@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.logging;
 
-public class EventLogger
+public class EventLogger implements MessageLogger
 {
     private MessageLogger _messageLogger;
 
@@ -40,6 +40,7 @@ public class EventLogger
      * @param subject The subject that is being logged
      * @param message The message to log
      */
+    @Override
     public void message(LogSubject subject, LogMessage message)
     {
         _messageLogger.message(subject, message);
@@ -50,9 +51,22 @@ public class EventLogger
      *
      * @param message The message to log
      */
+    @Override
     public void message(LogMessage message)
     {
         _messageLogger.message((message));
+    }
+
+    @Override
+    public boolean isEnabled()
+    {
+        return _messageLogger.isEnabled();
+    }
+
+    @Override
+    public boolean isMessageEnabled(String logHierarchy)
+    {
+        return _messageLogger.isMessageEnabled(logHierarchy);
     }
 
     public void setMessageLogger(final MessageLogger messageLogger)

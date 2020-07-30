@@ -190,7 +190,7 @@ define(["dojo/_base/xhr",
                     widget.defaultValue = defaultValue;
                     if ( widget instanceof dijit.form.CheckBox)
                     {
-                        widget.set("checked", defaultValue === true);
+                        widget.set("checked", defaultValue === true || defaultValue === "true");
                     }
                 }
             }

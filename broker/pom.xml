@@ -28,6 +28,25 @@
   <name>Apache Qpid Broker-J</name>
   <description>Broker configuration and executable</description>
 
+  <profiles>
+    <profile>
+      <id>graylog</id>
+      <activation>
+        <property>
+          <name>graylog</name>
+        </property>
+      </activation>
+
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-broker-plugins-graylog-logging-logback</artifactId>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
   <dependencies>
     <dependency>
       <groupId>org.apache.qpid</groupId>
