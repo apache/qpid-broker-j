@@ -18,16 +18,23 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
@@ -45,23 +52,12 @@ public class ApiDocsServlet extends AbstractServlet
 {
     private static final long serialVersionUID = 1L;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ApiDocsServlet.class);
-
     private static final Set<Character> VOWELS = new HashSet<>(Arrays.asList('a','e','i','o','u'));
 
     public static final Comparator<Class<? extends ConfiguredObject>> CLASS_COMPARATOR =
-            new Comparator<Class<? extends ConfiguredObject>>()
-            {
-                @Override
-                public int compare(final Class<? extends ConfiguredObject> o1,
-                                   final Class<? extends ConfiguredObject> o2)
-                {
-                    return o1.getSimpleName().compareTo(o2.getSimpleName());
-                }
+            Comparator.comparing(Class::getSimpleName);
 
-            };
-
-    private transient final ConcurrentMap<Class<? extends ConfiguredObject>, List<Class<? extends ConfiguredObject>>> _typeSpecialisations = new ConcurrentHashMap<>();
+    private final transient ConcurrentMap<Class<? extends ConfiguredObject>, List<Class<? extends ConfiguredObject>>> _typeSpecialisations = new ConcurrentHashMap<>();
 
     public ApiDocsServlet()
     {
@@ -71,9 +67,9 @@ public class ApiDocsServlet extends AbstractServlet
     @Override
     protected void doGet(HttpServletRequest request,
                          HttpServletResponse response,
-                         final ConfiguredObject<?> managedObject) throws ServletException, IOException
+                         final ConfiguredObject<?> managedObject) throws IOException
     {
-        ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
+        final ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
 
         final Class<? extends ConfiguredObject> configuredClass;
 
@@ -81,7 +77,7 @@ public class ApiDocsServlet extends AbstractServlet
 
         final String[] servletPathParts = request.getServletPath().split("/");
         final Model model = managedObject.getModel();
-        if(servletPathParts.length < 4)
+        if (servletPathParts.length < 4)
         {
             configuredClass = null;
             hierarchy = null;
@@ -100,10 +96,10 @@ public class ApiDocsServlet extends AbstractServlet
                 sendError(response, HttpServletResponse.SC_NOT_FOUND);
                 return;
             }
-            if(!_typeSpecialisations.containsKey(configuredClass))
+            if (!_typeSpecialisations.containsKey(configuredClass))
             {
-                List<Class<? extends ConfiguredObject>> types = new ArrayList<>(model
-                                                                                        .getTypeRegistry().getTypeSpecialisations(configuredClass));
+                final List<Class<? extends ConfiguredObject>> types =
+                        new ArrayList<>(model.getTypeRegistry().getTypeSpecialisations(configuredClass));
                 _typeSpecialisations.putIfAbsent(configuredClass, types);
             }
         }
@@ -111,12 +107,12 @@ public class ApiDocsServlet extends AbstractServlet
         response.setStatus(HttpServletResponse.SC_OK);
 
 
-        PrintWriter writer = response.getWriter();
+        final PrintWriter writer = response.getWriter();
 
         writePreamble(writer);
         writeHead(writer, hierarchy, configuredClass);
 
-        if(hierarchy == null)
+        if (hierarchy == null)
         {
             writer.println("<table class=\"api\">");
             writer.println("<thead>");
@@ -127,23 +123,21 @@ public class ApiDocsServlet extends AbstractServlet
             writer.println("</tr>");
             writer.println("</thead>");
             writer.println("<tbody>");
-            SortedSet<Class<? extends ConfiguredObject>> managedCategories = new TreeSet<>(CLASS_COMPARATOR);
+            final SortedSet<Class<? extends ConfiguredObject>> managedCategories = new TreeSet<>(CLASS_COMPARATOR);
             managedCategories.addAll(finder.getManagedCategories());
-            String pathStem = "/" + servletPathParts[1] + "/" + (servletPathParts.length == 2 ? "latest" : servletPathParts[2]) + "/";
-            for(Class<? extends ConfiguredObject> category : managedCategories)
+            final String pathStem = "/" + servletPathParts[1] + "/" + (servletPathParts.length == 2 ? "latest" : servletPathParts[2]) + "/";
+            for (final Class<? extends ConfiguredObject> category : managedCategories)
             {
-                Class<? extends ConfiguredObject> objClass = category;
-                String path = pathStem + category.getSimpleName().toLowerCase();
+                final String path = pathStem + category.getSimpleName().toLowerCase();
                 writer.println("<tr>");
-                writer.println("<td class=\"type\"><a href=" + ((servletPathParts.length == 2) ? "\"latest/" : "")+ objClass.getSimpleName().toLowerCase()+"\">"+objClass.getSimpleName()+"</a></td>");
+                writer.println("<td class=\"type\"><a href=" + path + ">" + category.getSimpleName() + "</a></td>");
                 writer.println("<td class=\"path\">" + path + "</td>");
-                writer.println("<td class=\"description\">"+
-                               objClass.getAnnotation(ManagedObject.class).description()+"</td>");
+                writer.println("<td class=\"description\">" +
+                        category.getAnnotation(ManagedObject.class).description()+"</td>");
                 writer.println("</tr>");
             }
             writer.println("</tbody>");
             writer.println("</table>");
-
         }
         else
         {

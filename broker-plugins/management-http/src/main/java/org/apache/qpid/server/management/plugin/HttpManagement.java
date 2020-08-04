@@ -390,11 +390,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private void addFiltersAndServletsForUserInterfaces(final ServletContextHandler root)
     {
         root.addFilter(new FilterHolder(new AuthenticationCheckFilter()), "/apidocs/*", EnumSet.of(DispatcherType.REQUEST));
-        root.addFilter(new FilterHolder(new InteractiveAuthenticationFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
+        root.addFilter(new FilterHolder(new InteractiveAuthenticationFilter()), DEFAULT_LOGIN_URL, EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(new FilterHolder(new InteractiveAuthenticationFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
 
         FilterHolder redirectFilter = new FilterHolder(new RedirectFilter());
-        redirectFilter.setInitParameter(RedirectFilter.INIT_PARAM_REDIRECT_URI, "/index.html");
+        redirectFilter.setInitParameter(RedirectFilter.INIT_PARAM_REDIRECT_URI, DEFAULT_LOGIN_URL);
         root.addFilter(redirectFilter, "/login.html", EnumSet.of(DispatcherType.REQUEST));
 
         if (_serveUncompressedDojo)
@@ -424,11 +424,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     {
         final ApiDocsServlet apiDocsServlet = new ApiDocsServlet();
         final ServletHolder apiDocsServletHolder = new ServletHolder(apiDocsServlet);
-        final ServletHolder rewriteSerlvet = new ServletHolder(new RewriteServlet("^(.*)$", "$1/"));
-        final String version = getLatestSupportedVersion();
-        for (String path : new String[]{"/apidocs", "/apidocs/latest", "/apidocs/v" + version})
+        final String version = "v" + BrokerModel.MODEL_VERSION;
+        for (final String path : new String[]{"/apidocs", "/apidocs/latest", "/apidocs/" + version})
         {
-            root.addServlet(rewriteSerlvet, path);
+            root.addServlet(apiDocsServletHolder, path);
             root.addServlet(apiDocsServletHolder, path + "/");
         }
 
@@ -778,11 +777,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         final ServletHolder versionsServletHolder = new ServletHolder(new JsonValueServlet(supported));
         root.addServlet(versionsServletHolder, "/api");
         root.addServlet(versionsServletHolder, "/api/");
-    }
-
-    private String getLatestSupportedVersion()
-    {
-        return "v"+String.valueOf(BrokerModel.MODEL_VERSION);
     }
 
     private void logOperationalListenMessages()
