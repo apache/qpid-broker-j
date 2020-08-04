@@ -382,10 +382,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
 
         ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet());
-        final ServletHolder rewriteSerlvet = new ServletHolder(new RewriteServlet("^(.*)$", "$1/"));
-        for(String path : new String[]{"/apidocs", "/apidocs/latest", "/apidocs/"+getLatestSupportedVersion()})
+        final String version = "v" + BrokerModel.MODEL_VERSION;
+        for (final String path : new String[]{"/apidocs", "/apidocs/latest", "/apidocs/" + version})
         {
-            root.addServlet(rewriteSerlvet, path);
+            root.addServlet(apiDocsServlet, path);
             root.addServlet(apiDocsServlet, path + "/");
         }
 
@@ -761,11 +761,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         final ServletHolder versionsServletHolder = new ServletHolder(new JsonValueServlet(supported));
         root.addServlet(versionsServletHolder, "/api");
         root.addServlet(versionsServletHolder, "/api/");
-    }
-
-    private String getLatestSupportedVersion()
-    {
-        return "v"+String.valueOf(BrokerModel.MODEL_VERSION);
     }
 
     private void logOperationalListenMessages()
