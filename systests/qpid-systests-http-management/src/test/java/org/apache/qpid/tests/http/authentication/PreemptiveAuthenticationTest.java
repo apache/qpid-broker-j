@@ -116,7 +116,7 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
     {
         HttpTestHelper helper = configForClientAuth("CN=foo");
 
-        HttpURLConnection authenticateConnection = helper.openManagementConnection("/index.html", "GET");
+        HttpURLConnection authenticateConnection = helper.openManagementConnection(HttpManagement.DEFAULT_LOGIN_URL, "GET");
         authenticateConnection.setInstanceFollowRedirects(false);
 
         int status = authenticateConnection.getResponseCode();
@@ -125,7 +125,7 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
 
         assertThat(status, is(equalTo(HttpURLConnection.HTTP_MOVED_TEMP)));
 
-        authenticateConnection = helper.openManagementConnection("/index.html", "GET");
+        authenticateConnection = helper.openManagementConnection(HttpManagement.DEFAULT_LOGIN_URL, "GET");
         authenticateConnection.setRequestProperty("Cookie", cookies);
         status = authenticateConnection.getResponseCode();
         authenticateConnection.disconnect();
