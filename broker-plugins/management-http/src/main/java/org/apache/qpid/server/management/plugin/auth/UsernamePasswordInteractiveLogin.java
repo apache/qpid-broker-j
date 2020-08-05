@@ -20,11 +20,7 @@
  */
 package org.apache.qpid.server.management.plugin.auth;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
@@ -35,16 +31,7 @@ import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticati
 @PluggableService
 public class UsernamePasswordInteractiveLogin implements HttpRequestInteractiveAuthenticator
 {
-    private static final String DEFAULT_LOGIN_URL = "/index.html";
-
-    private static  final LogoutHandler LOGOUT_HANDLER = new LogoutHandler()
-    {
-        @Override
-        public void handleLogout(final HttpServletResponse response) throws IOException
-        {
-            response.sendRedirect(HttpManagement.DEFAULT_LOGOUT_URL);
-        }
-    };
+    private static final LogoutHandler LOGOUT_HANDLER = response -> response.sendRedirect(HttpManagement.DEFAULT_LOGOUT_URL);
 
     @Override
     public AuthenticationHandler getAuthenticationHandler(final HttpServletRequest request,
@@ -52,7 +39,7 @@ public class UsernamePasswordInteractiveLogin implements HttpRequestInteractiveA
     {
         if(configuration.getAuthenticationProvider(request) instanceof UsernamePasswordAuthenticationProvider)
         {
-            return response -> request.getRequestDispatcher(DEFAULT_LOGIN_URL).forward(request, response);
+            return response -> request.getRequestDispatcher(HttpManagement.DEFAULT_LOGIN_URL).forward(request, response);
         }
         else
         {
