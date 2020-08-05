@@ -134,7 +134,8 @@ public final class Strings
         base64String = base64String.replaceAll("\\s","");
         if(!base64String.matches("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"))
         {
-            throw new IllegalArgumentException("Cannot convert string '"+ base64String+ "'to a byte[] - it does not appear to be base64 data");
+            // do not add base64String to exception message as it can contain private data
+            throw new IllegalArgumentException("Cannot convert string to a byte[] - it does not appear to be base64 data");
         }
 
         return Base64.getDecoder().decode(base64String);
