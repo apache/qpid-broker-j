@@ -20,10 +20,13 @@
 
 package org.apache.qpid.server.management.plugin.auth;
 
+import java.io.IOException;
 import java.security.AccessControlException;
 
 import javax.security.auth.Subject;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,49 +57,46 @@ public class AnonymousInteractiveAuthenticator implements HttpRequestInteractive
                                                           final HttpManagementConfiguration configuration)
     {
         final Port<?> port = configuration.getPort(request);
-        if(configuration.getAuthenticationProvider(request) instanceof AnonymousAuthenticationManager)
+        if (configuration.getAuthenticationProvider(request) instanceof AnonymousAuthenticationManager)
         {
-            return response ->
-            {
-                AnonymousAuthenticationManager authenticationProvider =
-                        (AnonymousAuthenticationManager) configuration.getAuthenticationProvider(request);
-                AuthenticationResult authenticationResult = authenticationProvider.getAnonymousAuthenticationResult();
-                try
-                {
-                    SubjectAuthenticationResult result = port.getSubjectCreator(request.isSecure(), request.getServerName()).createResultWithGroups(authenticationResult);
-                    Subject original = result.getSubject();
-
-                    if (original == null)
-                    {
-                        throw new SecurityException("Only authenticated users can access the management interface");
-                    }
-                    Subject subject = HttpManagementUtil.createServletConnectionSubject(request, original);
-                    Broker broker = (Broker) authenticationProvider.getParent();
-                    HttpManagementUtil.assertManagementAccess(broker, subject);
-                    HttpManagementUtil.saveAuthorisedSubject(request, subject);
-
-                    String originalRequestUri = getOriginalRequestUri(request);
-                    LOGGER.debug("Successful login. Redirect to original resource {}", originalRequestUri);
-                    response.sendRedirect(originalRequestUri);
-                }
-                catch (SecurityException e)
-                {
-                    if (e instanceof AccessControlException)
-                    {
-                        LOGGER.info("User '{}' is not authorised for management", authenticationResult.getMainPrincipal());
-                        response.sendError(403, "User is not authorised for management");
-                    }
-                    else
-                    {
-                        LOGGER.info("Authentication failed", authenticationResult.getCause());
-                        response.sendError(401);
-                    }
-                }
-            };
+            return response -> getLoginHandler(request, response, configuration, port);
         }
         else
         {
             return null;
+        }
+    }
+
+    private void getLoginHandler(HttpServletRequest request, HttpServletResponse response,
+                                 HttpManagementConfiguration configuration, Port<?> port) throws ServletException, IOException
+    {
+        final AnonymousAuthenticationManager authenticationProvider =
+                (AnonymousAuthenticationManager) configuration.getAuthenticationProvider(request);
+        final AuthenticationResult authenticationResult = authenticationProvider.getAnonymousAuthenticationResult();
+        try
+        {
+            final SubjectAuthenticationResult result = port.getSubjectCreator(request.isSecure(), request.getServerName()).createResultWithGroups(authenticationResult);
+            final Subject original = result.getSubject();
+
+            if (original == null)
+            {
+                throw new SecurityException("Only authenticated users can access the management interface");
+            }
+            final Subject subject = HttpManagementUtil.createServletConnectionSubject(request, original);
+            final Broker broker = (Broker) authenticationProvider.getParent();
+            HttpManagementUtil.assertManagementAccess(broker, subject);
+            HttpManagementUtil.saveAuthorisedSubject(request, subject);
+            request.getRequestDispatcher(HttpManagement.DEFAULT_LOGIN_URL).forward(request, response);
+        }
+        catch (AccessControlException e)
+        {
+            LOGGER.info("User '{}' is not authorised for management", authenticationResult.getMainPrincipal());
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "User is not authorised for management");
+        }
+        catch (SecurityException e)
+        {
+            LOGGER.info("Authentication failed", authenticationResult.getCause());
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
         }
     }
 
@@ -119,16 +119,4 @@ public class AnonymousInteractiveAuthenticator implements HttpRequestInteractive
     {
         return ANONYMOUS;
     }
-
-    private String getOriginalRequestUri(final HttpServletRequest request)
-    {
-        StringBuffer originalRequestURL = request.getRequestURL();
-        final String queryString = request.getQueryString();
-        if (queryString != null)
-        {
-            originalRequestURL.append("?").append(queryString);
-        }
-        return originalRequestURL.toString();
-    }
-
 }
