@@ -256,7 +256,7 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
             String simpleName = returnType instanceof Class ? ((Class) returnType).getSimpleName() : returnType.toString();
 
             throw new IllegalArgumentException("Cannot convert '" +
-                                               (User.PASSWORD.equals(getName()) ? AbstractConfiguredObject.SECURED_STRING_VALUE : value)
+                                               (isSecure() ? AbstractConfiguredObject.SECURED_STRING_VALUE : value)
                                                + "' into a " + simpleName
                                                + " for attribute " + getName()
                                                + " (" + iae.getMessage() + ")", iae);

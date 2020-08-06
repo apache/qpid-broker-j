@@ -21,7 +21,6 @@
 package org.apache.qpid.server.util;
 
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Base64;
@@ -129,16 +128,32 @@ public final class Strings
         return resolver;
     }
 
-    public static byte[] decodeBase64(String base64String)
+    public static byte[] decodePrivateBase64(String base64String, String description)
     {
-        base64String = base64String.replaceAll("\\s","");
-        if(!base64String.matches("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"))
+        if (isInvalidBase64String(base64String))
         {
             // do not add base64String to exception message as it can contain private data
-            throw new IllegalArgumentException("Cannot convert string to a byte[] - it does not appear to be base64 data");
+            throw new IllegalArgumentException("Cannot convert " + description +
+                    " string to a byte[] - it does not appear to be base64 data");
         }
 
         return Base64.getDecoder().decode(base64String);
+    }
+
+    public static byte[] decodeBase64(String base64String)
+    {
+        if (isInvalidBase64String(base64String))
+        {
+            throw new IllegalArgumentException("Cannot convert string '" + base64String +
+                    "' to a byte[] - it does not appear to be base64 data");
+        }
+
+        return Base64.getDecoder().decode(base64String);
+    }
+
+    private static boolean isInvalidBase64String(String base64String)
+    {
+        return !base64String.replaceAll("\\s", "").matches("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$");
     }
 
     public static interface Resolver
