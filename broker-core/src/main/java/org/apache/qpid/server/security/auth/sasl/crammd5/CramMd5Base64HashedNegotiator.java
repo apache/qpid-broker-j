@@ -27,21 +27,16 @@ import org.apache.qpid.server.util.Strings;
 public class CramMd5Base64HashedNegotiator extends AbstractCramMd5Negotiator
 {
     public static final String MECHANISM = "CRAM-MD5-HASHED";
-    private static final PasswordTransformer BASE64_PASSWORD_TRANSFORMER =
-            new PasswordTransformer()
-            {
-                @Override
-                public char[] transform(final char[] passwordData)
-                {
-                    byte[] passwordBytes = Strings.decodeBase64(new String(passwordData));
-                    char[] password = new char[passwordBytes.length];
-                    for (int i = 0; i < passwordBytes.length; i++)
-                    {
-                        password[i] = (char) passwordBytes[i];
-                    }
-                    return password;
-                }
-            };
+    private static final PasswordTransformer BASE64_PASSWORD_TRANSFORMER = passwordData ->
+    {
+        final byte[] passwordBytes = Strings.decodePrivateBase64(new String(passwordData), "CRAM MD5 hashed password");
+        final char[] password = new char[passwordBytes.length];
+        for (int i = 0; i < passwordBytes.length; i++)
+        {
+            password[i] = (char) passwordBytes[i];
+        }
+        return password;
+    };
 
     public CramMd5Base64HashedNegotiator(final PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider,
                                          final String localFQDN,

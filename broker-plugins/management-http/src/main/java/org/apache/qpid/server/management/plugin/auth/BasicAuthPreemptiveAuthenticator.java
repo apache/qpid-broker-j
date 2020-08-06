@@ -45,16 +45,16 @@ public class BasicAuthPreemptiveAuthenticator implements HttpRequestPreemptiveAu
     @Override
     public Subject attemptAuthentication(final HttpServletRequest request, final HttpManagementConfiguration managementConfiguration)
     {
-        String header = request.getHeader("Authorization");
+        final String header = request.getHeader("Authorization");
         final Port<?> port = managementConfiguration.getPort(request);
         final AuthenticationProvider<?> authenticationProvider = managementConfiguration.getAuthenticationProvider(request);
-        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
+        final SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
 
         if (header != null && authenticationProvider instanceof UsernamePasswordAuthenticationProvider)
         {
-            UsernamePasswordAuthenticationProvider<?> namePasswdAuthProvider = (UsernamePasswordAuthenticationProvider<?>)authenticationProvider;
+            final UsernamePasswordAuthenticationProvider<?> namePasswdAuthProvider = (UsernamePasswordAuthenticationProvider<?>)authenticationProvider;
 
-            String[] tokens = header.split("\\s");
+            final String[] tokens = header.split("\\s");
             if (tokens.length >= 2 && "BASIC".equalsIgnoreCase(tokens[0]))
             {
                 boolean isBasicAuthSupported = false;
@@ -68,19 +68,17 @@ public class BasicAuthPreemptiveAuthenticator implements HttpRequestPreemptiveAu
                 }
                 if (isBasicAuthSupported)
                 {
-                    String base64UsernameAndPassword = tokens[1];
-                    String[] credentials = (new String(Strings.decodeBase64(base64UsernameAndPassword),
-                                                       StandardCharsets.UTF_8)).split(":", 2);
+                    final String base64UsernameAndPassword = tokens[1];
+                    final String[] credentials = new String(Strings.decodePrivateBase64(base64UsernameAndPassword,
+                            "basic authentication credentials"), StandardCharsets.UTF_8).split(":", 2);
                     if (credentials.length == 2)
                     {
-                        String username = credentials[0];
-                        String password = credentials[1];
-                        AuthenticationResult authenticationResult = namePasswdAuthProvider.authenticate(username, password);
-                        SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
+                        final String username = credentials[0];
+                        final String password = credentials[1];
+                        final AuthenticationResult authenticationResult = namePasswdAuthProvider.authenticate(username, password);
+                        final SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
 
                         return result.getSubject();
-
-
                     }
                 }
             }
