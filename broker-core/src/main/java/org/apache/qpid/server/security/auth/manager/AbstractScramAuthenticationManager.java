@@ -159,17 +159,18 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         final String[] passwordFields = user.getPassword().split(",");
         if (passwordFields.length == 2)
         {
-            byte[] saltedPassword = Strings.decodeBase64(passwordFields[PasswordField.SALTED_PASSWORD.ordinal()]);
+            final byte[] saltedPassword = Strings.decodePrivateBase64(passwordFields[PasswordField.SALTED_PASSWORD.ordinal()],
+                    "user '" + user.getName() + "' salted password");
 
             try
             {
-                byte[] clientKey = computeHmac(saltedPassword, "Client Key");
+                final byte[] clientKey = computeHmac(saltedPassword, "Client Key");
 
-                byte[] storedKey = MessageDigest.getInstance(getDigestName()).digest(clientKey);
+                final byte[] storedKey = MessageDigest.getInstance(getDigestName()).digest(clientKey);
 
-                byte[] serverKey = computeHmac(saltedPassword, "Server Key");
+                final byte[] serverKey = computeHmac(saltedPassword, "Server Key");
 
-                String password = passwordFields[PasswordField.SALT.ordinal()] + ","
+                final String password = passwordFields[PasswordField.SALT.ordinal()] + ","
                                   + "," // remove previously insecure salted password field
                                   + Base64.getEncoder().encodeToString(storedKey) + ","
                                   + Base64.getEncoder().encodeToString(serverKey) + ","
@@ -183,7 +184,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         }
         else if (passwordFields.length == 4)
         {
-            String password = passwordFields[PasswordField.SALT.ordinal()] + ","
+            final String password = passwordFields[PasswordField.SALT.ordinal()] + ","
                     + "," // remove previously insecure salted password field
                     + passwordFields[PasswordField.STORED_KEY.ordinal()] + ","
                     + passwordFields[PasswordField.SERVER_KEY.ordinal()] + ","
@@ -296,7 +297,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     @Override
     public SaltAndPasswordKeys getSaltAndPasswordKeys(final String username)
     {
-        ManagedUser user = getUser(username);
+        final ManagedUser user = getUser(username);
 
         final byte[] salt;
         final byte[] storedKey;
@@ -318,9 +319,12 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         {
             updateStoredPasswordFormatIfNecessary(user);
             final String[] passwordFields = user.getPassword().split(",");
-            salt = Strings.decodeBase64(passwordFields[PasswordField.SALT.ordinal()]);
-            storedKey = Strings.decodeBase64(passwordFields[PasswordField.STORED_KEY.ordinal()]);
-            serverKey = Strings.decodeBase64(passwordFields[PasswordField.SERVER_KEY.ordinal()]);
+            salt = Strings.decodePrivateBase64(passwordFields[PasswordField.SALT.ordinal()],
+                    "user '" + user.getName() + "' salt");
+            storedKey = Strings.decodePrivateBase64(passwordFields[PasswordField.STORED_KEY.ordinal()],
+                    "user '" + user.getName() + "' stored key");
+            serverKey = Strings.decodePrivateBase64(passwordFields[PasswordField.SERVER_KEY.ordinal()],
+                    "user '" + user.getName() + "' server key");
             iterationCount = Integer.parseInt(passwordFields[PasswordField.ITERATION_COUNT.ordinal()]);
             exception = null;
         }
