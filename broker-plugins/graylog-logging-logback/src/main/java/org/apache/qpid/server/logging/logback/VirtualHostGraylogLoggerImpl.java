@@ -24,8 +24,10 @@ import ch.qos.logback.classic.AsyncAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
+
 import org.apache.qpid.server.logging.logback.validator.GelfConfigurationValidator;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHost;
 
@@ -33,7 +35,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-public class VirtualHostGraylogLoggerImpl extends AbstractVirtualHostLogger<VirtualHostGraylogLoggerImpl> implements VirtualHostGraylogLogger<VirtualHostGraylogLoggerImpl>
+@ManagedObject(category = false,
+        type = GraylogLogger.TYPE,
+        validChildTypes = "org.apache.qpid.server.logging.logback.AbstractLogger#getSupportedVirtualHostLoggerChildTypes()",
+        amqpName = "org.apache.qpid.VirtualHostGraylogLogger")
+public class VirtualHostGraylogLoggerImpl extends AbstractVirtualHostLogger<VirtualHostGraylogLoggerImpl>
+        implements VirtualHostGraylogLogger<VirtualHostGraylogLoggerImpl>
 {
     @ManagedAttributeField
     private String _remoteHost;

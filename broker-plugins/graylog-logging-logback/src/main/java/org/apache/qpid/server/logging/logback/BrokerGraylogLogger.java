@@ -21,11 +21,7 @@
 package org.apache.qpid.server.logging.logback;
 
 import org.apache.qpid.server.model.BrokerLogger;
-import org.apache.qpid.server.model.ManagedObject;
 
-@ManagedObject(category = false, type = GraylogLogger.TYPE,
-        description = "Logger implementation that writes log events to a remote graylog server",
-        validChildTypes = "org.apache.qpid.server.logging.logback.AbstractLogger#getSupportedBrokerLoggerChildTypes()")
 public interface BrokerGraylogLogger<X extends BrokerGraylogLogger<X>> extends BrokerLogger<X>, GraylogLogger<X>
 {
 }

@@ -20,13 +20,8 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.VirtualHostLogger;
 
-@ManagedObject(category = false,
-        type = GraylogLogger.TYPE,
-        validChildTypes = "org.apache.qpid.server.logging.logback.AbstractLogger#getSupportedVirtualHostLoggerChildTypes()",
-        amqpName = "org.apache.qpid.VirtualHostGraylogLogger")
 public interface VirtualHostGraylogLogger<X extends VirtualHostGraylogLogger<X>> extends VirtualHostLogger<X>, GraylogLogger<X>
 {
 }

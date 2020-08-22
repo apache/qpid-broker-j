@@ -24,16 +24,22 @@ import ch.qos.logback.classic.AsyncAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
+
 import org.apache.qpid.server.logging.logback.validator.GelfConfigurationValidator;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-public class BrokerGraylogLoggerImpl extends AbstractBrokerLogger<BrokerGraylogLoggerImpl> implements BrokerGraylogLogger<BrokerGraylogLoggerImpl>
+@ManagedObject(category = false, type = GraylogLogger.TYPE,
+        description = "Logger implementation that writes log events to a remote graylog server",
+        validChildTypes = "org.apache.qpid.server.logging.logback.AbstractLogger#getSupportedBrokerLoggerChildTypes()")
+public class BrokerGraylogLoggerImpl extends AbstractBrokerLogger<BrokerGraylogLoggerImpl>
+        implements BrokerGraylogLogger<BrokerGraylogLoggerImpl>
 {
     @ManagedObjectFactoryConstructor
     public BrokerGraylogLoggerImpl(Map<String, Object> attributes, Broker<?> broker)
