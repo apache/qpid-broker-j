@@ -156,6 +156,7 @@
     <kerby-version>2.0.0</kerby-version>
     <bcprov-version>1.64</bcprov-version>
     <bcpkix-version>1.64</bcpkix-version>
+    <logback-gelf-version>3.0.0</logback-gelf-version>
   </properties>
 
   <modules>
@@ -174,6 +175,7 @@
     <module>broker-plugins/jdbc-provider-bone</module>
     <module>broker-plugins/jdbc-store</module>
     <module>broker-plugins/jdbc-logging-logback</module>
+    <module>broker-plugins/graylog-logging-logback</module>
     <module>broker-plugins/logging-logback</module>
     <module>broker-plugins/management-amqp</module>
     <module>broker-plugins/management-http</module>
@@ -825,6 +827,13 @@
         <artifactId>bcpkix-jdk15on</artifactId>
         <version>${bcpkix-version}</version>
       </dependency>
+
+      <dependency>
+        <groupId>de.siegmar</groupId>
+        <artifactId>logback-gelf</artifactId>
+        <version>${logback-gelf-version}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -1631,26 +1640,6 @@
       </build>
     </profile>
 
-    <profile>
-      <id>graylog</id>
-      <activation>
-        <property>
-          <name>graylog</name>
-        </property>
-      </activation>
-
-      <modules>
-        <module>broker-plugins/graylog-logging-logback</module>
-      </modules>
-      <properties>
-        <graylog/>
-        <profile>java-mms.1-0</profile>
-        <profile.broker.version>1.0</profile.broker.version>
-        <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
-        <profile.qpid.tests.mms.messagestore.persistence>true</profile.qpid.tests.mms.messagestore.persistence>
-      </properties>
-    </profile>
   </profiles>
 </project>
 
