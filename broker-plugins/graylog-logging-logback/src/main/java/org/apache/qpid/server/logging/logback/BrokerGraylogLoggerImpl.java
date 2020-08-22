@@ -41,7 +41,8 @@ import java.util.Set;
 public class BrokerGraylogLoggerImpl extends AbstractBrokerLogger<BrokerGraylogLoggerImpl>
         implements BrokerGraylogLogger<BrokerGraylogLoggerImpl>
 {
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true,
+            condition = "org.apache.qpid.server.logging.logback.GelfCheck#isAvailable()")
     public BrokerGraylogLoggerImpl(Map<String, Object> attributes, Broker<?> broker)
     {
         super(attributes, broker);

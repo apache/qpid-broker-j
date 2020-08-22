@@ -92,7 +92,8 @@ public class VirtualHostGraylogLoggerImpl extends AbstractVirtualHostLogger<Virt
 
     private AsyncAppender _appender;
 
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true,
+            condition = "org.apache.qpid.server.logging.logback.GelfCheck#isAvailable()")
     public VirtualHostGraylogLoggerImpl(Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
