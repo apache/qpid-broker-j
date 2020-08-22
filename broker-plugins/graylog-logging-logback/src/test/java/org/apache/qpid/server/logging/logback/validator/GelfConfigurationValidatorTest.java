@@ -1,7 +1,7 @@
 package org.apache.qpid.server.logging.logback.validator;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.logback.GelfAppenderConfiguration;
+import org.apache.qpid.server.logging.logback.graylog.GelfAppenderConfiguration;
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.junit.Test;
 

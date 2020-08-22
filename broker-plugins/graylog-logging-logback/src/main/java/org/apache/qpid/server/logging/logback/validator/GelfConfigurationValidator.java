@@ -21,7 +21,7 @@
 
 package org.apache.qpid.server.logging.logback.validator;
 
-import org.apache.qpid.server.logging.logback.GelfAppenderConfiguration;
+import org.apache.qpid.server.logging.logback.graylog.GelfAppenderConfiguration;
 import org.apache.qpid.server.model.ConfiguredObject;
 
 import java.util.Arrays;

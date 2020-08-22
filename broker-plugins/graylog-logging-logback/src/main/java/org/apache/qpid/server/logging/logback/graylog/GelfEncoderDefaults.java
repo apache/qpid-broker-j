@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging.logback;
+package org.apache.qpid.server.logging.logback.graylog;
 
 public enum GelfEncoderDefaults
 {

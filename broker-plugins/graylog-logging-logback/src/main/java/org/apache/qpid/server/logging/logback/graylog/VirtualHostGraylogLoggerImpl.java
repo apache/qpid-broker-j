@@ -18,13 +18,14 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging.logback;
+package org.apache.qpid.server.logging.logback.graylog;
 
 import ch.qos.logback.classic.AsyncAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 
+import org.apache.qpid.server.logging.logback.AbstractVirtualHostLogger;
 import org.apache.qpid.server.logging.logback.validator.GelfConfigurationValidator;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
@@ -93,7 +94,7 @@ public class VirtualHostGraylogLoggerImpl extends AbstractVirtualHostLogger<Virt
     private AsyncAppender _appender;
 
     @ManagedObjectFactoryConstructor(conditionallyAvailable = true,
-            condition = "org.apache.qpid.server.logging.logback.GelfCheck#isAvailable()")
+            condition = "org.apache.qpid.server.logging.logback.graylog.GelfCheck#isAvailable()")
     public VirtualHostGraylogLoggerImpl(Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);

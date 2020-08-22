@@ -18,10 +18,20 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging.logback;
+package org.apache.qpid.server.logging.logback.graylog;
 
-import org.apache.qpid.server.model.VirtualHostLogger;
-
-public interface VirtualHostGraylogLogger<X extends VirtualHostGraylogLogger<X>> extends VirtualHostLogger<X>, GraylogLogger<X>
+public class GelfCheck
 {
+    public static boolean isAvailable()
+    {
+        try
+        {
+            Class.forName("de.siegmar.logbackgelf.GelfEncoder");
+            return true;
+        }
+        catch (ClassNotFoundException | NoClassDefFoundError e)
+        {
+            return false;
+        }
+    }
 }

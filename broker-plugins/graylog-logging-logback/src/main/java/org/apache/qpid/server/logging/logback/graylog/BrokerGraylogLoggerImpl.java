@@ -18,13 +18,14 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging.logback;
+package org.apache.qpid.server.logging.logback.graylog;
 
 import ch.qos.logback.classic.AsyncAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 
+import org.apache.qpid.server.logging.logback.AbstractBrokerLogger;
 import org.apache.qpid.server.logging.logback.validator.GelfConfigurationValidator;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -42,7 +43,7 @@ public class BrokerGraylogLoggerImpl extends AbstractBrokerLogger<BrokerGraylogL
         implements BrokerGraylogLogger<BrokerGraylogLoggerImpl>
 {
     @ManagedObjectFactoryConstructor(conditionallyAvailable = true,
-            condition = "org.apache.qpid.server.logging.logback.GelfCheck#isAvailable()")
+            condition = "org.apache.qpid.server.logging.logback.graylog.GelfCheck#isAvailable()")
     public BrokerGraylogLoggerImpl(Map<String, Object> attributes, Broker<?> broker)
     {
         super(attributes, broker);
