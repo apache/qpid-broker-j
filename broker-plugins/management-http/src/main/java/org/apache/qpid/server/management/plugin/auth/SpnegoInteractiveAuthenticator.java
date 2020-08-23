@@ -74,11 +74,8 @@ public class SpnegoInteractiveAuthenticator implements HttpRequestInteractiveAut
                     final Port<?> port = configuration.getPort(request);
                     final SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
                     final SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
-                    final Subject subject = HttpManagementUtil.createServletConnectionSubject(request, result.getSubject());
-
                     final Broker broker = (Broker) kerberosProvider.getParent();
-                    HttpManagementUtil.assertManagementAccess(broker, subject);
-                    HttpManagementUtil.saveAuthorisedSubject(request, subject);
+                    HttpManagementUtil.createServletConnectionSubjectAssertManagementAccessAndSave(broker, request, result.getSubject());
                     request.getRequestDispatcher(HttpManagement.DEFAULT_LOGIN_URL).forward(request, response);
                 }
             };

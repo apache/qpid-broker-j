@@ -49,9 +49,8 @@ public class SSLClientCertInteractiveAuthenticator implements HttpRequestInterac
                 final Subject subject = _preemptiveAuthenticator.attemptAuthentication(request, configuration);
                 if (subject != null)
                 {
-                    final Subject servletSubject = HttpManagementUtil.createServletConnectionSubject(request, subject);
-                    HttpManagementUtil.assertManagementAccess((Broker) authenticationProvider.getParent(), servletSubject);
-                    HttpManagementUtil.saveAuthorisedSubject(request, servletSubject);
+                    final Broker broker = (Broker) authenticationProvider.getParent();
+                    HttpManagementUtil.createServletConnectionSubjectAssertManagementAccessAndSave(broker, request, subject);
                     response.sendRedirect("/");
                 }
                 else

@@ -361,4 +361,13 @@ public class HttpManagementUtil
             // session was invalidated
         }
     }
+
+    public static void createServletConnectionSubjectAssertManagementAccessAndSave(final Broker broker,
+                                                                                   final HttpServletRequest request,
+                                                                                   final Subject original)
+    {
+        final Subject subject = createServletConnectionSubject(request, original);
+        assertManagementAccess(broker, subject);
+        saveAuthorisedSubject(request, subject);
+    }
 }

@@ -56,10 +56,12 @@ public class AnonymousInteractiveAuthenticator implements HttpRequestInteractive
     public AuthenticationHandler getAuthenticationHandler(final HttpServletRequest request,
                                                           final HttpManagementConfiguration configuration)
     {
-        final Port<?> port = configuration.getPort(request);
         if (configuration.getAuthenticationProvider(request) instanceof AnonymousAuthenticationManager)
         {
-            return response -> getLoginHandler(request, response, configuration, port);
+            final AnonymousAuthenticationManager authenticationProvider =
+                    (AnonymousAuthenticationManager) configuration.getAuthenticationProvider(request);
+            final Port<?> port = configuration.getPort(request);
+            return response -> getLoginHandler(request, response, authenticationProvider, port);
         }
         else
         {
@@ -67,25 +69,24 @@ public class AnonymousInteractiveAuthenticator implements HttpRequestInteractive
         }
     }
 
-    private void getLoginHandler(HttpServletRequest request, HttpServletResponse response,
-                                 HttpManagementConfiguration configuration, Port<?> port) throws ServletException, IOException
+    private void getLoginHandler(final HttpServletRequest request,
+                                 final HttpServletResponse response,
+                                 final AnonymousAuthenticationManager authenticationProvider,
+                                 final Port<?> port) throws ServletException, IOException
     {
-        final AnonymousAuthenticationManager authenticationProvider =
-                (AnonymousAuthenticationManager) configuration.getAuthenticationProvider(request);
         final AuthenticationResult authenticationResult = authenticationProvider.getAnonymousAuthenticationResult();
         try
         {
-            final SubjectAuthenticationResult result = port.getSubjectCreator(request.isSecure(), request.getServerName()).createResultWithGroups(authenticationResult);
+            final SubjectAuthenticationResult result = port.getSubjectCreator(request.isSecure(), request.getServerName())
+                        .createResultWithGroups(authenticationResult);
             final Subject original = result.getSubject();
 
             if (original == null)
             {
                 throw new SecurityException("Only authenticated users can access the management interface");
             }
-            final Subject subject = HttpManagementUtil.createServletConnectionSubject(request, original);
             final Broker broker = (Broker) authenticationProvider.getParent();
-            HttpManagementUtil.assertManagementAccess(broker, subject);
-            HttpManagementUtil.saveAuthorisedSubject(request, subject);
+            HttpManagementUtil.createServletConnectionSubjectAssertManagementAccessAndSave(broker, request, original);
             request.getRequestDispatcher(HttpManagement.DEFAULT_LOGIN_URL).forward(request, response);
         }
         catch (AccessControlException e)

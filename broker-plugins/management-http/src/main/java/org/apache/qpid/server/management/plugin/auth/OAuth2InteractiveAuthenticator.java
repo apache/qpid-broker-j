@@ -170,9 +170,17 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                         AuthenticationResult authenticationResult = oauth2Provider.authenticateViaAuthorizationCode(authorizationCode, redirectUri, addressSpace);
                         try
                         {
-                            Subject subject = createSubject(authenticationResult);
-                            authoriseManagement(subject);
-                            HttpManagementUtil.saveAuthorisedSubject(request, subject);
+                            SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
+                            SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
+                            Subject original = result.getSubject();
+
+                            if (original == null)
+                            {
+                                throw new SecurityException("Only authenticated users can access the management interface");
+                            }
+
+                            Broker broker = (Broker) oauth2Provider.getParent();
+                            HttpManagementUtil.createServletConnectionSubjectAssertManagementAccessAndSave(broker, request, original);
 
                             LOGGER.debug("Successful login. Redirect to original resource {}", originalRequestUri);
                             response.sendRedirect(originalRequestUri);
@@ -190,27 +198,6 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                                 response.sendError(401);
                             }
                         }
-                    }
-
-                    private Subject createSubject(final AuthenticationResult authenticationResult)
-                    {
-                        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
-                        SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
-                        Subject original = result.getSubject();
-
-                        if (original == null)
-                        {
-                            throw new SecurityException("Only authenticated users can access the management interface");
-                        }
-
-                        Subject subject = HttpManagementUtil.createServletConnectionSubject(request, original);
-                        return subject;
-                    }
-
-                    private void authoriseManagement(final Subject subject)
-                    {
-                        Broker broker = (Broker) oauth2Provider.getParent();
-                        HttpManagementUtil.assertManagementAccess(broker, subject);
                     }
                 };
             }
