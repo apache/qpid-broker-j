@@ -171,10 +171,17 @@
     <section xml:id="Java-Broker-Runtime-Logging-Loggers-GraylogLogger">
       <title>GraylogLogger</title>
       <para><emphasis>GraylogLogger</emphasis> - sends log messages to a Graylog server in
-        <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://docs.graylog.org/en/3.2/pages/gelf.html">GELF format</link> via TCP.
-        The hostname and port number of the Graylog server has to be configured. The content of the log messages is also configurable.</para>
-      <para>The Broker has to be built using option <code>-Dgraylog</code> to support Graylog logger, please visit
-        <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://github.com/apache/qpid-broker-j/blob/master/doc/developer-guide/src/main/markdown/build-instructions.md#maven-commands">build instructions</link>.
+        <link xmlns:xlink="http://www.w3.org/1999/xlink"
+              xlink:href="https://docs.graylog.org/en/3.2/pages/gelf.html">GELF format</link> via TCP.
+        The hostname and port number of the Graylog server has to be configured. The content of the log messages
+        is also configurable.</para>
+      <para>The logger is implemented on top of LGPL licenced library <literal>de.siegmar:logback-gelf</literal>.
+        The LGPL license is incompatible with Apache License. Thus, the Graylog integration module is not included
+        into standard broker distribution. It has to be built using option <code>-Dgraylog</code>. The built jar
+        <literal>org.apache.qpid:qpid-broker-plugins-graylog-logging-logback</literal> and
+        <literal>de.siegmar:logback-gelf</literal> jar should be copied manually under broker
+        <literal>lib</literal> folder. The broker restart is required to have <emphasis>GraylogLogger</emphasis>
+        available for the use.
       </para>
     </section>
   </section>
