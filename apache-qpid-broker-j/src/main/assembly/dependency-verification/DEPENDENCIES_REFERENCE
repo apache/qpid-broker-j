@@ -99,8 +99,6 @@ From: 'The Apache Software Foundation' (https://www.apache.org/)
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Derby Message Store Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-derby-store) org.apache.qpid:qpid-broker-plugins-derby-store:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Apache Qpid Broker-J LogBack GrayLog Logging Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-graylog-logging-logback) org.apache.qpid:qpid-broker-plugins-graylog-logging-logback:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J LogBack JDBC Logging Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-logging-logback) org.apache.qpid:qpid-broker-plugins-jdbc-logging-logback:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J JDBC Message Store Connection Pooling Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-provider-bone) org.apache.qpid:qpid-broker-plugins-jdbc-provider-bone:jar
