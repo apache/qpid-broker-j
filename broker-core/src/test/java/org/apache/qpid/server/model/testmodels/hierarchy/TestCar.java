@@ -25,7 +25,10 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
+import org.apache.qpid.server.model.ManagedStatistic;
 import org.apache.qpid.server.model.Param;
+import org.apache.qpid.server.model.StatisticType;
+import org.apache.qpid.server.model.StatisticUnit;
 
 @ManagedObject( defaultType = TestStandardCarImpl.TEST_STANDARD_CAR_TYPE)
 public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>
@@ -60,4 +63,15 @@ public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>
 
     void setRejectStateChange(boolean b);
 
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT)
+    int getMileage();
+
+    @ManagedStatistic(metricName = "age",
+            statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.TIME_DURATION,
+            metricDisabled = true)
+    int getAge();
+
+    @ManagedOperation(changesConfiguredObjectState = false)
+    int move(@Param(name = "mileage", mandatory = true) int mileage);
 }

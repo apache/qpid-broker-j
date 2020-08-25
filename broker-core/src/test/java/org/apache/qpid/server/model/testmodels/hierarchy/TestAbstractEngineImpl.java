@@ -34,6 +34,7 @@ import org.apache.qpid.server.model.StateTransition;
 
 public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends AbstractConfiguredObject<X> implements TestEngine<X>
 {
+    public static final int TEST_TEMPERATURE = 50;
     @ManagedAttributeField
     private ListenableFuture<Void> _beforeCloseFuture = Futures.immediateFuture(null);
 
@@ -108,5 +109,11 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
         }
         setState(State.ACTIVE);
         return (ListenableFuture<Void>) _stateChangeFuture;
+    }
+
+    @Override
+    public int getTemperature()
+    {
+        return TEST_TEMPERATURE;
     }
 }

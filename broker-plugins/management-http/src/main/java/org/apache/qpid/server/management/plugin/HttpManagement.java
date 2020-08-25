@@ -90,6 +90,7 @@ import org.apache.qpid.server.management.plugin.filter.RewriteRequestForUncompre
 import org.apache.qpid.server.management.plugin.portunification.TlsOrPlainConnectionFactory;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
 import org.apache.qpid.server.management.plugin.servlet.RootServlet;
+import org.apache.qpid.server.management.plugin.servlet.ContentServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.BrokerQueryServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.JsonValueServlet;
@@ -119,6 +120,8 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.adapter.AbstractPluginAdapter;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.model.port.PortManager;
+import org.apache.qpid.server.plugin.ContentFactory;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.DaemonThreadFactory;
@@ -411,6 +414,21 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
+
+        final Iterable<ContentFactory> contentFactories = new QpidServiceLoader().instancesOf(ContentFactory.class);
+        contentFactories.forEach(f->{
+            ServletHolder metricsServlet = new ServletHolder(new ContentServlet(f));
+            String path = f.getType().toLowerCase();
+            root.addServlet(metricsServlet, "/" + path);
+            root.addServlet(metricsServlet, "/" + path  + "/*");
+
+            if (getContextValue(Boolean.class, HTTP_MANAGEMENT_ENABLE_CONTENT_AUTHENTICATION))
+            {
+                root.addFilter(restAuthorizationFilter, "/" + path, EnumSet.of(DispatcherType.REQUEST));
+                root.addFilter(restAuthorizationFilter, "/" + path  + "/*", EnumSet.of(DispatcherType.REQUEST));
+            }
+
+        });
 
         root.getSessionHandler().getSessionCookieConfig().setName(JSESSIONID_COOKIE_PREFIX + lastPort);
         root.getSessionHandler().getSessionCookieConfig().setHttpOnly(true);

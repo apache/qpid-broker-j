@@ -167,7 +167,9 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                                                 _typeValidator,
                                                                 StatisticUnit.BYTES,
                                                                 StatisticType.POINT_IN_TIME,
-                                                                memoryPoolMXBean.getName() + " Memory Used");
+                                                                memoryPoolMXBean.getName() + " Memory Used",
+                                                                null,
+                                                                true);
                 statistics.add(injectedStatistic);
             }
             catch (NoSuchMethodException e)
@@ -195,7 +197,9 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                                                 StatisticUnit.COUNT,
                                                                 StatisticType.CUMULATIVE,
                                                                 garbageCollectorMXBean.getName()
-                                                                + " GC Collection Time");
+                                                                + " GC Collection Time",
+                                                                null,
+                                                                true);
                 statistics.add(injectedStatistic);
             }
             catch (NoSuchMethodException e)
@@ -218,7 +222,9 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                                                 StatisticUnit.COUNT,
                                                                 StatisticType.CUMULATIVE,
                                                                 garbageCollectorMXBean.getName()
-                                                                + " GC Collection Count");
+                                                                + " GC Collection Count",
+                                                                null,
+                                                                true);
                 statistics.add(injectedStatistic);
             }
             catch (NoSuchMethodException e)
@@ -263,7 +269,9 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                                                 StatisticUnit.TIME_DURATION,
                                                                 StatisticType.CUMULATIVE,
                                                                 _operatingSystemMXBeanClass.getName()
-                                                                + " Process CPU Time");
+                                                                + " Process CPU Time",
+                                                                "process_cpu_time_nanoseconds",
+                                                                true);
                 statistics.add(injectedStatistic);
 
             }
@@ -308,7 +316,9 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                                                 StatisticUnit.COUNT,
                                                                 StatisticType.POINT_IN_TIME,
                                                                 _operatingSystemMXBean.getName()
-                                                                + " Process CPU Load");
+                                                                + " Process CPU Load",
+                                                                null,
+                                                                true);
                 statistics.add(injectedStatistic);
 
             }

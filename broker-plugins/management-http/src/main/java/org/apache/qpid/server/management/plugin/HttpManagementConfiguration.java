@@ -85,6 +85,11 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     @ManagedContextDefault( name = SASL_EXCHANGE_EXPIRY_CONTEXT_NAME)
     long DEFAULT_SASL_EXCHANGE_EXPIRY = 60000L;
 
+    String HTTP_MANAGEMENT_ENABLE_CONTENT_AUTHENTICATION = "qpid.httpManagement.enableMetricContentAuthentication";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = HTTP_MANAGEMENT_ENABLE_CONTENT_AUTHENTICATION)
+    boolean DEFAULT_HTTP_MANAGEMENT_ENABLE_CONTENT_AUTHENTICATION = false;
+
     AuthenticationProvider getAuthenticationProvider(HttpServletRequest request);
     Port<?> getPort(HttpServletRequest request);
 }

@@ -27,6 +27,10 @@ Apache Qpid Broker-J Bundles
 From: 'an unknown organization'
   - Guava: Google Core Libraries for Java (https://github.com/google/guava/guava) com.google.guava:guava:bundle:27.0-jre
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Prometheus Java Simpleclient (http://github.com/prometheus/client_java/simpleclient) io.prometheus:simpleclient:bundle:0.9.0
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Prometheus Java Simpleclient Common (http://github.com/prometheus/client_java/simpleclient_common) io.prometheus:simpleclient_common:bundle:0.9.0
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - dgrid (http://webjars.org) org.webjars.bower:dgrid:jar:1.2.1
     License: BSD 3-Clause  (https://spdx.org/licenses/BSD 3-Clause#licenseText)
   - dstore (http://webjars.org) org.webjars.bower:dstore:jar:1.1.2
@@ -110,6 +114,8 @@ From: 'The Apache Software Foundation' (https://www.apache.org/)
   - Apache Qpid Broker-J HTTP Management Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-http) org.apache.qpid:qpid-broker-plugins-management-http:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Memory Message Store Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-memory-store) org.apache.qpid:qpid-broker-plugins-memory-store:jar
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - qpid-broker-plugins-prometheus-exporter (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-prometheus-exporter) org.apache.qpid:qpid-broker-plugins-prometheus-exporter:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J WebSocket Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-websocket) org.apache.qpid:qpid-broker-plugins-websocket:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)

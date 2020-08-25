@@ -101,6 +101,11 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-broker-plugins-prometheus-exporter</artifactId>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>org.apache.qpid</groupId>

@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,21 +17,26 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package org.apache.qpid.server.prometheus;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface ManagedStatistic
+import java.util.function.Predicate;
+
+import org.apache.qpid.server.model.ConfiguredObjectStatistic;
+
+public class IncludeDisabledStatisticPredicate implements Predicate<ConfiguredObjectStatistic<?,?>>
+
 {
-    String description() default "";
-    String label() default "";
-    StatisticUnit units();
-    StatisticType statisticType();
-    String metricName()  default "";
-    boolean metricDisabled() default false;
+    private final boolean _includeDisabled;
+
+    IncludeDisabledStatisticPredicate(final boolean includeDisabled)
+    {
+        _includeDisabled = includeDisabled;
+    }
+
+    @Override
+    public boolean test(final ConfiguredObjectStatistic s)
+    {
+        return _includeDisabled || !s.isMetricDisabled();
+    }
 }

@@ -21,6 +21,7 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
@@ -32,9 +33,17 @@ public class TestTemperatureSensorImpl extends TestAbstractSensorImpl<TestTemper
 
     public static final String TEST_TEMPERATURE_SENSOR_TYPE = "temperature";
 
+    private AtomicInteger _alertCount = new AtomicInteger();
+
     @ManagedObjectFactoryConstructor
     protected TestTemperatureSensorImpl(final Map<String, Object> attributes,final TestInstrumentPanel<?> parent)
     {
         super(parent, attributes);
+    }
+
+    @Override
+    public int getNumberOfAlerts()
+    {
+        return _alertCount.getAndIncrement();
     }
 }

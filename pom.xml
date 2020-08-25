@@ -154,6 +154,7 @@
     <h2.version>1.4.199</h2.version>
     <apache-directory-version>2.0.0-M23</apache-directory-version>
     <kerby-version>1.0.1</kerby-version>
+    <prometheus-client-version>0.9.0</prometheus-client-version>
   </properties>
 
   <modules>
@@ -179,6 +180,7 @@
     <module>broker-plugins/websocket</module>
     <module>broker-plugins/amqp-1-0-bdb-store</module>
     <module>broker-plugins/amqp-1-0-jdbc-store</module>
+    <module>broker-plugins/prometheus-exporter</module>
     <module>tools</module>
 
     <module>qpid-systests-parent</module>
@@ -469,6 +471,12 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-prometheus-exporter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- External dependencies -->
       <dependency>
         <groupId>org.apache.qpid</groupId>
@@ -749,6 +757,18 @@
         <artifactId>kerb-simplekdc</artifactId>
         <scope>test</scope>
         <version>${kerby-version}</version>
+      </dependency>
+
+      <!-- prometheus client dependencies -->
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient</artifactId>
+        <version>${prometheus-client-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient_common</artifactId>
+        <version>${prometheus-client-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

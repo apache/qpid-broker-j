@@ -41,6 +41,8 @@ final public class ConfiguredObjectInjectedStatistic<C extends ConfiguredObject,
     private final StatisticType _type;
     private final String _label;
     private final Object[] _staticParams;
+    private final String _metricName;
+    private final boolean _metricDisabled;
 
     public ConfiguredObjectInjectedStatistic(final String name,
                                              final Method method,
@@ -49,7 +51,9 @@ final public class ConfiguredObjectInjectedStatistic<C extends ConfiguredObject,
                                              final TypeValidator typeValidator,
                                              final StatisticUnit units,
                                              final StatisticType type,
-                                             final String label)
+                                             final String label,
+                                             final String metricName,
+                                             final boolean metricDisabled)
     {
         super(name,
               (Class<T>) AttributeValueConverter.getTypeFromMethod(method), method.getGenericReturnType(), typeValidator);
@@ -57,6 +61,8 @@ final public class ConfiguredObjectInjectedStatistic<C extends ConfiguredObject,
         _type = type;
         _label = label;
         _staticParams = staticParams == null ? new Object[0] : staticParams;
+        _metricName = metricName;
+        _metricDisabled = metricDisabled;
         if(!(method.getParameterTypes().length == 1 + _staticParams.length
              && ConfiguredObject.class.isAssignableFrom(method.getParameterTypes()[0])
              && Modifier.isStatic(method.getModifiers())
@@ -146,5 +152,17 @@ final public class ConfiguredObjectInjectedStatistic<C extends ConfiguredObject,
             }
         }
 
+    }
+
+    @Override
+    public String getMetricName()
+    {
+        return _metricName;
+    }
+
+    @Override
+    public boolean isMetricDisabled()
+    {
+        return _metricDisabled;
     }
 }
