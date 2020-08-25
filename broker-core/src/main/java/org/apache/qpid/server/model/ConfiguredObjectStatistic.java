@@ -29,4 +29,8 @@ public interface ConfiguredObjectStatistic<C extends ConfiguredObject, T extends
     StatisticType getStatisticType();
 
     String getLabel();
+
+    String getMetricName();
+
+    boolean isMetricDisabled();
 }

@@ -66,4 +66,16 @@ public final class ConfiguredObjectMethodStatistic<C extends ConfiguredObject, T
     {
         return _annotation.label();
     }
+
+    @Override
+    public String getMetricName()
+    {
+        return _annotation.metricName();
+    }
+
+    @Override
+    public boolean isMetricDisabled()
+    {
+        return _annotation.metricDisabled();
+    }
 }
