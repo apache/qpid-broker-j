@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Metrics">
+  <title>Prometheus Metrics</title>
+    <para>This section describes the metrics endpoints exposing broker statistics in
+      <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://prometheus.io/">Prometheus format</link>.
+      The metrics endpoint is intended for scraping by Prometheus server to collect the Broker telemetry.</para>
+    <para>The Prometheus metric endpoints are mapped under /metrics path and /metrics/*.
+      The latter allows to get the Virtual Host statistics by specify the path to the virtual host as
+      /metrics/&lt;virtual host node name&gt;/&lt; virtual host name&gt;.
+      The former allow to get all Broker statistics or Virtual Host statistics when called with HOST header
+      set to the Virtual Host name</para>
+    <para>
+      The metrics endpoints allow anonymous access by default. If required, an authentication can be enabled for the
+      metrics endpoints by setting http management context variable
+      <literal>qpid.httpManagement.enableMetricContentAuthentication</literal> to <literal>true</literal>.
+    </para>
+
+    <para>The Broker JVM statistics are disabled by default. The metrics endpoints can be called with parameter
+      <literal>includeDisabled</literal> set to <literal>true</literal> to include JVM  broker metrics into endpoint
+      output.
+    </para>
+    <note>
+      <para>For more information about Prometheus, check out the
+        <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://prometheus.io/docs/introduction/overview/">prometheus documentation</link>.
+      </para>
+    </note>
+
+</section>

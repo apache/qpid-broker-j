@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,21 +17,25 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package org.apache.qpid.tests.http.metrics;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface ManagedStatistic
+import static org.apache.qpid.tests.http.metrics.TestMetricsHelper.QUEUE_NAME;
+import static org.apache.qpid.tests.http.metrics.TestMetricsHelper.assertVirtualHostHierarchyMetrics;
+
+import org.junit.Test;
+
+import org.apache.qpid.tests.http.HttpRequestConfig;
+import org.apache.qpid.tests.http.HttpTestBase;
+
+@HttpRequestConfig
+public class VirtualHostMetricsTest extends HttpTestBase
 {
-    String description() default "";
-    String label() default "";
-    StatisticUnit units();
-    StatisticType statisticType();
-    String metricName()  default "";
-    boolean metricDisabled() default false;
+    @Test
+    public void testVirtualHostMetrics() throws Exception
+    {
+        getBrokerAdmin().createQueue(QUEUE_NAME);
+        final byte[] metricsBytes = getHelper().getBytes("/metrics");
+        assertVirtualHostHierarchyMetrics(metricsBytes);
+    }
 }

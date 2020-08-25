@@ -292,14 +292,16 @@ public class InjectedAttributeTest extends UnitTestBase
                                                                            TYPE_VALIDATOR,
                                                                            StatisticUnit.COUNT,
                                                                            StatisticType.POINT_IN_TIME,
-                                                                           "What is 6 x 9?");
+                                                                           "What is 6 x 9?",
+                                                                           null,
+                                                                           false);
 
         TestModel model = new TestModel(null, new TestInjector(statInjector));
 
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
         final Map<String, Object> statistics = testCar.getStatistics();
-        assertEquals("incorrect number of statistics", (long) 1, (long) statistics.size());
+        assertEquals("incorrect number of statistics", (long) 3, (long) statistics.size());
         assertEquals("incorrect statistic value", 42, statistics.get("meaningOfLife"));
     }
 
@@ -317,7 +319,9 @@ public class InjectedAttributeTest extends UnitTestBase
                                                                            TYPE_VALIDATOR,
                                                                            StatisticUnit.COUNT,
                                                                            StatisticType.POINT_IN_TIME,
-                                                                           "One");
+                                                                           "One",
+                                                                           null,
+                                                                           false);
         final ConfiguredObjectInjectedStatistic<?, ?> statInjector2 =
                 new ConfiguredObjectInjectedStatistic<TestCar<?>, Integer>("whatISent2",
                                                                            method,
@@ -325,13 +329,15 @@ public class InjectedAttributeTest extends UnitTestBase
                                                                            TYPE_VALIDATOR,
                                                                            StatisticUnit.COUNT,
                                                                            StatisticType.POINT_IN_TIME,
-                                                                           "Two");
+                                                                           "Two",
+                                                                           null,
+                                                                           false);
         TestModel model = new TestModel(null, new TestInjector(statInjector1, statInjector2));
 
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
         final Map<String, Object> statistics = testCar.getStatistics();
-        assertEquals("incorrect number of statistics", (long) 2, (long) statistics.size());
+        assertEquals("incorrect number of statistics", (long) 4, (long) statistics.size());
         assertEquals("incorrect statistic value", 1, statistics.get("whatISent1"));
         assertEquals("incorrect statistic value", 2, statistics.get("whatISent2"));
     }

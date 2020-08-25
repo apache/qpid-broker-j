@@ -22,9 +22,14 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedStatistic;
+import org.apache.qpid.server.model.StatisticType;
+import org.apache.qpid.server.model.StatisticUnit;
 
 @ManagedObject( defaultType = TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE)
 public interface TestSensor<X extends TestSensor<X>> extends ConfiguredObject<X>
 {
 
+    @ManagedStatistic(metricName = "alert_count", statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT)
+    int getNumberOfAlerts();
 }

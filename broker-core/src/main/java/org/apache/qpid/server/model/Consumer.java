@@ -69,10 +69,10 @@ public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> ext
                         + "consumers.  Priority 2147483647 is the highest priority.")
     int getPriority();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound", metricName = "outbound_bytes_count")
     long getBytesOut();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound", metricName = "outbound_messages_count")
     long getMessagesOut();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Prefetch")

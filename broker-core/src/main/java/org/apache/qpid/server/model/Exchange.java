@@ -88,27 +88,27 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     // Statistics
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings",
-                      description = "Current number of bindings to this exchange.")
+                      description = "Current number of bindings to this exchange.", metricName = "bindings_total")
     long getBindingCount();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Dropped",
-                      description = "Total size of all unroutable messages dropped by this exchange.")
+                      description = "Total size of all unroutable messages dropped by this exchange.", metricName = "dropped_bytes_count")
     long getBytesDropped();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
-                      description = "Total size of messages received by this exchange.")
+                      description = "Total size of messages received by this exchange.", metricName = "inbound_bytes_count")
     long getBytesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Dropped",
-                      description = "Number of unroutable messages dropped by this exchange.")
+                      description = "Number of unroutable messages dropped by this exchange.", metricName = "dropped_messages_count")
     long getMessagesDropped();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
-                      description = "Number of messages received by this exchange.")
+                      description = "Number of messages received by this exchange.", metricName = "inbound_messages_count")
     long getMessagesIn();
 
 

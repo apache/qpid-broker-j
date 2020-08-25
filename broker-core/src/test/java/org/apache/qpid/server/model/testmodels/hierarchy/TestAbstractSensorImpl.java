@@ -21,6 +21,7 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -32,6 +33,8 @@ import org.apache.qpid.server.model.StateTransition;
 public class TestAbstractSensorImpl<X extends TestAbstractSensorImpl<X>> extends AbstractConfiguredObject<X>
         implements TestSensor<X>
 {
+
+    private AtomicInteger _alertCount;
 
     protected TestAbstractSensorImpl(final TestInstrumentPanel<?> parent,
                                      final Map<String, Object> attributes)
@@ -50,5 +53,11 @@ public class TestAbstractSensorImpl<X extends TestAbstractSensorImpl<X>> extends
     {
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
+    }
+
+    @Override
+    public int getNumberOfAlerts()
+    {
+        return _alertCount.getAndIncrement();
     }
 }

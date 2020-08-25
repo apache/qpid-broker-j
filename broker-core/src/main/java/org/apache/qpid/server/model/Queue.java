@@ -390,17 +390,17 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings",
-                      description = "Current number of bindings to this queue.")
+                      description = "Current number of bindings to this queue.", metricName = "bindings_total")
     int getBindingCount();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers",
-                      description = "Current number of consumers attached to this queue.")
+                      description = "Current number of consumers attached to this queue.", metricName = "consumers_total")
     int getConsumerCount();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers with credit",
-                      description = "Current number of consumers attached to this queue with credit")
+                      description = "Current number of consumers attached to this queue with credit", metricName = "consumers_with_credit_total")
     int getConsumerCountWithCredit();
 
     @SuppressWarnings("unused")
@@ -425,42 +425,42 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth",
-                      description = "Current size of all messages enqueued by this queue.")
+                      description = "Current size of all messages enqueued by this queue.", metricName = "depth_bytes_total")
     long getQueueDepthBytes();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth",
-                      description = "Current number of messages enqueued by this queue.")
+                      description = "Current number of messages enqueued by this queue.", metricName = "depth_messages_total")
     int getQueueDepthMessages();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Delivered",
-                      description = "Total size of all messages delivered by this queue.")
+                      description = "Total size of all messages delivered by this queue.", metricName = "dequeued_bytes_count")
     long getTotalDequeuedBytes();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Delivered",
-                      description = "Total number of messages delivered by this queue.")
+                      description = "Total number of messages delivered by this queue.", metricName = "dequeued_messages_count")
     long getTotalDequeuedMessages();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Enqueued",
-                      description = "Total size of all messages received by this queue.")
+                      description = "Total size of all messages received by this queue.", metricName = "enqueue_bytes_count")
     long getTotalEnqueuedBytes();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Enqueued",
-                      description = "Total number of messages received by this queue.")
+                      description = "Total number of messages received by this queue.", metricName = "enqueued_messages_count")
     long getTotalEnqueuedMessages();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Expired",
-            description = "Total size of all messages expired by message time-to-live on this queue.")
+            description = "Total size of all messages expired by message time-to-live on this queue.", metricName = "expired_bytes_count")
     long getTotalExpiredBytes();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Expired",
-            description = "Total number of messages expired by message time-to-live on this queue.")
+            description = "Total number of messages expired by message time-to-live on this queue.", metricName = "expired_messages_count")
     long getTotalExpiredMessages();
 
 
@@ -486,37 +486,37 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Available HWM",
-                      description = "Maximum recorded size of available messages.")
+                      description = "Maximum recorded size of available messages.", metricName = "available_bytes_high_water_mark")
     long getAvailableBytesHighWatermark();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Available HWM",
-                      description = "Maximum recorded number of available messages.")
+                      description = "Maximum recorded number of available messages.", metricName = "available_messages_high_water_mark")
     int getAvailableMessagesHighWatermark();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth HWM",
-                      description = "Maximum recorded size of enqueued messages.")
+                      description = "Maximum recorded size of enqueued messages.", metricName = "depth_bytes_high_water_mark")
     long getQueueDepthBytesHighWatermark();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth HWM",
-                      description = "Maximum recorded number of enqueued messages.")
+                      description = "Maximum recorded number of enqueued messages.", metricName = "depth_messages_high_water_mark")
     int getQueueDepthMessagesHighWatermark();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.TIME_DURATION, label = "Oldest Message",
-                      description = "Current age of oldest message on the queue.")
+                      description = "Current age of oldest message on the queue.", metricName = "oldest_message_age_milliseconds")
     long getOldestMessageAge();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Malformed",
-            description = "Total size of enqueued malformed messages.")
+            description = "Total size of enqueued malformed messages.", metricName = "malformed_bytes_count")
     long getTotalMalformedBytes();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Malformed",
-            description = "Total number of enqueued malformed messages.")
+            description = "Total number of enqueued malformed messages.", metricName = "malformed_messages_count")
     long getTotalMalformedMessages();
 
     @ManagedOperation(description = "move messages from this queue to another", changesConfiguredObjectState = false)

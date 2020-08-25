@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,21 +17,15 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package org.apache.qpid.server.plugin;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface ManagedStatistic
+import java.util.Map;
+
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Content;
+
+public interface ContentFactory extends Pluggable
 {
-    String description() default "";
-    String label() default "";
-    StatisticUnit units();
-    StatisticType statisticType();
-    String metricName()  default "";
-    boolean metricDisabled() default false;
+    Content createContent(ConfiguredObject<?> object, Map<String, String[]> filter);
 }
