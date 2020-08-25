@@ -158,6 +158,7 @@
     <bcprov-version>1.64</bcprov-version>
     <bcpkix-version>1.64</bcpkix-version>
     <logback-gelf-version>3.0.0</logback-gelf-version>
+    <prometheus-client-version>0.9.0</prometheus-client-version>
   </properties>
 
   <modules>
@@ -183,6 +184,7 @@
     <module>broker-plugins/websocket</module>
     <module>broker-plugins/amqp-1-0-bdb-store</module>
     <module>broker-plugins/amqp-1-0-jdbc-store</module>
+    <module>broker-plugins/prometheus-exporter</module>
     <module>tools</module>
 
     <module>qpid-systests-parent</module>
@@ -470,6 +472,12 @@
       <dependency>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-systests-http</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-prometheus-exporter</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -822,6 +830,17 @@
         <version>${bcpkix-version}</version>
       </dependency>
 
+      <!-- prometheus client dependencies -->
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient</artifactId>
+        <version>${prometheus-client-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient_common</artifactId>
+        <version>${prometheus-client-version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

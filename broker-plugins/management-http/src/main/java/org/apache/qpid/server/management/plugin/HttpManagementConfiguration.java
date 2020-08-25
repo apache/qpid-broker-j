@@ -90,6 +90,11 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     @ManagedContextDefault( name = DISABLE_UI_CONTEXT_NAME)
     boolean DEFAULT_DISABLE_UI = false;
 
+    String HTTP_MANAGEMENT_ENABLE_CONTENT_AUTHENTICATION = "qpid.httpManagement.enableMetricContentAuthentication";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = HTTP_MANAGEMENT_ENABLE_CONTENT_AUTHENTICATION)
+    boolean DEFAULT_HTTP_MANAGEMENT_ENABLE_CONTENT_AUTHENTICATION = false;
+
     AuthenticationProvider getAuthenticationProvider(HttpServletRequest request);
     Port<?> getPort(HttpServletRequest request);
 }

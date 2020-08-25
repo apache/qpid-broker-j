@@ -117,24 +117,24 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     // See also QPID-7689: https://issues.apache.org/jira/browse/QPID-7689?focusedCommentId=16022923#comment-16022923
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
-                      description = "Total size of all messages received by this connection.")
+                      description = "Total size of all messages received by this connection.", metricName = "inbound_bytes_count")
     long getBytesIn();
 
     // currently this reports outbound message content size without header.
     // See also QPID-7689: https://issues.apache.org/jira/browse/QPID-7689?focusedCommentId=16022923#comment-16022923
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound",
-                      description = "Total size of all messages delivered by this connection.")
+                      description = "Total size of all messages delivered by this connection.", metricName = "outbound_bytes_count")
     long getBytesOut();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
-                      description = "Total number of messages delivered by this connection.")
+                      description = "Total number of messages delivered by this connection.", metricName = "inbound_messages_count")
     long getMessagesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound",
-                      description = "Total number of messages received by this connection.")
+                      description = "Total number of messages received by this connection.", metricName = "outbound_messages_count")
     long getMessagesOut();
 
     @SuppressWarnings("unused")
@@ -162,7 +162,7 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Sessions",
-                      description = "Current number of sessions belonging to this connection.")
+                      description = "Current number of sessions belonging to this connection.", metricName = "sessions_total")
     int getSessionCount();
 
     @SuppressWarnings("unused")
@@ -188,12 +188,12 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Transacted Inbound",
-            description = "Total number of messages delivered by this connection within a transaction.")
+            description = "Total number of messages delivered by this connection within a transaction.", metricName = "transacted_inbound_messages_count")
     long getTransactedMessagesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Transacted Outbound",
-            description = "Total number of messages received by this connection within a transaction.")
+            description = "Total number of messages received by this connection within a transaction.", metricName = "transacted_outbound_messages_count")
     long getTransactedMessagesOut();
 
     //children

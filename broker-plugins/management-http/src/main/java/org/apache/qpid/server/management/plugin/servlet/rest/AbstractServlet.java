@@ -284,8 +284,22 @@ public abstract class AbstractServlet extends HttpServlet
     protected void writeTypedContent(Content content, HttpServletRequest request, HttpServletResponse response)
             throws IOException
     {
-        Map<String, Object> headers = getResponseHeaders(content);
+        try
+        {
+            writeContent(content, request, response);
+        }
+        catch (IOException e)
+        {
+            LOGGER.warn("Unexpected exception processing request", e);
+            sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+    }
 
+    protected void writeContent(final Content content,
+                                final HttpServletRequest request,
+                                final HttpServletResponse response) throws IOException
+    {
+        Map<String, Object> headers = new HashMap<>(getResponseHeaders(content));
         try (OutputStream os = getOutputStream(request, response, headers))
         {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -294,11 +308,6 @@ public abstract class AbstractServlet extends HttpServlet
                 response.setHeader(entry.getKey(), String.valueOf(entry.getValue()));
             }
             content.write(os);
-        }
-        catch (IOException e)
-        {
-            LOGGER.warn("Unexpected exception processing request", e);
-            sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 

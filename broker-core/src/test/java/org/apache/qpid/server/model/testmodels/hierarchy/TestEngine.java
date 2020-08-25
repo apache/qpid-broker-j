@@ -25,6 +25,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedStatistic;
+import org.apache.qpid.server.model.StatisticType;
+import org.apache.qpid.server.model.StatisticUnit;
 
 @ManagedObject(category = true, defaultType = TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE)
 public interface TestEngine<X extends TestEngine<X>> extends ConfiguredObject<X>
@@ -51,5 +54,8 @@ public interface TestEngine<X extends TestEngine<X>> extends ConfiguredObject<X>
     @ManagedAttribute
     Object getStateChangeException();
     void setStateChangeException(RuntimeException exception);
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT)
+    int getTemperature();
 
 }

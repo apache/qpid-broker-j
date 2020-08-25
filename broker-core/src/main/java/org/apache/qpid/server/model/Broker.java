@@ -197,36 +197,52 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String getModelVersion();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
-                      description = "Total size of all messages received by the Broker.")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.BYTES,
+            label = "Inbound",
+            description = "Total size of all messages received by the Broker.",
+            metricName = "inbound_bytes_count")
     long getBytesIn();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound",
-                      description = "Total size of all messages delivered by the Broker.")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.BYTES,
+            label = "Outbound",
+            description = "Total size of all messages delivered by the Broker.",
+            metricName = "outbound_bytes_count")
     long getBytesOut();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
-                      description = "Total number of messages received by the Broker.")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.MESSAGES,
+            label = "Inbound",
+            description = "Total number of messages received by the Broker.",
+            metricName = "inbound_messages_count")
     long getMessagesIn();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound",
-                      description = "Total number of messages delivered by the Broker.")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.MESSAGES,
+            label = "Outbound",
+            description = "Total number of messages delivered by the Broker.",
+            metricName = "outbound_messages_count")
     long getMessagesOut();
 
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.MESSAGES,
             label = "Transacted Inbound",
-            description = "Total number of messages delivered by the Broker within a transaction.")
+            description = "Total number of messages delivered by the Broker within a transaction.",
+            metricName = "inbound_transacted_messages_count")
     long getTransactedMessagesIn();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.MESSAGES,
             label = "Transacted Outbound",
-            description = "Total number of messages received by the Broker within a transaction.")
+            description = "Total number of messages received by the Broker within a transaction.",
+            metricName = "outbound_transacted_messages_count")
     long getTransactedMessagesOut();
 
     @ManagedOperation(nonModifying = true,
@@ -257,37 +273,44 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
-                      units = StatisticUnit.COUNT,
-                      label = "Live threads",
-                      description = "Number of live threads")
+            units = StatisticUnit.COUNT,
+            label = "Live threads",
+            description = "Number of live threads",
+            metricName = "live_threads_total",
+            metricDisabled = true)
     int getNumberOfLiveThreads();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
-                      units = StatisticUnit.BYTES,
-                      label = "Used Heap Memory Size",
-                      description = "Size of used heap memory")
+            units = StatisticUnit.BYTES,
+            label = "Used Heap Memory Size",
+            description = "Size of used heap memory",
+            metricDisabled = true)
     long getUsedHeapMemorySize();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
-                      units = StatisticUnit.BYTES,
-                      label = "Used Direct Memory Size",
-                      description = "Size of used direct memory")
+            units = StatisticUnit.BYTES,
+            label = "Used Direct Memory Size",
+            description = "Size of used direct memory",
+            metricDisabled = true)
     long getUsedDirectMemorySize();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
-                      units = StatisticUnit.BYTES,
-                      label = "Direct Memory Total Capacity",
-                      description = "Total capacity of direct memory allocated for the Broker process")
+            units = StatisticUnit.BYTES,
+            label = "Direct Memory Total Capacity",
+            description = "Total capacity of direct memory allocated for the Broker process",
+            metricName = "direct_memory_capacity_bytes_total",
+            metricDisabled = true)
     long getDirectMemoryTotalCapacity();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
-                      units = StatisticUnit.COUNT,
-                      label = "Number Of Object Pending Finalization",
-                      description = "Number of objects pending finalization")
+            units = StatisticUnit.COUNT,
+            label = "Number Of Object Pending Finalization",
+            description = "Number of objects pending finalization",
+            metricDisabled = true)
     int getNumberOfObjectsPendingFinalization();
 
     @SuppressWarnings("unused")
@@ -308,7 +331,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.BYTES,
             label = "Maximum recorded size of inbound messages",
-            description = "Maximum size of messages published into the Broker since start-up.")
+            description = "Maximum size of messages published into the Broker since start-up.",
+            metricName = "inbound_message_size_high_watermark")
     long getInboundMessageSizeHighWatermark();
 
     @ManagedOperation(nonModifying = true,

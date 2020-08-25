@@ -215,69 +215,69 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Queues",
-                      description = "Current number of queues on this virtualhost.")
+                      description = "Current number of queues on this virtualhost.", metricName = "queues_total")
     long getQueueCount();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Exchanges",
-                      description = "Current number of exchanges on this virtualhost.")
+                      description = "Current number of exchanges on this virtualhost.", metricName = "exchanges_total")
     long getExchangeCount();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Connections",
-                      description = "Current number of messaging connections made to this virtualhost.")
+                      description = "Current number of messaging connections made to this virtualhost.", metricName = "connections_total")
     long getConnectionCount();
 
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Total Connections",
-            description = "Total number of messaging connections made to this virtualhost since broker startup")
+            description = "Total number of messaging connections made to this virtualhost since broker startup", metricName = "aggregate_connection_count")
     long getTotalConnectionCount();
 
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
-                      description = "Total size of all messages received by this virtualhost.")
+                      description = "Total size of all messages received by this virtualhost.", metricName = "inbound_bytes_count")
     long getBytesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound",
-                      description = "Total size of all messages delivered by this virtualhost.")
+                      description = "Total size of all messages delivered by this virtualhost.", metricName = "outbound_bytes_count")
     long getBytesOut();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
-                      description = "Total number of messages received by this virtualhost.")
+                      description = "Total number of messages received by this virtualhost.", metricName = "inbound_messages_count")
     long getMessagesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound",
-                      description = "Total number of messages delivered by this virtualhost.")
+                      description = "Total number of messages delivered by this virtualhost.", metricName = "outbound_messages_count")
     long getMessagesOut();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
             label = "Transacted Inbound",
-            description = "Total number of messages delivered by this virtualhost within a transaction.")
+            description = "Total number of messages delivered by this virtualhost within a transaction.", metricName = "inbound_transacted_messages_count")
     long getTransactedMessagesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
             label = "Transacted Outbound",
-            description = "Total number of messages received by this virtualhost within a transaction.")
+            description = "Total number of messages received by this virtualhost within a transaction.", metricName = "outbound_transacted_messages_count")
     long getTransactedMessagesOut();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth",
-            description = "Current size of all messages enqueued by this virtualhost.")
+            description = "Current size of all messages enqueued by this virtualhost.", metricName = "queue_depth_bytes_total")
     long getTotalDepthOfQueuesBytes();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth",
-                      description = "Current number of messages enqueued by this virtualhost.")
+                      description = "Current number of messages enqueued by this virtualhost.", metricName = "queue_depth_messages_total")
     long getTotalDepthOfQueuesMessages();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "In-Memory Message Bytes",
-                      description="Current size of all messages cached in-memory.")
+                      description="Current size of all messages cached in-memory.", metricName = "in_memory_message_size_bytes_total")
     long getInMemoryMessageSize();
 
     @SuppressWarnings("unused")
@@ -289,7 +289,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.BYTES,
             label = "Maximum recorded size of inbound messages",
-            description = "Maximum size of message published into the Virtual Host since start-up.")
+            description = "Maximum size of message published into the Virtual Host since start-up.", metricName = "inbound_message_size_high_water_mark")
     long getInboundMessageSizeHighWatermark();
 
     @Override

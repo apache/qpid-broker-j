@@ -22,6 +22,7 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -36,6 +37,8 @@ public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> exte
     private Colour _bodyColour;
     @ManagedAttributeField
     private Colour _interiorColour;
+
+    private AtomicInteger _mileage = new AtomicInteger();
 
     private volatile boolean _rejectStateChange;
 
@@ -101,5 +104,23 @@ public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> exte
     public void setRejectStateChange(final boolean rejectStateChange)
     {
         _rejectStateChange = rejectStateChange;
+    }
+
+    @Override
+    public int getMileage()
+    {
+        return _mileage.get();
+    }
+
+    @Override
+    public int move(final int value)
+    {
+        return _mileage.addAndGet(value);
+    }
+
+    @Override
+    public int getAge()
+    {
+        return 0;
     }
 }
