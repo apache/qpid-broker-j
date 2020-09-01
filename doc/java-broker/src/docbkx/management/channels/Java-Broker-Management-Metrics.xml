@@ -37,7 +37,8 @@
 
     <para>The Broker JVM statistics are disabled by default. The metrics endpoints can be called with parameter
       <literal>includeDisabled</literal> set to <literal>true</literal> to include JVM  broker metrics into endpoint
-      output.
+      output. If required, the JVM metrics could be enabled by setting context variable
+      <literal>qpid.metrics.includeDisabled</literal> to <literal>true</literal>.
     </para>
     <note>
       <para>For more information about Prometheus, check out the
