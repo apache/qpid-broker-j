@@ -64,6 +64,11 @@ public class CommonProperties
     public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "qpid.security.tls.cipherSuiteBlackList";
     public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT = "";
 
+    public static final String QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST = "qpid.security.tls.protocolAllowList";
+    public static final String QPID_SECURITY_TLS_PROTOCOL_DENY_LIST = "qpid.security.tls.protocolDenyList";
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST = "qpid.security.tls.cipherSuiteAllowList";
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST = "qpid.security.tls.cipherSuiteDenyList";
+
     private static final String MANIFEST_HEADER_IMPLEMENTATION_BUILD = "Implementation-Build";
 
     /** Defines the name of the version suffix property. */

@@ -34,10 +34,8 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
-import java.util.Arrays;
 
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
@@ -157,7 +155,8 @@ public class SpawnBrokerAdminTest extends UnitTestBase
     @Test
     public void afterTestClass() throws Exception
     {
-        try (SpawnBrokerAdmin admin = new SpawnBrokerAdmin())
+        SpawnBrokerAdmin admin = new SpawnBrokerAdmin();
+        try
         {
             admin.beforeTestClass(SpawnBrokerAdminTest.class);
             admin.beforeTestMethod(SpawnBrokerAdminTest.class, getClass().getMethod("afterTestClass"));
@@ -179,6 +178,17 @@ public class SpawnBrokerAdminTest extends UnitTestBase
             catch (JMSException e)
             {
                 // pass
+            }
+            finally
+            {
+                admin = null;
+            }
+        }
+        finally
+        {
+            if (admin != null)
+            {
+                admin.close();
             }
         }
     }

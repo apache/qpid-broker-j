@@ -77,28 +77,52 @@ public class ConnectionBuilder
         return this;
     }
 
+    @Deprecated
     public ConnectionBuilder setTlsProtocolWhiteList(final List<String> tlsProtocolWhiteList)
     {
         _tlsProtocolWhiteList = tlsProtocolWhiteList;
         return this;
     }
 
+    @Deprecated
     public ConnectionBuilder setTlsProtocolBlackList(final List<String> tlsProtocolBlackList)
     {
         _tlsProtocolBlackList = tlsProtocolBlackList;
         return this;
     }
 
+    @Deprecated
     public ConnectionBuilder setTlsCipherSuiteWhiteList(final List<String> tlsCipherSuiteWhiteList)
     {
         _tlsCipherSuiteWhiteList = tlsCipherSuiteWhiteList;
         return this;
     }
 
+    @Deprecated
     public ConnectionBuilder setTlsCipherSuiteBlackList(final List<String> tlsCipherSuiteBlackList)
     {
         _tlsCipherSuiteBlackList = tlsCipherSuiteBlackList;
         return this;
+    }
+
+    public ConnectionBuilder setTlsProtocolAllowList(final List<String> tlsProtocolAllowList)
+    {
+        return setTlsProtocolWhiteList(tlsProtocolAllowList);
+    }
+
+    public ConnectionBuilder setTlsProtocolDenyList(final List<String> tlsProtocolDenyList)
+    {
+        return setTlsProtocolBlackList(tlsProtocolDenyList);
+    }
+
+    public ConnectionBuilder setTlsCipherSuiteAllowList(final List<String> tlsCipherSuiteAllowList)
+    {
+        return setTlsCipherSuiteWhiteList(tlsCipherSuiteAllowList);
+    }
+
+    public ConnectionBuilder setTlsCipherSuiteDenyList(final List<String> tlsCipherSuiteDenyList)
+    {
+        return setTlsCipherSuiteBlackList(tlsCipherSuiteDenyList);
     }
 
     public HttpURLConnection build() throws IOException

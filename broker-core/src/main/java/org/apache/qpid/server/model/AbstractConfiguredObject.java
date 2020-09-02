@@ -3498,6 +3498,21 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return converter.convert("${" + propertyName + "}", this);
     }
 
+    protected <T> T getContextValue(final Class<T> clazz, final Type type, final String propertyName, final String fallbackName)
+    {
+        final Set<String> keys = getContextKeys(false);
+        String name;
+        if (keys.contains(propertyName))
+        {
+            name = propertyName;
+        }
+        else
+        {
+            name = fallbackName;
+        }
+        return getContextValue(clazz, type, name);
+    }
+
     @Override
     public Set<String> getContextKeys(final boolean excludeSystem)
     {

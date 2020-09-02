@@ -90,17 +90,34 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     @ManagedAttribute
     Collection<TrustStore> getTrustStores();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsProtocolWhiteList();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsProtocolBlackList();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsCipherSuiteWhiteList();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsCipherSuiteBlackList();
+
+    @DerivedAttribute
+    List<String> getTlsProtocolAllowList();
+
+    @DerivedAttribute
+    List<String> getTlsProtocolDenyList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteAllowList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteDenyList();
+
 
     @ManagedAttribute(defaultValue = "*",
                       description = "The network interface this port binds to expressed as an IP address or a"

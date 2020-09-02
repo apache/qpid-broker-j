@@ -19,8 +19,11 @@
 
 package org.apache.qpid.server.model.port;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,6 +40,7 @@ import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -44,6 +48,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -325,6 +330,88 @@ public class AmqpPortImplTest extends UnitTestBase
         verify(mockLogger, times(1)).message(any(LogSubject.class), any(LogMessage.class));
 
         assertFalse(_port.canAcceptNewConnection(new InetSocketAddress("example.org", 0)));
+    }
+
+    @Test
+    public void testTlProtocolsAndCypherSuitesUsingAllowDenyListContextVariable()
+    {
+        final Map<String, String> brokerContext = new HashMap<>();
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST, "[\"TLSv1.3\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST, "[\"Ssl.*\",\"TLSv1\",\"TLSv1.1\",\"TLSv1.2\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST, "[\"(TLS|SSL)_AES_128_GCM_SHA256\", \"(TLS|SSL)_AES_256_GCM_SHA384\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST, "[\".*CBC.*\"]");
+
+        when(_broker.getContext()).thenReturn(brokerContext);
+
+        _port = createPort(getTestName());
+        final List<String> expectedAllowedTlsProtocols = Collections.singletonList("TLSv1.3");
+        final List<String> expectedDeniedTlsProtocols = Arrays.asList("Ssl.*","TLSv1","TLSv1.1","TLSv1.2");
+        final List<String> expectedAllowedTlsCypherSuites = Arrays.asList("(TLS|SSL)_AES_128_GCM_SHA256", "(TLS|SSL)_AES_256_GCM_SHA384");
+        final List<String> expectedDeniedTlsCypherSuites = Collections.singletonList(".*CBC.*");
+        assertThat(_port.getTlsProtocolAllowList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_port.getTlsProtocolWhiteList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_port.getTlsProtocolDenyList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_port.getTlsProtocolBlackList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_port.getTlsCipherSuiteAllowList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_port.getTlsCipherSuiteWhiteList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_port.getTlsCipherSuiteDenyList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+        assertThat(_port.getTlsCipherSuiteBlackList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+    }
+
+    @Test
+    public void testTlProtocolsAndCypherSuitesUsingWhiteBlackListContextVariable()
+    {
+        final Map<String, String> brokerContext = new HashMap<>();
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST, "[\"TLSv1.3\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST, "[\"Ssl.*\",\"TLSv1\",\"TLSv1.1\",\"TLSv1.2\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST, "[\"(TLS|SSL)_AES_128_GCM_SHA256\", \"(TLS|SSL)_AES_256_GCM_SHA384\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST, "[\".*CBC.*\"]");
+
+        when(_broker.getContext()).thenReturn(brokerContext);
+
+        _port = createPort(getTestName());
+        final List<String> expectedAllowedTlsProtocols = Collections.singletonList("TLSv1.3");
+        final List<String> expectedDeniedTlsProtocols = Arrays.asList("Ssl.*","TLSv1","TLSv1.1","TLSv1.2");
+        final List<String> expectedAllowedTlsCypherSuites = Arrays.asList("(TLS|SSL)_AES_128_GCM_SHA256", "(TLS|SSL)_AES_256_GCM_SHA384");
+        final List<String> expectedDeniedTlsCypherSuites = Collections.singletonList(".*CBC.*");
+        assertThat(_port.getTlsProtocolAllowList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_port.getTlsProtocolWhiteList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_port.getTlsProtocolDenyList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_port.getTlsProtocolBlackList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_port.getTlsCipherSuiteAllowList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_port.getTlsCipherSuiteWhiteList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_port.getTlsCipherSuiteDenyList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+        assertThat(_port.getTlsCipherSuiteBlackList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+    }
+
+    @Test
+    public void testTlProtocolsAndCypherSuitesUsingAllowDenyAndWhiteBlackListContextVariable()
+    {
+        final Map<String, String> brokerContext = new HashMap<>();
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST, "[\"TLSv1.3\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST, "[\"Ssl.*\",\"TLSv1\",\"TLSv1.1\",\"TLSv1.2\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST, "[\"(TLS|SSL)_AES_128_GCM_SHA256\", \"(TLS|SSL)_AES_256_GCM_SHA384\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST, "[\".*CBC.*\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST, "[\"TLSv1.2\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST, "[\"Ssl.*\",\"TLSv1\",\"TLSv1.1\",\"TLSv1.3\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST, "[\".*CBC.*\"]");
+        brokerContext.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST, "[\".*GCM.*\"]");
+
+        when(_broker.getContext()).thenReturn(brokerContext);
+
+        _port = createPort(getTestName());
+        final List<String> expectedAllowedTlsProtocols = Collections.singletonList("TLSv1.3");
+        final List<String> expectedDeniedTlsProtocols = Arrays.asList("Ssl.*","TLSv1","TLSv1.1","TLSv1.2");
+        final List<String> expectedAllowedTlsCypherSuites = Arrays.asList("(TLS|SSL)_AES_128_GCM_SHA256", "(TLS|SSL)_AES_256_GCM_SHA384");
+        final List<String> expectedDeniedTlsCypherSuites = Collections.singletonList(".*CBC.*");
+        assertThat(_port.getTlsProtocolAllowList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_port.getTlsProtocolWhiteList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_port.getTlsProtocolDenyList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_port.getTlsProtocolBlackList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_port.getTlsCipherSuiteAllowList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_port.getTlsCipherSuiteWhiteList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_port.getTlsCipherSuiteDenyList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+        assertThat(_port.getTlsCipherSuiteBlackList(), is(equalTo(expectedDeniedTlsCypherSuites)));
     }
 
     private AmqpPortImpl createPort(final String portName)

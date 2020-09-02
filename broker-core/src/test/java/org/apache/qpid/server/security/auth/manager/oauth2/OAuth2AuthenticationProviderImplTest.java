@@ -20,14 +20,19 @@
  */
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
@@ -41,6 +46,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
@@ -50,6 +56,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvider;
+import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFoundryOAuth2IdentityResolverService;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.oauth2.OAuth2Negotiator;
@@ -93,6 +100,20 @@ public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
         _server = new OAuth2MockEndpointHolder();
         _server.start();
 
+        _authProvider = createAuthenticationProvider(Collections.emptyMap());
+
+        assertEquals("Could not successfully open authProvider", State.ACTIVE, _authProvider.getState());
+
+        final TrustManager[] trustingTrustManager = new TrustManager[] {new TrustingTrustManager() };
+
+        final SSLContext sc = SSLContext.getInstance("SSL");
+        sc.init(null, trustingTrustManager, new java.security.SecureRandom());
+        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        HttpsURLConnection.setDefaultHostnameVerifier(new BlindHostnameVerifier());
+    }
+
+    private OAuth2AuthenticationProvider<?> createAuthenticationProvider(Map<String, Object> attributes)
+    {
         Broker broker = BrokerTestHelper.createBrokerMock();
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(broker.getTaskExecutor()).thenReturn(taskExecutor);
@@ -125,18 +146,13 @@ public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
                                                  TEST_POST_LOGOUT_PATH));
         authProviderAttributes.put("scope", TEST_SCOPE);
         authProviderAttributes.put("trustStore", TEST_TRUST_STORE_NAME);
+        authProviderAttributes.putAll(attributes);
 
         setTestSystemProperty(CachingAuthenticationProvider.AUTHENTICATION_CACHE_MAX_SIZE, "0");
-        _authProvider = new OAuth2AuthenticationProviderImpl(authProviderAttributes, broker);
-        _authProvider.open();
-        assertEquals("Could not successfully open authProvider", State.ACTIVE, _authProvider.getState());
-
-        final TrustManager[] trustingTrustManager = new TrustManager[] {new TrustingTrustManager() };
-
-        final SSLContext sc = SSLContext.getInstance("SSL");
-        sc.init(null, trustingTrustManager, new java.security.SecureRandom());
-        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-        HttpsURLConnection.setDefaultHostnameVerifier(new BlindHostnameVerifier());
+        final OAuth2AuthenticationProviderImpl authenticationProvider =
+                new OAuth2AuthenticationProviderImpl(authProviderAttributes, broker);
+        authenticationProvider.open();
+        return authenticationProvider;
     }
 
     @After
@@ -249,6 +265,61 @@ public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
                 _authProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN, null);
         assertFailure(authenticationResult, "invalid_token");
     }
+
+    @Test
+    public void testTlProtocolsAndCypherSuitesUsingAllowDenyListContextVariable()
+    {
+        final Map<String, String> context = new HashMap<>();
+        context.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST, "[\"TLSv1.3\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST, "[\"Ssl.*\",\"TLSv1\",\"TLSv1.1\",\"TLSv1.2\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST, "[\"(TLS|SSL)_AES_128_GCM_SHA256\", \"(TLS|SSL)_AES_256_GCM_SHA384\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST, "[\".*CBC.*\"]");
+
+        final Map<String, Object> attributes =
+                Collections.singletonMap(SimpleLDAPAuthenticationManager.CONTEXT, context);
+        final OAuth2AuthenticationProvider<?> _authenticationProvider = createAuthenticationProvider(attributes);
+
+        final List<String> expectedAllowedTlsProtocols = Collections.singletonList("TLSv1.3");
+        final List<String> expectedDeniedTlsProtocols = Arrays.asList("Ssl.*", "TLSv1", "TLSv1.1", "TLSv1.2");
+        final List<String> expectedAllowedTlsCypherSuites = Arrays.asList("(TLS|SSL)_AES_128_GCM_SHA256", "(TLS|SSL)_AES_256_GCM_SHA384");
+        final List<String> expectedDeniedTlsCypherSuites = Collections.singletonList(".*CBC.*");
+        assertThat(_authenticationProvider.getTlsProtocolAllowList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolWhiteList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolDenyList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolBlackList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteAllowList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteWhiteList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteDenyList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteBlackList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+    }
+
+    @Test
+    public void testTlProtocolsAndCypherSuitesUsingBlackWhiteListContextVariable()
+    {
+        final Map<String, String> context = new HashMap<>();
+        context.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST, "[\"TLSv1.3\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST, "[\"Ssl.*\",\"TLSv1\",\"TLSv1.1\",\"TLSv1.2\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST, "[\"(TLS|SSL)_AES_128_GCM_SHA256\", \"(TLS|SSL)_AES_256_GCM_SHA384\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST, "[\".*CBC.*\"]");
+
+        final Map<String, Object> attributes =
+                Collections.singletonMap(SimpleLDAPAuthenticationManager.CONTEXT, context);
+        final OAuth2AuthenticationProvider<?> _authenticationProvider = createAuthenticationProvider(attributes);
+
+        final List<String> expectedAllowedTlsProtocols = Collections.singletonList("TLSv1.3");
+        final List<String> expectedDeniedTlsProtocols = Arrays.asList("Ssl.*", "TLSv1", "TLSv1.1", "TLSv1.2");
+        final List<String> expectedAllowedTlsCypherSuites = Arrays.asList("(TLS|SSL)_AES_128_GCM_SHA256", "(TLS|SSL)_AES_256_GCM_SHA384");
+        final List<String> expectedDeniedTlsCypherSuites = Collections.singletonList(".*CBC.*");
+        assertThat(_authenticationProvider.getTlsProtocolAllowList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolWhiteList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolDenyList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolBlackList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteAllowList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteWhiteList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteDenyList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteBlackList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+    }
+
 
     private void assertSuccess(final AuthenticationResult authenticationResult)
     {
