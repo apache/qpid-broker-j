@@ -21,15 +21,15 @@ package org.apache.qpid.server.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.server.KdcConfigKey;
@@ -38,44 +38,69 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.util.FileUtils;
+
 public class EmbeddedKdcResource extends ExternalResource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddedKdcResource.class);
+    private static final AtomicInteger COUNTER = new AtomicInteger();
+    private static final AtomicInteger PORT = new AtomicInteger();
+    private static final boolean CLEAN_UP = Boolean.parseBoolean(System.getProperty("qpid.test.cleanUpKdcArtifacts", "true"));
     private final SimpleKdcServer _simpleKdcServer;
     private final String _realm;
     private final List<File> _createdFiles = new ArrayList<>();
-    private volatile File _kdcDirectory;
+    private final Path _kdcDirectory;
+    private final int _port;
 
     public EmbeddedKdcResource(final String host, final int port, final String serviceName, final String realm)
     {
+        _port = port;
         _realm = realm;
+        _kdcDirectory = Paths.get("target", "simple-kdc-" + COUNTER.incrementAndGet());
         try
         {
+            createWorkDirectory(_kdcDirectory);
             _simpleKdcServer = new SimpleKdcServer();
-            _simpleKdcServer.setKdcHost(host);
-            if (port > 0)
-            {
-                _simpleKdcServer.setKdcTcpPort(port);
-            }
-            _simpleKdcServer.setAllowUdp(false);
-            _simpleKdcServer.setKdcRealm(realm);
-            _simpleKdcServer.getKdcConfig().setString(KdcConfigKey.KDC_SERVICE_NAME, serviceName);
         }
-        catch (KrbException e)
+        catch (KrbException | IOException e)
         {
             throw new AssertionError(String.format("Unable to create SimpleKdcServer': %s", e.getMessage()), e);
         }
+
+        _simpleKdcServer.setKdcHost(host);
+
+        // re-use port from previous start-up if any
+        // IBM JDK caches port somehow causing test failures
+        int p = port == 0 ? PORT.get() : port;
+        if (p > 0)
+        {
+            _simpleKdcServer.setKdcTcpPort(p);
+        }
+        _simpleKdcServer.setAllowUdp(false);
+        _simpleKdcServer.setKdcRealm(realm);
+        _simpleKdcServer.getKdcConfig().setString(KdcConfigKey.KDC_SERVICE_NAME, serviceName);
+        _simpleKdcServer.setWorkDir(_kdcDirectory.toFile());
     }
 
     @Override
     public void before() throws Exception
     {
-        final Path targetDir = FileSystems.getDefault().getPath("target");
-        _kdcDirectory = Files.createTempDirectory(targetDir, "simple-kdc-").toFile();
-        _simpleKdcServer.setWorkDir(_kdcDirectory);
         _simpleKdcServer.init();
+        if (_port == 0)
+        {
+            PORT.compareAndSet(0, _simpleKdcServer.getKdcSetting().checkGetKdcTcpPort());
+        }
         _simpleKdcServer.start();
-        LOGGER.info("SimpleKdcServer started on port {}, realm '{}'", getPort(), getRealm());
+        LOGGER.debug("SimpleKdcServer started on port {}, realm '{}' with work dir '{}'", getPort(), getRealm(), _kdcDirectory);
+
+        final String config = FileUtils.readFileAsString(new File(System.getProperty("java.security.krb5.conf")));
+        LOGGER.debug("java.security.krb5.conf='{}'", System.getProperty("java.security.krb5.conf"));
+        final Path krb5Conf = Paths.get(_kdcDirectory.toString(), "krb5.conf");
+        LOGGER.debug("JAAS config:" + config);
+        if (!CLEAN_UP)
+        {
+            Files.copy(krb5Conf, Paths.get(_kdcDirectory.toString(), "krb5.conf.copy"), StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     @Override
@@ -91,21 +116,11 @@ public class EmbeddedKdcResource extends ExternalResource
         }
         finally
         {
-            try
+            if (CLEAN_UP)
             {
-                delete(_kdcDirectory);
+                cleanUp();
             }
-            catch (IOException e)
-            {
-                LOGGER.warn("Failure to delete KDC directory", e);
-            }
-            for (File f: _createdFiles)
-            {
-                if (!f.delete())
-                {
-                    LOGGER.warn("Failure to delete file {}", f.getAbsolutePath());
-                }
-            }
+
         }
     }
 
@@ -114,38 +129,28 @@ public class EmbeddedKdcResource extends ExternalResource
         return _realm;
     }
 
-    private void delete(File f) throws IOException
+    private void delete(Path path) throws IOException
     {
-        Files.walkFileTree(f.toPath(),
-                           new SimpleFileVisitor<Path>()
-                           {
-                               @Override
-                               public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-                                       throws IOException
-                               {
-                                   Files.delete(file);
-                                   return FileVisitResult.CONTINUE;
-                               }
-
-                               @Override
-                               public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
-                                       throws IOException
-                               {
-                                   Files.delete(dir);
-                                   return FileVisitResult.CONTINUE;
-                               }
-                           });
+        Files.walk(path)
+             .sorted(Comparator.reverseOrder())
+             .map(Path::toFile)
+             .forEach(f -> {
+                 if (!f.delete())
+                 {
+                     LOGGER.warn("Could not delete file at {}", f.getAbsolutePath());
+                 }
+             });
     }
 
     public int getPort()
     {
-        return _simpleKdcServer.getKdcTcpPort();
+        return _simpleKdcServer.getKdcSetting().getKdcTcpPort();
     }
 
     public File createPrincipal(String keyTabFileName, String... principals)
             throws Exception
     {
-        final Path ketTabPath = Paths.get("target", keyTabFileName);
+        final Path ketTabPath = Paths.get("target", keyTabFileName).toAbsolutePath().normalize();
         final File ketTabFile = ketTabPath.toFile();
         _createdFiles.add(ketTabFile);
         createPrincipal(ketTabFile, principals);
@@ -172,4 +177,36 @@ public class EmbeddedKdcResource extends ExternalResource
         }
     }
 
+    private void createWorkDirectory(final Path kdcDir) throws IOException
+    {
+        try
+        {
+            Files.createDirectory(kdcDir);
+        }
+        catch (FileAlreadyExistsException e)
+        {
+            delete(kdcDir);
+            Files.createDirectory(kdcDir);
+        }
+    }
+
+
+    private void cleanUp()
+    {
+        try
+        {
+            delete(_kdcDirectory);
+        }
+        catch (IOException e)
+        {
+            LOGGER.warn("Failure to delete KDC directory", e);
+        }
+        for (File f: _createdFiles)
+        {
+            if (!f.delete())
+            {
+                LOGGER.warn("Failure to delete file {}", f.getAbsolutePath());
+            }
+        }
+    }
 }

@@ -107,7 +107,7 @@ public class KerberosUtilities
     public byte[] buildToken(String clientPrincipalName, File clientKeyTabFile, String targetServerPrincipalName)
             throws Exception
     {
-        final LoginContext lc = createKerberosKeyTabLoginContext("test",
+        final LoginContext lc = createKerberosKeyTabLoginContext(INITIATE_SCOPE,
                                                                  clientPrincipalName,
                                                                  clientKeyTabFile);
 
