@@ -104,16 +104,32 @@ public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticat
             defaultValue = LOGIN_CONFIG_SCOPE_DEFAULT)
     String getLoginConfigScope();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsProtocolWhiteList();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsProtocolBlackList();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsCipherSuiteWhiteList();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsCipherSuiteBlackList();
+
+    @DerivedAttribute
+    List<String> getTlsProtocolAllowList();
+
+    @DerivedAttribute
+    List<String> getTlsProtocolDenyList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteAllowList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteDenyList();
 
 }

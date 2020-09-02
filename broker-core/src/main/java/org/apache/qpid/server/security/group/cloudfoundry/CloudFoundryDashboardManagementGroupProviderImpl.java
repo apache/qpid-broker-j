@@ -21,8 +21,12 @@
 package org.apache.qpid.server.security.group.cloudfoundry;
 
 import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST;
+import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST;
+import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST;
 import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST;
 import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST;
+import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST;
+import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST;
 import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST;
 import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
 
@@ -104,10 +108,10 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     public void onOpen()
     {
         super.onOpen();
-        _tlsProtocolWhiteList = getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
-        _tlsProtocolBlackList = getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
-        _tlsCipherSuiteWhiteList = getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
-        _tlsCipherSuiteBlackList = getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
+        _tlsProtocolWhiteList = getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST, QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+        _tlsProtocolBlackList = getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_PROTOCOL_DENY_LIST, QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
+        _tlsCipherSuiteWhiteList = getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST, QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
+        _tlsCipherSuiteBlackList = getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST, QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
         _connectTimeout = getContextValue(Integer.class, QPID_GROUPPROVIDER_CLOUDFOUNDRY_CONNECT_TIMEOUT);
         _readTimeout = getContextValue(Integer.class, QPID_GROUPPROVIDER_CLOUDFOUNDRY_READ_TIMEOUT);
     }
@@ -310,5 +314,30 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     {
         return _tlsCipherSuiteBlackList;
     }
+
+    @Override
+    public List<String> getTlsProtocolAllowList()
+    {
+        return getTlsProtocolWhiteList();
+    }
+
+    @Override
+    public List<String> getTlsProtocolDenyList()
+    {
+        return getTlsProtocolBlackList();
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteAllowList()
+    {
+        return getTlsCipherSuiteWhiteList();
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteDenyList()
+    {
+        return getTlsCipherSuiteBlackList();
+    }
+
 
 }

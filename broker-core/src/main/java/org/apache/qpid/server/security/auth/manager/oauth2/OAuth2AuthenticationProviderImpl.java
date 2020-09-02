@@ -130,10 +130,10 @@ public class OAuth2AuthenticationProviderImpl
         super.onOpen();
         String type = getIdentityResolverType();
         _identityResolverService = new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(type);
-        _tlsProtocolWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
-        _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
-        _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
-        _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
+        _tlsProtocolWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+        _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
+        _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
+        _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
         _connectTimeout = getContextValue(Integer.class, AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
         _readTimeout = getContextValue(Integer.class, AUTHENTICATION_OAUTH2_READ_TIMEOUT);
 
@@ -517,6 +517,30 @@ public class OAuth2AuthenticationProviderImpl
     public List<String> getTlsCipherSuiteBlackList()
     {
         return _tlsCipherSuiteBlackList;
+    }
+
+    @Override
+    public List<String> getTlsProtocolAllowList()
+    {
+        return getTlsProtocolWhiteList();
+    }
+
+    @Override
+    public List<String> getTlsProtocolDenyList()
+    {
+        return getTlsProtocolBlackList();
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteAllowList()
+    {
+        return getTlsCipherSuiteWhiteList();
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteDenyList()
+    {
+        return getTlsCipherSuiteBlackList();
     }
 
     @Override

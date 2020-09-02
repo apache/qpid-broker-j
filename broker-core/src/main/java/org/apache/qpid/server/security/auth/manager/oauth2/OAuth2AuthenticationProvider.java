@@ -102,17 +102,35 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     @DerivedAttribute( description = "Default OAuth access token scope passed to the authorization endpoint")
     String getDefaultScope();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsProtocolWhiteList();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsProtocolBlackList();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsCipherSuiteWhiteList();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsCipherSuiteBlackList();
+
+    @DerivedAttribute
+    List<String> getTlsProtocolAllowList();
+
+    @DerivedAttribute
+    List<String> getTlsProtocolDenyList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteAllowList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteDenyList();
+
+
 
     int getConnectTimeout();
 

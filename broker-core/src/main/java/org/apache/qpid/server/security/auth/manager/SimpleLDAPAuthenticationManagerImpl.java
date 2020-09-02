@@ -189,10 +189,10 @@ public class SimpleLDAPAuthenticationManagerImpl
     {
         super.onOpen();
 
-        _tlsProtocolWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
-        _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
-        _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
-        _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
+        _tlsProtocolWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+        _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
+        _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
+        _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
 
         Integer cacheMaxSize = getContextValue(Integer.class, AUTHENTICATION_CACHE_MAX_SIZE);
         Long cacheExpirationTime = getContextValue(Long.class, AUTHENTICATION_CACHE_EXPIRATION_TIME);
@@ -782,6 +782,30 @@ public class SimpleLDAPAuthenticationManagerImpl
     public List<String> getTlsCipherSuiteBlackList()
     {
         return _tlsCipherSuiteBlackList;
+    }
+
+    @Override
+    public List<String> getTlsProtocolAllowList()
+    {
+        return getTlsProtocolWhiteList();
+    }
+
+    @Override
+    public List<String> getTlsProtocolDenyList()
+    {
+        return getTlsProtocolBlackList();
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteAllowList()
+    {
+        return getTlsCipherSuiteWhiteList();
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteDenyList()
+    {
+        return getTlsCipherSuiteBlackList();
     }
 
     private void closeSafely(InitialDirContext ctx)

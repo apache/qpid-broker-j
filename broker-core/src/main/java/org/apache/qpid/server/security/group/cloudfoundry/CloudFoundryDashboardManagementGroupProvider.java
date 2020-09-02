@@ -51,12 +51,26 @@ public interface CloudFoundryDashboardManagementGroupProvider<X extends CloudFou
     @ManagedAttribute( description = "A service instance id to qpid management group mapping. If the CloudFoundry endpoint grants a user permission to manage a service instance the user will be associated with the corresponding management group.", mandatory = true )
     Map<String, String> getServiceToManagementGroupMapping();
 
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsProtocolWhiteList();
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsProtocolBlackList();
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsCipherSuiteWhiteList();
+    @Deprecated
     @DerivedAttribute
     List<String> getTlsCipherSuiteBlackList();
+
+    @DerivedAttribute
+    List<String> getTlsProtocolAllowList();
+    @DerivedAttribute
+    List<String> getTlsProtocolDenyList();
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteAllowList();
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteDenyList();
+
 }

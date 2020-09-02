@@ -20,9 +20,12 @@ package org.apache.qpid.server.security.auth.manager;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvider.AUTHENTICATION_CACHE_MAX_SIZE;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
@@ -36,6 +39,7 @@ import java.nio.file.Path;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -80,6 +84,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -328,6 +333,70 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         final AuthenticationResult result = _authenticationProvider.authenticate(USER_1_NAME, USER_1_PASSWORD);
         assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
         assertEquals(USER_1_DN, result.getMainPrincipal().getName());
+    }
+
+    @Test
+    public void testTlProtocolsAndCypherSuitesUsingAllowDenyListContextVariable()
+    {
+        if (_authenticationProvider != null)
+        {
+            _authenticationProvider.close();
+        }
+
+        final Map<String, String> context = new HashMap<>();
+        context.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST, "[\"TLSv1.3\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST, "[\"Ssl.*\",\"TLSv1\",\"TLSv1.1\",\"TLSv1.2\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST, "[\"(TLS|SSL)_AES_128_GCM_SHA256\", \"(TLS|SSL)_AES_256_GCM_SHA384\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST, "[\".*CBC.*\"]");
+
+        final Map<String, Object> attributes =
+                Collections.singletonMap(SimpleLDAPAuthenticationManager.CONTEXT, context);
+        _authenticationProvider = createAuthenticationProvider(attributes);
+
+        final List<String> expectedAllowedTlsProtocols = Collections.singletonList("TLSv1.3");
+        final List<String> expectedDeniedTlsProtocols = Arrays.asList("Ssl.*", "TLSv1", "TLSv1.1", "TLSv1.2");
+        final List<String> expectedAllowedTlsCypherSuites = Arrays.asList("(TLS|SSL)_AES_128_GCM_SHA256", "(TLS|SSL)_AES_256_GCM_SHA384");
+        final List<String> expectedDeniedTlsCypherSuites = Collections.singletonList(".*CBC.*");
+        assertThat(_authenticationProvider.getTlsProtocolAllowList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolWhiteList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolDenyList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolBlackList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteAllowList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteWhiteList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteDenyList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteBlackList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+    }
+
+    @Test
+    public void testTlProtocolsAndCypherSuitesUsingBlackWhiteListContextVariable()
+    {
+        if (_authenticationProvider != null)
+        {
+            _authenticationProvider.close();
+        }
+
+        final Map<String, String> context = new HashMap<>();
+        context.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST, "[\"TLSv1.3\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST, "[\"Ssl.*\",\"TLSv1\",\"TLSv1.1\",\"TLSv1.2\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST, "[\"(TLS|SSL)_AES_128_GCM_SHA256\", \"(TLS|SSL)_AES_256_GCM_SHA384\"]");
+        context.put(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST, "[\".*CBC.*\"]");
+
+        final Map<String, Object> attributes =
+                Collections.singletonMap(SimpleLDAPAuthenticationManager.CONTEXT, context);
+        _authenticationProvider = createAuthenticationProvider(attributes);
+
+        final List<String> expectedAllowedTlsProtocols = Collections.singletonList("TLSv1.3");
+        final List<String> expectedDeniedTlsProtocols = Arrays.asList("Ssl.*", "TLSv1", "TLSv1.1", "TLSv1.2");
+        final List<String> expectedAllowedTlsCypherSuites = Arrays.asList("(TLS|SSL)_AES_128_GCM_SHA256", "(TLS|SSL)_AES_256_GCM_SHA384");
+        final List<String> expectedDeniedTlsCypherSuites = Collections.singletonList(".*CBC.*");
+        assertThat(_authenticationProvider.getTlsProtocolAllowList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolWhiteList(), is(equalTo(expectedAllowedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolDenyList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsProtocolBlackList(), is(equalTo(expectedDeniedTlsProtocols)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteAllowList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteWhiteList(), is(equalTo(expectedAllowedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteDenyList(), is(equalTo(expectedDeniedTlsCypherSuites)));
+        assertThat(_authenticationProvider.getTlsCipherSuiteBlackList(), is(equalTo(expectedDeniedTlsCypherSuites)));
     }
 
     private SimpleLDAPAuthenticationManagerImpl createAuthenticationProvider()
