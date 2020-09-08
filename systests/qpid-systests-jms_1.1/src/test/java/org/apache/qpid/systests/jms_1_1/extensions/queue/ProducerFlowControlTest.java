@@ -20,10 +20,14 @@
 */
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +47,8 @@ import javax.jms.Session;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.OverflowPolicy;
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.systests.Utils;
 
 public class ProducerFlowControlTest extends OverflowPolicyTestBase
 {
@@ -300,6 +306,60 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
         finally
         {
             producerConnection.close();
+        }
+    }
+
+    @Test
+    public void testEnforceFlowControlOnNewConnection() throws Exception
+    {
+        assumeThat(getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        final Queue testQueue = createQueueWithOverflowPolicy(getTestName(), OverflowPolicy.PRODUCER_FLOW_CONTROL, 0, 1, 0);
+        final Connection producerConnection1 = getConnectionBuilder().setSyncPublish(true).build();
+        try
+        {
+            Utils.sendMessages(producerConnection1, testQueue, 2);
+            assertTrue("Flow is not stopped", awaitAttributeValue(testQueue.getQueueName(), "queueFlowStopped", true, 5000));
+        }
+        finally
+        {
+            producerConnection1.close();
+        }
+
+        final Connection producerConnection2 = getConnectionBuilder().setSyncPublish(true).build();
+        try
+        {
+            final Session producerSession = producerConnection2.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final MessageProducer producer = producerSession.createProducer(testQueue);
+            final MessageSender messageSender = sendMessagesAsync(producer, producerSession, 1);
+
+            assertTrue("Flow is not stopped", awaitAttributeValue(testQueue.getQueueName(), "queueFlowStopped", true, 5000));
+            assertEquals("Incorrect number of message sent before blocking",
+                         0,
+                         messageSender.getNumberOfSentMessages());
+
+            final Connection consumerConnection = getConnection();
+            try
+            {
+                Session consumerSession = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                MessageConsumer consumer = consumerSession.createConsumer(testQueue);
+                consumerConnection.start();
+
+                Message message = consumer.receive(getReceiveTimeout());
+                assertNotNull("Message is not received", message);
+
+                Message message2 = consumer.receive(getReceiveTimeout());
+                assertNotNull("Message is not received", message2);
+                assertTrue("Message sending is not finished", messageSender.getSendLatch()
+                                                                           .await(getReceiveTimeout(), TimeUnit.MILLISECONDS));
+            }
+            finally
+            {
+                consumerConnection.close();
+            }
+        }
+        finally
+        {
+            producerConnection2.close();
         }
     }
 
