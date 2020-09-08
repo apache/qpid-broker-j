@@ -1358,6 +1358,28 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         _associatedLinkEndpoints.forEach(linkedEnpoint -> linkedEnpoint.receiveComplete());
     }
 
+    private void checkMessageDestinationFlowForReceivingLinkEndpoint(final LinkEndpoint<?,?> endpoint)
+    {
+        if (endpoint instanceof StandardReceivingLinkEndpoint)
+        {
+            final ReceivingDestination destination =
+                    ((StandardReceivingLinkEndpoint) endpoint).getReceivingDestination();
+            if (_blockingEntities.contains(this)
+                || _blockingEntities.contains(destination))
+            {
+                endpoint.setStopped(true);
+            }
+            else if (destination.getMessageDestination() instanceof Queue)
+            {
+                Queue<?> queue = (Queue<?>)destination.getMessageDestination();
+                if (queue.isQueueFlowStopped())
+                {
+                    queue.checkCapacity();
+                }
+            }
+        }
+    }
+
     private class EndpointCreationCallback<T extends LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> implements FutureCallback<T>
     {
 
@@ -1394,17 +1416,11 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     }
                     else
                     {
-                        if (endpoint instanceof StandardReceivingLinkEndpoint
-                            && (_blockingEntities.contains(Session_1_0.this)
-                                || _blockingEntities.contains(((StandardReceivingLinkEndpoint) endpoint)
-                                                                      .getReceivingDestination())))
-                        {
-                            endpoint.setStopped(true);
-                        }
 
                         if (!_endpointToOutputHandle.containsKey(endpoint))
                         {
                             _endpointToOutputHandle.put(endpoint, endpoint.getLocalHandle());
+                            checkMessageDestinationFlowForReceivingLinkEndpoint(endpoint);
                             endpoint.sendAttach();
                             endpoint.start();
                         }
