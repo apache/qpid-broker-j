@@ -189,8 +189,8 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
                         }
 
                         final AMQPSession<?, ?> session = sessionPrincipal.getSession();
-                        _blockedSessions.add(session);
                         session.block(_queue);
+                        _blockedSessions.add(session);
                     }
                 }
             }
