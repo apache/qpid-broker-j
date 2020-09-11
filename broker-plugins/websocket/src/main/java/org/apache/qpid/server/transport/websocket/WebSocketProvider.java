@@ -331,7 +331,7 @@ class WebSocketProvider implements AcceptingTransport
         private final ThreadFactory _threadFactory = QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(r -> QBBTrackingThreadPool.super.newThread(r));
 
         @Override
-        protected Thread newThread(final Runnable runnable)
+        public Thread newThread(final Runnable runnable)
         {
             return _threadFactory.newThread(runnable);
         }

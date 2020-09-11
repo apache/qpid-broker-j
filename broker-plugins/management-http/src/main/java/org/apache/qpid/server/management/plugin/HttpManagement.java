@@ -951,7 +951,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         @Override
-        protected Thread newThread(final Runnable runnable)
+        public Thread newThread(final Runnable runnable)
         {
             return _threadFactory.newThread(runnable);
         }
