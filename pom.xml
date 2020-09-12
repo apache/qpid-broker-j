@@ -129,12 +129,12 @@
     <!-- test dependency version numbers -->
     <junit-version>4.13</junit-version>
     <mockito-version>3.2.4</mockito-version>
-    <netty-version>4.1.45.Final</netty-version>
+    <netty-version>4.1.51.Final</netty-version>
     <hamcrest-version>2.2</hamcrest-version>
     <maven-core-version>3.5.4</maven-core-version>
     <maven-resolver-version>1.1.1</maven-resolver-version>
     <httpclient-version>4.5.3</httpclient-version>
-    <qpid-jms-client-version>0.49.0</qpid-jms-client-version>
+    <qpid-jms-client-version>0.54.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.3.4</qpid-jms-client-amqp-0-x-version>
     <jaxb-api-version>2.3.1</jaxb-api-version>
 
@@ -153,9 +153,9 @@
     <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
     <h2.version>1.4.200</h2.version>
     <apache-directory-version>2.0.0.AM25</apache-directory-version>
-    <kerby-version>2.0.0</kerby-version>
-    <bcprov-version>1.64</bcprov-version>
-    <bcpkix-version>1.64</bcpkix-version>
+    <kerby-version>2.0.1</kerby-version>
+    <bcprov-version>1.66</bcprov-version>
+    <bcpkix-version>1.66</bcpkix-version>
     <prometheus-client-version>0.9.0</prometheus-client-version>
   </properties>
 
