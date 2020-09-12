@@ -22,8 +22,8 @@ package org.apache.qpid.server.security.auth.manager.oauth2;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -62,8 +62,8 @@ import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationMana
 import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFoundryOAuth2IdentityResolverService;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.oauth2.OAuth2Negotiator;
-import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.tls.TlsResource;
 
 public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
 {

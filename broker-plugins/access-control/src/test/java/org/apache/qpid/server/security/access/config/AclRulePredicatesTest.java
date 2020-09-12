@@ -25,9 +25,9 @@ import static org.apache.qpid.server.security.access.config.ObjectProperties.Pro
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.FROM_NETWORK;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.NAME;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
