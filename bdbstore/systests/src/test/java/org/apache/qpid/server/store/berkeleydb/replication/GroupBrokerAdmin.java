@@ -391,7 +391,7 @@ public class GroupBrokerAdmin
         return members;
     }
 
-    private GroupMember getMemberByAmqpPort(final int amqpPort)
+    GroupMember getMemberByAmqpPort(final int amqpPort)
     {
         return Arrays.stream(_members)
                      .filter(m -> m.getAmqpPort() == amqpPort)
@@ -520,6 +520,16 @@ public class GroupBrokerAdmin
         private Map<String, Object> getNodeAttributes()
         {
             return _nodeAttributes;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "GroupMember{" +
+                   "name='" + _name + '\'' +
+                   ",bdbPort=" + _bdbPort +
+                   ",amqpPort=" + _amqpPort +
+                   '}';
         }
     }
 }

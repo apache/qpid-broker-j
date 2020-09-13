@@ -368,6 +368,9 @@ public class MultiNodeTest extends GroupJmsTestBase
                                               final int activeBrokerPort,
                                               final int inactiveBrokerPort) throws Exception
     {
+        LOGGER.info("Transfer mastership to {} from {}",
+                    getBrokerAdmin().getMemberByAmqpPort(inactiveBrokerPort),
+                    getBrokerAdmin().getMemberByAmqpPort(activeBrokerPort));
         _failoverListener = new FailoverAwaitingListener();
         getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
