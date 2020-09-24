@@ -1205,6 +1205,13 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 removeMessage(_messageId, false);
                 storedSizeChangeOccurred(-getContentSize());
             }
+            if (!_messageDeleteListeners.isEmpty())
+            {
+                for (final MessageDeleteListener messageDeleteListener : _messageDeleteListeners)
+                {
+                    messageDeleteListener.messageDeleted(this);
+                }
+            }
 
             final T metaData;
             long bytesCleared = 0;
@@ -1224,13 +1231,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             }
             _messageDataRef = null;
             _inMemorySize.addAndGet(-bytesCleared);
-            if (!_messageDeleteListeners.isEmpty())
-            {
-                for (final MessageDeleteListener messageDeleteListener : _messageDeleteListeners)
-                {
-                    messageDeleteListener.messageDeleted(this);
-                }
-            }
         }
 
         @Override
