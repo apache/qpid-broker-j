@@ -311,9 +311,6 @@ public class MemoryMessageStore implements MessageStore
             public void remove()
             {
                 _messages.remove(getMessageNumber());
-                int bytesCleared = metaData.getStorableSize() + metaData.getContentSize();
-                super.remove();
-                _inMemorySize.addAndGet(-bytesCleared);
                 if (!_messageDeleteListeners.isEmpty())
                 {
                     for (final MessageDeleteListener messageDeleteListener : _messageDeleteListeners)
@@ -321,6 +318,9 @@ public class MemoryMessageStore implements MessageStore
                         messageDeleteListener.messageDeleted(this);
                     }
                 }
+                int bytesCleared = metaData.getStorableSize() + metaData.getContentSize();
+                super.remove();
+                _inMemorySize.addAndGet(-bytesCleared);
             }
         };
         _messages.put(storedMemoryMessage.getMessageNumber(), storedMemoryMessage);
