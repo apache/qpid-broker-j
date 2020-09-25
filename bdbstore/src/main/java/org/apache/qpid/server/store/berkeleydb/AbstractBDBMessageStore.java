@@ -573,12 +573,11 @@ public abstract class AbstractBDBMessageStore implements MessageStore
      *
      * @throws org.apache.qpid.server.store.StoreException If the operation fails for any reason, or if the specified message does not exist.
      */
-    private void storeMetaData(final Transaction tx, long messageId,
-                               StorableMessageMetaData messageMetaData)
+    private void storeMetaData(final Transaction tx, long messageId, StorableMessageMetaData messageMetaData)
             throws StoreException
     {
         getLogger().debug("storeMetaData called for transaction {}, messageId {}, messageMetaData {} ",
-                          tx, messageId, messageMetaData);
+                tx, messageId, messageMetaData);
 
         DatabaseEntry key = new DatabaseEntry();
         LongBinding.longToEntry(messageId, key);
@@ -586,19 +585,32 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
         MessageMetaDataBinding messageBinding = MessageMetaDataBinding.getInstance();
         messageBinding.objectToEntry(messageMetaData, value);
-        try
-        {
-            getMessageMetaDataDb().put(tx, key, value);
-            getLogger().debug("Storing message metadata for message id {} in transaction {}", messageId, tx);
 
-        }
-        catch (RuntimeException e)
+        boolean complete = false;
+        int attempts = 0;
+
+        do
         {
-            throw getEnvironmentFacade().handleDatabaseException("Error writing message metadata with id "
-                                                                 + messageId
-                                                                 + " to database: "
-                                                                 + e.getMessage(), e);
+            try
+            {
+                getMessageMetaDataDb().put(tx, key, value);
+                getLogger().debug("Storing message metadata for message id {} in transaction {}", messageId, tx);
+                complete = true;
+
+            }
+            catch (LockConflictException e)
+            {
+                sleepOrThrowOnLockConflict(attempts++, "Cannot store metadata", e);
+            }
+            catch (RuntimeException e)
+            {
+                throw getEnvironmentFacade().handleDatabaseException("Error writing message metadata with id "
+                        + messageId
+                        + " to database: "
+                        + e.getMessage(), e);
+            }
         }
+        while(!complete);
     }
 
 
