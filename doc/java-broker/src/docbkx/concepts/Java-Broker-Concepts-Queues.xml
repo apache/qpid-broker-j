@@ -233,6 +233,8 @@
         <table>
           <title>Setting the replay period using a Qpid JMS AMQP 0-x address</title>
           <tgroup cols="2">
+              <colspec colnum="1" colname="syntax" colwidth="1*"/>
+              <colspec colnum="2" colname="example" colwidth="1*"/>
             <thead>
               <row>
                 <entry>Syntax</entry>

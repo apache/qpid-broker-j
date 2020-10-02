@@ -111,10 +111,11 @@
                     <artifactId>docbkx-maven-plugin</artifactId>
                     <executions>
                         <execution>
-                            <id>docbook-html</id>
+                            <id>docbook-generation</id>
                             <phase>compile</phase>
                             <goals>
                                 <goal>generate-xhtml</goal>
+                                <goal>generate-pdf</goal>
                             </goals>
                         </execution>
                     </executions>

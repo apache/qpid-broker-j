@@ -49,7 +49,7 @@
     <title>Virtualhost Model showing major entities</title>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/VirtualHost-Model.png" format="PNG" scalefit="1"/>
+          <imagedata fileref="images/VirtualHost-Model.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
         </imageobject>
         <textobject>
           <phrase>Virtual Host Model</phrase>

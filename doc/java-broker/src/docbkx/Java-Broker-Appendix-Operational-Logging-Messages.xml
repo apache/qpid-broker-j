@@ -62,8 +62,7 @@
     user id used by the client (myapp1), their IP, ephemeral port number and the name of the virtual
     host. The message text itself gives us further details about the connection: the client id, the
     protocol version in used, and details of the client's qpid library.</para>
-  <screen>[con:8(myapp1@/127.0.0.1:52851/default)] CON-1001 : Open : Destination : AMQP(127.0.0.1:5672) :
-    Protocol Version : 0-10 : Client ID : myapp1 : Client Version : ${project.version} : Client Product : qpid</screen>
+  <screen>[con:8(myapp1@/127.0.0.1:52851/default)] CON-1001 : Open : Destination : AMQP(127.0.0.1:5672) : Protocol Version : 0-10 : Client ID : myapp1 : Client Version : ${project.version} : Client Product : qpid</screen>
   <para><literal><link linkend="Java-Broker-Appendix-Operation-Logging-Message-QUE-1001">QUE-1001</link></literal> is used when a queue is created. The connection actor
       <literal>con</literal> tells us details of the connection performing the queue creation: the
     user id used by the client (myapp1), the IP, ephemeral port number and the name of the virtual
@@ -76,6 +75,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Actor-Format">
     <title>Actors Entities</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="actortype" colwidth="1*"/>
+      <colspec colnum="2" colname="purpose" colwidth="1*"/>
       <thead>
         <row>
           <entry>Actor Type</entry>
@@ -143,6 +144,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Subject-Format">
     <title>Subject Entities</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="subjtype" colwidth="1*"/>
+      <colspec colnum="2" colname="purpose" colwidth="1*"/>
       <thead>
         <row>
           <entry>Subject Type</entry>
@@ -237,6 +240,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Broker">
     <title>Broker Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -391,6 +396,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Management">
     <title>Management Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -473,6 +480,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-VirtualHost">
     <title>Virtual Host Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -545,6 +554,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Queue">
     <title>Queue Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -636,6 +647,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Exchange">
     <title>Exchange Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -690,6 +703,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Binding">
     <title>Binding Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -723,6 +738,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Connection">
     <title>Connection Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -852,6 +869,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Channel">
     <title>Channel Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -980,6 +999,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Subscription">
     <title>Subscription Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -1037,6 +1058,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-MessageStore">
     <title>Message Store Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -1141,6 +1164,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-TransactionStore">
     <title>Transaction Store Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -1214,6 +1239,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-ConfigurationStore">
     <title>Configuration Store Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -1276,6 +1303,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-HA">
     <title>HA Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>
@@ -1441,6 +1470,8 @@
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Port">
     <title>Port Log Messages</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
       <thead>
         <row>
           <entry>Message Id</entry>

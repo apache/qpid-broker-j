@@ -211,6 +211,8 @@
     <table>
       <title>HTTP status codes returned by REST interfaces</title>
       <tgroup cols="2">
+        <colspec colnum="1" colname="statuscode" colwidth="1*"/>
+        <colspec colnum="2" colname="description" colwidth="1*"/>
         <thead>
           <row>
             <entry>Status code</entry>

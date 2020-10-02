@@ -28,15 +28,15 @@
   <para>For example, if queue <literal>myqueue</literal> is configured with a message count alert of
     1000, and then owing to a failure of a downstream system messages begin to accumulate on the
     queue, the following alerts will be written periodically to the log. </para>
-  <screen>
-INFO [default:VirtualHostHouseKeepingTask] (queue.NotificationCheck) - MESSAGE_COUNT_ALERT
-           On Queue myqueue - 1272: Maximum count on queue threshold (1000) breached.
+  <screen>INFO [default:VirtualHostHouseKeepingTask] (queue.NotificationCheck) - MESSAGE_COUNT_ALERT On Queue myqueue - 1272: Maximum count on queue threshold (1000) breached.
   </screen>
   <para>Note that queue alerts are <emphasis>soft</emphasis> in nature; breaching the limit will
     merely cause the alerts to be generated but messages will still be accepted to the queue.</para>
   <table pgwide="1" xml:id="Java-Broker-Appendix-Queue-Alerts-Alerting-Messages">
     <title>Queue Alerts</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="alertname" colwidth="1*"/>
+      <colspec colnum="2" colname="purpose" colwidth="1*"/>
       <thead>
         <row>
           <entry>Alert Name</entry>

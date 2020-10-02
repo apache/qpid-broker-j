@@ -55,12 +55,12 @@
       <literal>qpid.virtualhost.statisticsReportPattern</literal></para>
     <para>The value of the context variable is a free text string containing reference(s) to the statistic names that
       are to appear in the report. References are made by surrounding the name of the statistic with '$' and curly braces,
-      thus <literal>${&lt;statistic-name&gt;}</literal>.</para>
+      thus <literal>\${&lt;statistic-name&gt;}</literal>.</para>
     <para>Statistics references allow an optional formatters. The supported formatters are: <literal>:byteunit</literal>
       (produces a human readable byte value e.g. 3 MiB), <literal>:duration</literal> (produces a ISO-8601 duration)and
       <literal>:datetime</literal> (produces a ISO-8601 date/time).</para>
     <para>For example, a statistic report pattern for the <literal>queue</literal> category specifying two queue
-      statistic values: <literal>queueDepthMessages=${queueDepthMessages},queueDepthBytes=${queueDepthBytes:byteunit}</literal></para>
+      statistic values: <literal>queueDepthMessages=\${queueDepthMessages},queueDepthBytes=\${queueDepthBytes:byteunit}</literal></para>
     <para>Like all context variables, the statistic report pattern can also reference the attributes of the entity
       or even its ancestors.  This feature can be exploited to include things like the name of the entity within the
       report.</para>
@@ -74,28 +74,33 @@
       cURL.  This example uses <literal>ancestor</literal> references to include entity names:</para>
     <example>
       <title>Enabling statistics for a single queue using the REST API and cURL</title>
-      <screen><![CDATA[curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern", "value" : "${ancestor:virtualhost:name}/${ancestor:queue:name}: queueDepthMessages=${queueDepthMessages}, queueDepthBytes=${queueDepthBytes:byteunit}"}' https://localhost:8080/api/latest/queue/default/default/myqueue/setContextVariable]]></screen>
+      <screen><![CDATA[curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern",
+"value" : "\${ancestor:virtualhost:name}/\${ancestor:queue:name}: queueDepthMessages=\${queueDepthMessages},
+queueDepthBytes=\${queueDepthBytes:byteunit}"}' https://localhost:8080/api/latest/queue/default/default/myqueue/setContextVariable]]></screen>
     </example>
     <para>
       Once enabled, an example statistic report output written to the log might look like this:
-      <screen><![CDATA[2017-10-15 13:03:12,993 INFO  [virtualhost-default-pool-0] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=0, queueDepthBytes=0 B
-2017-10-15 13:03:22,979 INFO  [virtualhost-default-pool-2] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=3, queueDepthBytes=345 B
-2017-10-15 13:03:32,981 INFO  [virtualhost-default-pool-2] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=3, queueDepthBytes=345 B]]></screen>
+      <screen><![CDATA[INFO  [virtualhost-default-pool-0] (q.s.Queue)- Statistics: default/myqueue: queueDepthMessages=0, queueDepthBytes=0 B
+ INFO  [virtualhost-default-pool-2] (q.s.Queue)- Statistics: default/myqueue: queueDepthMessages=3, queueDepthBytes=345 B
+ INFO  [virtualhost-default-pool-2] (q.s.Queue)- Statistics: default/myqueue: queueDepthMessages=3, queueDepthBytes=345 B]]></screen>
     </para>
     <para>Removing a statistic report pattern from the same queue:</para>
     <example>
       <title>Disabling statistics for a single queue using the REST API and cURL</title>
-      <screen><![CDATA[curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern"}' https://localhost:8080/api/latest/queue/default/default/myqueue/setContextVariable]]></screen>
+      <screen><![CDATA[
+curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern"}' https://localhost:8080/api/latest/queue/default/default/myqueue/setContextVariable]]></screen>
     </example>
     <para>Adding a statistic reporting pattern to all queues:</para>
     <example>
       <title>Enabling statistics for all queues using the REST API and cURL</title>
-      <screen><![CDATA[curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern", "value" : "${ancestor:virtualhost:name}/${ancestor:queue:name}: oldestMessageAge=${oldestMessageAge:duration}"}' https://localhost:8080/api/latest/virtualhost/default/default/setContextVariable]]></screen>
+      <screen><![CDATA[curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern",
+"value" : "\${ancestor:virtualhost:name}/\${ancestor:queue:name}:
+oldestMessageAge=\${oldestMessageAge:duration}"}' https://localhost:8080/api/latest/virtualhost/default/default/setContextVariable]]></screen>
     </example>
     <para>
       Once enabled, an  example statistic report for a virtualhost with two queues might look like this:
-      <screen><![CDATA[2017-10-15 13:17:42,918 INFO  [virtualhost-default-pool-1] (q.s.Queue) - Statistics: default/myqueue1: oldestMessageAge=PT1M24S
-2017-10-15 13:17:42,918 INFO  [virtualhost-default-pool-1] (q.s.Queue) - Statistics: default/myqueue2: oldestMessageAge=PT0S]]></screen>
+      <screen><![CDATA[INFO  [virtualhost-default-pool-1] (q.s.Queue)- Statistics: default/myqueue1: oldestMessageAge=PT1M24S
+      INFO  [virtualhost-default-pool-1] (q.s.Queue)- Statistics: default/myqueue2: oldestMessageAge=PT0S]]></screen>
     </para>
   </section>
 </appendix>

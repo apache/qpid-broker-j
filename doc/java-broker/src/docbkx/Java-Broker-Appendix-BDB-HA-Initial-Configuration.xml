@@ -174,10 +174,10 @@
       and node <literal>weather3</literal> on host/port <literal>thor:5000</literal>.</para>
     <para>The node <literal>weather1</literal> can be created with the following command</para>
     <screen>
-      $ ./qpid-server -icp ./initial-config.json -prop ha.node_name=weather1 -prop  ha.node_address=chaac:5000 \
-      -prop ha.group_name=weather -prop ha.helper_address=chaac:5000 -prop ha.helper_node_name=weather1 \
-      -prop ha.permitted_nodes="[\"chaac:5000\",\"indra:5000\",\"thor:5000\"]" -prop ha.priority=3 \
-      -prop qpid.amqp_port=10000 -prop qpid.http_port=20000
+$ ./qpid-server -icp ./initial-config.json -prop ha.node_name=weather1 -prop  ha.node_address=chaac:5000 \
+-prop ha.group_name=weather -prop ha.helper_address=chaac:5000 -prop ha.helper_node_name=weather1 \
+-prop ha.permitted_nodes="[\"chaac:5000\",\"indra:5000\",\"thor:5000\"]" -prop ha.priority=3 \
+-prop qpid.amqp_port=10000 -prop qpid.http_port=20000
     </screen>
     <para>Please note, the broker is started with initial configuration at file <literal>./initial-config.json</literal>.
       The context variable for node name <literal>ha.node_name</literal> is set to <literal>weather1</literal>.
@@ -189,10 +189,10 @@
     </para>
     <para>The node <literal>weather2</literal> can be created on host<literal>indra</literal> with the following command:</para>
     <screen>
-      $ ./qpid-server -icp ./initial-config.json -prop ha.node_name=weather2 -prop  ha.node_address=indra:5000 \
-      -prop ha.group_name=weather -prop ha.helper_address=chaac:5000 -prop ha.helper_node_name=weather1 \
-      -prop ha.permitted_nodes="[\"chaac:5000\",\"indra:5000\",\"thor:5000\"]"  -prop ha.priority=2 \
-      -prop qpid.amqp_port=10001 -prop qpid.http_port=20001
+ $ ./qpid-server -icp ./initial-config.json -prop ha.node_name=weather2 -prop  ha.node_address=indra:5000 \
+-prop ha.group_name=weather -prop ha.helper_address=chaac:5000 -prop ha.helper_node_name=weather1 \
+-prop ha.permitted_nodes="[\"chaac:5000\",\"indra:5000\",\"thor:5000\"]"  -prop ha.priority=2 \
+-prop qpid.amqp_port=10001 -prop qpid.http_port=20001
     </screen>
     <para>
       The context variable for node name <literal>ha.node_name</literal> is set to <literal>weather2</literal>.
@@ -204,10 +204,10 @@
     </para>
     <para>The node <literal>weather3</literal> can be created on host<literal>thor</literal> with the following command:</para>
     <screen>
-      $ ./qpid-server -icp ./initial-config.json -prop ha.node_name=weather3 -prop  ha.node_address=thor:5000 \
-      -prop ha.group_name=weather -prop ha.helper_address=chaac:5000 -prop ha.helper_node_name=weather1 \
-      -prop ha.permitted_nodes="[\"chaac:5000\",\"indra:5000\",\"thor:5000\"]"  -prop ha.priority=1 \
-      -prop qpid.amqp_port=10002 -prop qpid.http_port=20002
+$ ./qpid-server -icp ./initial-config.json -prop ha.node_name=weather3 -prop  ha.node_address=thor:5000 \
+-prop ha.group_name=weather -prop ha.helper_address=chaac:5000 -prop ha.helper_node_name=weather1 \
+-prop ha.permitted_nodes="[\"chaac:5000\",\"indra:5000\",\"thor:5000\"]"  -prop ha.priority=1 \
+-prop qpid.amqp_port=10002 -prop qpid.http_port=20002
     </screen>
     <para>
       The context variable for node name <literal>ha.node_name</literal> is set to <literal>weather3</literal>.
