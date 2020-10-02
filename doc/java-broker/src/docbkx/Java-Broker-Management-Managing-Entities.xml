@@ -53,7 +53,7 @@
         <listitem>
           <para>Attributes values can be expressed as a simple value (e.g. <literal>myName</literal>
             or <literal>1234</literal>), in terms of context variables
-              (e.g.<literal>${foo}</literal> or <literal>/data/${foo}/</literal>).</para>
+              (e.g.<literal>\${foo}</literal> or <literal>/data/\${foo}/</literal>).</para>
         </listitem>
         <listitem>
           <para>Each entity has zero or more context variables.</para>
@@ -66,7 +66,7 @@
         </listitem>
         <listitem>
           <para>When resolving an attribute's value, if the value contains a variable
-              (e.g.<literal>${foo}</literal>), the variable is first resolved using the entity's own
+              (e.g.<literal>\${foo}</literal>), the variable is first resolved using the entity's own
             context variables. If the entity has no definition for the context variable, the
             entity's parent is tried, then its grandparent and so forth, all the way until the
             SystemContext is reached.</para>

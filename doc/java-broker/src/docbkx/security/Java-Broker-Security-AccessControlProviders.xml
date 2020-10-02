@@ -146,6 +146,8 @@
   <table xml:id="table-Java-Broker-Security-AccessControlProviders-Syntax_permissions">
     <title>List of ACL permission</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="command" colwidth="1*"/>
+      <colspec colnum="2" colname="action" colwidth="1*"/>
       <tbody>
         <row>
           <entry><command>ALLOW</command></entry>
@@ -169,6 +171,10 @@
   <table xml:id="table-Java-Broker-Security-AccessControlProviders-Syntax_actions">
     <title>List of ACL actions</title>
     <tgroup cols="4">
+      <colspec colnum="1" colname="action" colwidth="1*"/>
+      <colspec colnum="2" colname="description" colwidth="1*"/>
+      <colspec colnum="3" colname="supportedtypes" colwidth="1*"/>
+      <colspec colnum="4" colname="supportedproperties" colwidth="1*"/>
     <thead>
         <row>
           <entry><para>Action</para></entry>
@@ -261,7 +267,12 @@
   </table>
   <table xml:id="table-Java-Broker-Security-AccessControlProviders-Syntax_objects">
     <title>List of ACL objects</title>
-    <tgroup cols="4">
+    <tgroup cols="5">
+      <colspec colnum="1" colname="objecttype" colwidth="1*"/>
+      <colspec colnum="2" colname="description" colwidth="1*"/>
+      <colspec colnum="3" colname="supportedactions" colwidth="1*"/>
+      <colspec colnum="4" colname="supportedproperties" colwidth="1*"/>
+      <colspec colnum="5" colname="allowedVHAcls" colwidth="1*"/>
       <thead>
         <row>
           <entry><para>Object type</para></entry>
@@ -327,6 +338,8 @@
   <table xml:id="table-Java-Broker-Security-AccessControlProviders-Syntax_properties">
     <title>List of ACL properties</title>
     <tgroup cols="2">
+      <colspec colnum="1" colname="name" colwidth="1*"/>
+      <colspec colnum="2" colname="description" colwidth="1*"/>
       <tbody>
         <row>
           <entry><command>name</command> </entry>

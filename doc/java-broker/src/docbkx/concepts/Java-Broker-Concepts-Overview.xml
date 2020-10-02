@@ -69,7 +69,7 @@
       <title>Message Flow through Key Entities</title>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/Broker-MessageFlow.png" format="PNG" scalefit="1"/>
+          <imagedata fileref="images/Broker-MessageFlow.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
         </imageobject>
         <textobject>
           <phrase>Message Flow through the Key Entities of the Broker</phrase>
@@ -82,7 +82,7 @@
       <title>Broker Structure showing major entities</title>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/Broker-Model.png" format="PNG" scalefit="1"/>
+          <imagedata fileref="images/Broker-Model.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
         </imageobject>
         <textobject>
           <phrase>Broker Structure</phrase>

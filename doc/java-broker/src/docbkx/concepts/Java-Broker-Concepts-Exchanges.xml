@@ -78,7 +78,7 @@
     <title>Direct exchange</title>
     <mediaobject>
      <imageobject>
-      <imagedata fileref="images/Exchange-Direct.png" format="PNG" scalefit="1"/>
+      <imagedata fileref="images/Exchange-Direct.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
      </imageobject>
     </mediaobject>
    </figure>
@@ -104,7 +104,7 @@
      <title>Topic exchange - exact match on topic name</title>
      <mediaobject>
       <imageobject>
-       <imagedata fileref="images/Exchange-Topic.png" format="PNG" scalefit="1"/>
+       <imagedata fileref="images/Exchange-Topic.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
       </imageobject>
      </mediaobject>
     </figure>
@@ -115,7 +115,7 @@
     <title>Topic exchange - matching on hierarchical topic patterns</title>
     <mediaobject>
      <imageobject>
-      <imagedata fileref="images/Exchange-Topic-Hierarchical.png" format="PNG" scalefit="1"/>
+      <imagedata fileref="images/Exchange-Topic-Hierarchical.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
      </imageobject>
     </mediaobject>
    </figure>
@@ -131,7 +131,7 @@
     <title>Topic exchange - matching on JMS message selector</title>
     <mediaobject>
      <imageobject>
-      <imagedata fileref="images/Exchange-Topic-JMSSelector.png" format="PNG" scalefit="1"/>
+      <imagedata fileref="images/Exchange-Topic-JMSSelector.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
      </imageobject>
     </mediaobject>
    </figure>
@@ -155,7 +155,7 @@
      <title>Fanout exchange</title>
      <mediaobject>
       <imageobject>
-       <imagedata fileref="images/Exchange-Fanout.png" format="PNG" scalefit="1"/>
+       <imagedata fileref="images/Exchange-Fanout.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
       </imageobject>
      </mediaobject>
     </figure>
