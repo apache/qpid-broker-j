@@ -29,6 +29,9 @@
   <table pgwide="1">
     <title>System properties</title>
     <tgroup cols="3">
+      <colspec colnum="1" colname="systemproperty" colwidth="1*"/>
+      <colspec colnum="2" colname="default" colwidth="1*"/>
+      <colspec colnum="3" colname="purpose" colwidth="1*"/>
       <thead>
         <row>
           <entry>System property</entry>

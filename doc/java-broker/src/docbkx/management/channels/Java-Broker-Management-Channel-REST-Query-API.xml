@@ -51,6 +51,8 @@
             <table>
                 <title>Query API URLs</title>
                 <tgroup cols="2">
+                    <colspec colnum="1" colname="queryurl" colwidth="1*"/>
+                    <colspec colnum="2" colname="description" colwidth="1*"/>
                     <thead>
                         <row>
                             <entry>Query API URL</entry>
@@ -86,6 +88,8 @@
             <table>
                 <title>Query API request parameters</title>
                 <tgroup cols="2">
+                    <colspec colnum="1" colname="paramname" colwidth="1*"/>
+                    <colspec colnum="2" colname="description" colwidth="1*"/>
                     <thead>
                         <row>
                             <entry>Parameter Name</entry>
@@ -217,6 +221,8 @@
                 <table>
                     <title>Query API functions</title>
                     <tgroup cols="2">
+                        <colspec colnum="1" colname="functionname" colwidth="1*"/>
+                        <colspec colnum="2" colname="description" colwidth="1*"/>
                     <thead>
                         <row>
                             <entry>Function Name</entry>

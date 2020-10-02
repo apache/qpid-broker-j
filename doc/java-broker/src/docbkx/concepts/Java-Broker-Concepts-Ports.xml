@@ -49,7 +49,7 @@
             <title>Control flow during Authentication</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="images/Broker-PortAuthFlow.png" format="PNG" scalefit="1"/>
+                    <imagedata fileref="images/Broker-PortAuthFlow.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
                 </imageobject>
                 <textobject>
                     <phrase>Control flow during Authentication</phrase>

@@ -76,7 +76,7 @@
       <title>3-node group deployed across three Brokers.</title>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/HA-Overview.png" format="PNG" scalefit="1"/>
+          <imagedata fileref="images/HA-Overview.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
         </imageobject>
         <textobject>
           <phrase>Diagram showing a 3 node group deployed across three Brokers</phrase>
@@ -152,7 +152,7 @@
               <title>Creating 1st node in a group</title>
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/HA-Create-1.png" format="PNG" scalefit="1"/>
+                  <imagedata fileref="images/HA-Create-1.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
                 </imageobject>
                 <textobject>
                   <phrase>Creating 1st node in a group</phrase>
@@ -195,7 +195,7 @@
               <title>Adding subsequent nodes to the group</title>
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/HA-Create-2.png" format="PNG" scalefit="1"/>
+                  <imagedata fileref="images/HA-Create-2.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
                 </imageobject>
                 <textobject>
                   <phrase>Adding subsequent nodes to the group</phrase>
@@ -211,7 +211,7 @@
         <title>View of group from one node</title>
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/HA-Create-3.png" format="PNG" scalefit="1"/>
+            <imagedata fileref="images/HA-Create-3.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
           </imageobject>
           <textobject>
             <phrase>View of group from one node</phrase>

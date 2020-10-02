@@ -193,6 +193,9 @@ $ ./qpid-server -st JDBC \
             default values if not otherwise configured by the user: <table>
                 <title>Base Configuration Properties</title>
                 <tgroup cols="3">
+                    <colspec colnum="1" colname="name" colwidth="1*"/>
+                    <colspec colnum="2" colname="description" colwidth="1*"/>
+                    <colspec colnum="3" colname="value" colwidth="1*"/>
                     <thead>
                         <row>
                             <entry> Name </entry>

@@ -54,7 +54,7 @@
             <title>Web Management Console - Authentication</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="images/Management-Web-Auth.png" format="PNG" scalefit="1" width="900px"/>
+                    <imagedata fileref="images/Management-Web-Auth.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
                 </imageobject>
                 <textobject>
                     <phrase>Web Console Authentication</phrase>
@@ -70,7 +70,7 @@
             <title>Web Management Orientation - Console</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="images/Management-Web-Console.png" format="PNG" scalefit="1" width="900px"/>
+                    <imagedata fileref="images/Management-Web-Console.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
                 </imageobject>
                 <textobject>
                     <phrase>The Web Console</phrase>
@@ -109,7 +109,7 @@
             <title>Web Management Orientation - Tab</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="images/Management-Web-Tab.png" format="PNG" scalefit="1" width="900px"/>
+                    <imagedata fileref="images/Management-Web-Tab.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
                 </imageobject>
                 <textobject>
                     <phrase>A tab within the Web Consle</phrase>
@@ -154,7 +154,7 @@
                 <title>Web Management Orientation - Add Dialogue</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="images/Management-Web-Add-Dialogue.png" format="PNG" scalefit="1"/>
+                        <imagedata fileref="images/Management-Web-Add-Dialogue.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
                     </imageobject>
                     <textobject>
                         <phrase>Example add dialogue showing field level help</phrase>
@@ -174,7 +174,7 @@
                 <title>Web Management Orientation - Edit Dialogue</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="images/Management-Web-Edit-Dialogue.png" format="PNG" scalefit="1"/>
+                        <imagedata fileref="images/Management-Web-Edit-Dialogue.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
                     </imageobject>
                     <textobject>
                         <phrase>Example edit dialogue</phrase>
@@ -200,7 +200,7 @@
                 <title>Web Management Orientation - Context Variables</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="images/Management-Web-ContextVar.png" format="PNG" scalefit="1"/>
+                        <imagedata fileref="images/Management-Web-ContextVar.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
                     </imageobject>
                     <textobject>
                         <phrase>Editing Context Variables</phrase>

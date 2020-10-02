@@ -28,8 +28,8 @@
     <table xml:id="Java-Broker-Appendix-Supported-Queue-Declare-Arguments">
         <title>Queue declare arguments</title>
         <tgroup cols="2">
-            <colspec colnum="1" colname="col1"/>
-            <colspec colnum="2" colname="col2"/>
+            <colspec colnum="1" colname="argname" colwidth="1*"/>
+            <colspec colnum="2" colname="description" colwidth="1*"/>
             <spanspec spanname="both" namest="col1" nameend="col2"/>
             <thead>
                 <row>
@@ -79,7 +79,11 @@
                             <emphasis>Address</emphasis>
                             based syntax as in the example below:
                             <screen><![CDATA[
-my-queue; {create: always, node: {x-declare: {arguments:{'qpid.max_count': 10000, 'qpid.max_size': 102400, 'qpid.policy_type: 'ring'}}}}
+my-queue; {create: always, node:
+{x-declare: {arguments:
+{'qpid.max_count': 10000,
+'qpid.max_size': 102400,
+'qpid.policy_type: 'ring'}}}}
 ]]></screen>
                         </para>
                     </entry>
@@ -115,7 +119,10 @@ my-queue; {create: always, node: {x-declare: {arguments:{'qpid.max_count': 10000
                         <para>The <emphasis>Producer Flow Control</emphasis> can be specified using
                             <emphasis>Address</emphasis> based syntax as in the example below:
                             <screen><![CDATA[
-my-queue; {create: always, node: {x-declare: {arguments:{'x-qpid-capacity': 102400, 'x-qpid-flow-resume-capacity': 8192000}}}}
+my-queue; {create: always, node:
+{x-declare: {arguments:
+{'x-qpid-capacity': 102400,
+'x-qpid-flow-resume-capacity': 8192000}}}}
 ]]></screen>
                         </para>
                     </entry>

@@ -216,7 +216,7 @@
         <title>Viewing a file logger</title>
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/Management-Web-Logging-FileLogger.png" format="PNG" scalefit="1" width="900px"/>
+            <imagedata fileref="images/Management-Web-Logging-FileLogger.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
           </imageobject>
           <textobject>
             <phrase>Viewing a file logger</phrase>
@@ -228,7 +228,7 @@
         <title>Editing an inclusion rule</title>
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/Management-Web-Logging-InclusionRule.png" format="PNG" scalefit="1" width="900px"/>
+            <imagedata fileref="images/Management-Web-Logging-InclusionRule.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
           </imageobject>
           <textobject>
             <phrase>Editing an inclusion rule</phrase>
@@ -241,7 +241,7 @@
         <title>Viewing a memory logger</title>
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/Management-Web-Logging-MemoryLogger.png" format="PNG" scalefit="1" width="900px"/>
+            <imagedata fileref="images/Management-Web-Logging-MemoryLogger.png" format="PNG" scalefit="1" width="100%" contentdepth="100%"/>
           </imageobject>
           <textobject>
             <phrase>Viewing a memory logger</phrase>
