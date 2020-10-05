@@ -1754,7 +1754,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         txn.commit();
-
+        logOperation(String.format("clearQueue : %s: %d", getName(), count));
         return count;
     }
 
@@ -3430,6 +3430,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                           parseSelector(selector),
                                                                           limit);
         _virtualHost.executeTransaction(transaction);
+        logOperation(String.format("moveMessages : %s: %s: %d",
+                                   getName(),
+                                   destination.getName(),
+                                   transaction.getModifiedMessageIds().size()));
         return transaction.getModifiedMessageIds();
 
     }
@@ -3443,6 +3447,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                           parseSelector(selector),
                                                                           limit);
         _virtualHost.executeTransaction(transaction);
+        logOperation(String.format("copyMessages : %s: %s: %d",
+                                   getName(),
+                                   destination.getName(),
+                                   transaction.getModifiedMessageIds().size()));
         return transaction.getModifiedMessageIds();
 
     }
@@ -3455,7 +3463,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                               parseSelector(selector),
                                                                               limit);
         _virtualHost.executeTransaction(transaction);
-
+        logOperation(String.format("deleteMessages : %s: %d",
+                                   getName(),
+                                   transaction.getModifiedMessageIds().size()));
         return transaction.getModifiedMessageIds();
     }
 
