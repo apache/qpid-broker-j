@@ -98,7 +98,7 @@
     <profile.test_receive_timeout>1000</profile.test_receive_timeout>
     <profile.qpid.tests.mms.messagestore.persistence>true</profile.qpid.tests.mms.messagestore.persistence>
     <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
-
+    <qpid.tests.redirectTestOutputToFile>true</qpid.tests.redirectTestOutputToFile>
     <dollar.sign>$</dollar.sign>
     <at.sign>@</at.sign>
 
@@ -984,7 +984,7 @@
           <includes>
             <include>**/*Test.java</include>
           </includes>
-          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <redirectTestOutputToFile>${qpid.tests.redirectTestOutputToFile}</redirectTestOutputToFile>
           <reportsDirectory>${test.output.dir}</reportsDirectory>
           <systemPropertyVariables>
             <!-- Defaults -->

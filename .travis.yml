@@ -5,4 +5,4 @@ jdk:
 env:
   - phase="test" pl="" additionalprops=""
   - phase="verify" pl="-pl systests/protocol-tests-amqp-0-8,systests/protocol-tests-amqp-0-10,systests/protocol-tests-amqp-1-0,systests/qpid-systests-jms_1.1,systests/qpid-systests-jms_2.0,systests/qpid-systests-http-management" additionalprops="-DskipTests=false -DskipITs=false"
-script: "mvn --fail-at-end ${phase} ${pl} ${additionalprops}"
+script: "mvn --fail-at-end ${phase} ${pl} ${additionalprops}" -DargLine="-Dlogback.configurationFile=${TRAVIS_BUILD_DIR}/etc/logback.xml -Dlogback.statusListenerClass=ch.qos.logback.core.status.OnConsoleStatusListener" -Dqpid.tests.redirectTestOutputToFile=false
