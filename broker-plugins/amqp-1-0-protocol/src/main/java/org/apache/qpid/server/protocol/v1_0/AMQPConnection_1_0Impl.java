@@ -1197,6 +1197,9 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             default:
                 throw new ServerScopedRuntimeException("Unknown state: " + _connectionState);
         }
+
+        getSender().close();
+
     }
 
     @Override
