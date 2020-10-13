@@ -84,6 +84,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.QueueMessages;
+import org.apache.qpid.server.logging.messages.SenderMessages;
 import org.apache.qpid.server.logging.subjects.QueueLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContainer;
@@ -1826,7 +1827,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         txn.commit();
-
+        logOperation(String.format("clearQueue : %s: %d", getName(), count));
         return count;
     }
 
@@ -3508,6 +3509,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                           parseSelector(selector),
                                                                           limit);
         _virtualHost.executeTransaction(transaction);
+        logOperation(String.format("moveMessages : %s: %s: %d",
+                                   getName(),
+                                   destination.getName(),
+                                   transaction.getModifiedMessageIds().size()));
         return transaction.getModifiedMessageIds();
 
     }
@@ -3521,6 +3526,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                           parseSelector(selector),
                                                                           limit);
         _virtualHost.executeTransaction(transaction);
+        logOperation(String.format("copyMessages : %s: %s: %d",
+                                   getName(),
+                                   destination.getName(),
+                                   transaction.getModifiedMessageIds().size()));
         return transaction.getModifiedMessageIds();
 
     }
@@ -3533,7 +3542,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                               parseSelector(selector),
                                                                               limit);
         _virtualHost.executeTransaction(transaction);
-
+        logOperation(String.format("deleteMessages : %s: %d",
+                                   getName(),
+                                   transaction.getModifiedMessageIds().size()));
         return transaction.getModifiedMessageIds();
     }
 
@@ -3816,6 +3827,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             _linkedSenders.put(sender, oldValue+1);
         }
+        if( link.TYPE_LINK.equals(link.getType()))
+        {
+            getEventLogger().message(SenderMessages.CREATE(link.getName(), link.getDestination()));
+        }
         if(Binding.TYPE.equals(link.getType()))
         {
             _bindingCount++;
@@ -3829,6 +3844,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if(oldValue != 1)
         {
             _linkedSenders.put(sender, oldValue-1);
+        }
+        if( link.TYPE_LINK.equals(link.getType()))
+        {
+            getEventLogger().message(SenderMessages.CLOSE(link.getName(), link.getDestination()));
         }
         if(Binding.TYPE.equals(link.getType()))
         {
