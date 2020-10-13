@@ -967,10 +967,11 @@ public class ServerSession extends SessionInvoker
         final RoutingResult<MessageTransferMessage> result =
                 exchange.route(message, message.getInitialRoutingAddress(), instanceProperties);
         result.send(_transaction, null);
-        getAMQPConnection().registerMessageReceived(message.getSize());
+
+        getModelObject().registerMessageReceived(message.getSize());
         if (isTransactional())
         {
-            getAMQPConnection().registerTransactedMessageReceived();
+            getModelObject().registerTransactedMessageReceived();
         }
         return result;
     }
@@ -978,10 +979,10 @@ public class ServerSession extends SessionInvoker
     public void sendMessage(MessageTransfer xfr,
                             Runnable postIdSettingAction)
     {
-        getAMQPConnection().registerMessageDelivered(xfr.getBodySize());
+        getModelObject().registerMessageDelivered(xfr.getBodySize());
         if (_transaction.isTransactional())
         {
-            getAMQPConnection().registerTransactedMessageDelivered();
+            getModelObject().registerTransactedMessageDelivered();
         }
         invoke(xfr, postIdSettingAction);
     }

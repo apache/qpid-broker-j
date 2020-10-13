@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
@@ -81,6 +82,13 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     protected final Set<AbstractConsumerTarget> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
     private Iterator<AbstractConsumerTarget> _processPendingIterator;
     private final Set<Consumer<?,X>> _consumers = ConcurrentHashMap.newKeySet();
+
+    private final AtomicLong _messagesIn = new AtomicLong();
+    private final AtomicLong _messagesOut = new AtomicLong();
+    private final AtomicLong _transactedMessagesIn = new AtomicLong();
+    private final AtomicLong _transactedMessagesOut = new AtomicLong();
+    private final AtomicLong _bytesIn = new AtomicLong();
+    private final AtomicLong _bytesOut = new AtomicLong();
 
     protected AbstractAMQPSession(final Connection<?> parent, final int sessionId)
     {
@@ -295,5 +303,71 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
                 getAMQPConnection().notifyWork(AbstractAMQPSession.this);
             }
         });
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        return _bytesIn.get();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return _bytesOut.get();
+    }
+
+    @Override
+    public long getMessagesIn()
+    {
+        return _messagesIn.get();
+    }
+
+    @Override
+    public long getMessagesOut()
+    {
+        return _messagesOut.get();
+    }
+
+    @Override
+    public long getTransactedMessagesIn()
+    {
+        return _transactedMessagesIn.get();
+    }
+
+    @Override
+    public long getTransactedMessagesOut()
+    {
+        return _transactedMessagesOut.get();
+    }
+
+    @Override
+    public void registerMessageDelivered(long messageSize)
+    {
+        _messagesOut.incrementAndGet();
+        _bytesOut.addAndGet(messageSize);
+        _connection.registerMessageDelivered(messageSize);
+    }
+
+    @Override
+    public void registerMessageReceived(long messageSize)
+    {
+        _messagesIn.incrementAndGet();
+        _bytesIn.addAndGet(messageSize);
+        _connection.registerMessageReceived(messageSize);
+    }
+
+    @Override
+    public void registerTransactedMessageDelivered()
+    {
+        _transactedMessagesOut.incrementAndGet();
+        _connection.registerTransactedMessageDelivered();
+    }
+
+    @Override
+    public void registerTransactedMessageReceived()
+    {
+        _transactedMessagesIn.incrementAndGet();
+        _connection.registerTransactedMessageReceived();
     }
 }

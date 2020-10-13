@@ -65,4 +65,34 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
             changesConfiguredObjectState = false,
             skipAclCheck = true)
     Set<? extends Consumer<?, ?>> getConsumers();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
+            description = "Total size of all messages received by this session.", metricName = "inbound_bytes_count")
+    long getBytesIn();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound",
+            description = "Total size of all messages delivered by this session.", metricName = "outbound_bytes_count")
+    long getBytesOut();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
+            description = "Total number of messages delivered by this session.", metricName = "inbound_messages_count")
+    long getMessagesIn();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound",
+            description = "Total number of messages received by this session.", metricName = "outbound_messages_count")
+    long getMessagesOut();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Transacted Inbound",
+            description = "Total number of messages delivered by this session within a transaction.", metricName = "transacted_inbound_messages_count")
+    long getTransactedMessagesIn();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Transacted Outbound",
+            description = "Total number of messages received by this session within a transaction.", metricName = "transacted_outbound_messages_count")
+    long getTransactedMessagesOut();
 }
