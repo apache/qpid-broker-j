@@ -341,10 +341,10 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                         updateDisposition(delivery.getDeliveryTag(), resultantState, settled);
                     }
 
-                    getSession().getAMQPConnection().registerMessageReceived(serverMessage.getSize());
+                    getSession().registerMessageReceived(serverMessage.getSize());
                     if (transactionId != null)
                     {
-                        getSession().getAMQPConnection().registerTransactedMessageReceived();
+                        getSession().registerTransactedMessageReceived();
                     }
 
                     setRollbackOnly = false;

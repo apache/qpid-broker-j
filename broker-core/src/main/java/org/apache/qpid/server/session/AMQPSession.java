@@ -93,4 +93,12 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
     void close();
 
     ListenableFuture<Void> doOnIOThreadAsync(final Runnable task);
+
+    void registerTransactedMessageReceived();
+
+    void registerTransactedMessageDelivered();
+
+    void registerMessageReceived(long size);
+
+    void registerMessageDelivered(long size);
 }
