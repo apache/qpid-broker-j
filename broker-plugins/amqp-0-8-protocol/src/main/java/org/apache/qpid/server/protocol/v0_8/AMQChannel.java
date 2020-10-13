@@ -507,10 +507,10 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 }
                 finally
                 {
-                    _connection.registerMessageReceived(bodySize);
+                    registerMessageReceived(bodySize);
                     if (isTransactional())
                     {
-                        _connection.registerTransactedMessageReceived();
+                        registerTransactedMessageReceived();
                     }
                     _currentMessage = null;
                 }
