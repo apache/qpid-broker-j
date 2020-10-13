@@ -51,6 +51,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.BindingMessages;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
+import org.apache.qpid.server.logging.messages.SenderMessages;
 import org.apache.qpid.server.logging.subjects.ExchangeLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
@@ -1036,6 +1037,10 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         {
             _linkedSenders.put(sender, oldValue+1);
         }
+        if( link.TYPE_LINK.equals(link.getType()))
+        {
+            getEventLogger().message(SenderMessages.CREATE(link.getName(), link.getDestination()));
+        }
     }
 
     @Override
@@ -1045,6 +1050,10 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         if(oldValue != 1)
         {
             _linkedSenders.put(sender, oldValue-1);
+        }
+        if( link.TYPE_LINK.equals(link.getType()))
+        {
+            getEventLogger().message(SenderMessages.CLOSE(link.getName(), link.getDestination()));
         }
     }
 
