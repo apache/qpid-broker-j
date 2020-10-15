@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
@@ -28,7 +29,8 @@ public class AclAction
 
     public AclAction(LegacyOperation operation, ObjectType object, AclRulePredicates predicates)
     {
-        _action = new Action(operation, object, predicates.getObjectProperties());
+        ObjectProperties properties = (predicates ==null) ? ObjectProperties.EMPTY : predicates.getObjectProperties();
+        _action = new Action(operation, object, properties);
         _predicates = predicates;
     }
 
@@ -98,7 +100,7 @@ public class AclAction
 
     public Map<ObjectProperties.Property, String> getAttributes()
     {
-        return _predicates.getParsedProperties();
+        return _predicates == null ? Collections.emptyMap() : _predicates.getParsedProperties();
     }
 
 }
