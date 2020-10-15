@@ -20,15 +20,18 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
@@ -84,6 +87,17 @@ public class AclActionTest extends UnitTestBase
                          hasEntry(ObjectProperties.Property.FROM_HOSTNAME, TEST_HOSTNAME),
                          hasEntry(ObjectProperties.Property.ATTRIBUTES, TEST_ATTRIBUTES),
                          hasEntry(ObjectProperties.Property.NAME, getTestName())));
+    }
+
+    @Test
+    public void testGetAttributesWithoutPredicates()
+    {
+        final ObjectType objectType = ObjectType.VIRTUALHOST;
+        final LegacyOperation operation = LegacyOperation.ACCESS;
+        final AclAction aclAction = new AclAction(operation, objectType, (AclRulePredicates) null);
+        final Map<ObjectProperties.Property, String> attributes = aclAction.getAttributes();
+        assertNotNull(attributes);
+        assertThat(attributes, Matchers.anEmptyMap());
     }
 
     private AclRulePredicates createAclRulePredicates()
