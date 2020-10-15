@@ -732,6 +732,22 @@ public class MessagingACLTest extends JmsTestBase
     }
 
     @Test
+    public void testAllAllowed() throws Exception
+    {
+        configureACL("ACL ALLOW ALL ALL");
+
+        Connection connection = getConnectionBuilder().setUsername(USER1).setPassword(USER1_PASSWORD).build();
+        try
+        {
+            assertConnection(connection);
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
     public void testFirewallDeny() throws Exception
     {
         configureACL(String.format("ACL DENY %s ACCESS VIRTUALHOST from_network=\"127.0.0.1\"", USER1));
