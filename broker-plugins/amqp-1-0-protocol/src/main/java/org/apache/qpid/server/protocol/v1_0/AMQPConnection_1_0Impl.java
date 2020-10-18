@@ -1164,6 +1164,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private void closeConnection(final Error error)
     {
+        LOGGER.debug("Closing connection {} (state={}) due to {}", this, _connectionState, error);
         _closeCause = error.getDescription();
         Close close = new Close();
         close.setError(error);
@@ -1179,6 +1180,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 sendOpen(0, 0);
                 sendClose(close);
                 _connectionState = ConnectionState.CLOSED;
+                getSender().close();
                 break;
             case OPENED:
                 sendClose(close);
@@ -1197,9 +1199,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             default:
                 throw new ServerScopedRuntimeException("Unknown state: " + _connectionState);
         }
-
-        getSender().close();
-
     }
 
     @Override
