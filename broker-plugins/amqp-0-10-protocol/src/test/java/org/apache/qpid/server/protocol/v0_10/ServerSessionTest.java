@@ -136,7 +136,7 @@ public class ServerSessionTest extends UnitTestBase
                 invokedMethods.add(m);
             }
         };
-        Session_0_10 modelSession = new Session_0_10(modelConnection, 1, session);
+        Session_0_10 modelSession = new Session_0_10(modelConnection, 1, session, getTestName());
         session.setModelObject(modelSession);
         ServerSessionDelegate delegate = new ServerSessionDelegate();
 
