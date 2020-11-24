@@ -22,14 +22,19 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import static org.apache.qpid.server.protocol.v0_10.ServerConnection.State.CLOSE_RCVD;
 
+import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +57,8 @@ import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> implements ProtocolDelegate<ServerConnection>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnectionDelegate.class);
+    static final String MESSAGE_DIGEST_SHA1 = "SHA-1";
+    static final int BASE64_LIMIT = 64;
     private final AmqpPort<?> _port;
 
     private List<Object> _locales;
@@ -410,7 +417,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
             final ServerSession serverSession =
                     new ServerSession(serverConnection, serverSessionDelegate, new Binary(atc.getName()), 0);
             final Session_0_10 session = new Session_0_10(serverConnection.getAmqpConnection(), atc.getChannel(),
-                                                          serverSession);
+                                                          serverSession, getPeerSessionName(atc.getName()));
             session.create();
             serverSession.setModelObject(session);
 
@@ -425,6 +432,49 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
             detached.setChannel(atc.getChannel());
             serverConnection.invoke(detached);
         }
+    }
+
+    private String getPeerSessionName(final byte[] attachName)
+    {
+        try
+        {
+            return UUID.fromString(new String(attachName, StandardCharsets.UTF_8)).toString();
+        }
+        catch (RuntimeException e)
+        {
+            return createBase64OrSha1(attachName);
+        }
+    }
+
+    private String createBase64OrSha1(final byte[] attachName)
+    {
+        if (attachName.length <= BASE64_LIMIT)
+        {
+            return Base64.getEncoder().encodeToString(attachName);
+        }
+        else
+        {
+            return createSha1(attachName);
+        }
+    }
+
+    private String createSha1(final byte[] attachName)
+    {
+        try
+        {
+            final MessageDigest digest = MessageDigest.getInstance(MESSAGE_DIGEST_SHA1);
+            return Base64.getEncoder().encodeToString(digest.digest(attachName));
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            return Base64.getEncoder().encodeToString(attachName);
+        }
+    }
+
+    // for test purposes only
+    void setState(ConnectionState state)
+    {
+        _state = state;
     }
 
     private boolean isSessionNameUnique(final byte[] name, final ServerConnection conn)
