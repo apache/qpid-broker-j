@@ -25,7 +25,6 @@ import java.util.List;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
@@ -33,7 +32,7 @@ import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.util.Action;
 
 public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarget_0_10>
-        implements LogSubject, org.apache.qpid.server.util.Deletable<Session_0_10> ,Session<Session_0_10>
+        implements org.apache.qpid.server.util.Deletable<Session_0_10> ,Session<Session_0_10>
 {
     private final AMQPConnection_0_10 _connection;
     private final ServerSession _serverSession;
@@ -47,12 +46,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
         _peerSessionName = peerSessionName;
         _connection = (AMQPConnection_0_10) parent;
         _serverSession = serverSession;
-    }
-
-    @Override
-    public String toLogString()
-    {
-        return _serverSession.toLogString();
     }
 
     @Override

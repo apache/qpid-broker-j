@@ -20,7 +20,10 @@
  */
 package org.apache.qpid.server.session;
 
+import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
+
 import java.security.AccessControlContext;
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -45,7 +48,6 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
-import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -63,7 +65,7 @@ import org.apache.qpid.server.util.Action;
 public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
                                           X extends ConsumerTarget<X>>
         extends AbstractConfiguredObject<S>
-        implements AMQPSession<S, X>, EventLoggerProvider
+        implements AMQPSession<S, X>, EventLoggerProvider, LogSubject
 {
     private final Action _deleteModelTask;
     private final AMQPConnection<?> _connection;
@@ -74,12 +76,11 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     protected final SecurityToken _token;
     protected final PublishAuthorisationCache _publishAuthCache;
 
-    protected final LogSubject _logSubject;
-
     protected final List<Action<? super S>> _taskList = new CopyOnWriteArrayList<>();
     private final AtomicInteger _consumerCount = new AtomicInteger();
 
     protected final Set<AbstractConsumerTarget> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
+    private final String _logString;
     private Iterator<AbstractConsumerTarget> _processPendingIterator;
     private final Set<Consumer<?,X>> _consumers = ConcurrentHashMap.newKeySet();
 
@@ -125,9 +126,15 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         final long authCacheTimeout = _connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT);
         final int authCacheSize = _connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE);
         _publishAuthCache = new PublishAuthorisationCache(_token, authCacheTimeout, authCacheSize);
-        _logSubject = new ChannelLogSubject(this);
+        _logString = createLogString();
 
         setState(State.ACTIVE);
+    }
+
+    @Override
+    public String toLogString()
+    {
+        return _logString;
     }
 
     @Override
@@ -212,7 +219,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     @Override
     public LogSubject getLogSubject()
     {
-        return _logSubject;
+        return this;
     }
 
     @Override
@@ -369,5 +376,15 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     {
         _transactedMessagesIn.incrementAndGet();
         _connection.registerTransactedMessageReceived();
+    }
+
+    protected String createLogString()
+    {
+        return "[" + MessageFormat.format(CHANNEL_FORMAT,
+                                          _connection == null ? -1L : _connection.getConnectionId(),
+                                          (_connection == null || _connection.getAuthorizedPrincipal() == null) ? "?" : _connection.getAuthorizedPrincipal().getName(),
+                                          (_connection == null || _connection.getRemoteAddressString() == null) ? "?" : _connection.getRemoteAddressString(),
+                                          (_connection == null || _connection.getAddressSpaceName() == null) ? "?" : _connection.getAddressSpaceName(),
+                                          _sessionId) + "] ";
     }
 }

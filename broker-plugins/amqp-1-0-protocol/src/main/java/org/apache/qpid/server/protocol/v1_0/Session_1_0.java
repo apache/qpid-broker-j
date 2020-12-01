@@ -108,7 +108,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget_1_0>
-        implements LogSubject, org.apache.qpid.server.util.Deletable<Session_1_0>
+        implements org.apache.qpid.server.util.Deletable<Session_1_0>
 {
     static final Symbol DELAYED_DELIVERY = Symbol.valueOf("DELAYED_DELIVERY");
     static final Symbol SHARED_CAPABILITY = Symbol.getSymbol("shared");
@@ -1005,7 +1005,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             {
                 task.performAction(this);
             }
-            getAMQPConnection().getEventLogger().message(_logSubject,ChannelMessages.CLOSE());
+            getAMQPConnection().getEventLogger().message(this, ChannelMessages.CLOSE());
         }
     }
 
@@ -1149,7 +1149,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private void messageWithSubject(final LogMessage operationalLogMessage)
     {
-        getEventLogger().message(_logSubject, operationalLogMessage);
+        getEventLogger().message(this, operationalLogMessage);
     }
 
     @Override
@@ -1162,12 +1162,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     public int getUnacknowledgedMessageCount()
     {
         return _outgoingDeliveryRegistry.size();
-    }
-
-    @Override
-    public String toLogString()
-    {
-        return getLogSubject().toLogString();
     }
 
     public AMQPConnection_1_0<?> getConnection()
