@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
 import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.CLOSED;
 import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.CLOSING;
 import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.DETACHED;
@@ -41,7 +40,6 @@ import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1521,20 +1519,7 @@ public class ServerSession extends SessionInvoker
     @Override
     public String toLogString()
     {
-        long connectionId = getConnection() instanceof ServerConnection
-                            ? getConnection().getConnectionId()
-                            : -1;
-        String authorizedPrincipal = (getAuthorizedPrincipal() == null) ? "?" : getAuthorizedPrincipal().getName();
-
-        String remoteAddress = String.valueOf(getConnection().getRemoteSocketAddress());
-        return "[" +
-               MessageFormat.format(CHANNEL_FORMAT,
-                                    connectionId,
-                                    authorizedPrincipal,
-                                    remoteAddress,
-                                    getAddressSpace().getName(),
-                                    getChannel())
-            + "] ";
+        return _modelObject.toLogString();
     }
 
     public void close(int cause, String message)
