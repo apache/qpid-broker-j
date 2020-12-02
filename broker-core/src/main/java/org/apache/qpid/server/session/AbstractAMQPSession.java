@@ -79,12 +79,11 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     protected final SecurityToken _token;
     protected final PublishAuthorisationCache _publishAuthCache;
 
-    protected final LogSubject _logSubject;
-
     protected final List<Action<? super S>> _taskList = new CopyOnWriteArrayList<>();
     private final AtomicInteger _consumerCount = new AtomicInteger();
 
     protected final Set<AbstractConsumerTarget> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
+    private final LogSubject _logSubject;
     private Iterator<AbstractConsumerTarget> _processPendingIterator;
     private final Set<Consumer<?,X>> _consumers = ConcurrentHashMap.newKeySet();
 
@@ -96,6 +95,11 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     private final AtomicLong _bytesOut = new AtomicLong();
 
     protected AbstractAMQPSession(final Connection<?> parent, final int sessionId)
+    {
+        this(parent, sessionId, new ChannelLogSubject((AMQPConnection) parent, sessionId));
+    }
+
+    protected AbstractAMQPSession(final Connection<?> parent, final int sessionId, final LogSubject logSubject)
     {
         super(parent, createAttributes(sessionId));
         _connection = (AMQPConnection) parent;
@@ -130,7 +134,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         final long authCacheTimeout = _connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT);
         final int authCacheSize = _connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE);
         _publishAuthCache = new PublishAuthorisationCache(_token, authCacheTimeout, authCacheSize);
-        _logSubject = new ChannelLogSubject(this);
+        _logSubject = logSubject;
 
         setState(State.ACTIVE);
     }

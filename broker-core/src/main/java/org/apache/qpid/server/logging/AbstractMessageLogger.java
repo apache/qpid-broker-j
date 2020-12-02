@@ -21,7 +21,6 @@
 package org.apache.qpid.server.logging;
 
 
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTION_FORMAT;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.SOCKET_FORMAT;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.USER_FORMAT;
@@ -219,19 +218,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
 
     private static String generateSessionActor(final AMQPSession session)
     {
-        AMQPConnection<?> connection = session.getAMQPConnection();
-        return "[" + MessageFormat.format(CHANNEL_FORMAT, connection == null ? -1L : connection.getConnectionId(),
-                                          (connection == null || connection.getAuthorizedPrincipal() == null)
-                                                  ? "?"
-                                                  : connection.getAuthorizedPrincipal().getName(),
-                                          (connection == null || connection.getRemoteAddressString() == null)
-                                                  ? "?"
-                                                  : connection.getRemoteAddressString(),
-                                          (connection == null || connection.getAddressSpaceName() == null)
-                                                  ? "?"
-                                                  : connection.getAddressSpaceName(),
-                                          session.getChannelId())
-               + "] ";
+        return session.getLogSubject().toLogString();
     }
 
     private static <P extends Principal> P getPrincipal(Subject subject, Class<P> clazz)
