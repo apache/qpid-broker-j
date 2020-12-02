@@ -4,8 +4,8 @@
 
 |CI Process|Status|
 |---|---|
-|Travis CI Build|[![https://travis-ci.org/apache/qpid-broker-j.svg?branch=master](https://travis-ci.org/apache/qpid-broker-j.png?branch=master)](https://travis-ci.org/apache/qpid-broker-j?branch=master)|
-|Apache Jenkins CI Build|[![Status](https://builds.apache.org/buildStatus/icon?job=Qpid-Broker-J-TestMatrix)](https://builds.apache.org/view/M-R/view/Qpid/job/Qpid-Broker-J-TestMatrix/)|
+|Travis CI Build|[![https://travis-ci.com/apache/qpid-broker-j.svg?branch=8.0.x](https://travis-ci.com/apache/qpid-broker-j.png?branch=8.0.x)](https://travis-ci.com/apache/qpid-broker-j)|
+|Apache Jenkins CI Build|[![Build Status](https://ci-builds.apache.org/buildStatus/icon?job=Qpid%2FQpid-Broker-J-8.0.x-TestMatrix)](https://ci-builds.apache.org/job/Qpid/job/Qpid-Broker-J-8.0.x-TestMatrix/)|
 
 ---
 
