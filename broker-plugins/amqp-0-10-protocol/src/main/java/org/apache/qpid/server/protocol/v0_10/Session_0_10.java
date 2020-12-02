@@ -26,6 +26,7 @@ import java.util.List;
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
@@ -37,16 +38,23 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
 {
     private final AMQPConnection_0_10 _connection;
     private final ServerSession _serverSession;
-    private String _peerSessionName;
+    private final String _peerSessionName;
 
     protected Session_0_10(final Connection<?> parent,
                            final int sessionId,
-                           final ServerSession serverSession, final String peerSessionName)
+                           final ServerSession serverSession,
+                           final String peerSessionName)
     {
-        super(parent, sessionId);
+        super(parent, sessionId, new ChannelLogSubject((AMQPConnection_0_10) parent, String.format("%d:%s", sessionId, peerSessionName));
         _peerSessionName = peerSessionName;
         _connection = (AMQPConnection_0_10) parent;
         _serverSession = serverSession;
+    }
+
+    @Override
+    public String toLogString()
+    {
+        return getLogSubject().toLogString();
     }
 
     @Override

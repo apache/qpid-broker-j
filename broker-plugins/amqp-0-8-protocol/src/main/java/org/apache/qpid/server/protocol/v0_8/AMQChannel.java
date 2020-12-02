@@ -799,7 +799,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private void messageWithSubject(final LogMessage operationalLogMessage)
     {
-        getEventLogger().message(this, operationalLogMessage);
+        getEventLogger().message(getLogSubject(), operationalLogMessage);
     }
 
     private void unsubscribeAllConsumers()
