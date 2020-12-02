@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,12 +19,7 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import org.junit.Assert;
-
-import org.apache.qpid.server.session.AMQPSession;
 
 /**
  * Validate ChannelLogSubjects are logged as expected
@@ -38,11 +32,7 @@ public class ChannelLogSubjectTest extends ConnectionLogSubjectTest
     public void setUp() throws Exception
     {
         super.setUp();
-
-        AMQPSession<?,?> session = mock(AMQPSession.class);
-        when(session.getAMQPConnection()).thenReturn(getConnection());
-        when(session.getChannelId()).thenReturn(_channelID);
-        _subject = new ChannelLogSubject(session);
+        _subject = new ChannelLogSubject(getConnection(), _channelID);
     }
 
     /**

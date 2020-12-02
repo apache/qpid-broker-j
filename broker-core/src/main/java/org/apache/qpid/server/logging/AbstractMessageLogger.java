@@ -203,19 +203,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
 
     protected String generateSessionMessage(final AMQPSession session)
     {
-        AMQPConnection<?> connection = session.getAMQPConnection();
-        return "[" + MessageFormat.format(CHANNEL_FORMAT, connection == null ? -1L : connection.getConnectionId(),
-                                          (connection == null || connection.getAuthorizedPrincipal() == null)
-                                                  ? "?"
-                                                  : connection.getAuthorizedPrincipal().getName(),
-                                          (connection == null || connection.getRemoteAddressString() == null)
-                                                  ? "?"
-                                                  : connection.getRemoteAddressString(),
-                                          (connection == null || connection.getAddressSpaceName() == null)
-                                                  ? "?"
-                                                  : connection.getAddressSpaceName(),
-                                          session.getChannelId())
-               + "] ";
+        return session.getLogSubject().toLogString();
     }
 
     private <P extends Principal> P getPrincipal(Subject subject, Class<P> clazz)

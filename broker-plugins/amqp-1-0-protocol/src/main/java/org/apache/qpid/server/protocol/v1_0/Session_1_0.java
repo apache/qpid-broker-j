@@ -20,13 +20,10 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
-
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -106,7 +103,6 @@ import org.apache.qpid.server.queue.CreatingLinkInfo;
 import org.apache.qpid.server.queue.CreatingLinkInfoImpl;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.session.AbstractAMQPSession;
-import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -1009,7 +1005,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             {
                 task.performAction(this);
             }
-            getAMQPConnection().getEventLogger().message(_logSubject,ChannelMessages.CLOSE());
+            getAMQPConnection().getEventLogger().message(getLogSubject(), ChannelMessages.CLOSE());
         }
     }
 
@@ -1153,7 +1149,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private void messageWithSubject(final LogMessage operationalLogMessage)
     {
-        getEventLogger().message(_logSubject, operationalLogMessage);
+        getEventLogger().message(getLogSubject(), operationalLogMessage);
     }
 
     @Override
@@ -1171,18 +1167,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public String toLogString()
     {
-        final AMQPConnection<?> amqpConnection = getAMQPConnection();
-        long connectionId = amqpConnection.getConnectionId();
-
-        String remoteAddress = amqpConnection.getRemoteAddressString();
-        final String authorizedPrincipal = amqpConnection.getAuthorizedPrincipal() == null ? "?" : amqpConnection.getAuthorizedPrincipal().getName();
-        return "[" +
-               MessageFormat.format(CHANNEL_FORMAT,
-                                    connectionId,
-                                    authorizedPrincipal,
-                                    remoteAddress,
-                                    getAddressSpace().getName(),
-                                    _sendingChannel) + "] ";
+        return getLogSubject().toLogString();
     }
 
     public AMQPConnection_1_0<?> getConnection()
