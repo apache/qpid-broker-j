@@ -17,18 +17,16 @@
     specific language governing permissions and limitations
     under the License.
 -->
-<configuration  debug="true">
+<configuration scan="true" scanPeriod="10 seconds">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <target>System.out</target>
         <encoder>
-            <pattern>%date %-5level [%thread] %logger{10} %msg%n</pattern>
+            <pattern>%msg%n</pattern>
         </encoder>
     </appender>
 
-    <logger name="org.eclipse.jetty" level="warn" />
-    <logger name="org.apache" level="warn" />
-    <logger name="org.apache.qpid" level="debug" />
-    <root level="info">
+
+    <root level="">
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>
