@@ -75,6 +75,7 @@ import javax.net.ssl.StandardConstants;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -897,7 +898,7 @@ public class SSLUtil
 
                                     if (code == StandardConstants.SNI_HOST_NAME)
                                     {
-                                        return new SNIHostName(encoded).getAsciiName();
+                                        return createSNIHostName(encoded).getAsciiName();
                                     }
                                     extensionDataRemaining -= serverNameLength + 3;
                                 }
@@ -1063,6 +1064,30 @@ public class SSLUtil
             }
         }
         return certificates;
+    }
+
+    public static SNIHostName createSNIHostName(String hostName)
+    {
+        try
+        {
+            return new SNIHostName(hostName);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ConnectionScopedRuntimeException("Failed to create SNIHostName from string '" + hostName + "'", e);
+        }
+    }
+
+    public static SNIHostName createSNIHostName(byte[] hostName)
+    {
+        try
+        {
+            return new SNIHostName(hostName);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ConnectionScopedRuntimeException("Failed to create SNIHostName from byte array '" + new String(hostName) + "'", e);
+        }
     }
 
     public interface KeyCertPair
