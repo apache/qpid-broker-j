@@ -102,7 +102,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                     {
                         _parent.setSelectedHost(hostName);
                         SSLParameters sslParameters = _sslEngine.getSSLParameters();
-                        sslParameters.setServerNames(Collections.singletonList(new SNIHostName(hostName)));
+                        sslParameters.setServerNames(Collections.singletonList(SSLUtil.createSNIHostName(hostName)));
                         _sslEngine.setSSLParameters(sslParameters);
                     }
                     _hostChecked = true;
