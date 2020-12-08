@@ -42,6 +42,7 @@ import javax.net.ssl.X509TrustManager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -156,6 +157,12 @@ public class SNITest extends UnitTestBase
         performTest(false, "fooinvalid", "foo", _fooInvalid);
     }
 
+    @Test(expected = ConnectionScopedRuntimeException.class)
+    public void testInvalidHostname() throws Exception
+    {
+        performTest(false, "fooinvalid", "_foo", _fooInvalid);
+    }
+
 
     private void performTest(final boolean useMatching,
                              final String defaultAlias,
@@ -194,7 +201,7 @@ public class SNITest extends UnitTestBase
                 SSLParameters parameters = socket.getSSLParameters();
                 if (sniHostName != null)
                 {
-                    parameters.setServerNames(Collections.singletonList(new SNIHostName(sniHostName)));
+                    parameters.setServerNames(Collections.singletonList(SSLUtil.createSNIHostName(sniHostName)));
                 }
                 socket.setSSLParameters(parameters);
                 InetSocketAddress address = new InetSocketAddress("localhost", _boundPort);
