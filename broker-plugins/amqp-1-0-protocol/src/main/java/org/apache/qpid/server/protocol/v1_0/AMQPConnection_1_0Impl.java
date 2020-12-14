@@ -697,68 +697,76 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void receiveBegin(final int receivingChannelId, final Begin begin)
     {
-
-        assertState(ConnectionState.OPENED);
-        if (begin.getRemoteChannel() != null)
+        try
         {
-            closeConnection(ConnectionError.FRAMING_ERROR,
-                            "BEGIN received on channel "
-                            + receivingChannelId
-                            + " with given remote-channel "
-                            + begin.getRemoteChannel()
-                            + ". Since the broker does not spontaneously start channels, this must be an error.");
-
-        }
-        else // Peer requesting session creation
-        {
-
-            if (_receivingSessions[receivingChannelId] == null)
+            assertState(ConnectionState.OPENED);
+            if (begin.getRemoteChannel() != null)
             {
-                int sendingChannelId = getFirstFreeChannel();
-                if (sendingChannelId == -1)
+                closeConnection(ConnectionError.FRAMING_ERROR,
+                                "BEGIN received on channel "
+                                + receivingChannelId
+                                + " with given remote-channel "
+                                + begin.getRemoteChannel()
+                                + ". Since the broker does not spontaneously start channels, this must be an error.");
+
+            }
+            else // Peer requesting session creation
+            {
+
+                if (_receivingSessions[receivingChannelId] == null)
                 {
-                    closeConnection(ConnectionError.FRAMING_ERROR,
-                                    "BEGIN received on channel "
-                                    + receivingChannelId
-                                    + ". There are no free channels for the broker to respond on.");
-                }
-                else
-                {
-                    Session_1_0 session = new Session_1_0(this,
-                                                          begin,
-                                                          sendingChannelId,
-                                                          receivingChannelId,
-                                                          getContextValue(Long.class, AMQPConnection_1_0.CONNECTION_SESSION_CREDIT_WINDOW_SIZE));
-                    session.create();
-
-                    _receivingSessions[receivingChannelId] = session;
-                    _sendingSessions[sendingChannelId] = session;
-
-                    Begin beginToSend = new Begin();
-                    beginToSend.setRemoteChannel(UnsignedShort.valueOf(receivingChannelId));
-                    beginToSend.setNextOutgoingId(session.getNextOutgoingId());
-                    beginToSend.setOutgoingWindow(session.getOutgoingWindow());
-                    beginToSend.setIncomingWindow(session.getIncomingWindow());
-                    sendFrame(sendingChannelId, beginToSend);
-
-                    synchronized (_blockingLock)
+                    int sendingChannelId = getFirstFreeChannel();
+                    if (sendingChannelId == -1)
                     {
-                        _sessions.add(session);
-                        if (_blocking)
+                        closeConnection(ConnectionError.FRAMING_ERROR,
+                                        "BEGIN received on channel "
+                                        + receivingChannelId
+                                        + ". There are no free channels for the broker to respond on.");
+                    }
+                    else
+                    {
+                        Session_1_0 session = new Session_1_0(this,
+                                                              begin,
+                                                              sendingChannelId,
+                                                              receivingChannelId,
+                                                              getContextValue(Long.class, AMQPConnection_1_0.CONNECTION_SESSION_CREDIT_WINDOW_SIZE));
+                        session.create();
+
+                        _receivingSessions[receivingChannelId] = session;
+                        _sendingSessions[sendingChannelId] = session;
+
+                        Begin beginToSend = new Begin();
+                        beginToSend.setRemoteChannel(UnsignedShort.valueOf(receivingChannelId));
+                        beginToSend.setNextOutgoingId(session.getNextOutgoingId());
+                        beginToSend.setOutgoingWindow(session.getOutgoingWindow());
+                        beginToSend.setIncomingWindow(session.getIncomingWindow());
+                        sendFrame(sendingChannelId, beginToSend);
+
+                        synchronized (_blockingLock)
                         {
-                            session.block();
+                            _sessions.add(session);
+                            if (_blocking)
+                            {
+                                session.block();
+                            }
                         }
                     }
                 }
-            }
-            else
-            {
-                closeConnection(ConnectionError.FRAMING_ERROR,
-                                "BEGIN received on channel " + receivingChannelId + " which is already in use.");
-            }
+                else
+                {
+                    closeConnection(ConnectionError.FRAMING_ERROR,
+                                    "BEGIN received on channel " + receivingChannelId + " which is already in use.");
+                }
 
+            }
         }
-
+        catch (ConnectionScopedRuntimeException exception)
+        {
+            if (isClosed())
+            {
+                getNetwork().close();
+            }
+        }
     }
 
     private int getFirstFreeChannel()
