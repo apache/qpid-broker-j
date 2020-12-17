@@ -253,6 +253,15 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 }
 
                 _status = QpidByteBuffer.encryptSSL(_sslEngine, buffers, _netOutputBuffer);
+                // QPID-8489: workaround for JDK 8 bug to avoid tight looping for half closed connections
+                // Additional info: https://bugs.openjdk.java.net/browse/JDK-8240071,
+                // http://mail.openjdk.java.net/pipermail/security-dev/2019-January/019142.html
+                if(_status.bytesProduced() < 1 && _status.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_WRAP
+                        && !_sslEngine.isOutboundDone() && _sslEngine.isInboundDone())
+                {
+                    throw new SSLException(String.format("SSLEngine.wrap produced 0 bytes (status %s, handshake status %s)",
+                            _status.getStatus(), _status.getHandshakeStatus()));
+                }
                 encrypted = _status.bytesProduced() > 0;
                 totalConsumed += _status.bytesConsumed();
                 runSSLEngineTasks(_status);
