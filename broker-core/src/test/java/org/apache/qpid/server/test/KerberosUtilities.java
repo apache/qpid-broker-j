@@ -95,13 +95,14 @@ public class KerberosUtilities
         return clientKeyTabFile;
     }
 
-    public void prepareConfiguration(final String hostName, final SystemPropertySetter systemPropertySetter)
+    public String prepareConfiguration(final String hostName, final SystemPropertySetter systemPropertySetter)
             throws IOException
     {
         final Path loginConfig = transformLoginConfig(hostName);
-        systemPropertySetter.setSystemProperty(LOGIN_CONFIG,
-                                               URLDecoder.decode(loginConfig.toFile().getAbsolutePath(), UTF_8.name()));
+        final String configLocation = URLDecoder.decode(loginConfig.toFile().getAbsolutePath(), UTF_8.name());
+        systemPropertySetter.setSystemProperty(LOGIN_CONFIG, configLocation);
         systemPropertySetter.setSystemProperty(USE_SUBJECT_CREDS_ONLY, "false");
+        return configLocation;
     }
 
     public byte[] buildToken(String clientPrincipalName, File clientKeyTabFile, String targetServerPrincipalName)
