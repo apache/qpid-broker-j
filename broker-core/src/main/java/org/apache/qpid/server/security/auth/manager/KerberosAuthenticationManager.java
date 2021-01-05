@@ -115,13 +115,20 @@ public class KerberosAuthenticationManager extends AbstractAuthenticationManager
     {
         super.validateOnCreate();
         validate(this);
+
+        if (_container.getChildren(AuthenticationProvider.class)
+                .stream()
+                .anyMatch(p -> p instanceof KerberosAuthenticationManager && p != this))
+        {
+            throw new IllegalConfigurationException("Another Kerberos authentication provider already exists."
+                    + " Only one Kerberos authentication provider can be created.");
+        }
     }
 
     @Override
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        validate(proxyForValidation);
     }
 
     private void validate(final ConfiguredObject<?> authenticationProvider)
@@ -131,15 +138,6 @@ public class KerberosAuthenticationManager extends AbstractAuthenticationManager
         {
             throw new IllegalConfigurationException(String.format(
                     "A path to non-existing file is specified in JVM system property '%s'", JAAS_CONFIG_PROPERTY));
-        }
-
-        if (_container.getChildren(AuthenticationProvider.class)
-                      .stream()
-                      .anyMatch(p -> p instanceof KerberosAuthenticationManager
-                                     && p != authenticationProvider))
-        {
-            throw new IllegalConfigurationException("Another Kerberos authentication provider already exists."
-                                                    + " Only one Kerberos authentication provider can be created.");
         }
     }
 }

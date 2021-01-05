@@ -30,11 +30,13 @@ import static org.apache.qpid.server.test.KerberosUtilities.SERVER_PROTOCOL;
 import static org.apache.qpid.server.test.KerberosUtilities.SERVICE_PRINCIPAL_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.security.Principal;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Base64;
@@ -48,6 +50,7 @@ import javax.security.auth.login.LoginContext;
 import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
 
+import org.apache.qpid.server.security.TokenCarryingPrincipal;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -68,7 +71,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class KerberosAuthenticationManagerTest extends UnitTestBase
 {
-
+    private static final String ANOTHER_SERVICE = "foo/" + HOST_NAME;
+    private static final String ANOTHER_SERVICE_FULL_NAME = ANOTHER_SERVICE + "@" + REALM;
     private static final KerberosUtilities UTILS = new KerberosUtilities();
 
     @ClassRule
@@ -81,30 +85,27 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
     public static final SystemPropertySetter SYSTEM_PROPERTY_SETTER = new SystemPropertySetter();
 
     private static File _clientKeyTabFile;
+    private static String _config;
 
     private KerberosAuthenticationManager _kerberosAuthenticationProvider;
     private Broker<?> _broker;
+    private SpnegoAuthenticator _spnegoAuthenticator;
 
     @BeforeClass
     public static void createKeyTabs() throws Exception
     {
-        UTILS.prepareConfiguration(HOST_NAME, SYSTEM_PROPERTY_SETTER);
+        KDC.createPrincipal("another.keytab", ANOTHER_SERVICE_FULL_NAME);
+        _config = UTILS.prepareConfiguration(HOST_NAME, SYSTEM_PROPERTY_SETTER);
         _clientKeyTabFile = UTILS.prepareKeyTabs(KDC);
     }
 
     @Before
     public void setUp() throws Exception
     {
-        Map<String, String> context = Collections.singletonMap(KerberosAuthenticationManager.GSSAPI_SPNEGO_CONFIG,
-                                                               ACCEPT_SCOPE);
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(AuthenticationProvider.NAME, getTestName());
-        attributes.put(AuthenticationProvider.CONTEXT, context);
+        SYSTEM_PROPERTY_SETTER.setSystemProperty(LOGIN_CONFIG, _config);
         _broker = BrokerTestHelper.createBrokerMock();
-        _kerberosAuthenticationProvider = new KerberosAuthenticationManager(attributes, _broker);
-        _kerberosAuthenticationProvider.create();
-        when(_broker.getChildren(AuthenticationProvider.class))
-                .thenReturn(Collections.singleton(_kerberosAuthenticationProvider));
+        _kerberosAuthenticationProvider = createKerberosAuthenticationProvider(ACCEPT_SCOPE);
+        _spnegoAuthenticator = new SpnegoAuthenticator(_kerberosAuthenticationProvider);
     }
 
     @Test
@@ -179,6 +180,105 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
 
         assertNotNull(result);
         assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
+    }
+
+    @Test
+    public void testAuthenticate() throws Exception
+    {
+        final String token = Base64.getEncoder().encodeToString(buildToken(SERVICE_PRINCIPAL_NAME));
+        final String authenticationHeader = SpnegoAuthenticator.NEGOTIATE_PREFIX + token;
+
+        final AuthenticationResult result = _spnegoAuthenticator.authenticate(authenticationHeader);
+
+        assertNotNull(result);
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
+        final Principal principal = result.getMainPrincipal();
+        assertTrue(principal instanceof TokenCarryingPrincipal);
+        assertEquals(KerberosUtilities.CLIENT_PRINCIPAL_FULL_NAME, principal.getName());
+
+        final Map<String, String> tokens = ((TokenCarryingPrincipal)principal).getTokens();
+        assertNotNull(tokens);
+        assertTrue(tokens.containsKey(SpnegoAuthenticator.RESPONSE_AUTH_HEADER_NAME));
+    }
+
+    @Test
+    public void testAuthenticateNoAuthenticationHeader()
+    {
+        final AuthenticationResult result = _spnegoAuthenticator.authenticate((String) null);
+        assertNotNull(result);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
+    }
+
+    @Test
+    public void testAuthenticateNoNegotiatePrefix() throws Exception
+    {
+        final String token = Base64.getEncoder().encodeToString(buildToken(SERVICE_PRINCIPAL_NAME));
+        final AuthenticationResult result = _spnegoAuthenticator.authenticate(token);
+        assertNotNull(result);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
+    }
+
+    @Test
+    public void testAuthenticateEmptyToken()
+    {
+        final AuthenticationResult result =
+                _spnegoAuthenticator.authenticate(SpnegoAuthenticator.NEGOTIATE_PREFIX + "");
+        assertNotNull(result);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
+    }
+
+    @Test
+    public void testAuthenticateInvalidToken()
+    {
+        final AuthenticationResult result =
+                _spnegoAuthenticator.authenticate(SpnegoAuthenticator.NEGOTIATE_PREFIX + "Zm9v");
+        assertNotNull(result);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
+    }
+
+    @Test
+    public void testAuthenticateWrongConfigName() throws Exception
+    {
+        _kerberosAuthenticationProvider.delete();
+
+        _kerberosAuthenticationProvider = createKerberosAuthenticationProvider("foo");
+        _spnegoAuthenticator = new SpnegoAuthenticator(_kerberosAuthenticationProvider);
+
+        final String token = Base64.getEncoder().encodeToString(buildToken(SERVICE_PRINCIPAL_NAME));
+        final String authenticationHeader = SpnegoAuthenticator.NEGOTIATE_PREFIX + token;
+
+        final AuthenticationResult result = _spnegoAuthenticator.authenticate(authenticationHeader);
+        assertNotNull(result);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
+    }
+
+    @Test
+    public void testAuthenticateWrongServer() throws Exception
+    {
+        final String token = Base64.getEncoder().encodeToString(buildToken(ANOTHER_SERVICE));
+        final String authenticationHeader = SpnegoAuthenticator.NEGOTIATE_PREFIX + token;
+
+        final AuthenticationResult result = _spnegoAuthenticator.authenticate(authenticationHeader);
+        assertNotNull(result);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
+    }
+
+    private KerberosAuthenticationManager createKerberosAuthenticationProvider(String acceptScope)
+    {
+        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.emptyList());
+        final Map<String, String> context = Collections.singletonMap(KerberosAuthenticationManager.GSSAPI_SPNEGO_CONFIG, acceptScope);
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put(AuthenticationProvider.NAME, getTestName());
+        attributes.put(AuthenticationProvider.CONTEXT, context);
+        KerberosAuthenticationManager kerberosAuthenticationProvider = new KerberosAuthenticationManager(attributes, _broker);
+        kerberosAuthenticationProvider.create();
+        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.singleton(kerberosAuthenticationProvider));
+        return kerberosAuthenticationProvider;
+    }
+
+    private byte[] buildToken(final String anotherService) throws Exception
+    {
+        return UTILS.buildToken(KerberosUtilities.CLIENT_PRINCIPAL_NAME, _clientKeyTabFile, anotherService);
     }
 
     private AuthenticationResult authenticate(final SaslNegotiator negotiator) throws Exception
