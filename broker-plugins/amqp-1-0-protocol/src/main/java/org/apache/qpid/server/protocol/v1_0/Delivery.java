@@ -189,7 +189,11 @@ public class Delivery
         List<QpidByteBuffer> transferBuffers = new ArrayList<>(_transfers.size());
         for (Transfer t : _transfers)
         {
-            transferBuffers.add(t.getPayload());
+            QpidByteBuffer payload = t.getPayload();
+            if (payload != null)
+            {
+                transferBuffers.add(payload);
+            }
             t.dispose();
         }
         _transfers.clear();

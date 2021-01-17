@@ -181,6 +181,10 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             MessageFormat format = MessageFormatRegistry.getFormat(messageFormat.intValue());
             if(format != null)
             {
+                if (delivery.getTotalPayloadSize() == 0)
+                {
+                    return new Error(AmqpError.NOT_IMPLEMENTED, "Delivery without payload is not supported");
+                }
                 try (QpidByteBuffer payload = delivery.getPayload())
                 {
                     serverMessage = format.createMessage(payload,

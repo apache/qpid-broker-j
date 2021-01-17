@@ -107,6 +107,53 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
     }
 
     @Test
+    @SpecificationTest(section = "", description = "")
+    public void multiTransferMessageHavingTransfersWithoutPayload() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        {
+            QpidByteBuffer[] payloads = Utils.splitPayload(getTestName(), 1);
+
+            final UnsignedInteger deliveryId = UnsignedInteger.ZERO;
+            final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
+
+            Interaction interaction = transport.newInteraction();
+            Disposition disposition = interaction.negotiateOpen()
+                    .begin().consumeResponse(Begin.class)
+                    .attachRole(Role.SENDER)
+                    .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                    .attach().consumeResponse(Attach.class)
+                    .consumeResponse(Flow.class)
+                    .transferPayload(payloads[0])
+                    .transferDeliveryId(deliveryId)
+                    .transferDeliveryTag(deliveryTag)
+                    .transferMore(true)
+                    .transfer()
+
+                    .transferMore(true)
+                    .transferPayload(null)
+                    .transfer()
+
+                    .transferMore(false)
+                    .transferPayload(null)
+                    .transfer()
+                    .consume(Disposition.class, Flow.class);
+
+            for (final QpidByteBuffer payload : payloads)
+            {
+                payload.dispose();
+            }
+
+            interaction.detachEndCloseUnconditionally();
+
+            assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
+            assertThat(disposition.getLast(), oneOf(null, deliveryId));
+            assertThat(disposition.getSettled(), is(equalTo(true)));
+        }
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
+    }
+
+    @Test
     @SpecificationTest(section = "2.7.5",
             description = "[delivery-id] On continuation transfers the delivery-id MAY be omitted..."
                           + "[delivery-tag] field MUST be specified for the first transfer of a multi-transfer"

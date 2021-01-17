@@ -73,7 +73,11 @@ public class MessageDecoder
         {
             throw new IllegalStateException("The section fragments have already been parsed");
         }
-        _fragments.add(transfer.getPayload());
+        QpidByteBuffer payload = transfer.getPayload();
+        if (payload != null)
+        {
+            _fragments.add(payload);
+        }
     }
 
     public void parse() throws AmqpErrorException
@@ -145,10 +149,6 @@ public class MessageDecoder
                 }
                 while (s instanceof AmqpSequenceSection);
             }
-            else
-            {
-                throw new IllegalStateException("Application data sections are not found");
-            }
 
             if (s instanceof FooterSection)
             {
@@ -170,6 +170,10 @@ public class MessageDecoder
     {
         parse();
 
+        if (_dataSections.size() == 0)
+        {
+            return null;
+        }
 
         Object bodyObject = null;
         EncodingRetainingSection<?> firstBodySection = _dataSections.get(0);

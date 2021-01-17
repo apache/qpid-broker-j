@@ -225,6 +225,39 @@ public class TransferTest extends BrokerAdminUsingTestBase
     }
 
     @Test
+    public void transferWithoutPayload() throws Exception
+    {
+        final String firstMessage = getTestName() + "_1";
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, firstMessage);
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateOpen()
+                    .begin().consumeResponse(Begin.class)
+                    .attachRole(Role.SENDER)
+                    .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                    .attachHandle(UnsignedInteger.ONE)
+                    .attach().consumeResponse(Attach.class)
+                    .consumeResponse(Flow.class)
+                    .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
+                    .transferDeliveryId()
+                    .transferHandle(UnsignedInteger.ONE)
+                    .transfer()
+                    .consumeResponse();
+
+            final Response<?> response = interaction.getLatestResponse();
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getBody(), is(notNullValue()));
+            assertThat(response.getBody(), is(instanceOf(ErrorCarryingFrameBody.class)));
+
+            final Error error = ((ErrorCarryingFrameBody)response.getBody()).getError();
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), equalTo(AmqpError.NOT_IMPLEMENTED));
+        }
+        assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(firstMessage)));
+    }
+
+    @Test
     @SpecificationTest(section = "2.6.12 Transferring A Message",
             description = "The delivery-tag MUST be unique amongst all deliveries"
                           + " that could be considered unsettled by either end of the link.")
