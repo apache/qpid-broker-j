@@ -92,6 +92,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     public static final String REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME = "qpid.bdb.ha.remote_node_monitor_timeout";
     public static final String ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME = "qpid.bdb.ha.environment_restart_retry_limit";
     public static final String EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME = "qpid.bdb.ha.executor_shutdown_timeout";
+    public static final String DISABLE_COALESCING_COMMITTER_PROPERTY_NAME = "qpid.bdb.ha.disable_coalescing_committer";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatedEnvironmentFacade.class);
 
@@ -101,6 +102,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private static final int DEFAULT_REMOTE_NODE_MONITOR_TIMEOUT = 1000;
     private static final int DEFAULT_ENVIRONMENT_RESTART_RETRY_LIMIT = 3;
     private static final int DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT = 5000;
+    private static final boolean DEFAULT_DISABLE_COALESCING_COMMITTER = false;
 
     /** Length of time allowed for a master transfer to complete before the operation will timeout */
     private final int _masterTransferTimeout;
@@ -134,6 +136,8 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
      * Length of time for executors used by facade to shutdown gracefully
      */
     private final int _executorShutdownTimeout;
+
+    private final boolean _disableCoalescingCommiter;
 
     private final int _logHandlerCleanerProtectedFilesLimit;
 
@@ -279,6 +283,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         _environmentJobExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("Environment-" + _prettyGroupNodeName));
         _stateChangeExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(new DaemonThreadFactory("StateChange-" + _prettyGroupNodeName)));
         _groupChangeExecutor = new ScheduledThreadPoolExecutor(2, new DaemonThreadFactory("Group-Change-Learner:" + _prettyGroupNodeName));
+        _disableCoalescingCommiter = configuration.getFacadeParameter(Boolean.class,DISABLE_COALESCING_COMMITTER_PROPERTY_NAME, DEFAULT_DISABLE_COALESCING_COMMITTER);
 
         // create environment in a separate thread to avoid renaming of the current thread by JE
         EnvHomeRegistry.getInstance().registerHome(_environmentDirectory);
@@ -1688,7 +1693,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 _coalescingCommiter = null;
             }
 
-            if (localTransactionSynchronizationPolicy == LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY)
+            if (!_disableCoalescingCommiter && localTransactionSynchronizationPolicy == LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY)
             {
                 localTransactionSynchronizationPolicy = SyncPolicy.NO_SYNC;
                 _coalescingCommiter = new CoalescingCommiter(_configuration.getGroupName(), this);
