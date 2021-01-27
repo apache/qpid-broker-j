@@ -154,8 +154,8 @@
     <h2.version>1.4.200</h2.version>
     <apache-directory-version>2.0.0.AM25</apache-directory-version>
     <kerby-version>2.0.1</kerby-version>
-    <bcprov-version>1.66</bcprov-version>
-    <bcpkix-version>1.66</bcpkix-version>
+    <bcprov-version>1.68</bcprov-version>
+    <bcpkix-version>1.68</bcpkix-version>
     <prometheus-client-version>0.9.0</prometheus-client-version>
   </properties>
 
