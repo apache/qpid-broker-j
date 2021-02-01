@@ -39,6 +39,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
+import org.apache.qpid.server.security.SiteSpecificTrustStore;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.PortUtil;
@@ -183,6 +184,11 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
             {
                 throw new IllegalConfigurationException("Only trust stores of type " + ManagedPeerCertificateTrustStore.TYPE_NAME + " may be used as the client certificate recorder");
             }
+        }
+        if (getTrustStores() != null && getTrustStores().stream().anyMatch(t -> t instanceof SiteSpecificTrustStore))
+        {
+            throw new IllegalConfigurationException(
+                    "Can't use trust store of type SiteSpecificTrustStore for the mutual authentication.");
         }
     }
 

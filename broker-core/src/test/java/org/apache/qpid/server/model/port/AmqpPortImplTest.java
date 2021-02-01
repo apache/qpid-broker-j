@@ -60,6 +60,7 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.security.SiteSpecificTrustStore;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AmqpPortImplTest extends UnitTestBase
@@ -163,6 +164,32 @@ public class AmqpPortImplTest extends UnitTestBase
         attributes.put(AmqpPort.KEY_STORE, KEYSTORE_NAME);
         attributes.put(AmqpPort.TRUST_STORES, Collections.singletonList(TRUSTSTORE_NAME));
         _port = createPort(getTestName(), attributes);
+    }
+
+    @Test
+    public void testCreateTlsClientAuthUsingSiteTrustStore()
+    {
+        final String trustStoreName = "siteSpecificTrustStore";
+        final SiteSpecificTrustStore<?> trustStore = mock(SiteSpecificTrustStore.class);
+        when(trustStore.getName()).thenReturn(trustStoreName);
+        when(trustStore.getParent()).thenReturn(_broker);
+        when(_broker.getChildren(TrustStore.class)).thenReturn(Collections.singleton(trustStore));
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(AmqpPort.TRANSPORTS, Collections.singletonList(Transport.SSL));
+        attributes.put(AmqpPort.KEY_STORE, KEYSTORE_NAME);
+        attributes.put(AmqpPort.TRUST_STORES, Collections.singletonList(trustStoreName));
+        attributes.put(AmqpPort.NEED_CLIENT_AUTH, "true");
+
+        try
+        {
+            createPort(getTestName(), attributes);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
     }
 
     @Test
