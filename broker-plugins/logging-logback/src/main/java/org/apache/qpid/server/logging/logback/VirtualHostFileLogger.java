@@ -61,7 +61,7 @@ public interface VirtualHostFileLogger<X extends VirtualHostFileLogger<X>> exten
     @ManagedAttribute( defaultValue = "100")
     int getMaxFileSize();
 
-    @ManagedAttribute(defaultValue = "%date %-5level [%thread] \\(%logger{2}\\) - %msg%n")
+    @ManagedAttribute(defaultValue = "%date{\"yyyy-MM-dd'T'HH:mm:ss,SSSXXX\", UTC} %-5level [%thread] \\(%logger{2}\\) - %msg%n")
     String getLayout();
 
     @DerivedAttribute
