@@ -29,18 +29,18 @@ import javax.crypto.CipherInputStream;
 public class EncryptionHelper
 {
 
-    public static boolean isValidBase64(final String encrypted)
+    static boolean isValidBase64(final String encrypted)
     {
         return encrypted.matches("^([\\w\\d+/]{4})*([\\w\\d+/]{2}==|[\\w\\d+/]{3}=)?$");
     }
 
 
-    public static byte[] readFromCipherStream(final byte[] unencryptedBytes, final Cipher cipher) throws IOException
+    static byte[] readFromCipherStream(final byte[] unencryptedBytes, final Cipher cipher) throws IOException
     {
         return readFromCipherStream(unencryptedBytes, 0, unencryptedBytes.length, cipher);
     }
 
-    public static byte[] readFromCipherStream(final byte[] unencryptedBytes,
+    static byte[] readFromCipherStream(final byte[] unencryptedBytes,
                                               int offset,
                                               int length,
                                               final Cipher cipher)

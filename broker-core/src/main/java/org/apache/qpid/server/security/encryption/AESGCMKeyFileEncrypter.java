@@ -63,17 +63,17 @@ class AESGCMKeyFileEncrypter implements ConfigurationSecretEncrypter
     @Override
     public String encrypt(final String unencrypted)
     {
-        byte[] unencryptedBytes = unencrypted.getBytes(StandardCharsets.UTF_8);
+        final byte[] unencryptedBytes = unencrypted.getBytes(StandardCharsets.UTF_8);
         try
         {
-            byte[] ivbytes = new byte[GCM_INITIALIZATION_VECTOR_LENGTH];
-            _random.nextBytes(ivbytes);
-            Cipher cipher = Cipher.getInstance(CIPHER_NAME);
-            GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH, ivbytes);
+            final byte[] initializationVectorBytes = new byte[GCM_INITIALIZATION_VECTOR_LENGTH];
+            _random.nextBytes(initializationVectorBytes);
+            final Cipher cipher = Cipher.getInstance(CIPHER_NAME);
+            final GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH, initializationVectorBytes);
             cipher.init(Cipher.ENCRYPT_MODE, _secretKey, gcmParameterSpec);
-            byte[] encryptedBytes = EncryptionHelper.readFromCipherStream(unencryptedBytes, cipher);
-            byte[] output = new byte[GCM_INITIALIZATION_VECTOR_LENGTH + encryptedBytes.length];
-            System.arraycopy(ivbytes, 0, output, 0, GCM_INITIALIZATION_VECTOR_LENGTH);
+            final byte[] encryptedBytes = EncryptionHelper.readFromCipherStream(unencryptedBytes, cipher);
+            final byte[] output = new byte[GCM_INITIALIZATION_VECTOR_LENGTH + encryptedBytes.length];
+            System.arraycopy(initializationVectorBytes, 0, output, 0, GCM_INITIALIZATION_VECTOR_LENGTH);
             System.arraycopy(encryptedBytes, 0, output, GCM_INITIALIZATION_VECTOR_LENGTH, encryptedBytes.length);
             return Base64.getEncoder().encodeToString(output);
         }
@@ -88,18 +88,19 @@ class AESGCMKeyFileEncrypter implements ConfigurationSecretEncrypter
     {
         if (!EncryptionHelper.isValidBase64(encrypted))
         {
-            throw new IllegalArgumentException("Encrypted value is not valid Base 64 data: '" + encrypted + "'");
+            throw new IllegalArgumentException(String.format("Encrypted value is not valid Base 64 data: '%s'", encrypted));
         }
-        byte[] encryptedBytes = Strings.decodeBase64(encrypted);
+        final byte[] encryptedBytes = Strings.decodeBase64(encrypted);
+        if (encryptedBytes.length < GCM_INITIALIZATION_VECTOR_LENGTH)
+        {
+            throw new IllegalArgumentException(String.format("Encrypted value length is less than expected : '%s'", encrypted));
+        }
         try
         {
-            Cipher cipher = Cipher.getInstance(CIPHER_NAME);
-            byte[] ivbytes = new byte[GCM_INITIALIZATION_VECTOR_LENGTH];
-            if (encryptedBytes.length >= GCM_INITIALIZATION_VECTOR_LENGTH)
-            {
-                System.arraycopy(encryptedBytes, 0, ivbytes, 0, GCM_INITIALIZATION_VECTOR_LENGTH);
-            }
-            GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH, ivbytes);
+            final Cipher cipher = Cipher.getInstance(CIPHER_NAME);
+            final byte[] initializationVectorBytes = new byte[GCM_INITIALIZATION_VECTOR_LENGTH];
+            System.arraycopy(encryptedBytes, 0, initializationVectorBytes, 0, GCM_INITIALIZATION_VECTOR_LENGTH);
+            GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH, initializationVectorBytes);
             cipher.init(Cipher.DECRYPT_MODE, _secretKey, gcmParameterSpec);
             return new String(EncryptionHelper.readFromCipherStream(encryptedBytes,
                                                                     GCM_INITIALIZATION_VECTOR_LENGTH,
