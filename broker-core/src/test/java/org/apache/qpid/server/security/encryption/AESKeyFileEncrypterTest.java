@@ -38,6 +38,7 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -45,12 +46,21 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class AESKeyFileEncrypterTest extends UnitTestBase
 {
     private final SecureRandom _random = new SecureRandom();
-    public static final String PLAINTEXT = "notaverygoodpassword";
+    public static final String PLAINTEXT = "secret";
+    private static SecretKeySpec secretKey;
+
+    @Before
+    public void setUp()
+    {
+        final byte[] keyData = new byte[32];
+        _random.nextBytes(keyData);
+        secretKey = new SecretKeySpec(keyData, "AES");
+    }
 
     @Test
     public void testSimpleEncryptDecrypt() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if (isStrongEncryptionEnabled())
         {
             doTestSimpleEncryptDecrypt(PLAINTEXT);
         }
@@ -60,14 +70,13 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
     @Test
     public void testRepeatedEncryptionsReturnDifferentValues() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if (isStrongEncryptionEnabled())
         {
-            SecretKeySpec secretKey = createSecretKey();
             AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
 
             Set<String> encryptions = new HashSet<>();
 
-            int iterations = 100;
+            int iterations = 10;
 
             for (int i = 0; i < iterations; i++)
             {
@@ -86,7 +95,7 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
     @Test
     public void testCreationFailsOnInvalidSecret() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if (isStrongEncryptionEnabled())
         {
             try
             {
@@ -115,7 +124,7 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
     @Test
     public void testEncryptionOfEmptyString() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if (isStrongEncryptionEnabled())
         {
             String text = "";
             doTestSimpleEncryptDecrypt(text);
@@ -124,7 +133,6 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
 
     private void doTestSimpleEncryptDecrypt(final String text)
     {
-        SecretKeySpec secretKey = createSecretKey();
         AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
 
         String encrypted = encrypter.encrypt(text);
@@ -138,13 +146,12 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
     @Test
     public void testEncryptingNullFails() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if (isStrongEncryptionEnabled())
         {
+            AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
+
             try
             {
-                SecretKeySpec secretKey = createSecretKey();
-                AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
-
                 String encrypted = encrypter.encrypt(null);
                 fail("Attempting to encrypt null should fail");
             }
@@ -158,7 +165,7 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
     @Test
     public void testEncryptingVeryLargeSecret() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if (isStrongEncryptionEnabled())
         {
             Random random = new Random();
             byte[] data = new byte[4096];
@@ -173,18 +180,15 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
 
     private boolean isStrongEncryptionEnabled() throws NoSuchAlgorithmException
     {
-        return Cipher.getMaxAllowedKeyLength("AES")>=256;
+        return Cipher.getMaxAllowedKeyLength("AES") >= 256;
     }
 
     @Test
     public void testDecryptNonsense() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if (isStrongEncryptionEnabled())
         {
-            SecretKeySpec secretKey = createSecretKey();
             AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
-
-
             try
             {
                 encrypter.decrypt(null);
@@ -225,12 +229,5 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
                 // pass
             }
         }
-    }
-
-    private SecretKeySpec createSecretKey()
-    {
-        final byte[] keyData = new byte[32];
-        _random.nextBytes(keyData);
-        return new SecretKeySpec(keyData, "AES");
     }
 }
