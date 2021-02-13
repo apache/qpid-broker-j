@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -41,11 +40,11 @@ import org.apache.qpid.server.plugin.ConfigurationSecretEncrypterFactory;
 import org.apache.qpid.server.plugin.PluggableService;
 
 @PluggableService
-public class AESKeyFileEncrypterFactory extends AbstractAESKeyFileEncrypterFactory
+public class AESGCMKeyFileEncrypterFactory extends AbstractAESKeyFileEncrypterFactory
         implements ConfigurationSecretEncrypterFactory, ConditionallyAvailable
 {
-    public static final String TYPE = "AESKeyFile";
-    private static final Logger LOGGER = LoggerFactory.getLogger(AESKeyFileEncrypterFactory.class);
+    public static final String TYPE = "AESGCMKeyFile";
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAESKeyFileEncrypterFactory.class);
 
     @Override
     public String getType()
@@ -92,16 +91,15 @@ public class AESKeyFileEncrypterFactory extends AbstractAESKeyFileEncrypterFacto
         }
         if (!file.isFile())
         {
-            throw new IllegalArgumentException("File '" + fileLocation + "' is not a regular file.");
+            throw new IllegalArgumentException(String.format("File '%s' is not a regular file.", fileLocation));
         }
         try
         {
             checkFilePermissions(fileLocation, file);
             if (Files.size(file.toPath()) != AES_KEY_SIZE_BYTES)
             {
-                throw new IllegalArgumentException("Key file '"
-                                                   + fileLocation
-                                                   + "' contains an incorrect about of data");
+                throw new IllegalArgumentException(String.format("Key file '%s' contains an incorrect about of data",
+                                                                 fileLocation));
             }
 
             try (FileInputStream inputStream = new FileInputStream(file))
@@ -120,7 +118,7 @@ public class AESKeyFileEncrypterFactory extends AbstractAESKeyFileEncrypterFacto
                             fileLocation));
                 }
                 SecretKeySpec keySpec = new SecretKeySpec(key, AES_ALGORITHM);
-                return new AESKeyFileEncrypter(keySpec);
+                return new AESGCMKeyFileEncrypter(keySpec);
             }
         }
         catch (IOException e)
