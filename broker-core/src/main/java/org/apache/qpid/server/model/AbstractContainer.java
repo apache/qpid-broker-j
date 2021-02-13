@@ -101,6 +101,7 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
         {
             _confidentialConfigurationEncryptionProvider =
                     String.valueOf(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER));
+            updateEncrypter(_confidentialConfigurationEncryptionProvider);
         }
 
     }
@@ -109,10 +110,6 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
     protected void postResolveChildren()
     {
         super.postResolveChildren();
-        if (_confidentialConfigurationEncryptionProvider != null)
-        {
-            updateEncrypter(_confidentialConfigurationEncryptionProvider);
-        }
     }
 
     @SuppressWarnings("unused")
