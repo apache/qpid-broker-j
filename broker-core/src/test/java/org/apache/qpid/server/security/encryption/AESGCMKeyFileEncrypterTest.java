@@ -19,11 +19,14 @@
  */
 package org.apache.qpid.server.security.encryption;
 
+import static org.apache.qpid.server.security.encryption.AbstractAESKeyFileEncrypterFactoryTest.isStrongEncryptionEnabled;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,10 +35,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -48,7 +51,7 @@ import javax.crypto.spec.SecretKeySpec;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.SettableFuture;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -66,94 +69,54 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AESGCMKeyFileEncrypterTest extends UnitTestBase
 {
-    private static final String PLAIN_SECRET = "secret";
-    public static final int TIMEOUT = 10;
+    private static final String SECRET = "secret";
+    public static final int BROKER_START_TIMEOUT = 10;
     private final SecureRandom _random = new SecureRandom();
-    private static Path _configurationLocation;
-    private static Path _workDir;
+    private Path _configurationLocation;
+    private Path _workDir;
     private Broker<?> _broker;
-    private static SystemLauncher _systemLauncher;
+    private SystemLauncher _systemLauncher;
     private static SecretKeySpec secretKey;
 
     @Before
-    public void setUp()
+    public void setUp() throws Exception
     {
+        assumeThat(isStrongEncryptionEnabled(), is(true));
         final byte[] keyData = new byte[32];
         _random.nextBytes(keyData);
         secretKey = new SecretKeySpec(keyData, "AES");
     }
 
-    private void createBrokerWithEncrypter(final Object encrptionType) throws Exception
+    @After
+    public void tearDown() throws Exception
     {
-        _workDir = Files.createTempDirectory("qpid_work_dir");
-        _configurationLocation = Files.createTempFile(_workDir, "config", ".json");
-        Map<String, Object> config = new HashMap<>();
-        config.put(ConfiguredObject.NAME, getTestName());
-        config.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-        config.put(Broker.CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER, encrptionType);
-        new ObjectMapper().writeValue(_configurationLocation.toFile(), config);
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("storePath", _configurationLocation.toFile().getAbsolutePath());
-        attributes.put("preferenceStoreAttributes", "{\"type\": \"Noop\"}");
-        attributes.put(SystemConfig.TYPE, JsonSystemConfigImpl.SYSTEM_CONFIG_TYPE);
-        attributes.put(SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, Boolean.FALSE);
-        attributes.put(SystemConfig.CONTEXT,
-                       Collections.singletonMap("qpid.work_dir", _workDir.toFile().getAbsolutePath()));
-        final SettableFuture<SystemConfig<?>> configFuture = SettableFuture.create();
-        _systemLauncher = new SystemLauncher(new SystemLauncherListener.DefaultSystemLauncherListener()
+        if (_systemLauncher != null)
         {
-            @Override
-            public void onContainerResolve(final SystemConfig<?> systemConfig)
-            {
-                configFuture.set(systemConfig);
-            }
-        });
-        _systemLauncher.startup(attributes);
-        final SystemConfig<?> systemConfig = configFuture.get(TIMEOUT, TimeUnit.SECONDS);
-        _broker = (Broker<?>) systemConfig.getContainer();
-
-        final Map<String, Object> authProviderAttributes = new HashMap<>();
-        authProviderAttributes.put(ConfiguredObject.NAME, "testAuthProvider");
-        authProviderAttributes.put(ConfiguredObject.TYPE, "Plain");
-
-        final AuthenticationProvider
-                authProvider = _broker.createChild(AuthenticationProvider.class, authProviderAttributes);
-
-        Map<String, Object> userAttrs = new HashMap<>();
-        userAttrs.put(User.TYPE, "managed");
-        userAttrs.put(User.NAME, "guest");
-        userAttrs.put(User.PASSWORD, PLAIN_SECRET);
-        User user = (User) authProvider.createChild(User.class, userAttrs);
-    }
-
-    @AfterClass
-    public static void tearDown() throws Exception
-    {
-        _systemLauncher.shutdown();
-        FileUtils.deleteDirectory(_workDir.toFile().getAbsolutePath());
-        FileUtils.deleteDirectory(_configurationLocation.toFile().getAbsolutePath());
+            _systemLauncher.shutdown();
+        }
+        if (_workDir != null)
+        {
+            FileUtils.deleteDirectory(_workDir.toFile().getAbsolutePath());
+        }
     }
 
     @Test
-    public void testRepeatedEncryptionsReturnDifferentValues() throws Exception
+    public void testRepeatedEncryptionsReturnDifferentValues()
     {
-        AESGCMKeyFileEncrypter encrypter = new AESGCMKeyFileEncrypter(secretKey);
-
-        Set<String> encryptions = new HashSet<>();
-
-        int iterations = 10;
+        final AESGCMKeyFileEncrypter encrypter = new AESGCMKeyFileEncrypter(secretKey);
+        final Set<String> encryptions = new HashSet<>();
+        final int iterations = 10;
 
         for (int i = 0; i < iterations; i++)
         {
-            encryptions.add(encrypter.encrypt(PLAIN_SECRET));
+            encryptions.add(encrypter.encrypt(SECRET));
         }
 
-        assertEquals("Not all encryptions were distinct", (long) iterations, (long) encryptions.size());
+        assertEquals("Not all encryptions were distinct", iterations, encryptions.size());
 
         for (String encrypted : encryptions)
         {
-            assertEquals("Not all encryptions decrypt correctly", PLAIN_SECRET, encrypter.decrypt(encrypted));
+            assertEquals("Not all encryptions decrypt correctly", SECRET, encrypter.decrypt(encrypted));
         }
     }
 
@@ -171,10 +134,10 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
                        e.getMessage().contains("A non null secret key must be supplied"));
         }
 
+        PBEKeySpec keySpec = new PBEKeySpec(SECRET.toCharArray());
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBEWithMD5AndDES");
         try
         {
-            PBEKeySpec keySpec = new PBEKeySpec(PLAIN_SECRET.toCharArray());
-            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBEWithMD5AndDES");
             new AESGCMKeyFileEncrypter(factory.generateSecret(keySpec));
             fail("An encrypter should not be creatable from the wrong type of secret key");
         }
@@ -187,31 +150,18 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
     }
 
     @Test
-    public void testEncryptionOfEmptyString() throws Exception
+    public void testEncryptionOfEmptyString()
     {
         doTestSimpleEncryptDecrypt("");
     }
 
-    private void doTestSimpleEncryptDecrypt(final String text)
-    {
-        AESGCMKeyFileEncrypter encrypter = new AESGCMKeyFileEncrypter(secretKey);
-
-        String encrypted = encrypter.encrypt(text);
-        assertNotNull("Encrypter did not return a result from encryption", encrypted);
-        assertNotEquals("Plain text and encrypted version are equal", text, encrypted);
-        String decrypted = encrypter.decrypt(encrypted);
-        assertNotNull("Encrypter did not return a result from decryption", decrypted);
-        assertEquals("Encryption was not reversible", text, decrypted);
-    }
-
     @Test
-    public void testEncryptingNullFails() throws Exception
+    public void testEncryptingNullFails()
     {
+        final AESGCMKeyFileEncrypter encrypter = new AESGCMKeyFileEncrypter(secretKey);
         try
         {
-            AESGCMKeyFileEncrypter encrypter = new AESGCMKeyFileEncrypter(secretKey);
-
-            String encrypted = encrypter.encrypt(null);
+            encrypter.encrypt(null);
             fail("Attempting to encrypt null should fail");
         }
         catch (NullPointerException e)
@@ -221,7 +171,7 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
     }
 
     @Test
-    public void testEncryptingVeryLargeSecret() throws Exception
+    public void testEncryptingVeryLargeSecret()
     {
         Random random = new Random();
         byte[] data = new byte[4096];
@@ -234,9 +184,9 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
     }
 
     @Test
-    public void testDecryptNonsense() throws Exception
+    public void testDecryptNonsense()
     {
-        AESGCMKeyFileEncrypter encrypter = new AESGCMKeyFileEncrypter(secretKey);
+        final AESGCMKeyFileEncrypter encrypter = new AESGCMKeyFileEncrypter(secretKey);
 
         try
         {
@@ -270,7 +220,7 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
 
         try
         {
-            String answer = encrypter.decrypt("thisisn'tvalidBase64!soitshouldfailwithanIllegalArgumentException");
+            encrypter.decrypt("thisisn'tvalidBase64!soitshouldfailwithanIllegalArgumentException");
             fail("Should not decrypt a larger amount of nonsense");
         }
         catch (IllegalArgumentException e)
@@ -280,80 +230,114 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
     }
 
     @Test
-    public void testChangeOfEncryptiontoGCM() throws Exception
+    public void testChangeOfEncryptionToGCM() throws Exception
     {
-        createBrokerWithEncrypter(AESKeyFileEncrypterFactory.TYPE);
-        String aesEncryptedPassword = getEncryptedPasswordFromConfig();
-        byte[] keyBytes = getSecretKey();
-        final SecretKeySpec aesSecretKey = new SecretKeySpec(keyBytes, "AES");
-        AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(aesSecretKey);
-        String aesDecryptedPassword = encrypter.decrypt(aesEncryptedPassword);
-        assertEquals("Decrpted text doesnt match original", PLAIN_SECRET, aesDecryptedPassword);
+        createBrokerAndAuthenticationProviderWithEncrypterPassword(AESKeyFileEncrypterFactory.TYPE);
+        final String aesEncryptedPassword = getEncryptedPasswordFromConfig();
+        final SecretKeySpec aesSecretKey = new SecretKeySpec(getBrokerSecretKey(), "AES");
+        final AESKeyFileEncrypter cbcEncrypter = new AESKeyFileEncrypter(aesSecretKey);
+        final String aesDecryptedPassword = cbcEncrypter.decrypt(aesEncryptedPassword);
+        assertEquals("Decrypted text doesnt match original", SECRET, aesDecryptedPassword);
         _broker.setAttributes(Collections.singletonMap(Broker.CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER,
                                                        AESGCMKeyFileEncrypterFactory.TYPE));
-        String gcmencryptedPassword = getEncryptedPasswordFromConfig();
-        AESGCMKeyFileEncrypter gcmEncrypter = new AESGCMKeyFileEncrypter(aesSecretKey);
-        String gcmDecryptedPassword = gcmEncrypter.decrypt(gcmencryptedPassword);
-        assertEquals("Decrpted text doesnt match original", PLAIN_SECRET, gcmDecryptedPassword);
+        final String gcmEncryptedPassword = getEncryptedPasswordFromConfig();
+        final AESGCMKeyFileEncrypter gcmEncrypter = new AESGCMKeyFileEncrypter(aesSecretKey);
+        final String gcmDecryptedPassword = gcmEncrypter.decrypt(gcmEncryptedPassword);
+        assertEquals("Decrypted text doesnt match original", SECRET, gcmDecryptedPassword);
     }
 
     @Test
-    public void testChangeOfEncryptiontoAES() throws Exception
+    public void testChangeOfEncryptionToAES() throws Exception
     {
-        createBrokerWithEncrypter(AESGCMKeyFileEncrypterFactory.TYPE);
-        String gcmEncryptedPassword = getEncryptedPasswordFromConfig();
-        byte[] keyBytes = getSecretKey();
-        final SecretKeySpec aesSecretKey = new SecretKeySpec(keyBytes, "AES");
-        AESGCMKeyFileEncrypter gcmEncrypter = new AESGCMKeyFileEncrypter(aesSecretKey);
-        String gcmDecryptedPassword = gcmEncrypter.decrypt(gcmEncryptedPassword);
-        assertEquals("Decrpted text doesnt match original", PLAIN_SECRET, gcmDecryptedPassword);
+        createBrokerAndAuthenticationProviderWithEncrypterPassword(AESGCMKeyFileEncrypterFactory.TYPE);
+        final String gcmEncryptedPassword = getEncryptedPasswordFromConfig();
+        final SecretKeySpec aesSecretKey = new SecretKeySpec(getBrokerSecretKey(), "AES");
+        final AESGCMKeyFileEncrypter gcmEncrypter = new AESGCMKeyFileEncrypter(aesSecretKey);
+        final String gcmDecryptedPassword = gcmEncrypter.decrypt(gcmEncryptedPassword);
+        assertEquals("Decrypted text doesnt match original", SECRET, gcmDecryptedPassword);
         _broker.setAttributes(Collections.singletonMap(Broker.CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER,
                                                        "AESKeyFile"));
-        String aesencryptedPassword = getEncryptedPasswordFromConfig();
-        AESKeyFileEncrypter aesEncrypter = new AESKeyFileEncrypter(aesSecretKey);
-        String aesDecryptedPassword = aesEncrypter.decrypt(aesencryptedPassword);
-        assertEquals("Decrpted text doesnt match original", PLAIN_SECRET, aesDecryptedPassword);
+        final String cbcEncryptedPassword = getEncryptedPasswordFromConfig();
+        final AESKeyFileEncrypter cbcEncrypter = new AESKeyFileEncrypter(aesSecretKey);
+        final String cbcDecryptedPassword = cbcEncrypter.decrypt(cbcEncryptedPassword);
+        assertEquals("Decrypted text doesnt match original", SECRET, cbcDecryptedPassword);
     }
 
-    private byte[] getSecretKey() throws IOException
+    private void doTestSimpleEncryptDecrypt(final String text)
     {
-        byte[] keyBytes = new byte[0];
-        boolean isSecretFound = false;
-        File[] workDir = _workDir.toFile().listFiles();
+        AESGCMKeyFileEncrypter encrypter = new AESGCMKeyFileEncrypter(secretKey);
 
-        for (File file : workDir)
-        {
-            if (file.isDirectory())
-            {
-                File[] keysDir = file.listFiles();
-                for (File keysFile : keysDir)
-                {
-                    File secretKeyFile = keysFile;
-                    keyBytes = Files.readAllBytes(Paths.get(String.valueOf(secretKeyFile)));
-                    isSecretFound = true;
-                    break;
-                }
-                if (isSecretFound)
-                {
-                    break;
-                }
-            }
-        }
-        return keyBytes;
+        String encrypted = encrypter.encrypt(text);
+        assertNotNull("Encrypter did not return a result from encryption", encrypted);
+        assertNotEquals("Plain text and encrypted version are equal", text, encrypted);
+        String decrypted = encrypter.decrypt(encrypted);
+        assertNotNull("Encrypter did not return a result from decryption", decrypted);
+        assertEquals("Encryption was not reversible", text, decrypted);
     }
 
+    private void createBrokerAndAuthenticationProviderWithEncrypterPassword(final Object encryptionType)
+            throws Exception
+    {
+        _workDir = Files.createTempDirectory("qpid_work_dir");
+        _configurationLocation = Files.createTempFile(_workDir, "config", ".json");
+        final Map<String, Object> config = new HashMap<>();
+        config.put(ConfiguredObject.NAME, getTestName());
+        config.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
+        config.put(Broker.CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER, encryptionType);
+        new ObjectMapper().writeValue(_configurationLocation.toFile(), config);
+
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put("storePath", _configurationLocation.toFile().getAbsolutePath());
+        attributes.put("preferenceStoreAttributes", "{\"type\": \"Noop\"}");
+        attributes.put(SystemConfig.TYPE, JsonSystemConfigImpl.SYSTEM_CONFIG_TYPE);
+        attributes.put(SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, Boolean.FALSE);
+        attributes.put(SystemConfig.CONTEXT,
+                       Collections.singletonMap("qpid.work_dir", _workDir.toFile().getAbsolutePath()));
+        final SettableFuture<SystemConfig<?>> configFuture = SettableFuture.create();
+        _systemLauncher = new SystemLauncher(new SystemLauncherListener.DefaultSystemLauncherListener()
+        {
+            @Override
+            public void onContainerResolve(final SystemConfig<?> systemConfig)
+            {
+                configFuture.set(systemConfig);
+            }
+        });
+        _systemLauncher.startup(attributes);
+        final SystemConfig<?> systemConfig = configFuture.get(BROKER_START_TIMEOUT, TimeUnit.SECONDS);
+        _broker = (Broker<?>) systemConfig.getContainer();
+
+        final Map<String, Object> authProviderAttributes = new HashMap<>();
+        authProviderAttributes.put(ConfiguredObject.NAME, "testAuthProvider");
+        authProviderAttributes.put(ConfiguredObject.TYPE, "Plain");
+
+        final AuthenticationProvider<?>
+                authProvider = _broker.createChild(AuthenticationProvider.class, authProviderAttributes);
+
+        final Map<String, Object> userAttrs = new HashMap<>();
+        userAttrs.put(User.TYPE, "managed");
+        userAttrs.put(User.NAME, "guest");
+        userAttrs.put(User.PASSWORD, SECRET);
+        authProvider.createChild(User.class, userAttrs);
+    }
+
+    private byte[] getBrokerSecretKey() throws IOException
+    {
+        final String keyFile = AbstractAESKeyFileEncrypterFactory.getSecretKeyLocation(_broker);
+        return Files.readAllBytes(Paths.get(keyFile));
+    }
+
+    @SuppressWarnings("unchecked")
     private String getEncryptedPasswordFromConfig() throws java.io.IOException
     {
-        ObjectMapper objectMapper = new ObjectMapper();
-        File configFile = _configurationLocation.toFile();
-        TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>()
-        {
-        };
-        HashMap<String, Object> configEntry = objectMapper.readValue(configFile, typeRef);
-        ArrayList configAuthProvider = (ArrayList) configEntry.get("authenticationproviders");
-        HashMap<String, Object> users = (HashMap<String, Object>) configAuthProvider.get(0);
-        ArrayList configUsers = (ArrayList) users.get("users");
-        HashMap<String, Object> configUser = (HashMap<String, Object>) configUsers.get(0);
+        final File configFile = _configurationLocation.toFile();
+        final Map<String, Object> configEntry = new ObjectMapper().readValue(configFile,
+                                                                             new TypeReference<Map<String, Object>>()
+                                                                             {
+                                                                             });
+        final List<Object> configAuthProvider = (List<Object>) configEntry.get("authenticationproviders");
+        final Map<String, Object> users = (Map<String, Object>) configAuthProvider.get(0);
+        final List<Object> configUsers = (List<Object>) users.get("users");
+        final Map<String, Object> configUser = (HashMap<String, Object>) configUsers.get(0);
         return (String) configUser.get("password");
     }
 }
