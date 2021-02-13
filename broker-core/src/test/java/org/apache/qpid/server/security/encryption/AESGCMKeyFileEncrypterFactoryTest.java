@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -60,11 +59,11 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AESKeyFileEncrypterFactoryTest extends UnitTestBase
+public class AESGCMKeyFileEncrypterFactoryTest extends UnitTestBase
 {
     private Broker _broker;
     private Path _tmpDir;
-    private AESKeyFileEncrypterFactory _factory;
+    private AESGCMKeyFileEncrypterFactory _factory;
 
     @Before
     public void setUp() throws Exception
@@ -93,7 +92,7 @@ public class AESKeyFileEncrypterFactoryTest extends UnitTestBase
             }
         }).when(_broker).setAttributes(attributesCaptor.capture());
 
-        _factory = new AESKeyFileEncrypterFactory();
+        _factory = new AESGCMKeyFileEncrypterFactory();
     }
 
     @Test

@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -32,28 +31,31 @@ import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 
 import org.apache.qpid.server.util.Strings;
 
-class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
+class AESGCMKeyFileEncrypter implements ConfigurationSecretEncrypter
 {
-    private static final String CIPHER_NAME = "AES/CBC/PKCS5Padding";
-    private static final int AES_INITIALIZATION_VECTOR_LENGTH = 16;
+    private static final String CIPHER_NAME = "AES/GCM/NoPadding";
+    private static final int GCM_INITIALIZATION_VECTOR_LENGTH = 12;
+    private static final int GCM_TAG_LENGTH = 128;
     private static final String AES_ALGORITHM = "AES";
-    private final SecretKey _secretKey;
     private final SecureRandom _random = new SecureRandom();
+    private final SecretKey _secretKey;
 
-    AESKeyFileEncrypter(SecretKey secretKey)
+    AESGCMKeyFileEncrypter(SecretKey secretKey)
     {
-        if(secretKey == null)
+        if (secretKey == null)
         {
-            throw new NullPointerException("A non null secret key must be supplied");
+            throw new IllegalArgumentException("A non null secret key must be supplied");
         }
-        if(!AES_ALGORITHM.equals(secretKey.getAlgorithm()))
+        if (!AES_ALGORITHM.equals(secretKey.getAlgorithm()))
         {
-            throw new IllegalArgumentException("Provided secret key was for the algorithm: " + secretKey.getAlgorithm()
-                                                + "when" + AES_ALGORITHM + "was needed.");
+            throw new IllegalArgumentException(String.format(
+                    "Provided secret key was for the algorithm: %s when %s was needed.",
+                    secretKey.getAlgorithm(),
+                    AES_ALGORITHM));
         }
         _secretKey = secretKey;
     }
@@ -64,14 +66,15 @@ class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
         byte[] unencryptedBytes = unencrypted.getBytes(StandardCharsets.UTF_8);
         try
         {
-            byte[] ivbytes = new byte[AES_INITIALIZATION_VECTOR_LENGTH];
+            byte[] ivbytes = new byte[GCM_INITIALIZATION_VECTOR_LENGTH];
             _random.nextBytes(ivbytes);
             Cipher cipher = Cipher.getInstance(CIPHER_NAME);
-            cipher.init(Cipher.ENCRYPT_MODE, _secretKey, new IvParameterSpec(ivbytes));
+            GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH, ivbytes);
+            cipher.init(Cipher.ENCRYPT_MODE, _secretKey, gcmParameterSpec);
             byte[] encryptedBytes = EncryptionHelper.readFromCipherStream(unencryptedBytes, cipher);
-            byte[] output = new byte[AES_INITIALIZATION_VECTOR_LENGTH + encryptedBytes.length];
-            System.arraycopy(ivbytes, 0, output, 0, AES_INITIALIZATION_VECTOR_LENGTH);
-            System.arraycopy(encryptedBytes, 0, output, AES_INITIALIZATION_VECTOR_LENGTH, encryptedBytes.length);
+            byte[] output = new byte[GCM_INITIALIZATION_VECTOR_LENGTH + encryptedBytes.length];
+            System.arraycopy(ivbytes, 0, output, 0, GCM_INITIALIZATION_VECTOR_LENGTH);
+            System.arraycopy(encryptedBytes, 0, output, GCM_INITIALIZATION_VECTOR_LENGTH, encryptedBytes.length);
             return Base64.getEncoder().encodeToString(output);
         }
         catch (IOException | InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e)
@@ -83,7 +86,7 @@ class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
     @Override
     public String decrypt(final String encrypted)
     {
-        if(!EncryptionHelper.isValidBase64(encrypted))
+        if (!EncryptionHelper.isValidBase64(encrypted))
         {
             throw new IllegalArgumentException("Encrypted value is not valid Base 64 data: '" + encrypted + "'");
         }
@@ -91,21 +94,22 @@ class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
         try
         {
             Cipher cipher = Cipher.getInstance(CIPHER_NAME);
-
-            IvParameterSpec ivParameterSpec = new IvParameterSpec(encryptedBytes, 0, AES_INITIALIZATION_VECTOR_LENGTH);
-
-            cipher.init(Cipher.DECRYPT_MODE, _secretKey, ivParameterSpec);
-
+            byte[] ivbytes = new byte[GCM_INITIALIZATION_VECTOR_LENGTH];
+            if (encryptedBytes.length >= GCM_INITIALIZATION_VECTOR_LENGTH)
+            {
+                System.arraycopy(encryptedBytes, 0, ivbytes, 0, GCM_INITIALIZATION_VECTOR_LENGTH);
+            }
+            GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH, ivbytes);
+            cipher.init(Cipher.DECRYPT_MODE, _secretKey, gcmParameterSpec);
             return new String(EncryptionHelper.readFromCipherStream(encryptedBytes,
-                                                   AES_INITIALIZATION_VECTOR_LENGTH,
-                                                   encryptedBytes.length - AES_INITIALIZATION_VECTOR_LENGTH,
-                                                   cipher), StandardCharsets.UTF_8);
+                                                                    GCM_INITIALIZATION_VECTOR_LENGTH,
+                                                                    encryptedBytes.length
+                                                                    - GCM_INITIALIZATION_VECTOR_LENGTH,
+                                                                    cipher), StandardCharsets.UTF_8);
         }
         catch (IOException | InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e)
         {
             throw new IllegalArgumentException("Unable to decrypt secret", e);
         }
     }
-
-
 }
