@@ -244,18 +244,18 @@ abstract class AbstractAESKeyFileEncrypterFactory implements ConfigurationSecret
         }
     }
 
-    private boolean isPosixFileSystem(File file)
+    private static boolean isPosixFileSystem(File file)
     {
         return Files.getFileAttributeView(file.toPath(), PosixFileAttributeView.class) != null;
     }
 
-    private boolean isAclFileSystem(File file)
+    private static boolean isAclFileSystem(File file)
     {
         return Files.getFileAttributeView(file.toPath(), AclFileAttributeView.class) != null;
     }
 
 
-    private void createAndPopulateKeyFile(final File file)
+    static void createAndPopulateKeyFile(final File file)
     {
         try
         {
@@ -277,7 +277,7 @@ abstract class AbstractAESKeyFileEncrypterFactory implements ConfigurationSecret
         }
     }
 
-    private void makeKeyFileReadOnly(File file) throws IOException
+    private static void makeKeyFileReadOnly(File file) throws IOException
     {
         if (isPosixFileSystem(file))
         {
@@ -317,7 +317,7 @@ abstract class AbstractAESKeyFileEncrypterFactory implements ConfigurationSecret
         }
     }
 
-    private void createEmptyKeyFile(File file) throws IOException
+    private static void createEmptyKeyFile(File file) throws IOException
     {
         final Path parentFilePath = file.getAbsoluteFile().getParentFile().toPath();
 

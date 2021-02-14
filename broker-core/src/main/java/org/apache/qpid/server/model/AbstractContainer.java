@@ -101,6 +101,10 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
         {
             _confidentialConfigurationEncryptionProvider =
                     String.valueOf(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER));
+
+            // resolve context attributes here
+            // as encrypter factory relies on context variables
+            onResolve();
             updateEncrypter(_confidentialConfigurationEncryptionProvider);
         }
 
