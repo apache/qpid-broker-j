@@ -35,11 +35,11 @@ From: 'Apache Software Foundation' (http://www.apache.org)
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'FasterXML' (http://fasterxml.com/)
-  - Jackson-annotations (http://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:bundle:2.10.5
+  - Jackson-annotations (http://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:bundle:2.12.1
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Jackson-core (https://github.com/FasterXML/jackson-core) com.fasterxml.jackson.core:jackson-core:bundle:2.10.5
+  - Jackson-core (https://github.com/FasterXML/jackson-core) com.fasterxml.jackson.core:jackson-core:bundle:2.12.1
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - jackson-databind (http://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:bundle:2.10.5
+  - jackson-databind (http://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:bundle:2.12.1
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'QOS.ch' (http://www.qos.ch)
@@ -47,7 +47,7 @@ From: 'QOS.ch' (http://www.qos.ch)
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
   - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.2.3
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
-  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:1.7.26
+  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:1.7.30
     License: MIT License  (http://www.opensource.org/licenses/mit-license.php)
 
 From: 'The Apache Software Foundation' (http://www.apache.org/)
