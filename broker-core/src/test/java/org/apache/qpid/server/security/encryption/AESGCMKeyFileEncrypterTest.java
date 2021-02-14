@@ -247,6 +247,25 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
     }
 
     @Test
+    public void testSetKeyLocationAsExpression() throws Exception
+    {
+        final Path workDir = Files.createTempDirectory("qpid_work_dir");
+        final File keyFile = new File(workDir.toFile(), "test.key");
+        AbstractAESKeyFileEncrypterFactory.createAndPopulateKeyFile(keyFile);
+        final Map<String, String> context = Collections.singletonMap(
+                AbstractAESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE,
+                "${qpid.work_dir}" + File.separator + keyFile.getName());
+        createBrokerAndAuthenticationProviderWithEncrypterPassword(AESGCMKeyFileEncrypterFactory.TYPE,
+                                                                   workDir,
+                                                                   context);
+        final String encryptedPassword = getEncryptedPasswordFromConfig();
+        final SecretKeySpec aesSecretKey = new SecretKeySpec(Files.readAllBytes(keyFile.toPath()), "AES");
+        final AESGCMKeyFileEncrypter encrypter = new AESGCMKeyFileEncrypter(aesSecretKey);
+        final String decryptedPassword = encrypter.decrypt(encryptedPassword);
+        assertEquals("Decrypted text doesnt match original", SECRET, decryptedPassword);
+    }
+
+    @Test
     public void testChangeOfEncryptionToAES() throws Exception
     {
         createBrokerAndAuthenticationProviderWithEncrypterPassword(AESGCMKeyFileEncrypterFactory.TYPE);
@@ -278,12 +297,26 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
     private void createBrokerAndAuthenticationProviderWithEncrypterPassword(final Object encryptionType)
             throws Exception
     {
-        _workDir = Files.createTempDirectory("qpid_work_dir");
+        createBrokerAndAuthenticationProviderWithEncrypterPassword(encryptionType,
+                                                                   Files.createTempDirectory("qpid_work_dir"),
+                                                                   Collections.emptyMap());
+    }
+
+    private void createBrokerAndAuthenticationProviderWithEncrypterPassword(final Object encryptionType,
+                                                                            final Path workDir,
+                                                                            final Map<String, String> brokerContext)
+            throws Exception
+    {
+        _workDir = workDir;
+        final Map<String, String> context = new HashMap<>();
+        context.put("qpid.work_dir", workDir.toFile().getAbsolutePath());
+
         _configurationLocation = Files.createTempFile(_workDir, "config", ".json");
         final Map<String, Object> config = new HashMap<>();
         config.put(ConfiguredObject.NAME, getTestName());
         config.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
         config.put(Broker.CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER, encryptionType);
+        config.put(Broker.CONTEXT, brokerContext);
         new ObjectMapper().writeValue(_configurationLocation.toFile(), config);
 
         final Map<String, Object> attributes = new HashMap<>();
@@ -291,8 +324,7 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
         attributes.put("preferenceStoreAttributes", "{\"type\": \"Noop\"}");
         attributes.put(SystemConfig.TYPE, JsonSystemConfigImpl.SYSTEM_CONFIG_TYPE);
         attributes.put(SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, Boolean.FALSE);
-        attributes.put(SystemConfig.CONTEXT,
-                       Collections.singletonMap("qpid.work_dir", _workDir.toFile().getAbsolutePath()));
+        attributes.put(SystemConfig.CONTEXT, context);
         final SettableFuture<SystemConfig<?>> configFuture = SettableFuture.create();
         _systemLauncher = new SystemLauncher(new SystemLauncherListener.DefaultSystemLauncherListener()
         {
