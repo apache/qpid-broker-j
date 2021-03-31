@@ -51,7 +51,7 @@ Sources are kept in a Git repository. Thus a git client is required.
 ## Release Steps
 
 1.  Checkout Qpid Broker-J Sources
-    * For new major/minor release; checkout sources master
+    * For new major/minor release; checkout sources main branch
 
         git clone https://gitbox.apache.org/repos/asf/qpid-broker-j.git qpid-broker-j
     * For bugfix release

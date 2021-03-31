@@ -108,11 +108,11 @@ The changes can be submitted as pull request against github mirror of Apache Qpi
 ## How to contribute changes to Qpid Broker-J
 
 Here is a set of simple instructions to follow in order to contribute changes.
-Please note, that changes need to be implemented on master branch first before they can be ported into specific version support branch.
+Please note, that changes need to be implemented on main branch first before they can be ported into specific version support branch.
 
 * Raise JIRA ticket
 * Fork github mirror of broker-j repository, if it is not forked yet
-* Create working branch from master in forked repo
+* Create working branch from main in forked repo
 * Implement required changes and unit/integration tests
 * Verify that implementation follows [Qpid code standard](code-guide.md) and [clean code practices](https://en.wikipedia.org/wiki/SOLID)
 * Verify that all tests are passing locally on a developer machine
@@ -120,5 +120,5 @@ Please note, that changes need to be implemented on master branch first before t
 * Create pull request in github mirror of broker-j repository
 * Verify that all tests executed for PR by project Continuous Integration tools are still passing
 * Address comments submitted by pull request reviewers if any and applicable
-* The reviewed changes needs to be applied into the master branch by project committer
+* The reviewed changes needs to be applied into the main branch by project committer
 * Close the JIRA ticket
