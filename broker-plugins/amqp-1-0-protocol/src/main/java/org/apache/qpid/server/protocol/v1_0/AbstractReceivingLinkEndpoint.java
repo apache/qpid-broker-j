@@ -173,6 +173,10 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                     _currentDelivery = null;
                 }
             }
+            else
+            {
+                getSession().sendFlowConditional();
+            }
         }
         else
         {
