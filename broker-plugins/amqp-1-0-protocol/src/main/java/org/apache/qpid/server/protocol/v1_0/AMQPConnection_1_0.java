@@ -44,7 +44,7 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
 
     String CONNECTION_SESSION_CREDIT_WINDOW_SIZE = "connection.sessionCreditWindowSize";
     @ManagedContextDefault(name = CONNECTION_SESSION_CREDIT_WINDOW_SIZE)
-    int DEFAULT_CONNECTION_SESSION_CREDIT_WINDOW_SIZE = 8192;
+    int DEFAULT_CONNECTION_SESSION_CREDIT_WINDOW_SIZE = 2 * 8192;
 
     String SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE = "connection.sendSaslFinalResponseAsChallenge";
     @ManagedContextDefault(name = SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE)
