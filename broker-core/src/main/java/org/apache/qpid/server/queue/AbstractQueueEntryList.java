@@ -81,6 +81,7 @@ abstract class AbstractQueueEntryList implements QueueEntryList
         {
             case AVAILABLE:
                 queueStatistics.addToAvailable(sizeWithHeader);
+                _queue.checkCapacity();
                 break;
             case ACQUIRED:
                 if(isConsumerAcquired && !wasConsumerAcquired)
