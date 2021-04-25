@@ -19,13 +19,20 @@
 
 package org.apache.qpid.server.queue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.QueueMessages;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
+import org.apache.qpid.server.txn.ServerTransaction;
 
 public class RingOverflowPolicyHandler implements OverflowPolicyHandler
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RingOverflowPolicyHandler.class);
     private final Handler _handler;
 
     RingOverflowPolicyHandler(final Queue<?> queue,
@@ -38,7 +45,7 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
     @Override
     public void checkOverflow(final QueueEntry newlyEnqueued)
     {
-        _handler.checkOverflow();
+        _handler.checkOverflow(newlyEnqueued);
     }
 
     private static class Handler extends OverflowPolicyMaximumQueueDepthChangeListener
@@ -57,10 +64,10 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
         @Override
         void onMaximumQueueDepthChange(final Queue<?> queue)
         {
-            checkOverflow();
+            checkOverflow(null);
         }
 
-        private void checkOverflow()
+        private void checkOverflow(final QueueEntry newlyEnqueued)
         {
             // When this method causes an entry to be deleted, the size of the queue is changed, leading to
             // checkOverflow being called again (because for other policies this may trigger relaxation of flow control,
@@ -78,6 +85,7 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
                     int counter = 0;
                     int queueDepthMessages;
                     long queueDepthBytes;
+                    QueueEntry lastSeenEntry = null;
                     do
                     {
                         queueDepthMessages = _queue.getQueueDepthMessages();
@@ -94,22 +102,26 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
                                 overflow = true;
                             }
 
-                            QueueEntry entry = _queue.getLeastSignificantOldestEntry();
-
-                            if (entry != null)
+                            lastSeenEntry = lastSeenEntry == null
+                                    ? _queue.getLeastSignificantOldestEntry()
+                                    : lastSeenEntry.getNextValidEntry();
+                            if (lastSeenEntry != null)
                             {
-                                counter++;
-                                _queue.deleteEntry(entry);
-                            }
-                            else
-                            {
-                                queueDepthMessages = _queue.getQueueDepthMessages();
-                                queueDepthBytes = _queue.getQueueDepthBytes();
-                                break;
+                                // ensure that we are deleting only entries before the newly enqueued one
+                                if (newlyEnqueued != null && lastSeenEntry.compareTo(newlyEnqueued) >= 0)
+                                {
+                                    // stop at new entry
+                                    lastSeenEntry = null;
+                                }
+                                else if (lastSeenEntry.acquireOrSteal(null))
+                                {
+                                    counter++;
+                                    deleteAcquiredEntry(lastSeenEntry);
+                                }
                             }
                         }
                     }
-                    while (bytesOverflow || messagesOverflow);
+                    while ((bytesOverflow || messagesOverflow) && lastSeenEntry != null);
 
                     if (overflow)
                     {
@@ -126,6 +138,27 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
                 }
             }
         }
-    }
 
+        private void deleteAcquiredEntry(final QueueEntry entry)
+        {
+            final MessageStore messageStore = _queue.getVirtualHost().getMessageStore();
+            final ServerTransaction txn =
+                    new AsyncAutoCommitTransaction(messageStore, (future, action) -> action.postCommit());
+            txn.dequeue(entry.getEnqueueRecord(),
+                        new ServerTransaction.Action()
+                        {
+                            @Override
+                            public void postCommit()
+                            {
+                                entry.delete();
+                            }
+
+                            @Override
+                            public void onRollback()
+                            {
+
+                            }
+                        });
+        }
+    }
 }
