@@ -38,15 +38,15 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -233,7 +233,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
 
     // Multi session transactions
-    private volatile ServerTransaction[] _openTransactions = new ServerTransaction[16];
+    private final Map<Integer, ServerTransaction> _openTransactions = new ConcurrentSkipListMap<>();
     private volatile boolean _sendSaslFinalChallengeAsChallenge;
     private volatile String _closeCause;
 
@@ -1846,68 +1846,37 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public Iterator<ServerTransaction> getOpenTransactions()
     {
-        final AtomicInteger counter = new AtomicInteger(0);
-        return Arrays.stream(_openTransactions)
-                .filter(Objects::nonNull)
-                .map(transaction -> new IdentifiedTransaction(counter.getAndIncrement(), transaction).getServerTransaction())
-                .collect(Collectors.toList()).iterator();
+        return _openTransactions.values().iterator();
     }
 
     @Override
     public IdentifiedTransaction createIdentifiedTransaction()
     {
-        ServerTransaction[] openTransactions = _openTransactions;
-        final int maxOpenTransactions = openTransactions.length;
-        int id = 0;
-        for(; id < maxOpenTransactions; id++)
-        {
-            if(openTransactions[id] == null)
-            {
-                break;
-
-            }
-        }
-
-        // we need to expand the transaction array;
-        if(id == maxOpenTransactions)
-        {
-            final int newSize = maxOpenTransactions < 1024 ? 2*maxOpenTransactions : maxOpenTransactions + 1024;
-
-            _openTransactions = new ServerTransaction[newSize];
-            System.arraycopy(openTransactions, 0, _openTransactions, 0, maxOpenTransactions);
-
-        }
-
         final LocalTransaction serverTransaction = createLocalTransaction();
-
-        _openTransactions[id] = serverTransaction;
+        int id = 0;
+        while (id >= 0 && _openTransactions.putIfAbsent(id, serverTransaction) != null)
+        {
+            id++;
+        }
+        if (id < 0)
+        {
+            throw new IllegalStateException("Unsupported state, too many opened transactions");
+        }
         return new IdentifiedTransaction(id, serverTransaction);
     }
 
     @Override
     public ServerTransaction getTransaction(final int txnId)
     {
-        try
-        {
-            return _openTransactions[txnId];
-        }
-        catch (ArrayIndexOutOfBoundsException e)
-        {
-            throw new UnknownTransactionException(txnId);
-        }
+        return Optional.ofNullable(_openTransactions.get(txnId))
+                .orElseThrow(() -> new UnknownTransactionException(txnId));
     }
 
     @Override
     public void removeTransaction(final int txnId)
     {
-        try
-        {
-            _openTransactions[txnId] = null;
-        }
-        catch (ArrayIndexOutOfBoundsException e)
-        {
-            throw new UnknownTransactionException(txnId);
-        }
+        Optional.ofNullable(_openTransactions.remove(txnId))
+                .orElseThrow(() -> new UnknownTransactionException(txnId));
     }
 
     @Override
