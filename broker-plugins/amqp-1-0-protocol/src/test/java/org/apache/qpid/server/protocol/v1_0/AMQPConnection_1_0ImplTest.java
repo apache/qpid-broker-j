@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -48,7 +49,7 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
 {
     private Broker<?> _broker;
     private ServerNetworkConnection _network;
-    private AmqpPort _port;
+    private AmqpPort<?> _port;
     private AggregateTicker _aggregateTicket;
     private QueueManagingVirtualHost<?> _virtualHost;
 
@@ -71,7 +72,8 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
     @Test
     public void testGetOpenTransactions()
     {
-        final AMQPConnection_1_0Impl connection = new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
+        final AMQPConnection_1_0Impl connection =
+                new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
         connection.setAddressSpace(_virtualHost);
         final IdentifiedTransaction tx1 = connection.createIdentifiedTransaction();
         final IdentifiedTransaction tx2 = connection.createIdentifiedTransaction();
@@ -83,5 +85,75 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
         assertThat(iterator.hasNext(), is(true));
         assertThat(iterator.next(), is(equalTo(tx2.getServerTransaction())));
         assertThat(iterator.hasNext(), is(false));
+    }
+
+    @Test
+    public void testCreateIdentifiedTransaction()
+    {
+        final AMQPConnection_1_0Impl connection =
+                new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
+        connection.setAddressSpace(_virtualHost);
+        final IdentifiedTransaction tx1 = connection.createIdentifiedTransaction();
+        connection.createIdentifiedTransaction();
+
+        connection.removeTransaction(tx1.getId());
+
+        final IdentifiedTransaction tx3 = connection.createIdentifiedTransaction();
+        assertThat(tx1.getId(), is(equalTo(tx3.getId())));
+    }
+
+    @Test
+    public void testGetTransaction()
+    {
+        final AMQPConnection_1_0Impl connection =
+                new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
+        connection.setAddressSpace(_virtualHost);
+        final IdentifiedTransaction tx1 = connection.createIdentifiedTransaction();
+        final IdentifiedTransaction tx2 = connection.createIdentifiedTransaction();
+
+        final ServerTransaction serverTransaction1 = connection.getTransaction(tx1.getId());
+        assertThat(tx1.getServerTransaction(), is(equalTo(serverTransaction1)));
+
+        final ServerTransaction serverTransaction2 = connection.getTransaction(tx2.getId());
+        assertThat(tx2.getServerTransaction(), is(equalTo(serverTransaction2)));
+    }
+
+    @Test
+    public void testGetTransactionUnknownId()
+    {
+        final AMQPConnection_1_0Impl connection =
+                new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
+        connection.setAddressSpace(_virtualHost);
+        final IdentifiedTransaction tx1 = connection.createIdentifiedTransaction();
+
+        try
+        {
+            connection.getTransaction(tx1.getId() + 1);
+            fail("UnknownTransactionException is not thrown");
+        }
+        catch (UnknownTransactionException e)
+        {
+            // pass
+        }
+    }
+
+    @Test
+    public void testRemoveTransaction()
+    {
+        final AMQPConnection_1_0Impl connection =
+                new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
+        connection.setAddressSpace(_virtualHost);
+        final IdentifiedTransaction tx1 = connection.createIdentifiedTransaction();
+        connection.removeTransaction(tx1.getId());
+
+        try
+        {
+            connection.getTransaction(tx1.getId());
+            fail("UnknownTransactionException is not thrown");
+        }
+        catch (UnknownTransactionException e)
+        {
+            // pass
+        }
     }
 }
