@@ -93,4 +93,14 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
     {
         getAncestor(Container.class).getEventLogger().message(AccessControlMessages.OPERATION(operation));
     }
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
 }

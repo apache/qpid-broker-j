@@ -43,6 +43,7 @@ public class GroupMemberImpl extends AbstractConfiguredObject<GroupMemberImpl> i
     public GroupMemberImpl(Map<String, Object> attributes, Group group)
     {
         super((ConfiguredObject<?>) group, attributes);
+        createOperationalLog(attributes);
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )

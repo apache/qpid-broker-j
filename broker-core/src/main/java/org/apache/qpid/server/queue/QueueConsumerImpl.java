@@ -627,4 +627,9 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         }
 
     }
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
 }

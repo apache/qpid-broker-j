@@ -170,6 +170,16 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         return Futures.immediateFuture(null);
     }
 
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
+
     private void onCloseOrDelete()
     {
         if(_checkExpiryTaskFuture != null)

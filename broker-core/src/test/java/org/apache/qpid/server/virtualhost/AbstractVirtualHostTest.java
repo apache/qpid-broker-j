@@ -63,6 +63,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.Event;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.util.FileUtils;
@@ -103,6 +104,7 @@ public class AbstractVirtualHostTest extends UnitTestBase
         when(_node.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         when(_node.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(_node.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
+        when(_node.getEventLogger()).thenReturn(mock(EventLogger.class));
 
         _failingStore = mock(MessageStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(_failingStore).openMessageStore(any(ConfiguredObject.class));

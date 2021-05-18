@@ -217,4 +217,14 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     }
 
     protected abstract Collection<Certificate> getCertificates();
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
 }

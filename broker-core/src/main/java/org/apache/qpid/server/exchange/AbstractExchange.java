@@ -1085,4 +1085,14 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             }
         }
     }
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
 }

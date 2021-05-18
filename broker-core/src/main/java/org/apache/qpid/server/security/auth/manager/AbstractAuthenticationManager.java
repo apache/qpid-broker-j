@@ -159,4 +159,14 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     {
         return _eventLogger;
     }
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
 }

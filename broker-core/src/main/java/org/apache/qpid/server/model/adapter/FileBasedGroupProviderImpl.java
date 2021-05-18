@@ -313,6 +313,7 @@ public class FileBasedGroupProviderImpl
         public GroupAdapter(Map<String, Object> attributes)
         {
             super(FileBasedGroupProviderImpl.this, attributes);
+            createOperationalLog(attributes);
         }
 
         @Override
@@ -391,6 +392,7 @@ public class FileBasedGroupProviderImpl
             {
                 // TODO - need to relate to the User object
                 super(GroupAdapter.this, attrMap);
+                createOperationalLog(attrMap);
             }
 
             @Override

@@ -44,6 +44,7 @@ public class GroupImpl extends AbstractConfiguredObject<GroupImpl> implements Gr
                      GroupProvider<?> provider)
     {
         super(provider, attributes);
+        createOperationalLog(attributes);
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )
