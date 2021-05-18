@@ -29,6 +29,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
@@ -224,6 +225,40 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
         final Map<String, Object> memberAttrs = Collections.singletonMap(GroupMember.NAME, "root");
         GroupMember rootMember = (GroupMember) superGroup.createChild(GroupMember.class, memberAttrs);
         assertThat(rootMember.getName(), is(equalTo("root")));
+    }
+
+    @Test(expected = IllegalConfigurationException.class)
+    public void testDuplicateAddMember() throws Exception
+    {
+        _groupFile = createTemporaryGroupFile(Collections.emptyMap());
+
+        Map<String, Object> providerAttrs = new HashMap<>();
+        String groupsFile = _groupFile.getAbsolutePath();
+        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
+        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
+        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
+
+        @SuppressWarnings("unchecked")
+        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+
+        assertThat(provider.getChildren(Group.class).size(), is(equalTo(0)));
+
+        final Map<String, Object> groupAttrs = Collections.singletonMap(Group.NAME, "supers");
+        Group superGroup = provider.createChild(Group.class, groupAttrs);
+        assertThat(superGroup.getName(), is(equalTo("supers")));
+
+        final Map<String, Object> memberAttrs1 = Collections.singletonMap(GroupMember.NAME, "root1");
+        GroupMember rootMember1 = (GroupMember) superGroup.createChild(GroupMember.class, memberAttrs1);
+        assertThat(rootMember1.getName(), is(equalTo("root1")));
+
+        final Map<String, Object> memberAttrs2 = Collections.singletonMap(GroupMember.NAME, "root2");
+        GroupMember rootMember2 = (GroupMember) superGroup.createChild(GroupMember.class, memberAttrs2);
+        assertThat(rootMember2.getName(), is(equalTo("root2")));
+
+        GroupMember rootMember = (GroupMember) superGroup.createChild(GroupMember.class, memberAttrs1);
+        assertThrows("Child of type GroupMemberAdapter already exists with name of root1", IllegalConfigurationException.class, null);
+        assertThat(superGroup.getChildren(GroupMember.class).size(), is(equalTo(1)));
+
     }
 
     @Test

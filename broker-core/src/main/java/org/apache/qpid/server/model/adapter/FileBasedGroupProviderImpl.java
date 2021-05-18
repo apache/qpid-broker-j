@@ -360,16 +360,20 @@ public class FileBasedGroupProviderImpl
             if (childClass == GroupMember.class)
             {
                 String memberName = (String) attributes.get(GroupMember.NAME);
-
-                _groupDatabase.addUserToGroup(memberName, getName());
-                UUID id = UUID.randomUUID();
-                Map<String,Object> attrMap = new HashMap<String, Object>();
-                attrMap.put(GroupMember.ID,id);
-                attrMap.put(GroupMember.NAME, memberName);
-                GroupMemberAdapter groupMemberAdapter = new GroupMemberAdapter(attrMap);
-                groupMemberAdapter.create();
-                return Futures.immediateFuture((C) groupMemberAdapter);
-
+                Set<String> users = _groupDatabase.getUsersInGroup(getName());
+                if(!users.contains(memberName))
+                {
+                    _groupDatabase.addUserToGroup(memberName, getName());
+                    UUID id = UUID.randomUUID();
+                    Map<String, Object> attrMap = new HashMap<String, Object>();
+                    attrMap.put(GroupMember.ID, id);
+                    attrMap.put(GroupMember.NAME, memberName);
+                    GroupMemberAdapter groupMemberAdapter = new GroupMemberAdapter(attrMap);
+                    groupMemberAdapter.create();
+                    return Futures.immediateFuture((C) groupMemberAdapter);
+                }else{
+                    throw new IllegalConfigurationException(String.format("Group member with name'%s' already exists", memberName));
+                }
             }
             else
             {
