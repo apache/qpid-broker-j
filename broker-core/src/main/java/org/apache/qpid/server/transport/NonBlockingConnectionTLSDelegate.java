@@ -253,6 +253,12 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 }
 
                 _status = QpidByteBuffer.encryptSSL(_sslEngine, buffers, _netOutputBuffer);
+                if(_status.getStatus() == SSLEngineResult.Status.CLOSED)
+                {
+                    throw new SSLException(String.format("SSLEngine.wrap operation could not be completed because"
+                                    + " it was already closed (status %s, handshake status %s)",
+                            _status.getStatus(), _status.getHandshakeStatus()));
+                }
                 // QPID-8489: workaround for JDK 8 bug to avoid tight looping for half closed connections
                 // Additional info: https://bugs.openjdk.java.net/browse/JDK-8240071,
                 // http://mail.openjdk.java.net/pipermail/security-dev/2019-January/019142.html
