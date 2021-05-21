@@ -31,6 +31,7 @@ public abstract class AbstractCaseAwareGroupProvider<X extends AbstractCaseAware
     protected AbstractCaseAwareGroupProvider(Container<?> container, Map<String, Object> attributes)
     {
         super(container, attributes);
+        createOperationalLog(attributes);
     }
 
     public boolean isCaseSensitive()

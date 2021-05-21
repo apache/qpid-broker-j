@@ -528,4 +528,13 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
     protected abstract boolean updateSSLContext();
 
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
 }

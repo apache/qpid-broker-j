@@ -568,7 +568,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         }
         else
         {
-            String queueString = new QueueLogSubject(_queue).toLogString();
+            String queueString = new QueueLogSubject(getName(), getName()).toLogString();
             logString = "[" + MessageFormat.format(SUBSCRIPTION_FORMAT, getConsumerNumber())
                                      + "("
                                      // queueString is [vh(/{0})/qu({1}) ] so need to trim
@@ -626,5 +626,10 @@ class QueueConsumerImpl<T extends ConsumerTarget>
             _target.notifyWork();
         }
 
+    }
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
     }
 }

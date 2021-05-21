@@ -60,6 +60,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 import javax.security.auth.SubjectDomainCombiner;
@@ -71,6 +72,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.messages.ManagementMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +83,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.OperationLogMessage;
+import org.apache.qpid.server.logging.subjects.AbstractLogSubject;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
@@ -178,6 +182,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private final Class<? extends ConfiguredObject> _category;
     private final Class<? extends ConfiguredObject> _typeClass;
     private final Class<? extends ConfiguredObject> _bestFitInterface;
+    private final LogSubject _managementLogSubject;
     private volatile Model _model;
     private final boolean _managesChildStorage;
 
@@ -380,6 +385,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 }
             }
         }
+        _managementLogSubject = () -> String.format("[%s(%s)] ", _category.getSimpleName(), _name);
     }
 
     protected final void updateModel(Model model)
@@ -722,7 +728,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 childCloseFutures.add(childCloseFuture);
             }
         });
-
         ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childCloseFutures);
         return doAfter(combinedFuture, new Runnable()
         {
@@ -1608,6 +1613,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected void onCreate()
     {
+        createOperationalLog(getActualAttributes());
     }
 
     @Override
@@ -2421,9 +2427,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                  attributeSet(ConfiguredObject.DESIRED_STATE, currentDesiredState, State.DELETED);
                                                                  unregister(true);
 
-                                                                 LOGGER.debug("Delete {} : {}",
-                                                                              simpleClassName,
-                                                                              getName());
+                                                                 deleteOperationalLog();
                                                                  return Futures.immediateFuture(null);
                                                                        });
         addFutureCallback(future, new FutureCallback<Void>()
@@ -2929,6 +2933,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     validateChange(createProxyForValidation(attributes), attributes.keySet());
                 }
 
+                changeAttributesOperationalLog(updateAttributes);
                 changeAttributes(updateAttributes);
                 return null;
             }
@@ -2973,6 +2978,72 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             return Futures.immediateFuture(null);
         }
     }
+
+    protected void changeAttributesOperationalLog(final Map<String, Object> attributes)
+    {
+        final String attributesString = getAttributeString(attributes);
+        EventLogger eventLogger = getEventLogger();
+        if(eventLogger !=null)
+        {
+            eventLogger.message(getManagementLogSubject(),
+                                     ManagementMessages.UPDATE(getCategoryClass().getSimpleName(),
+                                                               getType(),
+                                                               getName(),
+                                                               attributesString));
+        }
+    }
+
+    private String getAttributeString(final Map<String, Object> attributes)
+    {
+        return attributes.entrySet()
+                         .stream()
+                         .filter(e -> _attributeTypes.get(e.getKey()) != null)
+                         .map(e -> {
+                             ConfiguredObjectAttribute<?, ?> attributeType =
+                                     _attributeTypes.get(e.getKey());
+                             Object value;
+                             if (attributeType.isSecureValue(e.getValue()))
+                             {
+                                 value = SECURED_STRING_VALUE;
+                             }
+                             else
+                             {
+                                 value = e.getValue();
+                             }
+                             return String.format("%s=%s", e.getKey(), value);
+                         }).collect(Collectors.joining(",", "[", "]"));
+    }
+
+    protected void createOperationalLog(final Map<String, Object> attributes){
+        final String attributeString = getAttributeString(attributes);
+        final EventLogger eventLogger = getEventLogger();
+        if(eventLogger != null)
+        {
+            eventLogger.message(getManagementLogSubject(),
+                                     ManagementMessages.CREATE(getCategoryClass().getSimpleName(),
+                                                               getType(),
+                                                               getName(),
+                                                               attributeString));
+        }
+    }
+
+    protected void deleteOperationalLog(){
+
+        final EventLogger eventLogger = getEventLogger();
+        if(eventLogger != null)
+        {
+            eventLogger.message(getManagementLogSubject(),
+                                ManagementMessages.DELETE(getCategoryClass().getSimpleName(),
+                                                          getType(),
+                                                          getName(),
+                                                          null));
+        }
+    }
+
+    protected LogSubject getManagementLogSubject()
+    {
+        return _managementLogSubject;
+    };
 
     public void forceUpdateAllSecureAttributes()
     {

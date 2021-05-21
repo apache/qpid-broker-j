@@ -278,7 +278,8 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         return _broker;
     }
 
-    protected EventLogger getEventLogger()
+    @Override
+    public EventLogger getEventLogger()
     {
         return _eventLogger;
     }
@@ -589,6 +590,18 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
             supportedTypes.add(ProvidedStoreVirtualHostImpl.VIRTUAL_HOST_TYPE);
         }
         return Collections.unmodifiableCollection(supportedTypes);
+    }
+
+
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
     }
 
 }

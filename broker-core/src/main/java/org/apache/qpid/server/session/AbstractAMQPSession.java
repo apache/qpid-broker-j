@@ -374,4 +374,14 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         _transactedMessagesIn.incrementAndGet();
         _connection.registerTransactedMessageReceived();
     }
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
 }

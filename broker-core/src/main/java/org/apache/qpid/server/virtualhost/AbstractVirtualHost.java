@@ -3402,4 +3402,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
 
     }
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
+
 }

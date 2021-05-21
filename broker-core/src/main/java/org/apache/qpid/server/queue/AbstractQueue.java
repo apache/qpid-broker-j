@@ -300,6 +300,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _queueConsumerManager = new QueueConsumerManagerImpl(this);
 
         _virtualHost = virtualHost;
+        _logSubject = new QueueLogSubject(getName(), _virtualHost.getName());
     }
 
     @Override
@@ -366,8 +367,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         arguments.put(Queue.LIFETIME_POLICY, getLifetimePolicy());
 
         _arguments = Collections.synchronizedMap(arguments);
-
-        _logSubject = new QueueLogSubject(this);
 
         _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
@@ -3970,4 +3969,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
+    protected LogSubject getManagementLogSubject()
+    {
+        return _logSubject;
+    }
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
 }

@@ -50,7 +50,7 @@ public class QueueLogSubjectTest extends AbstractTestLogSubject
         when(_queue.getName()).thenReturn("QueueLogSubjectTest");
         when(_queue.getVirtualHost()).thenReturn(_testVhost);
 
-        _subject = new QueueLogSubject(_queue);
+        _subject = new QueueLogSubject(_queue.getName(),_queue.getVirtualHost().getName());
     }
 
     @After

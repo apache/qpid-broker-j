@@ -205,4 +205,14 @@ public class PriorityQueueImpl extends OutOfOrderQueue<PriorityQueueImpl> implem
         messageMutator.setPriority(newPriority);
         return messageMutator.create();
     }
+
+    @Override
+    protected void createOperationalLog(final Map<String, Object> attributes)
+    {
+    }
+
+    @Override
+    protected void deleteOperationalLog()
+    {
+    }
 }

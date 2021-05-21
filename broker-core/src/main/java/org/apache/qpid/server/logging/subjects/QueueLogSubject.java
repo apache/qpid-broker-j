@@ -28,10 +28,8 @@ public class QueueLogSubject extends AbstractLogSubject
 {
 
     /** Create an QueueLogSubject that Logs in the following format. */
-    public QueueLogSubject(Queue<?> queue)
+    public QueueLogSubject(String name, String virtualHostName)
     {
-        setLogStringWithFormat(QUEUE_FORMAT,
-                               queue.getVirtualHost().getName(),
-                               queue.getName());
+        setLogStringWithFormat(QUEUE_FORMAT, virtualHostName, name);
     }
 }
