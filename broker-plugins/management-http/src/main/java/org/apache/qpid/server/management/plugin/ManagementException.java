@@ -192,7 +192,7 @@ public class ManagementException extends RuntimeException
         }
         else if (e instanceof IllegalConfigurationException || e instanceof IllegalArgumentException)
         {
-            LOGGER.warn("{} processing request {} from user '{}': {}",
+            LOGGER.info("{} processing request {} from user '{}': {}",
                         e.getClass().getSimpleName(),
                         getRequestURI(path, categoryMapping),
                         getRequestPrincipals(),
@@ -201,7 +201,7 @@ public class ManagementException extends RuntimeException
             int maxDepth = 10;
             while ((t = t.getCause()) != null && maxDepth-- != 0)
             {
-                LOGGER.warn("... caused by " + t.getClass().getSimpleName() + "  : " + t.getMessage());
+                LOGGER.info("... caused by " + t.getClass().getSimpleName() + "  : " + t.getMessage());
             }
             if (LOGGER.isDebugEnabled())
             {

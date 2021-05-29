@@ -60,6 +60,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 import javax.security.auth.SubjectDomainCombiner;
@@ -71,6 +72,13 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+
+import org.apache.qpid.server.logging.CreateLogMessage;
+import org.apache.qpid.server.logging.DeleteLogMessage;
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.logging.Outcome;
+import org.apache.qpid.server.logging.UpdateLogMessage;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -588,7 +596,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                 doResolution(true, exceptionHandler);
                                                 doValidation(true, exceptionHandler);
                                                 doOpening(true, exceptionHandler);
-                                                return doAttainState(exceptionHandler);
+                                                return doAttainState(exceptionHandler,
+                                                                     object -> object.logRecovered(Outcome.SUCCESS));
                                             }
                                             catch (RuntimeException e)
                                             {
@@ -600,7 +609,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                         {
                                             return Futures.immediateFuture(null);
                                         }
-
                                     }
 
                                     @Override
@@ -722,7 +730,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 childCloseFutures.add(childCloseFuture);
             }
         });
-
         ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childCloseFutures);
         return doAfter(combinedFuture, new Runnable()
         {
@@ -894,7 +901,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     {
                         doCreation(true, unregisteringExceptionHandler);
                         doOpening(true, unregisteringExceptionHandler);
-                        return doAttainState(unregisteringExceptionHandler);
+                        return doAttainState(unregisteringExceptionHandler,
+                                             object -> object.logCreated(getActualAttributes(), Outcome.SUCCESS));
                     }
                     catch (RuntimeException e)
                     {
@@ -1032,7 +1040,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
     }
 
-    private ListenableFuture<Void> doAttainState(final AbstractConfiguredObjectExceptionHandler exceptionHandler)
+    private ListenableFuture<Void> doAttainState(final AbstractConfiguredObjectExceptionHandler exceptionHandler,
+                                                 final Action<AbstractConfiguredObject<?>> postAction)
     {
         final List<ListenableFuture<Void>> childStateFutures = new ArrayList<>();
 
@@ -1047,7 +1056,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     if(abstractConfiguredChild._dynamicState.get().getDynamicState() == DynamicState.OPENED)
                     {
                         final AbstractConfiguredObject configuredObject = abstractConfiguredChild;
-                        childStateFutures.add(configuredObject.doAttainState(exceptionHandler));
+                        childStateFutures.add(configuredObject.doAttainState(exceptionHandler, postAction));
                     }
                 }
                 else if(child instanceof AbstractConfiguredObjectProxy
@@ -1075,6 +1084,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                             @Override
                                             public void onSuccess(final Void result1)
                                             {
+                                                postAction.performAction(AbstractConfiguredObject.this);
                                                 returnVal.set(null);
                                             }
 
@@ -2066,6 +2076,23 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             @Override
             public ListenableFuture<C> execute()
             {
+                ListenableFuture<C> result = null;
+                try
+                {
+                    result = create();
+                }
+                finally
+                {
+                    if (result == null)
+                    {
+                        logCreated(childClass, attributes, Outcome.FAILURE);
+                    }
+                }
+                return result;
+            }
+
+            private ListenableFuture<C> create()
+            {
                 authoriseCreateChild(childClass, attributes);
                 return doAfter(addChildAsync(childClass, attributes),
                                 new CallableWithArgument<ListenableFuture<C>, C>()
@@ -2222,7 +2249,37 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         {
             return Futures.immediateFuture(null);
         }
+        ListenableFuture<Void> result = null;
+        try
+        {
+            result = deleteWithChecks();
+            addFutureCallback(result, new FutureCallback<Void>()
+            {
+                @Override
+                public void onSuccess(final Void result11)
+                {
+                    logDeleted(Outcome.SUCCESS);
+                }
 
+                @Override
+                public void onFailure(final Throwable t)
+                {
+                    logDeleted(Outcome.FAILURE);
+                }
+            }, MoreExecutors.directExecutor());
+            return result;
+        }
+        finally
+        {
+            if (result == null)
+            {
+                logDeleted(Outcome.FAILURE);
+            }
+        }
+    }
+
+    private ListenableFuture<Void> deleteWithChecks()
+    {
         Map<String, Object> attributes = Collections.singletonMap(ConfiguredObject.DESIRED_STATE, State.DELETED);
         ConfiguredObject<?> proxyForValidation = createProxyForValidation(attributes);
         authoriseSetAttributes(proxyForValidation, attributes);
@@ -2421,9 +2478,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                  attributeSet(ConfiguredObject.DESIRED_STATE, currentDesiredState, State.DELETED);
                                                                  unregister(true);
 
-                                                                 LOGGER.debug("Delete {} : {}",
-                                                                              simpleClassName,
-                                                                              getName());
                                                                  return Futures.immediateFuture(null);
                                                                        });
         addFutureCallback(future, new FutureCallback<Void>()
@@ -2478,6 +2532,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 @Override
                 public void onSuccess(final Void result)
                 {
+                    if (child instanceof AbstractConfiguredObject<?>)
+                    {
+                        ((AbstractConfiguredObject)child).logDeleted(Outcome.SUCCESS);
+                    }
                 }
 
                 @Override
@@ -2485,6 +2543,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     LOGGER.error("Exception occurred while deleting {} : {}",
                                  child.getClass().getSimpleName(), child.getName(), t);
+
+                    if (child instanceof AbstractConfiguredObject<?>)
+                    {
+                        ((AbstractConfiguredObject)child).logDeleted(Outcome.FAILURE);
+                    }
                 }
             }, getTaskExecutor());
             childDeleteFutures.add(childDeleteFuture);
@@ -2923,6 +2986,21 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             @Override
             public Void execute()
             {
+                Outcome outcome = Outcome.FAILURE;
+                try
+                {
+                    setAttributes();
+                    outcome = Outcome.SUCCESS;
+                }
+                finally
+                {
+                    logUpdated(updateAttributes, outcome);
+                }
+                return null;
+            }
+
+            private void setAttributes()
+            {
                 authoriseSetAttributes(createProxyForValidation(attributes), attributes);
                 if (!isSystemProcess())
                 {
@@ -2930,7 +3008,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 }
 
                 changeAttributes(updateAttributes);
-                return null;
             }
 
             @Override
@@ -3598,14 +3675,105 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
         else
         {
-            LOGGER.info(getCategoryClass().getSimpleName()
-                        + "("
-                        + getName()
-                        + ") : Operation "
-                        + operation
-                        + " invoked by user "
-                        + AuthenticatedPrincipal.getCurrentUser().getName());
+            LOGGER.info("{} : {} ({}) : Operation : {}",
+                        LogMessage.getActor(),
+                        getCategoryClass().getSimpleName(),
+                        getName(),
+                        operation);
         }
+    }
+
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        final EventLogger eventLogger = getEventLogger();
+        if (eventLogger != null)
+        {
+            eventLogger.message(new UpdateLogMessage(this, attributesAsString(attributes), outcome));
+        }
+        else
+        {
+            LOGGER.info("{} : {} ({}) : Update : {} : {}",
+                        LogMessage.getActor(),
+                        getCategoryClass().getSimpleName(),
+                        getName(),
+                        outcome,
+                        attributesAsString(attributes));
+        }
+    }
+
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        logCreated(getCategoryClass(), attributes, outcome);
+    }
+
+    private void logCreated(final Class<? extends ConfiguredObject> categoryClass,
+                            final Map<String, Object> attributes,
+                            final Outcome outcome)
+    {
+        final EventLogger eventLogger = getEventLogger();
+        if (eventLogger != null)
+        {
+            final String name =
+                    attributes != null && attributes.containsKey(NAME) ? String.valueOf(attributes.get(NAME)) : "";
+            eventLogger.message(new CreateLogMessage(outcome, categoryClass, name, attributesAsString(attributes)));
+        }
+        else
+        {
+            LOGGER.info("{} : {} ({}) : Create : {} : {}",
+                        LogMessage.getActor(),
+                        getCategoryClass().getSimpleName(),
+                        getName(),
+                        outcome,
+                        attributesAsString(getActualAttributes()));
+        }
+    }
+
+    protected void logRecovered(final Outcome outcome)
+    {
+        LOGGER.debug("{} : {} ({}) : Recover : {}",
+                     LogMessage.getActor(),
+                     getCategoryClass().getSimpleName(),
+                     getName(),
+                     outcome);
+    }
+
+    protected void logDeleted(final Outcome outcome)
+    {
+        final EventLogger eventLogger = getEventLogger();
+        if (eventLogger != null)
+        {
+            eventLogger.message(new DeleteLogMessage(this, outcome));
+        }
+        else
+        {
+            LOGGER.debug("{} : {} ({}) : Delete : {}",
+                         LogMessage.getActor(),
+                         getCategoryClass().getSimpleName(),
+                         getName(),
+                         outcome);
+        }
+    }
+
+    protected String attributesAsString(final Map<String, Object> attributes)
+    {
+        return attributes.entrySet()
+                         .stream()
+                         .filter(e -> _attributeTypes.get(e.getKey()) != null)
+                         .sorted(Map.Entry.comparingByKey())
+                         .map(e -> {
+                             final ConfiguredObjectAttribute<?, ?> attributeType = _attributeTypes.get(e.getKey());
+                             Object value = e.getValue();
+                             if (attributeType.isSecureValue(value))
+                             {
+                                 value = SECURED_STRING_VALUE;
+                             }
+                             else if (value instanceof Date)
+                             {
+                                 value = ((Date)value).toInstant().toString();
+                             }
+                             return String.format("%s=%s", e.getKey(), value);
+                         }).collect(Collectors.joining(",", "{", "}"));
     }
 
     //=========================================================================================
@@ -3939,7 +4107,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         {
             if(source instanceof AbstractConfiguredObject<?>)
             {
-                ((AbstractConfiguredObject)source).handleExceptionOnOpen(exception);
+                AbstractConfiguredObject object = (AbstractConfiguredObject) source;
+                object.logRecovered(Outcome.FAILURE);
+                object.handleExceptionOnOpen(exception);
             }
             else if(source instanceof AbstractConfiguredObjectProxy)
             {
@@ -3972,7 +4142,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     // TODO - RG - This isn't right :-(
                     if (source instanceof AbstractConfiguredObject)
                     {
-                        ((AbstractConfiguredObject) source).deleteNoChecks();
+                        final AbstractConfiguredObject object = (AbstractConfiguredObject) source;
+                        object.logCreated(object.getActualAttributes(), Outcome.FAILURE);
+                        object.deleteNoChecks();
                     }
                     else if (source instanceof AbstractConfiguredObjectProxy)
                     {

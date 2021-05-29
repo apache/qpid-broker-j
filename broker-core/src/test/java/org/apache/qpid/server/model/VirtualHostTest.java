@@ -733,8 +733,8 @@ public class VirtualHostTest extends UnitTestBase
                     }
                 }
         };
-
-        QueueManagingVirtualHost<?> vhost = createVirtualHost("host");
+        String virtualHostName = getTestName();
+        QueueManagingVirtualHost<?> vhost = createVirtualHost(virtualHostName);
 
 
         Map<String, Object> newAttributes = Collections.singletonMap(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES,

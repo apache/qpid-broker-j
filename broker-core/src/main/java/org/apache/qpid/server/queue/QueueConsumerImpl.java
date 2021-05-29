@@ -45,6 +45,8 @@ import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.SubscriptionMessages;
 import org.apache.qpid.server.logging.subjects.QueueLogSubject;
@@ -568,7 +570,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         }
         else
         {
-            String queueString = new QueueLogSubject(_queue).toLogString();
+            String queueString = new QueueLogSubject(getName(), getName()).toLogString();
             logString = "[" + MessageFormat.format(SUBSCRIPTION_FORMAT, getConsumerNumber())
                                      + "("
                                      // queueString is [vh(/{0})/qu({1}) ] so need to trim
@@ -626,5 +628,26 @@ class QueueConsumerImpl<T extends ConsumerTarget>
             _target.notifyWork();
         }
 
+    }
+
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        LOGGER.debug("{} : {} ({}) : Create : {}",
+                     LogMessage.getActor(),
+                     getCategoryClass().getSimpleName(),
+                     getName(),
+                     outcome);
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        LOGGER.debug("{} : {} ({}) : Delete : {}",
+                     LogMessage.getActor(),
+                     getCategoryClass().getSimpleName(),
+                     getName(),
+                     outcome);
     }
 }

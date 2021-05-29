@@ -21,7 +21,6 @@
 package org.apache.qpid.server.logging;
 
 
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTION_FORMAT;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.SOCKET_FORMAT;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.USER_FORMAT;
@@ -45,6 +44,7 @@ import org.apache.qpid.server.transport.AMQPConnection;
 public abstract class AbstractMessageLogger implements MessageLogger
 {
     public static final String DEFAULT_LOG_HIERARCHY_PREFIX = "qpid.message.";
+    private static final String UNKNOWN_ACTOR = "<<UNKNOWN>>";
 
     private final String _msgPrefix = System.getProperty("qpid.logging.prefix","");
 
@@ -97,13 +97,18 @@ public abstract class AbstractMessageLogger implements MessageLogger
 
     protected String getActor()
     {
+        return getLogActor();
+    }
+
+    static String getLogActor()
+    {
         Subject subject = Subject.getSubject(AccessController.getContext());
 
         SessionPrincipal sessionPrincipal = getPrincipal(subject, SessionPrincipal.class);
         String message;
         if(sessionPrincipal != null)
         {
-            message =  generateSessionMessage(sessionPrincipal.getSession());
+            message =  generateSessionActor(sessionPrincipal.getSession());
         }
         else
         {
@@ -111,7 +116,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
 
             if(connPrincipal != null)
             {
-                message = generateConnectionMessage(connPrincipal.getConnection());
+                message = generateConnectionActor(connPrincipal.getConnection());
             }
             else
             {
@@ -129,7 +134,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
                     }
                     else
                     {
-                        message = "<<UNKNOWN>> ";
+                        message = UNKNOWN_ACTOR + " ";
                     }
                 }
             }
@@ -137,7 +142,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
         return message;
     }
 
-    private String generateManagementConnectionMessage(final ManagementConnectionPrincipal managementConnection,
+    private static String generateManagementConnectionMessage(final ManagementConnectionPrincipal managementConnection,
                                                        final AuthenticatedPrincipal userPrincipal)
     {
         String remoteAddress = managementConnection.getRemoteAddress().toString();
@@ -153,12 +158,17 @@ public abstract class AbstractMessageLogger implements MessageLogger
                                           remoteAddress) + "] ";
     }
 
-    private String generateTaskMessage(final TaskPrincipal taskPrincipal)
+    private static String generateTaskMessage(final TaskPrincipal taskPrincipal)
     {
         return "["+taskPrincipal.getName()+"] ";
     }
 
     protected String generateConnectionMessage(final AMQPConnection<?> connection)
+    {
+        return generateConnectionActor(connection);
+    }
+
+    private static String generateConnectionActor(final AMQPConnection<?> connection)
     {
         if (connection.getAuthorizedPrincipal() != null)
         {
@@ -203,10 +213,15 @@ public abstract class AbstractMessageLogger implements MessageLogger
 
     protected String generateSessionMessage(final AMQPSession session)
     {
+        return generateSessionActor(session);
+    }
+
+    private static String generateSessionActor(final AMQPSession session)
+    {
         return session.getLogSubject().toLogString();
     }
 
-    private <P extends Principal> P getPrincipal(Subject subject, Class<P> clazz)
+    private static <P extends Principal> P getPrincipal(Subject subject, Class<P> clazz)
     {
         if(subject != null)
         {

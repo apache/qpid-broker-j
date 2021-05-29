@@ -22,6 +22,12 @@ package org.apache.qpid.server.logging;
 
 public interface LogMessage
 {
+
+    static String getActor()
+    {
+        return AbstractMessageLogger.getLogActor();
+    }
+
     String getLogHierarchy();
 
 }

@@ -18,24 +18,10 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging.subjects;
+package org.apache.qpid.server.logging;
 
-import org.apache.qpid.server.model.Queue;
-
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.QUEUE_FORMAT;
-
-public class QueueLogSubject extends AbstractLogSubject
+public enum Outcome
 {
-
-    /** Create an QueueLogSubject that Logs in the following format. */
-    @Deprecated
-    public QueueLogSubject(Queue<?> queue)
-    {
-        this(queue.getName(), queue.getVirtualHost().getName());
-    }
-
-    public QueueLogSubject(String name, String virtualHostName)
-    {
-        setLogStringWithFormat(QUEUE_FORMAT, virtualHostName, name);
-    }
+    SUCCESS,
+    FAILURE
 }
