@@ -88,11 +88,15 @@
                         <qpid.initialConfigurationLocation>classpath:config-end-to-end-conversion-tests.json</qpid.initialConfigurationLocation>
                         <qpid.systests.end_to_end_conversion.localRepository>${settings.localRepository}</qpid.systests.end_to_end_conversion.localRepository>
                         <qpid.systests.end_to_end_conversion.remoteRepository>https://repo.maven.apache.org/maven2/</qpid.systests.end_to_end_conversion.remoteRepository>
+                        <qpid-jms-client-version>${qpid-jms-client-version}</qpid-jms-client-version>
+                        <qpid-jms-client-amqp-0-x-version>${qpid-jms-client-amqp-0-x-version}</qpid-jms-client-amqp-0-x-version>
                     </systemPropertyVariables>
+                    <reuseForks>false</reuseForks>
+                    <forkCount>6</forkCount>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>0-9-1 -&gt; 1.0</id>
+                        <id>default-test</id>
                         <configuration>
                             <skipTests>${skipITs}</skipTests>
                             <systemPropertyVariables>
@@ -108,7 +112,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>1.0 -&gt; 0-9-1</id>
+                        <id>1.0_to_0-9-1</id>
                         <configuration>
                             <skipTests>${skipITs}</skipTests>
                             <systemPropertyVariables>
@@ -124,7 +128,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>0-10 -&gt; 1.0</id>
+                        <id>0-10_to_1.0</id>
                         <configuration>
                             <skipTests>${skipITs}</skipTests>
                             <systemPropertyVariables>
@@ -140,7 +144,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>1.0 -&gt; 0-10</id>
+                        <id>1.0_to_0-10</id>
                         <configuration>
                             <skipTests>${skipITs}</skipTests>
                             <systemPropertyVariables>
@@ -156,7 +160,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>0-9-1 -&gt; 0-10</id>
+                        <id>0-9-1_to_0-10</id>
                         <configuration>
                             <skipTests>${skipITs}</skipTests>
                             <systemPropertyVariables>
@@ -172,7 +176,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>0-10 -&gt; 0-9-1</id>
+                        <id>0-10_to_0-9-1</id>
                         <configuration>
                             <skipTests>${skipITs}</skipTests>
                             <systemPropertyVariables>
@@ -186,6 +190,17 @@
                         <goals>
                             <goal>test</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
