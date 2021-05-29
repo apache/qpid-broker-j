@@ -36,6 +36,8 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
@@ -43,6 +45,8 @@ import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
@@ -65,6 +69,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         extends AbstractConfiguredObject<S>
         implements AMQPSession<S, X>, EventLoggerProvider
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAMQPSession.class);
     private final Action _deleteModelTask;
     private final AMQPConnection<?> _connection;
     private final int _sessionId;
@@ -369,5 +374,26 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     {
         _transactedMessagesIn.incrementAndGet();
         _connection.registerTransactedMessageReceived();
+    }
+
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        LOGGER.debug("{} : {} ({}) : Create : {}",
+                    LogMessage.getActor(),
+                    getCategoryClass().getSimpleName(),
+                    getName(),
+                    outcome);
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        LOGGER.debug("{} : {} ({}) : Delete : {}",
+                     LogMessage.getActor(),
+                     getCategoryClass().getSimpleName(),
+                     getName(),
+                     outcome);
     }
 }

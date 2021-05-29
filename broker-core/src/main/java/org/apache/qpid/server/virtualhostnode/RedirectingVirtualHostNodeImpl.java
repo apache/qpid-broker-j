@@ -34,6 +34,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -278,4 +279,9 @@ public class RedirectingVirtualHostNodeImpl
         return Collections.singletonMap(VirtualHost.class.getSimpleName(), validVhostTypes);
     }
 
+    @Override
+    public EventLogger getEventLogger()
+    {
+        return _broker.getEventLogger();
+    }
 }

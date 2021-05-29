@@ -53,6 +53,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.logging.subjects.ConnectionLogSubject;
@@ -218,7 +219,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         _lastReadTime = _lastWriteTime = _lastMessageInboundTime = _lastMessageOutboundTime = getCreatedTime().getTime();
         _maxUncommittedInMemorySize = getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         _transactionObserver = _maxUncommittedInMemorySize < 0 ? FlowToDiskTransactionObserver.NOOP_TRANSACTION_OBSERVER : new FlowToDiskTransactionObserver(_maxUncommittedInMemorySize, _logSubject, _eventLoggerProvider.getEventLogger());
-        logConnectionOpen();
     }
 
     @Override
@@ -666,7 +666,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     protected ListenableFuture<Void> onDelete()
     {
-        getEventLogger().message(_logSubject, ConnectionMessages.MODEL_DELETE());
         return closeAsyncIfNotAlreadyClosing();
     }
 
@@ -1184,5 +1183,18 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             return 0;
         }
         return _connectionPrincipalStatistics.getConnectionFrequency();
+    }
+
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        logConnectionOpen();
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        getEventLogger().message(_logSubject, ConnectionMessages.MODEL_DELETE());
     }
 }

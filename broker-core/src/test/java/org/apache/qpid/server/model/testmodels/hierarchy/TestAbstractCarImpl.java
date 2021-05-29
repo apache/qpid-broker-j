@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -37,6 +38,7 @@ public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> exte
     private Colour _bodyColour;
     @ManagedAttributeField
     private Colour _interiorColour;
+    private EventLogger _eventLogger;
 
     private AtomicInteger _mileage = new AtomicInteger();
 
@@ -44,12 +46,13 @@ public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> exte
 
     public TestAbstractCarImpl(final Map<String, Object> attributes)
     {
-        super(null, attributes, newTaskExecutor(), TestModel.getInstance());
+        this(attributes, TestModel.getInstance());
     }
 
     public TestAbstractCarImpl(final Map<String, Object> attributes, Model model)
     {
         super(null, attributes, newTaskExecutor(), model);
+        _eventLogger = new EventLogger();
     }
 
     @Override
@@ -122,5 +125,11 @@ public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> exte
     public int getAge()
     {
         return 0;
+    }
+
+    @Override
+    public EventLogger getEventLogger()
+    {
+        return _eventLogger;
     }
 }

@@ -69,6 +69,7 @@ public class TrustStoreMessages
     public static final String EXPIRING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.expiring";
     public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.open";
     public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.operation";
+    public static final String UPDATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.update";
 
     static
     {
@@ -79,6 +80,7 @@ public class TrustStoreMessages
         LoggerFactory.getLogger(EXPIRING_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
+        LoggerFactory.getLogger(UPDATE_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.TrustStore_logmessages", _currentLocale);
     }
@@ -375,7 +377,7 @@ public class TrustStoreMessages
 
     /**
      * Log a TrustStore message of the Format:
-     * <pre>TST-1005 : Operation : {0}</pre>
+     * <pre>TST-1006 : Operation : {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
@@ -403,6 +405,66 @@ public class TrustStoreMessages
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a TrustStore message of the Format:
+     * <pre>TST-1007 : Update : {0} : {1} : {2}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage UPDATE(String param1, String param2, String param3)
+    {
+        String rawMessage = _messages.getString("UPDATE");
+
+        final Object[] messageArguments = {param1, param2, param3};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return UPDATE_LOG_HIERARCHY;
             }
 
             @Override

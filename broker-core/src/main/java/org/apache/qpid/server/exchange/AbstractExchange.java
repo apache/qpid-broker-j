@@ -48,6 +48,7 @@ import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.BindingMessages;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
@@ -267,8 +268,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 LOGGER.warn("Cannot find alternate binding destination '{}' for exchange '{}'", alternateDestination, toString());
             }
         }
-
-        getEventLogger().message(ExchangeMessages.CREATED(getType(), getName(), isDurable()));
     }
 
     @Override
@@ -329,8 +328,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             {
                 _alternateBindingDestination.removeReference(AbstractExchange.this);
             }
-
-            getEventLogger().message(_logSubject, ExchangeMessages.DELETED());
         }
     }
 
@@ -1084,5 +1081,54 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                         destinationName));
             }
         }
+    }
+
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            getEventLogger().message(_logSubject, ExchangeMessages.CREATED(getType(), getName(), isDurable()));
+        }
+        else
+        {
+            super.logCreated(attributes, outcome);
+        }
+    }
+
+    @Override
+    protected void logRecovered(final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            getEventLogger().message(_logSubject, ExchangeMessages.CREATED(getType(), getName(), isDurable()));
+        }
+        else
+        {
+            super.logRecovered(outcome);
+        }
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            getEventLogger().message(_logSubject, ExchangeMessages.DELETED());
+        }
+        else
+        {
+            super.logDeleted(outcome);
+        }
+    }
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        getEventLogger().message(_logSubject,
+                                 ExchangeMessages.UPDATE(getName(),
+                                                         String.valueOf(outcome),
+                                                         attributesAsString(attributes)));
     }
 }

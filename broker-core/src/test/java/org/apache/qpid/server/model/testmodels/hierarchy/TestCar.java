@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
@@ -31,7 +32,7 @@ import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
 
 @ManagedObject( defaultType = TestStandardCarImpl.TEST_STANDARD_CAR_TYPE)
-public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>
+public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>, EventLoggerProvider
 {
     enum Colour { BLACK, RED, BLUE, GREY };
 

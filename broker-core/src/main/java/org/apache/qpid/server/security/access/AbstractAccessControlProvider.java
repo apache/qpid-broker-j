@@ -27,11 +27,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.CommonAccessControlProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -48,11 +48,7 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
     public AbstractAccessControlProvider(Map<String, Object> attributes, T parent)
     {
         super(parent, attributes);
-
         _eventLogger = parent.getEventLogger();
-        _eventLogger.message(AccessControlMessages.CREATE(getName()));
-
-
     }
 
     @Override
@@ -82,15 +78,55 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected void logOperation(final String operation)
     {
-        getEventLogger().message(AccessControlMessages.DELETE(getName()));
-        return super.onDelete();
+        getEventLogger().message(AccessControlMessages.OPERATION(operation));
     }
 
     @Override
-    protected void logOperation(final String operation)
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
     {
-        getAncestor(Container.class).getEventLogger().message(AccessControlMessages.OPERATION(operation));
+        if (outcome == Outcome.SUCCESS)
+        {
+            getEventLogger().message(AccessControlMessages.CREATE(getName()));
+        }
+        else
+        {
+            super.logCreated(attributes, outcome);
+        }
+    }
+
+    @Override
+    protected void logRecovered(final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            getEventLogger().message(AccessControlMessages.CREATE(getName()));
+        }
+        else
+        {
+            super.logRecovered(outcome);
+        }
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            getEventLogger().message(AccessControlMessages.DELETE(getName()));
+        }
+        else
+        {
+            super.logDeleted(outcome);
+        }
+    }
+
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        getEventLogger().message(AccessControlMessages.UPDATE(getName(), outcome.name(), attributesAsString(attributes)));
     }
 }

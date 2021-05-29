@@ -278,7 +278,8 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         return _broker;
     }
 
-    protected EventLogger getEventLogger()
+    @Override
+    public EventLogger getEventLogger()
     {
         return _eventLogger;
     }

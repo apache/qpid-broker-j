@@ -62,6 +62,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.ConfigStoreMessages;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
@@ -300,7 +302,6 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             List<String> permittedNodes = new ArrayList<>(getPermittedNodesFromHelper());
             setAttributes(Collections.<String, Object>singletonMap(PERMITTED_NODES, permittedNodes));
         }
-        getEventLogger().message(getVirtualHostNodeLogSubject(), HighAvailabilityMessages.CREATED());
     }
 
     @Override
@@ -1472,5 +1473,38 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     public static Map<String, Collection<String>> getSupportedChildTypes()
     {
         return Collections.singletonMap(VirtualHost.class.getSimpleName(), (Collection<String>) Collections.singleton(BDBHAVirtualHostImpl.VIRTUAL_HOST_TYPE));
+    }
+
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            getEventLogger().message(getVirtualHostNodeLogSubject(), HighAvailabilityMessages.CREATED());
+        }
+        else
+        {
+            super.logCreated(attributes, outcome);
+        }
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        LOGGER.debug("{} : {} ({}) : Delete : {}",
+                     LogMessage.getActor(),
+                     getCategoryClass().getSimpleName(),
+                     getName(),
+                     outcome);
+    }
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        getEventLogger().message(getVirtualHostNodeLogSubject(),
+                                 HighAvailabilityMessages.UPDATE(getName(),
+                                                                 String.valueOf(outcome),
+                                                                 attributesAsString(attributes)));
     }
 }

@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
@@ -96,7 +97,6 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
         _container = container;
         _eventLogger = container.getEventLogger();
-        _eventLogger.message(PortMessages.CREATE(getName()));
     }
 
     @Override
@@ -368,13 +368,6 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         return getChildren(Connection.class);
     }
 
-    @Override
-    protected ListenableFuture<Void> onDelete()
-    {
-        _eventLogger.message(PortMessages.DELETE(getType(), getName()));
-        return super.onDelete();
-    }
-
     @StateTransition( currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE )
     protected ListenableFuture<Void> activate()
     {
@@ -546,4 +539,49 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
     protected abstract boolean updateSSLContext();
 
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            _eventLogger.message(PortMessages.CREATE(getName()));
+        }
+        else
+        {
+            super.logCreated(attributes, outcome);
+        }
+    }
+
+    @Override
+    protected void logRecovered(final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            _eventLogger.message(PortMessages.CREATE(getName()));
+        }
+        else
+        {
+            super.logRecovered(outcome);
+        }
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            _eventLogger.message(PortMessages.DELETE(getType(), getName()));
+        }
+        else
+        {
+            super.logDeleted(outcome);
+        }
+    }
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        _eventLogger.message(PortMessages.UPDATE(getName(), String.valueOf(outcome), attributesAsString(attributes)));
+    }
 }

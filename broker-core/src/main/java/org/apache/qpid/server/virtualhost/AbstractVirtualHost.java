@@ -86,6 +86,7 @@ import org.apache.qpid.server.exchange.DefaultDestination;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.MessageStoreMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
@@ -297,8 +298,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         final SystemConfig systemConfig = (SystemConfig) _broker.getParent();
         _eventLogger = systemConfig.getEventLogger();
-
-        _eventLogger.message(VirtualHostMessages.CREATED(getName()));
 
         _principal = new VirtualHostPrincipal(this);
 
@@ -3401,5 +3400,46 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             return _empty;
         }
 
+    }
+
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            _eventLogger.message(VirtualHostMessages.CREATED(getName()));
+        }
+        else
+        {
+            super.logCreated(attributes, outcome);
+        }
+    }
+
+    @Override
+    protected void logRecovered(final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            _eventLogger.message(VirtualHostMessages.CREATED(getName()));
+        }
+        else
+        {
+            super.logRecovered(outcome);
+        }
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        _eventLogger.message(VirtualHostMessages.DELETE(getName(), String.valueOf(outcome)));
+    }
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        _eventLogger.message(VirtualHostMessages.UPDATE(getName(),
+                                                        String.valueOf(outcome),
+                                                        attributesAsString(attributes)));
     }
 }

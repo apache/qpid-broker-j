@@ -186,7 +186,7 @@ public class VirtualHostLoggerTest extends HttpTestBase
         try (InputStreamReader r = new InputStreamReader(httpCon.getInputStream()))
         {
             final List<String> strings = CharStreams.readLines(r);
-            return strings.stream().map(line -> line.contains(searchTerm)).collect(Collectors.toList()).size();
+            return strings.stream().filter(line -> line.contains(searchTerm)).collect(Collectors.toList()).size();
         }
     }
 }

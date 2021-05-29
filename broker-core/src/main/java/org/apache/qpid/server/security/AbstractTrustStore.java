@@ -66,6 +66,8 @@ import javax.net.ssl.X509TrustManager;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,7 +124,6 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
 
         _broker = broker;
         _eventLogger = broker.getEventLogger();
-        _eventLogger.message(TrustStoreMessages.CREATE(getName()));
     }
 
     public final Broker<?> getBroker()
@@ -168,6 +169,54 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     {
         onCloseOrDelete();
         return Futures.immediateFuture(null);
+    }
+
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            _eventLogger.message(TrustStoreMessages.CREATE(getName()));
+        }
+        else
+        {
+            super.logCreated(attributes, outcome);
+        }
+    }
+
+    @Override
+    protected void logRecovered(final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            _eventLogger.message(TrustStoreMessages.CREATE(getName()));
+        }
+        else
+        {
+            super.logRecovered(outcome);
+        }
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        if (outcome == Outcome.SUCCESS)
+        {
+            _eventLogger.message(TrustStoreMessages.DELETE(getName()));
+        }
+        else
+        {
+            super.logDeleted(outcome);
+        }
+    }
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        _eventLogger.message(TrustStoreMessages.UPDATE(getName(),
+                                                       String.valueOf(outcome),
+                                                       attributesAsString(attributes)));
     }
 
     private void onCloseOrDelete()
@@ -217,7 +266,6 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     protected ListenableFuture<Void> onDelete()
     {
         onCloseOrDelete();
-        _eventLogger.message(TrustStoreMessages.DELETE(getName()));
         return super.onDelete();
     }
 
