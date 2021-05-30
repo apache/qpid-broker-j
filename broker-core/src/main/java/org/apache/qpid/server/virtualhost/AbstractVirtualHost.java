@@ -1612,7 +1612,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
 
         closeNetworkConnectionScheduler();
-        _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
+        _eventLogger.message(VirtualHostMessages.CLOSE(getName()));
 
         stopLogging(_virtualHostLoggersToClose);
         _systemNodeRegistry.close();
@@ -3406,27 +3406,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected void logCreated(final Map<String, Object> attributes,
                               final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(VirtualHostMessages.CREATED(getName()));
-        }
-        else
-        {
-            super.logCreated(attributes, outcome);
-        }
+        _eventLogger.message(VirtualHostMessages.CREATE(getName(),
+                                                        String.valueOf(outcome),
+                                                        attributesAsString(attributes)));
     }
 
     @Override
     protected void logRecovered(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(VirtualHostMessages.CREATED(getName()));
-        }
-        else
-        {
-            super.logRecovered(outcome);
-        }
+        _eventLogger.message(VirtualHostMessages.OPEN(getName(), String.valueOf(outcome)));
     }
 
     @Override

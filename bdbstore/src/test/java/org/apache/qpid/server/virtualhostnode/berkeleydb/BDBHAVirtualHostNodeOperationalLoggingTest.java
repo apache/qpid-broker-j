@@ -36,6 +36,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.hamcrest.Description;
 import org.junit.After;
@@ -46,6 +47,7 @@ import org.mockito.ArgumentMatcher;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -102,6 +104,9 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         Map<String, Object> node1Attributes = _helper.createNodeAttributes(nodeName, groupName, helperAddress, helperAddress, nodeName, node1PortNumber);
         BDBHAVirtualHostNodeImpl node1 = (BDBHAVirtualHostNodeImpl)_helper.createHaVHN(node1Attributes);
 
+        final String address = node1.getAddress();
+        final String createTime = node1.getCreatedTime().toInstant().toString();
+        final String updateTime = node1.getLastUpdatedTime().toInstant().toString();
         _helper.assertNodeRole(node1, NodeRole.MASTER);
 
         // stop node to avoid running into race when role change is reported after we performed the check
@@ -113,9 +118,25 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
         assertEquals("Unexpected group log subject", "[grp(/group)] ", node1.getGroupLogSubject().getLogString());
 
-        String expectedMessage = HighAvailabilityMessages.CREATED().toString();
+        String attributes = String.format(
+                "{address=%s,context={je.rep.insufficientReplicasTimeout=2 s, je.rep.replicaAckTimeout=2 s},createdTime=%s,groupName=%s,helperAddress=%s,id=%s,lastUpdatedTime=%s,name=%s,permittedNodes=[%s],storePath=%s,type=%s,virtualHostInitialConfiguration={\n  \"type\" : \"BDB_HA\"\n}}",
+                address,
+                createTime,
+                groupName,
+                helperAddress,
+                node1.getId(),
+                updateTime,
+                nodeName,
+                address,
+                node1.getStorePath(),
+                node1.getType()
+                );
+
+        String expectedMessage = HighAvailabilityMessages.CREATE(nodeName,
+                                                                 String.valueOf(Outcome.SUCCESS),
+                                                                 attributes).toString();
         verify(_eventLogger).message(argThat(new LogSubjectMatcher(node1.getVirtualHostNodeLogSubject())),
-                argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.CREATED_LOG_HIERARCHY)));
+                argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.CREATE_LOG_HIERARCHY)));
 
         expectedMessage = HighAvailabilityMessages.ROLE_CHANGED(node1.getName(), node1.getAddress(), NodeRole.WAITING.name(), NodeRole.MASTER.name()).toString();
         verify(_eventLogger).message(argThat(new LogSubjectMatcher(node1.getGroupLogSubject())),
@@ -138,9 +159,9 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
         node1.delete();
 
-        String expectedMessage = HighAvailabilityMessages.DELETED().toString();
+        String expectedMessage = HighAvailabilityMessages.DELETE(nodeName, String.valueOf(Outcome.SUCCESS)).toString();
         verify(_eventLogger).message(argThat(new LogSubjectMatcher(node1.getVirtualHostNodeLogSubject())),
-                argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.DELETED_LOG_HIERARCHY)));
+                argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.DELETE_LOG_HIERARCHY)));
 
     }
 

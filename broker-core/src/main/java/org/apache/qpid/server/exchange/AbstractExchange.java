@@ -1087,40 +1087,22 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     protected void logCreated(final Map<String, Object> attributes,
                               final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(_logSubject, ExchangeMessages.CREATED(getType(), getName(), isDurable()));
-        }
-        else
-        {
-            super.logCreated(attributes, outcome);
-        }
+        getEventLogger().message(_logSubject,
+                                 ExchangeMessages.CREATE(getName(),
+                                                         String.valueOf(outcome),
+                                                         attributesAsString(attributes)));
     }
 
     @Override
     protected void logRecovered(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(_logSubject, ExchangeMessages.CREATED(getType(), getName(), isDurable()));
-        }
-        else
-        {
-            super.logRecovered(outcome);
-        }
+        getEventLogger().message(_logSubject, ExchangeMessages.OPEN(getName(), String.valueOf(outcome)));
     }
 
     @Override
     protected void logDeleted(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(_logSubject, ExchangeMessages.DELETED());
-        }
-        else
-        {
-            super.logDeleted(outcome);
-        }
+        getEventLogger().message(_logSubject, ExchangeMessages.DELETE(getName(), String.valueOf(outcome)));
     }
 
     @Override

@@ -221,40 +221,21 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     protected void logCreated(final Map<String, Object> attributes,
                               final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(KeyStoreMessages.CREATE(getName()));
-        }
-        else
-        {
-            super.logCreated(attributes, outcome);
-        }
+        _eventLogger.message(KeyStoreMessages.CREATE(getName(),
+                                                     String.valueOf(outcome),
+                                                     attributesAsString(attributes)));
     }
 
     @Override
     protected void logRecovered(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(KeyStoreMessages.CREATE(getName()));
-        }
-        else
-        {
-            super.logRecovered(outcome);
-        }
+        _eventLogger.message(KeyStoreMessages.OPEN(getName(), String.valueOf(outcome)));
     }
 
     @Override
     protected void logDeleted(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(KeyStoreMessages.DELETE(getName()));
-        }
-        else
-        {
-            super.logDeleted(outcome);
-        }
+        _eventLogger.message(KeyStoreMessages.DELETE(getName(), String.valueOf(outcome)));
     }
 
     @Override

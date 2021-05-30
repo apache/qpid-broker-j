@@ -170,16 +170,21 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1003 : Close</pre>
+     * <pre>ATH-1003 : Close : "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE()
+    public static LogMessage CLOSE(String param1)
     {
         String rawMessage = _messages.getString("CLOSE");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -225,16 +230,16 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1001 : Create "{0}"</pre>
+     * <pre>ATH-1001 : Create : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATE(String param1)
+    public static LogMessage CREATE(String param1, String param2, String param3)
     {
         String rawMessage = _messages.getString("CREATE");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -285,16 +290,16 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1004 : Delete "{0}"</pre>
+     * <pre>ATH-1004 : Delete "{0}" : {1}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1)
+    public static LogMessage DELETE(String param1, String param2)
     {
         String rawMessage = _messages.getString("DELETE");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -345,16 +350,21 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1002 : Open</pre>
+     * <pre>ATH-1002 : Open : "{0}" : {1}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN()
+    public static LogMessage OPEN(String param1, String param2)
     {
         String rawMessage = _messages.getString("OPEN");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -460,7 +470,7 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1011 : Update : {0} : {1} : {2}</pre>
+     * <pre>ATH-1011 : Update : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *

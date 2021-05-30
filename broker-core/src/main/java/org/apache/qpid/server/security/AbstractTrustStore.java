@@ -175,40 +175,21 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     protected void logCreated(final Map<String, Object> attributes,
                               final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(TrustStoreMessages.CREATE(getName()));
-        }
-        else
-        {
-            super.logCreated(attributes, outcome);
-        }
+        _eventLogger.message(TrustStoreMessages.CREATE(getName(),
+                                                       String.valueOf(outcome),
+                                                       attributesAsString(attributes)));
     }
 
     @Override
     protected void logRecovered(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(TrustStoreMessages.CREATE(getName()));
-        }
-        else
-        {
-            super.logRecovered(outcome);
-        }
+        _eventLogger.message(TrustStoreMessages.OPEN(getName(), String.valueOf(outcome)));
     }
 
     @Override
     protected void logDeleted(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(TrustStoreMessages.DELETE(getName()));
-        }
-        else
-        {
-            super.logDeleted(outcome);
-        }
+        _eventLogger.message(TrustStoreMessages.DELETE(getName(), String.valueOf(outcome)));
     }
 
     @Override

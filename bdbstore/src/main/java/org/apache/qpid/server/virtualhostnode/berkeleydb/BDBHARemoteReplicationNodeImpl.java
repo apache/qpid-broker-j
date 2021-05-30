@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
 import org.apache.qpid.server.logging.subjects.BDBHAVirtualHostNodeLogSubject;
 import org.apache.qpid.server.logging.subjects.GroupLogSubject;
@@ -134,11 +135,14 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
             try
             {
                 _replicatedEnvironmentFacade.removeNodeFromGroup(nodeName);
-                getEventLogger().message(_virtualHostNodeLogSubject, HighAvailabilityMessages.DELETED());
+                getEventLogger().message(_virtualHostNodeLogSubject,
+                                         HighAvailabilityMessages.DELETE(getName(), String.valueOf(Outcome.SUCCESS)));
                 future.set(null);
             }
             catch (RuntimeException e)
             {
+                getEventLogger().message(_virtualHostNodeLogSubject,
+                                         HighAvailabilityMessages.DELETE(getName(), String.valueOf(Outcome.FAILURE)));
                 future.setException(e);
             }
             return future;

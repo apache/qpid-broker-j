@@ -87,40 +87,21 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
     protected void logCreated(final Map<String, Object> attributes,
                               final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(AccessControlMessages.CREATE(getName()));
-        }
-        else
-        {
-            super.logCreated(attributes, outcome);
-        }
+        getEventLogger().message(AccessControlMessages.CREATE(getName(),
+                                                              String.valueOf(outcome),
+                                                              attributesAsString(attributes)));
     }
 
     @Override
     protected void logRecovered(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(AccessControlMessages.CREATE(getName()));
-        }
-        else
-        {
-            super.logRecovered(outcome);
-        }
+        getEventLogger().message(AccessControlMessages.OPEN(getName(), String.valueOf(outcome)));
     }
 
     @Override
     protected void logDeleted(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(AccessControlMessages.DELETE(getName()));
-        }
-        else
-        {
-            super.logDeleted(outcome);
-        }
+        getEventLogger().message(AccessControlMessages.DELETE(getName(), String.valueOf(outcome)));
     }
 
 

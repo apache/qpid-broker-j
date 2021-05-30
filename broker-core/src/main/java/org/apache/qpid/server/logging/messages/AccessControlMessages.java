@@ -151,16 +151,21 @@ public class AccessControlMessages
 
     /**
      * Log a AccessControl message of the Format:
-     * <pre>ACL-1013 : Close</pre>
+     * <pre>ACL-1013 : Close : "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE()
+    public static LogMessage CLOSE(String param1)
     {
         String rawMessage = _messages.getString("CLOSE");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -206,16 +211,16 @@ public class AccessControlMessages
 
     /**
      * Log a AccessControl message of the Format:
-     * <pre>ACL-1011 : Create "{0}"</pre>
+     * <pre>ACL-1011 : Create "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATE(String param1)
+    public static LogMessage CREATE(String param1, String param2, String param3)
     {
         String rawMessage = _messages.getString("CREATE");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -266,16 +271,16 @@ public class AccessControlMessages
 
     /**
      * Log a AccessControl message of the Format:
-     * <pre>ACL-1014 : Delete "{0}"</pre>
+     * <pre>ACL-1014 : Delete "{0}": {1}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1)
+    public static LogMessage DELETE(String param1, String param2)
     {
         String rawMessage = _messages.getString("DELETE");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -446,16 +451,21 @@ public class AccessControlMessages
 
     /**
      * Log a AccessControl message of the Format:
-     * <pre>ACL-1012 : Open</pre>
+     * <pre>ACL-1012 : Open : "{0}" : {1}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN()
+    public static LogMessage OPEN(String param1, String param2)
     {
         String rawMessage = _messages.getString("OPEN");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -561,7 +571,7 @@ public class AccessControlMessages
 
     /**
      * Log a AccessControl message of the Format:
-     * <pre>ACL-1017 : Update : {0} : {1} : {2}</pre>
+     * <pre>ACL-1017 : Update : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *

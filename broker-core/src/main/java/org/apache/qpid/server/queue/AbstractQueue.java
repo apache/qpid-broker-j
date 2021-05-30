@@ -614,19 +614,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _postEnqueueOverflowPolicyHandler = overflowPolicyHandler;
     }
 
-    protected LogMessage getCreatedLogMessage()
-    {
-        String ownerString = getOwner();
-        return QueueMessages.CREATED(getId().toString(),
-                                     ownerString,
-                                     0,
-                                     ownerString != null,
-                                     getLifetimePolicy() != LifetimePolicy.PERMANENT,
-                                     isDurable(),
-                                     !isDurable(),
-                                     false);
-    }
-
     private MessageDestination getOpenedMessageDestination(final String name)
     {
         MessageDestination destination = getVirtualHost().getSystemDestination(name);
@@ -3967,40 +3954,22 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     protected void logCreated(final Map<String, Object> attributes,
                               final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(_logSubject, getCreatedLogMessage());
-        }
-        else
-        {
-            super.logCreated(attributes, outcome);
-        }
+        getEventLogger().message(_logSubject,
+                                 QueueMessages.CREATE(getName(),
+                                                      String.valueOf(outcome),
+                                                      attributesAsString(attributes)));
     }
 
     @Override
     protected void logRecovered(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(_logSubject, getCreatedLogMessage());
-        }
-        else
-        {
-            super.logRecovered(outcome);
-        }
+        getEventLogger().message(_logSubject, QueueMessages.OPEN(getName(), String.valueOf(outcome)));
     }
 
     @Override
     protected void logDeleted(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(_logSubject, QueueMessages.DELETED(getId().toString()));
-        }
-        else
-        {
-            super.logDeleted(outcome);
-        }
+        getEventLogger().message(_logSubject, QueueMessages.DELETE(getName(), String.valueOf(outcome)));
     }
 
     @Override

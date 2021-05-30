@@ -63,18 +63,22 @@ public class ExchangeMessages
     }
 
     public static final String EXCHANGE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange";
-    public static final String CREATED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange.created";
-    public static final String DELETED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange.deleted";
+    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange.close";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange.create";
+    public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange.delete";
     public static final String DISCARDMSG_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange.discardmsg";
+    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange.open";
     public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange.operation";
     public static final String UPDATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "exchange.update";
 
     static
     {
         LoggerFactory.getLogger(EXCHANGE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(DELETED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DISCARDMSG_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(UPDATE_LOG_HIERARCHY);
 
@@ -83,39 +87,16 @@ public class ExchangeMessages
 
     /**
      * Log a Exchange message of the Format:
-     * <pre>EXH-1001 : Create :[ Durable] Type: {0} Name: {1}</pre>
+     * <pre>EXH-1007 : Close : "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATED(String param1, String param2, boolean opt1)
+    public static LogMessage CLOSE(String param1)
     {
-        String rawMessage = _messages.getString("CREATED");
-        StringBuffer msg = new StringBuffer();
+        String rawMessage = _messages.getString("CLOSE");
 
-        // Split the formatted message up on the option values so we can
-        // rebuild the message based on the configured options.
-        String[] parts = rawMessage.split("\\[");
-        msg.append(parts[0]);
-
-        int end;
-        if (parts.length > 1)
-        {
-
-            // Add Option : Durable.
-            end = parts[1].indexOf(']');
-            if (opt1)
-            {
-                msg.append(parts[1].substring(0, end));
-            }
-
-            // Use 'end + 1' to remove the ']' from the output
-            msg.append(parts[1].substring(end + 1));
-        }
-
-        rawMessage = msg.toString();
-
-        final Object[] messageArguments = {param1, param2};
+        final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -133,7 +114,7 @@ public class ExchangeMessages
             @Override
             public String getLogHierarchy()
             {
-                return CREATED_LOG_HIERARCHY;
+                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override
@@ -166,16 +147,21 @@ public class ExchangeMessages
 
     /**
      * Log a Exchange message of the Format:
-     * <pre>EXH-1002 : Deleted</pre>
+     * <pre>EXH-1001 : Create : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETED()
+    public static LogMessage CREATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("DELETED");
+        String rawMessage = _messages.getString("CREATE");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1, param2, param3};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -188,7 +174,67 @@ public class ExchangeMessages
             @Override
             public String getLogHierarchy()
             {
-                return DELETED_LOG_HIERARCHY;
+                return CREATE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Exchange message of the Format:
+     * <pre>EXH-1002 : Delete : "{0}" : {1}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage DELETE(String param1, String param2)
+    {
+        String rawMessage = _messages.getString("DELETE");
+
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return DELETE_LOG_HIERARCHY;
             }
 
             @Override
@@ -281,6 +327,66 @@ public class ExchangeMessages
 
     /**
      * Log a Exchange message of the Format:
+     * <pre>EXH-1006 : Open : "{0}" : {1}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OPEN(String param1, String param2)
+    {
+        String rawMessage = _messages.getString("OPEN");
+
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return OPEN_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Exchange message of the Format:
      * <pre>EXH-1004 : Operation : {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
@@ -341,7 +447,7 @@ public class ExchangeMessages
 
     /**
      * Log a Exchange message of the Format:
-     * <pre>EXH-1005 : Update : {0} : {1} : {2}</pre>
+     * <pre>EXH-1005 : Update : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *

@@ -63,10 +63,12 @@ public class QueueMessages
     }
 
     public static final String QUEUE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue";
-    public static final String CREATED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.created";
-    public static final String DELETED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.deleted";
+    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.close";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.create";
+    public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.delete";
     public static final String DROPPED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.dropped";
     public static final String MALFORMED_MESSAGE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.malformed_message";
+    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.open";
     public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.operation";
     public static final String OVERFULL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.overfull";
     public static final String UNDERFULL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.underfull";
@@ -75,10 +77,12 @@ public class QueueMessages
     static
     {
         LoggerFactory.getLogger(QUEUE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(DELETED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DROPPED_LOG_HIERARCHY);
         LoggerFactory.getLogger(MALFORMED_MESSAGE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(OVERFULL_LOG_HIERARCHY);
         LoggerFactory.getLogger(UNDERFULL_LOG_HIERARCHY);
@@ -89,79 +93,16 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1001 : Create : ID: {0}[ Owner: {1}][ AutoDelete][ Durable][ Transient][ Priority: {2,number,#}]</pre>
+     * <pre>QUE-1019 : Close : "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATED(String param1, String param2, Number param3, boolean opt1, boolean opt2, boolean opt3, boolean opt4, boolean opt5)
+    public static LogMessage CLOSE(String param1)
     {
-        String rawMessage = _messages.getString("CREATED");
-        StringBuffer msg = new StringBuffer();
+        String rawMessage = _messages.getString("CLOSE");
 
-        // Split the formatted message up on the option values so we can
-        // rebuild the message based on the configured options.
-        String[] parts = rawMessage.split("\\[");
-        msg.append(parts[0]);
-
-        int end;
-        if (parts.length > 1)
-        {
-
-            // Add Option : Owner: {1}.
-            end = parts[1].indexOf(']');
-            if (opt1)
-            {
-                msg.append(parts[1].substring(0, end));
-            }
-
-            // Use 'end + 1' to remove the ']' from the output
-            msg.append(parts[1].substring(end + 1));
-
-            // Add Option : AutoDelete.
-            end = parts[2].indexOf(']');
-            if (opt2)
-            {
-                msg.append(parts[2].substring(0, end));
-            }
-
-            // Use 'end + 1' to remove the ']' from the output
-            msg.append(parts[2].substring(end + 1));
-
-            // Add Option : Durable.
-            end = parts[3].indexOf(']');
-            if (opt3)
-            {
-                msg.append(parts[3].substring(0, end));
-            }
-
-            // Use 'end + 1' to remove the ']' from the output
-            msg.append(parts[3].substring(end + 1));
-
-            // Add Option : Transient.
-            end = parts[4].indexOf(']');
-            if (opt4)
-            {
-                msg.append(parts[4].substring(0, end));
-            }
-
-            // Use 'end + 1' to remove the ']' from the output
-            msg.append(parts[4].substring(end + 1));
-
-            // Add Option : Priority: {2,number,#}.
-            end = parts[5].indexOf(']');
-            if (opt5)
-            {
-                msg.append(parts[5].substring(0, end));
-            }
-
-            // Use 'end + 1' to remove the ']' from the output
-            msg.append(parts[5].substring(end + 1));
-        }
-
-        rawMessage = msg.toString();
-
-        final Object[] messageArguments = {param1, param2, param3};
+        final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -179,7 +120,7 @@ public class QueueMessages
             @Override
             public String getLogHierarchy()
             {
-                return CREATED_LOG_HIERARCHY;
+                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override
@@ -212,16 +153,16 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1002 : Deleted : ID: {0}</pre>
+     * <pre>QUE-1001 : Create : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETED(String param1)
+    public static LogMessage CREATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("DELETED");
+        String rawMessage = _messages.getString("CREATE");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -239,7 +180,67 @@ public class QueueMessages
             @Override
             public String getLogHierarchy()
             {
-                return DELETED_LOG_HIERARCHY;
+                return CREATE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Queue message of the Format:
+     * <pre>QUE-1002 : Delete : "{0}" : {1}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage DELETE(String param1, String param2)
+    {
+        String rawMessage = _messages.getString("DELETE");
+
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return DELETE_LOG_HIERARCHY;
             }
 
             @Override
@@ -360,6 +361,66 @@ public class QueueMessages
             public String getLogHierarchy()
             {
                 return MALFORMED_MESSAGE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Queue message of the Format:
+     * <pre>QUE-1018 : Open : "{0}" : {1}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OPEN(String param1, String param2)
+    {
+        String rawMessage = _messages.getString("OPEN");
+
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return OPEN_LOG_HIERARCHY;
             }
 
             @Override
@@ -572,7 +633,7 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1017 : Update : {0} : {1} : {2}</pre>
+     * <pre>QUE-1017 : Update : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *

@@ -79,20 +79,6 @@ public class PriorityQueueImpl extends OutOfOrderQueue<PriorityQueueImpl> implem
     }
 
     @Override
-    protected LogMessage getCreatedLogMessage()
-    {
-        String ownerString = getOwner();
-        return QueueMessages.CREATED(getId().toString(),
-                                     ownerString,
-                                     getPriorities(),
-                                     ownerString != null,
-                                     getLifetimePolicy() != LifetimePolicy.PERMANENT,
-                                     isDurable(),
-                                     !isDurable(),
-                                     true);
-    }
-
-    @Override
     public long reenqueueMessageForPriorityChange(final long messageId, final int newPriority)
     {
         final QueueEntry entry = getMessageOnTheQueue(messageId);

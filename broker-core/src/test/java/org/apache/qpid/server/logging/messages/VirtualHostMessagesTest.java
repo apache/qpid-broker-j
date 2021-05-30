@@ -24,6 +24,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.apache.qpid.server.logging.Outcome;
+
 /**
  * Test VHT Log Messages
  */
@@ -32,11 +34,12 @@ public class VirtualHostMessagesTest extends AbstractTestMessages
     @Test
     public void testVirtualhostCreated()
     {
-        String name = "test";
-        _logMessage = VirtualHostMessages.CREATED(name);
-        List<Object> log = performLog();
+        final String name = "test";
+        final String attributes = "{\"type\": \"JSON\"}";
+        _logMessage = VirtualHostMessages.CREATE(name, String.valueOf(Outcome.SUCCESS), attributes);
+        final List<Object> log = performLog();
 
-        String[] expected = {"Created :", name};
+        final String[] expected = {"Create : \"", name, "\" : ", String.valueOf(Outcome.SUCCESS), " : ", attributes};
 
         validateLogMessage(log, "VHT-1001", expected);
     }
@@ -44,11 +47,11 @@ public class VirtualHostMessagesTest extends AbstractTestMessages
     @Test
     public void testVirtualhostClosed()
     {
-        String name = "test";
-        _logMessage = VirtualHostMessages.CLOSED(name);
-        List<Object> log = performLog();
+        final String name = "test";
+        _logMessage = VirtualHostMessages.CLOSE(name);
+        final List<Object> log = performLog();
 
-        String[] expected = {"Closed :", name};
+        final String[] expected = {"Close : \"", name, "\""};
 
         validateLogMessage(log, "VHT-1002", expected);
     }

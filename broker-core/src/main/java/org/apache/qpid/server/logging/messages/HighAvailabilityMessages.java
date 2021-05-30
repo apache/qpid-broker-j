@@ -64,8 +64,8 @@ public class HighAvailabilityMessages
 
     public static final String HIGHAVAILABILITY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability";
     public static final String ADDED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability.added";
-    public static final String CREATED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability.created";
-    public static final String DELETED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability.deleted";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability.create";
+    public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability.delete";
     public static final String DESIGNATED_PRIMARY_CHANGED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability.designated_primary_changed";
     public static final String INTRUDER_DETECTED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability.intruder_detected";
     public static final String JOINED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability.joined";
@@ -83,8 +83,8 @@ public class HighAvailabilityMessages
     {
         LoggerFactory.getLogger(HIGHAVAILABILITY_LOG_HIERARCHY);
         LoggerFactory.getLogger(ADDED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(DELETED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DESIGNATED_PRIMARY_CHANGED_LOG_HIERARCHY);
         LoggerFactory.getLogger(INTRUDER_DETECTED_LOG_HIERARCHY);
         LoggerFactory.getLogger(JOINED_LOG_HIERARCHY);
@@ -163,16 +163,21 @@ public class HighAvailabilityMessages
 
     /**
      * Log a HighAvailability message of the Format:
-     * <pre>HA-1001 : Created</pre>
+     * <pre>HA-1001 : Create : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATED()
+    public static LogMessage CREATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("CREATED");
+        String rawMessage = _messages.getString("CREATE");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1, param2, param3};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -185,7 +190,7 @@ public class HighAvailabilityMessages
             @Override
             public String getLogHierarchy()
             {
-                return CREATED_LOG_HIERARCHY;
+                return CREATE_LOG_HIERARCHY;
             }
 
             @Override
@@ -218,16 +223,21 @@ public class HighAvailabilityMessages
 
     /**
      * Log a HighAvailability message of the Format:
-     * <pre>HA-1002 : Deleted</pre>
+     * <pre>HA-1002 : Delete : "{0}" : {1}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETED()
+    public static LogMessage DELETE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("DELETED");
+        String rawMessage = _messages.getString("DELETE");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -240,7 +250,7 @@ public class HighAvailabilityMessages
             @Override
             public String getLogHierarchy()
             {
-                return DELETED_LOG_HIERARCHY;
+                return DELETE_LOG_HIERARCHY;
             }
 
             @Override
@@ -923,7 +933,7 @@ public class HighAvailabilityMessages
 
     /**
      * Log a HighAvailability message of the Format:
-     * <pre>HA-1015 : Update : {0} : {1} : {2}</pre>
+     * <pre>HA-1015 : Update : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *

@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.BrokerTestHelper;
 
@@ -35,42 +36,48 @@ public class ExchangeMessagesTest extends AbstractTestMessages
     @Test
     public void testExchangeCreated_Transient() throws Exception
     {
-        Exchange<?> exchange = BrokerTestHelper.createExchange("test", false, getEventLogger());
-
-        String type = exchange.getType();
-        String name = exchange.getName();
-
-        _logMessage = ExchangeMessages.CREATED(type, name, false);
-        List<Object> log = getLog();
-
-        String[] expected = {"Create :", "Type:", type, "Name:", name};
-
+        final Exchange<?> exchange = BrokerTestHelper.createExchange("test", false, getEventLogger());
+        final String type = exchange.getType();
+        final String name = exchange.getName();
+        final String attributes =
+                String.format("{createdTime=%s,durable=false,id=%s,lastUpdatedTime=%s,name=%s,type=%s}",
+                              exchange.getCreatedTime().toInstant().toString(),
+                              exchange.getId().toString(),
+                              exchange.getLastUpdatedTime().toInstant().toString(),
+                              name,
+                              type);
+        _logMessage = ExchangeMessages.CREATE(name, String.valueOf(Outcome.SUCCESS), attributes);
+        final List<Object> log = getLog();
+        final String[] expected = {"Create : \"", name, "\" : ", String.valueOf(Outcome.SUCCESS), attributes};
         validateLogMessageNoSubject(log, "EXH-1001", expected);
     }
 
     @Test
     public void testExchangeCreated_Persistent() throws Exception
     {
-        Exchange<?> exchange = BrokerTestHelper.createExchange("test", true, getEventLogger());
+        final Exchange<?> exchange = BrokerTestHelper.createExchange("test", true, getEventLogger());
+        final String type = exchange.getType();
+        final String name = exchange.getName();
+        final String attributes =
+                String.format("{createdTime=%s,durable=true,id=%s,lastUpdatedTime=%s,name=%s,type=%s}",
+                              exchange.getCreatedTime().toInstant().toString(),
+                              exchange.getId().toString(),
+                              exchange.getLastUpdatedTime().toInstant().toString(),
+                              name,
+                              type);
 
-        String type = exchange.getType();
-        String name = exchange.getName();
-
-        _logMessage = ExchangeMessages.CREATED(type, name, true);
-        List<Object> log = getLog();
-
-        String[] expected = {"Create :", "Durable", "Type:", type, "Name:", name};
-
+        _logMessage = ExchangeMessages.CREATE(name, String.valueOf(Outcome.SUCCESS), attributes);
+        final List<Object> log = getLog();
+        final String[] expected = {"Create : \"", name, "\" : ", String.valueOf(Outcome.SUCCESS), attributes};
         validateLogMessageNoSubject(log, "EXH-1001", expected);
     }
 
     @Test
     public void testExchangeDeleted()
     {
-        _logMessage = ExchangeMessages.DELETED();
-        List<Object> log = performLog();
-
-        String[] expected = {"Deleted"};
+        _logMessage = ExchangeMessages.DELETE("test", String.valueOf(Outcome.SUCCESS));
+        final List<Object> log = performLog();
+        final String[] expected = {"Delete : \"test\" : ", String.valueOf(Outcome.SUCCESS)};
 
         validateLogMessage(log, "EXH-1002", expected);
     }
@@ -78,8 +85,7 @@ public class ExchangeMessagesTest extends AbstractTestMessages
     @Test
     public void testExchangeDiscardedMessage() throws Exception
     {
-        Exchange<?> exchange = BrokerTestHelper.createExchange("test", false, getEventLogger());
-
+        final Exchange<?> exchange = BrokerTestHelper.createExchange("test", false, getEventLogger());
         final String name = exchange.getName();
         final String routingKey = "routingKey";
         clearLog();

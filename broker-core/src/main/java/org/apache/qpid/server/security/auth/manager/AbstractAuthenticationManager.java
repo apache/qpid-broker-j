@@ -153,48 +153,29 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     protected void logCreated(final Map<String, Object> attributes,
                               final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(AuthenticationProviderMessages.CREATE(getName()));
-        }
-        else
-        {
-            super.logCreated(attributes, outcome);
-        }
+        _eventLogger.message(AuthenticationProviderMessages.CREATE(getName(),
+                                                                   String.valueOf(outcome),
+                                                                   attributesAsString(attributes)));
     }
 
     @Override
     protected void logRecovered(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            _eventLogger.message(AuthenticationProviderMessages.CREATE(getName()));
-        }
-        else
-        {
-            super.logRecovered(outcome);
-        }
+        _eventLogger.message(AuthenticationProviderMessages.OPEN(getName(), String.valueOf(outcome)));
     }
 
     @Override
     protected void logDeleted(final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(AuthenticationProviderMessages.DELETE(getName()));
-        }
-        else
-        {
-            super.logDeleted(outcome);
-        }
+        _eventLogger.message(AuthenticationProviderMessages.DELETE(getName(), String.valueOf(outcome)));
     }
 
     @Override
     protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
     {
-        getEventLogger().message(AuthenticationProviderMessages.UPDATE(getName(),
-                                                                       String.valueOf(outcome),
-                                                                       attributesAsString(attributes)));
+        _eventLogger.message(AuthenticationProviderMessages.UPDATE(getName(),
+                                                                   String.valueOf(outcome),
+                                                                   attributesAsString(attributes)));
     }
 
 }

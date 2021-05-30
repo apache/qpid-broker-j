@@ -24,232 +24,40 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.apache.qpid.server.logging.Outcome;
+
 /**
  * Test QUE Log Messages
  */
 public class QueueMessagesTest extends AbstractTestMessages
 {
     @Test
-    public void testQueueCreatedALL()
+    public void testQueueCreateSuccess()
     {
-        String owner = "guest";
-        Integer priority = 3;
-
-        _logMessage = QueueMessages.CREATED("uuid",owner, priority, true, true, true, true, true);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid", "Owner:", owner, "AutoDelete",
-                             "Durable", "Transient", "Priority:",
-                             String.valueOf(priority)};
-
+        final String attributes = "{\"type\": \"standard\"}";
+        _logMessage = QueueMessages.CREATE("test", String.valueOf(Outcome.SUCCESS), attributes);
+        final List<Object> log = performLog();
+        final String[] expected = {"Create : \"test\" : ", String.valueOf(Outcome.SUCCESS), " : {\"type\": \"standard\"}"};
         validateLogMessage(log, "QUE-1001", expected);
     }
 
     @Test
     public void testQueueCreatedOwnerAutoDelete()
     {
-        String owner = "guest";
-
-        _logMessage = QueueMessages.CREATED("uuid", owner, null, true, true, false, false, false);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid", "Owner:", owner, "AutoDelete"};
-
+        final String attributes = "{\"type\": \"standard\", \"owner\": \"guest\", \"lifetimePolicy\": \"DELETE_ON_CONNECTION_CLOSE\"}";
+        _logMessage = QueueMessages.CREATE("test", String.valueOf(Outcome.SUCCESS), attributes);
+        final List<Object> log = performLog();
+        final String[] expected = {"Create : \"test\" : ", String.valueOf(Outcome.SUCCESS), attributes};
         validateLogMessage(log, "QUE-1001", expected);
     }
 
     @Test
-    public void testQueueCreatedOwnerPriority()
+    public void testQueueDelete()
     {
-        String owner = "guest";
-        Integer priority = 3;
+        _logMessage = QueueMessages.DELETE("test", String.valueOf(Outcome.SUCCESS));
+        final List<Object> log = performLog();
 
-        _logMessage = QueueMessages.CREATED("uuid", owner, priority, true, false, false, false, true);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid", "Owner:", owner, "Priority:",
-                             String.valueOf(priority)};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedOwnerAutoDeletePriority()
-    {
-        String owner = "guest";
-        Integer priority = 3;
-
-        _logMessage = QueueMessages.CREATED("uuid", owner, priority, true, true, false, false, true);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid", "Owner:", owner, "AutoDelete",
-                             "Priority:",
-                             String.valueOf(priority)};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedOwnerAutoDeleteTransient()
-    {
-        String owner = "guest";
-
-        _logMessage = QueueMessages.CREATED("uuid", owner, null, true, true, false, true, false);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid", "Owner:", owner, "AutoDelete",
-                             "Transient"};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedOwnerAutoDeleteTransientPriority()
-    {
-        String owner = "guest";
-        Integer priority = 3;
-
-        _logMessage = QueueMessages.CREATED("uuid", owner, priority, true, true, false, true, true);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid", "Owner:", owner, "AutoDelete",
-                             "Transient", "Priority:",
-                             String.valueOf(priority)};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedOwnerAutoDeleteDurable()
-    {
-        String owner = "guest";
-
-        _logMessage = QueueMessages.CREATED("uuid", owner, null, true, true, true, false, false);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid", "Owner:", owner, "AutoDelete",
-                             "Durable"};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedOwnerAutoDeleteDurablePriority()
-    {
-        String owner = "guest";
-        Integer priority = 3;
-
-        _logMessage = QueueMessages.CREATED("uuid", owner, priority, true, true, true, false, true);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid", "Owner:", owner, "AutoDelete",
-                             "Durable", "Priority:",
-                             String.valueOf(priority)};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedAutoDelete()
-    {
-        _logMessage = QueueMessages.CREATED("uuid", null, null, false, true, false, false, false);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid", "AutoDelete"};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedPriority()
-    {
-        Integer priority = 3;
-
-        _logMessage = QueueMessages.CREATED("uuid", null, priority, false, false, false, false, true);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid",
-                             "Priority:", String.valueOf(priority)};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedAutoDeletePriority()
-    {
-        Integer priority = 3;
-
-        _logMessage = QueueMessages.CREATED("uuid", null, priority, false, true, false, false, true);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "AutoDelete",
-                             "Priority:",
-                             String.valueOf(priority)};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedAutoDeleteTransient()
-    {
-        _logMessage = QueueMessages.CREATED("uuid", null, null, false, true, false, true, false);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid",
-                             "AutoDelete", "Transient"};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedAutoDeleteTransientPriority()
-    {
-        Integer priority = 3;
-
-        _logMessage = QueueMessages.CREATED("uuid", null, priority, false, true, false, true, true);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid",
-                             "AutoDelete", "Transient", "Priority:",
-                String.valueOf(priority)};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedAutoDeleteDurable()
-    {
-        _logMessage = QueueMessages.CREATED("uuid", null, null, false, true, true, false, false);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid",
-                             "AutoDelete", "Durable"};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueCreatedAutoDeleteDurablePriority()
-    {
-        Integer priority = 3;
-
-        _logMessage = QueueMessages.CREATED("uuid", null, priority, false, true, true, false, true);
-        List<Object> log = performLog();
-
-        String[] expected = {"Create :", "ID:", "uuid",
-                             "AutoDelete", "Durable", "Priority:",
-                String.valueOf(priority)};
-
-        validateLogMessage(log, "QUE-1001", expected);
-    }
-
-    @Test
-    public void testQueueDeleted()
-    {
-        _logMessage = QueueMessages.DELETED("uuid");
-        List<Object> log = performLog();
-
-        String[] expected = {"Deleted", "ID:", "uuid"};
+        final String[] expected = {"Delete : \"test\" : SUCCESS"};
 
         validateLogMessage(log, "QUE-1002", expected);
     }

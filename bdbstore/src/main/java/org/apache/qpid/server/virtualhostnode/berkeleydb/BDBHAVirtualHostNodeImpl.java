@@ -457,7 +457,9 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                                  {
                                      configurationStore.closeConfigurationStore();
                                      configurationStore.onDelete(BDBHAVirtualHostNodeImpl.this);
-                                     getEventLogger().message(getVirtualHostNodeLogSubject(), HighAvailabilityMessages.DELETED());
+                                     getEventLogger().message(getVirtualHostNodeLogSubject(),
+                                                              HighAvailabilityMessages.DELETE(getName(),
+                                                                                              String.valueOf(Outcome.SUCCESS)));
                                  }
 
                                  if (!helpers.isEmpty())
@@ -1479,14 +1481,10 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     protected void logCreated(final Map<String, Object> attributes,
                               final Outcome outcome)
     {
-        if (outcome == Outcome.SUCCESS)
-        {
-            getEventLogger().message(getVirtualHostNodeLogSubject(), HighAvailabilityMessages.CREATED());
-        }
-        else
-        {
-            super.logCreated(attributes, outcome);
-        }
+        getEventLogger().message(getVirtualHostNodeLogSubject(),
+                                 HighAvailabilityMessages.CREATE(getName(),
+                                                                 String.valueOf(outcome),
+                                                                 attributesAsString(attributes)));
     }
 
     @Override
