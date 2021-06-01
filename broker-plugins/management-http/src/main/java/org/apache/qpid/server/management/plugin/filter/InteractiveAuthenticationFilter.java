@@ -21,6 +21,9 @@
 package org.apache.qpid.server.management.plugin.filter;
 
 import java.io.IOException;
+import java.security.Principal;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,6 +43,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
+import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 
@@ -96,7 +100,7 @@ public class InteractiveAuthenticationFilter implements Filter
 
             if(handler != null)
             {
-                handler.handleAuthentication(httpResponse);
+                invokeAuthenticationHandler(httpRequest, httpResponse, handler);
             }
             else
             {
@@ -105,4 +109,25 @@ public class InteractiveAuthenticationFilter implements Filter
         }
     }
 
+    private void invokeAuthenticationHandler(final HttpServletRequest httpRequest,
+                                             final HttpServletResponse httpResponse,
+                                             final HttpRequestInteractiveAuthenticator.AuthenticationHandler handler)
+            throws ServletException
+    {
+        final Subject tempSubject = new Subject(true,
+                                                Collections.<Principal>singleton(new ServletConnectionPrincipal(httpRequest)),
+                                                Collections.emptySet(),
+                                                Collections.emptySet());
+        try
+        {
+            Subject.doAs(tempSubject, (PrivilegedExceptionAction<Void>) () -> {
+                handler.handleAuthentication(httpResponse);
+                return null;
+            });
+        }
+        catch (PrivilegedActionException e)
+        {
+            throw new ServletException(e);
+        }
+    }
 }
