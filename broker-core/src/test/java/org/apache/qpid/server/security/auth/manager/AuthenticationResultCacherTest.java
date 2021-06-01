@@ -135,6 +135,19 @@ public class AuthenticationResultCacherTest extends UnitTestBase
         assertGetOrLoad(credentials, expectedResult, expectedHitCount);
     }
 
+    @Test
+    public void testCacheHitNoSubject()
+    {
+        final String credentials = "credentials";
+        final AuthenticationResult result1 = _authenticationResultCacher.getOrLoad(new String[]{credentials}, _loader);
+        assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result1);
+        assertEquals("Unexpected number of loads before cache hit", 1, _loadCallCount);
+
+        final AuthenticationResult result2 = _authenticationResultCacher.getOrLoad(new String[]{credentials}, _loader);
+        assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result2);
+        assertEquals("Unexpected number of loads before cache hit", 1, _loadCallCount);
+    }
+
     private void assertGetOrLoad(final String credentials,
                                  final AuthenticationResult expectedResult,
                                  final int expectedHitCount)
