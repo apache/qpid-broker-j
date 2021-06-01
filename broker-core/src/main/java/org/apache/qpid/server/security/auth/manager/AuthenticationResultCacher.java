@@ -115,23 +115,27 @@ public class AuthenticationResultCacher
             MessageDigest md = MessageDigest.getInstance("SHA-256");
 
             Subject subject = Subject.getSubject(AccessController.getContext());
-            Set<SocketConnectionPrincipal> connectionPrincipals = subject.getPrincipals(SocketConnectionPrincipal.class);
-            if (connectionPrincipals != null && !connectionPrincipals.isEmpty())
+            if (subject != null)
             {
-                SocketConnectionPrincipal connectionPrincipal = connectionPrincipals.iterator().next();
-                SocketAddress remoteAddress = connectionPrincipal.getRemoteAddress();
-                String address;
-                if (remoteAddress instanceof InetSocketAddress)
+                Set<SocketConnectionPrincipal> connectionPrincipals =
+                        subject.getPrincipals(SocketConnectionPrincipal.class);
+                if (!connectionPrincipals.isEmpty())
                 {
-                    address = ((InetSocketAddress) remoteAddress).getHostString();
-                }
-                else
-                {
-                    address = remoteAddress.toString();
-                }
-                if (address != null)
-                {
-                    md.update(address.getBytes(UTF8));
+                    SocketConnectionPrincipal connectionPrincipal = connectionPrincipals.iterator().next();
+                    SocketAddress remoteAddress = connectionPrincipal.getRemoteAddress();
+                    String address;
+                    if (remoteAddress instanceof InetSocketAddress)
+                    {
+                        address = ((InetSocketAddress) remoteAddress).getHostString();
+                    }
+                    else
+                    {
+                        address = remoteAddress.toString();
+                    }
+                    if (address != null)
+                    {
+                        md.update(address.getBytes(UTF8));
+                    }
                 }
             }
 
