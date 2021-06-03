@@ -71,8 +71,6 @@ class SelectorThread extends Thread
     {
         private final Selector _selector;
         private final AtomicBoolean _selecting = new AtomicBoolean();
-        private final AtomicBoolean _inSelect = new AtomicBoolean();
-        private final AtomicInteger _wakeups = new AtomicInteger();
         private long _nextTimeout;
 
         /**
@@ -102,7 +100,7 @@ class SelectorThread extends Thread
             return _selecting.compareAndSet(false,true);
         }
 
-        public void clearSelecting()
+        private void clearSelecting()
         {
             _selecting.set(false);
         }
@@ -295,81 +293,57 @@ class SelectorThread extends Thread
             _scheduler.incrementRunningCount();
             try
             {
-                while (!_closed.get())
+                while (!_closed.get() && acquireSelecting())
                 {
-                    if (acquireSelecting())
+                    final List<ConnectionProcessor> connections = new ArrayList<>();
+                    try
                     {
-                        List<ConnectionProcessor> connections = new ArrayList<>();
-                        try
-                        {
-                            if (!_closed.get())
-                            {
-                                Thread.currentThread().setName(_scheduler.getSelectorThreadName());
-                                _inSelect.set(true);
-                                try
-                                {
-                                    if (_wakeups.getAndSet(0) > 0)
-                                    {
-                                        _selector.selectNow();
-                                    }
-                                    else
-                                    {
-                                        _selector.select(_nextTimeout);
-                                    }
-                                }
-                                catch (IOException e)
-                                {
-                                    // TODO Inform the model object
-                                    LOGGER.error("Failed to trying to select()", e);
-                                    closeSelector();
-                                    return;
-                                }
-                                finally
-                                {
-                                    _inSelect.set(false);
-                                }
-                                for (NonBlockingConnection connection : processSelectionKeys())
-                                {
-                                    if (connection.setScheduled())
-                                    {
-                                        connections.add(new ConnectionProcessor(_scheduler, connection));
-                                    }
-                                }
-                                for (NonBlockingConnection connection : reregisterUnregisteredConnections())
-                                {
-                                    if (connection.setScheduled())
-                                    {
-                                        connections.add(new ConnectionProcessor(_scheduler, connection));
-                                    }
-                                }
-                                for (NonBlockingConnection connection : processUnscheduledConnections())
-                                {
-                                    if (connection.setScheduled())
-                                    {
-                                        connections.add(new ConnectionProcessor(_scheduler, connection));
-                                    }
-                                }
-                                runTasks();
-                            }
-                        }
-                        finally
-                        {
-                            clearSelecting();
-                        }
+                        Thread.currentThread().setName(_scheduler.getSelectorThreadName());
+                        _selector.select(_nextTimeout);
 
-                        if (!connections.isEmpty())
+                        for (final NonBlockingConnection connection : processSelectionKeys())
                         {
-                            _workQueue.addAll(connections);
-                            _workQueue.add(this);
-                            for (ConnectionProcessor connectionProcessor : connections)
+                            if (connection.setScheduled())
                             {
-                                connectionProcessor.processConnection();
+                                connections.add(new ConnectionProcessor(_scheduler, connection));
                             }
                         }
+                        for (final NonBlockingConnection connection : reregisterUnregisteredConnections())
+                        {
+                            if (connection.setScheduled())
+                            {
+                                connections.add(new ConnectionProcessor(_scheduler, connection));
+                            }
+                        }
+                        for (final NonBlockingConnection connection : processUnscheduledConnections())
+                        {
+                            if (connection.setScheduled())
+                            {
+                                connections.add(new ConnectionProcessor(_scheduler, connection));
+                            }
+                        }
+                        runTasks();
                     }
-                    else
+                    catch (IOException e)
                     {
-                        break;
+                        // TODO Inform the model object
+                        LOGGER.error("Failed to trying to select()", e);
+                        closeSelector();
+                        return;
+                    }
+                    finally
+                    {
+                        clearSelecting();
+                    }
+
+                    if (!connections.isEmpty())
+                    {
+                        _workQueue.addAll(connections);
+                        _workQueue.add(this);
+                        for (final ConnectionProcessor connectionProcessor : connections)
+                        {
+                            connectionProcessor.processConnection();
+                        }
                     }
                 }
 
@@ -402,11 +376,7 @@ class SelectorThread extends Thread
 
         public void wakeup()
         {
-            _wakeups.compareAndSet(0, 1);
-            if(_inSelect.get() && _wakeups.get() != 0)
-            {
-                _selector.wakeup();
-            }
+            _selector.wakeup();
         }
     }
 
