@@ -36,7 +36,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -54,7 +53,7 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     private FileGroupDatabase _fileGroupDatabase;
     private GroupProviderUtil _util;
     private String _groupFile;
-    private FileBasedGroupProvider _groupProvider;
+    private FileBasedGroupProvider<?> _groupProvider;
 
     @Before
     public void setUp() throws IOException
@@ -171,15 +170,15 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         assertTrue(groups.contains(MY_GROUP1));
     }
 
-    @Test(expected = IllegalConfigurationException.class)
+    @Test
     public void testGetGroupPrincipalsForUserWhenUserAddedToGroupTheyAreAlreadyInCaseInsensitive() throws Exception
     {
         _util.writeAndSetGroupFile("myGroup.users", USER1);
-        _fileGroupDatabase.addUserToGroup(USER1, MY_GROUP);
 
-        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1.toUpperCase());
-        assertThrows("Group with name supers already exists", IllegalConfigurationException.class, ()->_fileGroupDatabase.addUserToGroup(USER1, MY_GROUP));
-
+        _fileGroupDatabase.getGroupsForUser(USER1.toUpperCase());
+        assertThrows("Group with name supers already exists",
+                     IllegalConfigurationException.class,
+                     () -> _fileGroupDatabase.addUserToGroup(USER1.toUpperCase(), MY_GROUP));
     }
 
     @Test
@@ -372,7 +371,9 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP));
 
-        assertThrows("Group with name myGroup already exists", IllegalConfigurationException.class, ()->_fileGroupDatabase.createGroup(MY_GROUP));
+        assertThrows("Group with name myGroup already exists",
+                     IllegalConfigurationException.class,
+                     () -> _fileGroupDatabase.createGroup(MY_GROUP.toUpperCase()));
     }
 
     @Test

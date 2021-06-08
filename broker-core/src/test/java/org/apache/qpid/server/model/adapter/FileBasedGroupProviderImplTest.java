@@ -23,12 +23,12 @@ package org.apache.qpid.server.model.adapter;
 import static org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl.GROUP_FILE_PROVIDER_TYPE;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -57,7 +56,6 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.GroupProvider;
-import org.apache.qpid.server.security.group.FileGroupDatabase;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -78,15 +76,9 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
     @After
     public void tearDown() throws Exception
     {
-        try
+        if (_groupFile.exists())
         {
-            if (_groupFile.exists())
-            {
-                _groupFile.delete();
-            }
-        }
-        finally
-        {
+            _groupFile.delete();
         }
     }
 
@@ -119,8 +111,8 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
     public void testValidationOnCreateWithInvalidGroups()
     {
         _groupFile = TestFileUtils.createTempFile(this, "groups", "=blah");
-        Map<String, Object> attributes = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
+        final Map<String, Object> attributes = new HashMap<>();
+        final String groupsFile = _groupFile.getAbsolutePath();
         attributes.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
         attributes.put(FileBasedGroupProvider.PATH, groupsFile);
         attributes.put(FileBasedGroupProvider.NAME, getTestName());
@@ -144,30 +136,21 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
         Map<String, Set<String>> input = new HashMap<>();
         input.put("super", Sets.newHashSet("root"));
 
-        _groupFile = createTemporaryGroupFile(input);
+        final GroupProvider<?> provider = createGroupProvider(input);
 
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
-        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
-        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
-        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
-
-        @SuppressWarnings("unchecked")
-        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
-
-        Set<Principal> adminGroups = provider.getGroupPrincipalsForUser(() -> "root");
+        final Set<Principal> adminGroups = provider.getGroupPrincipalsForUser(() -> "root");
         assertThat("root has unexpected group membership",
                    adminGroups.stream().map(Principal::getName).collect(Collectors.toSet()),
                    containsInAnyOrder("super"));
 
-        Collection<Group> groups = provider.getChildren(Group.class);
+        final Collection<Group> groups = provider.getChildren(Group.class);
         assertThat(groups.size(), is(equalTo(1)));
-        Group<?> superGroup = groups.iterator().next();
+        final Group<?> superGroup = groups.iterator().next();
         assertThat(superGroup.getName(), is(equalTo("super")));
 
-        Collection<GroupMember> members = superGroup.getChildren(GroupMember.class);
+        final Collection<GroupMember> members = superGroup.getChildren(GroupMember.class);
         assertThat(members.size(), is(equalTo(1)));
-        GroupMember rootMember = members.iterator().next();
+        final GroupMember<?> rootMember = members.iterator().next();
         assertThat(rootMember.getName(), is(equalTo("root")));
     }
 
@@ -175,29 +158,20 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
     @Test
     public void testGetGroupPrincipalsForUserCaseAware() throws Exception
     {
-        Map<String, Set<String>> input = new HashMap<>();
+        final Map<String, Set<String>> input = new HashMap<>();
         input.put("super", Sets.newHashSet("root"));
 
-        _groupFile = createTemporaryGroupFile(input);
-
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
-        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
-        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
-        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
-
-        @SuppressWarnings("unchecked")
-        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+        final GroupProvider<?> provider = createGroupProvider(input);
         assertThat(provider, is(instanceOf(FileBasedGroupProvider.class)));
-        assertThat(((FileBasedGroupProvider) provider).isCaseSensitive(), is(true));
+        assertThat(((FileBasedGroupProvider<?>) provider).isCaseSensitive(), is(true));
 
-        Set<Principal> adminGroups = provider.getGroupPrincipalsForUser(() -> "Root");
+        final Set<Principal> adminGroups = provider.getGroupPrincipalsForUser(() -> "Root");
         assertThat("No group should be found when caseSensitive=true",
                    adminGroups.stream().map(Principal::getName).collect(Collectors.toSet()),
                    is(empty()));
 
         provider.setAttributes(Collections.singletonMap("caseSensitive", false));
-        assertThat(((FileBasedGroupProvider) provider).isCaseSensitive(), is(false));
+        assertThat(((FileBasedGroupProvider<?>) provider).isCaseSensitive(), is(false));
         Set<Principal> adminGroups2 = provider.getGroupPrincipalsForUser(() -> "Root");
         assertThat("root has unexpected group membership",
                    adminGroups2.stream().map(Principal::getName).collect(Collectors.toSet()),
@@ -207,54 +181,36 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
     @Test
     public void testAddGroupAndMember() throws Exception
     {
-        _groupFile = createTemporaryGroupFile(Collections.emptyMap());
-
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
-        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
-        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
-        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
-
-        @SuppressWarnings("unchecked")
-        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+        final GroupProvider<?> provider = createGroupProvider(Collections.emptyMap());
 
         assertThat(provider.getChildren(Group.class).size(), is(equalTo(0)));
 
-        final Map<String, Object> groupAttrs = Collections.singletonMap(Group.NAME, "supers");
-        Group superGroup = provider.createChild(Group.class, groupAttrs);
-        assertThat(superGroup.getName(), is(equalTo("supers")));
+        final String groupName = "supers";
+        final Group<?> superGroup = provider.createChild(Group.class, Collections.singletonMap(Group.NAME, groupName));
+        assertThat(superGroup.getName(), is(equalTo(groupName)));
 
         final Map<String, Object> memberAttrs = Collections.singletonMap(GroupMember.NAME, "root");
-        GroupMember rootMember = (GroupMember) superGroup.createChild(GroupMember.class, memberAttrs);
+        final GroupMember<?> rootMember = (GroupMember<?>) superGroup.createChild(GroupMember.class, memberAttrs);
         assertThat(rootMember.getName(), is(equalTo("root")));
     }
 
     @Test
     public void testRemoveGroupAndMember() throws Exception
     {
-        Map<String, Set<String>> input = new HashMap<>();
+        final Map<String, Set<String>> input = new HashMap<>();
         input.put("supers", Sets.newHashSet("root"));
         input.put("operators", Sets.newHashSet("operator", "root"));
 
-        _groupFile = createTemporaryGroupFile(input);
-
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
-        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
-        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
-        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
-
-        @SuppressWarnings("unchecked")
-        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+        final GroupProvider<?> provider = createGroupProvider(input);
 
         assertThat(provider.getChildren(Group.class).size(), is(equalTo(2)));
 
-        Group operators = provider.getChildByName(Group.class, "operators");
-        GroupMember rootMember = (GroupMember) operators.getChildByName(GroupMember.class, "root");
+        final Group<?> operators = provider.getChildByName(Group.class, "operators");
+        final GroupMember<?> rootMember = (GroupMember<?>) operators.getChildByName(GroupMember.class, "root");
         rootMember.delete();
 
         assertThat(operators.getChildren(GroupMember.class).size(), is(equalTo(1)));
-        Group supers = provider.getChildByName(Group.class, "supers");
+        final Group<?> supers = provider.getChildByName(Group.class, "supers");
         assertThat(supers.getChildren(GroupMember.class).size(), is(equalTo(1)));
 
         operators.delete();
@@ -266,8 +222,8 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
     {
         _groupFile = createTemporaryGroupFile(Collections.emptyMap());
 
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
+        final Map<String, Object> providerAttrs = new HashMap<>();
+        final String groupsFile = _groupFile.getAbsolutePath();
         providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
         providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
         providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
@@ -278,7 +234,7 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
             assertThat(provider.getChildren(Group.class).size(), is(equalTo(0)));
 
             final Map<String, Object> groupAttrs = Collections.singletonMap(Group.NAME, "group");
-            final Group group = provider.createChild(Group.class, groupAttrs);
+            final Group<?> group = provider.createChild(Group.class, groupAttrs);
 
             final Map<String, Object> memberAttrs = Collections.singletonMap(GroupMember.NAME, "user");
             group.createChild(GroupMember.class, memberAttrs);
@@ -291,9 +247,9 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
                     _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
             assertThat(provider.getChildren(Group.class).size(), is(equalTo(1)));
 
-            final Group group = provider.getChildByName(Group.class, "group");
+            final Group<?> group = provider.getChildByName(Group.class, "group");
             assertThat(group.getChildren(GroupMember.class).size(), is(equalTo(1)));
-            final GroupMember member = (GroupMember) group.getChildByName(GroupMember.class, "user");
+            final GroupMember<?> member = (GroupMember<?>) group.getChildByName(GroupMember.class, "user");
 
             member.delete();
             provider.close();
@@ -302,7 +258,7 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
         {
             @SuppressWarnings("unchecked") final GroupProvider<?> provider =
                     _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
-            final Group group = provider.getChildByName(Group.class, "group");
+            final Group<?> group = provider.getChildByName(Group.class, "group");
             assertThat(group.getChildren(GroupMember.class).size(), is(equalTo(0)));
 
             group.delete();
@@ -320,16 +276,7 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
     @Test
     public void testProvideDelete() throws Exception
     {
-        _groupFile = createTemporaryGroupFile(Collections.emptyMap());
-
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
-        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
-        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
-        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
-
-        @SuppressWarnings("unchecked") final GroupProvider<?> provider =
-                _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+        final GroupProvider<?> provider = createGroupProvider(Collections.emptyMap());
 
         provider.delete();
         assertThat(_groupFile.exists(), is(equalTo(false)));
@@ -370,106 +317,75 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
     @Test
     public void testCreateDuplicateGroup() throws Exception
     {
-        _groupFile = createTemporaryGroupFile(Collections.emptyMap());
-
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
-        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
-        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
-        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
-
-        @SuppressWarnings("unchecked")
-        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+        final GroupProvider<?> provider = createGroupProvider(Collections.emptyMap());
 
         assertThat(provider.getChildren(Group.class).size(), is(equalTo(0)));
 
-        final Map<String, Object> groupAttrs = Collections.singletonMap(Group.NAME, "supers");
-        Group superGroup = provider.createChild(Group.class, groupAttrs);
-        assertThat(superGroup.getName(), is(equalTo("supers")));
+        final String groupName = "supers";
+        final Group<?> superGroup = provider.createChild(Group.class, Collections.singletonMap(Group.NAME, groupName));
+        assertThat(superGroup.getName(), is(equalTo(groupName)));
 
-        assertThrows("Group member with name root1 already exists", IllegalConfigurationException.class, ()->provider.createChild(Group.class, groupAttrs));
+        assertThrows("Group member with name root1 already exists",
+                     IllegalConfigurationException.class,
+                     () -> provider.createChild(Group.class, Collections.singletonMap(Group.NAME, groupName)));
     }
 
     @Test
     public void testCreateDuplicateMember() throws Exception
     {
-        _groupFile = createTemporaryGroupFile(Collections.emptyMap());
-
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
-        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
-        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
-        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
-
-        @SuppressWarnings("unchecked")
-        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+        final GroupProvider<?> provider = createGroupProvider(Collections.emptyMap());
 
         assertThat(provider.getChildren(Group.class).size(), is(equalTo(0)));
 
-        final Map<String, Object> groupAttrs = Collections.singletonMap(Group.NAME, "supers");
-        Group superGroup = provider.createChild(Group.class, groupAttrs);
-        assertThat(superGroup.getName(), is(equalTo("supers")));
+        final String groupName = "supers";
+        final Group<?> superGroup = provider.createChild(Group.class, Collections.singletonMap(Group.NAME, groupName));
+        assertThat(superGroup.getName(), is(equalTo(groupName)));
 
-        final Map<String, Object> memberAttrs1 = Collections.singletonMap(GroupMember.NAME, "root1");
-        GroupMember rootMember = (GroupMember) superGroup.createChild(GroupMember.class, memberAttrs1);
-        assertThat(rootMember.getName(), is(equalTo("root1")));
+        final String memberName = "root1";
+        final Map<String, Object> memberAttributes = Collections.singletonMap(GroupMember.NAME, memberName);
+        final GroupMember<?> rootMember = (GroupMember<?>) superGroup.createChild(GroupMember.class, memberAttributes);
+        assertThat(rootMember.getName(), is(equalTo(memberName)));
 
-        assertThrows("Group member with name root1 already exists", IllegalConfigurationException.class, ()->superGroup.createChild(GroupMember.class, memberAttrs1));
+        assertThrows("Group member with name root1 already exists",
+                     IllegalConfigurationException.class,
+                     () -> superGroup.createChild(GroupMember.class, memberAttributes));
         assertThat(superGroup.getChildren(GroupMember.class).size(), is(equalTo(1)));
     }
 
     @Test
     public void testCreateGroups() throws Exception
     {
-        _groupFile = createTemporaryGroupFile(Collections.emptyMap());
-
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
-        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
-        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
-        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
-
-        @SuppressWarnings("unchecked")
-        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+        final GroupProvider<?> provider = createGroupProvider(Collections.emptyMap());
 
         assertThat(provider.getChildren(Group.class).size(), is(equalTo(0)));
 
-        final Map<String, Object> groupAttrs = Collections.singletonMap(Group.NAME, "supers");
-        Group superGroup = provider.createChild(Group.class, groupAttrs);
-        assertThat(superGroup.getName(), is(equalTo("supers")));
+        final String groupName = "supers";
+        final Group<?> superGroup = provider.createChild(Group.class, Collections.singletonMap(Group.NAME, groupName));
+        assertThat(superGroup.getName(), is(equalTo(groupName)));
 
-        final Map<String, Object> groupAttrs2 = Collections.singletonMap(Group.NAME, "Supers");
-        Group superGroup2 = provider.createChild(Group.class, groupAttrs2);
-        assertThat(superGroup2.getName(), is(equalTo("Supers")));
+        final String groupName2 = "Supers";
+        final Group<?> superGroup2 = provider.createChild(Group.class, Collections.singletonMap(Group.NAME, groupName2));
+        assertThat(superGroup2.getName(), is(equalTo(groupName2)));
 
         assertThat(provider.getChildren(Group.class).size(), is(equalTo(2)));
     }
 
-    @Test(expected = IllegalConfigurationException.class)
+    @Test
     public void testCreateMembers() throws Exception
     {
-        _groupFile = createTemporaryGroupFile(Collections.emptyMap());
-
-        Map<String, Object> providerAttrs = new HashMap<>();
-        String groupsFile = _groupFile.getAbsolutePath();
-        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
-        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
-        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
-
-        @SuppressWarnings("unchecked")
-        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+        final GroupProvider<?> provider = createGroupProvider(Collections.emptyMap());
 
         assertThat(provider.getChildren(Group.class).size(), is(equalTo(0)));
 
-        final Map<String, Object> groupAttrs = Collections.singletonMap(Group.NAME, "supers");
-        Group superGroup = provider.createChild(Group.class, groupAttrs);
-        assertThat(superGroup.getName(), is(equalTo("supers")));
+        final String groupName = "supers";
+        final Group<?> superGroup = provider.createChild(Group.class, Collections.singletonMap(Group.NAME, groupName));
+        assertThat(superGroup.getName(), is(equalTo(groupName)));
 
-        final Map<String, Object> memberAttrs1 = Collections.singletonMap(GroupMember.NAME, "root1");
-        GroupMember rootMember = (GroupMember) superGroup.createChild(GroupMember.class, memberAttrs1);
-        assertThat(rootMember.getName(), is(equalTo("root1")));
+        final String memberName = "root1";
+        final Map<String, Object> memberAttrs1 = Collections.singletonMap(GroupMember.NAME, memberName);
+        final GroupMember<?> rootMember = superGroup.createChild(GroupMember.class, memberAttrs1);
+        assertThat(rootMember.getName(), is(equalTo(memberName)));
 
-        superGroup.createChild(GroupMember.class, memberAttrs1);
         assertThrows("Group member with name root1 already exists",
                      IllegalConfigurationException.class,
                      () -> superGroup.createChild(GroupMember.class, memberAttrs1));
@@ -483,17 +399,28 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
 
         Properties props = new Properties();
 
-        Map<String, String> m = groups.entrySet()
+        final Map<String, String> m = groups.entrySet()
                                       .stream()
                                       .collect(Collectors.toMap(e -> e.getKey() + ".users",
-                                                                e -> e.getValue()
-                                                                      .stream()
-                                                                      .collect(Collectors.joining(","))));
+                                                                e -> String.join(",", e.getValue())));
         props.putAll(m);
         try (final FileOutputStream out = new FileOutputStream(groupFile))
         {
             props.store(out, "test group file");
         }
         return groupFile;
+    }
+
+    private GroupProvider<?> createGroupProvider(final Map<String, Set<String>> objectObjectMap) throws Exception
+    {
+        _groupFile = createTemporaryGroupFile(objectObjectMap);
+
+        final Map<String, Object> providerAttrs = new HashMap<>();
+        final String groupsFile = _groupFile.getAbsolutePath();
+        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
+        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
+        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
+
+        return _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
     }
 }
