@@ -203,19 +203,19 @@ public class FileBasedGroupProviderImpl
 
             if (getState() != State.ACTIVE)
             {
-                throw new IllegalConfigurationException(String.format("Group provider '%s' is not activated. Cannot create a group.", getName()));
+                throw new IllegalConfigurationException(String.format(
+                        "Group provider '%s' is not activated. Cannot create a group.",
+                        getName()));
             }
-
             _groupDatabase.createGroup(groupName);
 
-            Map<String,Object> attrMap = new HashMap<String, Object>();
+            Map<String, Object> attrMap = new HashMap<String, Object>();
             UUID id = UUID.randomUUID();
             attrMap.put(ConfiguredObject.ID, id);
             attrMap.put(ConfiguredObject.NAME, groupName);
             GroupAdapter groupAdapter = new GroupAdapter(attrMap);
             groupAdapter.create();
             return Futures.immediateFuture((C) groupAdapter);
-
         }
         else
         {
@@ -359,16 +359,14 @@ public class FileBasedGroupProviderImpl
             if (childClass == GroupMember.class)
             {
                 String memberName = (String) attributes.get(GroupMember.NAME);
-
                 _groupDatabase.addUserToGroup(memberName, getName());
                 UUID id = UUID.randomUUID();
-                Map<String,Object> attrMap = new HashMap<String, Object>();
-                attrMap.put(GroupMember.ID,id);
+                Map<String, Object> attrMap = new HashMap<String, Object>();
+                attrMap.put(GroupMember.ID, id);
                 attrMap.put(GroupMember.NAME, memberName);
                 GroupMemberAdapter groupMemberAdapter = new GroupMemberAdapter(attrMap);
                 groupMemberAdapter.create();
                 return Futures.immediateFuture((C) groupMemberAdapter);
-
             }
             else
             {
