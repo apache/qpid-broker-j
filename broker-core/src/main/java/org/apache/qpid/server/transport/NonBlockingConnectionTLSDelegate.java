@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDelegate
@@ -61,6 +62,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     private QpidByteBuffer _netInputBuffer;
     private QpidByteBuffer _netOutputBuffer;
     private QpidByteBuffer _applicationBuffer;
+    private final boolean _ignoreInvalidSni;
 
 
     public NonBlockingConnectionTLSDelegate(NonBlockingConnection parent, AmqpPort port)
@@ -79,6 +81,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         _netInputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
         _applicationBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
         _netOutputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
+        _ignoreInvalidSni = port.getIgnoreInvalidSni();
     }
 
     @Override
@@ -97,12 +100,12 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 buffer.flip();
                 if (SSLUtil.isSufficientToDetermineClientSNIHost(buffer))
                 {
-                    String hostName = SSLUtil.getServerNameFromTLSClientHello(buffer);
+                    final SNIHostName hostName = getSNIHostName(buffer);
                     if (hostName != null)
                     {
-                        _parent.setSelectedHost(hostName);
+                        _parent.setSelectedHost(hostName.getAsciiName());
                         SSLParameters sslParameters = _sslEngine.getSSLParameters();
-                        sslParameters.setServerNames(Collections.singletonList(SSLUtil.createSNIHostName(hostName)));
+                        sslParameters.setServerNames(Collections.singletonList(hostName));
                         _sslEngine.setSSLParameters(sslParameters);
                     }
                     _hostChecked = true;
@@ -154,6 +157,26 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             _netInputBuffer.clear();
         }
         return readData;
+    }
+
+    private SNIHostName getSNIHostName(final QpidByteBuffer buffer)
+    {
+        try
+        {
+            final String name = SSLUtil.getServerNameFromTLSClientHello(buffer);
+            if (name != null)
+            {
+                return SSLUtil.createSNIHostName(name);
+            }
+        }
+        catch (ConnectionScopedRuntimeException e)
+        {
+            if (!_ignoreInvalidSni)
+            {
+                throw e;
+            }
+        }
+        return null;
     }
 
     @Override
