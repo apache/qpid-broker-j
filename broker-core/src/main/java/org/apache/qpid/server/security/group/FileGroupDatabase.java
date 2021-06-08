@@ -36,6 +36,7 @@ import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.util.BaseAction;
 import org.apache.qpid.server.util.FileHelper;
@@ -104,8 +105,10 @@ public class FileGroupDatabase implements GroupDatabase
     @Override
     public synchronized void addUserToGroup(String user, String group)
     {
-        Set<String> users = _groupToUserMap.get(keySearch(_groupToUserMap.keySet(), group));
-        if (users == null)
+        final String groupKey = keySearch(_groupToUserMap.keySet(), group);
+        Set<String> groupUsers = _groupToUserMap.get(groupKey);
+        final String userKey = keySearch(_userToGroupMap.keySet(), user);
+        if (groupUsers == null)
         {
             throw new IllegalArgumentException("Group "
                                                + group
@@ -113,16 +116,30 @@ public class FileGroupDatabase implements GroupDatabase
                                                + user
                                                + " to it");
         }
+        else if (groupUsers.contains(userKey))
+        {
+            throw new IllegalConfigurationException(String.format("Group member with name '%s' already exists", user));
+        }
 
-        users.add(keySearch(users, user));
-
-        Set<String> groups = _userToGroupMap.get(keySearch(_userToGroupMap.keySet(), user));
+        final String groupUserKey = keySearch(groupUsers, user);
+        if (!userKey.equals(groupUserKey))
+        {
+            throw new IllegalConfigurationException(String.format(
+                    "Inconsistent data: user  key '%s' is not equal to a group key '%s'",
+                    userKey,
+                    groupKey));
+        }
+        else
+        {
+            groupUsers.add(groupUserKey);
+        }
+        Set<String> groups = _userToGroupMap.get(userKey);
         if (groups == null)
         {
             groups = new ConcurrentSkipListSet<String>();
             _userToGroupMap.put(user, groups);
         }
-        groups.add(keySearch(_groupToUserMap.keySet(), group));
+        groups.add(groupKey);
 
         update();
     }
@@ -174,10 +191,32 @@ public class FileGroupDatabase implements GroupDatabase
     @Override
     public synchronized void createGroup(String group)
     {
-        Set<String> users = new ConcurrentSkipListSet<String>();
-        _groupToUserMap.put(group, users);
+        if (!exists(group, _groupToUserMap.keySet()))
+        {
+            Set<String> users = new ConcurrentSkipListSet<String>();
+            _groupToUserMap.put(group, users);
+            update();
+        }
+        else
+        {
+            throw new IllegalConfigurationException(String.format("Group with name '%s' already exists", group));
+        }
+    }
 
-        update();
+    private boolean exists(final String searchString, final Set<String> set)
+    {
+        if (!_groupProvider.isCaseSensitive())
+        {
+            for (String key : set)
+            {
+                if (key.equalsIgnoreCase(searchString))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return set.contains(searchString);
     }
 
     @Override

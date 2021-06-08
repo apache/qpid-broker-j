@@ -21,6 +21,7 @@ package org.apache.qpid.server.security.group;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -34,6 +35,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -168,20 +171,15 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         assertTrue(groups.contains(MY_GROUP1));
     }
 
-    @Test
+    @Test(expected = IllegalConfigurationException.class)
     public void testGetGroupPrincipalsForUserWhenUserAddedToGroupTheyAreAlreadyInCaseInsensitive() throws Exception
     {
         _util.writeAndSetGroupFile("myGroup.users", USER1);
         _fileGroupDatabase.addUserToGroup(USER1, MY_GROUP);
 
         Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1.toUpperCase());
+        assertThrows("Group with name supers already exists", IllegalConfigurationException.class, ()->_fileGroupDatabase.addUserToGroup(USER1, MY_GROUP));
 
-        assertEquals(1, groups.size());
-        assertTrue(groups.contains(MY_GROUP));
-
-        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
-        assertEquals(1, users.size());
-        assertTrue(users.contains(USER1));
     }
 
     @Test
@@ -358,6 +356,23 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         Set<String> newGroups = newGroupDatabase.getAllGroups();
         assertEquals(1, newGroups.size());
         assertTrue(newGroups.contains(MY_GROUP));
+    }
+
+    @Test
+    public void testDuplicateCreateGroupPersistedToFileCaseInsensitive() throws Exception
+    {
+        _util.writeAndSetGroupFile();
+
+        Set<String> groups = _fileGroupDatabase.getAllGroups();
+        assertTrue(groups.isEmpty());
+
+        _fileGroupDatabase.createGroup(MY_GROUP);
+
+        groups = _fileGroupDatabase.getAllGroups();
+        assertEquals(1, groups.size());
+        assertTrue(groups.contains(MY_GROUP));
+
+        assertThrows("Group with name myGroup already exists", IllegalConfigurationException.class, ()->_fileGroupDatabase.createGroup(MY_GROUP));
     }
 
     @Test
