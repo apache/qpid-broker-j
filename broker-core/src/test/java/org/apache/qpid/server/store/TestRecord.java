@@ -54,7 +54,7 @@ public class TestRecord implements EnqueueRecord, Transaction.DequeueRecord, Mes
     {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((_message == null) ? 0 : new Long(_message.getMessageNumber()).hashCode());
+        result = prime * result + ((_message == null) ? 0 : Long.valueOf(_message.getMessageNumber()).hashCode());
         result = prime * result + ((_queue == null) ? 0 : _queue.getId().hashCode());
         return result;
     }

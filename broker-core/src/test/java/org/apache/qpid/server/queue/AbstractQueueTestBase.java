@@ -183,7 +183,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testRegisterConsumerThenEnqueueMessage() throws Exception
     {
-        ServerMessage messageA = createMessage(new Long(24));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
 
         // Check adding a consumer adds it to the queue
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
@@ -205,7 +205,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         assertFalse("Queue still has consumer", 1 == _queue.getConsumerCount());
         assertFalse("Queue still has active consumer", 1 == _queue.getConsumerCountWithCredit());
 
-        ServerMessage messageB = createMessage(new Long (25));
+        ServerMessage messageB = createMessage(Long.valueOf(25));
         _queue.enqueue(messageB, null, null);
         assertNull(_consumer.getQueueContext());
     }
@@ -213,7 +213,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testEnqueueMessageThenRegisterConsumer() throws Exception, InterruptedException
     {
-        ServerMessage messageA = createMessage(new Long(24));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
         _queue.enqueue(messageA, null, null);
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerOption.ACQUIRES,
@@ -230,8 +230,8 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testEnqueueTwoMessagesThenRegisterConsumer() throws Exception
     {
-        ServerMessage messageA = createMessage(new Long(24));
-        ServerMessage messageB = createMessage(new Long(25));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
+        ServerMessage messageB = createMessage(Long.valueOf(25));
         _queue.enqueue(messageA, null, null);
         _queue.enqueue(messageB, null, null);
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
@@ -254,7 +254,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
-        ServerMessage messageA = createMessage(new Long(24));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
         AMQMessageHeader messageHeader = messageA.getMessageHeader();
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()+20000L);
         _queue.enqueue(messageA, null, null);
@@ -285,7 +285,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
-        ServerMessage messageA = createMessage(new Long(24));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
         AMQMessageHeader messageHeader = messageA.getMessageHeader();
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()+20000L);
         _queue.enqueue(messageA, null, null);
@@ -310,11 +310,11 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
-        ServerMessage messageA = createMessage(new Long(24));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
         AMQMessageHeader messageHeader = messageA.getMessageHeader();
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()+20000L);
         _queue.enqueue(messageA, null, null);
-        ServerMessage messageB = createMessage(new Long(25));
+        ServerMessage messageB = createMessage(Long.valueOf(25));
         _queue.enqueue(messageB, null, null);
 
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
@@ -347,9 +347,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     public void testReleasedMessageIsResentToSubscriber() throws Exception
     {
 
-        ServerMessage messageA = createMessage(new Long(24));
-        ServerMessage messageB = createMessage(new Long(25));
-        ServerMessage messageC = createMessage(new Long(26));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
+        ServerMessage messageB = createMessage(Long.valueOf(25));
+        ServerMessage messageC = createMessage(Long.valueOf(26));
 
 
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
@@ -398,7 +398,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testReleaseMessageThatBecomesExpiredIsNotRedelivered() throws Exception
     {
-        ServerMessage messageA = createMessage(new Long(24));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
         final CountDownLatch sendIndicator = new CountDownLatch(1);
         _consumerTarget = new TestConsumerTarget()
         {
@@ -496,9 +496,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     public void testReleasedOutOfComparableOrderAreRedelivered() throws Exception
     {
 
-        ServerMessage messageA = createMessage(new Long(24));
-        ServerMessage messageB = createMessage(new Long(25));
-        ServerMessage messageC = createMessage(new Long(26));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
+        ServerMessage messageB = createMessage(Long.valueOf(25));
+        ServerMessage messageC = createMessage(Long.valueOf(26));
 
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerOption.ACQUIRES,
@@ -547,8 +547,8 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testReleaseForQueueWithMultipleConsumers() throws Exception
     {
-        ServerMessage messageA = createMessage(new Long(24));
-        ServerMessage messageB = createMessage(new Long(25));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
+        ServerMessage messageB = createMessage(Long.valueOf(25));
 
         TestConsumerTarget target1 = new TestConsumerTarget();
         TestConsumerTarget target2 = new TestConsumerTarget();
@@ -596,7 +596,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testExclusiveConsumer() throws Exception
     {
-        ServerMessage messageA = createMessage(new Long(24));
+        ServerMessage messageA = createMessage(Long.valueOf(24));
         // Check adding an exclusive consumer adds it to the queue
 
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
@@ -682,11 +682,11 @@ abstract class AbstractQueueTestBase extends UnitTestBase
             {
                 assertFalse("Message with id " + dequeueMessageIndex
                                    + " was dequeued and should not be returned by method getMessagesOnTheQueue!",
-                                   new Long(expectedId).equals(id));
+                                   Long.valueOf(expectedId).equals(id));
                 expectedId++;
             }
             assertEquals("Expected message with id " + expectedId + " but got message with id " + id,
-                                new Long(expectedId),
+                                Long.valueOf(expectedId),
                                 id);
             expectedId++;
         }
@@ -734,11 +734,11 @@ abstract class AbstractQueueTestBase extends UnitTestBase
             {
                 assertFalse("Message with id " + dequeueMessageIndex
                                    + " was dequeued and should not be returned by method getMessagesOnTheQueue!",
-                                   new Long(expectedId).equals(id));
+                                   Long.valueOf(expectedId).equals(id));
                 expectedId++;
             }
             assertEquals("Expected message with id " + expectedId + " but got message with id " + id,
-                                new Long(expectedId),
+                                Long.valueOf(expectedId),
                                 id);
             expectedId++;
         }
@@ -780,10 +780,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         _queue.setAttributes(Collections.<String, Object>singletonMap(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,
                                                                       Integer.valueOf(2)));
 
-        _queue.enqueue(createMessage(new Long(24)), null, null);
+        _queue.enqueue(createMessage(Long.valueOf(24)), null, null);
         verifyNoInteractions(listener);
 
-        _queue.enqueue(createMessage(new Long(25)), null, null);
+        _queue.enqueue(createMessage(Long.valueOf(25)), null, null);
 
         verify(listener, atLeastOnce()).notifyClients(eq(NotificationCheck.MESSAGE_COUNT_ALERT), eq(_queue), contains("Maximum count on queue threshold"));
     }
@@ -793,9 +793,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     {
         QueueNotificationListener  listener = mock(QueueNotificationListener .class);
 
-        _queue.enqueue(createMessage(new Long(24)), null, null);
-        _queue.enqueue(createMessage(new Long(25)), null, null);
-        _queue.enqueue(createMessage(new Long(26)), null, null);
+        _queue.enqueue(createMessage(Long.valueOf(24)), null, null);
+        _queue.enqueue(createMessage(Long.valueOf(25)), null, null);
+        _queue.enqueue(createMessage(Long.valueOf(26)), null, null);
 
         _queue.setNotificationListener(listener);
         _queue.setAttributes(Collections.<String, Object>singletonMap(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,
@@ -901,13 +901,13 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
 
-        ServerMessage message = createMessage(new Long(24), 50, 50);
+        ServerMessage message = createMessage(Long.valueOf(24), 50, 50);
         when(message.getArrivalTime()).thenReturn(10l);
         queue.enqueue(message, null, null);
-        message = createMessage(new Long(25), 50, 50);
+        message = createMessage(Long.valueOf(25), 50, 50);
         when(message.getArrivalTime()).thenReturn(50l);
         queue.enqueue(message, null, null);
-        message = createMessage(new Long(26), 50, 50);
+        message = createMessage(Long.valueOf(26), 50, 50);
         when(message.getArrivalTime()).thenReturn(200l);
         queue.enqueue(message, null, null);
 
@@ -928,19 +928,19 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
 
-        ServerMessage message = createMessage(new Long(24), 10, 10);
+        ServerMessage message = createMessage(Long.valueOf(24), 10, 10);
         when(message.getArrivalTime()).thenReturn(10l);
         queue.enqueue(message, null, null);
-        message = createMessage(new Long(25), 10, 10);
+        message = createMessage(Long.valueOf(25), 10, 10);
         when(message.getArrivalTime()).thenReturn(50l);
         queue.enqueue(message, null, null);
-        message = createMessage(new Long(26), 10, 10);
+        message = createMessage(Long.valueOf(26), 10, 10);
         when(message.getArrivalTime()).thenReturn(200l);
         queue.enqueue(message, null, null);
-        message = createMessage(new Long(27), 10, 10);
+        message = createMessage(Long.valueOf(27), 10, 10);
         when(message.getArrivalTime()).thenReturn(500l);
         queue.enqueue(message, null, null);
-        message = createMessage(new Long(28), 10, 10);
+        message = createMessage(Long.valueOf(28), 10, 10);
         when(message.getArrivalTime()).thenReturn(1000l);
         queue.enqueue(message, null, null);
 
@@ -962,23 +962,23 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
 
-        ServerMessage message = createMessage(new Long(24), 10, 10);
+        ServerMessage message = createMessage(Long.valueOf(24), 10, 10);
         when(message.getArrivalTime()).thenReturn(10l);
         queue.enqueue(message, null, null);
-        message = createMessage(new Long(25), 10, 10);
+        message = createMessage(Long.valueOf(25), 10, 10);
         when(message.getArrivalTime()).thenReturn(50l);
         queue.enqueue(message, null, null);
-        message = createMessage(new Long(26), 20, 10);
+        message = createMessage(Long.valueOf(26), 20, 10);
         when(message.getArrivalTime()).thenReturn(200l);
         queue.enqueue(message, null, null);
-        message = createMessage(new Long(27), 20, 10);
+        message = createMessage(Long.valueOf(27), 20, 10);
         when(message.getArrivalTime()).thenReturn(200l);
         queue.enqueue(message, null, null);
 
         assertEquals("Wrong number of messages in queue", (long) 4, (long) queue.getQueueDepthMessages());
         assertEquals("Wrong size of messages in queue", (long) 100, queue.getQueueDepthBytes());
 
-        message = createMessage(new Long(27), 20, 10);
+        message = createMessage(Long.valueOf(27), 20, 10);
         when(message.getArrivalTime()).thenReturn(500l);
         queue.enqueue(message, null, null);
 
@@ -1002,7 +1002,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         ServerMessage message;
         RoutingResult result;
 
-        message = createMessage(new Long(27), 20, 10);
+        message = createMessage(Long.valueOf(27), 20, 10);
         result = queue.route(message, message.getInitialRoutingAddress(), null);
         assertTrue("Result should include not accepting route", result.isRejected());
 
@@ -1015,7 +1015,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10);
         queue.setAttributes(attributes);
 
-        message = createMessage(new Long(id), headerSize, payloadSize);
+        message = createMessage(Long.valueOf(id), headerSize, payloadSize);
         result = queue.route(message, message.getInitialRoutingAddress(), null);
         assertTrue("Result should include not accepting route", result.isRejected());
     }
@@ -1546,7 +1546,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     protected ServerMessage createMessage(Long id, final int headerSize, final int payloadSize)
     {
         ServerMessage message = createMessage(id);
-        when(message.getSizeIncludingHeader()).thenReturn(new Long(headerSize + payloadSize));
+        when(message.getSizeIncludingHeader()).thenReturn(Long.valueOf(headerSize + payloadSize));
         return message;
     }
 

@@ -123,7 +123,7 @@ public class JsonHandlerTest extends UnitTestBase
         assertEquals("Unexpected generator value", "first", generator.getValue());
         for (int i = 0; i < 10; i++)
         {
-            assertEquals("Unexpected generator value", new Integer(i), generator.getValue());
+            assertEquals("Unexpected generator value", Integer.valueOf(i), generator.getValue());
         }
 
         String newJson =_jsonHandler.marshall(unmarshalledCommand);

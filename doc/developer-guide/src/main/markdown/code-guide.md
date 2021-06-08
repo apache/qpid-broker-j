@@ -447,7 +447,7 @@ This section gives general guidance on the use of exceptions when programming in
     ```java
     try
     {
-        propertySet.setProperty("thingy", new Integer(10));
+        propertySet.setProperty("thingy", Integer.valueOf(10));
     }
     catch (UnknownPropertyException ignore)
     {

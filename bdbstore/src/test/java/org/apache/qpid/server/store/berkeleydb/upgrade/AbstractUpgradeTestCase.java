@@ -177,7 +177,7 @@ public abstract class AbstractUpgradeTestCase extends UnitTestBase
             @Override
             public Long call(Database sourceDatabase, Database targetDatabase, Transaction transaction)
             {
-                return new Long(sourceDatabase.count());
+                return Long.valueOf(sourceDatabase.count());
 
             }
         };

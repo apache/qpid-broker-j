@@ -577,7 +577,7 @@ public class MultiNodeTest extends GroupJmsTestBase
                         LOGGER.info("Active connection port {}", activeBrokerPort);
 
                         List<Integer> inactivePorts = new ArrayList<>(ports);
-                        inactivePorts.remove(new Integer(activeBrokerPort));
+                        inactivePorts.remove(Integer.valueOf(activeBrokerPort));
 
                         final CountDownLatch latch = new CountDownLatch(inactivePorts.size());
                         for (int port : inactivePorts)
@@ -718,14 +718,14 @@ public class MultiNodeTest extends GroupJmsTestBase
 
             Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(activeBrokerPort);
             assertEquals("Broker has unexpected quorum override",
-                         new Integer(0),
+                         Integer.valueOf(0),
                          attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
             getBrokerAdmin().setNodeAttributes(activeBrokerPort,
                                                Collections.singletonMap(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1));
 
             attributes = getBrokerAdmin().getNodeAttributes(activeBrokerPort);
             assertEquals("Broker has unexpected quorum override",
-                         new Integer(1),
+                         Integer.valueOf(1),
                          attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
 
             _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);

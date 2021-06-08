@@ -54,9 +54,9 @@ public class RangePropertyValueTest extends UnitTestBase
     @Test
     public void testGetters()
     {
-        assertEquals("Unexpected upper boundary", new Double(10.0), (Object) _generator.getUpper());
-        assertEquals("Unexpected lower boundary", new Double(0.0), (Object) _generator.getLower());
-        assertEquals("Unexpected step", new Double(2.0), (Object) _generator.getStep());
+        assertEquals("Unexpected upper boundary", Double.valueOf(10.0), (Object) _generator.getUpper());
+        assertEquals("Unexpected lower boundary", Double.valueOf(0.0), (Object) _generator.getLower());
+        assertEquals("Unexpected step", Double.valueOf(2.0), (Object) _generator.getStep());
         assertEquals("Unexpected type", "double", _generator.getType());
         assertTrue("Unexpected cyclic", _generator.isCyclic());
     }

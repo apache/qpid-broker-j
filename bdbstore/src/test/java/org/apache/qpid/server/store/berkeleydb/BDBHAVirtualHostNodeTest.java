@@ -829,7 +829,7 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
             Thread.sleep(100l);
         }
         assertEquals("Last transaction was not replicated",
-                            new Long(remote.getLastKnownReplicationTransactionId()),
+                            Long.valueOf(remote.getLastKnownReplicationTransactionId()),
                             node1.getLastKnownReplicationTransactionId());
     }
 

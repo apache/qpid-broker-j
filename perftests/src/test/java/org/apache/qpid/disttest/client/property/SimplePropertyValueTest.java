@@ -18,31 +18,17 @@
  */
 package org.apache.qpid.disttest.client.property;
 
-import org.junit.Assert;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import org.junit.Test;
 
 public class SimplePropertyValueTest extends UnitTestBase
 {
     @Test
     public void testGetValue()
     {
-        SimplePropertyValue value = new SimplePropertyValue(new Integer(1));
-        assertEquals("Unexpected value", new Integer(1), value.getValue());
+        SimplePropertyValue value = new SimplePropertyValue(Integer.valueOf(1));
+        assertEquals("Unexpected value", Integer.valueOf(1), value.getValue());
     }
 }
