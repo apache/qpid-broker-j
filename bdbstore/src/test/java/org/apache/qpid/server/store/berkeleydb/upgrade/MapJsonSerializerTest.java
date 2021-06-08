@@ -46,8 +46,8 @@ public class MapJsonSerializerTest extends UnitTestBase
     {
         Map<String, Object> testMap = new HashMap<>();
         testMap.put("string", "Test String");
-        testMap.put("integer", new Integer(10));
-        testMap.put("long", new Long(Long.MAX_VALUE));
+        testMap.put("integer", Integer.valueOf(10));
+        testMap.put("long", Long.valueOf(Long.MAX_VALUE));
         testMap.put("boolean", Boolean.TRUE);
 
         String jsonString = _serializer.serialize(testMap);

@@ -125,7 +125,7 @@ public class ConstantExpression<T> implements Expression<T>
 
     public static <E> ConstantExpression<E> createFloat(String text)
     {
-        Number value = new Double(text);
+        Number value = Double.valueOf(text);
 
         return new ConstantExpression<>(value);
     }

@@ -53,8 +53,8 @@ public class RandomPropertyValueTest extends UnitTestBase
     @Test
     public void testGetters()
     {
-        assertEquals("Unexpected upper boundary", new Double(20.0), (Object) _generator.getUpper());
-        assertEquals("Unexpected lower boundary", new Double(10.0), (Object) _generator.getLower());
+        assertEquals("Unexpected upper boundary", Double.valueOf(20.0), (Object) _generator.getUpper());
+        assertEquals("Unexpected lower boundary", Double.valueOf(10.0), (Object) _generator.getLower());
         assertEquals("Unexpected type", "double", _generator.getType());
     }
 

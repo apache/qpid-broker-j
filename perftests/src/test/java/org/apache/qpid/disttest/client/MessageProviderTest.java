@@ -105,10 +105,10 @@ public class MessageProviderTest extends UnitTestBase
     {
         Map<String, PropertyValue> properties = new HashMap<String, PropertyValue>();
         properties.put("test1", new SimplePropertyValue("testValue1"));
-        properties.put("test2", new SimplePropertyValue(new Integer(1)));
-        properties.put("priority", new SimplePropertyValue(new Integer(2)));
+        properties.put("test2", new SimplePropertyValue(Integer.valueOf(1)));
+        properties.put("priority", new SimplePropertyValue(Integer.valueOf(2)));
         List<PropertyValue> listItems = new ArrayList<PropertyValue>();
-        listItems.add(new SimplePropertyValue(new Double(2.0)));
+        listItems.add(new SimplePropertyValue(Double.valueOf(2.0)));
         ListPropertyValue list = new ListPropertyValue();
         list.setItems(listItems);
         properties.put("test3", list);

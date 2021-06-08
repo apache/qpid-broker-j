@@ -158,7 +158,7 @@ public enum AMQType
         {
             BigDecimal bd = (BigDecimal) value;
 
-            byte places = new Integer(bd.scale()).byteValue();
+            byte places = Integer.valueOf(bd.scale()).byteValue();
 
             int unscaled = bd.intValue();
 

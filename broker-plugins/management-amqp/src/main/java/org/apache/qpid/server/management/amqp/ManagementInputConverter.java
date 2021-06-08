@@ -93,27 +93,27 @@ class ManagementInputConverter
     {
         if (clazz == Byte.class || clazz == Byte.TYPE)
         {
-            return (N) new Byte(number.byteValue());
+            return (N) Byte.valueOf(number.byteValue());
         }
         else if (clazz == Short.class || clazz == Short.TYPE)
         {
-            return (N) new Short(number.shortValue());
+            return (N) Short.valueOf(number.shortValue());
         }
         else if (clazz == Integer.class || clazz == Integer.TYPE)
         {
-            return (N) new Integer(number.intValue());
+            return (N) Integer.valueOf(number.intValue());
         }
         else if (clazz == Long.class || clazz == Long.TYPE)
         {
-            return (N) new Long(number.longValue());
+            return (N) Long.valueOf(number.longValue());
         }
         else if (clazz == Float.class || clazz == Float.TYPE)
         {
-            return (N) new Float(number.floatValue());
+            return (N) Float.valueOf(number.floatValue());
         }
         else if (clazz == Double.class || clazz == Double.TYPE)
         {
-            return (N) new Double(number.doubleValue());
+            return (N) Double.valueOf(number.doubleValue());
         }
         else
         {
