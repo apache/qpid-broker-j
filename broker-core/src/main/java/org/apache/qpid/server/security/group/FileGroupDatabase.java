@@ -106,15 +106,13 @@ public class FileGroupDatabase implements GroupDatabase
     public synchronized void addUserToGroup(String user, String group)
     {
         final String groupKey = keySearch(_groupToUserMap.keySet(), group);
-        Set<String> groupUsers = _groupToUserMap.get(groupKey);
+        final Set<String> groupUsers = _groupToUserMap.get(groupKey);
         final String userKey = keySearch(_userToGroupMap.keySet(), user);
         if (groupUsers == null)
         {
-            throw new IllegalArgumentException("Group "
-                                               + group
-                                               + " does not exist so could not add "
-                                               + user
-                                               + " to it");
+            throw new IllegalArgumentException(String.format("Group %s does not exist so could not add %s to it",
+                                                             group,
+                                                             user));
         }
         else if (groupUsers.contains(userKey))
         {
@@ -136,7 +134,7 @@ public class FileGroupDatabase implements GroupDatabase
         Set<String> groups = _userToGroupMap.get(userKey);
         if (groups == null)
         {
-            groups = new ConcurrentSkipListSet<String>();
+            groups = new ConcurrentSkipListSet<>();
             _userToGroupMap.put(user, groups);
         }
         groups.add(groupKey);
@@ -193,7 +191,7 @@ public class FileGroupDatabase implements GroupDatabase
     {
         if (!exists(group, _groupToUserMap.keySet()))
         {
-            Set<String> users = new ConcurrentSkipListSet<String>();
+            Set<String> users = new ConcurrentSkipListSet<>();
             _groupToUserMap.put(group, users);
             update();
         }
@@ -274,7 +272,7 @@ public class FileGroupDatabase implements GroupDatabase
 
                 if (groupsForThisUser == null)
                 {
-                    groupsForThisUser = new ConcurrentSkipListSet<String>();
+                    groupsForThisUser = new ConcurrentSkipListSet<>();
                     _userToGroupMap.put(userName, groupsForThisUser);
                 }
 
@@ -322,7 +320,7 @@ public class FileGroupDatabase implements GroupDatabase
     private ConcurrentSkipListSet<String> buildUserSetFromCommaSeparateValue(String userString)
     {
         String[] users = userString.split(",");
-        final ConcurrentSkipListSet<String> userSet = new ConcurrentSkipListSet<String>();
+        final ConcurrentSkipListSet<String> userSet = new ConcurrentSkipListSet<>();
         for (String user : users)
         {
             final String trimmed = user.trim();

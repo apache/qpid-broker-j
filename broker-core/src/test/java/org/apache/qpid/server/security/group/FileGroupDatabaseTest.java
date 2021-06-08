@@ -222,7 +222,6 @@ public class FileGroupDatabaseTest extends UnitTestBase
     {
         _util.writeAndSetGroupFile("myGroup.users", USER1);
         _fileGroupDatabase.addUserToGroup(USER1, MY_GROUP);
-
     }
 
     @Test
