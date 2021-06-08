@@ -33,6 +33,7 @@ import java.util.Date;
 import javax.security.auth.Subject;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -101,6 +102,7 @@ public class ConnectionPrincipalStatisticsRegistryImplTest extends UnitTestBase
         assertThat(_statisticsRegistry.getConnectionFrequency(_authorizedPrincipal), is(equalTo(0)));
     }
 
+    @Ignore
     @Test
     public void getConnectionFrequencyAfterExpirationOfFrequencyPeriod() throws InterruptedException
     {
