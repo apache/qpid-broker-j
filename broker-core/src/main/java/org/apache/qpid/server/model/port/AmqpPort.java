@@ -64,6 +64,12 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     @ManagedContextDefault(name = PORT_MAX_OPEN_CONNECTIONS)
     int DEFAULT_MAX_OPEN_CONNECTIONS = -1;
 
+    String PORT_IGNORE_INVALID_SNI = "qpid.port.amqp.ignoreInvalidSni";
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = PORT_IGNORE_INVALID_SNI)
+    boolean DEFAULT_PORT_IGNORE_INVALID_SNI = false;
+
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = PORT_AMQP_THREAD_POOL_SIZE)
     long DEFAULT_PORT_AMQP_THREAD_POOL_SIZE = 8;
@@ -158,6 +164,9 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 
     @ManagedAttribute( defaultValue = "${" + PORT_MAX_OPEN_CONNECTIONS + "}" )
     int getMaxOpenConnections();
+
+    @ManagedAttribute( defaultValue = "${" + PORT_IGNORE_INVALID_SNI + "}" )
+    boolean getIgnoreInvalidSni();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT,
             label = "Open Connections",

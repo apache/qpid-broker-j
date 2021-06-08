@@ -86,6 +86,9 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     private int _maxOpenConnections;
 
     @ManagedAttributeField
+    private boolean _ignoreInvalidSni;
+
+    @ManagedAttributeField
     private int _threadPoolSize;
 
     @ManagedAttributeField
@@ -146,6 +149,12 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public int getMaxOpenConnections()
     {
         return _maxOpenConnections;
+    }
+
+    @Override
+    public boolean getIgnoreInvalidSni()
+    {
+        return _ignoreInvalidSni;
     }
 
     @Override

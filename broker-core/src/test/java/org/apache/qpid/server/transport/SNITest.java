@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -32,9 +33,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
@@ -42,7 +44,8 @@ import javax.net.ssl.X509TrustManager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -136,40 +139,46 @@ public class SNITest extends UnitTestBase
     @Test
     public void testValidCertChosen() throws Exception
     {
-        performTest(true, "fooinvalid", "foo", _fooValid);
+        performTest(true, "fooinvalid", "foo", _fooValid, false);
     }
 
     @Test
     public void testMatchCertChosenEvenIfInvalid() throws Exception
     {
-        performTest(true, "fooinvalid", "bar", _barInvalid);
+        performTest(true, "fooinvalid", "bar", _barInvalid, false);
     }
 
     @Test
     public void testDefaultCertChose() throws Exception
     {
-        performTest(true, "fooinvalid", null, _fooInvalid);
+        performTest(true, "fooinvalid", null, _fooInvalid, false);
     }
 
     @Test
     public void testMatchingCanBeDisabled() throws Exception
     {
-        performTest(false, "fooinvalid", "foo", _fooInvalid);
+        performTest(false, "fooinvalid", "foo", _fooInvalid, false);
     }
 
-    @Test(expected = ConnectionScopedRuntimeException.class)
+    @Test(expected = SSLPeerUnverifiedException.class)
     public void testInvalidHostname() throws Exception
     {
-        performTest(false, "fooinvalid", "_foo", _fooInvalid);
+        performTest(false, "fooinvalid", "_foo", _fooInvalid, false);
+    }
+
+    @Test
+    public void testBypassInvalidSniHostname() throws Exception
+    {
+        performTest(false, "foovalid", "_foo", _fooValid,true);
     }
 
 
     private void performTest(final boolean useMatching,
                              final String defaultAlias,
                              final String sniHostName,
-                             final KeyCertificatePair expectedCert) throws Exception
+                             final KeyCertificatePair expectedCert, final boolean ignoreInvalidSni) throws Exception
     {
-            doBrokerStartup(useMatching, defaultAlias);
+            doBrokerStartup(useMatching, defaultAlias, ignoreInvalidSni);
             SSLContext context = SSLUtil.tryGetSSLContext();
             context.init(null,
                          new TrustManager[]
@@ -201,7 +210,7 @@ public class SNITest extends UnitTestBase
                 SSLParameters parameters = socket.getSSLParameters();
                 if (sniHostName != null)
                 {
-                    parameters.setServerNames(Collections.singletonList(SSLUtil.createSNIHostName(sniHostName)));
+                    parameters.setServerNames(Collections.singletonList(new TestSNIHostName(sniHostName)));
                 }
                 socket.setSSLParameters(parameters);
                 InetSocketAddress address = new InetSocketAddress("localhost", _boundPort);
@@ -213,7 +222,7 @@ public class SNITest extends UnitTestBase
             }
     }
 
-    private void doBrokerStartup(boolean useMatching, String defaultAlias) throws Exception
+    private void doBrokerStartup(boolean useMatching, String defaultAlias, final boolean ignoreInvalidSni) throws Exception
     {
         final File initialConfiguration = createInitialContext();
         _brokerWork = TestFileUtils.createTestDirectory("qpid-work", true);
@@ -257,6 +266,7 @@ public class SNITest extends UnitTestBase
         portAttr.put(Port.PORT, 0);
         portAttr.put(Port.AUTHENTICATION_PROVIDER, authProvider);
         portAttr.put(Port.KEY_STORE, keyStore);
+        portAttr.put(Port.CONTEXT, Collections.singletonMap(AmqpPort.PORT_IGNORE_INVALID_SNI, String.valueOf(ignoreInvalidSni)));
 
         final Port<?> port = _broker.createChild(Port.class, portAttr);
 
@@ -273,5 +283,13 @@ public class SNITest extends UnitTestBase
         ObjectMapper mapper = new ObjectMapper();
         String config = mapper.writeValueAsString(initialConfig);
         return TestFileUtils.createTempFile(this, ".initial-config.json", config);
+    }
+
+    private static final class TestSNIHostName extends SNIServerName
+    {
+        public TestSNIHostName(String hostname)
+        {
+            super(0, hostname.getBytes(StandardCharsets.US_ASCII));
+        }
     }
 }
