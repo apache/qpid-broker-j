@@ -78,6 +78,21 @@
     </dependency>
   </dependencies>
 
+  <repositories>
+    <!-- For the BDB JE dependency -->
+    <repository>
+      <id>oracle.releases</id>
+      <url>https://download.oracle.com/maven</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
   <build>
     <resources>
       <resource>
