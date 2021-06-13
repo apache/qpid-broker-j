@@ -165,8 +165,8 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     @ManagedAttribute( defaultValue = "${" + PORT_MAX_OPEN_CONNECTIONS + "}" )
     int getMaxOpenConnections();
 
-    @ManagedAttribute( defaultValue = "${" + PORT_IGNORE_INVALID_SNI + "}" )
-    boolean getIgnoreInvalidSni();
+    @DerivedAttribute
+    boolean isIgnoreInvalidSni();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT,
             label = "Open Connections",

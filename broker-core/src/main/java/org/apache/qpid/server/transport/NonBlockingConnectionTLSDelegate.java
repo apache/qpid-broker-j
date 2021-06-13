@@ -81,7 +81,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         _netInputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
         _applicationBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
         _netOutputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
-        _ignoreInvalidSni = port.getIgnoreInvalidSni();
+        _ignoreInvalidSni = port.isIgnoreInvalidSni();
     }
 
     @Override

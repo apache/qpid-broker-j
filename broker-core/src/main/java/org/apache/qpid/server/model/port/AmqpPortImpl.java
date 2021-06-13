@@ -86,9 +86,6 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     private int _maxOpenConnections;
 
     @ManagedAttributeField
-    private boolean _ignoreInvalidSni;
-
-    @ManagedAttributeField
     private int _threadPoolSize;
 
     @ManagedAttributeField
@@ -112,6 +109,8 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     private volatile int _tlsSessionTimeout;
     private volatile int _tlsSessionCacheSize;
     private volatile List<ConnectionPropertyEnricher> _connectionPropertyEnrichers;
+    private volatile boolean _ignoreInvalidSni;
+
 
     @ManagedObjectFactoryConstructor
     public AmqpPortImpl(Map<String, Object> attributes, Container<?> container)
@@ -152,7 +151,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     }
 
     @Override
-    public boolean getIgnoreInvalidSni()
+    public boolean isIgnoreInvalidSni()
     {
         return _ignoreInvalidSni;
     }
@@ -202,6 +201,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         _heartBeatDelay = getContextValue(Integer.class, AmqpPort.HEART_BEAT_DELAY);
         _tlsSessionTimeout = getContextValue(Integer.class, AmqpPort.TLS_SESSION_TIMEOUT);
         _tlsSessionCacheSize = getContextValue(Integer.class, AmqpPort.TLS_SESSION_CACHE_SIZE);
+        _ignoreInvalidSni = getContextValue(Boolean.class, AmqpPort.PORT_IGNORE_INVALID_SNI);
 
         @SuppressWarnings("unchecked")
         List<String> configurationPropertyEnrichers = getContextValue(List.class, AmqpPort.CONNECTION_PROPERTY_ENRICHERS);
