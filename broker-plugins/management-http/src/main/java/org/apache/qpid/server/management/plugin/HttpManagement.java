@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -53,12 +52,14 @@ import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.OptionalSslConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -87,7 +88,6 @@ import org.apache.qpid.server.management.plugin.filter.InteractiveAuthentication
 import org.apache.qpid.server.management.plugin.filter.LoggingFilter;
 import org.apache.qpid.server.management.plugin.filter.RedirectFilter;
 import org.apache.qpid.server.management.plugin.filter.RewriteRequestForUncompressedJavascript;
-import org.apache.qpid.server.management.plugin.portunification.TlsOrPlainConnectionFactory;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
 import org.apache.qpid.server.management.plugin.servlet.RootServlet;
 import org.apache.qpid.server.management.plugin.servlet.ContentServlet;
@@ -574,15 +574,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         else if (transports.contains(Transport.SSL))
         {
             sslContextFactory = createSslContextFactory(port);
-            ConnectionFactory sslConnectionFactory;
+            ConnectionFactory sslConnectionFactory =
+                    new SslConnectionFactory(sslContextFactory, httpConnectionFactory.getProtocol());
             if (port.getTransports().contains(Transport.TCP))
             {
-                sslConnectionFactory =
-                        new TlsOrPlainConnectionFactory(sslContextFactory, httpConnectionFactory.getProtocol());
-            }
-            else
-            {
-                sslConnectionFactory = new SslConnectionFactory(sslContextFactory, httpConnectionFactory.getProtocol());
+                sslConnectionFactory = new OptionalSslConnectionFactory((SslConnectionFactory)sslConnectionFactory, HttpVersion.HTTP_1_1.asString());
             }
             connectionFactories = new ConnectionFactory[]{sslConnectionFactory, httpConnectionFactory};
         }
@@ -1072,7 +1068,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private static class ConnectionTrackingListener implements Connection.Listener
     {
-        private final Map<Connection, SettableFuture<Void>> _closeFutures = new HashMap<>();
+        private final Map<Connection, SettableFuture<Void>> _closeFutures = new ConcurrentHashMap<>();
 
         @Override
         public void onOpened(final Connection connection)
