@@ -150,6 +150,7 @@ public class AttachTest extends BrokerAdminUsingTestBase
             assertThat(responseAttach.getName(), is(notNullValue()));
             assertThat(responseAttach.getHandle().longValue(), is(both(greaterThanOrEqualTo(0L)).and(lessThan(UnsignedInteger.MAX_VALUE.longValue()))));
             assertThat(responseAttach.getRole(), is(Role.SENDER));
+            assertThat(responseAttach.getInitialDeliveryCount(), is((UnsignedInteger.ZERO)));
             assertThat(responseAttach.getSource(), is(nullValue()));
             assertThat(responseAttach.getTarget(), is(nullValue()));
 

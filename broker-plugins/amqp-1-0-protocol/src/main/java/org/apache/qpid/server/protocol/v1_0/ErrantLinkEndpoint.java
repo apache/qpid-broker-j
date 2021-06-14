@@ -90,6 +90,7 @@ public class ErrantLinkEndpoint<S extends BaseSource, T extends BaseTarget> impl
         attachToSend.setName(_link.getName());
         attachToSend.setRole(getRole());
         attachToSend.setHandle(getLocalHandle());
+        attachToSend.setInitialDeliveryCount(UnsignedInteger.ZERO);
         attachToSend.setSource(getSource());
         attachToSend.setTarget(getTarget());
         _session.sendAttach(attachToSend);
