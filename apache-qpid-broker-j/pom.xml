@@ -28,6 +28,7 @@
 
   <properties>
     <dependency-change-verification>true</dependency-change-verification>
+    <bdb-repo-enabled>true</bdb-repo-enabled>
   </properties>
 
   <dependencies>

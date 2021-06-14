@@ -159,6 +159,8 @@
     <bcpkix-version>1.68</bcpkix-version>
     <logback-gelf-version>3.0.0</logback-gelf-version>
     <prometheus-client-version>0.9.0</prometheus-client-version>
+
+    <bdb-repo-enabled>false</bdb-repo-enabled>
   </properties>
 
   <modules>
@@ -1106,6 +1108,21 @@
 
     </plugins>
   </build>
+
+  <repositories>
+    <!-- For the BDB JE dependency -->
+    <repository>
+      <id>oracle.releases</id>
+      <url>https://download.oracle.com/maven</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>${bdb-repo-enabled}</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
   <reporting>
     <plugins>
