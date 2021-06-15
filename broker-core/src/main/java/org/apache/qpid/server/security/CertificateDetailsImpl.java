@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.qpid.server.model.ManagedAttributeValue;
 
@@ -35,9 +36,18 @@ public class CertificateDetailsImpl implements CertificateDetails, ManagedAttrib
 {
     private final X509Certificate _x509cert;
 
-    public CertificateDetailsImpl(final X509Certificate x509cert)
+    private final String _alias;
+
+    public CertificateDetailsImpl(X509Certificate x509cert)
     {
-        _x509cert = x509cert;
+        this(x509cert, null);
+    }
+
+    public CertificateDetailsImpl(X509Certificate x509cert, String alias)
+    {
+        super();
+        _x509cert = Objects.requireNonNull(x509cert);
+        _alias = alias;
     }
 
     @Override
@@ -107,5 +117,11 @@ public class CertificateDetailsImpl implements CertificateDetails, ManagedAttrib
     public Date getValidUntil()
     {
         return _x509cert.getNotAfter();
+    }
+
+    @Override
+    public String getAlias()
+    {
+        return _alias;
     }
 }
