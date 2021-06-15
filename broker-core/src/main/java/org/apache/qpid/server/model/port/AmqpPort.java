@@ -172,7 +172,7 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
             label = "Open Connections",
             description = "Current number of connections made through this port",
             metricName = "open_connections_total")
-    int getConnectionCount();
+    long getConnectionCount();
 
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT,
             label = "Total Connections",
@@ -204,11 +204,9 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
                                     + " 0 disables.")
     int getHeartbeatDelay();
 
-    boolean canAcceptNewConnection(final SocketAddress remoteSocketAddress);
+    boolean acceptNewConnectionAndIncrementCount(final SocketAddress remoteSocketAddress);
 
-    int incrementConnectionCount();
-
-    int decrementConnectionCount();
+    long decrementConnectionCount();
 
     int getNetworkBufferSize();
 

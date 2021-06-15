@@ -83,9 +83,8 @@ public class MultiVersionProtocolEngineFactory implements ProtocolEngineFactory
     @Override
     public MultiVersionProtocolEngine newProtocolEngine(final SocketAddress remoteSocketAddress)
     {
-        if(_port.canAcceptNewConnection(remoteSocketAddress))
+        if(_port.acceptNewConnectionAndIncrementCount(remoteSocketAddress))
         {
-            _port.incrementConnectionCount();
             return new MultiVersionProtocolEngine(_broker,
                                                   _supported, _defaultSupportedReply, _port, _transport,
                                                   ID_GENERATOR.getAndIncrement(),

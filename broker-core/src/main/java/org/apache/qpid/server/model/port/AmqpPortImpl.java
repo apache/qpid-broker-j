@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.net.ssl.SSLContext;
@@ -91,7 +90,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     @ManagedAttributeField
     private int _numberOfSelectors;
 
-    private final AtomicInteger _connectionCount = new AtomicInteger();
+    private final AtomicLong _connectionCount = new AtomicLong();
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
     private final AtomicLong _totalConnectionCount = new AtomicLong();
 
@@ -551,69 +550,66 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     }
 
     @Override
-    public int incrementConnectionCount()
+    public long decrementConnectionCount()
     {
-        int openConnections = _connectionCount.incrementAndGet();
-        _totalConnectionCount.incrementAndGet();
-        int maxOpenConnections = getMaxOpenConnections();
-        if(maxOpenConnections > 0
-           && openConnections > (maxOpenConnections * _connectionWarnCount) / 100
-           && _connectionCountWarningGiven.compareAndSet(false, true))
+        final long maxOpenConnections = getMaxOpenConnections();
+        final long openConnections = _connectionCount.decrementAndGet();
+
+        if (maxOpenConnections > 0L
+                && openConnections < (maxOpenConnections * square(_connectionWarnCount)) / 10000L)
         {
-            _container.getEventLogger().message(new PortLogSubject(this),
-                                                PortMessages.CONNECTION_COUNT_WARN(openConnections,
-                                                                                _connectionWarnCount,
-                                                                                maxOpenConnections));
+            _connectionCountWarningGiven.compareAndSet(true, false);
         }
-        return openConnections;
-    }
-
-    @Override
-    public int decrementConnectionCount()
-    {
-        int openConnections = _connectionCount.decrementAndGet();
-        int maxOpenConnections = getMaxOpenConnections();
-
-        if(maxOpenConnections > 0
-           && openConnections < (maxOpenConnections * square(_connectionWarnCount)) / 10000)
-        {
-           _connectionCountWarningGiven.compareAndSet(true,false);
-        }
-
 
         return openConnections;
     }
 
-    private static int square(int val)
+    private static long square(long val)
     {
         return val * val;
     }
 
     @Override
-    public boolean canAcceptNewConnection(final SocketAddress remoteSocketAddress)
+    public boolean acceptNewConnectionAndIncrementCount(final SocketAddress remoteSocketAddress)
     {
-        String addressString = remoteSocketAddress.toString();
+        final String addressString = remoteSocketAddress.toString();
         if (_closingOrDeleting.get())
         {
             _container.getEventLogger().message(new PortLogSubject(this),
-                                                PortMessages.CONNECTION_REJECTED_CLOSED(addressString));
+                    PortMessages.CONNECTION_REJECTED_CLOSED(addressString));
             return false;
         }
-        else if (_maxOpenConnections > 0 && _connectionCount.get() >= _maxOpenConnections)
+        final long maxOpenConnections = getMaxOpenConnections();
+        if (maxOpenConnections > 0L)
         {
-            _container.getEventLogger().message(new PortLogSubject(this),
-                                                PortMessages.CONNECTION_REJECTED_TOO_MANY(addressString,
-                                                                                       _maxOpenConnections));
-            return false;
+            long openConnections = _connectionCount
+                    .getAndUpdate(count -> count < maxOpenConnections ? count + 1L : count);
+
+            if (openConnections >= maxOpenConnections)
+            {
+                _container.getEventLogger().message(new PortLogSubject(this),
+                        PortMessages.CONNECTION_REJECTED_TOO_MANY(addressString, _maxOpenConnections));
+                return false;
+            }
+
+            openConnections++;
+            if (openConnections > (maxOpenConnections * _connectionWarnCount) / 100L
+                    && _connectionCountWarningGiven.compareAndSet(false, true))
+            {
+                _container.getEventLogger().message(new PortLogSubject(this),
+                        PortMessages.CONNECTION_COUNT_WARN(openConnections, _connectionWarnCount, maxOpenConnections));
+            }
         }
         else
         {
-            return true;
+            _connectionCount.incrementAndGet();
         }
+        _totalConnectionCount.incrementAndGet();
+        return true;
     }
 
     @Override
-    public int getConnectionCount()
+    public long getConnectionCount()
     {
         return _connectionCount.get();
     }
