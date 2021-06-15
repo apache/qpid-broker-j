@@ -555,7 +555,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         final long maxOpenConnections = getMaxOpenConnections();
         final long openConnections = _connectionCount.decrementAndGet();
 
-        if (maxOpenConnections > 0
+        if (maxOpenConnections > 0L
                 && openConnections < (maxOpenConnections * square(_connectionWarnCount)) / 10000L)
         {
             _connectionCountWarningGiven.compareAndSet(true, false);
@@ -580,7 +580,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
             return false;
         }
         final long maxOpenConnections = getMaxOpenConnections();
-        if (maxOpenConnections > 0)
+        if (maxOpenConnections > 0L)
         {
             long openConnections = _connectionCount
                     .getAndUpdate(count -> count < maxOpenConnections ? count + 1L : count);
