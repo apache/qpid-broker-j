@@ -335,23 +335,20 @@ public class AmqpPortImplTest extends UnitTestBase
 
         for(int i = 0; i < 8; i++)
         {
-            assertTrue(_port.canAcceptNewConnection(new InetSocketAddress("example.org", 0)));
-            _port.incrementConnectionCount();
-            assertEquals((long) (i + 1), (long) _port.getConnectionCount());
+            assertTrue(_port.acceptNewConnectionAndIncrementCount(new InetSocketAddress("example.org", 0)));
+            assertEquals(i + 1L, _port.getConnectionCount());
             verify(mockLogger, never()).message(any(LogSubject.class), any(LogMessage.class));
         }
 
-        assertTrue(_port.canAcceptNewConnection(new InetSocketAddress("example.org", 0)));
-        _port.incrementConnectionCount();
-        assertEquals((long) 9, (long) _port.getConnectionCount());
+        assertTrue(_port.acceptNewConnectionAndIncrementCount(new InetSocketAddress("example.org", 0)));
+        assertEquals(9, _port.getConnectionCount());
         verify(mockLogger, times(1)).message(any(LogSubject.class), any(LogMessage.class));
 
-        assertTrue(_port.canAcceptNewConnection(new InetSocketAddress("example.org", 0)));
-        _port.incrementConnectionCount();
-        assertEquals((long) 10, (long) _port.getConnectionCount());
+        assertTrue(_port.acceptNewConnectionAndIncrementCount(new InetSocketAddress("example.org", 0)));
+        assertEquals(10, _port.getConnectionCount());
         verify(mockLogger, times(1)).message(any(LogSubject.class), any(LogMessage.class));
 
-        assertFalse(_port.canAcceptNewConnection(new InetSocketAddress("example.org", 0)));
+        assertFalse(_port.acceptNewConnectionAndIncrementCount(new InetSocketAddress("example.org", 0)));
     }
 
     private AmqpPortImpl createPort(final String portName)
