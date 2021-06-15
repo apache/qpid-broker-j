@@ -20,9 +20,7 @@
  */
 package org.apache.qpid.server.security;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -30,12 +28,16 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -74,7 +76,8 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     private volatile String _password;
 
     private volatile TrustManager[] _trustManagers;
-    private volatile Certificate[] _certificates;
+
+    private volatile Map<String, Certificate> _certificates = Collections.emptyMap();
 
     static
     {
@@ -255,8 +258,20 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     @Override
     public Certificate[] getCertificates()
     {
-        Certificate[] certificates = _certificates;
-        return certificates == null ? new Certificate[0] : Arrays.copyOf(certificates, certificates.length);
+        return _certificates.values().toArray(new Certificate[0]);
+    }
+
+    @Override
+    public List<CertificateDetails> getCertificateDetails()
+    {
+        if (_certificates.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        return _certificates.entrySet().stream()
+                .filter(entry -> entry.getValue() instanceof X509Certificate)
+                .map(entry -> new CertificateDetailsImpl((X509Certificate) entry.getValue(), entry.getKey()))
+                .collect(Collectors.toList());
     }
 
     @SuppressWarnings(value = "unused")
@@ -274,18 +289,20 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
 
     protected void initialize()
     {
+        final TrustManager[] trustManagers;
+        final Map<String, Certificate> certificates;
         try
         {
-            KeyStore ts = initializeKeyStore(this);
-            TrustManager[] trustManagers = createTrustManagers(ts);
-            Certificate[] certificates = createCertificates(ts);
-            _trustManagers = trustManagers;
-            _certificates = certificates;
+            final KeyStore ts = initializeKeyStore(this);
+            trustManagers = createTrustManagers(ts);
+            certificates = Collections.unmodifiableMap(SSLUtil.getCertificates(ts));
         }
         catch (Exception e)
         {
             throw new IllegalConfigurationException(String.format("Cannot instantiate trust store '%s'", getName()), e);
         }
+        _trustManagers = trustManagers;
+        _certificates = certificates;
     }
 
     private TrustManager[] createTrustManagers(final KeyStore ts) throws KeyStoreException
@@ -334,12 +351,5 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
             }
             return trustManagersCol.toArray(new TrustManager[trustManagersCol.size()]);
         }
-    }
-
-    private Certificate[] createCertificates(final KeyStore ts) throws KeyStoreException
-    {
-        final Collection<Certificate> certificates = SSLUtil.getCertificates(ts);
-
-        return certificates.toArray(new Certificate[certificates.size()]);
     }
 }

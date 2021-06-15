@@ -37,5 +37,5 @@ public interface CertificateDetails extends ManagedAttributeValue
     List<String> getSubjectAltNames();
     Date getValidFrom();
     Date getValidUntil();
-
+    String getAlias();
 }
