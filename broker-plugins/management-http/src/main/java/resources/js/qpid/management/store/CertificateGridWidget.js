@@ -88,11 +88,11 @@ define(["dojo/_base/declare",
                     new UpdatableStore([], this.certificatesGridContainer, [{
                         name: "Subject Name",
                         field: "subjectName",
-                        width: "25%"
+                        width: "22%"
                     }, {
                         name: "Issuer Name",
                         field: "issuerName",
-                        width: "25%"
+                        width: "22%"
                     }, {
                         name: "Serial #",
                         field: "serialNumber",
@@ -100,13 +100,17 @@ define(["dojo/_base/declare",
                     }, {
                         name: "Valid From",
                         field: "validFrom",
-                        width: "20%",
+                        width: "15%",
                         formatter: lang.hitch(this, this._formatDate)
                     }, {
                         name: "Valid Until",
                         field: "validUntil",
-                        width: "20%",
+                        width: "15%",
                         formatter: lang.hitch(this, this._formatDate)
+                    }, {
+                        name: "Alias",
+                        field: "alias",
+                        width: "16%"
                     }], null, gridProperties, EnhancedGrid);
 
                 if (window.FileReader)

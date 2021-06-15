@@ -29,13 +29,16 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -80,7 +83,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     @ManagedAttributeField
     private String _password;
 
-    private volatile Collection<Certificate> _certificates;
+    private volatile Map<String, Certificate> _certificates = Collections.emptyMap();
 
     static
     {
@@ -132,16 +135,14 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
 
     private void initialize()
     {
-        Collection<Certificate> result;
         try
         {
-            result = Collections.unmodifiableCollection(SSLUtil.getCertificates(getInitializedKeyStore(this)));
+            _certificates = Collections.unmodifiableMap(SSLUtil.getCertificates(getInitializedKeyStore(this)));
         }
         catch (GeneralSecurityException | IOException e)
         {
             throw new IllegalConfigurationException(String.format("Cannot instantiate keystore '%s'", getName()), e);
         }
-        _certificates = result;
     }
 
     @Override
@@ -401,10 +402,22 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     }
 
     @Override
+    public List<CertificateDetails> getCertificateDetails()
+    {
+        if (_certificates.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        return _certificates.entrySet().stream()
+                .filter(entry -> entry.getValue() instanceof X509Certificate)
+                .map(entry -> new CertificateDetailsImpl((X509Certificate) entry.getValue(), entry.getKey()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     protected Collection<Certificate> getCertificates()
     {
-        final Collection<Certificate> certificates = _certificates;
-        return certificates == null ? Collections.emptyList() : certificates;
+        return _certificates.values();
     }
 
     private boolean containsPrivateKey(final java.security.KeyStore keyStore) throws KeyStoreException
