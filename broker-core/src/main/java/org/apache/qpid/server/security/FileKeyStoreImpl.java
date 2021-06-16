@@ -137,7 +137,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     {
         try
         {
-            _certificates = Collections.unmodifiableMap(SSLUtil.getCertificates(getInitializedKeyStore(this)));
+            _certificates = Collections.unmodifiableMap(SSLUtil.getCertificatesAsMap(getInitializedKeyStore(this)));
         }
         catch (GeneralSecurityException | IOException e)
         {

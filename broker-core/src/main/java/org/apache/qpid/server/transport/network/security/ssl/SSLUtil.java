@@ -1053,7 +1053,21 @@ public class SSLUtil
 
     }
 
-    public static Map<String, Certificate> getCertificates(final KeyStore ks) throws KeyStoreException
+    /**
+     * Get keystore certificates
+     * @deprecated
+     * The signature of this method is changed in version 9.0 and onwards.
+     * <p> Use {@link SSLUtil#getCertificatesAsMap(KeyStore)} instead.
+     *
+     * @return cllection of keystore certificates
+     */
+    @Deprecated
+    public static Collection<Certificate> getCertificates(final KeyStore ks) throws KeyStoreException
+    {
+        return getCertificatesAsMap(ks).values();
+    }
+
+    public static Map<String, Certificate> getCertificatesAsMap(final KeyStore ks) throws KeyStoreException
     {
         final Map<String ,Certificate> certificates = new HashMap<>();
         final Enumeration<String> aliases = ks.aliases();
