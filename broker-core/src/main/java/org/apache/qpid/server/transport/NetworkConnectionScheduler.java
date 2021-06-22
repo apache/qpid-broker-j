@@ -40,7 +40,6 @@ public class NetworkConnectionScheduler
     private final ThreadFactory _factory;
     private final String _selectorThreadName;
     private volatile ThreadPoolExecutor _executor;
-    private final AtomicInteger _running = new AtomicInteger();
     private final int _poolSize;
     private final long _threadKeepAliveTimeout;
     private final String _name;
@@ -71,7 +70,6 @@ public class NetworkConnectionScheduler
         return "NetworkConnectionScheduler{" +
                "_factory=" + _factory +
                ", _executor=" + _executor +
-               ", _running=" + _running +
                ", _poolSize=" + _poolSize +
                ", _threadKeepAliveTimeout=" + _threadKeepAliveTimeout +
                ", _name='" + _name + '\'' +
@@ -121,64 +119,6 @@ public class NetworkConnectionScheduler
         {
             throw new TransportException(e);
         }
-    }
-
-    void processConnection(final NonBlockingConnection connection)
-    {
-        Thread.currentThread().setName(connection.getThreadName());
-        connection.doPreWork();
-        boolean rerun;
-        do
-        {
-            rerun = false;
-            boolean closed = connection.doWork();
-            if (!closed && connection.getScheduler() == this)
-            {
-
-                if (connection.isStateChanged() || connection.isPartialRead())
-                {
-                    if (_running.get() == _poolSize)
-                    {
-                        connection.clearScheduled();
-                        schedule(connection);
-                    }
-                    else
-                    {
-                        rerun = true;
-                    }
-                }
-                else
-                {
-                    connection.clearScheduled();
-                    if (connection.isStateChanged())
-                    {
-                        _selectorThread.addToWork(connection);
-                    }
-                    else
-                    {
-                        _selectorThread.returnConnectionToSelector(connection);
-                    }
-                }
-            }
-            else if (connection.getScheduler() != this)
-            {
-                removeConnection(connection);
-                connection.clearScheduled();
-                connection.getScheduler().addConnection(connection);
-            }
-
-        } while (rerun);
-
-    }
-
-    void decrementRunningCount()
-    {
-        _running.decrementAndGet();
-    }
-
-    void incrementRunningCount()
-    {
-        _running.incrementAndGet();
     }
 
     public void close()

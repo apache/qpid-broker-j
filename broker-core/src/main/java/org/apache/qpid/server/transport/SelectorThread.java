@@ -95,7 +95,7 @@ class SelectorThread extends Thread
             performSelect();
         }
 
-        public boolean acquireSelecting()
+        private boolean acquireSelecting()
         {
             return _selecting.compareAndSet(false,true);
         }
@@ -199,7 +199,6 @@ class SelectorThread extends Thread
                     _workQueue.add(() -> {
                             try
                             {
-                                _scheduler.incrementRunningCount();
                                 transport.acceptSocketChannel(channel);
                             }
                             finally
@@ -225,10 +224,6 @@ class SelectorThread extends Thread
                                 {
                                     LOGGER.info("Failed to register selector on accepting port {}"
                                                 + " because selector key is already cancelled", localSocketAddress, e);
-                                }
-                                finally
-                                {
-                                    _scheduler.decrementRunningCount();
                                 }
                             }
                     });
@@ -290,71 +285,63 @@ class SelectorThread extends Thread
 
         private void performSelect()
         {
-            _scheduler.incrementRunningCount();
-            try
+            while (!_closed.get() && acquireSelecting())
             {
-                while (!_closed.get() && acquireSelecting())
+                final List<ConnectionProcessor> connections = new ArrayList<>();
+                try
                 {
-                    final List<ConnectionProcessor> connections = new ArrayList<>();
-                    try
-                    {
-                        Thread.currentThread().setName(_scheduler.getSelectorThreadName());
-                        _selector.select(_nextTimeout);
+                    Thread.currentThread().setName(_scheduler.getSelectorThreadName());
+                    _selector.select(_nextTimeout);
 
-                        for (final NonBlockingConnection connection : processSelectionKeys())
-                        {
-                            if (connection.setScheduled())
-                            {
-                                connections.add(new ConnectionProcessor(_scheduler, connection));
-                            }
-                        }
-                        for (final NonBlockingConnection connection : reregisterUnregisteredConnections())
-                        {
-                            if (connection.setScheduled())
-                            {
-                                connections.add(new ConnectionProcessor(_scheduler, connection));
-                            }
-                        }
-                        for (final NonBlockingConnection connection : processUnscheduledConnections())
-                        {
-                            if (connection.setScheduled())
-                            {
-                                connections.add(new ConnectionProcessor(_scheduler, connection));
-                            }
-                        }
-                        runTasks();
-                    }
-                    catch (IOException e)
+                    for (final NonBlockingConnection connection : processSelectionKeys())
                     {
-                        // TODO Inform the model object
-                        LOGGER.error("Failed to trying to select()", e);
-                        closeSelector();
-                        return;
-                    }
-                    finally
-                    {
-                        clearSelecting();
-                    }
-
-                    if (!connections.isEmpty())
-                    {
-                        _workQueue.addAll(connections);
-                        _workQueue.add(this);
-                        for (final ConnectionProcessor connectionProcessor : connections)
+                        if (connection.setScheduled())
                         {
-                            connectionProcessor.processConnection();
+                            connections.add(new ConnectionProcessor(connection));
                         }
                     }
+                    for (final NonBlockingConnection connection : reregisterUnregisteredConnections())
+                    {
+                        if (connection.setScheduled())
+                        {
+                            connections.add(new ConnectionProcessor(connection));
+                        }
+                    }
+                    for (final NonBlockingConnection connection : processUnscheduledConnections())
+                    {
+                        if (connection.setScheduled())
+                        {
+                            connections.add(new ConnectionProcessor(connection));
+                        }
+                    }
+                    runTasks();
+                }
+                catch (IOException e)
+                {
+                    // TODO Inform the model object
+                    LOGGER.error("Failed to trying to select()", e);
+                    closeSelector();
+                    return;
+                }
+                finally
+                {
+                    clearSelecting();
                 }
 
-                if (_closed.get() && acquireSelecting())
+                if (!connections.isEmpty())
                 {
-                    closeSelector();
+                    _workQueue.addAll(connections);
+                    _workQueue.add(this);
+                    for (final ConnectionProcessor connectionProcessor : connections)
+                    {
+                        connectionProcessor.run();
+                    }
                 }
             }
-            finally
+
+            if (_closed.get() && acquireSelecting())
             {
-                _scheduler.decrementRunningCount();
+                closeSelector();
             }
         }
 
@@ -511,46 +498,54 @@ class SelectorThread extends Thread
 
     }
 
-    private static final class ConnectionProcessor implements Runnable
+    private final class ConnectionProcessor implements Runnable
     {
-
-        private final NetworkConnectionScheduler _scheduler;
         private final NonBlockingConnection _connection;
-        private AtomicBoolean _running = new AtomicBoolean();
+        private final AtomicBoolean _running = new AtomicBoolean();
 
-        public ConnectionProcessor(final NetworkConnectionScheduler scheduler, final NonBlockingConnection connection)
+        public ConnectionProcessor(final NonBlockingConnection connection)
         {
-            _scheduler = scheduler;
             _connection = connection;
         }
 
         @Override
         public void run()
         {
-            _scheduler.incrementRunningCount();
-            try
-            {
-                processConnection();
-            }
-            finally
-            {
-                _scheduler.decrementRunningCount();
-            }
-        }
-
-        public void processConnection()
-        {
             if (_running.compareAndSet(false, true))
             {
-                _scheduler.processConnection(_connection);
+                Thread.currentThread().setName(_connection.getThreadName());
+
+                if (_connection.getScheduler() != _scheduler)
+                {
+                    _connection.doPreWork();
+                    _connection.doWork();
+
+                    removeConnection(_connection);
+                    _connection.clearScheduled();
+                    _connection.getScheduler().addConnection(_connection);
+                    return;
+                }
+
+                boolean run = true;
+                _connection.doPreWork();
+                while (run)
+                {
+                    run = !_connection.doWork();
+                    if (!_connection.isStateChanged() && !_connection.isPartialRead())
+                    {
+                        _connection.clearScheduled();
+                        returnConnectionToSelector(_connection);
+                        run = false;
+                    }
+                    else if (!_workQueue.isEmpty())
+                    {
+                        _connection.clearScheduled();
+                        addToWork(_connection);
+                        run = false;
+                    }
+                }
             }
         }
-    }
-
-    private void unregisterConnection(final NonBlockingConnection connection) throws ClosedChannelException
-    {
-        SelectionKey register = connection.getSocketChannel().register(connection.getSelectionTask().getSelector(), 0);
-        register.cancel();
     }
 
     private void runTasks()
@@ -598,10 +593,10 @@ class SelectorThread extends Thread
 
     }
 
-    public void returnConnectionToSelector(final NonBlockingConnection connection)
+    private void returnConnectionToSelector(final NonBlockingConnection connection)
     {
-        SelectionTask selectionTask = connection.getSelectionTask();
-        if(selectionTask == null)
+        final SelectionTask selectionTask = connection.getSelectionTask();
+        if (selectionTask == null)
         {
             throw new IllegalStateException("returnConnectionToSelector should only be called with connections that are currently assigned a selector task");
         }
@@ -611,7 +606,6 @@ class SelectorThread extends Thread
             selectionTask.getUnregisteredConnections().add(connection);
             selectionTask.wakeup();
         }
-
     }
 
     private SelectionTask getNextSelectionTask()
@@ -629,12 +623,14 @@ class SelectorThread extends Thread
     {
         try
         {
-            unregisterConnection(connection);
+            connection.getSocketChannel()
+                    .register(connection.getSelectionTask().getSelector(), 0)
+                    .cancel();
         }
         catch (ClosedChannelException e)
         {
             LOGGER.debug("Failed to unregister with selector for connection {}. " +
-                         "Connection is probably being closed by peer.", connection);
+                    "Connection is probably being closed by peer.", connection);
 
         }
         catch (ClosedSelectorException | CancelledKeyException e)
@@ -644,7 +640,7 @@ class SelectorThread extends Thread
             // have closed the underlying socket and removed themselves from the selector. Once
             // this is done, this catch/swallow can be removed.
             LOGGER.debug("Failed to unregister with selector for connection {}. " +
-                         "Port has probably already been closed.", connection, e);
+                    "Port has probably already been closed.", connection, e);
         }
     }
 
@@ -681,7 +677,7 @@ class SelectorThread extends Thread
          }
          if(connection.setScheduled())
          {
-             _workQueue.add(new ConnectionProcessor(_scheduler, connection));
+             _workQueue.add(new ConnectionProcessor(connection));
          }
      }
 }
