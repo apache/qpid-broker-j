@@ -528,6 +528,7 @@ class SelectorThread extends Thread
 
                 boolean run = true;
                 _connection.doPreWork();
+                
                 while (run)
                 {
                     run = !_connection.doWork();
