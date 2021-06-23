@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.server.security.access.firewall;
 
+import org.apache.qpid.server.security.access.config.FirewallRule;
+
 public class FirewallRuleFactory
 {
     public FirewallRule createForHostname(String[] hostnames)

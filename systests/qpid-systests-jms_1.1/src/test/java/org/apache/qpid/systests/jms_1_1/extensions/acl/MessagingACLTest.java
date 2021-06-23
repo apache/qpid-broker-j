@@ -51,7 +51,6 @@ import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
-import javax.naming.NamingException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
@@ -76,7 +75,6 @@ import org.apache.qpid.server.security.access.plugins.RuleBasedVirtualHostAccess
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.group.GroupProviderImpl;
 import org.apache.qpid.systests.JmsTestBase;
-
 
 public class MessagingACLTest extends JmsTestBase
 {
@@ -178,125 +176,6 @@ public class MessagingACLTest extends JmsTestBase
         catch (JMSException e)
         {
             assertAccessDeniedException(e);
-        }
-    }
-
-    @Test
-    public void testAuthorizationWithConnectionLimit() throws Exception
-    {
-        final int connectionLimit = 2;
-        configureACL(String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST connection_limit='%d'",
-                                   USER2,
-                                   connectionLimit));
-
-        final List<Connection> establishedConnections = new ArrayList<>();
-        try
-        {
-            establishConnections(connectionLimit, establishedConnections);
-
-            verifyConnectionEstablishmentFails(connectionLimit);
-
-            establishedConnections.remove(0).close();
-            getConnectionBuilder().setUsername(USER2).setPassword(USER2_PASSWORD).build().close();
-        }
-        finally
-        {
-            closeConnections(establishedConnections);
-        }
-    }
-
-    @Test
-    public void testAuthorizationWithConnectionFrequencyLimit() throws Exception
-    {
-        final int connectionFrequencyLimit = 1;
-        configureACL(String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST connection_frequency_limit='%d'",
-                                   USER2,
-                                   connectionFrequencyLimit));
-
-        final List<Connection> establishedConnections = new ArrayList<>();
-        try
-        {
-            establishConnections(connectionFrequencyLimit, establishedConnections);
-
-            verifyConnectionEstablishmentFails(connectionFrequencyLimit);
-
-            establishedConnections.remove(0).close();
-
-            verifyConnectionEstablishmentFails(connectionFrequencyLimit);
-        }
-        finally
-        {
-            closeConnections(establishedConnections);
-        }
-    }
-
-    @Test
-    public void testAuthorizationWithConnectionLimitAndFrequencyLimit() throws Exception
-    {
-        final int connectionFrequencyLimit = 2;
-        final int connectionLimit = 3;
-        configureACL(String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST connection_limit='%d' connection_frequency_limit='%d'",
-                                   USER2,
-                                   connectionLimit,
-                                   connectionFrequencyLimit));
-
-        final List<Connection> establishedConnections = new ArrayList<>();
-        try
-        {
-            establishConnections(connectionFrequencyLimit, establishedConnections);
-
-            verifyConnectionEstablishmentFails(connectionFrequencyLimit);
-
-            establishedConnections.remove(0).close();
-
-            verifyConnectionEstablishmentFails(connectionFrequencyLimit);
-        }
-        finally
-        {
-            closeConnections(establishedConnections);
-        }
-    }
-
-    private void establishConnections(final int connectionNumber, final List<Connection> establishedConnections)
-            throws NamingException, JMSException
-    {
-        for (int i = 0; i < connectionNumber; i++)
-        {
-            establishedConnections.add(getConnectionBuilder().setUsername(USER2)
-                                                             .setPassword(USER2_PASSWORD)
-                                                             .setClientId(getTestName() + i)
-                                                             .build());
-        }
-    }
-
-    private void closeConnections(final List<Connection> establishedConnections) throws JMSException
-    {
-        for (Connection c : establishedConnections)
-        {
-            c.close();
-        }
-    }
-
-    private void verifyConnectionEstablishmentFails(final int frequencyLimit) throws NamingException
-    {
-        try
-        {
-            final Connection connection = getConnectionBuilder().setUsername(USER2)
-                                                                .setPassword(USER2_PASSWORD)
-                                                                .setClientId(getTestName() + frequencyLimit)
-                                                                .build();
-            try
-            {
-                fail("Connection creation should fail due to exceeding limit");
-            }
-            finally
-            {
-                connection.close();
-            }
-        }
-        catch (JMSException e)
-        {
-            //pass
         }
     }
 

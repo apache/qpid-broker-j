@@ -84,7 +84,6 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.ConnectionPrincipalStatistics;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,T>, T>
@@ -150,7 +149,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private long _maxUncommittedInMemorySize;
 
     private final Map<ServerTransaction, Set<Ticker>> _transactionTickers = new ConcurrentHashMap<>();
-    private volatile ConnectionPrincipalStatistics _connectionPrincipalStatistics;
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   ServerNetworkConnection network,
@@ -371,7 +369,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public void pushScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
     {
-        if(_network instanceof NonBlockingConnection)
+        if (_network instanceof NonBlockingConnection)
         {
             ((NonBlockingConnection) _network).pushScheduler(networkConnectionScheduler);
         }
@@ -380,7 +378,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public NetworkConnectionScheduler popScheduler()
     {
-        if(_network instanceof NonBlockingConnection)
+        if (_network instanceof NonBlockingConnection)
         {
             return ((NonBlockingConnection) _network).popScheduler();
         }
@@ -1156,32 +1154,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     public void incrementTransactionBeginCounter()
     {
         _localTransactionBegins.incrementAndGet();
-    }
-
-    @Override
-    public void registered(final ConnectionPrincipalStatistics connectionPrincipalStatistics)
-    {
-        _connectionPrincipalStatistics = connectionPrincipalStatistics;
-    }
-
-    @Override
-    public int getAuthenticatedPrincipalConnectionCount()
-    {
-        if (_connectionPrincipalStatistics == null)
-        {
-            return 0;
-        }
-        return _connectionPrincipalStatistics.getConnectionCount();
-    }
-
-    @Override
-    public int getAuthenticatedPrincipalConnectionFrequency()
-    {
-        if (_connectionPrincipalStatistics == null)
-        {
-            return 0;
-        }
-        return _connectionPrincipalStatistics.getConnectionFrequency();
     }
 
     @Override

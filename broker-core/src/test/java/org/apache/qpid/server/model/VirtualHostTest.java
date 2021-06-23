@@ -77,7 +77,6 @@ import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.virtualhost.ConnectionPrincipalStatistics;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -587,46 +586,6 @@ public class VirtualHostTest extends UnitTestBase
     }
 
     @Test
-    public void testRegisterConnectionCausesUpdateOfAuthenticatedPrincipalConnectionCountAndFrequency()
-    {
-        final NoopConnectionEstablishmentPolicy policy = new NoopConnectionEstablishmentPolicy();
-        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
-        final Principal principal = mockAuthenticatedPrincipal(getTestName());
-        final Principal principal2 = mockAuthenticatedPrincipal(getTestName() + "_2");
-        final AMQPConnection<?> connection1 = mockAmqpConnection(principal);
-        final AMQPConnection<?> connection2 = mockAmqpConnection(principal);
-        final AMQPConnection<?> connection3 = mockAmqpConnection(principal2);
-
-        vhost.registerConnection(connection1, policy);
-        verify(connection1).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(1, 1)));
-
-        vhost.registerConnection(connection2, policy);
-        verify(connection2).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(2, 2)));
-
-        vhost.registerConnection(connection3, policy);
-        verify(connection3).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(1, 1)));
-    }
-
-    @Test
-    public void testDeregisterConnectionAffectsAuthenticatedPrincipalConnectionCountAndFrequency()
-    {
-        final Principal principal = mockAuthenticatedPrincipal(getTestName());
-        final NoopConnectionEstablishmentPolicy policy = new NoopConnectionEstablishmentPolicy();
-        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
-
-        final AMQPConnection<?> connection1 = mockAmqpConnection(principal);
-        final AMQPConnection<?> connection2 = mockAmqpConnection(principal);
-
-        vhost.registerConnection(connection1, policy);
-        verify(connection1).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(1, 1)));
-
-        vhost.deregisterConnection(connection1);
-        vhost.registerConnection(connection2, policy);
-
-        verify(connection2).registered(argThat(new ConnectionPrincipalStatisticsArgumentMatcher(1, 2)));
-    }
-
-    @Test
     public void testStopVirtualhostClosesConnections()
     {
         QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
@@ -877,27 +836,6 @@ public class VirtualHostTest extends UnitTestBase
         public boolean matches(ConfiguredObjectRecord rhs)
         {
             return (_id.equals(rhs.getId()) || _type.equals(rhs.getType()));
-        }
-    }
-
-    private static class ConnectionPrincipalStatisticsArgumentMatcher implements ArgumentMatcher<ConnectionPrincipalStatistics>
-    {
-
-        private final int _expectedConnectionCount;
-        private final int _expectedConnectionFrequency;
-
-        ConnectionPrincipalStatisticsArgumentMatcher(final int expectedConnectionCount,
-                                                     final int expectedConnectionFrequency)
-        {
-            _expectedConnectionCount = expectedConnectionCount;
-            _expectedConnectionFrequency = expectedConnectionFrequency;
-        }
-
-        @Override
-        public boolean matches(final ConnectionPrincipalStatistics connectionPrincipalStatistics)
-        {
-            return connectionPrincipalStatistics.getConnectionFrequency() == _expectedConnectionFrequency
-                    && connectionPrincipalStatistics.getConnectionCount() == _expectedConnectionCount;
         }
     }
 }

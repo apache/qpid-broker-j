@@ -38,7 +38,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.AccessControlContext;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -149,7 +148,6 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.Strings;
-import org.apache.qpid.server.virtualhost.connection.ConnectionPrincipalStatisticsRegistryImpl;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
         implements QueueManagingVirtualHost<X>
@@ -230,6 +228,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }, Result.DEFER);
 
+    private final VirtualHostConnectionLimiter _connectionLimiter;
 
     @ManagedAttributeField
     private boolean _queue_deadLetterQueueEnabled;
@@ -272,7 +271,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     @ManagedAttributeField
     private volatile int _statisticsReportingPeriod;
-    
+
     private boolean _useAsyncRecoverer;
 
     private MessageDestination _defaultDestination;
@@ -285,8 +284,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private PreferenceStore _preferenceStore;
     private long _flowToDiskCheckPeriod;
     private volatile boolean _isDiscardGlobalSharedSubscriptionLinksOnDetach;
-    private volatile ConnectionPrincipalStatisticsRegistry _connectionPrincipalStatisticsRegistry;
-    private volatile HouseKeepingTask _statisticsCheckTask;
 
     public AbstractVirtualHost(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
@@ -319,6 +316,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _fileSystemSpaceCheckerJobContext = getSystemTaskControllerContext("FileSystemSpaceChecker["+getName()+"]", _principal);
 
         _fileSystemSpaceChecker = new FileSystemSpaceChecker();
+        _connectionLimiter = new VirtualHostConnectionLimiter(this, _broker);
     }
 
     private void updateAccessControl()
@@ -349,6 +347,21 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             ((CompoundAccessControl)_accessControl).setAccessControls(accessControls);
 
         }
+    }
+
+    private void openConnectionLimiter()
+    {
+        _connectionLimiter.open();
+    }
+
+    private void activateConnectionLimiter()
+    {
+        _connectionLimiter.activate();
+    }
+
+    private void closeConnectionLimiter()
+    {
+        _connectionLimiter.close();
     }
 
     @Override
@@ -588,6 +601,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         closeMessageStore();
         stopPreferenceTaskExecutor();
         closePreferenceStore();
+        closeConnectionLimiter();
         stopLogging(new ArrayList<>(getChildren(VirtualHostLogger.class)));
     }
 
@@ -627,6 +641,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _linkRegistry = createLinkRegistry();
 
         createHousekeepingExecutor();
+        openConnectionLimiter();
     }
 
     LinkRegistryModel createLinkRegistry()
@@ -1616,6 +1631,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         stopLogging(_virtualHostLoggersToClose);
         _systemNodeRegistry.close();
+
+        closeConnectionLimiter();
         return Futures.immediateFuture(null);
     }
 
@@ -2444,7 +2461,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             @Override
             public void run()
             {
-                resetConnectionPrincipalStatisticsRegistry();
                 shutdownHouseKeeping();
                 closeNetworkConnectionScheduler();
                 if (_linkRegistry != null)
@@ -2456,6 +2472,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 closePreferenceStore();
                 setState(State.STOPPED);
                 stopLogging(loggers);
+                closeConnectionLimiter();
             }
         });
     }
@@ -2585,6 +2602,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public boolean registerConnection(final AMQPConnection<?> connection,
                                       final ConnectionEstablishmentPolicy connectionEstablishmentPolicy)
     {
+        _connectionLimiter.register(connection);
         return doSync(registerConnectionAsync(connection, connectionEstablishmentPolicy));
     }
 
@@ -2600,9 +2618,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 {
                     if (connectionEstablishmentPolicy.mayEstablishNewConnection(_connections, connection))
                     {
-                        final ConnectionPrincipalStatistics cps =
-                                _connectionPrincipalStatisticsRegistry.connectionOpened(connection);
-                        connection.registered(cps);
                         _connections.add(connection);
                         _totalConnectionCount.incrementAndGet();
 
@@ -2653,7 +2668,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public void deregisterConnection(final AMQPConnection<?> connection)
     {
-        doSync(deregisterConnectionAsync(connection));
+        try
+        {
+            _connectionLimiter.deregister(connection);
+        }
+        finally
+        {
+            doSync(deregisterConnectionAsync(connection));
+
+        }
     }
 
     public ListenableFuture<Void> deregisterConnectionAsync(final AMQPConnection<?> connection)
@@ -2665,8 +2688,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 connection.popScheduler();
                 _connections.remove(connection);
-                _connectionPrincipalStatisticsRegistry.connectionClosed(connection);
-
                 return Futures.immediateFuture(null);
             }
 
@@ -2709,7 +2730,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         updateAccessControl();
         initialiseStatisticsReporting();
-        initialiseConnectionPrincipalStatisticsRegistry();
 
         MessageStore messageStore = getMessageStore();
         messageStore.openMessageStore(this);
@@ -2739,6 +2759,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         PreferencesRecoverer preferencesRecoverer = new PreferencesRecoverer(_preferenceTaskExecutor);
         preferencesRecoverer.recoverPreferences(this, records, _preferenceStore);
 
+        activateConnectionLimiter();
+
         if (_createDefaultExchanges)
         {
             return doAfter(createDefaultExchanges(), new Runnable()
@@ -2756,42 +2778,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             postCreateDefaultExchangeTasks();
             return Futures.immediateFuture(null);
         }
-    }
-
-    private void initialiseConnectionPrincipalStatisticsRegistry()
-    {
-        final long connectionFrequencyPeriodMillis = getContextValue(Long.class, CONNECTION_FREQUENCY_PERIOD);
-        final Duration connectionFrequencyPeriod = Duration.ofMillis(connectionFrequencyPeriodMillis);
-        final ConnectionPrincipalStatisticsRegistryImpl connectionStatisticsRegistry =
-                new ConnectionPrincipalStatisticsRegistryImpl(() -> connectionFrequencyPeriod);
-        HouseKeepingTask task = null;
-        long taskRunPeriod = connectionFrequencyPeriodMillis / 2;
-        if (taskRunPeriod > 0)
-        {
-            final AccessControlContext context =
-                    getSystemTaskControllerContext("ConnectionPrincipalStatisticsCheck", _principal);
-            task = new ConnectionPrincipalStatisticsCheckingTask(this, context, connectionStatisticsRegistry);
-            scheduleHouseKeepingTask(taskRunPeriod, task);
-        }
-        _statisticsCheckTask = task;
-        _connectionPrincipalStatisticsRegistry = connectionStatisticsRegistry;
-    }
-
-    private void resetConnectionPrincipalStatisticsRegistry()
-    {
-        final HouseKeepingTask previousStatisticsCheckTask = _statisticsCheckTask;
-        if (previousStatisticsCheckTask != null)
-        {
-            previousStatisticsCheckTask.cancel();
-        }
-        _statisticsCheckTask = null;
-        final ConnectionPrincipalStatisticsRegistry connectionPrincipalStatisticsRegistry =
-                _connectionPrincipalStatisticsRegistry;
-        if (connectionPrincipalStatisticsRegistry != null)
-        {
-            connectionPrincipalStatisticsRegistry.reset();
-        }
-        _connectionPrincipalStatisticsRegistry = null;
     }
 
     private void postCreateDefaultExchangeTasks()
@@ -2947,6 +2933,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             closePreferenceStore();
             setState(State.ERRORED);
             stopLogging(loggers);
+            closeConnectionLimiter();
         });
     }
 

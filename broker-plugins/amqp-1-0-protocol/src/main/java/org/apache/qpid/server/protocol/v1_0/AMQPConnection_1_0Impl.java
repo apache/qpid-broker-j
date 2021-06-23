@@ -55,6 +55,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.security.limit.ConnectionLimitException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -913,105 +914,109 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             final Error err = new Error();
             populateConnectionRedirect(addressSpace, err);
             closeConnection(err);
+            return;
         }
-        else
+
+        final Principal authenticatedPrincipal = getAuthorizedPrincipal();
+        if (authenticatedPrincipal == null)
         {
-            if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(getSubject()) == null)
+            closeConnection(AmqpError.NOT_ALLOWED, "Connection has not been authenticated");
+            return;
+        }
+
+        try
+        {
+            boolean registerSucceeded = addressSpace.registerConnection(this, (existingConnections, newConnection) ->
             {
-                closeConnection(AmqpError.NOT_ALLOWED, "Connection has not been authenticated");
-            }
-            else
-            {
-                try
+                boolean proceedWithRegistration = true;
+                if (newConnection instanceof AMQPConnection_1_0Impl && !newConnection.isClosing())
                 {
-                    boolean registerSucceeded = addressSpace.registerConnection(this, (existingConnections, newConnection) ->
+                    List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
+                    for (AMQPConnection<?> existingConnection : StreamSupport.stream(existingConnections.spliterator(), false)
+                            .filter(con -> con instanceof AMQPConnection_1_0)
+                            .filter(con -> !con.isClosing())
+                            .filter(con -> con.getRemoteContainerName().equals(newConnection.getRemoteContainerName()))
+                            .collect(Collectors.toList()))
                     {
-                        boolean proceedWithRegistration = true;
-                        if (newConnection instanceof AMQPConnection_1_0Impl && !newConnection.isClosing())
+                        SoleConnectionEnforcementPolicy soleConnectionEnforcementPolicy = null;
+                        if (((AMQPConnection_1_0Impl) existingConnection)._soleConnectionEnforcementPolicy
+                                != null)
                         {
-                            List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
-                            for (AMQPConnection<?> existingConnection : StreamSupport.stream(existingConnections.spliterator(), false)
-                                    .filter(con -> con instanceof AMQPConnection_1_0)
-                                    .filter(con -> !con.isClosing())
-                                    .filter(con -> con.getRemoteContainerName().equals(newConnection.getRemoteContainerName()))
-                                    .collect(Collectors.toList()))
-                            {
-                                SoleConnectionEnforcementPolicy soleConnectionEnforcementPolicy = null;
-                                if (((AMQPConnection_1_0Impl) existingConnection)._soleConnectionEnforcementPolicy
-                                        != null)
-                                {
-                                    soleConnectionEnforcementPolicy =
-                                            ((AMQPConnection_1_0Impl) existingConnection)._soleConnectionEnforcementPolicy;
-                                }
-                                else if (((AMQPConnection_1_0Impl) newConnection)._soleConnectionEnforcementPolicy != null)
-                                {
-                                    soleConnectionEnforcementPolicy =
-                                            ((AMQPConnection_1_0Impl) newConnection)._soleConnectionEnforcementPolicy;
-                                }
-                                if (SoleConnectionEnforcementPolicy.REFUSE_CONNECTION.equals(soleConnectionEnforcementPolicy))
-                                {
-                                    _properties.put(Symbol.valueOf("amqp:connection-establishment-failed"), true);
-                                    Error error = new Error(AmqpError.INVALID_FIELD,
-                                            String.format(
-                                                    "Connection closed due to sole-connection-enforcement-policy '%s'",
-                                                    soleConnectionEnforcementPolicy.toString()));
-                                    error.setInfo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
-                                    newConnection.doOnIOThreadAsync(() -> ((AMQPConnection_1_0Impl) newConnection).closeConnection(error));
-                                    proceedWithRegistration = false;
-                                    break;
-                                }
-                                else if (SoleConnectionEnforcementPolicy.CLOSE_EXISTING.equals(soleConnectionEnforcementPolicy))
-                                {
-                                    final Error error = new Error(AmqpError.RESOURCE_LOCKED,
-                                            String.format(
-                                                    "Connection closed due to sole-connection-enforcement-policy '%s'",
-                                                    soleConnectionEnforcementPolicy.toString()));
-                                    error.setInfo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true));
-                                    rescheduleFutures.add(existingConnection.doOnIOThreadAsync(
-                                            () -> ((AMQPConnection_1_0Impl) existingConnection).closeConnection(error)));
-                                    proceedWithRegistration = false;
-                                }
-                            }
-                            if (!rescheduleFutures.isEmpty())
-                            {
-                                doAfter(allAsList(rescheduleFutures), () -> newConnection.doOnIOThreadAsync(() -> receiveOpenInternal(addressSpace)));
-                            }
+                            soleConnectionEnforcementPolicy =
+                                    ((AMQPConnection_1_0Impl) existingConnection)._soleConnectionEnforcementPolicy;
                         }
-                        return proceedWithRegistration;
-                    });
-
-                    if (registerSucceeded)
-                    {
-                        setAddressSpace(addressSpace);
-
-                        if (!addressSpace.authoriseCreateConnection(this))
+                        else if (((AMQPConnection_1_0Impl) newConnection)._soleConnectionEnforcementPolicy != null)
                         {
-                            closeConnection(AmqpError.NOT_ALLOWED, "Connection refused");
+                            soleConnectionEnforcementPolicy =
+                                    ((AMQPConnection_1_0Impl) newConnection)._soleConnectionEnforcementPolicy;
                         }
-                        else
+                        if (SoleConnectionEnforcementPolicy.REFUSE_CONNECTION.equals(soleConnectionEnforcementPolicy))
                         {
-                            switch (_connectionState)
-                            {
-                                case AWAIT_OPEN:
-                                    sendOpen(_channelMax, _maxFrameSize);
-                                    _connectionState = ConnectionState.OPENED;
-                                    break;
-                                case CLOSE_SENT:
-                                case CLOSED:
-                                    // already sent our close - probably due to an error
-                                    break;
-                                default:
-                                    throw new ConnectionScopedRuntimeException(String.format(
-                                            "Unexpected state %s during connection open.", _connectionState));
-                            }
+                            _properties.put(Symbol.valueOf("amqp:connection-establishment-failed"), true);
+                            Error error = new Error(AmqpError.INVALID_FIELD,
+                                    String.format(
+                                            "Connection closed due to sole-connection-enforcement-policy '%s'",
+                                            soleConnectionEnforcementPolicy.toString()));
+                            error.setInfo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
+                            newConnection.doOnIOThreadAsync(() -> ((AMQPConnection_1_0Impl) newConnection).closeConnection(error));
+                            proceedWithRegistration = false;
+                            break;
+                        }
+                        else if (SoleConnectionEnforcementPolicy.CLOSE_EXISTING.equals(soleConnectionEnforcementPolicy))
+                        {
+                            final Error error = new Error(AmqpError.RESOURCE_LOCKED,
+                                    String.format(
+                                            "Connection closed due to sole-connection-enforcement-policy '%s'",
+                                            soleConnectionEnforcementPolicy.toString()));
+                            error.setInfo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true));
+                            rescheduleFutures.add(existingConnection.doOnIOThreadAsync(
+                                    () -> ((AMQPConnection_1_0Impl) existingConnection).closeConnection(error)));
+                            proceedWithRegistration = false;
                         }
                     }
+                    if (!rescheduleFutures.isEmpty())
+                    {
+                        doAfter(allAsList(rescheduleFutures), () -> newConnection.doOnIOThreadAsync(() -> receiveOpenInternal(addressSpace)));
+                    }
                 }
-                catch (VirtualHostUnavailableException | AccessControlException e)
+                return proceedWithRegistration;
+            });
+
+            if (registerSucceeded)
+            {
+                setAddressSpace(addressSpace);
+
+                if (!addressSpace.authoriseCreateConnection(this))
                 {
-                    closeConnection(AmqpError.NOT_ALLOWED, e.getMessage());
+                    closeConnection(AmqpError.NOT_ALLOWED, "Connection refused");
+                }
+                else
+                {
+                    switch (_connectionState)
+                    {
+                        case AWAIT_OPEN:
+                            sendOpen(_channelMax, _maxFrameSize);
+                            _connectionState = ConnectionState.OPENED;
+                            break;
+                        case CLOSE_SENT:
+                        case CLOSED:
+                            // already sent our close - probably due to an error
+                            break;
+                        default:
+                            throw new ConnectionScopedRuntimeException(String.format(
+                                    "Unexpected state %s during connection open.", _connectionState));
+                    }
                 }
             }
+        }
+        catch (VirtualHostUnavailableException | AccessControlException e)
+        {
+            closeConnection(AmqpError.NOT_ALLOWED, e.getMessage());
+        }
+        catch (ConnectionLimitException e)
+        {
+            LOGGER.debug("User connection limit exceeded", e);
+            closeConnection(AmqpError.RESOURCE_LIMIT_EXCEEDED, e.getMessage());
         }
     }
 
@@ -1151,7 +1156,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
         finally
         {
-            NamedAddressSpace virtualHost = getAddressSpace();
+            final NamedAddressSpace virtualHost = getAddressSpace();
             if (virtualHost != null)
             {
                 virtualHost.deregisterConnection(this);

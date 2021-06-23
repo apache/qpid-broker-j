@@ -20,7 +20,6 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.ATTRIBUTES;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.CLASS;
-import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.CONNECTION_LIMIT;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.FROM_HOSTNAME;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.FROM_NETWORK;
 import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.NAME;
@@ -41,7 +40,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.collections.Sets;
 
-import org.apache.qpid.server.security.access.firewall.FirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -125,12 +123,10 @@ public class AclRulePredicatesTest extends UnitTestBase
     {
         _aclRulePredicates.parse(ATTRIBUTES.name(), "attribute1,attribute2");
         _aclRulePredicates.parse(FROM_NETWORK.name(), "network1,network2");
-        _aclRulePredicates.parse(CONNECTION_LIMIT.name(), "20");
 
         final Map<ObjectProperties.Property, String> properties = _aclRulePredicates.getParsedProperties();
 
         assertThat(properties, allOf(hasEntry(ATTRIBUTES, "attribute1,attribute2"),
-                                     hasEntry(FROM_NETWORK, "network1,network2"),
-                                     hasEntry(CONNECTION_LIMIT, "20")));
+                                     hasEntry(FROM_NETWORK, "network1,network2")));
     }
 }
