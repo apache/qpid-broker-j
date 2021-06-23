@@ -20,7 +20,6 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.Matchers.aMapWithSize;
-import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,7 +33,6 @@ import java.util.Map;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import org.apache.qpid.server.security.access.firewall.FirewallRule;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AclActionTest extends UnitTestBase
@@ -103,7 +101,7 @@ public class AclActionTest extends UnitTestBase
     private AclRulePredicates createAclRulePredicates()
     {
         AclRulePredicates predicates = mock(AclRulePredicates.class);
-        when(predicates.getDynamicRule()).thenReturn(mock(FirewallRule.class));
+        when(predicates.getFirewallRule()).thenReturn(mock(FirewallRule.class));
         when(predicates.getObjectProperties()).thenReturn(mock(ObjectProperties.class));
         return predicates;
     }

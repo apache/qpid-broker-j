@@ -44,9 +44,9 @@ public class AclAction
         _action = new Action(operation, object, properties);
     }
 
-    public DynamicRule getDynamicRule()
+    public FirewallRule getFirewallRule()
     {
-        return _predicates == null ? null : _predicates.getDynamicRule();
+        return _predicates == null ? null : _predicates.getFirewallRule();
     }
 
     public Action getAction()

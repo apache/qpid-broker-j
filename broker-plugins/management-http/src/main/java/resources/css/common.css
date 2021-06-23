@@ -852,6 +852,11 @@ td.advancedSearchField, col.autoWidth {
 .queueMessages .field-state { width: 20%; }
 .queueMessages .field-arrivalTime { width: auto }
 
+.connectionLimitProviders .field-selected { width: 2em; }
+.connectionLimitProviders .field-name { width: 40%; }
+.connectionLimitProviders .field-state { width: 25%; }
+.connectionLimitProviders .field-type { width: auto;}
+
 .mapList-scroll-y
 {
     height: 5em;

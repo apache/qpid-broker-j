@@ -110,8 +110,8 @@ define(["dojo/parser",
                     registry.byNode(deleteQueueButton).on("click", function (evt)
                     {
                         that._deleteSelectedItems(that.vhostUpdater.queuesGrid,
-                                                  {type: "queue", parent: that.modelObj},
-                                                  "delete", "queue");
+                            {type: "queue", parent: that.modelObj},
+                            "delete", "queue");
                     });
 
                     var addExchangeButton = query(".addExchangeButton", containerNode)[0];
@@ -124,16 +124,16 @@ define(["dojo/parser",
                     registry.byNode(deleteExchangeButton).on("click", function (evt)
                     {
                         that._deleteSelectedItems(that.vhostUpdater.exchangesGrid,
-                                                 {type: "exchange", parent: that.modelObj},
-                                                 "delete", "exchange");
+                            {type: "exchange", parent: that.modelObj},
+                            "delete", "exchange");
                     });
 
                     var closeConnectionButton = query(".closeConnectionButton", containerNode)[0];
                     registry.byNode(closeConnectionButton).on("click", function (evt)
                     {
                         that._deleteSelectedItems(that.vhostUpdater.connectionsGrid,
-                                                  {type: "connection"},
-                                                  "close", "connection");
+                            {type: "connection"},
+                            "close", "connection");
                     });
 
                     var addLoggerButtonNode = query(".addVirtualHostLogger", contentPane.containerNode)[0];
@@ -148,8 +148,8 @@ define(["dojo/parser",
                     deleteLoggerButton.on("click", function (evt)
                     {
                         that._deleteSelectedItems(that.vhostUpdater.virtualHostLoggersGrid,
-                                                  {type: "virtualhostlogger", parent: that.modelObj},
-                                                  "delete", "virtual host logger");
+                            {type: "virtualhostlogger", parent: that.modelObj},
+                            "delete", "virtual host logger");
                     });
 
                     that.stopButton = registry.byNode(query(".stopButton", containerNode)[0]);
@@ -168,8 +168,8 @@ define(["dojo/parser",
                     that.deleteButton.on("click", function (e)
                     {
                         if (confirm("Deletion of virtual host will delete message data.\n\n"
-                                    + "Are you sure you want to delete virtual host  '"
-                                    + entities.encode(String(that.name)) + "'?"))
+                            + "Are you sure you want to delete virtual host  '"
+                            + entities.encode(String(that.name)) + "'?"))
                         {
                             that.management.remove(that.modelObj)
                                 .then(function (result)
@@ -188,8 +188,8 @@ define(["dojo/parser",
                     that.stopButton.on("click", function (event)
                     {
                         if (confirm("Stopping the virtual host will also stop its children. "
-                                    + "Are you sure you want to stop virtual host '"
-                                    + entities.encode(String(that.name)) + "'?"))
+                            + "Are you sure you want to stop virtual host '"
+                            + entities.encode(String(that.name)) + "'?"))
                         {
                             that.stopButton.set("disabled", true);
                             that.management.update(that.modelObj, {desiredState: "STOPPED"})
@@ -224,6 +224,27 @@ define(["dojo/parser",
                             "delete", "virtual host access control provider");
                     });
 
+                    const addConnectionLimitProviderButton = registry.byNode(
+                        query(".addVirtualHostConnectionLimitProvider", contentPane.containerNode)[0]);
+                    addConnectionLimitProviderButton.on("click", function () {
+                        require(["qpid/management/addConnectionLimitProvider"],
+                            function (addConnectionLimitProvider)
+                            {
+                                addConnectionLimitProvider.show(that.management, that.modelObj);
+                            });
+                    });
+
+                    const deleteConnectionLimitProviderButton = registry.byNode(
+                        query(".deleteVirtualHostConnectionLimitProvider", contentPane.containerNode)[0]);
+                    deleteConnectionLimitProviderButton.on("click", function () {
+                        that._deleteSelectedItems(that.vhostUpdater.virtualHostConnectionLimitProviderGrid,
+                            {
+                                type: "virtualhostconnectionlimitprovider",
+                                parent: that.modelObj
+                            },
+                            "delete", "virtual host connection limit provider");
+                    });
+
                     that.vhostUpdater.update(function ()
                     {
                         updater.add(that.vhostUpdater);
@@ -233,9 +254,10 @@ define(["dojo/parser",
 
         VirtualHost.prototype._deleteSelectedItems = function (dgrid, modelObj, friendlyAction, friendlyCategoryName)
         {
+            let confirmed = false;
             var selected = [];
             var selection = dgrid.selection;
-            for(var item in selection)
+            for (var item in selection)
             {
                 if (selection.hasOwnProperty(item) && selection[item])
                 {
@@ -246,10 +268,10 @@ define(["dojo/parser",
             {
                 var plural = selected.length === 1 ? "" : "s";
                 if (confirm(lang.replace("Are you sure you want to {0} {1} {2}{3}?",
-                        [friendlyAction,
-                         selected.length,
-                         entities.encode(friendlyCategoryName),
-                         plural])))
+                    [friendlyAction,
+                        selected.length,
+                        entities.encode(friendlyCategoryName),
+                        plural])))
                 {
                     this.management
                         .remove(modelObj, {"id": selected})
@@ -258,8 +280,10 @@ define(["dojo/parser",
                             dgrid.clearSelection();
                             this.vhostUpdater.update();
                         }));
+                    confirmed = true;
                 }
             }
+            return confirmed;
         };
 
         VirtualHost.prototype.close = function ()
@@ -304,22 +328,21 @@ define(["dojo/parser",
             this.virtualhostStatisticsNode = findNode("virtualhostStatistics");
 
             storeNodes(["name",
-                        "type",
-                        "state",
-                        "durable",
-                        "lifetimePolicy",
-                        "virtualHostDetailsContainer",
-                        "connectionThreadPoolSize",
-                        "statisticsReportingPeriod",
-                        "housekeepingCheckPeriod",
-                        "housekeepingThreadCount",
-                        "storeTransactionIdleTimeoutClose",
-                        "storeTransactionIdleTimeoutWarn",
-                        "storeTransactionOpenTimeoutClose",
-                        "storeTransactionOpenTimeoutWarn",
-                        "virtualHostConnections",
-                        "virtualHostChildren"]);
-
+                "type",
+                "state",
+                "durable",
+                "lifetimePolicy",
+                "virtualHostDetailsContainer",
+                "connectionThreadPoolSize",
+                "statisticsReportingPeriod",
+                "housekeepingCheckPeriod",
+                "housekeepingThreadCount",
+                "storeTransactionIdleTimeoutClose",
+                "storeTransactionIdleTimeoutWarn",
+                "storeTransactionOpenTimeoutClose",
+                "storeTransactionOpenTimeoutWarn",
+                "virtualHostConnections",
+                "virtualHostChildren"]);
 
 
             var CustomGrid = declare([QueryGrid, Selector]);
@@ -364,7 +387,9 @@ define(["dojo/parser",
                     }
                 ]
             }, findNode("queues"));
-            this.queuesGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
+            this.queuesGrid.on('rowBrowsed', function (event) {
+                controller.showById(event.id);
+            });
             this.queuesGrid.startup();
 
             this.exchangesGrid = new CustomGrid({
@@ -390,7 +415,7 @@ define(["dojo/parser",
                         field: "selected",
                         label: 'All',
                         selector: 'checkbox'
-                    },  {
+                    }, {
                         label: "Name",
                         field: "name"
                     }, {
@@ -402,7 +427,9 @@ define(["dojo/parser",
                     }
                 ]
             }, findNode("exchanges"));
-            this.exchangesGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
+            this.exchangesGrid.on('rowBrowsed', function (event) {
+                controller.showById(event.id);
+            });
             this.exchangesGrid.startup();
 
             this.connectionsGrid = new CustomGrid({
@@ -418,41 +445,43 @@ define(["dojo/parser",
                 deselectOnRefresh: false,
                 allowSelectAll: true,
                 columns: [
-                {
-                    field: "selected",
-                    label: 'All',
-                    selector: 'checkbox'
-                }, {
-                    label: "Name",
-                    field: "name"
-                }, {
-                    label: "User",
-                    field: "principal"
-                }, {
-                    label: "Port",
-                    field: "port"
-                }, {
-                    label: "Transport",
-                    field: "transport"
-                }, {
-                    label: "Sessions",
-                    field: "sessionCount"
-                }, {
-                    label: "Msgs In",
-                    field: "msgInRate"
-                }, {
-                    label: "Bytes In",
-                    field: "bytesInRate"
-                }, {
-                    label: "Msgs Out",
-                    field: "msgOutRate"
-                }, {
-                    label: "Bytes Out",
-                    field: "bytesOutRate"
-                }
+                    {
+                        field: "selected",
+                        label: 'All',
+                        selector: 'checkbox'
+                    }, {
+                        label: "Name",
+                        field: "name"
+                    }, {
+                        label: "User",
+                        field: "principal"
+                    }, {
+                        label: "Port",
+                        field: "port"
+                    }, {
+                        label: "Transport",
+                        field: "transport"
+                    }, {
+                        label: "Sessions",
+                        field: "sessionCount"
+                    }, {
+                        label: "Msgs In",
+                        field: "msgInRate"
+                    }, {
+                        label: "Bytes In",
+                        field: "bytesInRate"
+                    }, {
+                        label: "Msgs Out",
+                        field: "msgOutRate"
+                    }, {
+                        label: "Bytes Out",
+                        field: "bytesOutRate"
+                    }
                 ]
             }, findNode("connections"));
-            this.connectionsGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
+            this.connectionsGrid.on('rowBrowsed', function (event) {
+                controller.showById(event.id);
+            });
             this.connectionsGrid.startup();
 
             this.virtualHostLoggersGrid = new CustomGrid({
@@ -472,7 +501,7 @@ define(["dojo/parser",
                         field: "selected",
                         label: 'All',
                         selector: 'checkbox'
-                    },  {
+                    }, {
                         label: "Name",
                         field: "name"
                     }, {
@@ -487,7 +516,9 @@ define(["dojo/parser",
                     }
                 ]
             }, findNode("loggers"));
-            this.virtualHostLoggersGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
+            this.virtualHostLoggersGrid.on('rowBrowsed', function (event) {
+                controller.showById(event.id);
+            });
             this.virtualHostLoggersGrid.startup();
 
             var Store = MemoryStore.createSubclass(TrackableStore);
@@ -507,7 +538,8 @@ define(["dojo/parser",
                 pageSizeOptions: [10, 20, 30, 40, 50, 100],
                 adjustLastColumn: true,
                 collection: this._policyStore,
-                highlightRow: function (){},
+                highlightRow: function () {
+                },
                 columns: [
                     {
                         label: 'Node Type',
@@ -527,16 +559,16 @@ define(["dojo/parser",
                         label: "Attributes",
                         field: "attributes",
                         sortable: false,
-                        formatter: function(value, object)
+                        formatter: function (value, object)
                         {
                             var markup = "";
                             if (value)
                             {
                                 markup = "<div class='keyValuePair'>";
-                                for(var key in value)
+                                for (var key in value)
                                 {
                                     markup += "<div>" + entities.encode(String(key)) + "="
-                                              + entities.encode(String(value[key])) + "</div>";
+                                        + entities.encode(String(value[key])) + "</div>";
                                 }
                                 markup += "</div>"
                             }
@@ -549,7 +581,7 @@ define(["dojo/parser",
             this._policyGrid.startup();
             this._nodeAutoCreationPolicies = registry.byNode(findNode("nodeAutoCreationPolicies"));
 
-            aspect.after(this._nodeAutoCreationPolicies, "toggle", lang.hitch(this, function() {
+            aspect.after(this._nodeAutoCreationPolicies, "toggle", lang.hitch(this, function () {
                 if (this._nodeAutoCreationPolicies.get("open") === true)
                 {
                     this._policyGrid.refresh();
@@ -573,7 +605,7 @@ define(["dojo/parser",
                         field: "selected",
                         label: 'All',
                         selector: 'checkbox'
-                    },  {
+                    }, {
                         label: "Name",
                         field: "name"
                     }, {
@@ -588,9 +620,44 @@ define(["dojo/parser",
                     }
                 ]
             }, findNode("virtualHostAccessControlProviders"));
-            this.virtualHostAccessControlProviderGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
+            this.virtualHostAccessControlProviderGrid.on('rowBrowsed', function (event) {
+                controller.showById(event.id);
+            });
             this.virtualHostAccessControlProviderGrid.startup();
 
+            this.virtualHostConnectionLimitProviderGrid = new CustomGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
+                transformer: util.queryResultToObjects,
+                management: this.management,
+                parentObject: this.modelObj,
+                category: "VirtualHostConnectionLimitProvider",
+                selectClause: "id, name, state, type",
+                orderBy: "name",
+                selectionMode: 'none',
+                deselectOnRefresh: false,
+                allowSelectAll: true,
+                columns: [
+                    {
+                        field: "selected",
+                        label: 'All',
+                        selector: 'checkbox'
+                    }, {
+                        label: "Name",
+                        field: "name"
+                    }, {
+                        label: "State",
+                        field: "state"
+                    }, {
+                        label: "Type",
+                        field: "type"
+                    }
+                ]
+            }, findNode("virtualHostConnectionLimitProviders"));
+            this.virtualHostConnectionLimitProviderGrid.on('rowBrowsed', function (event) {
+                controller.showById(event.id);
+            });
+            this.virtualHostConnectionLimitProviderGrid.startup();
         }
 
         Updater.prototype.update = function (callback)
@@ -620,7 +687,7 @@ define(["dojo/parser",
                 }));
         };
 
-        Updater.prototype._updateFromData = function(data, callback)
+        Updater.prototype._updateFromData = function (data, callback)
         {
             this.vhostData = data || {name: this.modelObj.name};
 
@@ -675,6 +742,7 @@ define(["dojo/parser",
                 this.exchangesGrid.updateData();
                 this.virtualHostLoggersGrid.updateData();
                 this.virtualHostAccessControlProviderGrid.updateData();
+                this.virtualHostConnectionLimitProviderGrid.updateData();
             }
 
             if (this.details)
@@ -706,13 +774,13 @@ define(["dojo/parser",
             this.lifetimePolicy.innerHTML = entities.encode(String(this.vhostData["lifetimePolicy"]));
             util.updateUI(this.vhostData,
                 ["housekeepingCheckPeriod",
-                 "housekeepingThreadCount",
-                 "storeTransactionIdleTimeoutClose",
-                 "storeTransactionIdleTimeoutWarn",
-                 "storeTransactionOpenTimeoutClose",
-                 "storeTransactionOpenTimeoutWarn",
-                 "statisticsReportingPeriod",
-                 "connectionThreadPoolSize"],
+                    "housekeepingThreadCount",
+                    "storeTransactionIdleTimeoutClose",
+                    "storeTransactionIdleTimeoutWarn",
+                    "storeTransactionOpenTimeoutClose",
+                    "storeTransactionOpenTimeoutWarn",
+                    "statisticsReportingPeriod",
+                    "connectionThreadPoolSize"],
                 this)
         };
 
@@ -744,7 +812,7 @@ define(["dojo/parser",
                     if (oldConnection)
                     {
                         msgOutRate = (1000 * (connection.messagesOut - oldConnection.messagesOut))
-                                         / samplePeriod;
+                            / samplePeriod;
                         bytesOutRate = (1000 * (connection.bytesOut - oldConnection.bytesOut)) / samplePeriod;
                         msgInRate = (1000 * (connection.messagesIn - oldConnection.messagesIn)) / samplePeriod;
                         bytesInRate = (1000 * (connection.bytesIn - oldConnection.bytesIn)) / samplePeriod;

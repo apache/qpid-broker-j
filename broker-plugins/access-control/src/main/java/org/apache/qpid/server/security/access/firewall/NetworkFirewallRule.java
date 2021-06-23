@@ -25,13 +25,14 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NetworkFirewallRule extends FirewallRule
+public class NetworkFirewallRule extends AbstractFirewallRuleImpl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkFirewallRule.class);
     private List<InetNetwork> _networks;
 
     public NetworkFirewallRule(String... networks)
     {
+        super();
         _networks = new ArrayList<InetNetwork>();
         for (int i = 0; i < networks.length; i++)
         {

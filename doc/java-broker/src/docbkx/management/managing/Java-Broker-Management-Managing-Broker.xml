@@ -108,6 +108,9 @@
         <listitem>
           <para>Access Control Providers</para>
         </listitem>
+        <listitem>
+          <para>Connection Limit Providers</para>
+        </listitem>
       </itemizedlist>
     </para>
   </section>

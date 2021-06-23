@@ -45,6 +45,7 @@ define(["dojo/parser",
         "qpid/management/addAccessControlProvider",
         "qpid/management/editBroker",
         "qpid/management/addLogger",
+        "qpid/management/addConnectionLimitProvider",
         "dojo/text!showBroker.html",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
@@ -87,6 +88,7 @@ define(["dojo/parser",
               addAccessControlProvider,
               editBroker,
               addLogger,
+              addConnectionLimitProvider,
               template)
     {
 
@@ -328,6 +330,26 @@ define(["dojo/parser",
                                 that.brokerUpdater);
                         });
 
+                        const addConnectionLimitProviderButton = registry.byNode(
+                            query(".addConnectionLimitProvider", contentPane.containerNode)[0]);
+                        connect.connect(addConnectionLimitProviderButton, "onClick", function (evt)
+                        {
+                            addConnectionLimitProvider.show(that.management, that.modelObj);
+                        });
+
+                        const deleteConnectionLimitProviderButton = registry.byNode(
+                            query(".deleteConnectionLimitProvider", contentPane.containerNode)[0]);
+                        connect.connect(deleteConnectionLimitProviderButton, "onClick", function (evt)
+                        {
+                            util.deleteSelectedObjects(that.brokerUpdater.connectionLimitProvidersGrid.grid,
+                                "Are you sure you want to delete connection limit provider",
+                                that.management,
+                                {
+                                    type: "brokerconnectionlimitprovider",
+                                    parent: that.modelObj
+                                },
+                                that.brokerUpdater);
+                        });
                     });
             }
         };
@@ -896,6 +918,29 @@ define(["dojo/parser",
                     that.controller.showById(theItem.id);
                 });
             }, gridProperties, EnhancedGrid);
+
+            this.connectionLimitProvidersGrid =
+                new UpdatableStore([], query(".broker-connection-limit-providers")[0], [{
+                    name: "Name",
+                    field: "name",
+                    width: "40%"
+                }, {
+                    name: "State",
+                    field: "state",
+                    width: "30%"
+                }, {
+                    name: "Type",
+                    field: "type",
+                    width: "30%"
+                }], function (obj)
+                {
+                    connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                    {
+                        const theItem = this.getItem(evt.rowIndex);
+                        that.controller.showById(theItem.id);
+                    });
+                }, gridProperties, EnhancedGrid);
+
             this.update(function ()
             {
                 updater.add(that);
@@ -1043,6 +1088,11 @@ define(["dojo/parser",
                     if (that.brokerLoggersGrid)
                     {
                         that.brokerLoggersGrid.update(that.brokerData.brokerloggers);
+                    }
+                    if (that.connectionLimitProvidersGrid)
+                    {
+                        const limiters = that.brokerData.brokerconnectionlimitproviders;
+                        that.connectionLimitProvidersGrid.update(limiters);
                     }
                     if (callback)
                     {

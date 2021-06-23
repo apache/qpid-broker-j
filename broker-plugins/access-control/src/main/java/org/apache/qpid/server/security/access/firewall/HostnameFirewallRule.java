@@ -18,6 +18,9 @@
  */
 package org.apache.qpid.server.security.access.firewall;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
@@ -27,10 +30,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class HostnameFirewallRule extends FirewallRule
+public class HostnameFirewallRule extends AbstractFirewallRuleImpl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HostnameFirewallRule.class);
 
@@ -42,6 +42,7 @@ public class HostnameFirewallRule extends FirewallRule
 
     public HostnameFirewallRule(String... hostnames)
     {
+        super();
         _hostnames = hostnames;
 
         int i = 0;
@@ -69,7 +70,7 @@ public class HostnameFirewallRule extends FirewallRule
 
             if (hostnameMatches)
             {
-                if(LOGGER.isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
                     LOGGER.debug("Hostname " + hostname + " matches rule " + pattern.toString());
                 }
@@ -83,10 +84,9 @@ public class HostnameFirewallRule extends FirewallRule
     }
 
     /**
-     * @param remote
-     *            the InetAddress to look up
+     * @param remote the InetAddress to look up
      * @return the hostname, null if not found, takes longer than
-     *         {@link #DNS_LOOKUP} to find or otherwise fails
+     * {@link #DNS_LOOKUP} to find or otherwise fails
      */
     private String getHostname(final InetAddress remote) throws AccessControlFirewallException
     {
@@ -144,7 +144,7 @@ public class HostnameFirewallRule extends FirewallRule
     public String toString()
     {
         return "HostnameFirewallRule[" +
-               "hostnames=" + Arrays.toString(_hostnames) +
-               ']';
+                "hostnames=" + Arrays.toString(_hostnames) +
+                ']';
     }
 }

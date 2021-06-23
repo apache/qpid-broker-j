@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
+import org.apache.qpid.server.security.limit.ConnectionLimitException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,7 +166,6 @@ public class AMQPConnection_0_8Impl
     private volatile int _heartBeatDelay;
     private volatile String _closeCause;
     private volatile int _closeCauseCode;
-
 
     public AMQPConnection_0_8Impl(Broker<?> broker,
                                   ServerNetworkConnection network,
@@ -654,14 +654,7 @@ public class AMQPConnection_0_8Impl
             }
             finally
             {
-                performDeleteTasks();
-
-                final NamedAddressSpace virtualHost = getAddressSpace();
-                if (virtualHost != null)
-                {
-                    virtualHost.deregisterConnection(this);
-                }
-
+                clearConnection();
             }
         }
         catch (ConnectionScopedRuntimeException | TransportException e)
@@ -671,6 +664,22 @@ public class AMQPConnection_0_8Impl
         finally
         {
             markTransportClosed();
+        }
+    }
+
+    private void clearConnection()
+    {
+        try
+        {
+            performDeleteTasks();
+        }
+        finally
+        {
+            final NamedAddressSpace virtualHost = getAddressSpace();
+            if (virtualHost != null)
+            {
+                virtualHost.deregisterConnection(this);
+            }
         }
     }
 
@@ -937,10 +946,8 @@ public class AMQPConnection_0_8Impl
                                       AMQShortString capabilities,
                                       boolean insist)
     {
-        if(LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("RECV ConnectionOpen[" +" virtualHost: " + virtualHostName + " capabilities: " + capabilities + " insist: " + insist + " ]");
-        }
+        LOGGER.debug("RECV ConnectionOpen[virtualHost: {}, capabilities: {}, insist: {}]",
+                virtualHostName, capabilities, insist);
 
         assertState(ConnectionState.AWAIT_OPEN);
 
@@ -950,56 +957,57 @@ public class AMQPConnection_0_8Impl
             virtualHostStr = virtualHostStr.substring(1);
         }
 
-        NamedAddressSpace addressSpace = ((AmqpPort)getPort()).getAddressSpace(virtualHostStr);
+        final NamedAddressSpace addressSpace = ((AmqpPort)getPort()).getAddressSpace(virtualHostStr);
 
         if (addressSpace == null)
         {
             sendConnectionClose(ErrorCodes.NOT_FOUND,
                     "Unknown virtual host: '" + virtualHostName + "'", 0);
-
+            return;
         }
-        else
-        {
-            // Check virtualhost access
-            if (!addressSpace.isActive())
-            {
-                String redirectHost = addressSpace.getRedirectHost(getPort());
-                if(redirectHost != null)
-                {
-                    sendConnectionClose(0, new AMQFrame(0, new ConnectionRedirectBody(getProtocolVersion(), AMQShortString.valueOf(redirectHost), null)));
-                }
-                else
-                {
-                    sendConnectionClose(ErrorCodes.CONNECTION_FORCED,
-                            "Virtual host '" + addressSpace.getName() + "' is not active", 0);
-                }
 
+        // Check virtualhost access
+        if (!addressSpace.isActive())
+        {
+            final String redirectHost = addressSpace.getRedirectHost(getPort());
+            if (redirectHost != null)
+            {
+                sendConnectionClose(0, new AMQFrame(0, new ConnectionRedirectBody(getProtocolVersion(), AMQShortString.valueOf(redirectHost), null)));
             }
             else
             {
-                try
-                {
-                    addressSpace.registerConnection(this, new NoopConnectionEstablishmentPolicy());
-                    setAddressSpace(addressSpace);
-
-                    if(addressSpace.authoriseCreateConnection(this))
-                    {
-                        MethodRegistry methodRegistry = getMethodRegistry();
-                        AMQMethodBody responseBody = methodRegistry.createConnectionOpenOkBody(virtualHostName);
-
-                        writeFrame(responseBody.generateFrame(0));
-                        _state = ConnectionState.OPEN;
-                    }
-                    else
-                    {
-                        sendConnectionClose(ErrorCodes.ACCESS_REFUSED, "Connection refused", 0);
-                    }
-                }
-                catch (AccessControlException | VirtualHostUnavailableException e)
-                {
-                    sendConnectionClose(ErrorCodes.ACCESS_REFUSED, e.getMessage(), 0);
-                }
+                sendConnectionClose(ErrorCodes.CONNECTION_FORCED,
+                        "Virtual host '" + addressSpace.getName() + "' is not active", 0);
             }
+            return;
+        }
+
+        try
+        {
+            addressSpace.registerConnection(this, new NoopConnectionEstablishmentPolicy());
+            setAddressSpace(addressSpace);
+
+            if (addressSpace.authoriseCreateConnection(this))
+            {
+                final MethodRegistry methodRegistry = getMethodRegistry();
+                final AMQMethodBody responseBody = methodRegistry.createConnectionOpenOkBody(virtualHostName);
+
+                writeFrame(responseBody.generateFrame(0));
+                _state = ConnectionState.OPEN;
+            }
+            else
+            {
+                sendConnectionClose(ErrorCodes.ACCESS_REFUSED, "Connection refused", 0);
+            }
+        }
+        catch (AccessControlException | VirtualHostUnavailableException e)
+        {
+            sendConnectionClose(ErrorCodes.ACCESS_REFUSED, e.getMessage(), 0);
+        }
+        catch (ConnectionLimitException e)
+        {
+            LOGGER.debug("User connection limit exceeded", e);
+            sendConnectionClose(ErrorCodes.RESOURCE_ERROR, e.getMessage(), 0);
         }
     }
 

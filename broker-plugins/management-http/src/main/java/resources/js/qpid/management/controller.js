@@ -44,6 +44,7 @@ define(["dojo/dom",
         "qpid/management/QueryBrowserTab",
         "qpid/management/DashboardTab",
         "qpid/management/DashboardBrowserTab",
+        "qpid/management/ConnectionLimitProvider",
         "qpid/common/util",
         "dojo/ready",
         "dojox/uuid/generateRandomUuid",
@@ -74,6 +75,7 @@ define(["dojo/dom",
               QueryBrowserTab,
               DashboardTab,
               DashboardBrowserTab,
+              ConnectionLimitProvider,
               util,
               ready)
     {
@@ -100,7 +102,9 @@ define(["dojo/dom",
             query: QueryTab,
             dashboard: DashboardTab,
             queryBrowser: QueryBrowserTab,
-            dashboardBrowser: DashboardBrowserTab
+            dashboardBrowser: DashboardBrowserTab,
+            brokerconnectionlimitprovider: ConnectionLimitProvider,
+            virtualhostconnectionlimitprovider: ConnectionLimitProvider
         };
 
         ready(function ()

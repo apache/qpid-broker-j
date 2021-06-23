@@ -51,6 +51,8 @@
     Broker supports zero or more group providers.</para>
   <para><emphasis>Access Control Provider</emphasis> allows the abilities of users (or groups of
     users) to be restrained. A Broker can have zero or one access control providers.</para>
+  <para><emphasis>Connection Limit Provider</emphasis> restrains users (or groups of
+    users) at opening new connections on AMQP ports.</para>
   <para><emphasis>Keystores</emphasis> provide a repositories of certificates and are used when the
     Broker accepts SSL connections. Any number of keystore providers can be defined. Keystores are
     be associated with Ports defined to accepts SSL.</para>

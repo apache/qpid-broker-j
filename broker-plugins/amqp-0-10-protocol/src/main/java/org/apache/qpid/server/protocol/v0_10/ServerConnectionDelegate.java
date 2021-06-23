@@ -50,6 +50,7 @@ import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationS
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.limit.ConnectionLimitException;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -269,8 +270,10 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
 
             try
             {
+                final AMQPConnection_0_10 amqpConnection = sconn.getAmqpConnection();
+
                 sconn.setVirtualHost(addressSpace);
-                if(!addressSpace.authoriseCreateConnection(sconn.getAmqpConnection()))
+                if(!addressSpace.authoriseCreateConnection(amqpConnection))
                 {
                     sconn.setState(ServerConnection.State.CLOSING);
                     sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, "Connection not authorized");
@@ -282,6 +285,12 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
                 sconn.setState(ServerConnection.State.CLOSING);
                 sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage());
                 return;
+            }
+            catch (ConnectionLimitException e)
+            {
+                LOGGER.debug("User connection limit exceeded", e);
+                sconn.setState(ServerConnection.State.CLOSING);
+                sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage());
             }
 
             sconn.setState(ServerConnection.State.OPEN);

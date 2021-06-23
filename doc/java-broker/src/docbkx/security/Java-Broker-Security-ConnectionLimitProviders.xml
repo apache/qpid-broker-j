@@ -1,0 +1,248 @@
+<?xml version="1.0"?>
+<!--
+
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-ConnectionLimitProviders">
+    <title>Connection Limit Providers</title>
+    <para>
+        The Connection Limit Provider governs the limits of connections that an user can simultaneously open.
+    </para>
+    <para>There are two points within the hierarchy that enforce connection limits: the Broker itself and at each
+        Virtual Host. When a limit needs to be checked, every check point configured with a provider is consulted
+        for a decision. The example, when making a decision about the opening a new connection. If the Virtual Host is
+        configured with Connection Limit Provider then the limits are checked. Unless the connection is rejected,
+        the decision is delegated to the Connection Limit Provider configured at the Broker.
+    </para>
+    <para>Connection Limit Provider is configured with a set of CLT (connection limit) rules. The rules determine
+        the limit of open connections, how many connections can user open on the
+        <link linkend="Java-Broker-Concepts-Ports">AMQP Ports</link>.
+    </para>
+    <para>
+        CLT rules may be written in terms of user or group names. A rule written in terms of a group name applies to the
+        user if he is a member of that group. Groups information is obtained from the
+        <link linkend="Java-Broker-Security-Authentication-Providers">Authentication Providers</link>
+        and <link linkend="Java-Broker-Security-Group-Providers">Group Providers</link>. Writing CLT rules in terms of
+        user names is recommended.
+    </para>
+    <para>
+        The Connection Limit Providers can be configured using
+        <link linkend="Java-Broker-Management-Channel-REST-API">REST Management interfaces</link>
+        and <link linkend="Java-Broker-Management-Channel-Web-Console">Web Management Console</link>.
+    </para>
+    <section role="h3" xml:id="Java-Broker-Security-ConnectionLimitProviders-Types">
+        <title>Types</title>
+        <para>There are currently two types of Connection Limit Provider implementing CLT rules.
+            <itemizedlist>
+                <listitem>
+                    <para>
+                        <emphasis>RulesBased</emphasis>
+                        - a provider that stores the rule-set within the Broker's or VirtualHost's configuration.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <para>
+                            <emphasis>ConnectionLimitFile</emphasis>
+                            - a provider that references an externally provided CLT file (or data url).
+                        </para>
+                    </para>
+                </listitem>
+            </itemizedlist>
+        </para>
+    </section>
+    <section role="h3" xml:id="Java-Broker-Security-ConnectionLimitProviders-Rules">
+        <title>
+            Connection Limit Rules
+        </title>
+        <para>An CLT rule is composed of an user or group identification, AMQP port name and connection limits.
+            Let's look at some example.
+        </para>
+        <programlisting>
+            # Limits simultaneously open connection by alice on brokerAmqp port up to 10.
+            CLT alice port=brokerAmqp connection_count=10
+        </programlisting>
+        <para>If there is multiple rules for given user (or group) then the rules are merge into a single most
+            restrictive rule.
+        </para>
+        <programlisting>
+            CLT alice port=brokerAmqp connection_count=10
+            CLT alice port=brokerAmqp connection_count=12 connection_frequency_count=60/1m
+            CLT alice port=brokerAmqp connection_frequency_count=100/1m
+        </programlisting>
+        <para>The previous rules will be merge into a single effective rule.</para>
+        <programlisting>
+            CLT alice port=brokerAmqp connection_count=10 connection_frequency_count=60/1m
+        </programlisting>
+        <para>The rules are applied in following order:</para>
+        <orderedlist numeration="arabic">
+            <listitem>
+                <para>The effective rule for given user.</para>
+            </listitem>
+            <listitem>
+                <para>The effective rule for given set of groups that user is a member of.</para>
+            </listitem>
+            <listitem>
+                <para>The default rule, a rule with the user ALL that matches any user.</para>
+            </listitem>
+        </orderedlist>
+        <para>At the first broker looks for a rule for given user. If any rule is not found then broker will look for
+            the group rules. If any group rule is not found then broker will look for a default rule. An user without
+            any rule is not restricted.
+        </para>
+    </section>
+    <section role="h4" xml:id="Java-Broker-Security-ConnectionLimitProviders-Syntax">
+        <title>
+            Syntax
+        </title>
+        <para>
+            Connection limit rules follow this syntax:
+        </para>
+        <programlisting>
+            CLT {&lt;user-name&gt;|&lt;group-name&gt;|ALL} [BLOCK] [port=&lt;AMQP-port-name&gt;|ALL] [property="&lt;property-value&gt;"]
+        </programlisting>
+        <para>
+            A rule with user name ALL is default rule. Likewise a rule with port=ALL is applied to all ports.
+            The parameter BLOCK is optional and marks user or group that is not allowed to connect on the port.
+        </para>
+        <para>
+            Comments may be introduced with the hash (#) character and are ignored. A line can be broken with the slash
+            (\) character.
+        </para>
+        <programlisting>
+            # A comment
+            CLT alice port=brokerAMQP connection_limit=10 # Also a comment
+            CLT mark port=brokerAMQP \ # A broken line
+            connection_limit=10 \
+            connection_frequency_limit=60/1m
+            CLT ALL BLOCK # A default rule
+        </programlisting>
+        <table xml:id="table-Java-Broker-Security-ConnectionLimitProviders-Syntax_properties">
+            <title>List of connection limit (CLT) properties</title>
+            <tgroup cols="2">
+                <colspec colnum="1" colname="name" colwidth="1*"/>
+                <colspec colnum="2" colname="description" colwidth="1*"/>
+                <tbody>
+                    <row>
+                        <entry>
+                            <command>connection_limit</command>
+                        </entry>
+                        <entry>
+                            <para>
+                                Integer. A maximum number of connections the messaging user can establish to the Virtual
+                                Host on AMQP port.
+                            </para>
+                            <para>
+                                Alternatives: connection-limit, connectionLimit.
+                            </para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <command>connection_frequency_limit</command>
+                        </entry>
+                        <entry>
+                            <para>
+                                A maximum number of connections the messaging user can establish to the Virtual Host
+                                on AMQP port within defined period of time, which is 1 minute by default.
+                                The connection frequency limit is specified in the format: limit/period, where time
+                                period is written as xHyMz.wS - x hours, y minutes and z.w seconds.
+                            </para>
+                            <para>
+                                In case of time period 1 hour/minute/second the digit 1 can be omitted,
+                                for example: 7200/H or 120/M or 2/S.
+                                (7200/H is not the same frequency limit as 120/H or 2/S).
+                            </para>
+                            <para>
+                                If the period is omitted then the default frequency period is used.
+                                If required, the default frequency period can be changed using CONFIG command.
+                                See an example below. Setting it to zero or negative value turns off the connection
+                                frequency evaluation.
+                            </para>
+                            <para>
+                                Alternatives: connection-frequency-limit, connectionFrequencyLimit.
+                            </para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <command>port</command>
+                        </entry>
+                        <entry>
+                            <para>
+                                String. The AMQP port name, ALL is the default value.
+                            </para>
+                        </entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <para>
+            The default time period for frequency limit can be set up with the <literal>CONFIG</literal> command.
+            Default frequency period is specified in ms.
+        </para>
+        <programlisting>
+            CONFIG default_frequency_period=60000
+        </programlisting>
+        <para>
+            default-frequency-period and defaultFrequencyPeriod are valid alternatives to the default_frequency_period.
+        </para>
+        <para>
+            The default frequency period may be specified as context variable
+            <literal>qpid.broker.connectionLimiter.frequencyPeriodInMillis</literal>.
+        </para>
+        <para>
+            The Broker logs rejected connections when an user breaks the limit. But the Broker could also log
+            the accepted connections with current counter value. The full logging could be turn on with
+            <literal>CONFIG</literal> command.
+        </para>
+        <programlisting>
+            CONFIG log_all=true default_frequency_period=60000
+        </programlisting>
+        <para>
+            log-all and logAll are valid alternatives to the log_all.
+        </para>
+    </section>
+    <section role="h4" xml:id="Java-Broker-Security-ConnectionLimitProviders-WorkedExample">
+        <title>
+            Worked Example
+        </title>
+        <para>
+            Here are some example of connection limits illustrating common use cases.
+        </para>
+        <para>
+            Suppose you wish to restrict two users: a user <literal>operator</literal> can establish at the most 50
+            connections on any port. A user <literal>publisher</literal> can establish 30 new connection per two minutes
+            but at the most 20 parallel connections on <literal>amqp</literal> port. Another users should be blocked.
+        </para>
+        <example>
+            <title>CLT file example</title>
+            <programlisting><![CDATA[
+          # Limit operator
+          CLT operator connection_limit=50
+          # Limit publisher
+          CLT publisher port=amqp connection_frequency_limit=30/2M connection_limit=20
+          # Block all users by default
+          CLT ALL BLOCK
+            ]]>
+            </programlisting>
+        </example>
+    </section>
+</section>

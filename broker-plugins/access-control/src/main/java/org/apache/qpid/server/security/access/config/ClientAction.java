@@ -41,10 +41,10 @@ public class ClientAction
     public boolean matches(AclAction ruleAction, final Subject subject)
     {
         return _clientAction.matches(ruleAction.getAction())
-               && dynamicMatches(ruleAction.getDynamicRule(), subject);
+               && dynamicMatches(ruleAction.getFirewallRule(), subject);
     }
 
-    private boolean dynamicMatches(final DynamicRule dynamicRule, final Subject subject)
+    private boolean dynamicMatches(final FirewallRule dynamicRule, final Subject subject)
     {
         return dynamicRule == null || dynamicRule.matches(subject);
     }

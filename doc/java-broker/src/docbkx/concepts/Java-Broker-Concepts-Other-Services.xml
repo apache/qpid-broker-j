@@ -23,7 +23,8 @@
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Concepts-Other-Services">
 <title>Other Services</title>
     <para>
-        The Broker can also have <emphasis>Access Control Providers</emphasis>, <emphasis>Group Providers</emphasis>,
+        The Broker can also have <emphasis>Access Control Providers</emphasis>,
+        <emphasis>Connection Limit Providers</emphasis>, <emphasis>Group Providers</emphasis>,
         <emphasis>Keystores</emphasis>, <emphasis>Trustores</emphasis> and [Management] <emphasis>Plugins</emphasis> configured.
     </para>
 
@@ -31,6 +32,14 @@
         <title>Access Control Providers</title>
         <para><emphasis>Access Control Providers</emphasis> are used to authorize various operations relating to Broker objects.</para>
         <para>Access Control Provider configuration and management details are covered in <xref linkend="Java-Broker-Security-AccessControlProviders"/>.</para>
+    </section>
+
+    <section xml:id="Java-Broker-Concepts-Connection-Limit-Providers">
+        <title>Connection Limit Providers</title>
+        <para><emphasis>Connection Limit Providers</emphasis> are used to limit the amount of connections that
+            user could open on AMQP ports.</para>
+        <para>Connection Limit Providers configuration and management details are covered in
+            <xref linkend="Java-Broker-Security-ConnectionLimitProviders"/>.</para>
     </section>
 
     <section xml:id="Java-Broker-Concepts-Group-Providers">

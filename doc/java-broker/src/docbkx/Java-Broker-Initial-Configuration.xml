@@ -51,6 +51,9 @@
                     <para>Access Control Providers</para>
                 </listitem>
                 <listitem>
+                    <para>User Connection Limit Providers</para>
+                </listitem>
+                <listitem>
                     <para>Group Providers (optionally with Groups and GroupMembers for managing groups Group Providers)</para>
                 </listitem>
                 <listitem>
