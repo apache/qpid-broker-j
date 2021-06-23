@@ -264,7 +264,7 @@ public class TCPandSSLTransportTest extends UnitTestBase
         when(port.getPort()).thenReturn(0);
         when(port.getName()).thenReturn("testAmqp");
         when(port.getNetworkBufferSize()).thenReturn(64*1024);
-        when(port.canAcceptNewConnection(any(SocketAddress.class))).thenReturn(true);
+        when(port.acceptNewConnectionAndIncrementCount(any(SocketAddress.class))).thenReturn(true);
         when(port.getThreadPoolSize()).thenReturn(2);
         when(port.getNumberOfSelectors()).thenReturn(1);
         when(port.getSSLContext()).thenReturn(sslContext);

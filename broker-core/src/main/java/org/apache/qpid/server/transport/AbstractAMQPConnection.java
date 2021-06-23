@@ -144,7 +144,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     private volatile boolean _messageAuthorizationRequired;
 
-    private final AtomicLong _maxMessageSize = new AtomicLong(Long.MAX_VALUE);
+    private final AtomicLong _maxMessageSize = new AtomicLong(Integer.MAX_VALUE);
     private volatile int _messageCompressionThreshold;
     private volatile TransactionObserver _transactionObserver;
     private long _maxUncommittedInMemorySize;
@@ -400,19 +400,18 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     private long getMaxMessageSize(final ContextProvider object)
     {
-        long maxMessageSize;
         try
         {
-            maxMessageSize = object.getContextValue(Integer.class, MAX_MESSAGE_SIZE);
+            final int maxMessageSize = object.getContextValue(Integer.class, MAX_MESSAGE_SIZE);
+            return maxMessageSize > 0 ? maxMessageSize : Integer.MAX_VALUE;
         }
         catch (NullPointerException | IllegalArgumentException e)
         {
             LOGGER.warn("Context variable {} has invalid value and cannot be used to restrict maximum message size",
-                         MAX_MESSAGE_SIZE,
-                         e);
-            maxMessageSize = Long.MAX_VALUE;
+                    MAX_MESSAGE_SIZE,
+                    e);
         }
-        return maxMessageSize > 0 ? maxMessageSize : Long.MAX_VALUE;
+        return Integer.MAX_VALUE;
     }
 
     @Override
