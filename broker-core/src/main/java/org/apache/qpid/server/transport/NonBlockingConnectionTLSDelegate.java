@@ -300,7 +300,27 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                     _encryptedOutput.add(_netOutputBuffer);
                     _netOutputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
                 }
-
+                // SSLEngine looping circuit breaker
+                if (_parent.detectConnectionLooping())
+                {
+                    _parent.incrementLoopingCounter();
+                    if (_parent.isLooping())
+                    {
+                        LOGGER.warn("SSLEngine looping detected, _status: {}, _sslEngine.isOutboundDone(): {}, _sslEngine.isInboundDone(): {}, "
+                                        + "_sslEngine.getPeerHost(): {}, _sslEngine.getPeerPort(): {}",
+                                "[ Status = " + _status.getStatus() + ", HandshakeStatus = " + _status.getHandshakeStatus()
+                                        + ", bytesConsumed = " + _status.bytesConsumed() + ", bytesProduced = " + _status.bytesProduced() + " ]",
+                                _sslEngine.isOutboundDone(),
+                                _sslEngine.isInboundDone(),
+                                _sslEngine.getPeerHost(),
+                                _sslEngine.getPeerPort()
+                        );
+                    }
+                    if (_parent.stopLooping())
+                    {
+                        throw new SSLException("SSLEngine looping detected, executing circuit breaker");
+                    }
+                }
             }
             else
             {

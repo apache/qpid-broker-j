@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -75,6 +76,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private final AtomicLong _maxReadIdleMillis = new AtomicLong();
     private final List<SchedulingDelayNotificationListener> _schedulingDelayNotificationListeners = new CopyOnWriteArrayList<>();
     private final AtomicBoolean _hasShutdown = new AtomicBoolean();
+    private final AtomicInteger _loopingCounter = new AtomicInteger(0);
     private volatile long _bufferedSize;
     private String _selectedHost;
 
@@ -691,4 +693,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     {
         return _selectedHost;
     }
+
+    public boolean detectConnectionLooping() { return _port.getContextValue(Boolean.class, AmqpPort.PORT_DETECT_CONNECTION_LOOPING); }
+
+    public boolean isLooping() { return _loopingCounter.get() > _port.getContextValue(Integer.class, AmqpPort.PORT_CONNECTION_LOOPING_DETECTION_THRESHOLD); }
+
+    public boolean stopLooping() { return _loopingCounter.get() >= _port.getContextValue(Integer.class, AmqpPort.PORT_CONNECTION_LOOPING_STOP_THRESHOLD); }
+
+    public void incrementLoopingCounter() { _loopingCounter.incrementAndGet(); }
 }

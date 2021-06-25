@@ -56,6 +56,10 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     String PORT_AMQP_NUMBER_OF_SELECTORS = "qpid.port.amqp.threadPool.numberOfSelectors";
     String PORT_AMQP_ACCEPT_BACKLOG = "qpid.port.amqp.acceptBacklog";
 
+    String PORT_DETECT_CONNECTION_LOOPING = "qpid.port.amqp.detect.connection.looping";
+    String PORT_CONNECTION_LOOPING_DETECTION_THRESHOLD = "qpid.port.amqp.detect.connection.looping.detection.threshold";
+    String PORT_CONNECTION_LOOPING_STOP_THRESHOLD = "qpid.port.amqp.detect.connection.looping.stop.threshold";
+
     @ManagedContextDefault(name = DEFAULT_AMQP_PROTOCOLS)
     String INSTALLED_PROTOCOLS = AmqpPortImpl.getInstalledProtocolsAsString();
 
@@ -63,6 +67,18 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 
     @ManagedContextDefault(name = PORT_MAX_OPEN_CONNECTIONS)
     int DEFAULT_MAX_OPEN_CONNECTIONS = -1;
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PORT_DETECT_CONNECTION_LOOPING)
+    boolean DEFAULT_PORT_DETECT_CONNECTION_LOOPING = false;
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PORT_CONNECTION_LOOPING_DETECTION_THRESHOLD)
+    long DEFAULT_PORT_CONNECTION_LOOPING_DETECTION_THRESHOLD = 1000;
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PORT_CONNECTION_LOOPING_STOP_THRESHOLD)
+    long DEFAULT_PORT_CONNECTION_LOOPING_STOP_THRESHOLD = 1005;
 
     String PORT_IGNORE_INVALID_SNI = "qpid.port.amqp.ignoreInvalidSni";
 
