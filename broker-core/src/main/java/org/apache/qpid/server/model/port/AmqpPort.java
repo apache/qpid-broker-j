@@ -56,6 +56,10 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     String PORT_AMQP_NUMBER_OF_SELECTORS = "qpid.port.amqp.threadPool.numberOfSelectors";
     String PORT_AMQP_ACCEPT_BACKLOG = "qpid.port.amqp.acceptBacklog";
 
+    String PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING = "qpid.port.amqp.diagnosisOfSslEngineLooping";
+    String PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_WARN_THRESHOLD = "qpid.port.amqp.diagnosisOfSslEngineLoopingWarnThreshold";
+    String PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD = "qpid.port.amqp.diagnosisOfSslEngineLoopingBreakThreshold";
+
     @ManagedContextDefault(name = DEFAULT_AMQP_PROTOCOLS)
     String INSTALLED_PROTOCOLS = AmqpPortImpl.getInstalledProtocolsAsString();
 
@@ -63,6 +67,18 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 
     @ManagedContextDefault(name = PORT_MAX_OPEN_CONNECTIONS)
     int DEFAULT_MAX_OPEN_CONNECTIONS = -1;
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING)
+    boolean DEFAULT_PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING = false;
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_WARN_THRESHOLD)
+    long DEFAULT_PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_WARN_THRESHOLD = 1000;
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD)
+    long DEFAULT_PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD = 1005;
 
     String PORT_IGNORE_INVALID_SNI = "qpid.port.amqp.ignoreInvalidSni";
 
