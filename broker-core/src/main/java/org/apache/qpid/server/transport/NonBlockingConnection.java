@@ -691,4 +691,5 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     {
         return _selectedHost;
     }
+
 }
