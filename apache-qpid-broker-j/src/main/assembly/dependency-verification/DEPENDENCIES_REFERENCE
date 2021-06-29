@@ -85,8 +85,6 @@ From: 'The Apache Software Foundation' (https://www.apache.org/)
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Access Control Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-access-control) org.apache.qpid:qpid-broker-plugins-access-control:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Apache Qpid Broker-J Connection Limits Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-connection-limits) org.apache.qpid:qpid-broker-plugins-connection-limits:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP 0-10 Protocol Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-0-10-protocol) org.apache.qpid:qpid-broker-plugins-amqp-0-10-protocol:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP 0-8 Protocol Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-0-8-protocol) org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:jar
@@ -102,6 +100,8 @@ From: 'The Apache Software Foundation' (https://www.apache.org/)
   - Apache Qpid Broker-J AMQP 0-8 to 0-10 Message Conversion Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP 0-8 to 1-0 Message Conversion Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-8-to-1-0) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-8-to-1-0:jar
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Apache Qpid Broker-J Connection Limit Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-connection-limits) org.apache.qpid:qpid-broker-plugins-connection-limits:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Derby Message Store Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-derby-store) org.apache.qpid:qpid-broker-plugins-derby-store:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
