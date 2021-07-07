@@ -527,7 +527,6 @@ class SelectorThread extends Thread
                         _connection.clearScheduled();
                         _connection.getScheduler().addConnection(_connection);
                         run = false;
-                        ;
                     }
                     else if (!_connection.isStateChanged() && !_connection.isPartialRead())
                     {
