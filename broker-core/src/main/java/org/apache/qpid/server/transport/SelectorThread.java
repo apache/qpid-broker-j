@@ -515,24 +515,21 @@ class SelectorThread extends Thread
             {
                 Thread.currentThread().setName(_connection.getThreadName());
 
-                if (_connection.getScheduler() != _scheduler)
-                {
-                    _connection.doPreWork();
-                    _connection.doWork();
-
-                    removeConnection(_connection);
-                    _connection.clearScheduled();
-                    _connection.getScheduler().addConnection(_connection);
-                    return;
-                }
-
                 boolean run = true;
                 _connection.doPreWork();
-                
+
                 while (run)
                 {
                     run = !_connection.doWork();
-                    if (!_connection.isStateChanged() && !_connection.isPartialRead())
+                    if (_connection.getScheduler() != _scheduler)
+                    {
+                        removeConnection(_connection);
+                        _connection.clearScheduled();
+                        _connection.getScheduler().addConnection(_connection);
+                        run = false;
+                        ;
+                    }
+                    else if (!_connection.isStateChanged() && !_connection.isPartialRead())
                     {
                         _connection.clearScheduled();
                         returnConnectionToSelector(_connection);
