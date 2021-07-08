@@ -256,9 +256,9 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
             }
         }
 
-        if (messageContainer != null)
+        if (consumer != null && messageContainer != null)
         {
-            MessageInstance entry = messageContainer.getMessageInstance();
+            final MessageInstance entry = messageContainer.getMessageInstance();
             try
             {
                 send(consumer, entry, false);
@@ -281,7 +281,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
                         case ROUTE_TO_ALTERNATE:
                             if (consumer.acquires())
                             {
-                                int enqueues = entry.routeToAlternate(null, null, null);
+                                final int enqueues = entry.routeToAlternate(null, null, null);
                                 if (enqueues == 0)
                                 {
                                     LOGGER.info("Failed to convert message {} for this consumer because '{}'."

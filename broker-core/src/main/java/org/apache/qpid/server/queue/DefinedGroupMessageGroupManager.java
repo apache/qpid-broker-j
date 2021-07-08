@@ -251,14 +251,20 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
     
     private Object getKey(QueueEntry entry)
     {
-        ServerMessage message = entry.getMessage();
-        AMQMessageHeader messageHeader = message == null ? null : message.getMessageHeader();
-        Object groupVal = messageHeader == null
-                ? _defaultGroup
-                : _groupId == null
-                        ? messageHeader.getGroupId()
-                        : messageHeader.getHeader(_groupId);
-        if(groupVal == null)
+        final ServerMessage message = entry.getMessage();
+        final AMQMessageHeader messageHeader = message == null ? null : message.getMessageHeader();
+        Object groupVal;
+        if (messageHeader == null)
+        {
+            groupVal = _defaultGroup;
+        }
+        else
+        {
+            groupVal = _groupId == null
+                    ? messageHeader.getGroupId()
+                    : messageHeader.getHeader(_groupId);
+        }
+        if (groupVal == null)
         {
             groupVal = _defaultGroup;
         }

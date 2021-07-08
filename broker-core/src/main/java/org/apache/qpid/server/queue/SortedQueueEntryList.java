@@ -23,6 +23,7 @@ package org.apache.qpid.server.queue;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.queue.SortedQueueEntry.Colour;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 /**
  * A sorted implementation of QueueEntryList.
@@ -84,7 +85,7 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
     private void insert(final SortedQueueEntry entry)
     {
         SortedQueueEntry node;
-        if((node = _root) == null)
+        if ((node = _root) == null)
         {
             _root = entry;
             _head.setNext(entry);
@@ -94,10 +95,10 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
         else
         {
             SortedQueueEntry parent = null;
-            while(node != null)
+            while (node != null)
             {
                 parent = node;
-                if(entry.compareTo(node) < 0)
+                if (entry.compareTo(node) < 0)
                 {
                     node = node.getLeft();
                 }
@@ -106,9 +107,13 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
                     node = node.getRight();
                 }
             }
+            if (parent == null)
+            {
+                throw new ConnectionScopedRuntimeException("Failed to insert an entry, parent not found");
+            }
             entry.setParent(parent);
 
-            if(entry.compareTo(parent) < 0)
+            if (entry.compareTo(parent) < 0)
             {
                 parent.setLeft(entry);
                 final SortedQueueEntry prev = parent.getPrev();
@@ -125,7 +130,7 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
                 entry.setNext(next);
                 parent.setNext(entry);
 
-                if(next != null)
+                if (next != null)
                 {
                     next.setPrev(entry);
                 }

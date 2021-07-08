@@ -406,7 +406,11 @@ public class StressTestClient
                                             {
                                                 System.out.println(CLASS + ": Consuming Message " + cs);
                                             }
-                                            Message msg = consumer.receive(recieveTimeout);
+                                            Message msg = null;
+                                            if (consumer != null)
+                                            {
+                                                msg = consumer.receive(recieveTimeout);
+                                            }
 
                                             if (sess.getTransacted() && cs % txBatch == 0)
                                             {

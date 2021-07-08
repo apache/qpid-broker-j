@@ -133,7 +133,7 @@ public class ArgumentsParser
     public void usage(Class<?> objectClass, Set<String> requiredFields)
     {
         System.out.println("Supported arguments:");
-        Field[] fields = objectClass.getDeclaredFields();
+        final Field[] fields = objectClass.getDeclaredFields();
 
         Object object = null;
         try
@@ -147,7 +147,7 @@ public class ArgumentsParser
 
         for (int i = 0 ; i< fields.length ; i++)
         {
-            Field field = fields[i];
+            final Field field = fields[i];
             if (!Modifier.isFinal(field.getModifiers()))
             {
                 Object defaultValue = null;
@@ -163,7 +163,7 @@ public class ArgumentsParser
 
                 System.out.println("    " + field.getName()  + " ( type: "
                         + field.getType().getSimpleName().toLowerCase()
-                        + (object != null ? ", default: " + defaultValue : "")
+                        + (object != null ? ", default: " + String.valueOf(defaultValue) : "")
                         + (requiredFields != null && requiredFields.contains(field.getName()) ? ", mandatory" : "")
                         + ")");
             }
