@@ -458,7 +458,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 {
                     txn = _linkEndpoint.getTransaction(transactionId);
                     getSession().getConnection().registerTransactedMessageDelivered();
-                    TransactionLogResource owningResource = _queueEntry.getOwningResource();
+                    final TransactionLogResource owningResource = _queueEntry.getOwningResource();
                     if (owningResource instanceof TransactionMonitor)
                     {
                         ((TransactionMonitor) owningResource).registerTransaction(txn);
@@ -482,11 +482,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 txn = null;
             }
 
-            if(outcome instanceof Accepted)
+            if (txn != null)
             {
-                if (_queueEntry.makeAcquisitionUnstealable(getConsumer()))
+                if (outcome instanceof Accepted)
                 {
-                    txn.dequeue(_queueEntry.getEnqueueRecord(),
+                    if (_queueEntry.makeAcquisitionUnstealable(getConsumer()))
+                    {
+                        txn.dequeue(_queueEntry.getEnqueueRecord(),
                                 new ServerTransaction.Action()
                                 {
                                     @Override
@@ -504,13 +506,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
                                     }
                                 });
-                }
-                txn.addPostTransactionAction(new ServerTransaction.Action()
+                    }
+                    txn.addPostTransactionAction(new ServerTransaction.Action()
                     {
                         @Override
                         public void postCommit()
                         {
-                            if(Boolean.TRUE.equals(settled))
+                            if (Boolean.TRUE.equals(settled))
                             {
                                 _linkEndpoint.settle(_deliveryTag);
                             }
@@ -523,94 +525,94 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                         @Override
                         public void onRollback()
                         {
-                            if(Boolean.TRUE.equals(settled))
+                            if (Boolean.TRUE.equals(settled))
                             {
                                 // TODO: apply source's default outcome
                                 applyModifiedOutcome();
                             }
                         }
                     });
-            }
-            else if(outcome instanceof Released)
-            {
-                txn.addPostTransactionAction(new ServerTransaction.Action()
+                }
+                else if (outcome instanceof Released)
                 {
-                    @Override
-                    public void postCommit()
+                    txn.addPostTransactionAction(new ServerTransaction.Action()
                     {
-
-                        _queueEntry.release(getConsumer());
-                        _linkEndpoint.settle(_deliveryTag);
-                    }
-
-                    @Override
-                    public void onRollback()
-                    {
-                        _linkEndpoint.settle(_deliveryTag);
-
-                        // TODO: apply source's default outcome if settled
-                    }
-                });
-            }
-            else if(outcome instanceof Modified)
-            {
-                txn.addPostTransactionAction(new ServerTransaction.Action()
-                {
-                    @Override
-                    public void postCommit()
-                    {
-                        Modified modifiedOutcome = (Modified) outcome;
-                        if (Boolean.TRUE.equals(modifiedOutcome.getUndeliverableHere()))
+                        @Override
+                        public void postCommit()
                         {
-                            _queueEntry.reject(getConsumer());
-                        }
 
-                        if(Boolean.TRUE.equals(modifiedOutcome.getDeliveryFailed()))
-                        {
-                            incrementDeliveryCountOrRouteToAlternateOrDiscard();
-                        }
-                        else
-                        {
                             _queueEntry.release(getConsumer());
+                            _linkEndpoint.settle(_deliveryTag);
                         }
-                        _linkEndpoint.settle(_deliveryTag);
-                    }
 
-                    @Override
-                    public void onRollback()
-                    {
-                        if(Boolean.TRUE.equals(settled))
+                        @Override
+                        public void onRollback()
                         {
-                            // TODO: apply source's default outcome
-                            applyModifiedOutcome();
+                            _linkEndpoint.settle(_deliveryTag);
+
+                            // TODO: apply source's default outcome if settled
                         }
-                    }
-                });
-            }
-            else if (outcome instanceof Rejected)
-            {
-                txn.addPostTransactionAction(new ServerTransaction.Action()
+                    });
+                }
+                else if (outcome instanceof Modified)
                 {
-                    @Override
-                    public void postCommit()
+                    txn.addPostTransactionAction(new ServerTransaction.Action()
                     {
-                        _linkEndpoint.settle(_deliveryTag);
-                        incrementDeliveryCountOrRouteToAlternateOrDiscard();
-                        _linkEndpoint.sendFlowConditional();
-                    }
-
-                    @Override
-                    public void onRollback()
-                    {
-                        if(Boolean.TRUE.equals(settled))
+                        @Override
+                        public void postCommit()
                         {
-                            // TODO: apply source's default outcome
-                            applyModifiedOutcome();
-                        }
-                    }
-                });
-            }
+                            final Modified modifiedOutcome = (Modified) outcome;
+                            if (Boolean.TRUE.equals(modifiedOutcome.getUndeliverableHere()))
+                            {
+                                _queueEntry.reject(getConsumer());
+                            }
 
+                            if (Boolean.TRUE.equals(modifiedOutcome.getDeliveryFailed()))
+                            {
+                                incrementDeliveryCountOrRouteToAlternateOrDiscard();
+                            }
+                            else
+                            {
+                                _queueEntry.release(getConsumer());
+                            }
+                            _linkEndpoint.settle(_deliveryTag);
+                        }
+
+                        @Override
+                        public void onRollback()
+                        {
+                            if (Boolean.TRUE.equals(settled))
+                            {
+                                // TODO: apply source's default outcome
+                                applyModifiedOutcome();
+                            }
+                        }
+                    });
+                }
+                else if (outcome instanceof Rejected)
+                {
+                    txn.addPostTransactionAction(new ServerTransaction.Action()
+                    {
+                        @Override
+                        public void postCommit()
+                        {
+                            _linkEndpoint.settle(_deliveryTag);
+                            incrementDeliveryCountOrRouteToAlternateOrDiscard();
+                            _linkEndpoint.sendFlowConditional();
+                        }
+
+                        @Override
+                        public void onRollback()
+                        {
+                            if (Boolean.TRUE.equals(settled))
+                            {
+                                // TODO: apply source's default outcome
+                                applyModifiedOutcome();
+                            }
+                        }
+                    });
+                }
+            }
             return (transactionId == null && outcome != null);
         }
 

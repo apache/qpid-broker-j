@@ -926,12 +926,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         try
         {
-            boolean registerSucceeded = addressSpace.registerConnection(this, (existingConnections, newConnection) ->
+            final boolean registerSucceeded = addressSpace.registerConnection(this, (existingConnections, newConnection) ->
             {
                 boolean proceedWithRegistration = true;
                 if (newConnection instanceof AMQPConnection_1_0Impl && !newConnection.isClosing())
                 {
-                    List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
+                    final List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
                     for (AMQPConnection<?> existingConnection : StreamSupport.stream(existingConnections.spliterator(), false)
                             .filter(con -> con instanceof AMQPConnection_1_0)
                             .filter(con -> !con.isClosing())
@@ -953,10 +953,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                         if (SoleConnectionEnforcementPolicy.REFUSE_CONNECTION.equals(soleConnectionEnforcementPolicy))
                         {
                             _properties.put(Symbol.valueOf("amqp:connection-establishment-failed"), true);
-                            Error error = new Error(AmqpError.INVALID_FIELD,
+                            final Error error = new Error(AmqpError.INVALID_FIELD,
                                     String.format(
                                             "Connection closed due to sole-connection-enforcement-policy '%s'",
-                                            soleConnectionEnforcementPolicy.toString()));
+                                            String.valueOf(soleConnectionEnforcementPolicy)));
                             error.setInfo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
                             newConnection.doOnIOThreadAsync(() -> ((AMQPConnection_1_0Impl) newConnection).closeConnection(error));
                             proceedWithRegistration = false;
@@ -967,7 +967,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                             final Error error = new Error(AmqpError.RESOURCE_LOCKED,
                                     String.format(
                                             "Connection closed due to sole-connection-enforcement-policy '%s'",
-                                            soleConnectionEnforcementPolicy.toString()));
+                                            String.valueOf(soleConnectionEnforcementPolicy)));
                             error.setInfo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true));
                             rescheduleFutures.add(existingConnection.doOnIOThreadAsync(
                                     () -> ((AMQPConnection_1_0Impl) existingConnection).closeConnection(error)));

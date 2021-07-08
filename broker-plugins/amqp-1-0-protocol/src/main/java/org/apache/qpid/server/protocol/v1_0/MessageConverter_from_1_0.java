@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -78,7 +79,7 @@ public class MessageConverter_from_1_0
 
     static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
-        SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY.getSectionDecoderRegistry());
+        final SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY.getSectionDecoderRegistry());
 
         Object bodyObject = null;
         List<EncodingRetainingSection<?>> sections = null;
@@ -89,12 +90,13 @@ public class MessageConverter_from_1_0
                 sections = sectionDecoder.parseAll(allData);
             }
 
-            List<EncodingRetainingSection<?>> bodySections = new ArrayList<>(sections.size());
-            ListIterator<EncodingRetainingSection<?>> iterator = sections.listIterator();
+            final int size = sections == null ? 0 : sections.size();
+            final List<EncodingRetainingSection<?>> bodySections = new ArrayList<>(size);
+            final ListIterator<EncodingRetainingSection<?>> iterator = sections == null ? Collections.emptyListIterator() : sections.listIterator();
             EncodingRetainingSection<?> previousSection = null;
             while(iterator.hasNext())
             {
-                EncodingRetainingSection<?> section = iterator.next();
+                final EncodingRetainingSection<?> section = iterator.next();
                 if (section instanceof AmqpValueSection || section instanceof DataSection || section instanceof AmqpSequenceSection)
                 {
                     if (previousSection != null && (previousSection.getClass() != section.getClass() || section instanceof AmqpValueSection))
@@ -112,20 +114,20 @@ public class MessageConverter_from_1_0
             // In 1.0 of the spec, it is illegal to have message with no body but AMQP-127 asks to have that restriction lifted
             if (!bodySections.isEmpty())
             {
-                EncodingRetainingSection<?> firstBodySection = bodySections.get(0);
-                if(firstBodySection instanceof AmqpValueSection)
+                final EncodingRetainingSection<?> firstBodySection = bodySections.get(0);
+                if (firstBodySection instanceof AmqpValueSection)
                 {
                     bodyObject = convertValue(firstBodySection.getValue());
                 }
                 else if(firstBodySection instanceof DataSection)
                 {
                     int totalSize = 0;
-                    for(EncodingRetainingSection<?> section : bodySections)
+                    for (EncodingRetainingSection<?> section : bodySections)
                     {
                         totalSize += ((DataSection)section).getValue().getArray().length;
                     }
-                    byte[] bodyData = new byte[totalSize];
-                    ByteBuffer buf = ByteBuffer.wrap(bodyData);
+                    final byte[] bodyData = new byte[totalSize];
+                    final ByteBuffer buf = ByteBuffer.wrap(bodyData);
                     for(EncodingRetainingSection<?> section : bodySections)
                     {
                         buf.put(((DataSection) section).getValue().asByteBuffer());
@@ -134,7 +136,7 @@ public class MessageConverter_from_1_0
                 }
                 else
                 {
-                    ArrayList<Object> totalSequence = new ArrayList<>();
+                    final ArrayList<Object> totalSequence = new ArrayList<>();
                     for(EncodingRetainingSection<?> section : bodySections)
                     {
                         totalSequence.addAll(((AmqpSequenceSection)section).getValue());

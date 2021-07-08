@@ -402,10 +402,10 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                 _header.put(msgheader);
             }
 
-            if(!_header.hasRemaining())
+            if (!_header.hasRemaining())
             {
                 _header.flip();
-                byte[] headerBytes = new byte[MINIMUM_REQUIRED_HEADER_BYTES];
+                final byte[] headerBytes = new byte[MINIMUM_REQUIRED_HEADER_BYTES];
                 _header.get(headerBytes);
 
 
@@ -416,25 +416,25 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
                 //Check the supported versions for a header match, and if there is one save the
                 //delegate. Also save most recent supported version and associated reply header bytes
-                for(int i = 0; newDelegate == null && i < _creators.length; i++)
+                for (int i = 0; newDelegate == null && i < _creators.length; i++)
                 {
                     final ProtocolEngineCreator creator = _creators[i];
-                    if(_supported.contains(creator.getVersion()))
+                    if (_supported.contains(creator.getVersion()))
                     {
                         supportedReplyBytes = creator.getHeaderIdentifier();
                         supportedReplyVersion = creator.getVersion();
-                        byte[] compareBytes = creator.getHeaderIdentifier();
+                        final byte[] compareBytes = creator.getHeaderIdentifier();
                         boolean equal = true;
-                        for(int j = 0; equal && j<compareBytes.length; j++)
+                        for (int j = 0; equal && j<compareBytes.length; j++)
                         {
                             equal = headerBytes[j] == compareBytes[j];
                         }
-                        if(equal)
+                        if (equal)
                         {
                             newDelegate = creator.newProtocolEngine(_broker,
                                                                     _network, _port, _transport, _id,
                                                                     _aggregateTicker);
-                            if(newDelegate == null && creator.getSuggestedAlternativeHeader() != null)
+                            if (newDelegate == null && creator.getSuggestedAlternativeHeader() != null)
                             {
                                 defaultSupportedReplyBytes = creator.getSuggestedAlternativeHeader();
                             }
@@ -443,17 +443,17 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
                     //If there is a configured default reply to an unsupported version initiation,
                     //then save the associated reply header bytes when we encounter them
-                    if(defaultSupportedReplyBytes == null && _defaultSupportedReply != null && creator.getVersion() == _defaultSupportedReply)
+                    if (defaultSupportedReplyBytes == null && _defaultSupportedReply != null && creator.getVersion() == _defaultSupportedReply)
                     {
                         defaultSupportedReplyBytes = creator.getHeaderIdentifier();
                     }
                 }
 
                 // If no delegate is found then send back a supported protocol version id
-                if(newDelegate == null)
+                if (newDelegate == null)
                 {
                     //if a default reply was specified use its reply header instead of the most recent supported version
-                    if(_defaultSupportedReply != null && !(_defaultSupportedReply == supportedReplyVersion))
+                    if (_defaultSupportedReply != null && !(_defaultSupportedReply == supportedReplyVersion))
                     {
                         LOGGER.debug("Default reply to unsupported protocol version was configured, changing reply from {} to {}",
                                       supportedReplyVersion, _defaultSupportedReply);
@@ -464,13 +464,16 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
                     _broker.getEventLogger().message(new PortLogSubject(_port),
                                                      PortMessages.UNSUPPORTED_PROTOCOL_HEADER(Functions.str(headerBytes),
-                                                                                              supportedReplyVersion.toString()));
+                                                                                              String.valueOf(supportedReplyVersion)));
 
-                    try (QpidByteBuffer supportedReplyBuf = QpidByteBuffer.allocateDirect(supportedReplyBytes.length))
+                    if (supportedReplyBytes != null)
                     {
-                        supportedReplyBuf.put(supportedReplyBytes);
-                        supportedReplyBuf.flip();
-                        _sender.send(supportedReplyBuf);
+                        try (QpidByteBuffer supportedReplyBuf = QpidByteBuffer.allocateDirect(supportedReplyBytes.length))
+                        {
+                            supportedReplyBuf.put(supportedReplyBytes);
+                            supportedReplyBuf.flip();
+                            _sender.send(supportedReplyBuf);
+                        }
                     }
                     _sender.flush();
 
@@ -481,7 +484,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                 }
                 else
                 {
-                    boolean hasWork = _delegate.hasWork();
+                    final boolean hasWork = _delegate.hasWork();
                     if (hasWork)
                     {
                         newDelegate.notifyWork();
@@ -493,14 +496,14 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                     _delegate.received(_header);
                     _header.dispose();
 
-                    Certificate peerCertificate = _network.getPeerCertificate();
-                    if(peerCertificate != null && _port.getClientCertRecorder() != null)
+                    final Certificate peerCertificate = _network.getPeerCertificate();
+                    if (peerCertificate != null && _port.getClientCertRecorder() != null)
                     {
                         ((ManagedPeerCertificateTrustStore)(_port.getClientCertRecorder())).addCertificate(peerCertificate);
                     }
 
 
-                    if(msg.hasRemaining())
+                    if (msg.hasRemaining())
                     {
                         _delegate.received(msg);
                     }

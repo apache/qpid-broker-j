@@ -84,7 +84,7 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
     private void insert(final SortedQueueEntry entry)
     {
         SortedQueueEntry node;
-        if((node = _root) == null)
+        if ((node = _root) == null)
         {
             _root = entry;
             _head.setNext(entry);
@@ -94,10 +94,10 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
         else
         {
             SortedQueueEntry parent = null;
-            while(node != null)
+            while (node != null)
             {
                 parent = node;
-                if(entry.compareTo(node) < 0)
+                if (entry.compareTo(node) < 0)
                 {
                     node = node.getLeft();
                 }
@@ -108,28 +108,31 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
             }
             entry.setParent(parent);
 
-            if(entry.compareTo(parent) < 0)
+            if (parent != null)
             {
-                parent.setLeft(entry);
-                final SortedQueueEntry prev = parent.getPrev();
-                entry.setNext(parent);
-                prev.setNext(entry);
-                entry.setPrev(prev);
-                parent.setPrev(entry);
-            }
-            else
-            {
-                parent.setRight(entry);
-
-                final SortedQueueEntry next = parent.getNextValidEntry();
-                entry.setNext(next);
-                parent.setNext(entry);
-
-                if(next != null)
+                if (entry.compareTo(parent) < 0)
                 {
-                    next.setPrev(entry);
+                    parent.setLeft(entry);
+                    final SortedQueueEntry prev = parent.getPrev();
+                    entry.setNext(parent);
+                    prev.setNext(entry);
+                    entry.setPrev(prev);
+                    parent.setPrev(entry);
                 }
-                entry.setPrev(parent);
+                else
+                {
+                    parent.setRight(entry);
+
+                    final SortedQueueEntry next = parent.getNextValidEntry();
+                    entry.setNext(next);
+                    parent.setNext(entry);
+
+                    if (next != null)
+                    {
+                        next.setPrev(entry);
+                    }
+                    entry.setPrev(parent);
+                }
             }
         }
         entry.setColour(Colour.RED);
