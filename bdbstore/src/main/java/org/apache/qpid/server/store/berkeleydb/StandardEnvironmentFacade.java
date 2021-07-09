@@ -153,17 +153,17 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
             }
         }
 
-        int commiterNotifyThreshold = configuration.getFacadeParameter(
+        final int commiterNotifyThreshold = configuration.getFacadeParameter(
                 Integer.class,
                 BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD,
                 BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD
         );
-        long commiterNotifyTimeout = configuration.getFacadeParameter(
+        final long commiterWaitTimeout = configuration.getFacadeParameter(
                 Long.class,
-                BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_TIMEOUT,
-                BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_TIMEOUT
+                BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT,
+                BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT
         );
-        _committer =  new CoalescingCommiter(name, commiterNotifyThreshold, commiterNotifyTimeout, this);
+        _committer =  new CoalescingCommiter(name, commiterNotifyThreshold, commiterWaitTimeout, this);
         _committer.start();
     }
 

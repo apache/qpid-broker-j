@@ -297,7 +297,7 @@
               policy is sometimes known as <emphasis>commit to the network</emphasis>. Flushing
               behavior can be influenced by virtual host context parameters "qpid.broker.bdbCommiterNotifyThreshold"
               (defines threshold for amount of messages triggering BDB log flush to the disk) and
-              "qpid.broker.bdbCommiterNotifyTimeout" (defines timeout for BDB log flush to the disk).</para>
+              "qpid.broker.bdbCommiterWaitTimeout" (defines timeout for BDB log flush to the disk).</para>
           </listitem>
         </itemizedlist></para>
       <para>It is possible to assign a one policy to the master and a different policy to the

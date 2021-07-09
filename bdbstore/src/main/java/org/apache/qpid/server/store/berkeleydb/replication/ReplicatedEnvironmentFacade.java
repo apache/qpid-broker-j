@@ -1734,17 +1734,17 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             if (!_disableCoalescingCommiter && localTransactionSynchronizationPolicy == LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY)
             {
                 localTransactionSynchronizationPolicy = SyncPolicy.NO_SYNC;
-                int commiterNotifyThreshold = _configuration.getFacadeParameter(
+                final int commiterNotifyThreshold = _configuration.getFacadeParameter(
                         Integer.class,
                         BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD,
                         BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD
                 );
-                long commiterNotifyTimeout = _configuration.getFacadeParameter(
+                final long commiterWaitTimeout = _configuration.getFacadeParameter(
                         Long.class,
-                        BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_TIMEOUT,
-                        BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_TIMEOUT
+                        BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT,
+                        BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT
                 );
-                _coalescingCommiter = new CoalescingCommiter(_configuration.getGroupName(), commiterNotifyThreshold, commiterNotifyTimeout,  this);
+                _coalescingCommiter = new CoalescingCommiter(_configuration.getGroupName(), commiterNotifyThreshold, commiterWaitTimeout,  this);
                 _coalescingCommiter.start();
             }
             _realMessageStoreDurability = new Durability(localTransactionSynchronizationPolicy, remoteTransactionSynchronizationPolicy, replicaAcknowledgmentPolicy);

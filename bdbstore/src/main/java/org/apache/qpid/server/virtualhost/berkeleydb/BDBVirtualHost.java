@@ -38,7 +38,7 @@ public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends QueueManagi
     long BDB_MIN_CACHE_SIZE = 10*1024*1024;
     String QPID_BROKER_BDB_TOTAL_CACHE_SIZE = "qpid.broker.bdbTotalCacheSize";
     String QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD = "qpid.broker.bdbCommiterNotifyThreshold";
-    String QPID_BROKER_BDB_COMMITER_NOTIFY_TIMEOUT = "qpid.broker.bdbCommiterNotifyTimeout";
+    String QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT = "qpid.broker.bdbCommiterWaitTimeout";
 
     // Default the JE cache to 5% of total memory, but no less than 10Mb
     @ManagedContextDefault(name= QPID_BROKER_BDB_TOTAL_CACHE_SIZE)
@@ -49,8 +49,8 @@ public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends QueueManagi
     int DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD = 8;
 
     @SuppressWarnings("unused")
-    @ManagedContextDefault(name = QPID_BROKER_BDB_COMMITER_NOTIFY_TIMEOUT, description = "Timeout for BDB log flush to the disk")
-    long DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_TIMEOUT = 500L;
+    @ManagedContextDefault(name = QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT, description = "Timeout for BDB log flush to the disk")
+    long DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT = 500L;
 
     @Override
     @ManagedAttribute(mandatory = true, defaultValue = "${qpid.work_dir}${file.separator}${this:name}${file.separator}messages")

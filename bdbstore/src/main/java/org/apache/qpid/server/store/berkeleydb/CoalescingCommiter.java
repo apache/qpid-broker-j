@@ -40,9 +40,9 @@ public class CoalescingCommiter implements Committer
 {
     private final CommitThread _commitThread;
 
-    public CoalescingCommiter(String name, int commiterNotifyThreshold, long commiterNotifyTimeout, EnvironmentFacade environmentFacade)
+    public CoalescingCommiter(String name, int commiterNotifyThreshold, long commiterWaitTimeout, EnvironmentFacade environmentFacade)
     {
-        _commitThread = new CommitThread("Commit-Thread-" + name, commiterNotifyThreshold, commiterNotifyTimeout, environmentFacade);
+        _commitThread = new CommitThread("Commit-Thread-" + name, commiterNotifyThreshold, commiterWaitTimeout, environmentFacade);
     }
 
     @Override
@@ -135,8 +135,8 @@ public class CoalescingCommiter implements Committer
     {
         private static final Logger LOGGER = LoggerFactory.getLogger(CommitThread.class);
 
-        private final int jobQueueNotifyThreshold;
-        private final long commiterNotifyTimeout;
+        private final int _jobQueueNotifyThreshold;
+        private final long _commiterWaitTimeout;
         private final AtomicBoolean _stopped = new AtomicBoolean(false);
         private final Queue<CommitThreadJob> _jobQueue = new ConcurrentLinkedQueue<>();
         private final Object _lock = new Object();
@@ -144,11 +144,11 @@ public class CoalescingCommiter implements Committer
 
         private final List<CommitThreadJob> _inProcessJobs = new ArrayList<>(256);
 
-        public CommitThread(String name, int commiterNotifyThreshold, long commiterNotifyTimeout, EnvironmentFacade environmentFacade)
+        public CommitThread(String name, int commiterNotifyThreshold, long commiterWaitTimeout, EnvironmentFacade environmentFacade)
         {
             super(name);
-            this.jobQueueNotifyThreshold = commiterNotifyThreshold;
-            this.commiterNotifyTimeout = commiterNotifyTimeout;
+            this._jobQueueNotifyThreshold = commiterNotifyThreshold;
+            this._commiterWaitTimeout = commiterWaitTimeout;
             _environmentFacade = environmentFacade;
         }
 
@@ -173,7 +173,7 @@ public class CoalescingCommiter implements Committer
                         {
                             // Periodically wake up and check, just in case we
                             // missed a notification. Don't want to lock the broker hard.
-                            _lock.wait(commiterNotifyTimeout);
+                            _lock.wait(_commiterWaitTimeout);
                         }
                         catch (InterruptedException e)
                         {
@@ -251,7 +251,7 @@ public class CoalescingCommiter implements Committer
                 throw new IllegalStateException("Commit thread is stopped");
             }
             _jobQueue.add(commit);
-            if(sync || _jobQueue.size() >= jobQueueNotifyThreshold)
+            if(sync || _jobQueue.size() >= _jobQueueNotifyThreshold)
             {
                 synchronized (_lock)
                 {
