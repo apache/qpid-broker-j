@@ -23,8 +23,10 @@ package org.apache.qpid.server.store.berkeleydb.replication;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,10 +53,49 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.sleepycat.je.*;
+
+import com.sleepycat.je.CheckpointConfig;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.DbInternal;
+import com.sleepycat.je.Durability;
 import com.sleepycat.je.Durability.ReplicaAckPolicy;
 import com.sleepycat.je.Durability.SyncPolicy;
-import com.sleepycat.je.rep.*;
+import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.EnvironmentFailureException;
+import com.sleepycat.je.EnvironmentMutableConfig;
+import com.sleepycat.je.ExceptionEvent;
+import com.sleepycat.je.LogWriteException;
+import com.sleepycat.je.Sequence;
+import com.sleepycat.je.SequenceConfig;
+import com.sleepycat.je.Transaction;
+import com.sleepycat.je.TransactionConfig;
+import com.sleepycat.je.rep.AppStateMonitor;
+import com.sleepycat.je.rep.InsufficientAcksException;
+import com.sleepycat.je.rep.InsufficientLogException;
+import com.sleepycat.je.rep.InsufficientReplicasException;
+import com.sleepycat.je.rep.MasterStateException;
+import com.sleepycat.je.rep.MemberNotFoundException;
+import com.sleepycat.je.rep.NetworkRestore;
+import com.sleepycat.je.rep.NetworkRestoreConfig;
+import com.sleepycat.je.rep.NoConsistencyRequiredPolicy;
+import com.sleepycat.je.rep.NodeState;
+import com.sleepycat.je.rep.NodeType;
+import com.sleepycat.je.rep.RepInternal;
+import com.sleepycat.je.rep.ReplicaConsistencyException;
+import com.sleepycat.je.rep.ReplicaWriteException;
+import com.sleepycat.je.rep.ReplicatedEnvironment;
+import com.sleepycat.je.rep.ReplicationConfig;
+import com.sleepycat.je.rep.ReplicationGroup;
+import com.sleepycat.je.rep.ReplicationMutableConfig;
+import com.sleepycat.je.rep.ReplicationNode;
+import com.sleepycat.je.rep.RestartRequiredException;
+import com.sleepycat.je.rep.RollbackException;
+import com.sleepycat.je.rep.StateChangeEvent;
+import com.sleepycat.je.rep.StateChangeListener;
+import com.sleepycat.je.rep.UnknownMasterException;
 import com.sleepycat.je.rep.impl.node.NameIdPair;
 import com.sleepycat.je.rep.util.DbPing;
 import com.sleepycat.je.rep.util.ReplicationGroupAdmin;
@@ -64,6 +105,7 @@ import com.sleepycat.je.rep.utilint.ServiceDispatcher.ServiceConnectFailedExcept
 import com.sleepycat.je.rep.vlsn.VLSNRange;
 import com.sleepycat.je.utilint.PropUtil;
 import com.sleepycat.je.utilint.VLSN;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +125,7 @@ import org.apache.qpid.server.util.DaemonThreadFactory;
 import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 
 public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChangeListener
 {
@@ -1722,7 +1765,17 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             if (!_disableCoalescingCommiter && localTransactionSynchronizationPolicy == LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY)
             {
                 localTransactionSynchronizationPolicy = SyncPolicy.NO_SYNC;
-                _coalescingCommiter = new CoalescingCommiter(_configuration.getGroupName(), this);
+                final int commiterNotifyThreshold = _configuration.getFacadeParameter(
+                        Integer.class,
+                        BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD,
+                        BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD
+                );
+                final long commiterWaitTimeout = _configuration.getFacadeParameter(
+                        Long.class,
+                        BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT,
+                        BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT
+                );
+                _coalescingCommiter = new CoalescingCommiter(_configuration.getGroupName(), commiterNotifyThreshold, commiterWaitTimeout,  this);
                 _coalescingCommiter.start();
             }
             _realMessageStoreDurability = new Durability(localTransactionSynchronizationPolicy, remoteTransactionSynchronizationPolicy, replicaAcknowledgmentPolicy);
