@@ -20,17 +20,6 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.je.CheckpointConfig;
 import com.sleepycat.je.Database;
@@ -46,13 +35,23 @@ import com.sleepycat.je.SequenceConfig;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.berkeleydb.logging.Slf4jLoggingHandler;
 import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
-
+import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.store.berkeleydb.logging.Slf4jLoggingHandler;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class StandardEnvironmentFacade implements EnvironmentFacade
 {
@@ -154,7 +153,17 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
             }
         }
 
-        _committer =  new CoalescingCommiter(name, this);
+        int commiterNotifyThreshold = configuration.getFacadeParameter(
+                Integer.class,
+                BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD,
+                BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD
+        );
+        long commiterNotifyTimeout = configuration.getFacadeParameter(
+                Long.class,
+                BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_TIMEOUT,
+                BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_TIMEOUT
+        );
+        _committer =  new CoalescingCommiter(name, commiterNotifyThreshold, commiterNotifyTimeout, this);
         _committer.start();
     }
 

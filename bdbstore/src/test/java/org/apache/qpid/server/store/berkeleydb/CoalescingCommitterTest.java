@@ -53,7 +53,7 @@ public class CoalescingCommitterTest extends UnitTestBase
         assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
 
         _environmentFacade = mock(EnvironmentFacade.class);
-        _coalescingCommitter = new CoalescingCommiter("Test", _environmentFacade);
+        _coalescingCommitter = new CoalescingCommiter("Test", 8, 500, _environmentFacade);
         _coalescingCommitter.start();
     }
 
