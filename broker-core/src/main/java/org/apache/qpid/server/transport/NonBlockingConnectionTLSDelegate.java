@@ -65,9 +65,9 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     private QpidByteBuffer _applicationBuffer;
     private final boolean _ignoreInvalidSni;
     private final AtomicInteger _loopingCounter = new AtomicInteger(0);
-    private final boolean enableDiagnosisOfSslEngineLooping;
-    private final long diagnosisOfSslEngineLoopingWarnThreshold;
-    private final long diagnosisOfSslEngineLoopingBreakThreshold;
+    private final boolean _enableDiagnosisOfSslEngineLooping;
+    private final long _diagnosisOfSslEngineLoopingWarnThreshold;
+    private final long _diagnosisOfSslEngineLoopingBreakThreshold;
 
     public NonBlockingConnectionTLSDelegate(NonBlockingConnection parent, AmqpPort port)
     {
@@ -86,9 +86,9 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         _applicationBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
         _netOutputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
         _ignoreInvalidSni = port.isIgnoreInvalidSni();
-        enableDiagnosisOfSslEngineLooping = port.getContextValue(Boolean.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING);
-        diagnosisOfSslEngineLoopingWarnThreshold = port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_WARN_THRESHOLD);
-        diagnosisOfSslEngineLoopingBreakThreshold = port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD);
+        _enableDiagnosisOfSslEngineLooping = port.getContextValue(Boolean.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING);
+        _diagnosisOfSslEngineLoopingWarnThreshold = port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_WARN_THRESHOLD);
+        _diagnosisOfSslEngineLoopingBreakThreshold = port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD);
     }
 
     @Override
@@ -308,10 +308,10 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                     _netOutputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
                 }
                 // SSLEngine looping circuit breaker
-                if (enableDiagnosisOfSslEngineLooping)
+                if (_enableDiagnosisOfSslEngineLooping)
                 {
                     _loopingCounter.incrementAndGet();
-                    if (_loopingCounter.get() > diagnosisOfSslEngineLoopingWarnThreshold)
+                    if (_loopingCounter.get() > _diagnosisOfSslEngineLoopingWarnThreshold)
                     {
                         LOGGER.warn("SSLEngine looping detected, _status: {}, _sslEngine.isOutboundDone(): {}, _sslEngine.isInboundDone(): {}, "
                                         + "_sslEngine.getPeerHost(): {}, _sslEngine.getPeerPort(): {}",
@@ -323,7 +323,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                                 _sslEngine.getPeerPort()
                         );
                     }
-                    if (_loopingCounter.get() > diagnosisOfSslEngineLoopingBreakThreshold)
+                    if (_loopingCounter.get() > _diagnosisOfSslEngineLoopingBreakThreshold)
                     {
                         throw new SSLException("SSLEngine looping detected, executing circuit breaker");
                     }
@@ -337,7 +337,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         }
         while(encrypted && _sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP);
 
-        if (enableDiagnosisOfSslEngineLooping)
+        if (_enableDiagnosisOfSslEngineLooping && encrypted)
         {
             _loopingCounter.set(0);
         }
