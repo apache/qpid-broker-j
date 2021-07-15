@@ -315,7 +315,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
     }
 
-    void removeMessage(long messageId, boolean sync) throws StoreException
+    void removeMessage(long messageId) throws StoreException
     {
         boolean complete = false;
         Transaction tx = null;
@@ -351,7 +351,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
                     getLogger().debug("Deleted content for message {}", messageId);
 
-                    getEnvironmentFacade().commit(tx, sync);
+                    getEnvironmentFacade().commitNoSync(tx);
 
                     complete = true;
                     tx = null;
@@ -789,17 +789,16 @@ public abstract class AbstractBDBMessageStore implements MessageStore
      *
      * @throws org.apache.qpid.server.store.StoreException If the operation fails for any reason.
      */
-    private void commitTranImpl(final Transaction tx, boolean syncCommit) throws StoreException
+    private void commitTranImpl(final Transaction tx) throws StoreException
     {
         if (tx == null)
         {
             throw new StoreException("Fatal internal error: transactional is null at commitTran");
         }
 
-        getEnvironmentFacade().commit(tx, syncCommit);
+        getEnvironmentFacade().commit(tx);
 
-        getLogger().debug("commitTranImpl completed {} transaction {}",
-                          syncCommit ? "synchronous" : "asynchronous", tx);
+        getLogger().debug("commitTranImpl completed {} transaction synchronous", tx);
 
 
     }
@@ -1201,7 +1200,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                         throw getEnvironmentFacade().handleDatabaseException("failed to begin transaction", e);
                     }
                     store(txn);
-                    getEnvironmentFacade().commit(txn, false);
+                    getEnvironmentFacade().commitAsync(txn, false);
 
                 }
             }
@@ -1214,7 +1213,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             _messages.remove(this);
             if(stored())
             {
-                removeMessage(_messageId, false);
+                removeMessage(_messageId);
                 storedSizeChangeOccurred(-getContentSize());
             }
             if (!_messageDeleteListeners.isEmpty())
@@ -1378,7 +1377,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         {
             checkMessageStoreOpen();
             doPreCommitActions();
-            AbstractBDBMessageStore.this.commitTranImpl(_txn, true);
+            AbstractBDBMessageStore.this.commitTranImpl(_txn);
             doPostCommitActions();
             AbstractBDBMessageStore.this.storedSizeChangeOccurred(_storeSizeIncrease);
         }

@@ -93,6 +93,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     public static final String ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME = "qpid.bdb.ha.environment_restart_retry_limit";
     public static final String EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME = "qpid.bdb.ha.executor_shutdown_timeout";
     public static final String DISABLE_COALESCING_COMMITTER_PROPERTY_NAME = "qpid.bdb.ha.disable_coalescing_committer";
+    public static final String NO_SYNC_TX_DURABILITY_PROPERTY_NAME = "qpid.bdb.ha.noSyncTxDurablity";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatedEnvironmentFacade.class);
 
@@ -103,6 +104,8 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private static final int DEFAULT_ENVIRONMENT_RESTART_RETRY_LIMIT = 3;
     private static final int DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT = 5000;
     private static final boolean DEFAULT_DISABLE_COALESCING_COMMITTER = false;
+    private static final String DEFAULT_NO_SYNC_TX_DURABILITY_PROPERTY_NAME = "NO_SYNC,NO_SYNC,NONE";
+    private static final String DEFAULT_SYNC_TX_DURABILITY_PROPERTY_NAME = "SYNC,NO_SYNC,NONE";
 
     /** Length of time allowed for a master transfer to complete before the operation will timeout */
     private final int _masterTransferTimeout;
@@ -138,6 +141,8 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private final int _executorShutdownTimeout;
 
     private final boolean _disableCoalescingCommiter;
+
+    private final Durability _noSyncTxDurability;
 
     private final int _logHandlerCleanerProtectedFilesLimit;
 
@@ -284,6 +289,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         _stateChangeExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(new DaemonThreadFactory("StateChange-" + _prettyGroupNodeName)));
         _groupChangeExecutor = new ScheduledThreadPoolExecutor(2, new DaemonThreadFactory("Group-Change-Learner:" + _prettyGroupNodeName));
         _disableCoalescingCommiter = configuration.getFacadeParameter(Boolean.class,DISABLE_COALESCING_COMMITTER_PROPERTY_NAME, DEFAULT_DISABLE_COALESCING_COMMITTER);
+        _noSyncTxDurability = Durability.parse(configuration.getFacadeParameter(String.class, NO_SYNC_TX_DURABILITY_PROPERTY_NAME, getDefaultDurability(_disableCoalescingCommiter)));
 
         // create environment in a separate thread to avoid renaming of the current thread by JE
         EnvHomeRegistry.getInstance().registerHome(_environmentDirectory);
@@ -318,6 +324,18 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         }
     }
 
+    private String getDefaultDurability(final boolean disableCoalescingCommiter)
+    {
+        if (disableCoalescingCommiter)
+        {
+            return DEFAULT_SYNC_TX_DURABILITY_PROPERTY_NAME;
+        }
+        else
+        {
+            return DEFAULT_NO_SYNC_TX_DURABILITY_PROPERTY_NAME;
+        }
+    }
+
     @Override
     public Transaction beginTransaction(TransactionConfig transactionConfig)
     {
@@ -325,40 +343,48 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     }
 
     @Override
-    public void commit(final Transaction tx, boolean syncCommit)
+    public void commit(final Transaction tx)
+    {
+        commitInternal(tx, _realMessageStoreDurability);
+
+        if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
+                && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)
+        {
+            _coalescingCommiter.commit(tx, true);
+        }
+
+    }
+
+    private void commitInternal(final Transaction tx, final Durability realMessageStoreDurability)
     {
         try
         {
             // Using commit() instead of commitNoSync() for the HA store to allow
             // the HA durability configuration to influence resulting behaviour.
-            tx.commit(_realMessageStoreDurability);
+            tx.commit(realMessageStoreDurability);
         }
         catch (DatabaseException de)
         {
             throw handleDatabaseException("Got DatabaseException on commit, closing environment", de);
         }
+    }
+
+    @Override
+    public void commitNoSync(final Transaction tx)
+    {
+        commitInternal(tx, _noSyncTxDurability);
 
         if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
-                && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)
+            && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)
         {
-            _coalescingCommiter.commit(tx, syncCommit);
+            _coalescingCommiter.commit(tx, false);
         }
-
     }
 
     @Override
     public <X> ListenableFuture<X> commitAsync(final Transaction tx, final X val)
     {
-        try
-        {
-            // Using commit() instead of commitNoSync() for the HA store to allow
-            // the HA durability configuration to influence resulting behaviour.
-            tx.commit(_realMessageStoreDurability);
-        }
-        catch (DatabaseException de)
-        {
-            throw handleDatabaseException("Got DatabaseException on commit, closing environment", de);
-        }
+        commitInternal(tx, _realMessageStoreDurability);
 
         if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
             && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)

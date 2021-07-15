@@ -67,7 +67,7 @@ public interface EnvironmentFacade
 
     Transaction beginTransaction(TransactionConfig transactionConfig);
 
-    void commit(Transaction tx, boolean sync);
+    void commit(Transaction tx);
     <X> ListenableFuture<X> commitAsync(Transaction tx, X val);
 
     RuntimeException handleDatabaseException(String contextMessage, RuntimeException e);
@@ -98,4 +98,6 @@ public interface EnvironmentFacade
     Map<String,Object> getDatabaseStatistics(String database, boolean reset);
 
     void deleteDatabase(String databaseName);
+
+    void commitNoSync(final Transaction tx);
 }
