@@ -166,7 +166,12 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
     }
 
     @Override
-    public void commit(com.sleepycat.je.Transaction tx, boolean syncCommit)
+    public void commit(Transaction tx)
+    {
+        commitInternal(tx, true);
+    }
+
+    private void commitInternal(final Transaction tx, final boolean syncCommit)
     {
         try
         {
@@ -181,6 +186,12 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
             throw handleDatabaseException("Got DatabaseException on commit", de);
         }
         _committer.commit(tx, syncCommit);
+    }
+
+    @Override
+    public void commitNoSync(final Transaction tx)
+    {
+        commitInternal(tx, false);
     }
 
     @Override
