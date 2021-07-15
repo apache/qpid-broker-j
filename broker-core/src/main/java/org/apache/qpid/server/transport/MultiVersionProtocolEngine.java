@@ -24,14 +24,18 @@ package org.apache.qpid.server.transport;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.cert.Certificate;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -466,15 +470,22 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                                                      PortMessages.UNSUPPORTED_PROTOCOL_HEADER(Functions.str(headerBytes),
                                                                                               String.valueOf(supportedReplyVersion)));
 
-                    if (supportedReplyBytes != null)
+                    if (supportedReplyBytes == null)
                     {
-                        try (QpidByteBuffer supportedReplyBuf = QpidByteBuffer.allocateDirect(supportedReplyBytes.length))
-                        {
-                            supportedReplyBuf.put(supportedReplyBytes);
-                            supportedReplyBuf.flip();
-                            _sender.send(supportedReplyBuf);
-                        }
+                        ProtocolEngineCreator protocol = Arrays.stream(_creators)
+                                .filter(creator -> creator.getVersion().isAMQP() && _supported.contains(creator.getVersion()))
+                                .max((creator1, creator2) -> creator1.getVersion().ordinal() - creator2.getVersion().ordinal())
+                                .orElseThrow(() -> new ServerScopedRuntimeException("All AMQP protocols are disabled"));
+                        supportedReplyBytes = protocol.getHeaderIdentifier();
                     }
+
+                    try (QpidByteBuffer supportedReplyBuf = QpidByteBuffer.allocateDirect(supportedReplyBytes.length))
+                    {
+                        supportedReplyBuf.put(supportedReplyBytes);
+                        supportedReplyBuf.flip();
+                        _sender.send(supportedReplyBuf);
+                    }
+
                     _sender.flush();
 
                     _delegate = new ClosedDelegateProtocolEngine();

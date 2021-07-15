@@ -23,6 +23,7 @@ package org.apache.qpid.server.queue;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.queue.SortedQueueEntry.Colour;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 /**
  * A sorted implementation of QueueEntryList.
@@ -106,33 +107,34 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
                     node = node.getRight();
                 }
             }
+            if (parent == null)
+            {
+                throw new ConnectionScopedRuntimeException("Failed to insert an entry, parent not found");
+            }
             entry.setParent(parent);
 
-            if (parent != null)
+            if (entry.compareTo(parent) < 0)
             {
-                if (entry.compareTo(parent) < 0)
-                {
-                    parent.setLeft(entry);
-                    final SortedQueueEntry prev = parent.getPrev();
-                    entry.setNext(parent);
-                    prev.setNext(entry);
-                    entry.setPrev(prev);
-                    parent.setPrev(entry);
-                }
-                else
-                {
-                    parent.setRight(entry);
+                parent.setLeft(entry);
+                final SortedQueueEntry prev = parent.getPrev();
+                entry.setNext(parent);
+                prev.setNext(entry);
+                entry.setPrev(prev);
+                parent.setPrev(entry);
+            }
+            else
+            {
+                parent.setRight(entry);
 
-                    final SortedQueueEntry next = parent.getNextValidEntry();
-                    entry.setNext(next);
-                    parent.setNext(entry);
+                final SortedQueueEntry next = parent.getNextValidEntry();
+                entry.setNext(next);
+                parent.setNext(entry);
 
-                    if (next != null)
-                    {
-                        next.setPrev(entry);
-                    }
-                    entry.setPrev(parent);
+                if (next != null)
+                {
+                    next.setPrev(entry);
                 }
+                entry.setPrev(parent);
             }
         }
         entry.setColour(Colour.RED);

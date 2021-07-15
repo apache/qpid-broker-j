@@ -111,10 +111,10 @@ public class BDBConfiguredObjectRecord implements ConfiguredObjectRecord
     @Override
     public String toString()
     {
-        return "BDBConfiguredObjectRecord [id=" + String.valueOf(_id)
-                + ", type=" + String.valueOf(_type)
-                + ", name=" + (_attributes == null ? String.valueOf(null) : _attributes.get("name"))
-                + ", parents=" + String.valueOf(_parents) + "]";
+        return String.format(
+                "BDBConfiguredObjectRecord [id=%s, type=%s, name=%s, parents=%s]",
+                _id, _type, (_attributes == null ? "null" : _attributes.get("name")), _parents
+        );
     }
 
 }
