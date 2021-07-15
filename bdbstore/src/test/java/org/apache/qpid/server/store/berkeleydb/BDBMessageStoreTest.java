@@ -116,7 +116,7 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
         StoredMessage<MessageMetaData> storedMessage_0_8 = createAndStoreSingleChunkMessage_0_8(bdbStore);
         long messageid_0_8 = storedMessage_0_8.getMessageNumber();
 
-        bdbStore.removeMessage(messageid_0_8, true);
+        bdbStore.removeMessage(messageid_0_8);
 
         //verify the removal using the BDB store implementation methods directly
         try
