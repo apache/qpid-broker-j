@@ -41,6 +41,7 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.LockConflictException;
 import com.sleepycat.je.LockMode;
+import com.sleepycat.je.LockTimeoutException;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Sequence;
 import com.sleepycat.je.SequenceConfig;
@@ -72,6 +73,7 @@ import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.txn.Xid;
 import org.apache.qpid.server.util.CachingUUIDFactory;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 
 public abstract class AbstractBDBMessageStore implements MessageStore
@@ -230,6 +232,10 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                                                               MESSAGE_METADATA_SEQ_KEY,
                                                               MESSAGE_METADATA_SEQ_CONFIG);
             newMessageId = mmdSeq.get(null, 1);
+        }
+        catch(LockTimeoutException le)
+        {
+           throw new ConnectionScopedRuntimeException("Unexpected exception on BDB sequence", le);
         }
         catch (RuntimeException de)
         {
