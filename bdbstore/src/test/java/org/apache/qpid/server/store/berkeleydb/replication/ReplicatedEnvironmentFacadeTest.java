@@ -25,7 +25,6 @@ import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.LOG_HAND
 import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.*;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -934,11 +933,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         ReplicatedEnvironmentConfiguration configuration =  createReplicatedEnvironmentConfiguration(TEST_NODE_NAME + "_1", node1NodeHostPort, false);
         when(configuration.getHelperNodeName()).thenReturn(TEST_NODE_NAME);
 
-        TestStateChangeListener stateChangeListener = new TestStateChangeListener();
-        ReplicatedEnvironmentFacade secondNode = createReplicatedEnvironmentFacade(TEST_NODE_NAME + "_1",
-                                                                                   stateChangeListener, new NoopReplicationGroupListener(), configuration);
-        assertTrue("Environment was not created", stateChangeListener.awaitForStateChange(State.REPLICA,
-                                                                                          _timeout, TimeUnit.SECONDS));
+        ReplicatedEnvironmentFacade secondNode =
+                createNode(configuration, TEST_NODE_NAME + "_1", State.REPLICA);
         assertEquals("Unexpected state", State.REPLICA.name(), secondNode.getNodeState());
     }
 
@@ -972,9 +968,7 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
     @Test
     public void testNodeRolledback()  throws Exception
     {
-        DatabaseConfig createConfig = new DatabaseConfig();
-        createConfig.setAllowCreate(true);
-        createConfig.setTransactional(true);
+        DatabaseConfig createConfig = createDatabaseConfig();
 
         TestStateChangeListener masterListener = new TestStateChangeListener();
         ReplicatedEnvironmentFacade node1 = addNode(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, masterListener, new NoopReplicationGroupListener());
@@ -988,12 +982,12 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         Database db = node1.openDatabase("mydb", createConfig);
 
         // Put a record (that will be replicated)
-        putRecord(node1, db, 1, "value1");
+        putRecord(node1, db, 1, "value1", false);
 
         node2.close();
 
         // Put a record (that will be only on node1 as node2 is now offline)
-        putRecord(node1, db, 2, "value2");
+        putRecord(node1, db, 2, "value2", false);
 
         db.close();
 
@@ -1012,7 +1006,7 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         db = node2.openDatabase("mydb", DatabaseConfig.DEFAULT);
 
         // Do a transaction on node2. The two environments will have diverged
-        putRecord(node2, db, 3, "diverged");
+        putRecord(node2, db, 3, "diverged", false);
 
         LOGGER.debug("RESTARTING " + TEST_NODE_NAME);
         // Now restart node1 and ensure that it realises it needs to rollback before it can rejoin.
@@ -1033,7 +1027,7 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
                    _replicaRolledback.await(_timeout, TimeUnit.SECONDS));
 
         // Finally do one more transaction through the master
-        putRecord(node2, db, 4, "value4");
+        putRecord(node2, db, 4, "value4", false);
         db.close();
 
         LOGGER.debug("CLOSING");
@@ -1199,175 +1193,148 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
     }
 
     @Test
-    public void testNodeCommitNoSyncWithCoalescing() throws Exception
+    public void testCommitNoSyncWithCoalescing() throws Exception
     {
-        DatabaseConfig createConfig = new DatabaseConfig();
-        createConfig.setAllowCreate(true);
-        createConfig.setTransactional(true);
+        final ReplicatedEnvironmentConfiguration node1Config =
+                createReplicatedEnvironmentConfiguration(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, false);
+        when(node1Config.getFacadeParameter(eq(String.class),
+                                            eq(NO_SYNC_TX_DURABILITY_PROPERTY_NAME),
+                                            anyString())).thenReturn("NO_SYNC,NO_SYNC,NONE");
 
-        TestStateChangeListener masterListener = new TestStateChangeListener();
-        ReplicatedEnvironmentFacade node1 =
-                addNodeWithDurability(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, masterListener, new NoopReplicationGroupListener(), false,"NO_SYNC,NO_SYNC,NONE");
-        assertTrue("Environment was not created", masterListener.awaitForStateChange(State.MASTER,
-                                                                                     _timeout, TimeUnit.SECONDS));
+        final ReplicatedEnvironmentFacade node1 = createNode(node1Config, TEST_NODE_NAME, State.MASTER);
 
-        String replicaNodeHostPort = "localhost:" + _portHelper.getNextAvailable();
-        String replicaName = TEST_NODE_NAME + 1;
-        ReplicatedEnvironmentFacade node2 =
-                createReplica(replicaName, replicaNodeHostPort, new NoopReplicationGroupListener());
+        final String replicaNodeHostPort = "localhost:" + _portHelper.getNextAvailable();
+        final String replicaName = TEST_NODE_NAME + 1;
+        final ReplicatedEnvironmentConfiguration node2Config =
+                createReplicatedEnvironmentConfiguration(replicaName, replicaNodeHostPort, false, false);
+        when(node2Config.getFacadeParameter(eq(String.class),
+                                            eq(NO_SYNC_TX_DURABILITY_PROPERTY_NAME),
+                                            anyString())).thenReturn("NO_SYNC,NO_SYNC,NONE");
+        final ReplicatedEnvironmentFacade node2 = createNode(node2Config, replicaName, State.REPLICA);
 
-        Database db = node1.openDatabase("mydb", createConfig);
+        try (final Database db = node1.openDatabase("mydb", createDatabaseConfig()))
+        {
+            putRecord(node1, db, 1, "value", true);
+        }
 
-        int key = 1;
-        String data = "value";
-        // Put a record (using commitNoSync)
-        TransactionConfig transactionConfig = addTestKeyValueWithCommitNoSync(node1, db, key, data);
-        db.close();
-
-        node1.close();
         node2.close();
+        node1.close();
 
         LOGGER.debug("RESTARTING " + TEST_NODE_NAME);
-
-        node1 = addNodeWithDurability(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, masterListener, new NoopReplicationGroupListener(), false,"NO_SYNC,NO_SYNC,NONE");
-        boolean awaitForStateChange = masterListener.awaitForStateChange(State.MASTER,
-                                                                         _timeout, TimeUnit.SECONDS);
+        final ReplicatedEnvironmentFacade node1Restarted = createNode(node1Config, TEST_NODE_NAME, State.MASTER);
         LOGGER.debug("RESTARTING " + replicaName);
-        TestStateChangeListener node2StateChangeListener = new TestStateChangeListener();
-        node2 = addNode(replicaName,
-                        replicaNodeHostPort,
-                        false,
-                        node2StateChangeListener,
-                        new NoopReplicationGroupListener());
-        db = node1.openDatabase("mydb", DatabaseConfig.DEFAULT);
-        byte[] resultData = getTestKeyValue(node1, db, key, transactionConfig);
-        DatabaseEntry dbData = getDatabaseEntry(data);
-        assertArrayEquals(resultData, dbData.getData());
-        assertEquals("value", StringBinding.entryToString(dbData));
+        final ReplicatedEnvironmentFacade node2Restarted = createNode(node2Config, replicaName, State.REPLICA);
 
-        db.close();
-
-        LOGGER.debug("CLOSING");
-        node1.close();
-        node2.close();
+        try (final Database db = node1Restarted.openDatabase("mydb", null))
+        {
+            assertEquals("value", getTestKeyValue(db, 1));
+        }
+        node1Restarted.close();
+        node2Restarted.close();
     }
 
     @Test
-    public void testNodeCommitSyncWithoutCoalescing() throws Exception
+    public void testCommitNoSyncWithoutCoalescing() throws Exception
     {
-        DatabaseConfig createConfig = new DatabaseConfig();
-        createConfig.setAllowCreate(true);
-        createConfig.setTransactional(true);
+        final ReplicatedEnvironmentConfiguration node1Config =
+                createReplicatedEnvironmentConfiguration(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, true);
+        when(node1Config.getFacadeParameter(eq(String.class),
+                                            eq(NO_SYNC_TX_DURABILITY_PROPERTY_NAME),
+                                            anyString())).thenReturn("SYNC,NO_SYNC,NONE");
 
-        TestStateChangeListener masterListener = new TestStateChangeListener();
-        ReplicatedEnvironmentFacade node1 =
-                addNodeWithDurability(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, masterListener, new NoopReplicationGroupListener(),true,"SYNC,NO_SYNC,NONE");
+        final ReplicatedEnvironmentFacade node1 = createNode(node1Config, TEST_NODE_NAME, State.MASTER);
 
-        assertTrue("Environment was not created", masterListener.awaitForStateChange(State.MASTER,
-                                                                                     _timeout, TimeUnit.SECONDS));
+        final String replicaNodeHostPort = "localhost:" + _portHelper.getNextAvailable();
+        final String replicaName = TEST_NODE_NAME + 1;
 
-        String replicaNodeHostPort = "localhost:" + _portHelper.getNextAvailable();
-        String replicaName = TEST_NODE_NAME + 1;
-        ReplicatedEnvironmentFacade node2 =
-                createReplica(replicaName, replicaNodeHostPort, new NoopReplicationGroupListener());
+        final ReplicatedEnvironmentConfiguration node2Config =
+                createReplicatedEnvironmentConfiguration(replicaName, replicaNodeHostPort, false, true);
+        when(node2Config.getFacadeParameter(eq(String.class),
+                                            eq(NO_SYNC_TX_DURABILITY_PROPERTY_NAME),
+                                            anyString())).thenReturn("NO_SYNC,NO_SYNC,NONE");
+        final ReplicatedEnvironmentFacade node2 = createNode(node2Config, replicaName, State.REPLICA);
 
-        Database db = node1.openDatabase("mydb", createConfig);
-
-        int key = 1;
-        String data = "value";
-        // Put a record (using commitNoSync)
-        TransactionConfig transactionConfig = addTestKeyValueWithCommitNoSync(node1, db, key, data);
-        db.close();
+        try (final Database db = node1.openDatabase("mydb", createDatabaseConfig()))
+        {
+            putRecord(node1, db, 1, "value", true);
+        }
 
         node1.close();
         node2.close();
 
         LOGGER.debug("RESTARTING " + TEST_NODE_NAME);
-
-        node1 = addNodeWithDurability(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, masterListener, new NoopReplicationGroupListener(),true,"SYNC,NO_SYNC,NONE");
-        boolean awaitForStateChange = masterListener.awaitForStateChange(State.MASTER,
-                                                                         _timeout, TimeUnit.SECONDS);
+        final ReplicatedEnvironmentFacade node1Restarted = createNode(node1Config, TEST_NODE_NAME, State.MASTER);
         LOGGER.debug("RESTARTING " + replicaName);
-        TestStateChangeListener node2StateChangeListener = new TestStateChangeListener();
-        node2 = addNode(replicaName,
-                        replicaNodeHostPort,
-                        false,
-                        node2StateChangeListener,
-                        new NoopReplicationGroupListener());
-        db = node1.openDatabase("mydb", DatabaseConfig.DEFAULT);
-        byte[] resultData = getTestKeyValue(node1, db, key, transactionConfig);
-        DatabaseEntry dbData = getDatabaseEntry(data);
-        assertArrayEquals(resultData, dbData.getData());
-        assertEquals("value", StringBinding.entryToString(dbData));
+        final ReplicatedEnvironmentFacade node2Restarted = createNode(node2Config, replicaName, State.REPLICA);
 
-        db.close();
-
-        LOGGER.debug("CLOSING");
-        node1.close();
-        node2.close();
+        try (final Database db = node1Restarted.openDatabase("mydb", null))
+        {
+            assertEquals("value", getTestKeyValue(db, 1));
+        }
+        node1Restarted.close();
+        node2Restarted.close();
     }
 
-    private DatabaseEntry getDatabaseEntry(final String data)
+    private ReplicatedEnvironmentFacade createNode(final ReplicatedEnvironmentConfiguration node1Config,
+                                                   final String nodeName,
+                                                   final State nodeRole)
+            throws Exception
     {
-        DatabaseEntry dbData = new DatabaseEntry();
-        StringBinding.stringToEntry(data, dbData);
-        return dbData;
-    }
-    private DatabaseEntry getDatabaseEntry(final int data)
-    {
-        DatabaseEntry dbData = new DatabaseEntry();
-        IntegerBinding.intToEntry(data, dbData);
-        return dbData;
+        final TestStateChangeListener roleListener = new TestStateChangeListener();
+        final ReplicatedEnvironmentFacade node = createReplicatedEnvironmentFacade(nodeName,
+                                                                                   roleListener,
+                                                                                   new NoopReplicationGroupListener(),
+                                                                                   node1Config);
+        assertTrue("Environment was not created",
+                   roleListener.awaitForStateChange(nodeRole, _timeout, TimeUnit.SECONDS));
+        return node;
     }
 
-    private byte[] getTestKeyValue(final ReplicatedEnvironmentFacade node1,
-                                   final Database db,
-                                   final int keyValue,
-                                   final TransactionConfig transactionConfig)
+    private DatabaseConfig createDatabaseConfig()
     {
-        Transaction txn = node1.beginTransaction(transactionConfig);
+        final DatabaseConfig createConfig = new DatabaseConfig();
+        createConfig.setAllowCreate(true);
+        createConfig.setTransactional(true);
+        return createConfig;
+    }
 
-        DatabaseEntry key = getDatabaseEntry(keyValue);
-        DatabaseEntry result = new DatabaseEntry();
-        OperationStatus status = db.get(txn, key, result, LockMode.READ_UNCOMMITTED);
-        txn.commit();
-        byte[] resultData = new byte[0];
+    private String getTestKeyValue(final Database db, final int keyValue)
+    {
+        final DatabaseEntry key = new DatabaseEntry();
+        final DatabaseEntry result = new DatabaseEntry();
+        IntegerBinding.intToEntry(keyValue, key);
+        final OperationStatus status = db.get(null, key, result, LockMode.DEFAULT);
         if (status == OperationStatus.SUCCESS)
         {
-            resultData = result.getData();
+            return StringBinding.entryToString(result);
         }
-        return resultData;
+        return null;
     }
 
-    private TransactionConfig addTestKeyValueWithCommitNoSync(final ReplicatedEnvironmentFacade node1,
-                                                              final Database db,
-                                                              final int keyValue, final String dataValue)
+    private void putRecord(final ReplicatedEnvironmentFacade master,
+                           final Database db,
+                           final int key,
+                           final String value,
+                           final boolean commitNosync)
     {
-        DatabaseEntry key = getDatabaseEntry(keyValue);
-        DatabaseEntry data = getDatabaseEntry(dataValue);
-        TransactionConfig transactionConfig = new TransactionConfig();
-        transactionConfig.setDurability(node1.getRealMessageStoreDurability());
+        final DatabaseEntry keyEntry = new DatabaseEntry();
+        IntegerBinding.intToEntry(key, keyEntry);
+        final DatabaseEntry dataEntry = new DatabaseEntry();
+        StringBinding.stringToEntry(value, dataEntry);
 
-        Transaction txn = node1.beginTransaction(null);
-        db.put(txn, key, data);
-        node1.commitNoSync(txn);
-        return transactionConfig;
-    }
-
-
-    private void putRecord(final ReplicatedEnvironmentFacade master, final Database db, final int keyValue,
-                           final String dataValue)
-    {
-        DatabaseEntry key = getDatabaseEntry(keyValue);
-        DatabaseEntry data = getDatabaseEntry(dataValue);
-
-        TransactionConfig transactionConfig = new TransactionConfig();
+        final TransactionConfig transactionConfig = new TransactionConfig();
         transactionConfig.setDurability(master.getRealMessageStoreDurability());
-        Transaction txn = master.beginTransaction(transactionConfig);
-        db.put(txn, key, data);
-        txn.commit();
+        final Transaction txn = master.beginTransaction(transactionConfig);
+        db.put(txn, keyEntry, dataEntry);
+        if (commitNosync)
+        {
+            master.commitNoSync(txn);
+        }
+        else
+        {
+            master.commit(txn);
+        }
     }
-
 
     private void createIntruder(String nodeName, String node1NodeHostPort)
     {
@@ -1449,16 +1416,6 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
        return addNode(nodeName,nodeHostPort,designatedPrimary,stateChangeListener,replicationGroupListener,false);
     }
 
-    private ReplicatedEnvironmentFacade addNodeWithDurability(String nodeName, String nodeHostPort, boolean designatedPrimary,
-                                                StateChangeListener stateChangeListener, ReplicationGroupListener replicationGroupListener, boolean disableCoalescing, String durability)
-    {
-        ReplicatedEnvironmentConfiguration config = createReplicatedEnvironmentConfiguration(nodeName, nodeHostPort, designatedPrimary,disableCoalescing);
-        when(config.getFacadeParameter(eq(String.class),
-                                     eq(NO_SYNC_TX_DURABILITY_PROPERTY_NAME),
-                                     anyString())).thenReturn(durability);
-        return createReplicatedEnvironmentFacade(nodeName, stateChangeListener, replicationGroupListener, config);
-
-    }
     private ReplicatedEnvironmentFacade createReplicatedEnvironmentFacade(String nodeName, StateChangeListener stateChangeListener, ReplicationGroupListener replicationGroupListener, ReplicatedEnvironmentConfiguration config) {
         ReplicatedEnvironmentFacade ref = new ReplicatedEnvironmentFacade(config);
         ref.setStateChangeListener(stateChangeListener);
