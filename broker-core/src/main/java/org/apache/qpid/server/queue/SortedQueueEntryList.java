@@ -23,7 +23,7 @@ package org.apache.qpid.server.queue;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.queue.SortedQueueEntry.Colour;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 /**
  * A sorted implementation of QueueEntryList.
@@ -109,7 +109,7 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
             }
             if (parent == null)
             {
-                throw new ConnectionScopedRuntimeException("Failed to insert an entry, parent not found");
+                throw new ServerScopedRuntimeException("Failed to insert an entry, parent not found");
             }
             entry.setParent(parent);
 

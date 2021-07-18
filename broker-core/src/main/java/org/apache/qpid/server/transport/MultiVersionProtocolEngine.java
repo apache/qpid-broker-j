@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -65,7 +64,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     private final ProtocolEngineCreator[] _creators;
     private final Runnable _onCloseTask;
 
-    private Set<Protocol> _supported;
+    private final Set<Protocol> _supported;
     private String _fqdn;
     private final Broker<?> _broker;
     private ServerNetworkConnection _network;
@@ -474,7 +473,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                     {
                         ProtocolEngineCreator protocol = Arrays.stream(_creators)
                                 .filter(creator -> creator.getVersion().isAMQP() && _supported.contains(creator.getVersion()))
-                                .max((creator1, creator2) -> creator1.getVersion().ordinal() - creator2.getVersion().ordinal())
+                                .max(Comparator.comparingInt(creator -> creator.getVersion().ordinal()))
                                 .orElseThrow(() -> new ServerScopedRuntimeException("All AMQP protocols are disabled"));
                         supportedReplyBytes = protocol.getHeaderIdentifier();
                     }
