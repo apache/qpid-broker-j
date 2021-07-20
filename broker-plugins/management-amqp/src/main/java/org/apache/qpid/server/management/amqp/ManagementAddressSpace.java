@@ -169,17 +169,17 @@ public class ManagementAddressSpace implements NamedAddressSpace
         return null;
     }
 
-    ProxyMessageSource getProxyNode(final String name)
+    final ProxyMessageSource getProxyNode(final String name)
     {
         LOGGER.debug("RG: looking for proxy source {}", name);
-        Subject currentSubject = Subject.getSubject(AccessController.getContext());
-        Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
+        final Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        final Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
         if (!sessionPrincipals.isEmpty())
         {
-            Object connectionReference = sessionPrincipals.iterator().next().getSession().getConnectionReference();
-            Map<String, ProxyMessageSource>
+            final Object connectionReference = sessionPrincipals.iterator().next().getSession().getConnectionReference();
+            final Map<String, ProxyMessageSource>
                     connectionSpecificDestinations = _connectionSpecificDestinations.get(connectionReference);
-            if(connectionSpecificDestinations != null)
+            if (connectionSpecificDestinations != null)
             {
                 LOGGER.debug("RG: ", connectionSpecificDestinations);
 

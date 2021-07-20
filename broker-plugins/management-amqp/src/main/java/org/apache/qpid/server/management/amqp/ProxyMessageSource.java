@@ -149,24 +149,24 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
     }
 
     @Override
-    public <T extends ConsumerTarget<T>> MessageInstanceConsumer<T> addConsumer(final T target,
-                                                                                final FilterManager filters,
-                                                                                final Class<? extends ServerMessage> messageClass,
-                                                                                final String consumerName,
-                                                                                final EnumSet<ConsumerOption> options,
-                                                                                final Integer priority)
-            throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
-                   ConsumerAccessRefused, QueueDeleted
+    public final <T extends ConsumerTarget<T>> MessageInstanceConsumer<T> addConsumer(
+            final T target,
+            final FilterManager filters,
+            final Class<? extends ServerMessage> messageClass,
+            final String consumerName,
+            final EnumSet<ConsumerOption> options,
+            final Integer priority
+    ) throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive, ConsumerAccessRefused, QueueDeleted
     {
-        if(_consumerSet.compareAndSet(false,true))
+        if (_consumerSet.compareAndSet(false,true))
         {
-            Subject currentSubject = Subject.getSubject(AccessController.getContext());
-            Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
+            final Subject currentSubject = Subject.getSubject(AccessController.getContext());
+            final Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
             if (!sessionPrincipals.isEmpty())
             {
                 _connectionReference = sessionPrincipals.iterator().next().getSession().getConnectionReference();
 
-                WrappingTarget<T> wrapper = new WrappingTarget<>(target, _name);
+                final WrappingTarget<T> wrapper = new WrappingTarget<>(target, _name);
                 _managementAddressSpace.getManagementNode().addConsumer(wrapper, filters, messageClass, _name, options, priority);
                 final MessageInstanceConsumer<T> consumer = wrapper.getConsumer();
                 _consumer = consumer;

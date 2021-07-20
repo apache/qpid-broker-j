@@ -300,7 +300,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         return _transaction;
     }
 
-    public void receivedComplete()
+    public final void receivedComplete()
     {
         AccessController.doPrivileged(new PrivilegedAction<Void>()
         {

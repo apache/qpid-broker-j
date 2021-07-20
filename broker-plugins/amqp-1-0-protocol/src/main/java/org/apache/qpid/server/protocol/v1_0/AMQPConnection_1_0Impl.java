@@ -442,11 +442,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receive(final List<ChannelFrameBody> channelFrameBodies)
+    public final void receive(final List<ChannelFrameBody> channelFrameBodies)
     {
         if (!channelFrameBodies.isEmpty())
         {
-            PeekingIterator<ChannelFrameBody> itr = Iterators.peekingIterator(channelFrameBodies.iterator());
+            final PeekingIterator<ChannelFrameBody> itr = Iterators.peekingIterator(channelFrameBodies.iterator());
             boolean cleanExit = false;
             try
             {
@@ -455,7 +455,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     final ChannelFrameBody channelFrameBody = itr.next();
                     final int frameChannel = channelFrameBody.getChannel();
 
-                    Session_1_0 session = _receivingSessions == null || frameChannel >= _receivingSessions.length
+                    final Session_1_0 session = _receivingSessions == null || frameChannel >= _receivingSessions.length
                             ? null
                             : _receivingSessions[frameChannel];
                     if (session != null)
@@ -1271,7 +1271,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void readerIdle()
+    public final void readerIdle()
     {
         AccessController.doPrivileged((PrivilegedAction<Object>) () ->
         {
@@ -1342,7 +1342,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receivedComplete()
+    public final void receivedComplete()
     {
         if (_receivingSessions != null)
         {

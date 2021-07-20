@@ -40,9 +40,9 @@ public class PrincipalLogEventFilter extends Filter<ILoggingEvent> implements Lo
     }
 
     @Override
-    public FilterReply decide(ILoggingEvent event)
+    public final FilterReply decide(ILoggingEvent event)
     {
-        Subject subject = Subject.getSubject(AccessController.getContext());
+        final Subject subject = Subject.getSubject(AccessController.getContext());
         if (subject != null && subject.getPrincipals().contains(_principal))
         {
             return FilterReply.NEUTRAL;

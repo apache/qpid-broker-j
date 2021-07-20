@@ -69,21 +69,21 @@ public class ServerAssembler
         _segments = new HashMap<>();
     }
 
-    public void received(final List<ServerFrame> frames)
+    public final void received(final List<ServerFrame> frames)
     {
         if (!frames.isEmpty())
         {
-            PeekingIterator<ServerFrame> itr = Iterators.peekingIterator(frames.iterator());
+            final PeekingIterator<ServerFrame> itr = Iterators.peekingIterator(frames.iterator());
 
             boolean cleanExit = false;
             try
             {
-                while(itr.hasNext())
+                while (itr.hasNext())
                 {
                     final ServerFrame frame = itr.next();
                     final int frameChannel = frame.getChannel();
 
-                    ServerSession channel = _connection.getSession(frameChannel);
+                    final ServerSession channel = _connection.getSession(frameChannel);
                     if (channel != null)
                     {
                         final AccessControlContext context = channel.getAccessControllerContext();

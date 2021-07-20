@@ -1021,38 +1021,13 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public SocketConnectionMetaData getConnectionMetaData()
     {
-        Subject subject = Subject.getSubject(AccessController.getContext());
-        final SocketConnectionPrincipal principal;
-        if(subject != null)
-        {
-            Set<SocketConnectionPrincipal> principals = subject.getPrincipals(SocketConnectionPrincipal.class);
-            if(!principals.isEmpty())
-            {
-                principal = principals.iterator().next();
-            }
-            else
-            {
-                principal = null;
-            }
-        }
-        else
-        {
-            principal = null;
-        }
-        return principal == null ? null : principal.getConnectionMetaData();
+        return getConnectionMetaDataInternal();
     }
 
     @Override
     public Set<Principal> getGroups()
     {
-        Subject currentSubject = Subject.getSubject(AccessController.getContext());
-        if (currentSubject == null)
-        {
-            return Collections.emptySet();
-        }
-
-        final Set<Principal> currentPrincipals = Collections.<Principal>unmodifiableSet(currentSubject.getPrincipals(GroupPrincipal.class));
-        return currentPrincipals;
+        return getGroupsInternal();
     }
 
     @Override
@@ -1343,5 +1318,38 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately", e);
             }
         }
+    }
+
+    private final SocketConnectionMetaData getConnectionMetaDataInternal()
+    {
+        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final SocketConnectionPrincipal principal;
+        if (subject != null)
+        {
+            Set<SocketConnectionPrincipal> principals = subject.getPrincipals(SocketConnectionPrincipal.class);
+            if (!principals.isEmpty())
+            {
+                principal = principals.iterator().next();
+            }
+            else
+            {
+                principal = null;
+            }
+        }
+        else
+        {
+            principal = null;
+        }
+        return principal == null ? null : principal.getConnectionMetaData();
+    }
+
+    private final Set<Principal> getGroupsInternal()
+    {
+        final Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        if (currentSubject == null)
+        {
+            return Collections.emptySet();
+        }
+        return Collections.<Principal>unmodifiableSet(currentSubject.getPrincipals(GroupPrincipal.class));
     }
 }

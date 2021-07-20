@@ -75,9 +75,9 @@ public class BrokerDecoder extends ServerDecoder
     }
 
     @Override
-    protected int processAMQPFrames(final QpidByteBuffer buf) throws AMQFrameDecodingException
+    protected final int processAMQPFrames(final QpidByteBuffer buf) throws AMQFrameDecodingException
     {
-        int required = decodable(buf);
+        final int required = decodable(buf);
         if (required == 0)
         {
             final int channelId = buf.getUnsignedShort(buf.position() + 1);
@@ -116,7 +116,7 @@ public class BrokerDecoder extends ServerDecoder
                 }
                 catch (PrivilegedActionException e)
                 {
-                    Throwable cause = e.getCause();
+                    final Throwable cause = e.getCause();
                     if (cause instanceof AMQFrameDecodingException)
                     {
                         throw (AMQFrameDecodingException) cause;
