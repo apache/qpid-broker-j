@@ -430,40 +430,42 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
 
     protected final ConfiguredObjectRecord[] getInitialRecords() throws IOException
     {
-        ConfiguredObjectRecordConverter converter = new ConfiguredObjectRecordConverter(getModel());
+        final ConfiguredObjectRecordConverter converter = new ConfiguredObjectRecordConverter(getModel());
 
-        Collection<ConfiguredObjectRecord> records =
-                new ArrayList<>(converter.readFromJson(VirtualHost.class,this,getInitialConfigReader()));
-
-        if(!records.isEmpty())
+        try (final Reader initialConfigReader = getInitialConfigReader())
         {
-            ConfiguredObjectRecord vhostRecord = null;
-            for(ConfiguredObjectRecord record : records)
+            final Collection<ConfiguredObjectRecord> records =
+                    new ArrayList<>(converter.readFromJson(VirtualHost.class, this,  initialConfigReader));
+
+            if (!records.isEmpty())
             {
-                if(record.getType().equals(VirtualHost.class.getSimpleName()))
+                ConfiguredObjectRecord vhostRecord = null;
+                for (ConfiguredObjectRecord record : records)
                 {
-                    vhostRecord = record;
-                    break;
+                    if (record.getType().equals(VirtualHost.class.getSimpleName()))
+                    {
+                        vhostRecord = record;
+                        break;
+                    }
                 }
+                if (vhostRecord != null)
+                {
+                    records.remove(vhostRecord);
+                    vhostRecord = enrichInitialVirtualHostRootRecord(vhostRecord);
+                    records.add(vhostRecord);
+                }
+                else
+                {
+                    // this should be impossible as the converter should always generate a parent record
+                    throw new IllegalConfigurationException("Somehow the initial configuration has records but "
+                            + "not a VirtualHost. This must be a coding error in Qpid");
+                }
+                addStandardExchangesIfNecessary(records, vhostRecord);
+                enrichWithAuditInformation(records);
             }
-            if(vhostRecord != null)
-            {
-                records.remove(vhostRecord);
-                vhostRecord = enrichInitialVirtualHostRootRecord(vhostRecord);
-                records.add(vhostRecord);
-            }
-            else
-            {
-                // this should be impossible as the converter should always generate a parent record
-                throw new IllegalConfigurationException("Somehow the initial configuration has records but "
-                                                        + "not a VirtualHost. This must be a coding error in Qpid");
-            }
-            addStandardExchangesIfNecessary(records, vhostRecord);
-            enrichWithAuditInformation(records);
+
+            return records.toArray(new ConfiguredObjectRecord[records.size()]);
         }
-
-
-        return records.toArray(new ConfiguredObjectRecord[records.size()]);
     }
 
     private void enrichWithAuditInformation(final Collection<ConfiguredObjectRecord> records)

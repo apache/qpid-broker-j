@@ -309,13 +309,13 @@ public class RestStressTestClient
         public int put(String restServiceUrl, Map<String, Object> attributes) throws IOException
         {
             HttpURLConnection connection = createConnection("PUT", restServiceUrl, _cookies);
-            try
+            try (OutputStream outputStream = connection.getOutputStream())
             {
                 connection.connect();
                 if (attributes != null)
                 {
                     ObjectMapper mapper = new ObjectMapper();
-                    mapper.writeValue(connection.getOutputStream(), attributes);
+                    mapper.writeValue(outputStream, attributes);
                 }
                 checkResponseCode(connection);
                 return connection.getResponseCode();
@@ -570,8 +570,9 @@ public class RestStressTestClient
             {
                 _cookies = null;
             }
-            InputStream is = connection.getInputStream();
-            try(ByteArrayOutputStream baos = new ByteArrayOutputStream())
+
+            try (InputStream is = connection.getInputStream();
+                 ByteArrayOutputStream baos = new ByteArrayOutputStream())
             {
                 byte[] buffer = new byte[1024];
                 int len;

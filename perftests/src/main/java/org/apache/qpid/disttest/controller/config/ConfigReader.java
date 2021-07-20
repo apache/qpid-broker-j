@@ -37,10 +37,10 @@ public class ConfigReader
 
     public Config getConfigFromFile(String fileName) throws IOException
     {
-        Reader reader = getConfigReader(fileName);
-
-        Config config = readConfig(reader);
-        return config;
+        try (Reader reader = getConfigReader(fileName))
+        {
+            return readConfig(reader);
+        }
     }
 
     public Config readConfig(Reader reader) throws IOException

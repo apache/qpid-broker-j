@@ -156,49 +156,52 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
 
             boolean updated = false;
             Collection<ConfiguredObjectRecord> records = Collections.emptyList();
-            ConfiguredObjectRecordConverter configuredObjectRecordConverter =
+            final ConfiguredObjectRecordConverter configuredObjectRecordConverter =
                     new ConfiguredObjectRecordConverter(_parent.getModel());
 
-            records = configuredObjectRecordConverter.readFromJson(_rootClass, _parent, new FileReader(configFile));
-
-            if(_rootClass == null)
+            try (FileReader configFileReader =  new FileReader(configFile))
             {
-                _rootClass = configuredObjectRecordConverter.getRootClass();
-                _classNameMapping = generateClassNameMap(configuredObjectRecordConverter.getModel(), _rootClass);
-            }
+                records = configuredObjectRecordConverter.readFromJson(_rootClass, _parent, configFileReader);
 
-            if(records.isEmpty())
-            {
-                LOGGER.debug("File contains no records - using initial configuration");
-                records = Arrays.asList(initialRecords);
-                updated = true;
                 if (_rootClass == null)
                 {
-                    String containerTypeName = ((DynamicModel) _parent).getDefaultContainerType();
-                    ConfiguredObjectRecord rootRecord = null;
-                    for(ConfiguredObjectRecord record : records)
+                    _rootClass = configuredObjectRecordConverter.getRootClass();
+                    _classNameMapping = generateClassNameMap(configuredObjectRecordConverter.getModel(), _rootClass);
+                }
+
+                if (records.isEmpty())
+                {
+                    LOGGER.debug("File contains no records - using initial configuration");
+                    records = Arrays.asList(initialRecords);
+                    updated = true;
+                    if (_rootClass == null)
                     {
-                        if(record.getParents() == null || record.getParents().isEmpty())
+                        String containerTypeName = ((DynamicModel) _parent).getDefaultContainerType();
+                        ConfiguredObjectRecord rootRecord = null;
+                        for (ConfiguredObjectRecord record : records)
                         {
-                            rootRecord = record;
-                            break;
+                            if (record.getParents() == null || record.getParents().isEmpty())
+                            {
+                                rootRecord = record;
+                                break;
+                            }
                         }
-                    }
-                    if (rootRecord != null && rootRecord.getAttributes().get(ConfiguredObject.TYPE) instanceof String)
-                    {
-                        containerTypeName = rootRecord.getAttributes().get(ConfiguredObject.TYPE).toString();
-                    }
+                        if (rootRecord != null && rootRecord.getAttributes().get(ConfiguredObject.TYPE) instanceof String)
+                        {
+                            containerTypeName = rootRecord.getAttributes().get(ConfiguredObject.TYPE).toString();
+                        }
 
-                    QpidServiceLoader loader = new QpidServiceLoader();
-                    final ContainerType<?> containerType =
-                            loader.getInstancesByType(ContainerType.class).get(containerTypeName);
+                        final QpidServiceLoader loader = new QpidServiceLoader();
+                        final ContainerType<?> containerType =
+                                loader.getInstancesByType(ContainerType.class).get(containerTypeName);
 
-                    if (containerType != null)
-                    {
-                        _rootClass = containerType.getCategoryClass();
-                        _classNameMapping = generateClassNameMap(containerType.getModel(), containerType.getCategoryClass());
+                        if (containerType != null)
+                        {
+                            _rootClass = containerType.getCategoryClass();
+                            _classNameMapping = generateClassNameMap(containerType.getModel(), containerType.getCategoryClass());
+                        }
+
                     }
-
                 }
             }
 

@@ -65,14 +65,15 @@ public class JavaScriptConfigEvaluator
     {
         ScriptEngineManager mgr = new ScriptEngineManager();
         ScriptEngine engine = mgr.getEngineByName("JavaScript");
-        try
+        try (Reader json2Reader = new InputStreamReader(getClass().getClassLoader().getResourceAsStream("json2.js"));
+             Reader testUtilsReader = new InputStreamReader(getClass().getClassLoader().getResourceAsStream("test-utils.js")))
         {
-            engine.eval(new InputStreamReader(getClass().getClassLoader().getResourceAsStream("json2.js")));
-            engine.eval(new InputStreamReader(getClass().getClassLoader().getResourceAsStream("test-utils.js")));
+            engine.eval(json2Reader);
+            engine.eval(testUtilsReader);
             engine.eval(fileReader);
             engine.eval("jsonString = JSON.stringify(" + TEST_CONFIG_VARIABLE_NAME + ")");
         }
-        catch (ScriptException e)
+        catch (IOException | ScriptException e)
         {
             throw new DistributedTestException("Exception while evaluating test config", e);
         }
