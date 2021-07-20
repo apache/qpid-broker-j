@@ -156,18 +156,21 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
 
             boolean updated = false;
             Collection<ConfiguredObjectRecord> records = Collections.emptyList();
-            ConfiguredObjectRecordConverter configuredObjectRecordConverter =
+            final ConfiguredObjectRecordConverter configuredObjectRecordConverter =
                     new ConfiguredObjectRecordConverter(_parent.getModel());
 
-            records = configuredObjectRecordConverter.readFromJson(_rootClass, _parent, new FileReader(configFile));
+            try (FileReader configFileReader =  new FileReader(configFile))
+            {
+                records = configuredObjectRecordConverter.readFromJson(_rootClass, _parent, configFileReader);
+            }
 
-            if(_rootClass == null)
+            if (_rootClass == null)
             {
                 _rootClass = configuredObjectRecordConverter.getRootClass();
                 _classNameMapping = generateClassNameMap(configuredObjectRecordConverter.getModel(), _rootClass);
             }
 
-            if(records.isEmpty())
+            if (records.isEmpty())
             {
                 LOGGER.debug("File contains no records - using initial configuration");
                 records = Arrays.asList(initialRecords);
@@ -176,9 +179,9 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
                 {
                     String containerTypeName = ((DynamicModel) _parent).getDefaultContainerType();
                     ConfiguredObjectRecord rootRecord = null;
-                    for(ConfiguredObjectRecord record : records)
+                    for (ConfiguredObjectRecord record : records)
                     {
-                        if(record.getParents() == null || record.getParents().isEmpty())
+                        if (record.getParents() == null || record.getParents().isEmpty())
                         {
                             rootRecord = record;
                             break;
@@ -189,7 +192,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
                         containerTypeName = rootRecord.getAttributes().get(ConfiguredObject.TYPE).toString();
                     }
 
-                    QpidServiceLoader loader = new QpidServiceLoader();
+                    final QpidServiceLoader loader = new QpidServiceLoader();
                     final ContainerType<?> containerType =
                             loader.getInstancesByType(ContainerType.class).get(containerTypeName);
 

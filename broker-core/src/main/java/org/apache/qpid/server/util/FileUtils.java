@@ -60,7 +60,7 @@ public class FileUtils
     public static byte[] readFileAsBytes(String filename)
     {
 
-        try(BufferedInputStream is = new BufferedInputStream(new FileInputStream(filename)))
+        try (BufferedInputStream is = new BufferedInputStream(new FileInputStream(filename)))
         {
             return readStreamAsString(is);
         }
@@ -92,7 +92,7 @@ public class FileUtils
      */
     public static String readFileAsString(File file)
     {
-        try(BufferedInputStream is = new BufferedInputStream(new FileInputStream(file)))
+        try (BufferedInputStream is = new BufferedInputStream(new FileInputStream(file)))
         {
 
             return new String(readStreamAsString(is));
@@ -113,7 +113,7 @@ public class FileUtils
      */
     private static byte[] readStreamAsString(BufferedInputStream is)
     {
-        try(ByteArrayOutputStream inBuffer = new ByteArrayOutputStream())
+        try (ByteArrayOutputStream inBuffer = new ByteArrayOutputStream())
         {
             byte[] data = new byte[4096];
 
@@ -205,8 +205,10 @@ public class FileUtils
      */
     public static void copyCheckedEx(File src, File dst) throws IOException
     {
-        InputStream in = new FileInputStream(src);
-        copy(in, dst);
+        try (InputStream in = new FileInputStream(src))
+        {
+            copy(in, dst);
+        }
     }
 
     /**

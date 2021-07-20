@@ -430,23 +430,25 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
 
     protected final ConfiguredObjectRecord[] getInitialRecords() throws IOException
     {
-        ConfiguredObjectRecordConverter converter = new ConfiguredObjectRecordConverter(getModel());
+        final ConfiguredObjectRecordConverter converter = new ConfiguredObjectRecordConverter(getModel());
 
-        Collection<ConfiguredObjectRecord> records =
-                new ArrayList<>(converter.readFromJson(VirtualHost.class,this,getInitialConfigReader()));
-
-        if(!records.isEmpty())
+        final Collection<ConfiguredObjectRecord> records;
+        try (final Reader initialConfigReader = getInitialConfigReader())
+        {
+            records = new ArrayList<>(converter.readFromJson(VirtualHost.class, this, initialConfigReader));
+        }
+        if (!records.isEmpty())
         {
             ConfiguredObjectRecord vhostRecord = null;
-            for(ConfiguredObjectRecord record : records)
+            for (ConfiguredObjectRecord record : records)
             {
-                if(record.getType().equals(VirtualHost.class.getSimpleName()))
+                if (record.getType().equals(VirtualHost.class.getSimpleName()))
                 {
                     vhostRecord = record;
                     break;
                 }
             }
-            if(vhostRecord != null)
+            if (vhostRecord != null)
             {
                 records.remove(vhostRecord);
                 vhostRecord = enrichInitialVirtualHostRootRecord(vhostRecord);
@@ -456,12 +458,11 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
             {
                 // this should be impossible as the converter should always generate a parent record
                 throw new IllegalConfigurationException("Somehow the initial configuration has records but "
-                                                        + "not a VirtualHost. This must be a coding error in Qpid");
+                    + "not a VirtualHost. This must be a coding error in Qpid");
             }
             addStandardExchangesIfNecessary(records, vhostRecord);
             enrichWithAuditInformation(records);
         }
-
 
         return records.toArray(new ConfiguredObjectRecord[records.size()]);
     }

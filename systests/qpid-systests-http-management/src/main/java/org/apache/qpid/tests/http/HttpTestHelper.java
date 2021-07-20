@@ -25,6 +25,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -208,8 +209,10 @@ public class HttpTestHelper
 
     private void writeJsonRequest(HttpURLConnection connection, Object data) throws IOException
     {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(connection.getOutputStream(), data);
+        try (OutputStream outputStream = connection.getOutputStream())
+        {
+            new ObjectMapper().writeValue(outputStream, data);
+        }
     }
 
     public Map<String, Object> getJsonAsSingletonList(String path) throws IOException

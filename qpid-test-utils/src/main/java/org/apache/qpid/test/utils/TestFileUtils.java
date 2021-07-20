@@ -129,8 +129,7 @@ public class TestFileUtils
     public static File createTempFileFromResource(TestCase testCase, String resourceName)
     {
         File dst = createTempFile(testCase, resourceName);
-        InputStream in = testCase.getClass().getResourceAsStream(resourceName);
-        try
+        try (InputStream in = testCase.getClass().getResourceAsStream(resourceName))
         {
             copy(in, dst);
         }
@@ -146,8 +145,7 @@ public class TestFileUtils
     public static File createTempFileFromResource(UnitTestBase testCase, String resourceName)
     {
         File dst = createTempFile(testCase, resourceName);
-        InputStream in = testCase.getClass().getResourceAsStream(resourceName);
-        try
+        try (InputStream in = testCase.getClass().getResourceAsStream(resourceName))
         {
             copy(in, dst);
         }
