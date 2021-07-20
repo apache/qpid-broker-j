@@ -159,7 +159,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     }
 
     @Override
-    public void readerIdle()
+    public final void readerIdle()
     {
         AccessController.doPrivileged((PrivilegedAction<Object>) () ->
         {
@@ -176,14 +176,14 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     }
 
     @Override
-    public void closed()
+    public final void closed()
     {
         try
         {
             AccessController.doPrivileged((PrivilegedAction<Void>) () ->
             {
                 _inputHandler.closed();
-                if(_disassembler != null)
+                if (_disassembler != null)
                 {
                     _disassembler.closed();
                 }

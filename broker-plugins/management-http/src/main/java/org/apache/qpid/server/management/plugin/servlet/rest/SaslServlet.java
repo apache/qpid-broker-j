@@ -76,20 +76,22 @@ public class SaslServlet extends AbstractServlet
 
 
     @Override
-    protected void doGet(HttpServletRequest request,
-                         HttpServletResponse response,
-                         final ConfiguredObject<?> managedObject) throws ServletException, IOException
+    protected final void doGet(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            final ConfiguredObject<?> managedObject
+    ) throws ServletException, IOException
     {
         getRandom(request);
 
-        AuthenticationProvider<?> authenticationProvider = getAuthenticationProvider(request);
-        List<String> mechanismsList = authenticationProvider.getAvailableMechanisms(request.isSecure());
-        String[] mechanisms = mechanismsList.toArray(new String[mechanismsList.size()]);
-        Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
+        final AuthenticationProvider<?> authenticationProvider = getAuthenticationProvider(request);
+        final List<String> mechanismsList = authenticationProvider.getAvailableMechanisms(request.isSecure());
+        final String[] mechanisms = mechanismsList.toArray(new String[mechanismsList.size()]);
+        final Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
 
         final Subject subject = Subject.getSubject(AccessController.getContext());
         final Principal principal = AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subject);
-        if(principal != null)
+        if (principal != null)
         {
             outputObject.put("user", principal.getName());
         }

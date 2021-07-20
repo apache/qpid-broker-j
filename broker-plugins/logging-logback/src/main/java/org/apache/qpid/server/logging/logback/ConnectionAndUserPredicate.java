@@ -40,18 +40,18 @@ class ConnectionAndUserPredicate implements PredicateAndLoggerNameAndLevelFilter
     private Pattern _remoteContainerIdPattern = MATCH_ALL;
 
     @Override
-    public boolean evaluate(final ILoggingEvent event)
+    public final boolean evaluate(final ILoggingEvent event)
     {
         String userPrincipalString = "";
         String connectionString = "";
         String remoteContainerName = "";
 
-        Subject subject = Subject.getSubject(AccessController.getContext());
-        Set<SocketConnectionPrincipal> connectionPrincipals = subject.getPrincipals(SocketConnectionPrincipal.class);
-        Set<AuthenticatedPrincipal> userPrincipals = subject.getPrincipals(AuthenticatedPrincipal.class);
+        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final Set<SocketConnectionPrincipal> connectionPrincipals = subject.getPrincipals(SocketConnectionPrincipal.class);
+        final Set<AuthenticatedPrincipal> userPrincipals = subject.getPrincipals(AuthenticatedPrincipal.class);
         if (!connectionPrincipals.isEmpty())
         {
-            SocketConnectionPrincipal socketConnectionPrincipal = connectionPrincipals.iterator().next();
+            final SocketConnectionPrincipal socketConnectionPrincipal = connectionPrincipals.iterator().next();
             connectionString = socketConnectionPrincipal.getName();
             if (socketConnectionPrincipal instanceof ConnectionPrincipal)
             {

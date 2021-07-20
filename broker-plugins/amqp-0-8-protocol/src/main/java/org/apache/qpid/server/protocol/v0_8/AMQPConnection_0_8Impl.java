@@ -705,7 +705,7 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
-    public void readerIdle()
+    public final void readerIdle()
     {
         AccessController.doPrivileged(new PrivilegedAction<Object>()
         {

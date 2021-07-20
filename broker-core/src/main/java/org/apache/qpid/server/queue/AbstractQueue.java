@@ -355,12 +355,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    private Set<SessionPrincipal> getSessionPrincipals()
+    {
+        Subject activeSubject = Subject.getSubject(AccessController.getContext());
+        return activeSubject == null ? Collections.emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
+    }
+
     @Override
     protected void onOpen()
     {
         super.onOpen();
 
-        Map<String,Object> attributes = getActualAttributes();
+        final Map<String,Object> attributes = getActualAttributes();
 
         final LinkedHashMap<String, Object> arguments = new LinkedHashMap<>(attributes);
 
@@ -370,10 +376,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _arguments = Collections.synchronizedMap(arguments);
 
         _queueHouseKeepingTask = new AdvanceConsumersTask();
-        Subject activeSubject = Subject.getSubject(AccessController.getContext());
-        Set<SessionPrincipal> sessionPrincipals = activeSubject == null ? Collections.emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
-        AMQPSession<?, ?> session;
-        if(sessionPrincipals.isEmpty())
+        final Set<SessionPrincipal> sessionPrincipals = getSessionPrincipals();
+        final AMQPSession<?, ?> session;
+        if (sessionPrincipals.isEmpty())
         {
             session = null;
         }
@@ -383,7 +388,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             session = sessionPrincipal.getSession();
         }
 
-        if(session != null)
+        if (session != null)
         {
 
             switch(_exclusive)
@@ -413,11 +418,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                            + " this is a coding error inside Qpid");
             }
         }
-        else if(_exclusive == ExclusivityPolicy.PRINCIPAL)
+        else if (_exclusive == ExclusivityPolicy.PRINCIPAL)
         {
             if (attributes.get(Queue.OWNER) != null)
             {
-                String owner = String.valueOf(attributes.get(Queue.OWNER));
+                final String owner = String.valueOf(attributes.get(Queue.OWNER));
                 Principal ownerPrincipal;
                 try
                 {
@@ -430,7 +435,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _exclusiveOwner = new AuthenticatedPrincipal(ownerPrincipal);
             }
         }
-        else if(_exclusive == ExclusivityPolicy.CONTAINER)
+        else if (_exclusive == ExclusivityPolicy.CONTAINER)
         {
             if (attributes.get(Queue.OWNER) != null)
             {
@@ -439,9 +444,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
 
-        if(getLifetimePolicy() == LifetimePolicy.DELETE_ON_CONNECTION_CLOSE)
+        if (getLifetimePolicy() == LifetimePolicy.DELETE_ON_CONNECTION_CLOSE)
         {
-            if(session != null)
+            if (session != null)
             {
                 addLifetimeConstraint(session.getAMQPConnection());
             }
@@ -452,9 +457,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                    + " must be created from a connection.");
             }
         }
-        else if(getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END)
+        else if (getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END)
         {
-            if(session != null)
+            if (session != null)
             {
                 addLifetimeConstraint(session);
             }
@@ -489,7 +494,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
 
-        switch(getMessageGroupType())
+        switch (getMessageGroupType())
         {
             case NONE:
                 _messageGroupManager = null;
@@ -510,21 +515,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _flowToDiskThreshold = getAncestor(Broker.class).getFlowToDiskThreshold();
 
-        if(_defaultFilters != null)
+        if (_defaultFilters != null)
         {
-            QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
+            final QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
             final Map<String, MessageFilterFactory> messageFilterFactories =
                     qpidServiceLoader.getInstancesByType(MessageFilterFactory.class);
 
             for (Map.Entry<String,Map<String,List<String>>> entry : _defaultFilters.entrySet())
             {
-                String name = String.valueOf(entry.getKey());
-                Map<String, List<String>> filterValue = entry.getValue();
-                if(filterValue.size() == 1)
+                final String name = String.valueOf(entry.getKey());
+                final Map<String, List<String>> filterValue = entry.getValue();
+                if (filterValue.size() == 1)
                 {
-                    String filterTypeName = String.valueOf(filterValue.keySet().iterator().next());
+                    final String filterTypeName = String.valueOf(filterValue.keySet().iterator().next());
                     final MessageFilterFactory filterFactory = messageFilterFactories.get(filterTypeName);
-                    if(filterFactory != null)
+                    if (filterFactory != null)
                     {
                         final List<String> filterArguments = filterValue.values().iterator().next();
                         // check the arguments are valid
@@ -552,7 +557,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
-        if(isHoldOnPublishEnabled())
+        if (isHoldOnPublishEnabled())
         {
             _holdMethods.add(new HoldMethod()
                             {
@@ -566,7 +571,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         if (getAlternateBinding() != null)
         {
-            String alternateDestination = getAlternateBinding().getDestination();
+            final String alternateDestination = getAlternateBinding().getDestination();
             _alternateBindingDestination = getOpenedMessageDestination(alternateDestination);
             if (_alternateBindingDestination != null)
             {

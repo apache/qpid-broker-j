@@ -95,40 +95,40 @@ public abstract class AbstractMessageLogger implements MessageLogger
     abstract void rawMessage(String message, Throwable throwable, String logHierarchy);
 
 
-    protected String getActor()
+    protected final String getActor()
     {
         return getLogActor();
     }
 
     static String getLogActor()
     {
-        Subject subject = Subject.getSubject(AccessController.getContext());
+        final Subject subject = Subject.getSubject(AccessController.getContext());
 
-        SessionPrincipal sessionPrincipal = getPrincipal(subject, SessionPrincipal.class);
+        final SessionPrincipal sessionPrincipal = getPrincipal(subject, SessionPrincipal.class);
         String message;
-        if(sessionPrincipal != null)
+        if (sessionPrincipal != null)
         {
             message =  generateSessionActor(sessionPrincipal.getSession());
         }
         else
         {
-            ConnectionPrincipal connPrincipal = getPrincipal(subject, ConnectionPrincipal.class);
+            final ConnectionPrincipal connPrincipal = getPrincipal(subject, ConnectionPrincipal.class);
 
-            if(connPrincipal != null)
+            if (connPrincipal != null)
             {
                 message = generateConnectionActor(connPrincipal.getConnection());
             }
             else
             {
-                TaskPrincipal taskPrincipal = getPrincipal(subject, TaskPrincipal.class);
-                if(taskPrincipal != null)
+                final TaskPrincipal taskPrincipal = getPrincipal(subject, TaskPrincipal.class);
+                if (taskPrincipal != null)
                 {
                     message = generateTaskMessage(taskPrincipal);
                 }
                 else
                 {
-                    ManagementConnectionPrincipal managementConnection = getPrincipal(subject,ManagementConnectionPrincipal.class);
-                    if(managementConnection != null)
+                    final ManagementConnectionPrincipal managementConnection = getPrincipal(subject,ManagementConnectionPrincipal.class);
+                    if (managementConnection != null)
                     {
                         message = generateManagementConnectionMessage(managementConnection, getPrincipal(subject, AuthenticatedPrincipal.class));
                     }

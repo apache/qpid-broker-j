@@ -55,7 +55,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     }
 
     @Override
-    public CachingSecurityToken newToken()
+    public final CachingSecurityToken newToken()
     {
         return newToken(Subject.getSubject(AccessController.getContext()));
     }
@@ -72,7 +72,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
      * user the plugin will abstain.
      */
     @Override
-    public Result authorise(LegacyOperation operation, ObjectType objectType, ObjectProperties properties)
+    public final Result authorise(LegacyOperation operation, ObjectType objectType, ObjectProperties properties)
     {
         final Subject subject = Subject.getSubject(AccessController.getContext());
 

@@ -65,7 +65,7 @@ public class CompoundAccessControl implements AccessControl<CompoundSecurityToke
     }
 
     @Override
-    public CompoundSecurityToken newToken()
+    public final CompoundSecurityToken newToken()
     {
         return new CompoundSecurityToken(_underlyingControls.get(), Subject.getSubject(AccessController.getContext()));
     }
