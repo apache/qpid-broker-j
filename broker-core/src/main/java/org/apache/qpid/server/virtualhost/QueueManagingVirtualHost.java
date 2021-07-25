@@ -281,6 +281,13 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getInMemoryMessageSize();
 
     @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES,
+            label = "In-Memory Message Bytes Threshold",
+            description="A threshold for triggering flow to disk when the size of all messages cached in-memory exceeds the value.",
+            metricName = "in_memory_message_threshold_bytes_total")
+    long getInMemoryMessageThreshold();
+
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Evacuated Message Bytes",
                       description = "Total Number of Bytes Evacuated from Memory Due to Flow to Disk.")
     long getBytesEvacuatedFromMemory();
