@@ -884,7 +884,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     @SuppressWarnings("unused")
     public static Set<String> getAllAvailableCorsMethodCombinations()
     {
-        List<String> methods = Arrays.asList("OPTION", "HEAD", "GET", "POST", "PUT", "DELETE");
+        List<String> methods = Arrays.asList("OPTIONS", "HEAD", "GET", "POST", "PUT", "DELETE");
         Set<Set<String>> combinations = new HashSet<>();
         int n = methods.size();
         assert n < 31 : "Too many combination to calculate";
