@@ -83,9 +83,9 @@ import org.apache.qpid.server.logging.messages.ManagementConsoleMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.management.plugin.filter.AuthenticationCheckFilter;
 import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
-import org.apache.qpid.server.management.plugin.filter.ForbiddingTraceFilter;
 import org.apache.qpid.server.management.plugin.filter.InteractiveAuthenticationFilter;
 import org.apache.qpid.server.management.plugin.filter.LoggingFilter;
+import org.apache.qpid.server.management.plugin.filter.MethodFilter;
 import org.apache.qpid.server.management.plugin.filter.RedirectFilter;
 import org.apache.qpid.server.management.plugin.filter.RewriteRequestForUncompressedJavascript;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
@@ -348,7 +348,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         corsFilter.setInitParameter(CrossOriginFilter.ALLOW_CREDENTIALS_PARAM, String.valueOf(getCorsAllowCredentials()));
         root.addFilter(corsFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
-        root.addFilter(new FilterHolder(new ForbiddingTraceFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
+        root.addFilter(new FilterHolder(new MethodFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
 
         addFiltersAndServletsForRest(root);
         if (!Boolean.TRUE.equals(getContextValue(Boolean.class, DISABLE_UI_CONTEXT_NAME)))
