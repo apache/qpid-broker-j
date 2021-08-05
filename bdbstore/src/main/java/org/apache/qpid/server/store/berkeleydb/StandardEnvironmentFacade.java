@@ -54,7 +54,6 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.logging.Slf4jLoggingHandler;
 import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
-import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 
 public class StandardEnvironmentFacade implements EnvironmentFacade
 {
@@ -156,17 +155,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
             }
         }
 
-        final int commiterNotifyThreshold = configuration.getFacadeParameter(
-                Integer.class,
-                BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD,
-                BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD
-        );
-        final long commiterWaitTimeout = configuration.getFacadeParameter(
-                Long.class,
-                BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT,
-                BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT
-        );
-        _committer =  new CoalescingCommiter(name, commiterNotifyThreshold, commiterWaitTimeout, this);
+        _committer =  new CoalescingCommitter(configuration, this);
         _committer.start();
     }
 

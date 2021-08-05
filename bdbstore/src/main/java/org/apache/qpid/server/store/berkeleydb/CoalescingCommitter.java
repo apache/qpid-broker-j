@@ -36,13 +36,65 @@ import com.sleepycat.je.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CoalescingCommiter implements Committer
-{
-    private final CommitThread _commitThread;
+import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentConfiguration;
+import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 
-    public CoalescingCommiter(String name, int commiterNotifyThreshold, long commiterWaitTimeout, EnvironmentFacade environmentFacade)
+public class CoalescingCommitter implements Committer
+{
+    private static final String BATCHING_TYPE = "batching";
+    private final CommitThread _commitThread;
+    private final boolean _isBatching;
+
+    public CoalescingCommitter(
+            StandardEnvironmentConfiguration configuration,
+            EnvironmentFacade environmentFacade)
     {
-        _commitThread = new CommitThread("Commit-Thread-" + name, commiterNotifyThreshold, commiterWaitTimeout, environmentFacade);
+        this(configuration.getName(), configuration, environmentFacade);
+    }
+
+    public CoalescingCommitter(
+            ReplicatedEnvironmentConfiguration configuration,
+            EnvironmentFacade environmentFacade)
+    {
+        this(configuration.getGroupName(), configuration, environmentFacade);
+    }
+
+    public CoalescingCommitter(
+            String name,
+            StandardEnvironmentConfiguration configuration,
+            EnvironmentFacade environmentFacade)
+    {
+        this(
+                name,
+                configuration.getFacadeParameter(
+                        Integer.class,
+                        BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD,
+                        BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD),
+                configuration.getFacadeParameter(
+                        Long.class,
+                        BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT,
+                        BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT),
+                BATCHING_TYPE.equals(configuration.getFacadeParameter(
+                        String.class,
+                        BDBVirtualHost.QPID_BROKER_BDB_COMMITER_TYPE,
+                        BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_TYPE)),
+                environmentFacade);
+    }
+
+    public CoalescingCommitter(
+            String name,
+            int commiterNotifyThreshold,
+            long commiterNotifyTimeout,
+            boolean isBatching,
+            EnvironmentFacade environmentFacade)
+    {
+        _isBatching = isBatching;
+        _commitThread = new CommitThread(
+                "Commit-Thread-" + name,
+                commiterNotifyThreshold,
+                commiterNotifyTimeout,
+                isBatching,
+                environmentFacade);
     }
 
     @Override
@@ -84,20 +136,22 @@ public class CoalescingCommiter implements Committer
     @Override
     public <X> ListenableFuture<X> commitAsync(Transaction tx, X val)
     {
-        ThreadNotifyingSettableFuture<X> future = new ThreadNotifyingSettableFuture<X>();
-        BDBCommitFutureResult<X> commitFuture = new BDBCommitFutureResult<X>(val, future);
+        final ThreadNotifyingSettableFuture<X> future = new ThreadNotifyingSettableFuture<>();
+        if (_isBatching)
+        {
+            future.set(val);
+        }
+        final BDBCommitFutureResult<X> commitFuture = new BDBCommitFutureResult<>(val, future);
         _commitThread.addJob(commitFuture, false);
         return future;
     }
-
 
     private static final class BDBCommitFutureResult<X> implements CommitThreadJob
     {
         private final X _value;
         private final ThreadNotifyingSettableFuture<X> _future;
 
-        public BDBCommitFutureResult(X value,
-                                     final ThreadNotifyingSettableFuture<X> future)
+        public BDBCommitFutureResult(X value, final ThreadNotifyingSettableFuture<X> future)
         {
             _value = value;
             _future = future;
@@ -124,10 +178,10 @@ public class CoalescingCommiter implements Committer
     }
 
     /**
-     * Implements a thread which batches and commits a queue of {@link org.apache.qpid.server.store.berkeleydb.CoalescingCommiter.BDBCommitFutureResult} operations. The commit operations
+     * Implements a thread which batches and commits a queue of {@link CoalescingCommitter.BDBCommitFutureResult} operations. The commit operations
      * themselves are responsible for adding themselves to the queue and waiting for the commit to happen before
      * continuing, but it is the responsibility of this thread to tell the commit operations when they have been
-     * completed by calling back on their {@link org.apache.qpid.server.store.berkeleydb.CoalescingCommiter.BDBCommitFutureResult#complete()} and {@link org.apache.qpid.server.store.berkeleydb.CoalescingCommiter.BDBCommitFutureResult#abort} methods.
+     * completed by calling back on their {@link CoalescingCommitter.BDBCommitFutureResult#complete()} and {@link CoalescingCommitter.BDBCommitFutureResult#abort} methods.
      *
      * <p/><table id="crc"><caption>CRC Card</caption> <tr><th> Responsibilities <th> Collaborations </table>
      */
@@ -141,15 +195,22 @@ public class CoalescingCommiter implements Committer
         private final Queue<CommitThreadJob> _jobQueue = new ConcurrentLinkedQueue<>();
         private final Object _lock = new Object();
         private final EnvironmentFacade _environmentFacade;
+        private final boolean _isBatching;
+        private final List<CommitThreadJob> _inProcessJobs;
 
-        private final List<CommitThreadJob> _inProcessJobs = new ArrayList<>(256);
-
-        public CommitThread(String name, int commiterNotifyThreshold, long commiterWaitTimeout, EnvironmentFacade environmentFacade)
+        public CommitThread(
+                String name,
+                int commiterNotifyThreshold,
+                long commiterWaitTimeout,
+                boolean isBatching,
+                EnvironmentFacade environmentFacade)
         {
             super(name);
-            this._jobQueueNotifyThreshold = commiterNotifyThreshold;
-            this._commiterWaitTimeout = commiterWaitTimeout;
+            _jobQueueNotifyThreshold = commiterNotifyThreshold;
+            _commiterWaitTimeout = commiterWaitTimeout;
+            _isBatching = isBatching;
             _environmentFacade = environmentFacade;
+            _inProcessJobs = new ArrayList<>(_jobQueueNotifyThreshold);
         }
 
         public void explicitNotify()
@@ -167,7 +228,7 @@ public class CoalescingCommiter implements Committer
             {
                 synchronized (_lock)
                 {
-                    while (!_stopped.get() && !hasJobs())
+                    while (!_stopped.get() && _jobQueue.isEmpty())
                     {
                         try
                         {
@@ -177,10 +238,21 @@ public class CoalescingCommiter implements Committer
                         }
                         catch (InterruptedException e)
                         {
+                            // ignore
                         }
                     }
                 }
-                processJobs();
+                if (_isBatching)
+                {
+                    synchronized (_lock)
+                    {
+                        processJobs();
+                    }
+                }
+                else
+                {
+                    processJobs();
+                }
             }
         }
 
@@ -205,14 +277,17 @@ public class CoalescingCommiter implements Committer
 
                 if(LOGGER.isDebugEnabled())
                 {
-                    long duration = System.currentTimeMillis() - startTime;
-                    LOGGER.debug("flushLog completed in " + duration  + " ms");
+                    final long duration = System.currentTimeMillis() - startTime;
+                    LOGGER.debug("flushing log completed in {} ms, {} records flushed", duration, _inProcessJobs.size());
                 }
 
-                while(completedJobsIndex < _inProcessJobs.size())
+                if (!_isBatching)
                 {
-                    _inProcessJobs.get(completedJobsIndex).complete();
-                    completedJobsIndex++;
+                    while (completedJobsIndex < _inProcessJobs.size())
+                    {
+                        _inProcessJobs.get(completedJobsIndex).complete();
+                        completedJobsIndex++;
+                    }
                 }
 
             }
@@ -224,7 +299,7 @@ public class CoalescingCommiter implements Committer
 
                     for(; completedJobsIndex < _inProcessJobs.size(); completedJobsIndex++)
                     {
-                        CommitThreadJob commit = _inProcessJobs.get(completedJobsIndex);
+                        final CommitThreadJob commit = _inProcessJobs.get(completedJobsIndex);
                         commit.abort(e);
                     }
                 }
@@ -239,19 +314,38 @@ public class CoalescingCommiter implements Committer
             }
         }
 
-        private boolean hasJobs()
-        {
-            return !_jobQueue.isEmpty();
-        }
-
         public void addJob(CommitThreadJob commit, final boolean sync)
         {
             if (_stopped.get())
             {
                 throw new IllegalStateException("Commit thread is stopped");
             }
+            if (_isBatching)
+            {
+                addBatchingJob(commit, sync);
+            }
+            else
+            {
+                addCoalescingJob(commit, sync);
+            }
+        }
+
+        private void addBatchingJob(CommitThreadJob commit, boolean sync)
+        {
+            synchronized (_lock)
+            {
+                _jobQueue.add(commit);
+                if (sync || _jobQueue.size() >= _jobQueueNotifyThreshold)
+                {
+                    _lock.notifyAll();
+                }
+            }
+        }
+
+        private void addCoalescingJob(CommitThreadJob commit, boolean sync)
+        {
             _jobQueue.add(commit);
-            if(sync || _jobQueue.size() >= _jobQueueNotifyThreshold)
+            if (sync || _jobQueue.size() >= _jobQueueNotifyThreshold)
             {
                 synchronized (_lock)
                 {
@@ -275,7 +369,7 @@ public class CoalescingCommiter implements Committer
                         commit.complete();
                     }
                 }
-                catch(RuntimeException flushException)
+                catch (RuntimeException flushException)
                 {
                     RuntimeException e = new RuntimeException("Commit thread has been closed, transaction aborted");
                     int abortedCommits = 0;
@@ -301,7 +395,7 @@ public class CoalescingCommiter implements Committer
         public X get(final long timeout, final TimeUnit unit)
                 throws InterruptedException, TimeoutException, ExecutionException
         {
-            if(!isDone())
+            if (!isDone())
             {
                 _commitThread.explicitNotify();
             }
@@ -311,7 +405,7 @@ public class CoalescingCommiter implements Committer
         @Override
         public X get() throws InterruptedException, ExecutionException
         {
-            if(!isDone())
+            if (!isDone())
             {
                 _commitThread.explicitNotify();
             }
@@ -338,7 +432,7 @@ public class CoalescingCommiter implements Committer
         }
     }
 
-    private class SynchronousCommitThreadJob implements CommitThreadJob
+    private static class SynchronousCommitThreadJob implements CommitThreadJob
     {
         private boolean _done;
         private RuntimeException _exception;
@@ -362,7 +456,7 @@ public class CoalescingCommiter implements Committer
         public synchronized void awaitCompletion()
         {
             boolean interrupted = false;
-            while(!_done)
+            while (!_done)
             {
                 try
                 {
@@ -373,11 +467,11 @@ public class CoalescingCommiter implements Committer
                     interrupted = true;
                 }
             }
-            if(interrupted)
+            if (interrupted)
             {
                 Thread.currentThread().interrupt();
             }
-            if(_exception != null)
+            if (_exception != null)
             {
                 throw _exception;
             }

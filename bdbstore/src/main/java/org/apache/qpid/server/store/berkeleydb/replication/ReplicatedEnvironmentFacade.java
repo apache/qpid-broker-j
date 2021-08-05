@@ -114,7 +114,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.BDBUtils;
-import org.apache.qpid.server.store.berkeleydb.CoalescingCommiter;
+import org.apache.qpid.server.store.berkeleydb.CoalescingCommitter;
 import org.apache.qpid.server.store.berkeleydb.EnvHomeRegistry;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentUtils;
@@ -125,7 +125,6 @@ import org.apache.qpid.server.util.DaemonThreadFactory;
 import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 
 public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChangeListener
 {
@@ -275,7 +274,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private final Set<String> _permittedNodes = new CopyOnWriteArraySet<String>();
     private volatile Durability _realMessageStoreDurability = null;
     private volatile Durability _messageStoreDurability;
-    private volatile CoalescingCommiter _coalescingCommiter = null;
+    private volatile CoalescingCommitter _coalescingCommitter = null;
     private volatile long _joinTime;
     private volatile ReplicatedEnvironment.State _lastKnownEnvironmentState;
     private volatile long _envSetupTimeoutMillis;
@@ -390,10 +389,10 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         commitInternal(tx, _realMessageStoreDurability);
 
-        if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
-                && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)
+        if (_coalescingCommitter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
+            && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)
         {
-            _coalescingCommiter.commit(tx, true);
+            _coalescingCommitter.commit(tx, true);
         }
 
     }
@@ -417,10 +416,10 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         commitInternal(tx, _noSyncTxDurability);
 
-        if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
+        if (_coalescingCommitter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
             && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)
         {
-            _coalescingCommiter.commit(tx, false);
+            _coalescingCommitter.commit(tx, false);
         }
     }
 
@@ -429,10 +428,10 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         commitInternal(tx, _realMessageStoreDurability);
 
-        if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
+        if (_coalescingCommitter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
             && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)
         {
-            return _coalescingCommiter.commitAsync(tx, val);
+            return _coalescingCommitter.commitAsync(tx, val);
         }
         return Futures.immediateFuture(val);
     }
@@ -460,9 +459,9 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
                 try
                 {
-                    if (_coalescingCommiter != null)
+                    if (_coalescingCommitter != null)
                     {
-                        _coalescingCommiter.stop();
+                        _coalescingCommitter.stop();
                     }
                     closeSequences();
                     closeDatabases();
@@ -1122,7 +1121,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     public boolean isCoalescingSync()
     {
-        return _coalescingCommiter != null;
+        return _coalescingCommitter != null;
     }
 
     public String getNodeState()
@@ -1756,27 +1755,17 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         {
             _messageStoreDurability = new Durability(localTransactionSynchronizationPolicy, remoteTransactionSynchronizationPolicy, replicaAcknowledgmentPolicy);
 
-            if (_coalescingCommiter != null)
+            if (_coalescingCommitter != null)
             {
-                _coalescingCommiter.stop();
-                _coalescingCommiter = null;
+                _coalescingCommitter.stop();
+                _coalescingCommitter = null;
             }
 
             if (!_disableCoalescingCommiter && localTransactionSynchronizationPolicy == LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY)
             {
                 localTransactionSynchronizationPolicy = SyncPolicy.NO_SYNC;
-                final int commiterNotifyThreshold = _configuration.getFacadeParameter(
-                        Integer.class,
-                        BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD,
-                        BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD
-                );
-                final long commiterWaitTimeout = _configuration.getFacadeParameter(
-                        Long.class,
-                        BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT,
-                        BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT
-                );
-                _coalescingCommiter = new CoalescingCommiter(_configuration.getGroupName(), commiterNotifyThreshold, commiterWaitTimeout,  this);
-                _coalescingCommiter.start();
+                _coalescingCommitter = new CoalescingCommitter(_configuration, this);
+                _coalescingCommitter.start();
             }
             _realMessageStoreDurability = new Durability(localTransactionSynchronizationPolicy, remoteTransactionSynchronizationPolicy, replicaAcknowledgmentPolicy);
         }
