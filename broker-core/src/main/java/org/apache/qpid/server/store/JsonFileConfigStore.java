@@ -162,46 +162,46 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
             try (FileReader configFileReader =  new FileReader(configFile))
             {
                 records = configuredObjectRecordConverter.readFromJson(_rootClass, _parent, configFileReader);
+            }
 
+            if (_rootClass == null)
+            {
+                _rootClass = configuredObjectRecordConverter.getRootClass();
+                _classNameMapping = generateClassNameMap(configuredObjectRecordConverter.getModel(), _rootClass);
+            }
+
+            if (records.isEmpty())
+            {
+                LOGGER.debug("File contains no records - using initial configuration");
+                records = Arrays.asList(initialRecords);
+                updated = true;
                 if (_rootClass == null)
                 {
-                    _rootClass = configuredObjectRecordConverter.getRootClass();
-                    _classNameMapping = generateClassNameMap(configuredObjectRecordConverter.getModel(), _rootClass);
-                }
-
-                if (records.isEmpty())
-                {
-                    LOGGER.debug("File contains no records - using initial configuration");
-                    records = Arrays.asList(initialRecords);
-                    updated = true;
-                    if (_rootClass == null)
+                    String containerTypeName = ((DynamicModel) _parent).getDefaultContainerType();
+                    ConfiguredObjectRecord rootRecord = null;
+                    for (ConfiguredObjectRecord record : records)
                     {
-                        String containerTypeName = ((DynamicModel) _parent).getDefaultContainerType();
-                        ConfiguredObjectRecord rootRecord = null;
-                        for (ConfiguredObjectRecord record : records)
+                        if (record.getParents() == null || record.getParents().isEmpty())
                         {
-                            if (record.getParents() == null || record.getParents().isEmpty())
-                            {
-                                rootRecord = record;
-                                break;
-                            }
+                            rootRecord = record;
+                            break;
                         }
-                        if (rootRecord != null && rootRecord.getAttributes().get(ConfiguredObject.TYPE) instanceof String)
-                        {
-                            containerTypeName = rootRecord.getAttributes().get(ConfiguredObject.TYPE).toString();
-                        }
-
-                        final QpidServiceLoader loader = new QpidServiceLoader();
-                        final ContainerType<?> containerType =
-                                loader.getInstancesByType(ContainerType.class).get(containerTypeName);
-
-                        if (containerType != null)
-                        {
-                            _rootClass = containerType.getCategoryClass();
-                            _classNameMapping = generateClassNameMap(containerType.getModel(), containerType.getCategoryClass());
-                        }
-
                     }
+                    if (rootRecord != null && rootRecord.getAttributes().get(ConfiguredObject.TYPE) instanceof String)
+                    {
+                        containerTypeName = rootRecord.getAttributes().get(ConfiguredObject.TYPE).toString();
+                    }
+
+                    final QpidServiceLoader loader = new QpidServiceLoader();
+                    final ContainerType<?> containerType =
+                            loader.getInstancesByType(ContainerType.class).get(containerTypeName);
+
+                    if (containerType != null)
+                    {
+                        _rootClass = containerType.getCategoryClass();
+                        _classNameMapping = generateClassNameMap(containerType.getModel(), containerType.getCategoryClass());
+                    }
+
                 }
             }
 

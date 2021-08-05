@@ -437,10 +437,7 @@ public class RestServlet extends AbstractServlet
                 {
                     if ("data".equals(part.getName()) && "application/json".equals(part.getContentType()))
                     {
-                        try (InputStream inputStream = part.getInputStream())
-                        {
-                            items = mapper.readValue(inputStream, LinkedHashMap.class);
-                        }
+                        items = mapper.readValue(part.getInputStream(), LinkedHashMap.class);
                     }
                     else
                     {
