@@ -78,6 +78,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -171,6 +172,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractVirtualHost.class);
+    private static final Logger DIRECT_MEMORY_USAGE_LOGGER = LoggerFactory.getLogger("org.apache.qpid.server.directMemory.virtualhost");
 
     private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
 
@@ -220,6 +222,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AccessControl _accessControl;
 
     private volatile boolean _createDefaultExchanges;
+
+    private final AtomicBoolean _directMemoryExceedsTargetReported = new AtomicBoolean();
 
     private final AccessControl _systemUserAllowed = new SubjectFixedResultAccessControl(new ResultCalculator()
     {
@@ -1695,6 +1699,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _messagesOut.incrementAndGet();
         _bytesOut.addAndGet(messageSize);
         _broker.registerMessageDelivered(messageSize);
+        reportDirectMemoryBelowTargetIfReached();
     }
 
     @Override
@@ -1708,6 +1713,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             _maximumMessageSize.compareAndSet(hwm, messageSize);
         }
+        reportDirectMemoryAboveTargetIfExceeded();
     }
 
     @Override
@@ -2119,6 +2125,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             if (isOverTargetSize())
             {
                 long currentTargetSize = _targetSize.get();
+                reportDirectMemoryAboveTargetIfExceeded(currentTargetSize,
+                                                        AbstractVirtualHost.this.getInMemoryMessageSize());
                 List<QueueEntryIterator> queueIterators = new ArrayList<>();
                 for (Queue<?> q : getChildren(Queue.class))
                 {
@@ -2164,6 +2172,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         cyclicIterators.remove();
                     }
                 }
+                reportDirectMemoryBelowTargetIfReached(cumulativeSize,
+                                                       AbstractVirtualHost.this.getInMemoryMessageSize());
             }
         }
     }
@@ -2573,6 +2583,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public void setTargetSize(final long targetSize)
     {
         _targetSize.set(targetSize);
+        final long inMemoryMessageSize = getInMemoryMessageSize();
+        reportDirectMemoryAboveTargetIfExceeded(targetSize, inMemoryMessageSize);
+        reportDirectMemoryBelowTargetIfReached(targetSize, inMemoryMessageSize);
     }
 
     @Override
@@ -3447,5 +3460,51 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _eventLogger.message(VirtualHostMessages.UPDATE(getName(),
                                                         String.valueOf(outcome),
                                                         attributesAsString(attributes)));
+    }
+
+    private void reportDirectMemoryAboveTargetIfExceeded()
+    {
+        if (DIRECT_MEMORY_USAGE_LOGGER.isDebugEnabled())
+        {
+            reportDirectMemoryAboveTargetIfExceeded(getTargetSize(), getInMemoryMessageSize());
+        }
+    }
+
+    private void reportDirectMemoryBelowTargetIfReached()
+    {
+        if (DIRECT_MEMORY_USAGE_LOGGER.isDebugEnabled())
+        {
+            reportDirectMemoryBelowTargetIfReached(getTargetSize(), getInMemoryMessageSize());
+        }
+    }
+
+    private void reportDirectMemoryBelowTargetIfReached(final long currentTargetSize, final long inMemoryMessageSize)
+    {
+        if (DIRECT_MEMORY_USAGE_LOGGER.isDebugEnabled()
+            && inMemoryMessageSize <= currentTargetSize
+            && QpidByteBuffer.getAllocatedDirectMemorySize() <= _broker.getFlowToDiskThreshold()
+            && _directMemoryExceedsTargetReported.compareAndSet(true, false))
+        {
+            DIRECT_MEMORY_USAGE_LOGGER.debug(
+                    "VirtualHost '{}' direct memory allocation threshold ({}) maintained : {} bytes. Flow to disk stopped.",
+                    getName(),
+                    currentTargetSize,
+                    inMemoryMessageSize);
+        }
+    }
+
+    private void reportDirectMemoryAboveTargetIfExceeded(final long currentTargetSize, final long inMemoryMessageSize)
+    {
+        if (DIRECT_MEMORY_USAGE_LOGGER.isDebugEnabled()
+            && (inMemoryMessageSize > currentTargetSize
+                || QpidByteBuffer.getAllocatedDirectMemorySize() > _broker.getFlowToDiskThreshold())
+            && _directMemoryExceedsTargetReported.compareAndSet(false, true))
+        {
+            DIRECT_MEMORY_USAGE_LOGGER.debug(
+                    "VirtualHost '{}' direct memory allocation threshold ({}) exceeded : {} bytes. Flow to disk enforced.",
+                    getName(),
+                    currentTargetSize,
+                    inMemoryMessageSize);
+        }
     }
 }

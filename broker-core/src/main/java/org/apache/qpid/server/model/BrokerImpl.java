@@ -43,6 +43,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
@@ -96,6 +97,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<BrokerImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerImpl.class);
+    private static final Logger DIRECT_MEMORY_USAGE_LOGGER = LoggerFactory.getLogger("org.apache.qpid.server.directMemory.broker");
 
     private static final Pattern MODEL_VERSION_PATTERN = Pattern.compile("^\\d+\\.\\d+$");
 
@@ -145,6 +147,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private ScheduledFuture<?> _assignTargetSizeSchedulingFuture;
     private volatile ScheduledFuture<?> _statisticsReportingFuture;
     private long _housekeepingCheckPeriod;
+
+    private final AtomicBoolean _directMemoryExceedsThresholdReported = new AtomicBoolean();
 
     @ManagedObjectFactoryConstructor
     public BrokerImpl(Map<String, Object> attributes,
@@ -571,6 +575,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public synchronized void assignTargetSizes()
     {
+        reportDirectMemoryAboveThresholdIfExceeded();
         LOGGER.debug("Assigning target sizes based on total target {}", _flowToDiskThreshold);
         long totalSize = 0l;
         Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
@@ -609,6 +614,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             }
             entry.getKey().setTargetSize(size);
         }
+        reportDirectMemoryBelowThresholdIfReached();
     }
 
     @Override
@@ -1344,4 +1350,35 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             }
         }
     }
+
+    private void reportDirectMemoryBelowThresholdIfReached()
+    {
+        if (DIRECT_MEMORY_USAGE_LOGGER.isDebugEnabled())
+        {
+            final long allocatedDirectMemorySize = QpidByteBuffer.getAllocatedDirectMemorySize();
+            if (allocatedDirectMemorySize >= _flowToDiskThreshold
+                && _directMemoryExceedsThresholdReported.compareAndSet(true, false))
+            {
+                DIRECT_MEMORY_USAGE_LOGGER.debug("Direct memory threshold ({}) maintained : {}",
+                                                 _flowToDiskThreshold,
+                                                 allocatedDirectMemorySize);
+            }
+        }
+    }
+
+    private void reportDirectMemoryAboveThresholdIfExceeded()
+    {
+        if (DIRECT_MEMORY_USAGE_LOGGER.isDebugEnabled())
+        {
+            final long allocatedDirectMemorySize = QpidByteBuffer.getAllocatedDirectMemorySize();
+            if (allocatedDirectMemorySize > _flowToDiskThreshold
+                && _directMemoryExceedsThresholdReported.compareAndSet(false, true))
+            {
+                DIRECT_MEMORY_USAGE_LOGGER.debug("Direct memory threshold ({}) exceeded : {}",
+                                                 _flowToDiskThreshold,
+                                                 allocatedDirectMemorySize);
+            }
+        }
+    }
+
 }

@@ -39,4 +39,54 @@
   <para>Flow to disk is configured by Broker context variable
       <literal>broker.flowToDiskThreshold</literal>. It is expressed as a size in bytes and defaults
     to 75% of the JVM maximum heap size.</para>
+  <section role="h2" xml:id="Java-Broker-Runtime-Flow-To-Disk-Monitoring">
+    <title>Flow to Disk Monitoring</title>
+    <para>A number of statistics attributes are available on the <literal>Broker</literal> to allow monitoring
+      of the amount of utilized direct memory by the enqueued messages.
+    </para>
+    <para>The total amount of allocated direct memory by the <literal>Broker</literal> can be determined by
+      checking <literal>Broker</literal> statistics <literal>usedDirectMemorySize</literal>. There is another
+      <literal>Broker</literal> level statistics <literal>directMemoryTotalCapacity</literal> to get the total amount
+      of allocated direct memory. Usually, the values reported by both statistics attributes
+      <literal>usedDirectMemorySize</literal> and <literal>directMemoryTotalCapacity</literal> are the same
+      or do not differ much.
+    </para>
+    <para>The direct memory consumed by the <literal>VirtualHost</literal> messages is reported as
+      <literal>VirtualHost</literal> statistics <literal>inMemoryMessageSize</literal>. The current value of
+      <literal>VirtualHost</literal> direct memory threshold is exposed with statistics attribute
+      <literal>inMemoryMessageThreshold</literal>. When the value of <literal>inMemoryMessageSize</literal> is
+      greater than <literal>inMemoryMessageThreshold</literal>, the flow to disk is triggered to bring the amount of
+      direct memory consumed by the <literal>VirtualHost</literal> messages in-line with the
+      <literal>inMemoryMessageThreshold</literal>.
+    </para>
+  </section>
+  <section role="h2" xml:id="Java-Broker-Runtime-Flow-To-Disk-Logging">
+    <title>Flow to Disk Logging</title>
+    <para>The <literal>Flow to Disk</literal> events are not reported as operational logs or
+      <literal>INFO</literal> logs due to quite frequent triggering of <literal>Flow to Disk</literal>
+      for messaging use cases requiring holding messages on the <literal>Broker</literal> side for some time.
+      As result, the <literal>Flow to Disk</literal> logs can quickly dominate the broker logs and cause unnecessary
+      disk consumption.
+    </para>
+    <para>Though, if required, the <literal>Flow to Disk</literal> DEBUG logs can be enabled by adding
+      the following logging rule into the corresponding <literal>Broker</literal> logger.
+      <example>
+        <title>Flow to Disk logging rule</title>
+        <programlisting>
+          {
+            "name" : "DirectMemory",
+            "type" : "NameAndLevel",
+            "level" : "DEBUG",
+            "loggerName" : "org.apache.qpid.server.directMemory.*"
+          }
+        </programlisting>
+      </example>
+    </para>
+    <para>Please note, that the logger <literal>org.apache.qpid.server.directMemory.broker</literal>
+      is used by the <literal>Broker</literal> to report conditions when direct memory utilization exceeds the pred-defined
+      <literal>Broker</literal> threshold, whilst the logger <literal>org.apache.qpid.server.directMemory.virtualhost</literal>
+      is used to report conditions when direct memory utilization by the <literal>VirtualHost</literal>
+      messages exceeds the current value of the <literal>VirtualHost</literal> threshold.
+    </para>
+  </section>
 </section>
