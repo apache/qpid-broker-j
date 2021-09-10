@@ -18,10 +18,12 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +36,12 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostConnectionLimitProvider;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.limit.CachedConnectionLimiterImpl;
 import org.apache.qpid.server.security.limit.ConnectionLimitProvider;
 import org.apache.qpid.server.security.limit.ConnectionLimiter;
 import org.apache.qpid.server.security.limit.ConnectionLimiter.CachedLimiter;
+import org.apache.qpid.server.security.limit.ConnectionLimiterService;
 
 final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl implements CachedLimiter
 {
@@ -48,6 +52,8 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
     private final Broker<?> _broker;
 
     private final Map<ConnectionLimitProvider<?>, ConnectionLimiter> _connectionLimitProviders = new ConcurrentHashMap<>();
+
+    private final List<ConnectionLimiterService> _serviceLimiters = new CopyOnWriteArrayList<>();
 
     private final ChangeListener _virtualHostChangeListener;
     private final ChangeListener _brokerChangeListener;
@@ -70,6 +76,13 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
                 .forEach(child -> child.addChangeListener(ProviderChangeListener.virtualHostChangeListener(this)));
         _broker.getChildren(BrokerConnectionLimitProvider.class)
                 .forEach(child -> child.addChangeListener(ProviderChangeListener.brokerChangeListener(this)));
+
+        final QpidServiceLoader serviceLoader = new QpidServiceLoader();
+        for (final ConnectionLimiterService service : serviceLoader.instancesOf(ConnectionLimiterService.class))
+        {
+            LOGGER.debug("New connection limiter service found: {}", service.getType());
+            _serviceLimiters.add(service);
+        }
     }
 
     public void activate()
@@ -89,6 +102,8 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
         final ProviderChangeListener brokerChangeListener = ProviderChangeListener.brokerChangeListener(this);
         _broker.getChildren(BrokerConnectionLimitProvider.class)
                 .forEach(child -> child.removeChangeListener(brokerChangeListener));
+
+        _serviceLimiters.clear();
 
         swapLimiter(ConnectionLimiter.noLimits());
     }
@@ -139,6 +154,12 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
             {
                 limiter = ConnectionLimiter.blockEveryone();
             }
+        }
+
+        LOGGER.debug("Updating service based connection limiters");
+        for (final ConnectionLimiterService service : _serviceLimiters)
+        {
+            limiter = limiter.append(service);
         }
         return limiter;
     }

@@ -73,7 +73,6 @@ import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.transport.network.NetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 
 public class ServerConnection extends ConnectionInvoker
 {
@@ -194,7 +193,7 @@ public class ServerConnection extends ConnectionInvoker
 
     public void setVirtualHost(NamedAddressSpace addressSpace)
     {
-        addressSpace.registerConnection(_amqpConnection, new NoopConnectionEstablishmentPolicy());
+        addressSpace.registerConnection(_amqpConnection);
         _amqpConnection.setAddressSpace(addressSpace);
     }
 

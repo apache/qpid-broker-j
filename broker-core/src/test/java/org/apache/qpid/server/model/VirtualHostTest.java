@@ -78,7 +78,6 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
-import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -338,7 +337,7 @@ public class VirtualHostTest extends UnitTestBase
                             virtualHost.getConnectionCount());
 
         AMQPConnection modelConnection = getMockConnection();
-        virtualHost.registerConnection(modelConnection, new NoopConnectionEstablishmentPolicy());
+        virtualHost.registerConnection(modelConnection);
 
         assertEquals("Unexpected number of connections after connection registered",
                             (long) 1,
@@ -367,7 +366,7 @@ public class VirtualHostTest extends UnitTestBase
                             virtualHost.getConnectionCount());
 
         AMQPConnection modelConnection = getMockConnection();
-        virtualHost.registerConnection(modelConnection, new NoopConnectionEstablishmentPolicy());
+        virtualHost.registerConnection(modelConnection);
 
         assertEquals("Unexpected number of connections after connection registered",
                             (long) 1,
@@ -499,7 +498,7 @@ public class VirtualHostTest extends UnitTestBase
     {
         VirtualHost<?> host = createVirtualHost(getTestName());
         AMQPConnection connection = getMockConnection();
-        host.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
+        host.registerConnection(connection);
         ((EventListener) host).event(Event.PERSISTENT_MESSAGE_SIZE_OVERFULL);
         verify(connection).block();
     }
@@ -578,7 +577,7 @@ public class VirtualHostTest extends UnitTestBase
         AMQPConnection<?> connection = getMockConnection();
 
         assertEquals("unexpected number of connections before test", (long) 0, vhost.getConnectionCount());
-        vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
+        vhost.registerConnection(connection);
         assertEquals("unexpected number of connections after registerConnection",
                             (long) 1,
                             vhost.getConnectionCount());
@@ -591,7 +590,7 @@ public class VirtualHostTest extends UnitTestBase
         QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
 
-        vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
+        vhost.registerConnection(connection);
         assertEquals("unexpected number of connections after registerConnection",
                             (long) 1,
                             vhost.getConnectionCount());
@@ -610,7 +609,7 @@ public class VirtualHostTest extends UnitTestBase
         ((AbstractConfiguredObject<?>)vhost).stop();
         try
         {
-            vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
+            vhost.registerConnection(connection);
             fail("exception not thrown");
         }
         catch (VirtualHostUnavailableException e)
@@ -619,7 +618,7 @@ public class VirtualHostTest extends UnitTestBase
         }
         assertEquals("unexpected number of connections", (long) 0, vhost.getConnectionCount());
         ((AbstractConfiguredObject<?>)vhost).start();
-        vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
+        vhost.registerConnection(connection);
         assertEquals("unexpected number of connections", (long) 1, vhost.getConnectionCount());
     }
 

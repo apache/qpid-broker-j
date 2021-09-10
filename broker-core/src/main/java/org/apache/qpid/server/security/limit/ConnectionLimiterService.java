@@ -15,14 +15,11 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
+package org.apache.qpid.server.security.limit;
 
-package org.apache.qpid.server.virtualhost;
+import org.apache.qpid.server.plugin.Pluggable;
 
-import org.apache.qpid.server.transport.AMQPConnection;
-
-public interface ConnectionEstablishmentPolicy
+public interface ConnectionLimiterService extends ConnectionLimiter, Pluggable
 {
-    boolean mayEstablishNewConnection(Iterable<AMQPConnection<?>> existingConnections, AMQPConnection<?> newConnection);
 }

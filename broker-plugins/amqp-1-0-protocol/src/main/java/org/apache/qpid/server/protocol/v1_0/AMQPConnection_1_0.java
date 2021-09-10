@@ -29,6 +29,7 @@ import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -88,4 +89,6 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
 
     @DerivedAttribute(description = "If true send a final SASL challenge using a SaslChallenge performative, rather than SaslOutcome.")
     boolean getSendSaslFinalChallengeAsChallenge();
+
+    SoleConnectionEnforcementPolicy getSoleConnectionEnforcementPolicy();
 }
