@@ -20,31 +20,40 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.access.plugins.RuleOutcome;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StreamTokenizer;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Stack;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.EventLoggerProvider;
-import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.plugins.RuleOutcome;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class AclFileParser
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AclFileParser.class);
+
     public static final String DEFAULT_ALLOW = "defaultallow";
     public static final String DEFAULT_DEFER = "defaultdefer";
     public static final String DEFAULT_DENY = "defaultdeny";
@@ -54,71 +63,76 @@ public final class AclFileParser
 
     public static final String ACL = "acl";
     private static final String CONFIG = "config";
+    private static final String GROUP = "GROUP";
 
-    private static final String UNRECOGNISED_INITIAL_MSG = "Unrecognised initial token '%s' at line %d";
+    static final String UNRECOGNISED_INITIAL_MSG = "Unrecognised initial token '%s' at line %d";
     static final String NOT_ENOUGH_TOKENS_MSG = "Not enough tokens at line %d";
-    private static final String NUMBER_NOT_ALLOWED_MSG = "Number not allowed before '%s' at line %d";
-    private static final String CANNOT_LOAD_MSG = "I/O Error while reading configuration";
+    static final String NUMBER_NOT_ALLOWED_MSG = "Number not allowed before '%s' at line %d";
+    static final String CANNOT_LOAD_MSG = "I/O Error while reading configuration";
     static final String PREMATURE_CONTINUATION_MSG = "Premature continuation character at line %d";
-    private static final String PREMATURE_EOF_MSG = "Premature end of file reached at line %d";
     static final String PARSE_TOKEN_FAILED_MSG = "Failed to parse token at line %d";
     static final String NOT_ENOUGH_ACL_MSG = "Not enough data for an acl at line %d";
-    private static final String NOT_ENOUGH_CONFIG_MSG = "Not enough data for config at line %d";
-    private static final String BAD_ACL_RULE_NUMBER_MSG = "Invalid rule number at line %d";
+    static final String NOT_ENOUGH_CONFIG_MSG = "Not enough data for config at line %d";
+    static final String BAD_ACL_RULE_NUMBER_MSG = "Invalid rule number at line %d";
     static final String PROPERTY_KEY_ONLY_MSG = "Incomplete property (key only) at line %d";
     static final String PROPERTY_NO_EQUALS_MSG = "Incomplete property (no equals) at line %d";
     static final String PROPERTY_NO_VALUE_MSG = "Incomplete property (no value) at line %d";
+    static final String GROUP_NOT_SUPPORTED = "GROUP keyword not supported at line %d." +
+            " Groups should defined via a Group Provider, not in the ACL file.";
+    private static final String INVALID_ENUM = "Not a valid %s: %s";
+    private static final String INVALID_URL = "Cannot convert %s to a readable resource";
 
+    private static final Map<String, RuleOutcome> PERMISSION_MAP;
+    private static final Map<String, LegacyOperation> OPERATION_MAP;
+    private static final Map<String, ObjectType> OBJECT_TYPE_MAP;
 
-    private AclFileParser()
+    private static final Pattern NUMBER = Pattern.compile("\\s*(\\d+)\\s*");
+
+    static
     {
-    }
-
-    private static Reader getReaderFromURLString(String urlString)
-    {
-        try
+        PERMISSION_MAP = new HashMap<>();
+        for (final RuleOutcome value : RuleOutcome.values())
         {
-            URL url;
-
-            try
-            {
-                url = new URL(urlString);
-            }
-            catch (MalformedURLException e)
-            {
-                File file = new File(urlString);
-                try
-                {
-                    url = file.toURI().toURL();
-                }
-                catch (MalformedURLException notAFile)
-                {
-                    throw new IllegalConfigurationException("Cannot convert " + urlString + " to a readable resource", notAFile);
-                }
-
-            }
-            return new InputStreamReader(url.openStream());
+            PERMISSION_MAP.put(value.name().toUpperCase(Locale.ENGLISH), value);
+            PERMISSION_MAP.put(value.name().replace('_', '-').toUpperCase(Locale.ENGLISH), value);
         }
-        catch (IOException e)
-        {
-            throw new IllegalConfigurationException("Cannot convert " + urlString + " to a readable resource", e);
-        }
+
+        OPERATION_MAP = Arrays.stream(LegacyOperation.values()).collect(
+                Collectors.toMap(value -> value.name().toUpperCase(Locale.ENGLISH), Function.identity()));
+
+        OBJECT_TYPE_MAP = Arrays.stream(ObjectType.values()).collect(
+                Collectors.toMap(value -> value.name().toUpperCase(Locale.ENGLISH), Function.identity()));
     }
 
-    public static RuleSet parse(String name, EventLoggerProvider eventLoggerProvider)
+    public static RuleSet parse(String name, EventLoggerProvider eventLogger)
     {
-        return parse(getReaderFromURLString(name), eventLoggerProvider);
+        return new AclFileParser().readAndParse(name, eventLogger);
     }
 
-    public static RuleSet parse(final Reader configReader, EventLoggerProvider eventLogger)
+    public static RuleSet parse(Reader reader, EventLoggerProvider eventLogger)
     {
-        RuleSetCreator ruleSetCreator = new RuleSetCreator();
+        return new AclFileParser().readAndParse(reader, eventLogger);
+    }
+
+    RuleSet readAndParse(String name, EventLoggerProvider eventLogger)
+    {
+        return readAndParse(getReaderFromURLString(name)).createRuleSet(eventLogger);
+    }
+
+    RuleSet readAndParse(Reader reader, EventLoggerProvider eventLogger)
+    {
+        return readAndParse(reader).createRuleSet(eventLogger);
+    }
+
+    RuleSetCreator readAndParse(final Reader configReader)
+    {
+        final RuleSetCreator ruleSetCreator = new RuleSetCreator();
 
         int line = 0;
-        try(Reader fileReader = configReader)
+        try (Reader fileReader = configReader)
         {
             LOGGER.debug("About to load ACL file");
-            StreamTokenizer tokenizer = new StreamTokenizer(new BufferedReader(fileReader));
+            final StreamTokenizer tokenizer = new StreamTokenizer(new BufferedReader(fileReader));
             tokenizer.resetSyntax(); // setup the tokenizer
 
             tokenizer.commentChar(COMMENT); // single line comments
@@ -137,234 +151,273 @@ public final class AclFileParser
             tokenizer.wordChars('*', '*'); // star
             tokenizer.wordChars('@', '@'); // at
             tokenizer.wordChars(':', ':'); // colon
+            tokenizer.wordChars('+', '+'); // plus
 
             // parse the acl file lines
-            Stack<String> stack = new Stack<>();
+            final Queue<String> stack = new ArrayDeque<>();
             int current;
-            do {
+            do
+            {
                 current = tokenizer.nextToken();
-                line = tokenizer.lineno()-1;
+                line = tokenizer.lineno() - 1;
                 switch (current)
                 {
                     case StreamTokenizer.TT_EOF:
                     case StreamTokenizer.TT_EOL:
-                        if (stack.isEmpty())
-                        {
-                            break; // blank line
-                        }
-
-                        // pull out the first token from the bottom of the stack and check arguments exist
-                        String first = stack.firstElement();
-                        stack.removeElementAt(0);
-                        if (stack.isEmpty())
-                        {
-                            throw new IllegalConfigurationException(String.format(NOT_ENOUGH_TOKENS_MSG, line));
-                        }
-
-                        // check for and parse optional initial number for ACL lines
-                        Integer number = null;
-                        if (first != null && first.matches("\\d+"))
-                        {
-                            // set the acl number and get the next element
-                            number = Integer.valueOf(first);
-                            first = stack.firstElement();
-                            stack.removeElementAt(0);
-                        }
-
-                        if (ACL.equalsIgnoreCase(first))
-                        {
-                            parseAcl(number, stack, ruleSetCreator, line);
-                        }
-                        else if (number == null)
-                        {
-                            if("GROUP".equalsIgnoreCase(first))
-                            {
-                                throw new IllegalConfigurationException(String.format("GROUP keyword not supported at "
-                                                                                      + "line %d. Groups should defined "
-                                                                                      + "via a Group Provider, not in "
-                                                                                      + "the ACL file.",
-                                                                                      line));
-                            }
-                            else if (CONFIG.equalsIgnoreCase(first))
-                            {
-                                parseConfig(stack, ruleSetCreator, line);
-                            }
-                            else
-                            {
-                                throw new IllegalConfigurationException(String.format(UNRECOGNISED_INITIAL_MSG, first, line));
-                            }
-                        }
-                        else
-                        {
-                            throw new IllegalConfigurationException(String.format(NUMBER_NOT_ALLOWED_MSG, first, line));
-                        }
-
-                        // reset stack, start next line
-                        stack.clear();
+                        processLine(ruleSetCreator, line, stack);
                         break;
                     case StreamTokenizer.TT_NUMBER:
-                        stack.push(Integer.toString(Double.valueOf(tokenizer.nval).intValue()));
+                        // Dead code because the parsing numbers is turned off, see StreamTokenizer::parseNumbers.
+                        addLast(stack, Integer.toString(Double.valueOf(tokenizer.nval).intValue()));
                         break;
                     case StreamTokenizer.TT_WORD:
-                        stack.push(tokenizer.sval); // token
+                        addLast(stack, tokenizer.sval); // token
                         break;
                     default:
-                        if (tokenizer.ttype == CONTINUATION)
-                        {
-                            int next = tokenizer.nextToken();
-                            line = tokenizer.lineno()-1;
-                            if (next == StreamTokenizer.TT_EOL)
-                            {
-	                            break; // continue reading next line
-                            }
-
-                            // invalid location for continuation character (add one to line because we ate the EOL)
-                            throw new IllegalConfigurationException(String.format(PREMATURE_CONTINUATION_MSG, line + 1));
-                        }
-                        else if (tokenizer.ttype == '\'' || tokenizer.ttype == '"')
-                        {
-                            stack.push(tokenizer.sval); // quoted token
-                        }
-                        else
-                        {
-                            stack.push(Character.toString((char) tokenizer.ttype)); // single character
-                        }
+                        parseToken(tokenizer, stack);
                 }
-            } while (current != StreamTokenizer.TT_EOF);
-
-            if (!stack.isEmpty())
-            {
-                throw new IllegalConfigurationException(String.format(PREMATURE_EOF_MSG, line));
             }
+            while (current != StreamTokenizer.TT_EOF);
         }
-        catch (IllegalArgumentException iae)
+        catch (IllegalConfigurationException ice)
         {
-            throw new IllegalConfigurationException(String.format(PARSE_TOKEN_FAILED_MSG, line), iae);
+            throw ice;
         }
         catch (IOException ioe)
         {
             throw new IllegalConfigurationException(CANNOT_LOAD_MSG, ioe);
         }
-        return ruleSetCreator.createRuleSet(eventLogger);
+        catch (RuntimeException re)
+        {
+            throw new IllegalConfigurationException(String.format(PARSE_TOKEN_FAILED_MSG, line), re);
+        }
+        return ruleSetCreator;
     }
 
-    private static void parseAcl(Integer number, List<String> args, final RuleSetCreator ruleSetCreator, final int line)
+    private void processLine(RuleSetCreator ruleSetCreator, int line, Queue<String> stack)
+    {
+        if (stack.isEmpty())
+        {
+            return;
+        }
+
+        // pull out the first token from the bottom of the stack and check arguments exist
+        final String first = stack.poll();
+        if (stack.isEmpty())
+        {
+            throw new IllegalConfigurationException(String.format(NOT_ENOUGH_TOKENS_MSG, line));
+        }
+
+        // check for and parse optional initial number for ACL lines
+        final Matcher matcher = NUMBER.matcher(first);
+        if (matcher.matches())
+        {
+            // get the next element and set the acl number
+            final String type = stack.poll();
+            if (ACL.equalsIgnoreCase(type))
+            {
+                final Integer number = validateNumber(Integer.valueOf(matcher.group()), ruleSetCreator, line);
+                parseAcl(number, stack, ruleSetCreator, line);
+                // reset stack, start next line
+                stack.clear();
+                return;
+            }
+            throw new IllegalConfigurationException(String.format(NUMBER_NOT_ALLOWED_MSG, type, line));
+        }
+
+        if (ACL.equalsIgnoreCase(first))
+        {
+            parseAcl(null, stack, ruleSetCreator, line);
+        }
+        else if (CONFIG.equalsIgnoreCase(first))
+        {
+            parseConfig(stack, ruleSetCreator, line);
+        }
+        else if (GROUP.equalsIgnoreCase(first))
+        {
+            throw new IllegalConfigurationException(String.format(GROUP_NOT_SUPPORTED, line));
+        }
+        else
+        {
+            throw new IllegalConfigurationException(String.format(UNRECOGNISED_INITIAL_MSG, first, line));
+        }
+
+        // reset stack, start next line
+        stack.clear();
+    }
+
+    private void parseToken(StreamTokenizer tokenizer, Queue<String> stack) throws IOException
+    {
+        if (tokenizer.ttype == CONTINUATION)
+        {
+            if (tokenizer.nextToken() != StreamTokenizer.TT_EOL)
+            {
+                // invalid location for continuation character (add one to line because we ate the EOL)
+                throw new IllegalConfigurationException(String.format(PREMATURE_CONTINUATION_MSG, tokenizer.lineno()));
+            }
+            // continue reading next line
+        }
+        else if (tokenizer.ttype == '\'' || tokenizer.ttype == '"')
+        {
+            addLast(stack, tokenizer.sval); // quoted token
+        }
+        else if (!Character.isWhitespace(tokenizer.ttype))
+        {
+            addLast(stack, Character.toString((char) tokenizer.ttype)); // single character
+        }
+    }
+
+    private void addLast(Queue<String> queue, String value)
+    {
+        if (value != null)
+        {
+            queue.add(value);
+        }
+    }
+
+    private Integer validateNumber(Integer number, RuleSetCreator ruleSetCreator, int line)
+    {
+        if (!ruleSetCreator.isValidNumber(number))
+        {
+            throw new IllegalConfigurationException(String.format(BAD_ACL_RULE_NUMBER_MSG, line));
+        }
+        return number;
+    }
+
+    private void parseAcl(Integer number, Queue<String> args, final RuleSetCreator ruleSetCreator, final int line)
     {
         if (args.size() < 3)
         {
             throw new IllegalConfigurationException(String.format(NOT_ENOUGH_ACL_MSG, line));
         }
 
-        String text = args.get(0);
-        RuleOutcome outcome;
+        final RuleOutcome outcome = parsePermission(args.poll(), line);
+        final String identity = args.poll();
+        final LegacyOperation operation = parseOperation(args.poll(), line);
 
-        try
-        {
-            outcome = RuleOutcome.valueOf(text.replace('-', '_').toUpperCase());
-        }
-        catch(IllegalArgumentException e)
-        {
-            throw new IllegalArgumentException("Not a valid permission: " + text, e);
-        }
-        String identity = args.get(1);
-        LegacyOperation operation = LegacyOperation.valueOf(args.get(2).toUpperCase());
-
-        if (number != null && !ruleSetCreator.isValidNumber(number))
-        {
-            throw new IllegalConfigurationException(String.format(BAD_ACL_RULE_NUMBER_MSG, line));
-        }
-
-        if (args.size() == 3)
+        if (args.isEmpty())
         {
             ruleSetCreator.addRule(number, identity, outcome, operation);
         }
         else
         {
-            ObjectType object = ObjectType.valueOf(args.get(3).toUpperCase());
-            AclRulePredicates predicates = toRulePredicates(args.subList(4, args.size()), line);
+            final ObjectType object = parseObjectType(args.poll(), line);
+
+            final AclRulePredicates predicates = new AclRulePredicates();
+            final Iterator<String> tokenIterator = args.iterator();
+            while (tokenIterator.hasNext())
+            {
+                predicates.parse(tokenIterator.next(), readValue(tokenIterator, line));
+            }
 
             ruleSetCreator.addRule(number, identity, outcome, operation, object, predicates);
         }
     }
 
-    private static void parseConfig(List<String> args, final RuleSetCreator ruleSetCreator, final int line)
+    private static void parseConfig(final Queue<String> args, final RuleSetCreator ruleSetCreator, final int line)
     {
         if (args.size() < 3)
         {
             throw new IllegalConfigurationException(String.format(NOT_ENOUGH_CONFIG_MSG, line));
         }
 
-        Map<String, Boolean> properties = toPluginProperties(args, line);
-
-
-
-        if (Boolean.TRUE.equals(properties.get(DEFAULT_ALLOW)))
-        {
-            ruleSetCreator.setDefaultResult(Result.ALLOWED);
-        }
-        if (Boolean.TRUE.equals(properties.get(DEFAULT_DEFER)))
-        {
-            ruleSetCreator.setDefaultResult(Result.DEFER);
-        }
-        if (Boolean.TRUE.equals(properties.get(DEFAULT_DENY)))
-        {
-            ruleSetCreator.setDefaultResult(Result.DENIED);
-        }
-
-    }
-
-    private static AclRulePredicates toRulePredicates(List<String> args, final int line)
-    {
-        AclRulePredicates predicates = new AclRulePredicates();
-        Iterator<String> i = args.iterator();
+        final Iterator<String> i = args.iterator();
         while (i.hasNext())
         {
-            String key = i.next();
-            if (!i.hasNext())
-            {
-                throw new IllegalConfigurationException(String.format(PROPERTY_KEY_ONLY_MSG, line));
-            }
-            if (!"=".equals(i.next()))
-            {
-                throw new IllegalConfigurationException(String.format(PROPERTY_NO_EQUALS_MSG, line));
-            }
-            if (!i.hasNext())
-            {
-                throw new IllegalConfigurationException(String.format(PROPERTY_NO_VALUE_MSG, line));
-            }
-            String value = i.next();
+            final String key = i.next().toLowerCase(Locale.ENGLISH);
+            final Boolean value = Boolean.valueOf(readValue(i, line));
 
-            predicates.parse(key, value);
+            if (Boolean.TRUE.equals(value))
+            {
+                switch (key)
+                {
+                    case DEFAULT_ALLOW:
+                        ruleSetCreator.setDefaultResult(Result.ALLOWED);
+                        break;
+                    case DEFAULT_DEFER:
+                        ruleSetCreator.setDefaultResult(Result.DEFER);
+                        break;
+                    case DEFAULT_DENY:
+                        ruleSetCreator.setDefaultResult(Result.DENIED);
+                        break;
+                    default:
+                }
+            }
         }
-        return predicates;
     }
 
-    /** Converts a {@link List} of "name", "=", "value" tokens into a {@link Map}. */
-    private static Map<String, Boolean> toPluginProperties(List<String> args, final int line)
+    private static String readValue(Iterator<String> tokenIterator, int line)
     {
-        Map<String, Boolean> properties = new HashMap<>();
-        Iterator<String> i = args.iterator();
-        while (i.hasNext())
+        if (!tokenIterator.hasNext())
         {
-            String key = i.next().toLowerCase();
-            if (!i.hasNext())
-            {
-                throw new IllegalConfigurationException(String.format(PROPERTY_KEY_ONLY_MSG, line));
-            }
-            if (!"=".equals(i.next()))
-            {
-                throw new IllegalConfigurationException(String.format(PROPERTY_NO_EQUALS_MSG, line));
-            }
-            if (!i.hasNext())
-            {
-                throw new IllegalConfigurationException(String.format(PROPERTY_NO_VALUE_MSG, line));
-            }
-
-            // parse property value and save
-            Boolean value = Boolean.valueOf(i.next());
-            properties.put(key, value);
+            throw new IllegalConfigurationException(String.format(PROPERTY_KEY_ONLY_MSG, line));
         }
-        return properties;
+        if (!"=".equals(tokenIterator.next()))
+        {
+            throw new IllegalConfigurationException(String.format(PROPERTY_NO_EQUALS_MSG, line));
+        }
+        if (!tokenIterator.hasNext())
+        {
+            throw new IllegalConfigurationException(String.format(PROPERTY_NO_VALUE_MSG, line));
+        }
+        return tokenIterator.next();
     }
 
+    private RuleOutcome parsePermission(final String text, final int line)
+    {
+        return parseEnum(PERMISSION_MAP, text, line, "permission");
+    }
+
+    private LegacyOperation parseOperation(final String text, final int line)
+    {
+        return parseEnum(OPERATION_MAP, text, line, "operation");
+    }
+
+    private ObjectType parseObjectType(final String text, final int line)
+    {
+        return parseEnum(OBJECT_TYPE_MAP, text, line, "object type");
+    }
+
+    private <T extends Enum<T>> T parseEnum(final Map<String, T> map, final String text, final int line, final String typeDescription)
+    {
+        return Optional.ofNullable(
+                map.get(text.toUpperCase(Locale.ENGLISH))
+        ).orElseThrow(
+                () -> new IllegalConfigurationException(String.format(PARSE_TOKEN_FAILED_MSG, line),
+                        new IllegalArgumentException(String.format(INVALID_ENUM, typeDescription, text))));
+    }
+
+    private Reader getReaderFromURLString(String urlString)
+    {
+        try
+        {
+            return new InputStreamReader(new URL(urlString).openStream(), StandardCharsets.UTF_8);
+        }
+        catch (MalformedURLException e)
+        {
+            return getReaderFromPath(urlString);
+        }
+        catch (IOException | RuntimeException e)
+        {
+            throw createReaderError(urlString, e);
+        }
+    }
+
+    private Reader getReaderFromPath(String path)
+    {
+        try
+        {
+            final Path file = Paths.get(path);
+            return new InputStreamReader(file.toUri().toURL().openStream(), StandardCharsets.UTF_8);
+        }
+        catch (IOException | RuntimeException e)
+        {
+            throw createReaderError(path, e);
+        }
+    }
+
+    private IllegalConfigurationException createReaderError(String urlString, Exception e)
+    {
+        return new IllegalConfigurationException(String.format(INVALID_URL, urlString), e);
+    }
 }
