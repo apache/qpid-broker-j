@@ -20,8 +20,14 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import java.util.SortedMap;
+import java.util.HashSet;
+import java.util.NavigableMap;
+import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
@@ -29,14 +35,18 @@ import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 
 final class RuleSetCreator
 {
-    private final SortedMap<Integer, Rule> _rules = new TreeMap<Integer, Rule>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuleSetCreator.class);
     private static final Integer INCREMENT = 10;
+
+    private final NavigableMap<Integer, Rule> _rules = new TreeMap<>();
+    private final Set<RuleKey> _ruleSet = new HashSet<>();
+
     private Result _defaultResult = Result.DENIED;
 
     RuleSetCreator()
     {
+        super();
     }
-
 
     boolean isValidNumber(Integer number)
     {
@@ -45,8 +55,7 @@ final class RuleSetCreator
 
     void addRule(Integer number, String identity, RuleOutcome ruleOutcome, LegacyOperation operation)
     {
-        AclAction action = new AclAction(operation);
-        addRule(number, identity, ruleOutcome, action);
+        addRule(number, identity, ruleOutcome, new AclAction(operation));
     }
 
     void addRule(Integer number,
@@ -56,8 +65,7 @@ final class RuleSetCreator
                  ObjectType object,
                  ObjectProperties properties)
     {
-        AclAction action = new AclAction(operation, object, properties);
-        addRule(number, identity, ruleOutcome, action);
+        addRule(number, identity, ruleOutcome, new AclAction(operation, object, properties));
     }
 
     void addRule(Integer number,
@@ -67,37 +75,23 @@ final class RuleSetCreator
                  ObjectType object,
                  AclRulePredicates predicates)
     {
-        AclAction aclAction = new AclAction(operation, object, predicates);
-        addRule(number, identity, ruleOutcome, aclAction);
+        addRule(number, identity, ruleOutcome, new AclAction(operation, object, predicates));
     }
-
-    private boolean ruleExists(String identity, AclAction action)
-    {
-        for (Rule rule : _rules.values())
-        {
-            if (rule.getIdentity().equals(identity) && rule.getAclAction().equals(action))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     private void addRule(Integer number, String identity, RuleOutcome ruleOutcome, AclAction action)
     {
-
         if (!action.isAllowed())
         {
             throw new IllegalArgumentException("Action is not allowed: " + action);
         }
-        if (ruleExists(identity, action))
+        final RuleKey key = new RuleKey(identity, action);
+        if (_ruleSet.contains(key))
         {
+            LOGGER.warn("Duplicate rule for the {}", key);
             return;
         }
-
         // set rule number if needed
-        Rule rule = new Rule(identity, action, ruleOutcome);
+        final Rule rule = new Rule(identity, action, ruleOutcome);
         if (number == null)
         {
             if (_rules.isEmpty())
@@ -109,9 +103,9 @@ final class RuleSetCreator
                 number = _rules.lastKey() + INCREMENT;
             }
         }
-
         // save rule
         _rules.put(number, rule);
+        _ruleSet.add(new RuleKey(rule));
     }
 
     void setDefaultResult(final Result defaultResult)
@@ -119,18 +113,54 @@ final class RuleSetCreator
         _defaultResult = defaultResult;
     }
 
-    Result getDefaultResult()
-    {
-        return _defaultResult;
-    }
-
-    SortedMap<Integer, Rule> getRules()
-    {
-        return _rules;
-    }
-
     RuleSet createRuleSet(EventLoggerProvider eventLoggerProvider)
     {
         return new RuleSet(eventLoggerProvider, _rules.values(), _defaultResult);
+    }
+
+    private static final class RuleKey
+    {
+        private final String _identity;
+        private final AclAction _action;
+
+        RuleKey(String identity, AclAction action)
+        {
+            super();
+            _identity = identity;
+            _action = action;
+        }
+
+        RuleKey(Rule rule)
+        {
+            this(rule.getIdentity(), rule.getAclAction());
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(_identity, _action);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+
+            final RuleKey ruleKey = (RuleKey) o;
+            return Objects.equals(_identity, ruleKey._identity) && Objects.equals(_action, ruleKey._action);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "RuleKey[identity=" + _identity + ", action=" + _action + "]";
+        }
     }
 }
