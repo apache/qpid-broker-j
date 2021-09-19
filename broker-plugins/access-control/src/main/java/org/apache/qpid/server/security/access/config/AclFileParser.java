@@ -20,13 +20,6 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.EventLoggerProvider;
-import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.plugins.RuleOutcome;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,6 +42,14 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 
 public final class AclFileParser
 {
@@ -378,13 +379,17 @@ public final class AclFileParser
         return parseEnum(OBJECT_TYPE_MAP, text, line, "object type");
     }
 
-    private <T extends Enum<T>> T parseEnum(final Map<String, T> map, final String text, final int line, final String typeDescription)
+    private <T extends Enum<T>> T parseEnum(final Map<String, T> map,
+                                            final String text,
+                                            final int line,
+                                            final String typeDescription)
     {
-        return Optional.ofNullable(
-                map.get(text.toUpperCase(Locale.ENGLISH))
-        ).orElseThrow(
-                () -> new IllegalConfigurationException(String.format(PARSE_TOKEN_FAILED_MSG, line),
-                        new IllegalArgumentException(String.format(INVALID_ENUM, typeDescription, text))));
+        return Optional.ofNullable(map.get(text.toUpperCase(Locale.ENGLISH)))
+                       .orElseThrow(() -> new IllegalConfigurationException(String.format(PARSE_TOKEN_FAILED_MSG, line),
+                                                                            new IllegalArgumentException(String.format(
+                                                                                    INVALID_ENUM,
+                                                                                    typeDescription,
+                                                                                    text))));
     }
 
     private Reader getReaderFromURLString(String urlString)
