@@ -38,9 +38,10 @@ import org.apache.qpid.server.security.access.Operation;
 public class RuleBasedAccessControl implements AccessControl<CachingSecurityToken>, LegacyAccessControl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleBasedAccessControl.class);
+
     private final LegacyAccessControlAdapter _adapter;
 
-    private RuleSet _ruleSet;
+    private final RuleSet _ruleSet;
 
     public RuleBasedAccessControl(RuleSet rs, final Model model)
     {
@@ -57,13 +58,13 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     @Override
     public final CachingSecurityToken newToken()
     {
-        return newToken(Subject.getSubject(AccessController.getContext()));
+        return new CachingSecurityToken(this);
     }
 
     @Override
     public CachingSecurityToken newToken(final Subject subject)
     {
-        return new CachingSecurityToken(subject, this);
+        return newToken();
     }
 
     /**
@@ -77,24 +78,20 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
         final Subject subject = Subject.getSubject(AccessController.getContext());
 
         // Abstain if there is no subject/principal associated with this thread
-        if (subject == null  || subject.getPrincipals().size() == 0)
+        if (subject == null || subject.getPrincipals().isEmpty())
         {
             return Result.DEFER;
         }
 
-
-        if(LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("Checking " + operation + " " + objectType );
-        }
+        LOGGER.debug("Checking {} {}", operation, objectType);
 
         try
         {
-            return  _ruleSet.check(subject, operation, objectType, properties);
+            return _ruleSet.check(subject, operation, objectType, properties);
         }
-        catch(Exception e)
+        catch (RuntimeException e)
         {
-            LOGGER.error("Unable to check " + operation + " " + objectType , e);
+            LOGGER.error(String.format("Unable to check %s %s", operation, objectType), e);
             return Result.DENIED;
         }
     }
@@ -104,7 +101,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
                             final Operation operation,
                             final PermissionedObject configuredObject)
     {
-        return authorise(token, operation, configuredObject, Collections.<String,Object>emptyMap());
+        return authorise(token, operation, configuredObject, Collections.emptyMap());
     }
 
     @Override
@@ -113,7 +110,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
                             final PermissionedObject configuredObject,
                             final Map<String, Object> arguments)
     {
-        if(token != null)
+        if (token != null)
         {
             return token.authorise(this, operation, configuredObject, arguments);
         }
@@ -129,6 +126,4 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     {
         return _adapter.authorise(operation, configuredObject, arguments);
     }
-
-
 }

@@ -26,49 +26,31 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import javax.security.auth.Subject;
-
 import org.apache.qpid.server.model.PermissionedObject;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 
-class CachingSecurityToken implements SecurityToken
+final class CachingSecurityToken implements SecurityToken
 {
-    private final Subject _subject;
-    private volatile AccessControlCache _cache;
-
     private static final AtomicReferenceFieldUpdater<CachingSecurityToken, AccessControlCache> CACHE_UPDATE =
             AtomicReferenceFieldUpdater.newUpdater(CachingSecurityToken.class, AccessControlCache.class, "_cache");
 
-    CachingSecurityToken(final Subject subject, final RuleBasedAccessControl accessControl)
+    private volatile AccessControlCache _cache;
+
+    CachingSecurityToken(final RuleBasedAccessControl accessControl)
     {
-        _subject = subject;
         _cache = new AccessControlCache(accessControl);
     }
 
-    Subject getSubject()
-    {
-        return _subject;
-    }
-
-    Result authorise(final RuleBasedAccessControl ruleBasedAccessControl, final Operation operation,
+    Result authorise(final RuleBasedAccessControl ruleBasedAccessControl,
+                     final Operation operation,
                      final PermissionedObject configuredObject,
                      final Map<String, Object> arguments)
     {
-        AccessControlCache cache;
-        while((cache = CACHE_UPDATE.get(this)).getAccessControl() != ruleBasedAccessControl)
-        {
-            CACHE_UPDATE.compareAndSet(this, cache, new AccessControlCache(ruleBasedAccessControl));
-        }
-        final CachedMethodAuthKey key = new CachedMethodAuthKey(configuredObject, operation, arguments);
-        Result result = cache.getCache().get(key);
-        if(result == null)
-        {
-            result = ruleBasedAccessControl.authorise(operation, configuredObject, arguments);
-            cache.getCache().putIfAbsent(key, result);
-        }
-        return result;
+        return CACHE_UPDATE.updateAndGet(this,
+                c -> c.isNotBasedOn(ruleBasedAccessControl) ? new AccessControlCache(ruleBasedAccessControl) : c)
+                .authorise(operation, configuredObject, arguments);
     }
 
     private static final class CachedMethodAuthKey
@@ -76,6 +58,7 @@ class CachingSecurityToken implements SecurityToken
         private final PermissionedObject _configuredObject;
         private final Operation _operation;
         private final Map<String, Object> _arguments;
+
         private final int _hashCode;
 
         public CachedMethodAuthKey(final PermissionedObject configuredObject,
@@ -85,10 +68,7 @@ class CachingSecurityToken implements SecurityToken
             _configuredObject = configuredObject;
             _operation = operation;
             _arguments = arguments;
-            int result = _configuredObject != null ? _configuredObject.hashCode() : 0;
-            result = 31 * result + (operation != null ? operation.hashCode() : 0);
-            result = 31 * result + (_arguments != null ? _arguments.hashCode() : 0);
-            _hashCode = result;
+            _hashCode = Objects.hash(configuredObject, operation, arguments);
         }
 
         @Override
@@ -106,9 +86,8 @@ class CachingSecurityToken implements SecurityToken
             final CachedMethodAuthKey that = (CachedMethodAuthKey) o;
 
             return Objects.equals(_configuredObject, that._configuredObject)
-                   && Objects.equals(_operation, that._operation)
-                   && Objects.equals(_arguments, that._arguments);
-
+                    && Objects.equals(_operation, that._operation)
+                    && Objects.equals(_arguments, that._arguments);
         }
 
         @Override
@@ -121,21 +100,24 @@ class CachingSecurityToken implements SecurityToken
     private static final class AccessControlCache
     {
         private final RuleBasedAccessControl _accessControl;
-        private final ConcurrentMap<CachedMethodAuthKey, Result>  _cache = new ConcurrentHashMap<>();
+        private final ConcurrentMap<CachedMethodAuthKey, Result> _cache = new ConcurrentHashMap<>();
 
-        private AccessControlCache(final RuleBasedAccessControl accessControl)
+        AccessControlCache(final RuleBasedAccessControl accessControl)
         {
             _accessControl = accessControl;
         }
 
-        public RuleBasedAccessControl getAccessControl()
+        boolean isNotBasedOn(RuleBasedAccessControl accessControl)
         {
-            return _accessControl;
+            return _accessControl != accessControl;
         }
 
-        public ConcurrentMap<CachedMethodAuthKey, Result> getCache()
+        Result authorise(final Operation operation,
+                         final PermissionedObject configuredObject,
+                         final Map<String, Object> arguments)
         {
-            return _cache;
+            return _cache.computeIfAbsent(new CachedMethodAuthKey(configuredObject, operation, arguments),
+                    key -> _accessControl.authorise(operation, configuredObject, arguments));
         }
     }
 }
