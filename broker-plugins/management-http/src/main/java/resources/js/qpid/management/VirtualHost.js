@@ -114,6 +114,12 @@ define(["dojo/parser",
                             "delete", "queue");
                     });
 
+                    const clearQueueButton = query(".clearQueueButton", containerNode)[0];
+                    registry.byNode(clearQueueButton).on("click", function (evt)
+                    {
+                        that._clearQueues(that.vhostUpdater.queuesGrid);
+                    });
+
                     var addExchangeButton = query(".addExchangeButton", containerNode)[0];
                     registry.byNode(addExchangeButton).on("click", function (evt)
                     {
@@ -284,6 +290,35 @@ define(["dojo/parser",
                 }
             }
             return confirmed;
+        };
+
+        VirtualHost.prototype._clearQueues = function (dgrid)
+        {
+            let selected = [];
+            for (let item in dgrid.selection)
+            {
+                if (dgrid.selection.hasOwnProperty(item) && dgrid.selection[item])
+                {
+                    selected.push(item);
+                }
+            }
+            if (selected.length > 0)
+            {
+                const plural = selected.length === 1 ? "" : "s";
+                if (confirm(lang.replace("Are you sure you want to purge {0} queue{1}?", [selected.length, plural])))
+                {
+                    const modelObj = {
+                        type: "virtualhost",
+                        name: "clearQueues",
+                        parent: this.modelObj
+                    };
+                    this.management.update(modelObj, {"queues" : selected}).then(lang.hitch(this, function ()
+                    {
+                        dgrid.clearSelection();
+                        this.vhostUpdater.update();
+                    }));
+                }
+            }
         };
 
         VirtualHost.prototype.close = function ()

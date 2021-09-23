@@ -100,7 +100,35 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
-import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.ConfigurationChangeListener;
+import org.apache.qpid.server.model.ConfigurationExtractor;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.DoOnConfigThread;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.ExclusivityPolicy;
+import org.apache.qpid.server.model.ManageableMessage;
+import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.NoFactoryForTypeException;
+import org.apache.qpid.server.model.NotFoundException;
+import org.apache.qpid.server.model.Param;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.RestContentHeader;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.UUIDGenerator;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostAccessControlProvider;
+import org.apache.qpid.server.model.VirtualHostLogger;
+import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
@@ -3481,5 +3509,83 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     currentTargetSize,
                     inMemoryMessageSize);
         }
+    }
+
+    @Override
+    public long clearMatchingQueues(String queueNamePattern)
+    {
+        LOGGER.debug("Clearing the queues with name that matches the pattern: '{}'", queueNamePattern);
+        try
+        {
+            final Pattern pattern = Pattern.compile(queueNamePattern);
+
+            long count = 0;
+            for (final Queue<?> queue : getChildren(Queue.class))
+            {
+                if (pattern.matcher(queue.getName()).matches())
+                {
+                    LOGGER.debug("Clearing the queue with name '{}' and ID '{}'", queue.getName(), queue.getId());
+                    count += queue.clearQueue();
+                }
+            }
+            return count;
+        }
+        catch (PatternSyntaxException e)
+        {
+            final String message = String.format("Failed to compile queue name pattern: '%s'", queueNamePattern);
+            LOGGER.debug(message, e);
+            throw new IllegalArgumentException(message, e);
+        }
+    }
+
+    @Override
+    public long clearQueues(Collection<String> queues)
+    {
+        final Map<UUID, String> uuid = new HashMap<>();
+        final Set<String> names = new HashSet<>();
+        for (final String id : queues)
+        {
+            try
+            {
+                uuid.put(UUID.fromString(id), id);
+            }
+            catch (IllegalArgumentException e)
+            {
+                LOGGER.trace(String.format("'%s' is not a valid queue ID", id), e);
+                names.add(id);
+            }
+        }
+
+        final Collection<Queue> queueList = getChildren(Queue.class);
+        long count = 0;
+
+        if (!uuid.isEmpty())
+        {
+            LOGGER.debug("Clearing the queues with IDs: {}", uuid.values());
+            for (final Queue<?> queue : queueList)
+            {
+                if (uuid.remove(queue.getId()) != null)
+                {
+                    LOGGER.debug("Clearing the queue with ID '{}'", queue.getId());
+                    count += queue.clearQueue();
+                }
+            }
+            names.addAll(uuid.values());
+        }
+
+        if (!names.isEmpty())
+        {
+            LOGGER.debug("Clearing the queues with names: {}", names);
+            for (final Queue<?> queue : queueList)
+            {
+                if (names.contains(queue.getName()))
+                {
+                    LOGGER.debug("Clearing the queue with name '{}'", queue.getName());
+                    count += queue.clearQueue();
+                }
+            }
+        }
+
+        return count;
     }
 }
