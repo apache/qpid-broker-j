@@ -21,6 +21,7 @@
 package org.apache.qpid.server.virtualhost;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
@@ -33,8 +34,13 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -46,6 +52,7 @@ import ch.qos.logback.core.spi.FilterReply;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,13 +64,13 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
-import org.apache.qpid.server.store.Event;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.util.FileUtils;
@@ -349,5 +356,133 @@ public class AbstractVirtualHostTest extends UnitTestBase
 
         action.run();
         assertTrue("Did not receive expected log message", logMessageReceivedLatch.await(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testClearMatchingQueues()
+    {
+        final List<Queue> queues = new ArrayList<>();
+        final Queue<?> queueA = newQueue("queueA");
+        queues.add(queueA);
+        final Queue<?> topic = newQueue("queue-topic");
+        queues.add(topic);
+        final Queue<?> queueB = newQueue("queueB");
+        queues.add(queueB);
+
+        newVirtualHost(queues).clearMatchingQueues("queue.?");
+        Mockito.verify(queueA).clearQueue();
+        Mockito.verify(queueB).clearQueue();
+        Mockito.verify(topic, Mockito.never()).clearQueue();
+    }
+
+    @Test
+    public void testClearMatchingQueues_any()
+    {
+        final List<Queue> queues = new ArrayList<>();
+        queues.add(newQueue("queueA"));
+        queues.add(newQueue("queue-topic"));
+        queues.add(newQueue("queueB"));
+
+        newVirtualHost(queues).clearMatchingQueues(".*");
+        for (final Queue<?> queue : queues)
+        {
+            Mockito.verify(queue).clearQueue();
+        }
+    }
+
+    @Test
+    public void testClearMatchingQueues_exception()
+    {
+        final List<Queue> queues = new ArrayList<>();
+        queues.add(newQueue("queueA"));
+        queues.add(newQueue("queue-topic"));
+        queues.add(newQueue("queueB"));
+
+        final AbstractVirtualHost host = newVirtualHost(queues);
+        try
+        {
+            host.clearMatchingQueues(".*[");
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            assertNotNull(e.getMessage());
+        }
+        for (final Queue<?> queue : queues)
+        {
+            Mockito.verify(queue, Mockito.never()).clearQueue();
+        }
+    }
+
+    @Test
+    public void testClearQueues()
+    {
+        final List<Queue> queues = new ArrayList<>();
+        final Queue<?> queueA = newQueue("queueA");
+        queues.add(queueA);
+        final Queue<?> topic = newQueue("queue-topic");
+        queues.add(topic);
+        final Queue<?> queueB = newQueue("queueB");
+        queues.add(queueB);
+
+        newVirtualHost(queues).clearQueues(Arrays.asList("queue-topic", queueB.getId().toString()));
+        Mockito.verify(queueA, Mockito.never()).clearQueue();
+        Mockito.verify(queueB).clearQueue();
+        Mockito.verify(topic).clearQueue();
+    }
+
+    @Test
+    public void testClearQueues_none()
+    {
+        final List<Queue> queues = new ArrayList<>();
+        queues.add(newQueue("queueA"));
+        queues.add(newQueue("queue-topic"));
+        queues.add(newQueue("queueB"));
+
+        newVirtualHost(queues).clearQueues(Collections.emptySet());
+        for (final Queue<?> queue : queues)
+        {
+            Mockito.verify(queue, Mockito.never()).clearQueue();
+        }
+    }
+
+    private AbstractVirtualHost newVirtualHost(List<Queue> queues)
+    {
+        final Map<String, Object> attributes = Collections.singletonMap(AbstractVirtualHost.NAME, getTestName());
+        final MessageStore store = mock(MessageStore.class);
+        return new AbstractVirtualHost(attributes, _node)
+        {
+            @Override
+            protected MessageStore createMessageStore()
+            {
+                return store;
+            }
+
+            @Override
+            public Collection getChildren(Class clazz)
+            {
+                if (clazz == Queue.class)
+                {
+                    return queues;
+                }
+                else
+                {
+                    return super.getChildren(clazz);
+                }
+
+            }
+        };
+    }
+
+    private Queue<?> newQueue(final String name)
+    {
+        final Queue<?> queue = Mockito.mock(Queue.class);
+        Mockito.doReturn(name).when(queue).getName();
+
+        final UUID uuid = UUID.randomUUID();
+        Mockito.doReturn(uuid).when(queue).getId();
+
+        Mockito.doReturn(Queue.class).when(queue).getCategoryClass();
+        return queue;
     }
 }
