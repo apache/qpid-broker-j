@@ -343,6 +343,12 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
                            @Param(name = "role", description = "whether to remove only sending links (\"SENDER\"), receiving links (\"RECEIVER\") or both (\"BOTH\")", validValues = {"SENDER", "RECEIVER", "BOTH"}, defaultValue = "BOTH") String role,
                            @Param(name = "linkNamePattern", description = "Regular Expression to match the link names to be removed.", defaultValue = ".*") String linkNamePattern);
 
+    @ManagedOperation(description = "Purge every queue with the name that matches the regular expression.", changesConfiguredObjectState = false)
+    long clearMatchingQueues(@Param(name = "queueNamePattern", description = "Regular Expression to match the queue name.", defaultValue = ".*") String queueNamePattern);
+
+    @ManagedOperation(description = "Purge queues in provided list.", changesConfiguredObjectState = false)
+    long clearQueues(@Param(name = "queues", description = "Collection of queue IDs or names.") Collection<String> queues);
+
     Queue<?> getSubscriptionQueue(final String exchangeName,
                                   final Map<String, Object> attributes,
                                   final Map<String, Map<String, Object>> bindings);
