@@ -18,218 +18,125 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Joiner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/**
- * An set of properties for an access control v2 rule {@link ObjectType}.
- *
- * The {@link #propertiesMatch(ObjectProperties)} method is intended to be used when determining precedence of rules, and
- * {@link #equals(Object)} and {@link #hashCode()} are intended for use in maps. This is due to the wildcard matching
- * described above.
- */
-public class ObjectProperties
+public final class ObjectProperties
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ObjectProperties.class);
-    static final String WILD_CARD = "*";
+    static final String EMPTY_STRING = "";
 
-    static final ObjectProperties EMPTY = new ObjectProperties();
-    private Set<String> _attributeNames;
+    private final Set<String> _attributeNames = new HashSet<>();
 
-    public enum Property
-    {
-        ROUTING_KEY,
-        NAME,
-        QUEUE_NAME,
-        OWNER,
-        TYPE,
-        ALTERNATE,
-        DURABLE,
-        EXCLUSIVE,
-        TEMPORARY,
-        AUTO_DELETE,
-        COMPONENT,
-        PACKAGE,
-        CLASS,
-        FROM_NETWORK,
-        FROM_HOSTNAME,
-        VIRTUALHOST_NAME,
-        METHOD_NAME,
-        ATTRIBUTES,
-        CREATED_BY,
-        CONNECTION_LIMIT,
-        CONNECTION_FREQUENCY_LIMIT;
+    private final EnumMap<Property, Object> _properties = new EnumMap<>(Property.class);
 
-        private static final Map<String, Property> _canonicalNameToPropertyMap = new HashMap<String, ObjectProperties.Property>();
-
-        static
-        {
-            for (Property property : values())
-            {
-                _canonicalNameToPropertyMap.put(property.getCanonicalName(), property);
-            }
-        }
-
-        /**
-         * Properties are parsed using their canonical name (see {@link #getCanonicalName(String)})
-         * so that, for the sake of user-friendliness, the ACL file parses is insensitive to
-         * case and underscores.
-         */
-        public static Property parse(String text)
-        {
-            String propertyName = getCanonicalName(text);
-            Property property = _canonicalNameToPropertyMap.get(propertyName);
-
-            if(property == null)
-            {
-                throw new IllegalArgumentException("Not a valid property: " + text
-                        + " because " + propertyName
-                        + " is not in " + _canonicalNameToPropertyMap.keySet());
-            }
-            else
-            {
-                return property;
-            }
-        }
-
-        public String getCanonicalName()
-        {
-            return getCanonicalName(name());
-        }
-
-        private static String getCanonicalName(String name)
-        {
-            return name.replace("_","").toLowerCase();
-        }
-    }
-
-    private final EnumMap<Property, String> _properties = new EnumMap<Property, String>(Property.class);
+    private String _description = EMPTY_STRING;
 
     public ObjectProperties()
     {
+        super();
     }
 
     public ObjectProperties(Property property, String value)
     {
-        _properties.put(property, value);
+        super();
+        put(property, value);
     }
 
     public ObjectProperties(ObjectProperties copy)
     {
-        _properties.putAll(copy._properties);
+        super();
+        if (copy != null)
+        {
+            _properties.putAll(copy._properties);
+            _attributeNames.addAll(copy._attributeNames);
+            _description = copy._description;
+        }
     }
 
     public ObjectProperties(String name)
     {
+        super();
         setName(name);
     }
 
-
-    public ObjectProperties(String virtualHostName, String exchangeName, String routingKey)
+    public ObjectProperties withDescription(String description)
     {
-        super();
-
-        setName(exchangeName);
-
-        put(Property.ROUTING_KEY, routingKey);
-        put(Property.VIRTUALHOST_NAME, virtualHostName);
+        _description = description == null ? EMPTY_STRING : description;
+        return this;
     }
 
-    public Boolean isSet(Property key)
-    {
-        return _properties.containsKey(key) && Boolean.valueOf(_properties.get(key));
-    }
-
-    public String get(Property key)
+    public Object get(Property key)
     {
         return _properties.get(key);
     }
 
-    public String getName()
+    public Map<Property, Object> getAll()
+    {
+        return new EnumMap<>(_properties);
+    }
+
+    public Object getName()
     {
         return _properties.get(Property.NAME);
     }
 
     public void setName(String name)
     {
-        _properties.put(Property.NAME, name);
+        _properties.put(Property.NAME, name == null ? EMPTY_STRING : name);
     }
 
-    Set<String> getAttributeNames()
+    public void setCreatedBy(Object user)
     {
-        return _attributeNames;
-    }
-
-    void setAttributeNames(Set<String> attributeNames)
-    {
-        _attributeNames = attributeNames == null ? null : new HashSet<>(attributeNames);
-    }
-
-    public String put(Property key, String value)
-    {
-        return _properties.put(key, value == null ? "" : value.trim());
-    }
-
-    public void put(Property key, Boolean value)
-    {
-        if (value != null)
+        if (user != null)
         {
-            _properties.put(key, Boolean.toString(value));
+            put(Property.CREATED_BY, user.toString());
         }
     }
 
-    boolean propertiesMatch(ObjectProperties other)
+    public void setOwner(Object owner)
     {
-        if (other._properties.keySet().isEmpty())
+        if (owner != null)
         {
-            return true;
+            put(Property.OWNER, owner.toString());
         }
-
-        if (!_properties.keySet().containsAll(other._properties.keySet()))
-        {
-            return false;
-        }
-
-        for (Map.Entry<Property,String> entry : other._properties.entrySet())
-        {
-            Property key = entry.getKey();
-            String ruleValue = entry.getValue();
-
-            String thisValue = _properties.get(key);
-
-            if (!valueMatches(thisValue, ruleValue))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
-    boolean attributesMatch(final ObjectProperties other)
+    public Set<String> getAttributeNames()
     {
-        return !(other._attributeNames != null
-                 && (_attributeNames == null || !other._attributeNames.containsAll(_attributeNames)));
+        return Collections.unmodifiableSet(_attributeNames);
     }
 
-    private boolean valueMatches(String thisValue, String ruleValue)
+    public void addAttributeNames(Collection<String> attributeNames)
     {
-        return (ruleValue == null
-                || ruleValue.equals("")
-                || ruleValue.equals(thisValue))
-                || ruleValue.equals(WILD_CARD)
-                || (ruleValue.endsWith(WILD_CARD)
-                        && thisValue != null
-                        && thisValue.length() >= ruleValue.length() - 1
-                        && thisValue.startsWith(ruleValue.substring(0, ruleValue.length() - 1)));
+        if (attributeNames != null && !attributeNames.isEmpty())
+        {
+            _attributeNames.addAll(attributeNames);
+        }
+    }
+
+    public void addAttributeNames(String... attributeNames)
+    {
+        if (attributeNames != null && attributeNames.length > 0)
+        {
+            _attributeNames.addAll(Arrays.asList(attributeNames));
+        }
+    }
+
+    public Object put(Property key, String value)
+    {
+        return _properties.put(key, value == null ? EMPTY_STRING : value.trim());
+    }
+
+    public Object put(Property key, boolean value)
+    {
+        return _properties.put(key, value);
     }
 
     @Override
@@ -239,54 +146,53 @@ public class ObjectProperties
         {
             return true;
         }
-        if (o == null || getClass() != o.getClass())
+        if (o instanceof ObjectProperties)
         {
-            return false;
+            final ObjectProperties that = (ObjectProperties) o;
+            return _attributeNames.equals(that._attributeNames) &&
+                    _properties.equals(that._properties);
         }
-
-        final ObjectProperties that = (ObjectProperties) o;
-
-        if (_attributeNames != null ? !_attributeNames.equals(that._attributeNames) : that._attributeNames != null)
-        {
-            return false;
-        }
-        return _properties != null ? _properties.equals(that._properties) : that._properties == null;
+        return false;
     }
 
     @Override
     public int hashCode()
     {
-        int result = _attributeNames != null ? _attributeNames.hashCode() : 0;
-        result = 31 * result + (_properties != null ? _properties.hashCode() : 0);
-        return result;
+        return 31 * _attributeNames.hashCode() + _properties.hashCode();
     }
 
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
-        Joiner joiner = Joiner.on(",");
-        joiner.withKeyValueSeparator("=").appendTo(sb, _properties);
-        if (_attributeNames != null && !_attributeNames.isEmpty())
+        final StringBuilder sb = new StringBuilder();
+        sb.append("ObjectProperties[");
+        final Joiner joiner = Joiner.on(",");
+        if (!_properties.isEmpty())
         {
-            if (!_properties.isEmpty())
+            sb.append("properties=[");
+            joiner.withKeyValueSeparator("=").appendTo(sb, _properties);
+            sb.append("]");
+        }
+        if (!_attributeNames.isEmpty())
+        {
+            if (sb.length() > 1)
             {
                 sb.append(",");
             }
-            sb.append("ATTRIBUTES=[");
+            sb.append(Property.ATTRIBUTES.name());
+            sb.append("=[");
             joiner.appendTo(sb, _attributeNames);
             sb.append("]");
         }
+        if (!_description.isEmpty())
+        {
+            if (sb.length() > 1)
+            {
+                sb.append(", ");
+            }
+            sb.append(_description);
+        }
+        sb.append("]");
         return sb.toString();
-    }
-
-    public boolean isEmpty()
-    {
-        return _properties.isEmpty();
-    }
-
-    public Map<Property, String> asPropertyMap()
-    {
-        return Collections.unmodifiableMap(_properties);
     }
 }

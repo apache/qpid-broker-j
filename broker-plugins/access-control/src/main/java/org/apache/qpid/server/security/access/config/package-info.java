@@ -16,34 +16,4 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.qpid.server.security.access.config;
-
-import java.util.Objects;
-
-import javax.security.auth.Subject;
-
-public interface FirewallRule
-{
-    boolean matches(Subject subject);
-
-    default FirewallRule and(FirewallRule other)
-    {
-        Objects.requireNonNull(other);
-
-        return new FirewallRule()
-        {
-            @Override
-            public boolean matches(final Subject subject)
-            {
-                return FirewallRule.this.matches(subject) && other.matches(subject);
-            }
-
-            @Override
-            public String toString()
-            {
-                return String.format("%s and %s", FirewallRule.this.toString(), other.toString());
-            }
-        };
-    }
-}

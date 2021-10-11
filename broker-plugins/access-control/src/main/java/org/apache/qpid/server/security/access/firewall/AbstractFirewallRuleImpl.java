@@ -21,44 +21,57 @@ package org.apache.qpid.server.security.access.firewall;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Set;
+import java.util.Objects;
 
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
-import org.apache.qpid.server.security.access.config.FirewallRule;
+import org.apache.qpid.server.security.access.config.LegacyOperation;
+import org.apache.qpid.server.security.access.config.ObjectProperties;
+import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
 
 abstract class AbstractFirewallRuleImpl implements FirewallRule
 {
+    private final RulePredicate _subPredicate;
+
     AbstractFirewallRuleImpl()
     {
         super();
+        _subPredicate = RulePredicate.alwaysMatch();
+    }
+
+    AbstractFirewallRuleImpl(RulePredicate subPredicate)
+    {
+        _subPredicate = Objects.requireNonNull(subPredicate);
+    }
+
+    @Override
+    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    {
+        return matches(subject) && _subPredicate.matches(operation, objectProperties, subject);
     }
 
     @Override
     public boolean matches(final Subject subject)
     {
-        final InetAddress addressOfClient = getAddressOfClient(subject);
-        if (addressOfClient == null)
+        for (final ConnectionPrincipal principal : subject.getPrincipals(ConnectionPrincipal.class))
         {
-            return true;
-        }
-        return matches(addressOfClient);
-    }
-
-    private InetAddress getAddressOfClient(final Subject subject)
-    {
-        final Set<ConnectionPrincipal> principals = subject.getPrincipals(ConnectionPrincipal.class);
-        if(!principals.isEmpty())
-        {
-            final SocketAddress address = principals.iterator().next().getConnection().getRemoteSocketAddress();
-            if(address instanceof InetSocketAddress)
+            final SocketAddress address = principal.getConnection().getRemoteSocketAddress();
+            if (address instanceof InetSocketAddress)
             {
-                return ((InetSocketAddress) address).getAddress();
+                return matches(((InetSocketAddress) address).getAddress());
             }
         }
-        return null;
+        return true;
     }
 
-    protected abstract boolean matches(InetAddress addressOfClient);
+    @Override
+    public RulePredicate and(RulePredicate other)
+    {
+        return other instanceof AlwaysMatch ? this : copy(_subPredicate.and(other));
+    }
+
+    abstract boolean matches(InetAddress addressOfClient);
+
+    abstract RulePredicate copy(RulePredicate subPredicate);
 }

@@ -88,9 +88,8 @@ public class RuleSet implements EventLoggerProvider
             List<Rule> filtered = new LinkedList<>();
             for (Rule rule : _rules)
             {
-                final Action ruleAction = rule.getAction();
-                if ((ruleAction.getOperation() == LegacyOperation.ALL || ruleAction.getOperation() == operation)
-                    && (ruleAction.getObjectType() == ObjectType.ALL || ruleAction.getObjectType() == objectType))
+                if ((rule.getOperation() == LegacyOperation.ALL || rule.getOperation() == operation)
+                    && (rule.getObjectType() == ObjectType.ALL || rule.getObjectType() == objectType))
                 {
                     controlled = true;
 
@@ -135,9 +134,7 @@ public class RuleSet implements EventLoggerProvider
                         ObjectType objectType,
                         ObjectProperties properties)
     {
-        ClientAction action = new ClientAction(operation, objectType, properties);
-
-        LOGGER.debug("Checking action: {}", action);
+        LOGGER.debug("Checking action: operation={}, object={}, properties={}", operation, objectType, properties);
 
         // get the list of rules relevant for this request
         List<Rule> rules = getRules(subject, operation, objectType);
@@ -163,7 +160,7 @@ public class RuleSet implements EventLoggerProvider
             else
             {
                 // Discard OWNER rules if the object wasn't created by the subject
-                final String objectCreator = properties.get(ObjectProperties.Property.CREATED_BY);
+                final String objectCreator = (String) properties.get(Property.CREATED_BY);
                 final Principal principal =
                         AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subject);
                 if (principal == null || !principal.getName().equalsIgnoreCase(objectCreator))
@@ -178,9 +175,9 @@ public class RuleSet implements EventLoggerProvider
         {
             LOGGER.debug("Checking against rule: {}", rule);
 
-            if (action.matches(rule.getAclAction(), subject))
+            if (rule.matches(operation, objectType, properties, subject))
             {
-                RuleOutcome ruleOutcome = rule.getRuleOutcome();
+                RuleOutcome ruleOutcome = rule.getOutcome();
                 LOGGER.debug("Action matches.  Result: {}", ruleOutcome);
                 boolean allowed = ruleOutcome.isAllowed();
                 if(ruleOutcome.isLogged())
@@ -188,16 +185,16 @@ public class RuleSet implements EventLoggerProvider
                     if(allowed)
                     {
                         getEventLogger().message(AccessControlMessages.ALLOWED(
-                                action.getOperation().toString(),
-                                action.getObjectType().toString(),
-                                action.getProperties().toString()));
+                                operation.toString(),
+                                objectType.toString(),
+                                properties.toString()));
                     }
                     else
                     {
                         getEventLogger().message(AccessControlMessages.DENIED(
-                                action.getOperation().toString(),
-                                action.getObjectType().toString(),
-                                action.getProperties().toString()));
+                                operation.toString(),
+                                objectType.toString(),
+                                properties.toString()));
                     }
                 }
 

@@ -855,37 +855,7 @@ public class MessagingACLTest extends JmsTestBase
             final List<Rule> parsedRules = ruleSet.getAllRules();
             for(final Rule rule: parsedRules)
             {
-                aclRules.add(new AclRule(){
-                    @Override
-                    public String getIdentity()
-                    {
-                        return rule.getIdentity();
-                    }
-
-                    @Override
-                    public ObjectType getObjectType()
-                    {
-                        return rule.getAction().getObjectType();
-                    }
-
-                    @Override
-                    public LegacyOperation getOperation()
-                    {
-                        return rule.getAction().getOperation();
-                    }
-
-                    @Override
-                    public Map<ObjectProperties.Property, String> getAttributes()
-                    {
-                        return rule.getAttributes();
-                    }
-
-                    @Override
-                    public RuleOutcome getOutcome()
-                    {
-                        return rule.getRuleOutcome();
-                    }
-                });
+                aclRules.add(rule.asAclRule());
             }
         }
 

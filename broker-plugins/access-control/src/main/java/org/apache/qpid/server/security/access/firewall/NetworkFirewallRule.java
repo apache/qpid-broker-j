@@ -19,8 +19,13 @@
 package org.apache.qpid.server.security.access.firewall;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,49 +33,56 @@ import org.slf4j.LoggerFactory;
 public class NetworkFirewallRule extends AbstractFirewallRuleImpl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkFirewallRule.class);
-    private List<InetNetwork> _networks;
+
+    private Set<InetNetwork> _networks = new HashSet<>();
 
     public NetworkFirewallRule(String... networks)
     {
+        this(Arrays.asList(networks));
+    }
+
+    public NetworkFirewallRule(Collection<String> networks)
+    {
         super();
-        _networks = new ArrayList<InetNetwork>();
-        for (int i = 0; i < networks.length; i++)
+        for (final String network : networks)
         {
-            String network = networks[i];
             try
             {
-                InetNetwork inetNetwork = InetNetwork.getFromString(network);
-                if (!_networks.contains(inetNetwork))
-                {
-                    _networks.add(inetNetwork);
-                }
+                _networks.add(InetNetwork.getFromString(network));
             }
-            catch (java.net.UnknownHostException uhe)
+            catch (UnknownHostException uhe)
             {
-                LOGGER.error("Cannot resolve address: " + network, uhe);
+                LOGGER.error(String.format("Cannot resolve address: '%s'", network), uhe);
             }
         }
-
         LOGGER.debug("Created {}", this);
     }
 
-    @Override
-    protected boolean matches(InetAddress ip)
+    private NetworkFirewallRule(NetworkFirewallRule rule, RulePredicate subPredicate)
     {
-        for (InetNetwork network : _networks)
+        super(subPredicate);
+        _networks = rule._networks;
+    }
+
+    @Override
+    boolean matches(InetAddress ip)
+    {
+        for (final InetNetwork network : _networks)
         {
             if (network.contains(ip))
             {
-
-                LOGGER.debug("Client address {} matches configured network {}", ip, network);
-
+                LOGGER.debug("Client address '{}' matches configured network '{}'", ip, network);
                 return true;
             }
         }
-
-        LOGGER.debug("Client address {} does not match any configured networks", ip);
-
+        LOGGER.debug("Client address '{}' does not match any configured networks", ip);
         return false;
+    }
+
+    @Override
+    RulePredicate copy(RulePredicate subPredicate)
+    {
+        return new NetworkFirewallRule(this, subPredicate);
     }
 
     @Override
@@ -86,22 +98,20 @@ public class NetworkFirewallRule extends AbstractFirewallRuleImpl
         }
 
         final NetworkFirewallRule that = (NetworkFirewallRule) o;
-
-        return !(_networks != null ? !_networks.equals(that._networks) : that._networks != null);
-
+        return _networks.equals(that._networks);
     }
 
     @Override
     public int hashCode()
     {
-        return _networks != null ? _networks.hashCode() : 0;
+        return _networks.hashCode();
     }
 
     @Override
     public String toString()
     {
         return "NetworkFirewallRule[" +
-               "networks=" + _networks +
-               ']';
+                "networks=" + _networks +
+                ']';
     }
 }

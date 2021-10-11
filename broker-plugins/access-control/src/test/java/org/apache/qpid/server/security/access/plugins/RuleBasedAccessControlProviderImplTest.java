@@ -43,6 +43,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.ObjectType;
+import org.apache.qpid.server.security.access.config.Property;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -67,29 +68,29 @@ public class RuleBasedAccessControlProviderImplTest extends UnitTestBase
     @Test
     public void testLoadACLWithFromHostnameFirewallRule()
     {
-        loadAclAndAssertRule(ObjectProperties.Property.FROM_HOSTNAME, "localhost");
+        loadAclAndAssertRule(Property.FROM_HOSTNAME, "localhost");
     }
 
     @Test
     public void testLoadACLWithFromNetworkFirewallRule()
     {
-        loadAclAndAssertRule(ObjectProperties.Property.FROM_NETWORK, "192.168.1.0/24");
+        loadAclAndAssertRule(Property.FROM_NETWORK, "192.168.1.0/24");
     }
 
     @Test
     public void testLoadACLWithFromNetworkFirewallRuleContainingWildcard()
     {
-        loadAclAndAssertRule(ObjectProperties.Property.FROM_NETWORK, "192.168.1.*");
+        loadAclAndAssertRule(Property.FROM_NETWORK, "192.168.1.*");
     }
 
     @Test
     public void testLoadACLWithAttributes()
     {
-        loadAclAndAssertRule(ObjectProperties.Property.ATTRIBUTES,
-                             String.join(",", ConfiguredObject.NAME, ConfiguredObject.LIFETIME_POLICY));
+        loadAclAndAssertRule(Property.ATTRIBUTES,
+                             String.join(",", ConfiguredObject.LIFETIME_POLICY, ConfiguredObject.NAME));
     }
 
-    private void loadAclAndAssertRule(final ObjectProperties.Property attributeName,
+    private void loadAclAndAssertRule(final Property attributeName,
                                       final String attributeValue)
     {
         final String acl = String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST %s=\"%s\" name=\"%s\"",
@@ -113,7 +114,7 @@ public class RuleBasedAccessControlProviderImplTest extends UnitTestBase
         assertThat(rule.getAttributes(),
                    allOf(aMapWithSize(2),
                          hasEntry(attributeName, attributeValue),
-                         hasEntry(ObjectProperties.Property.NAME, _nameAttributeValue)));
+                         hasEntry(Property.NAME, _nameAttributeValue)));
     }
 
 }

@@ -146,13 +146,13 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         when(consumer.getCategoryClass()).thenReturn(Consumer.class);
 
         ObjectProperties properties = new ObjectProperties();
-        properties.put(ObjectProperties.Property.NAME, TEST_QUEUE);
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
-        properties.put(ObjectProperties.Property.AUTO_DELETE, false);
-        properties.put(ObjectProperties.Property.TEMPORARY, false);
-        properties.put(ObjectProperties.Property.DURABLE, true);
-        properties.put(ObjectProperties.Property.EXCLUSIVE, false);
-        properties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
+        properties.put(Property.NAME, TEST_QUEUE);
+        properties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+        properties.put(Property.AUTO_DELETE, false);
+        properties.put(Property.TEMPORARY, false);
+        properties.put(Property.DURABLE, true);
+        properties.put(Property.EXCLUSIVE, false);
+        properties.put(Property.CREATED_BY, TEST_USER);
 
         assertAuthorization(LegacyOperation.CREATE, consumer, LegacyOperation.CONSUME, ObjectType.QUEUE, properties,
                             Collections.emptyMap());
@@ -181,7 +181,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         when(mock.getCategoryClass()).thenReturn(User.class);
         when(mock.getParent()).thenReturn(authenticationProvider);
         ObjectProperties properties = new ObjectProperties(mock.getName());
-        properties.setAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
+        properties.addAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
         assertUpdateAuthorization(mock,
                                   LegacyOperation.UPDATE,
                                   ObjectType.USER,
@@ -201,7 +201,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         when(virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         when(virtualHost.getParent()).thenReturn(vhn);
         ObjectProperties properties = new ObjectProperties(virtualHost.getName());
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
+        properties.put(Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
         assertDeleteAuthorization(virtualHost, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties);
     }
 
@@ -329,7 +329,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     {
         VirtualHost vh = getMockVirtualHost();
         ObjectProperties expectedProperties = createExpectedQueueObjectProperties();
-        expectedProperties.setAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
+        expectedProperties.addAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
 
         Queue queueObject = mock(Queue.class);
         when(queueObject.getAttribute(Queue.NAME)).thenReturn(TEST_QUEUE);
@@ -349,7 +349,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     {
         VirtualHost vh = getMockVirtualHost();
         ObjectProperties expectedProperties = createExpectedExchangeObjectProperties();
-        expectedProperties.setAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
+        expectedProperties.addAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
 
         Exchange exchange = mock(Exchange.class);
         when(exchange.getName()).thenReturn(TEST_EXCHANGE);
@@ -386,7 +386,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
         final ObjectProperties expectedProperties = new ObjectProperties("testVHN");
-        expectedProperties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
+        expectedProperties.put(Property.CREATED_BY, TEST_USER);
         assertCreateAuthorization(vhn, LegacyOperation.CREATE, ObjectType.VIRTUALHOSTNODE,
                                   expectedProperties);
     }
@@ -510,7 +510,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     {
         VirtualHost vh = getMockVirtualHost();
         ObjectProperties expectedProperties = new ObjectProperties(TEST_VIRTUAL_HOST);
-        expectedProperties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+        expectedProperties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
         assertCreateAuthorization(vh, LegacyOperation.CREATE, ObjectType.VIRTUALHOST,
                                   expectedProperties);
     }
@@ -520,8 +520,8 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
         ObjectProperties expectedProperties = new ObjectProperties(vhn.getName());
-        expectedProperties.setAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
-        expectedProperties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
+        expectedProperties.addAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
+        expectedProperties.put(Property.CREATED_BY, TEST_USER);
         assertUpdateAuthorization(vhn,
                                   LegacyOperation.UPDATE,
                                   ObjectType.VIRTUALHOSTNODE,
@@ -596,7 +596,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         when(mock.getCategoryClass()).thenReturn(Group.class);
         when(mock.getParent()).thenReturn(groupProvider);
         ObjectProperties properties = new ObjectProperties(mock.getName());
-        properties.setAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
+        properties.addAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.GROUP, properties, Collections.singletonMap(ConfiguredObject.DESCRIPTION, "Test"));
     }
 
@@ -611,7 +611,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         when(mock.getCategoryClass()).thenReturn(GroupMember.class);
         when(mock.getParent()).thenReturn(group);
         ObjectProperties properties = new ObjectProperties(mock.getName());
-        properties.setAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
+        properties.addAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
         assertUpdateAuthorization(mock,
                                   LegacyOperation.UPDATE,
                                   ObjectType.GROUP,
@@ -630,8 +630,8 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         when(virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         when(virtualHost.getParent()).thenReturn(vhn);
         ObjectProperties properties = new ObjectProperties(virtualHost.getName());
-        properties.setAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHost.getName());
+        properties.addAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
+        properties.put(Property.VIRTUALHOST_NAME, virtualHost.getName());
         assertUpdateAuthorization(virtualHost, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties,
                                   Collections.singletonMap(ConfiguredObject.DESCRIPTION, "Test"));
     }
@@ -641,7 +641,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
         final ObjectProperties expectedProperties = new ObjectProperties(vhn.getName());
-        expectedProperties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
+        expectedProperties.put(Property.CREATED_BY, TEST_USER);
         assertDeleteAuthorization(vhn, LegacyOperation.DELETE, ObjectType.VIRTUALHOSTNODE,
                                   expectedProperties);
     }
@@ -691,42 +691,66 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     }
 
     @Test
-    public void testAuthoriseBrokerLoggerOperations()
+    public void testAuthoriseBrokerLoggerOperations_Create()
     {
-        BrokerLogger mock = mock(BrokerLogger.class);
+        assertBrokerChildCreateAuthorization(newBrokerLogger());
+    }
+
+    @Test
+    public void testAuthoriseBrokerLoggerOperations_Update()
+    {
+        assertBrokerChildUpdateAuthorization(newBrokerLogger());
+    }
+
+    @Test
+    public void testAuthoriseBrokerLoggerOperations_Delete()
+    {
+        assertBrokerChildDeleteAuthorization(newBrokerLogger());
+    }
+
+    private BrokerLogger newBrokerLogger()
+    {
+        final BrokerLogger mock = mock(BrokerLogger.class);
         when(mock.getName()).thenReturn("TEST");
         when(mock.getCategoryClass()).thenReturn(BrokerLogger.class);
         when(mock.getParent()).thenReturn(_broker);
         when(mock.getAttribute(ConfiguredObject.CREATED_BY)).thenReturn(TEST_USER);
-
-        assertBrokerChildCreateAuthorization(mock);
-
-        when(mock.getName()).thenReturn("test");
-        assertBrokerChildUpdateAuthorization(mock);
-        assertBrokerChildDeleteAuthorization(mock);
+        return mock;
     }
 
     @Test
-    public void testAuthoriseBrokerLogInclusionRuleOperations()
+    public void testAuthoriseBrokerLogInclusionRuleOperations_Create()
     {
-        BrokerLogger bl = mock(BrokerLogger.class);
+        assertBrokerChildCreateAuthorization(newInclusionRule());
+    }
+
+    @Test
+    public void testAuthoriseBrokerLogInclusionRuleOperations_Update()
+    {
+        assertBrokerChildUpdateAuthorization(newInclusionRule());
+    }
+
+    @Test
+    public void testAuthoriseBrokerLogInclusionRuleOperations_Delete()
+    {
+        assertBrokerChildDeleteAuthorization(newInclusionRule());
+    }
+
+    private BrokerLogInclusionRule newInclusionRule()
+    {
+        final BrokerLogger bl = mock(BrokerLogger.class);
         when(bl.getName()).thenReturn("LOGGER");
         when(bl.getCategoryClass()).thenReturn(BrokerLogger.class);
         when(bl.getParent()).thenReturn(_broker);
         when(bl.getAttribute(ConfiguredObject.CREATED_BY)).thenReturn(TEST_USER);
 
-
-        BrokerLogInclusionRule mock = mock(BrokerLogInclusionRule.class);
+        final BrokerLogInclusionRule mock = mock(BrokerLogInclusionRule.class);
         when(mock.getName()).thenReturn("TEST");
         when(mock.getCategoryClass()).thenReturn(BrokerLogInclusionRule.class);
         when(mock.getParent()).thenReturn(bl);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
         when(mock.getAttribute(ConfiguredObject.CREATED_BY)).thenReturn(TEST_USER);
-        assertBrokerChildCreateAuthorization(mock);
-
-        when(mock.getName()).thenReturn("test");
-        assertBrokerChildUpdateAuthorization(mock);
-        assertBrokerChildDeleteAuthorization(mock);
+        return mock;
     }
 
     @Test
@@ -746,11 +770,11 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
 
 
         ObjectProperties expectedProperties = new ObjectProperties();
-        expectedProperties.put(ObjectProperties.Property.NAME, TEST_QUEUE);
-        expectedProperties.put(ObjectProperties.Property.METHOD_NAME, methodName);
-        expectedProperties.put(ObjectProperties.Property.VIRTUALHOST_NAME, _virtualHost.getName());
-        expectedProperties.put(ObjectProperties.Property.COMPONENT, "VirtualHost.Queue");
-        expectedProperties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
+        expectedProperties.put(Property.NAME, TEST_QUEUE);
+        expectedProperties.put(Property.METHOD_NAME, methodName);
+        expectedProperties.put(Property.VIRTUALHOST_NAME, _virtualHost.getName());
+        expectedProperties.put(Property.COMPONENT, "VirtualHost.Queue");
+        expectedProperties.put(Property.CREATED_BY, TEST_USER);
 
         when(_accessControl.authorise(same(LegacyOperation.INVOKE),
                                       same(ObjectType.QUEUE),
@@ -769,10 +793,10 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         VirtualHostNode<?> virtualHostNode = _virtualHostNode;
 
         ObjectProperties expectedProperties = new ObjectProperties();
-        expectedProperties.put(ObjectProperties.Property.NAME, virtualHostNode.getName());
-        expectedProperties.put(ObjectProperties.Property.METHOD_NAME, methodName);
-        expectedProperties.put(ObjectProperties.Property.COMPONENT, "Broker.VirtualHostNode");
-        expectedProperties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
+        expectedProperties.put(Property.NAME, virtualHostNode.getName());
+        expectedProperties.put(Property.METHOD_NAME, methodName);
+        expectedProperties.put(Property.COMPONENT, "Broker.VirtualHostNode");
+        expectedProperties.put(Property.CREATED_BY, TEST_USER);
 
         when(_accessControl.authorise(same(LegacyOperation.INVOKE),
                                       same(ObjectType.VIRTUALHOSTNODE),
@@ -831,7 +855,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         Result result = _adapter.authoriseMethod(logger, "getFile", Collections.singletonMap("fileName", "qpid.log"));
         assertEquals("Unexpected authorise result", Result.ALLOWED, result);
 
-        verify(_accessControl).authorise(ACCESS_LOGS, BROKER, ObjectProperties.EMPTY);
+        verify(_accessControl).authorise(ACCESS_LOGS, BROKER, new ObjectProperties());
     }
 
     @Test
@@ -868,8 +892,8 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
                                       any(ObjectProperties.class))).thenReturn(Result.ALLOWED);
 
         ObjectProperties properties = new ObjectProperties("deleteMessages");
-        properties.put(ObjectProperties.Property.COMPONENT, "VirtualHost.Queue");
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+        properties.put(Property.COMPONENT, "VirtualHost.Queue");
+        properties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
 
         Queue queue = mock(Queue.class);
         when(queue.getParent()).thenReturn(_virtualHost);
@@ -890,7 +914,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     public void testAccessManagement()
     {
         _adapter.authoriseAction(_broker, "manage", Collections.emptyMap());
-        verify(_accessControl).authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
+        verify(_accessControl).authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, new ObjectProperties());
     }
 
     @Test
@@ -898,10 +922,12 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     {
         String routingKey = "routingKey";
         String exchangeName = "exchangeName";
-        ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST, exchangeName, routingKey);
-        properties.put(ObjectProperties.Property.DURABLE, true);
-        properties.put(ObjectProperties.Property.AUTO_DELETE, false);
-        properties.put(ObjectProperties.Property.TEMPORARY, false);
+        ObjectProperties properties = new ObjectProperties(exchangeName);
+        properties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+        properties.put(Property.ROUTING_KEY, routingKey);
+        properties.put(Property.DURABLE, true);
+        properties.put(Property.AUTO_DELETE, false);
+        properties.put(Property.TEMPORARY, false);
 
         Exchange exchange = mock(Exchange.class);
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
@@ -920,9 +946,9 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     public void testAuthoriseCreateConnection()
     {
         ObjectProperties properties = new ObjectProperties();
-        properties.put(ObjectProperties.Property.NAME, TEST_VIRTUAL_HOST);
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
-        properties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
+        properties.put(Property.NAME, TEST_VIRTUAL_HOST);
+        properties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+        properties.put(Property.CREATED_BY, TEST_USER);
 
         _adapter.authoriseAction(_virtualHost, "connect", Collections.emptyMap());
 
@@ -932,24 +958,24 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     private ObjectProperties createExpectedQueueObjectProperties()
     {
         ObjectProperties properties = new ObjectProperties();
-        properties.put(ObjectProperties.Property.NAME, TEST_QUEUE);
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
-        properties.put(ObjectProperties.Property.AUTO_DELETE, true);
-        properties.put(ObjectProperties.Property.TEMPORARY, true);
-        properties.put(ObjectProperties.Property.DURABLE, false);
-        properties.put(ObjectProperties.Property.EXCLUSIVE, false);
+        properties.put(Property.NAME, TEST_QUEUE);
+        properties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+        properties.put(Property.AUTO_DELETE, true);
+        properties.put(Property.TEMPORARY, true);
+        properties.put(Property.DURABLE, false);
+        properties.put(Property.EXCLUSIVE, false);
         return properties;
     }
 
     private ObjectProperties createExpectedExchangeObjectProperties()
     {
         ObjectProperties properties = new ObjectProperties();
-        properties.put(ObjectProperties.Property.NAME, TEST_EXCHANGE);
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
-        properties.put(ObjectProperties.Property.AUTO_DELETE, true);
-        properties.put(ObjectProperties.Property.TEMPORARY, true);
-        properties.put(ObjectProperties.Property.DURABLE, false);
-        properties.put(ObjectProperties.Property.TYPE, TEST_EXCHANGE_TYPE);
+        properties.put(Property.NAME, TEST_EXCHANGE);
+        properties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+        properties.put(Property.AUTO_DELETE, true);
+        properties.put(Property.TEMPORARY, true);
+        properties.put(Property.DURABLE, false);
+        properties.put(Property.TYPE, TEST_EXCHANGE_TYPE);
         return properties;
     }
 
@@ -959,8 +985,8 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
                                            LegacyOperation.CREATE.name().toLowerCase(),
                                            object.getCategoryClass().getSimpleName().toLowerCase(),
                                            "TEST");
-        ObjectProperties properties = new OperationLoggingDetails(description);
-        properties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
+        ObjectProperties properties = new ObjectProperties().withDescription(description);
+        properties.put(Property.CREATED_BY, TEST_USER);
         assertCreateAuthorization(object, LegacyOperation.CONFIGURE, ObjectType.BROKER, properties);
     }
 
@@ -985,9 +1011,9 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
                                            LegacyOperation.UPDATE.name().toLowerCase(),
                                            configuredObject.getCategoryClass().getSimpleName().toLowerCase(),
                                            configuredObject.getName());
-        ObjectProperties properties = new OperationLoggingDetails(description);
-        properties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
-        properties.setAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
+        ObjectProperties properties = new ObjectProperties().withDescription(description);
+        properties.put(Property.CREATED_BY, TEST_USER);
+        properties.addAttributeNames(Collections.singleton(ConfiguredObject.DESCRIPTION));
 
         assertUpdateAuthorization(configuredObject, LegacyOperation.CONFIGURE, ObjectType.BROKER,
                                   properties, Collections.singletonMap(ConfiguredObject.DESCRIPTION, "Test"));
@@ -1008,8 +1034,8 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
                                            LegacyOperation.DELETE.name().toLowerCase(),
                                            configuredObject.getCategoryClass().getSimpleName().toLowerCase(),
                                            configuredObject.getName());
-        ObjectProperties properties = new OperationLoggingDetails(description);
-        properties.put(ObjectProperties.Property.CREATED_BY, TEST_USER);
+        ObjectProperties properties = new ObjectProperties().withDescription(description);
+        properties.put(Property.CREATED_BY, TEST_USER);
         assertDeleteAuthorization(configuredObject, LegacyOperation.CONFIGURE, ObjectType.BROKER,
                                   properties);
     }

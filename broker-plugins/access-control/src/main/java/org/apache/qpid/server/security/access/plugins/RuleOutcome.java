@@ -48,5 +48,4 @@ public enum RuleOutcome
     {
         return _logged;
     }
-
 }

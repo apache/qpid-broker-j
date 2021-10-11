@@ -34,18 +34,18 @@ import org.junit.Test;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.config.ObjectProperties.Property;
+import org.apache.qpid.server.security.access.config.Rule.Builder;
+import org.apache.qpid.server.security.access.config.predicates.AclRulePredicatesBuilder;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 /**
  * This test checks that the {@link RuleSet} object which forms the core of the access control plugin performs
  * correctly.
  * <p>
  * The ruleset is configured directly rather than using an external file by adding rules individually, calling the
- * {@link RuleSetCreator#addRule(Integer, String, RuleOutcome, LegacyOperation, ObjectType, ObjectProperties)} method
+ * {@link RuleCollector#addRule(Integer, Rule)} method
  * . Then, the
  * access control mechanism is validated by checking whether operations would be authorised by calling the
  * {@link RuleSet#check(Subject, LegacyOperation, ObjectType, ObjectProperties)} method.
@@ -57,31 +57,32 @@ public class RuleSetTest extends UnitTestBase
     private static final String DENIED_VH = "deniedVH";
     private static final String ALLOWED_VH = "allowedVH";
 
-    private RuleSetCreator _ruleSetCreator = new RuleSetCreator();
+    private static final ObjectProperties EMPTY = new ObjectProperties();
+
+    private RuleCollector _ruleCollector = new RuleCollector();
 
     private static final String TEST_USER = "user";
 
     // Common things that are passed to frame constructors
-    private String _queueName = this.getClass().getName() + "queue";
-    private String _exchangeName = "amq.direct";
-    private String _exchangeType = "direct";
-    private Subject _testSubject = TestPrincipalUtils.createTestSubject(TEST_USER);
+    private final String _queueName = this.getClass().getName() + "queue";
+    private final String _exchangeName = "amq.direct";
+    private final String _exchangeType = "direct";
+    private final Subject _testSubject = TestPrincipalUtils.createTestSubject(TEST_USER);
 
     @Before
     public void setUp() throws Exception
     {
-
-        _ruleSetCreator = new RuleSetCreator();
+        _ruleCollector = new RuleCollector();
     }
 
     private RuleSet createRuleSet()
     {
-        return _ruleSetCreator.createRuleSet(mock(EventLoggerProvider.class));
+        return _ruleCollector.createRuleSet(mock(EventLoggerProvider.class));
     }
 
     private void assertDenyGrantAllow(Subject subject, LegacyOperation operation, ObjectType objectType)
     {
-        assertDenyGrantAllow(subject, operation, objectType, ObjectProperties.EMPTY);
+        assertDenyGrantAllow(subject, operation, objectType, EMPTY);
     }
 
     private void assertDenyGrantAllow(Subject subject,
@@ -91,38 +92,55 @@ public class RuleSetTest extends UnitTestBase
     {
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED, ruleSet.check(subject, operation, objectType, properties));
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.ALLOW, operation, objectType, properties);
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(operation)
+                .withObject(objectType)
+                .withPredicates(properties)
+                .build());
         ruleSet = createRuleSet();
-        assertEquals((long) 1, (long) ruleSet.getRuleCount());
+        assertEquals(1, ruleSet.getRuleCount());
         assertEquals(Result.ALLOWED, ruleSet.check(subject, operation, objectType, properties));
     }
 
     @Test
     public void testEmptyRuleSet()
     {
-        RuleSet ruleSet = createRuleSet();
+        final RuleSet ruleSet = createRuleSet();
         assertNotNull(ruleSet);
-        assertEquals((long) ruleSet.getRuleCount(), (long) 0);
+        assertEquals(ruleSet.getRuleCount(), 0);
         assertEquals(ruleSet.getDefault(),
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     @Test
-    public void testVirtualHostNodeCreateAllowPermissionWithVirtualHostName() throws Exception
+    public void testVirtualHostNodeCreateAllowPermissionWithVirtualHostName()
     {
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CREATE, ObjectType.VIRTUALHOSTNODE, ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.VIRTUALHOSTNODE)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.VIRTUALHOSTNODE, ObjectProperties.EMPTY));
+                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.VIRTUALHOSTNODE, EMPTY));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.DELETE, ObjectType.VIRTUALHOSTNODE, ObjectProperties.EMPTY));
+                            ruleSet.check(_testSubject, LegacyOperation.DELETE, ObjectType.VIRTUALHOSTNODE, EMPTY));
     }
 
     @Test
-    public void testVirtualHostAccessAllowPermissionWithVirtualHostName() throws Exception
+    public void testVirtualHostAccessAllowPermissionWithVirtualHostName()
     {
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH));
-        RuleSet ruleSet = createRuleSet();
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withPredicate(Property.NAME, ALLOWED_VH)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.DEFER,
@@ -130,11 +148,17 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessAllowPermissionWithNameSetToWildCard() throws Exception
+    public void testVirtualHostAccessAllowPermissionWithNameSetToWildCard()
     {
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ObjectProperties.WILD_CARD));
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withPredicate(Property.NAME, AclRulePredicatesBuilder.WILD_CARD)
+                .build());
 
-        RuleSet ruleSet = createRuleSet();
+        final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.ALLOWED,
@@ -142,10 +166,16 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessAllowPermissionWithNoName() throws Exception
+    public void testVirtualHostAccessAllowPermissionWithNoName()
     {
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.ALLOWED,
@@ -153,10 +183,15 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessDenyPermissionWithNoName() throws Exception
+    public void testVirtualHostAccessDenyPermissionWithNoName()
     {
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.DENIED,
@@ -164,10 +199,16 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessDenyPermissionWithNameSetToWildCard() throws Exception
+    public void testVirtualHostAccessDenyPermissionWithNameSetToWildCard()
     {
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ObjectProperties.WILD_CARD));
-        RuleSet ruleSet = createRuleSet();
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withPredicate(Property.NAME, AclRulePredicatesBuilder.WILD_CARD)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.DENIED,
@@ -175,11 +216,24 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessAllowDenyPermissions() throws Exception
+    public void testVirtualHostAccessAllowDenyPermissions()
     {
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH));
-        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH));
-        RuleSet ruleSet = createRuleSet();
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withPredicate(Property.NAME, DENIED_VH)
+                .build());
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withPredicate(Property.NAME, ALLOWED_VH)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.DENIED,
@@ -187,13 +241,19 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessAllowPermissionWithVirtualHostNameOtherPredicate() throws Exception
+    public void testVirtualHostAccessAllowPermissionWithVirtualHostNameOtherPredicate()
     {
-        ObjectProperties properties = new ObjectProperties();
+        final ObjectProperties properties = new ObjectProperties();
         properties.put(Property.VIRTUALHOST_NAME, ALLOWED_VH);
 
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
-        RuleSet ruleSet = createRuleSet();
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withPredicates(properties)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties));
         assertEquals(Result.DEFER, ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST,
@@ -202,22 +262,28 @@ public class RuleSetTest extends UnitTestBase
 
 
     @Test
-    public void testQueueCreateNamed() throws Exception
+    public void testQueueCreateNamed()
     {
         assertDenyGrantAllow(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, new ObjectProperties(_queueName));
     }
 
     @Test
-    public void testQueueCreateNamedVirtualHost() throws Exception
+    public void testQueueCreateNamedVirtualHost()
     {
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CREATE, ObjectType.QUEUE, new ObjectProperties(Property.VIRTUALHOST_NAME, ALLOWED_VH));
-        RuleSet ruleSet = createRuleSet();
-        ObjectProperties allowedQueueObjectProperties = new ObjectProperties(_queueName);
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicate(Property.VIRTUALHOST_NAME, ALLOWED_VH)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
+        final ObjectProperties allowedQueueObjectProperties = new ObjectProperties(_queueName);
         allowedQueueObjectProperties.put(Property.VIRTUALHOST_NAME, ALLOWED_VH);
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, new ObjectProperties(allowedQueueObjectProperties)));
 
-        ObjectProperties deniedQueueObjectProperties = new ObjectProperties(_queueName);
+        final ObjectProperties deniedQueueObjectProperties = new ObjectProperties(_queueName);
         deniedQueueObjectProperties.put(Property.VIRTUALHOST_NAME, DENIED_VH);
         assertEquals(Result.DEFER,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, deniedQueueObjectProperties));
@@ -226,8 +292,8 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testQueueCreateNamedNullRoutingKey()
     {
-        ObjectProperties properties = new ObjectProperties(_queueName);
-        properties.put(ObjectProperties.Property.ROUTING_KEY, (String) null);
+        final ObjectProperties properties = new ObjectProperties(_queueName);
+        properties.put(Property.ROUTING_KEY, null);
 
         assertDenyGrantAllow(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, properties);
     }
@@ -235,16 +301,22 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testExchangeCreateNamedVirtualHost()
     {
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CREATE, ObjectType.EXCHANGE, new ObjectProperties(Property.VIRTUALHOST_NAME, ALLOWED_VH));
-        RuleSet ruleSet = createRuleSet();
-        ObjectProperties allowedExchangeProperties = new ObjectProperties(_exchangeName);
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.EXCHANGE)
+                .withPredicate(Property.VIRTUALHOST_NAME, ALLOWED_VH)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
+        final ObjectProperties allowedExchangeProperties = new ObjectProperties(_exchangeName);
         allowedExchangeProperties.put(Property.TYPE, _exchangeType);
         allowedExchangeProperties.put(Property.VIRTUALHOST_NAME, ALLOWED_VH);
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.EXCHANGE, allowedExchangeProperties));
 
-        ObjectProperties deniedExchangeProperties = new ObjectProperties(_exchangeName);
+        final ObjectProperties deniedExchangeProperties = new ObjectProperties(_exchangeName);
         deniedExchangeProperties.put(Property.TYPE, _exchangeType);
         deniedExchangeProperties.put(Property.VIRTUALHOST_NAME, DENIED_VH);
         assertEquals(Result.DEFER,
@@ -255,7 +327,7 @@ public class RuleSetTest extends UnitTestBase
     public void testExchangeCreate()
     {
         ObjectProperties properties = new ObjectProperties(_exchangeName);
-        properties.put(ObjectProperties.Property.TYPE, _exchangeType);
+        properties.put(Property.TYPE, _exchangeType);
 
         assertDenyGrantAllow(_testSubject, LegacyOperation.CREATE, ObjectType.EXCHANGE, properties);
     }
@@ -279,18 +351,24 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testTemporaryUnnamedQueueConsume()
     {
-        ObjectProperties temporary = new ObjectProperties();
-        temporary.put(ObjectProperties.Property.AUTO_DELETE, Boolean.TRUE);
+        final ObjectProperties temporary = new ObjectProperties();
+        temporary.put(Property.AUTO_DELETE, Boolean.TRUE);
 
-        ObjectProperties normal = new ObjectProperties();
-        normal.put(ObjectProperties.Property.AUTO_DELETE, Boolean.FALSE);
+        final ObjectProperties normal = new ObjectProperties();
+        normal.put(Property.AUTO_DELETE, Boolean.FALSE);
 
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
-        _ruleSetCreator.addRule(0, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary);
+        _ruleCollector.addRule(0, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CONSUME)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(temporary)
+                .build());
         ruleSet = createRuleSet();
-        assertEquals((long) 1, (long) ruleSet.getRuleCount());
+        assertEquals(1, ruleSet.getRuleCount());
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
 
@@ -305,20 +383,34 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testTemporaryQueueFirstConsume()
     {
-        ObjectProperties temporary = new ObjectProperties(_queueName);
-        temporary.put(ObjectProperties.Property.AUTO_DELETE, Boolean.TRUE);
+        final ObjectProperties temporary = new ObjectProperties(_queueName);
+        temporary.put(Property.AUTO_DELETE, Boolean.TRUE);
 
-        ObjectProperties normal = new ObjectProperties(_queueName);
-        normal.put(ObjectProperties.Property.AUTO_DELETE, Boolean.FALSE);
+        final ObjectProperties normal = new ObjectProperties(_queueName);
+        normal.put(Property.AUTO_DELETE, Boolean.FALSE);
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
 
         // should not matter if the temporary permission is processed first or last
-        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CONSUME, ObjectType.QUEUE, normal);
-        _ruleSetCreator.addRule(2, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary);
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CONSUME)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(normal)
+                .build());
+
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CONSUME)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(temporary)
+                .build());
+
         ruleSet = createRuleSet();
-        assertEquals((long) 2, (long) ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
@@ -332,20 +424,34 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testTemporaryQueueLastConsume()
     {
-        ObjectProperties temporary = new ObjectProperties(_queueName);
-        temporary.put(ObjectProperties.Property.AUTO_DELETE, Boolean.TRUE);
+        final ObjectProperties temporary = new ObjectProperties(_queueName);
+        temporary.put(Property.AUTO_DELETE, Boolean.TRUE);
 
-        ObjectProperties normal = new ObjectProperties(_queueName);
-        normal.put(ObjectProperties.Property.AUTO_DELETE, Boolean.FALSE);
+        final ObjectProperties normal = new ObjectProperties(_queueName);
+        normal.put(Property.AUTO_DELETE, Boolean.FALSE);
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
 
         // should not matter if the temporary permission is processed first or last
-        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary);
-        _ruleSetCreator.addRule(2, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CONSUME, ObjectType.QUEUE, normal);
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CONSUME)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(temporary)
+                .build());
+
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CONSUME)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(normal)
+                .build());
+
         ruleSet = createRuleSet();
-        assertEquals((long) 2, (long) ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
@@ -363,19 +469,33 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testFirstNamedSecondTemporaryQueueDenied()
     {
-        ObjectProperties named = new ObjectProperties(_queueName);
-        ObjectProperties namedTemporary = new ObjectProperties(_queueName);
-        namedTemporary.put(ObjectProperties.Property.AUTO_DELETE, Boolean.TRUE);
+        final ObjectProperties named = new ObjectProperties(_queueName);
+        final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
+        namedTemporary.put(Property.AUTO_DELETE, Boolean.TRUE);
 
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
 
-        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CREATE, ObjectType.QUEUE, named);
-        _ruleSetCreator.addRule(2, TEST_USER, RuleOutcome.DENY, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary);
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(named)
+                .build());
+
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(namedTemporary)
+                .build());
+
         ruleSet = createRuleSet();
-        assertEquals((long) 2, (long) ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
@@ -389,18 +509,32 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testFirstTemporarySecondNamedQueueDenied()
     {
-        ObjectProperties named = new ObjectProperties(_queueName);
-        ObjectProperties namedTemporary = new ObjectProperties(_queueName);
-        namedTemporary.put(ObjectProperties.Property.AUTO_DELETE, Boolean.TRUE);
+        final ObjectProperties named = new ObjectProperties(_queueName);
+        final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
+        namedTemporary.put(Property.AUTO_DELETE, Boolean.TRUE);
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
 
-        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.DENY, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary);
-        _ruleSetCreator.addRule(2, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CREATE, ObjectType.QUEUE, named);
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(namedTemporary)
+                .build());
+
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(named)
+                .build());
+
         ruleSet = createRuleSet();
-        assertEquals((long) 2, (long) ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
@@ -414,11 +548,11 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testFirstTemporarySecondDurableThirdNamedQueueDenied()
     {
-        ObjectProperties named = new ObjectProperties(_queueName);
-        ObjectProperties namedTemporary = new ObjectProperties(_queueName);
-        namedTemporary.put(ObjectProperties.Property.AUTO_DELETE, Boolean.TRUE);
-        ObjectProperties namedDurable = new ObjectProperties(_queueName);
-        namedDurable.put(ObjectProperties.Property.DURABLE, Boolean.TRUE);
+        final ObjectProperties named = new ObjectProperties(_queueName);
+        final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
+        namedTemporary.put(Property.AUTO_DELETE, Boolean.TRUE);
+        final ObjectProperties namedDurable = new ObjectProperties(_queueName);
+        namedDurable.put(Property.DURABLE, Boolean.TRUE);
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
@@ -426,11 +560,32 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedDurable));
 
-        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.DENY, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary);
-        _ruleSetCreator.addRule(2, TEST_USER, RuleOutcome.DENY, LegacyOperation.CREATE, ObjectType.QUEUE, namedDurable);
-        _ruleSetCreator.addRule(3, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CREATE, ObjectType.QUEUE, named);
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(namedTemporary)
+                .build());
+
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(namedDurable)
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(named)
+                .build());
+
         ruleSet = createRuleSet();
-        assertEquals((long) 3, (long) ruleSet.getRuleCount());
+        assertEquals(3, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
@@ -443,18 +598,30 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testNamedTemporaryQueueAllowed()
     {
-        ObjectProperties named = new ObjectProperties(_queueName);
-        ObjectProperties namedTemporary = new ObjectProperties(_queueName);
-        namedTemporary.put(ObjectProperties.Property.AUTO_DELETE, Boolean.TRUE);
+        final ObjectProperties named = new ObjectProperties(_queueName);
+        final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
+        namedTemporary.put(Property.AUTO_DELETE, Boolean.TRUE);
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
 
-        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary);
-        _ruleSetCreator.addRule(2, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CREATE, ObjectType.QUEUE, named);
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(namedTemporary)
+                .build());
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(named)
+                .build());
         ruleSet = createRuleSet();
-        assertEquals((long) 2, (long) ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
@@ -465,18 +632,30 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testNamedTemporaryQueueDeniedAllowed()
     {
-        ObjectProperties named = new ObjectProperties(_queueName);
-        ObjectProperties namedTemporary = new ObjectProperties(_queueName);
-        namedTemporary.put(ObjectProperties.Property.AUTO_DELETE, Boolean.TRUE);
+        final ObjectProperties named = new ObjectProperties(_queueName);
+        final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
+        namedTemporary.put(Property.AUTO_DELETE, Boolean.TRUE);
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
 
-        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.ALLOW, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary);
-        _ruleSetCreator.addRule(2, TEST_USER, RuleOutcome.DENY, LegacyOperation.CREATE, ObjectType.QUEUE, named);
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(namedTemporary)
+                .build());
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.CREATE)
+                .withObject(ObjectType.QUEUE)
+                .withPredicates(named)
+                .build());
         ruleSet = createRuleSet();
-        assertEquals((long) 2, (long) ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.getRuleCount());
 
         assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.ALLOWED,
@@ -489,34 +668,49 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testAllowToAll()
     {
-        _ruleSetCreator.addRule(1, Rule.ALL, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
-        assertEquals((long) 1, (long) ruleSet.getRuleCount());
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(Rule.ALL)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(1, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject("usera"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(TestPrincipalUtils.createTestSubject("usera"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject("userb"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(TestPrincipalUtils.createTestSubject("userb"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     @Test
     public void testGroupsSupported()
     {
-        String allowGroup = "allowGroup";
-        String deniedGroup = "deniedGroup";
+        final String allowGroup = "allowGroup";
+        final String deniedGroup = "deniedGroup";
 
-        _ruleSetCreator.addRule(1, allowGroup, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        _ruleSetCreator.addRule(2, deniedGroup, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
-        assertEquals((long) 2, (long) ruleSet.getRuleCount());
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(allowGroup)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(deniedGroup)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(2, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(TestPrincipalUtils.createTestSubject("usera", allowGroup), LegacyOperation
-                                    .ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                                    .ACCESS, ObjectType.VIRTUALHOST, EMPTY));
         assertEquals(Result.DENIED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject("userb", deniedGroup), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(TestPrincipalUtils.createTestSubject("userb", deniedGroup), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
         assertEquals(Result.DEFER,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject("user", "group not mentioned in acl"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(TestPrincipalUtils.createTestSubject("user", "group not mentioned in acl"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     /**
@@ -530,13 +724,23 @@ public class RuleSetTest extends UnitTestBase
         String group = "group";
         String user = "user";
 
-        _ruleSetCreator.addRule(1, user, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        _ruleSetCreator.addRule(2, group, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
-        assertEquals((long) 2, (long) ruleSet.getRuleCount());
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(user)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(group)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(2, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     /**
@@ -549,59 +753,87 @@ public class RuleSetTest extends UnitTestBase
         String group = "aclgroup";
         String user = "usera";
 
-        _ruleSetCreator.addRule(1, group, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        _ruleSetCreator.addRule(2, user, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(group)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(user)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
 
-
-        RuleSet ruleSet = createRuleSet();
-        assertEquals((long) 2, (long) ruleSet.getRuleCount());
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(2, ruleSet.getRuleCount());
 
         assertEquals(Result.DENIED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     @Test
     public void testUserInMultipleGroups()
     {
-        String allowedGroup = "group1";
-        String deniedGroup = "group2";
+        final String allowedGroup = "group1";
+        final String deniedGroup = "group2";
 
-        _ruleSetCreator.addRule(1, allowedGroup, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        _ruleSetCreator.addRule(2, deniedGroup, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
-        Subject subjectInBothGroups = TestPrincipalUtils.createTestSubject("user", allowedGroup, deniedGroup);
-        Subject subjectInDeniedGroupAndOneOther = TestPrincipalUtils.createTestSubject("user", deniedGroup, "some other group");
-        Subject subjectInAllowedGroupAndOneOther = TestPrincipalUtils.createTestSubject("user", allowedGroup, "some other group");
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(allowedGroup)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(deniedGroup)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
+        final Subject subjectInBothGroups = TestPrincipalUtils.createTestSubject("user", allowedGroup, deniedGroup);
+        final Subject subjectInDeniedGroupAndOneOther = TestPrincipalUtils.createTestSubject("user", deniedGroup, "some other group");
+        final Subject subjectInAllowedGroupAndOneOther = TestPrincipalUtils.createTestSubject("user", allowedGroup, "some other group");
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(subjectInBothGroups, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(subjectInBothGroups, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
 
         assertEquals(Result.DENIED,
-                            ruleSet.check(subjectInDeniedGroupAndOneOther, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(subjectInDeniedGroupAndOneOther, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(subjectInAllowedGroupAndOneOther, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
+                            ruleSet.check(subjectInAllowedGroupAndOneOther, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     @Test
     public void testUpdatedAllowedAttribute()
     {
         final ObjectProperties ruleProperties = new ObjectProperties();
-        ruleProperties.setAttributeNames(Collections.singleton("attribute1"));
-        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.ALLOW,  LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, ruleProperties);
-        _ruleSetCreator.addRule(2, TEST_USER, RuleOutcome.DENY,  LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
+        ruleProperties.addAttributeNames(Collections.singleton("attribute1"));
+        _ruleCollector.addRule(1, new Rule.Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withPredicates(ruleProperties)
+                .build());
+        _ruleCollector.addRule(2, new Rule.Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
 
-        final ObjectProperties updateProperties = new ObjectProperties();
+        ObjectProperties updateProperties = new ObjectProperties();
+        updateProperties.addAttributeNames(Collections.singleton("attribute2"));
+
         assertEquals(Result.DENIED,
                             ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
 
-        updateProperties.setAttributeNames(Collections.singleton("attribute2"));
-
-        assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
-
-        updateProperties.setAttributeNames(Collections.singleton("attribute1"));
+        updateProperties = new ObjectProperties();
+        updateProperties.addAttributeNames(Collections.singleton("attribute1"));
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
     }
@@ -609,14 +841,14 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testExistingObjectOwner()
     {
-        _ruleSetCreator.addRule(1,
-                                Rule.OWNER,
-                                RuleOutcome.ALLOW,
-                                LegacyOperation.CONSUME,
-                                ObjectType.QUEUE,
-                                ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
-        assertEquals((long) 1, (long) ruleSet.getRuleCount());
+        _ruleCollector.addRule(1, new Rule.Builder()
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.CONSUME)
+                .withObject(ObjectType.QUEUE)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(1, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
                      ruleSet.check(_testSubject,
@@ -634,14 +866,14 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testCreateIgnoresOwnerRule()
     {
-        _ruleSetCreator.addRule(1,
-                                Rule.OWNER,
-                                RuleOutcome.ALLOW,
-                                LegacyOperation.ALL,
-                                ObjectType.QUEUE,
-                                ObjectProperties.EMPTY);
-        RuleSet ruleSet = createRuleSet();
-        assertEquals((long) 1, (long) ruleSet.getRuleCount());
+        _ruleCollector.addRule(1, new Rule.Builder()
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ALL)
+                .withObject(ObjectType.QUEUE)
+                .build());
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(1, ruleSet.getRuleCount());
 
         assertEquals(Result.ALLOWED,
                      ruleSet.check(_testSubject,
@@ -656,5 +888,4 @@ public class RuleSetTest extends UnitTestBase
                                    new ObjectProperties(Property.CREATED_BY, "anotherUser")));
 
     }
-
 }

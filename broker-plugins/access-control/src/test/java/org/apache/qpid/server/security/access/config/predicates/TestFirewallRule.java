@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,32 +15,25 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-package org.apache.qpid.server.security.access.firewall;
+package org.apache.qpid.server.security.access.config.predicates;
 
-public class AccessControlFirewallException extends RuntimeException
+import javax.security.auth.Subject;
+
+import org.apache.qpid.server.security.access.firewall.FirewallRule;
+
+public class TestFirewallRule implements FirewallRule
 {
-    /** serialVersionUID */
-    private static final long serialVersionUID = 4526157149690917805L;
+    private Subject _subject = null;
 
-    public AccessControlFirewallException()
+    @Override
+    public boolean matches(Subject subject)
     {
-        super();
+        return _subject == subject;
     }
 
-    public AccessControlFirewallException(String message)
+    public void setSubject(Subject subject)
     {
-        super(message);
-    }
-
-    public AccessControlFirewallException(String message, Throwable cause)
-    {
-        super(message, cause);
-    }
-
-    public AccessControlFirewallException(Throwable cause)
-    {
-        super(cause);
+        _subject = subject;
     }
 }
