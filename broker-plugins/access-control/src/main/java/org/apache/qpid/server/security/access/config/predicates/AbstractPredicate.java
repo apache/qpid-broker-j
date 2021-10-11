@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,32 +15,34 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-package org.apache.qpid.server.security.access.firewall;
+package org.apache.qpid.server.security.access.config.predicates;
 
-public class AccessControlFirewallException extends RuntimeException
+import java.util.Objects;
+
+abstract class AbstractPredicate implements RulePredicate
 {
-    /** serialVersionUID */
-    private static final long serialVersionUID = 4526157149690917805L;
+    final RulePredicate _previousPredicate;
 
-    public AccessControlFirewallException()
+    abstract RulePredicate copy(RulePredicate subPredicate);
+
+    AbstractPredicate(RulePredicate previousPredicate)
     {
-        super();
+        _previousPredicate = Objects.requireNonNull(previousPredicate);
     }
 
-    public AccessControlFirewallException(String message)
+    AbstractPredicate()
     {
-        super(message);
+        this(RulePredicate.any());
     }
 
-    public AccessControlFirewallException(String message, Throwable cause)
+    @Override
+    public RulePredicate and(RulePredicate other)
     {
-        super(message, cause);
-    }
-
-    public AccessControlFirewallException(Throwable cause)
-    {
-        super(cause);
+        if (other instanceof Any)
+        {
+            return this;
+        }
+        return copy(_previousPredicate.and(other));
     }
 }

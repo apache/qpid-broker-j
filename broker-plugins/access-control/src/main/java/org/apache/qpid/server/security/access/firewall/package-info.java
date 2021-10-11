@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,32 +15,5 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 package org.apache.qpid.server.security.access.firewall;
-
-public class AccessControlFirewallException extends RuntimeException
-{
-    /** serialVersionUID */
-    private static final long serialVersionUID = 4526157149690917805L;
-
-    public AccessControlFirewallException()
-    {
-        super();
-    }
-
-    public AccessControlFirewallException(String message)
-    {
-        super(message);
-    }
-
-    public AccessControlFirewallException(String message, Throwable cause)
-    {
-        super(message, cause);
-    }
-
-    public AccessControlFirewallException(Throwable cause)
-    {
-        super(cause);
-    }
-}

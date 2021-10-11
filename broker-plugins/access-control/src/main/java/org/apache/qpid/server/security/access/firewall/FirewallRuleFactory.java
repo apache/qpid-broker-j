@@ -18,18 +18,17 @@
  */
 package org.apache.qpid.server.security.access.firewall;
 
-import org.apache.qpid.server.security.access.config.FirewallRule;
+import java.util.Collection;
 
 public class FirewallRuleFactory
 {
-    public FirewallRule createForHostname(String[] hostnames)
+    public FirewallRule createForHostname(Collection<String> hostnames)
     {
         return new HostnameFirewallRule(hostnames);
     }
 
-    public FirewallRule createForNetwork(String[] networks)
+    public FirewallRule createForNetwork(Collection<String> networks)
     {
         return new NetworkFirewallRule(networks);
     }
-
 }

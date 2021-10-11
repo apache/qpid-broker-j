@@ -22,13 +22,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.Callable;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
+
+import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
 
 public class HostnameFirewallRule extends AbstractFirewallRuleImpl
 {
@@ -37,50 +45,59 @@ public class HostnameFirewallRule extends AbstractFirewallRuleImpl
     private static final long DNS_TIMEOUT = 30000;
     private static final ExecutorService DNS_LOOKUP = Executors.newCachedThreadPool();
 
-    private Pattern[] _hostnamePatterns;
-    private String[] _hostnames;
+    private final List<Pattern> _hostnamePatterns;
+    private final Set<String> _hostnames;
 
     public HostnameFirewallRule(String... hostnames)
     {
-        super();
-        _hostnames = hostnames;
+        this(Arrays.asList(hostnames));
+    }
 
-        int i = 0;
-        _hostnamePatterns = new Pattern[hostnames.length];
-        for (String hostname : hostnames)
+    public HostnameFirewallRule(Collection<String> hostnames)
+    {
+        super();
+        _hostnames = new HashSet<>(hostnames);
+        _hostnamePatterns = new ArrayList<>(_hostnames.size());
+
+        for (final String hostname : _hostnames)
         {
-            _hostnamePatterns[i++] = Pattern.compile(hostname);
+            _hostnamePatterns.add(Pattern.compile(hostname));
         }
 
         LOGGER.debug("Created {}", this);
+    }
 
+    private HostnameFirewallRule(HostnameFirewallRule rule, RulePredicate subPredicate)
+    {
+        super(subPredicate);
+        _hostnames = rule._hostnames;
+        _hostnamePatterns = rule._hostnamePatterns;
     }
 
     @Override
-    protected boolean matches(InetAddress remote)
+    boolean matches(InetAddress remote)
     {
-        String hostname = getHostname(remote);
+        final String hostname = getHostname(remote);
         if (hostname == null)
         {
             throw new AccessControlFirewallException("DNS lookup failed for address " + remote);
         }
-        for (Pattern pattern : _hostnamePatterns)
+        for (final Pattern pattern : _hostnamePatterns)
         {
-            boolean hostnameMatches = pattern.matcher(hostname).matches();
-
-            if (hostnameMatches)
+            if (pattern.matcher(hostname).matches())
             {
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Hostname " + hostname + " matches rule " + pattern.toString());
-                }
+                LOGGER.debug("Hostname '{}' matches rule '{}'", hostname, pattern);
                 return true;
             }
         }
-
-        LOGGER.debug("Hostname {} matches no configured hostname patterns", hostname);
-
+        LOGGER.debug("Hostname '{}' matches no configured hostname patterns", hostname);
         return false;
+    }
+
+    @Override
+    RulePredicate copy(RulePredicate subPredicate)
+    {
+        return new HostnameFirewallRule(this, subPredicate);
     }
 
     /**
@@ -88,25 +105,18 @@ public class HostnameFirewallRule extends AbstractFirewallRuleImpl
      * @return the hostname, null if not found, takes longer than
      * {@link #DNS_LOOKUP} to find or otherwise fails
      */
-    private String getHostname(final InetAddress remote) throws AccessControlFirewallException
+    private String getHostname(final InetAddress remote)
     {
-        FutureTask<String> lookup = new FutureTask<String>(new Callable<String>()
-        {
-            @Override
-            public String call()
-            {
-                return remote.getCanonicalHostName();
-            }
-        });
+        final FutureTask<String> lookup = new FutureTask<>(remote::getCanonicalHostName);
         DNS_LOOKUP.execute(lookup);
 
         try
         {
             return lookup.get(DNS_TIMEOUT, TimeUnit.MILLISECONDS);
         }
-        catch (Exception e)
+        catch (RuntimeException | InterruptedException | ExecutionException | TimeoutException e)
         {
-            LOGGER.warn("Unable to look up hostname from address " + remote, e);
+            LOGGER.warn(String.format("Unable to look up hostname from address '%s'", remote), e);
             return null;
         }
         finally
@@ -128,23 +138,20 @@ public class HostnameFirewallRule extends AbstractFirewallRuleImpl
         }
 
         final HostnameFirewallRule that = (HostnameFirewallRule) o;
-
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        return Arrays.equals(_hostnames, that._hostnames);
-
+        return _hostnames.equals(that._hostnames);
     }
 
     @Override
     public int hashCode()
     {
-        return _hostnames != null ? Arrays.hashCode(_hostnames) : 0;
+        return _hostnames.hashCode();
     }
 
     @Override
     public String toString()
     {
         return "HostnameFirewallRule[" +
-                "hostnames=" + Arrays.toString(_hostnames) +
+                "hostnames=" + _hostnames +
                 ']';
     }
 }

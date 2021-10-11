@@ -24,9 +24,9 @@ import java.util.Map;
 
 import org.apache.qpid.server.model.ManagedAttributeValue;
 import org.apache.qpid.server.model.ManagedAttributeValueType;
-import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
+import org.apache.qpid.server.security.access.config.Property;
 
 @ManagedAttributeValueType
 public interface AclRule extends ManagedAttributeValue
@@ -34,6 +34,6 @@ public interface AclRule extends ManagedAttributeValue
     String getIdentity();
     ObjectType getObjectType();
     LegacyOperation getOperation();
-    Map<ObjectProperties.Property,String> getAttributes();
+    Map<Property,String> getAttributes();
     RuleOutcome getOutcome();
 }

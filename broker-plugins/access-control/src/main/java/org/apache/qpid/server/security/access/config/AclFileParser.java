@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.access.config.Rule.Builder;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 
 public final class AclFileParser
@@ -125,9 +126,9 @@ public final class AclFileParser
         return readAndParse(reader).createRuleSet(eventLogger);
     }
 
-    RuleSetCreator readAndParse(final Reader configReader)
+    RuleCollector readAndParse(final Reader configReader)
     {
-        final RuleSetCreator ruleSetCreator = new RuleSetCreator();
+        final RuleCollector ruleCollector = new RuleCollector();
 
         int line = 0;
         try (Reader fileReader = configReader)
@@ -165,7 +166,7 @@ public final class AclFileParser
                 {
                     case StreamTokenizer.TT_EOF:
                     case StreamTokenizer.TT_EOL:
-                        processLine(ruleSetCreator, line, stack);
+                        processLine(ruleCollector, line, stack);
                         break;
                     case StreamTokenizer.TT_NUMBER:
                         // Dead code because the parsing numbers is turned off, see StreamTokenizer::parseNumbers.
@@ -192,10 +193,10 @@ public final class AclFileParser
         {
             throw new IllegalConfigurationException(String.format(PARSE_TOKEN_FAILED_MSG, line), re);
         }
-        return ruleSetCreator;
+        return ruleCollector;
     }
 
-    private void processLine(RuleSetCreator ruleSetCreator, int line, Queue<String> stack)
+    private void processLine(RuleCollector ruleCollector, int line, Queue<String> stack)
     {
         if (stack.isEmpty())
         {
@@ -217,8 +218,8 @@ public final class AclFileParser
             final String type = stack.poll();
             if (ACL.equalsIgnoreCase(type))
             {
-                final Integer number = validateNumber(Integer.valueOf(matcher.group()), ruleSetCreator, line);
-                parseAcl(number, stack, ruleSetCreator, line);
+                final Integer number = validateNumber(Integer.valueOf(matcher.group()), ruleCollector, line);
+                parseAcl(number, stack, ruleCollector, line);
                 // reset stack, start next line
                 stack.clear();
                 return;
@@ -228,11 +229,11 @@ public final class AclFileParser
 
         if (ACL.equalsIgnoreCase(first))
         {
-            parseAcl(null, stack, ruleSetCreator, line);
+            parseAcl(null, stack, ruleCollector, line);
         }
         else if (CONFIG.equalsIgnoreCase(first))
         {
-            parseConfig(stack, ruleSetCreator, line);
+            parseConfig(stack, ruleCollector, line);
         }
         else if (GROUP.equalsIgnoreCase(first))
         {
@@ -276,46 +277,41 @@ public final class AclFileParser
         }
     }
 
-    private Integer validateNumber(Integer number, RuleSetCreator ruleSetCreator, int line)
+    private Integer validateNumber(Integer number, RuleCollector ruleCollector, int line)
     {
-        if (!ruleSetCreator.isValidNumber(number))
+        if (!ruleCollector.isValidNumber(number))
         {
             throw new IllegalConfigurationException(String.format(BAD_ACL_RULE_NUMBER_MSG, line));
         }
         return number;
     }
 
-    private void parseAcl(Integer number, Queue<String> args, final RuleSetCreator ruleSetCreator, final int line)
+    private void parseAcl(Integer number, Queue<String> args, final RuleCollector ruleCollector, final int line)
     {
         if (args.size() < 3)
         {
             throw new IllegalConfigurationException(String.format(NOT_ENOUGH_ACL_MSG, line));
         }
 
-        final RuleOutcome outcome = parsePermission(args.poll(), line);
-        final String identity = args.poll();
-        final LegacyOperation operation = parseOperation(args.poll(), line);
+        final Builder builder = new Builder()
+                .withOutcome(parsePermission(args.poll(), line))
+                .withIdentity(args.poll())
+                .withOperation(parseOperation(args.poll(), line));
 
-        if (args.isEmpty())
+        if (!args.isEmpty())
         {
-            ruleSetCreator.addRule(number, identity, outcome, operation);
-        }
-        else
-        {
-            final ObjectType object = parseObjectType(args.poll(), line);
+            builder.withObject(parseObjectType(args.poll(), line));
 
-            final AclRulePredicates predicates = new AclRulePredicates();
             final Iterator<String> tokenIterator = args.iterator();
             while (tokenIterator.hasNext())
             {
-                predicates.parse(tokenIterator.next(), readValue(tokenIterator, line));
+                builder.withPredicate(tokenIterator.next(), readValue(tokenIterator, line));
             }
-
-            ruleSetCreator.addRule(number, identity, outcome, operation, object, predicates);
         }
+        ruleCollector.addRule(number, builder.build());
     }
 
-    private static void parseConfig(final Queue<String> args, final RuleSetCreator ruleSetCreator, final int line)
+    private static void parseConfig(final Queue<String> args, final RuleCollector ruleCollector, final int line)
     {
         if (args.size() < 3)
         {
@@ -333,13 +329,13 @@ public final class AclFileParser
                 switch (key)
                 {
                     case DEFAULT_ALLOW:
-                        ruleSetCreator.setDefaultResult(Result.ALLOWED);
+                        ruleCollector.setDefaultResult(Result.ALLOWED);
                         break;
                     case DEFAULT_DEFER:
-                        ruleSetCreator.setDefaultResult(Result.DEFER);
+                        ruleCollector.setDefaultResult(Result.DEFER);
                         break;
                     case DEFAULT_DENY:
-                        ruleSetCreator.setDefaultResult(Result.DENIED);
+                        ruleCollector.setDefaultResult(Result.DENIED);
                         break;
                     default:
                 }

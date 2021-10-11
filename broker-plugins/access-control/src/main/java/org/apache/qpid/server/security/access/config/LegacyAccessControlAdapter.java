@@ -91,7 +91,7 @@ class LegacyAccessControlAdapter
         ObjectProperties properties = getACLObjectProperties(configuredObject, operation);
         if (operation == LegacyOperation.UPDATE)
         {
-            properties.setAttributeNames(arguments.keySet());
+            properties.addAttributeNames(arguments.keySet());
         }
         LegacyOperation authoriseOperation = validateAuthoriseOperation(operation, categoryClass);
         return _accessControl.authorise(authoriseOperation, objectType, properties);
@@ -210,17 +210,17 @@ class LegacyAccessControlAdapter
         {
             Exchange<?> exchange = (Exchange<?>) configuredObject;
             Object lifeTimePolicy = exchange.getAttribute(ConfiguredObject.LIFETIME_POLICY);
-            properties.put(ObjectProperties.Property.AUTO_DELETE, lifeTimePolicy != LifetimePolicy.PERMANENT);
-            properties.put(ObjectProperties.Property.TEMPORARY, lifeTimePolicy != LifetimePolicy.PERMANENT);
-            properties.put(ObjectProperties.Property.DURABLE, (Boolean) exchange.getAttribute(ConfiguredObject.DURABLE));
-            properties.put(ObjectProperties.Property.TYPE, (String) exchange.getAttribute(Exchange.TYPE));
+            properties.put(Property.AUTO_DELETE, lifeTimePolicy != LifetimePolicy.PERMANENT);
+            properties.put(Property.TEMPORARY, lifeTimePolicy != LifetimePolicy.PERMANENT);
+            properties.put(Property.DURABLE, (Boolean) exchange.getAttribute(ConfiguredObject.DURABLE));
+            properties.put(Property.TYPE, (String) exchange.getAttribute(Exchange.TYPE));
             if (exchange.getAttribute(Queue.CREATED_BY) != null)
             {
-                properties.put(ObjectProperties.Property.CREATED_BY, (String) exchange.getAttribute(ConfiguredObject.CREATED_BY));
+                properties.put(Property.CREATED_BY, (String) exchange.getAttribute(ConfiguredObject.CREATED_BY));
             }
 
             VirtualHost virtualHost = (VirtualHost) exchange.getParent();
-            properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
+            properties.put(Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
         }
         else if (configuredObject instanceof QueueConsumer)
         {
@@ -236,17 +236,17 @@ class LegacyAccessControlAdapter
                                                    configuredObjectOperation == null? null : configuredObjectOperation.name().toLowerCase(),
                                                    configuredObjectType == null ? null : configuredObjectType.getSimpleName().toLowerCase(),
                                                    objectName);
-                properties = new OperationLoggingDetails(description);
+                properties = new ObjectProperties().withDescription(description);
             }
             else if (isVirtualHostType(configuredObjectType))
             {
                 ConfiguredObject<?> virtualHost = getModel().getAncestor(VirtualHost.class,
                                                                          object);
-                properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
+                properties.put(Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
             }
             if (object.getAttribute(ConfiguredObject.CREATED_BY) != null)
             {
-                properties.put(ObjectProperties.Property.CREATED_BY, (String) object.getAttribute(ConfiguredObject.CREATED_BY));
+                properties.put(Property.CREATED_BY, (String) object.getAttribute(ConfiguredObject.CREATED_BY));
             }
         }
         return properties;
@@ -256,13 +256,13 @@ class LegacyAccessControlAdapter
     {
         properties.setName((String)queue.getAttribute(Exchange.NAME));
         Object lifeTimePolicy = queue.getAttribute(ConfiguredObject.LIFETIME_POLICY);
-        properties.put(ObjectProperties.Property.AUTO_DELETE, lifeTimePolicy != LifetimePolicy.PERMANENT);
-        properties.put(ObjectProperties.Property.TEMPORARY, lifeTimePolicy != LifetimePolicy.PERMANENT);
-        properties.put(ObjectProperties.Property.DURABLE, (Boolean)queue.getAttribute(ConfiguredObject.DURABLE));
-        properties.put(ObjectProperties.Property.EXCLUSIVE, queue.getAttribute(Queue.EXCLUSIVE) != ExclusivityPolicy.NONE);
+        properties.put(Property.AUTO_DELETE, lifeTimePolicy != LifetimePolicy.PERMANENT);
+        properties.put(Property.TEMPORARY, lifeTimePolicy != LifetimePolicy.PERMANENT);
+        properties.put(Property.DURABLE, (Boolean)queue.getAttribute(ConfiguredObject.DURABLE));
+        properties.put(Property.EXCLUSIVE, queue.getAttribute(Queue.EXCLUSIVE) != ExclusivityPolicy.NONE);
         if (queue.getAttribute(Queue.CREATED_BY) != null)
         {
-            properties.put(ObjectProperties.Property.CREATED_BY, (String) queue.getAttribute(Queue.CREATED_BY));
+            properties.put(Property.CREATED_BY, (String) queue.getAttribute(Queue.CREATED_BY));
         }
         Object alternateBinding = queue.getAttribute(Queue.ALTERNATE_BINDING);
         if (alternateBinding instanceof AlternateBinding)
@@ -270,16 +270,16 @@ class LegacyAccessControlAdapter
             String name = ((AlternateBinding)alternateBinding).getDestination();
             if (name != null && !"".equals(name))
             {
-                properties.put(ObjectProperties.Property.ALTERNATE, name);
+                properties.put(Property.ALTERNATE, name);
             }
         }
         String owner = (String)queue.getAttribute(Queue.OWNER);
         if (owner != null)
         {
-            properties.put(ObjectProperties.Property.OWNER, owner);
+            properties.put(Property.OWNER, owner);
         }
         VirtualHost virtualHost = (VirtualHost) queue.getParent();
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
+        properties.put(Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
     }
 
 
@@ -334,17 +334,19 @@ class LegacyAccessControlAdapter
             {
 
                 final ObjectProperties props =
-                        new ObjectProperties(exchange.getAddressSpace().getName(), exchange.getName(), (String)arguments.get("routingKey"));
-                props.put(ObjectProperties.Property.DURABLE, exchange.isDurable());
+                        new ObjectProperties(exchange.getName());
+                props.put(Property.ROUTING_KEY, (String) arguments.get("routingKey"));
+                props.put(Property.VIRTUALHOST_NAME, exchange.getAddressSpace().getName());
+                props.put(Property.DURABLE, exchange.isDurable());
                 if (exchange instanceof Exchange<?>)
                 {
                     LifetimePolicy lifetimePolicy = ((Exchange) exchange).getLifetimePolicy();
-                    props.put(ObjectProperties.Property.AUTO_DELETE, lifetimePolicy != LifetimePolicy.PERMANENT);
-                    props.put(ObjectProperties.Property.TEMPORARY, lifetimePolicy != LifetimePolicy.PERMANENT);
+                    props.put(Property.AUTO_DELETE, lifetimePolicy != LifetimePolicy.PERMANENT);
+                    props.put(Property.TEMPORARY, lifetimePolicy != LifetimePolicy.PERMANENT);
                 }
                 if (createdBy != null)
                 {
-                    props.put(ObjectProperties.Property.CREATED_BY, createdBy);
+                    props.put(Property.CREATED_BY, createdBy);
                 }
                 return _accessControl.authorise(PUBLISH, EXCHANGE, props);
             }
@@ -355,10 +357,10 @@ class LegacyAccessControlAdapter
             {
                 String virtualHostName = configuredObject.getName();
                 ObjectProperties properties = new ObjectProperties(virtualHostName);
-                properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHostName);
+                properties.put(Property.VIRTUALHOST_NAME, virtualHostName);
                 if (createdBy != null)
                 {
-                    properties.put(ObjectProperties.Property.CREATED_BY, createdBy);
+                    properties.put(Property.CREATED_BY, createdBy);
                 }
                 return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
             }
@@ -367,11 +369,10 @@ class LegacyAccessControlAdapter
         {
             if("manage".equals(actionName))
             {
-                ObjectProperties props = ObjectProperties.EMPTY;
+                ObjectProperties props = new ObjectProperties();
                 if (createdBy != null)
                 {
-                    props = new ObjectProperties();
-                    props.put(ObjectProperties.Property.CREATED_BY, createdBy);
+                    props.put(Property.CREATED_BY, createdBy);
                 }
                 return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, props);
             }
@@ -383,10 +384,12 @@ class LegacyAccessControlAdapter
             {
 
                 final ObjectProperties props =
-                        new ObjectProperties(queue.getParent().getName(), "", queue.getName());
+                        new ObjectProperties("");
+                props.put(Property.ROUTING_KEY, queue.getName());
+                props.put(Property.VIRTUALHOST_NAME, queue.getParent().getName());
                 if (createdBy != null)
                 {
-                    props.put(ObjectProperties.Property.CREATED_BY, createdBy);
+                    props.put(Property.CREATED_BY, createdBy);
                 }
 
                 return _accessControl.authorise(PUBLISH, EXCHANGE, props);
@@ -416,7 +419,7 @@ class LegacyAccessControlAdapter
         final ObjectProperties properties = new ObjectProperties();
         if (createdBy != null)
         {
-            properties.put(ObjectProperties.Property.CREATED_BY, createdBy);
+            properties.put(Property.CREATED_BY, createdBy);
         }
 
         // Otherwise fallback to the older rule-style
@@ -433,8 +436,8 @@ class LegacyAccessControlAdapter
                 VirtualHost virtualHost = queue.getVirtualHost();
                 final String virtualHostName = virtualHost.getName();
                 properties.setName(methodName);
-                properties.put(ObjectProperties.Property.COMPONENT, buildHierarchicalCategoryName(queue, virtualHost));
-                properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHostName);
+                properties.put(Property.COMPONENT, buildHierarchicalCategoryName(queue, virtualHost));
+                properties.put(Property.VIRTUALHOST_NAME, virtualHostName);
                 return _accessControl.authorise(LegacyOperation.UPDATE, METHOD, properties);
             }
         }
@@ -457,7 +460,7 @@ class LegacyAccessControlAdapter
             final ObjectProperties props = createObjectPropertiesForExchangeBind(arguments, configuredObject);
             if (createdBy != null)
             {
-                props.put(ObjectProperties.Property.CREATED_BY, createdBy);
+                props.put(Property.CREATED_BY, createdBy);
             }
             if ("bind".equals(methodName))
             {
@@ -476,7 +479,7 @@ class LegacyAccessControlAdapter
                                                              final String methodName)
     {
         ObjectProperties properties = new ObjectProperties(permissionedObject.getName());
-        properties.put(ObjectProperties.Property.METHOD_NAME, methodName);
+        properties.put(Property.METHOD_NAME, methodName);
 
         if (permissionedObject instanceof ConfiguredObject<?>)
         {
@@ -487,18 +490,18 @@ class LegacyAccessControlAdapter
             final String componentName;
             if (virtualHost != null)
             {
-                properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHost.getName());
+                properties.put(Property.VIRTUALHOST_NAME, virtualHost.getName());
                 componentName = buildHierarchicalCategoryName(configuredObject, virtualHost);
             }
             else
             {
                 componentName = buildHierarchicalCategoryName(configuredObject, model.getAncestor(Broker.class, configuredObject));
             }
-            properties.put(ObjectProperties.Property.COMPONENT, componentName);
+            properties.put(Property.COMPONENT, componentName);
             final String createdBy = (String) configuredObject.getAttribute(ConfiguredObject.CREATED_BY);
             if (createdBy != null)
             {
-                properties.put(ObjectProperties.Property.CREATED_BY, createdBy);
+                properties.put(Property.CREATED_BY, createdBy);
             }
 
         }
@@ -531,9 +534,9 @@ class LegacyAccessControlAdapter
 
         properties.setName(exchange.getName());
         final String destination = (String) arguments.get("destination");
-        properties.put(ObjectProperties.Property.QUEUE_NAME, destination);
-        properties.put(ObjectProperties.Property.ROUTING_KEY, (String)arguments.get("bindingKey"));
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualhost.getName());
+        properties.put(Property.QUEUE_NAME, destination);
+        properties.put(Property.ROUTING_KEY, (String)arguments.get("bindingKey"));
+        properties.put(Property.VIRTUALHOST_NAME, virtualhost.getName());
 
         MessageDestination dest = virtualhost.getAttainedMessageDestination(destination, false);
         if (dest != null)
@@ -543,9 +546,9 @@ class LegacyAccessControlAdapter
             if (dest instanceof ConfiguredObject)
             {
                 ConfiguredObject queue = (ConfiguredObject) dest;
-                properties.put(ObjectProperties.Property.TEMPORARY, queue.getLifetimePolicy() != LifetimePolicy.PERMANENT);
+                properties.put(Property.TEMPORARY, queue.getLifetimePolicy() != LifetimePolicy.PERMANENT);
             }
-            properties.put(ObjectProperties.Property.DURABLE, dest.isDurable());
+            properties.put(Property.DURABLE, dest.isDurable());
 
         }
         return properties;
