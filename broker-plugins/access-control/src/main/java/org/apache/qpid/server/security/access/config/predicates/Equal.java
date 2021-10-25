@@ -34,7 +34,7 @@ final class Equal extends AbstractPredicate
 
     static RulePredicate newInstance(Property property, Object value)
     {
-        return value == null ? RulePredicate.alwaysMatch() : new Equal(property, value);
+        return value == null ? RulePredicate.any() : new Equal(property, value);
     }
 
     private Equal(Property property, Object value)
@@ -57,10 +57,10 @@ final class Equal extends AbstractPredicate
     }
 
     @Override
-    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
         return _value.equals(objectProperties.get(_property)) &&
-                _subPredicate.matches(operation, objectProperties, subject);
+                _previousPredicate.test(operation, objectProperties, subject);
     }
 
     @Override

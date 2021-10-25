@@ -104,7 +104,7 @@ public class Rule
 
     private boolean propertiesAttributesMatch(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        return _rulePredicate.matches(operation, objectProperties, subject);
+        return _rulePredicate.test(operation, objectProperties, subject);
     }
 
     private boolean operationsMatch(LegacyOperation actionOperation)

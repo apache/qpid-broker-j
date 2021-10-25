@@ -22,27 +22,27 @@ import java.util.Objects;
 
 abstract class AbstractPredicate implements RulePredicate
 {
-    final RulePredicate _subPredicate;
+    final RulePredicate _previousPredicate;
 
     abstract RulePredicate copy(RulePredicate subPredicate);
 
-    AbstractPredicate(RulePredicate subPredicate)
+    AbstractPredicate(RulePredicate previousPredicate)
     {
-        _subPredicate = Objects.requireNonNull(subPredicate);
+        _previousPredicate = Objects.requireNonNull(previousPredicate);
     }
 
     AbstractPredicate()
     {
-        this(RulePredicate.alwaysMatch());
+        this(RulePredicate.any());
     }
 
     @Override
     public RulePredicate and(RulePredicate other)
     {
-        if (other instanceof AlwaysMatch)
+        if (other instanceof Any)
         {
             return this;
         }
-        return copy(_subPredicate.and(other));
+        return copy(_previousPredicate.and(other));
     }
 }

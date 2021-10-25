@@ -34,7 +34,7 @@ final class WildCard extends AbstractPredicate
 
     static RulePredicate newInstance(Property property, String prefix)
     {
-        return prefix == null ? RulePredicate.alwaysMatch() : new WildCard(property, prefix);
+        return prefix == null ? RulePredicate.any() : new WildCard(property, prefix);
     }
 
     private WildCard(Property property, String prefix)
@@ -57,12 +57,12 @@ final class WildCard extends AbstractPredicate
     }
 
     @Override
-    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
         final Object value = objectProperties.get(_property);
         return (value instanceof String) &&
                 ((String) value).startsWith(_prefix) &&
-                _subPredicate.matches(operation, objectProperties, subject);
+                _previousPredicate.test(operation, objectProperties, subject);
     }
 
     @Override

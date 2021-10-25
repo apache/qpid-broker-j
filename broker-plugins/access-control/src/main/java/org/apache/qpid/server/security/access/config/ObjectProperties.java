@@ -82,11 +82,6 @@ public final class ObjectProperties
         return new EnumMap<>(_properties);
     }
 
-    public Object getName()
-    {
-        return _properties.get(Property.NAME);
-    }
-
     public void setName(String name)
     {
         _properties.put(Property.NAME, name == null ? EMPTY_STRING : name);

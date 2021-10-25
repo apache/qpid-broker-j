@@ -33,35 +33,35 @@ import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 @FunctionalInterface
 public interface RulePredicate
 {
-    boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject);
+    boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject);
 
     default RulePredicate and(RulePredicate other)
     {
-        if (Objects.requireNonNull(other) instanceof AlwaysMatch)
+        if (Objects.requireNonNull(other) instanceof Any)
         {
             return this;
         }
         return (operation, objectProperties, subject) ->
-                RulePredicate.this.matches(operation, objectProperties, subject)
-                        && other.matches(operation, objectProperties, subject);
+                RulePredicate.this.test(operation, objectProperties, subject)
+                        && other.test(operation, objectProperties, subject);
     }
 
-    static RulePredicate alwaysMatch()
+    static RulePredicate any()
     {
-        return AlwaysMatch.INSTANCE;
+        return Any.INSTANCE;
     }
 
-    final class AlwaysMatch implements RulePredicate
+    final class Any implements RulePredicate
     {
-        public static final RulePredicate INSTANCE = new AlwaysMatch();
+        public static final RulePredicate INSTANCE = new Any();
 
-        private AlwaysMatch()
+        private Any()
         {
             super();
         }
 
         @Override
-        public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+        public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
         {
             return true;
         }
@@ -80,7 +80,7 @@ public interface RulePredicate
 
     static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Map<Property, Set<?>> properties)
     {
-        RulePredicate predicate = RulePredicate.alwaysMatch();
+        RulePredicate predicate = RulePredicate.any();
         for (final Map.Entry<Property, Set<?>> entry : properties.entrySet())
         {
             predicate = predicate.and(build(firewallRuleFactory, entry.getKey(), entry.getValue()));
@@ -90,7 +90,7 @@ public interface RulePredicate
 
     static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Property property, Set<?> values)
     {
-        RulePredicate predicate = RulePredicate.alwaysMatch();
+        RulePredicate predicate = RulePredicate.any();
         switch (property)
         {
             case FROM_HOSTNAME:

@@ -32,23 +32,23 @@ import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
 
 abstract class AbstractFirewallRuleImpl implements FirewallRule
 {
-    private final RulePredicate _subPredicate;
+    private final RulePredicate _previousPredicate;
 
     AbstractFirewallRuleImpl()
     {
         super();
-        _subPredicate = RulePredicate.alwaysMatch();
+        _previousPredicate = RulePredicate.any();
     }
 
-    AbstractFirewallRuleImpl(RulePredicate subPredicate)
+    AbstractFirewallRuleImpl(RulePredicate previousPredicate)
     {
-        _subPredicate = Objects.requireNonNull(subPredicate);
+        _previousPredicate = Objects.requireNonNull(previousPredicate);
     }
 
     @Override
-    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        return matches(subject) && _subPredicate.matches(operation, objectProperties, subject);
+        return matches(subject) && _previousPredicate.test(operation, objectProperties, subject);
     }
 
     @Override
@@ -68,7 +68,7 @@ abstract class AbstractFirewallRuleImpl implements FirewallRule
     @Override
     public RulePredicate and(RulePredicate other)
     {
-        return other instanceof AlwaysMatch ? this : copy(_subPredicate.and(other));
+        return other instanceof Any ? this : copy(_previousPredicate.and(other));
     }
 
     abstract boolean matches(InetAddress addressOfClient);

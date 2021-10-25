@@ -50,7 +50,7 @@ public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
     {
         super();
         _properties = Collections.emptyMap();
-        _rulePredicate = RulePredicate.alwaysMatch();
+        _rulePredicate = RulePredicate.any();
     }
 
     AclRulePredicates(AclRulePredicatesBuilder builder)
@@ -104,9 +104,9 @@ public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
     }
 
     @Override
-    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        return _rulePredicate.matches(operation, objectProperties, subject);
+        return _rulePredicate.test(operation, objectProperties, subject);
     }
 
     @Override

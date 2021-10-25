@@ -32,7 +32,7 @@ final class AttributeNames extends AbstractPredicate
 
     static RulePredicate newInstance(Set<String> attributeNames)
     {
-        return attributeNames.isEmpty() ? RulePredicate.alwaysMatch() : new AttributeNames(attributeNames);
+        return attributeNames.isEmpty() ? RulePredicate.any() : new AttributeNames(attributeNames);
     }
 
     private AttributeNames(Set<String> attributeNames)
@@ -48,11 +48,11 @@ final class AttributeNames extends AbstractPredicate
     }
 
     @Override
-    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
         return (operation != LegacyOperation.UPDATE ||
                 _attributeNames.containsAll(objectProperties.getAttributeNames())) &&
-                _subPredicate.matches(operation, objectProperties, subject);
+                _previousPredicate.test(operation, objectProperties, subject);
     }
 
     @Override

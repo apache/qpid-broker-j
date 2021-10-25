@@ -31,7 +31,7 @@ public interface FirewallRule extends RulePredicate
     boolean matches(Subject subject);
 
     @Override
-    default boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    default boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
         return matches(subject);
     }

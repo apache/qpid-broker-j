@@ -53,9 +53,9 @@ final class Some extends AbstractPredicate
     }
 
     @Override
-    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        return objectProperties.get(_property) != null && _subPredicate.matches(operation, objectProperties, subject);
+        return objectProperties.get(_property) != null && _previousPredicate.test(operation, objectProperties, subject);
     }
 
     @Override

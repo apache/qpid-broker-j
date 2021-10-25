@@ -37,22 +37,22 @@ public class ObjectPropertiesTest extends UnitTestBase
     public void testName()
     {
         ObjectProperties properties = new ObjectProperties("name");
-        assertEquals("name", properties.getName());
+        assertEquals("name", properties.get(Property.NAME));
 
         properties = new ObjectProperties();
         properties.setName("name");
-        assertEquals("name", properties.getName());
+        assertEquals("name", properties.get(Property.NAME));
     }
 
     @Test
     public void testName_NullInput()
     {
         ObjectProperties properties = new ObjectProperties((String) null);
-        assertEquals("", properties.getName());
+        assertEquals("", properties.get(Property.NAME));
 
         properties = new ObjectProperties();
         properties.setName(null);
-        assertEquals("", properties.getName());
+        assertEquals("", properties.get(Property.NAME));
     }
 
     @Test
