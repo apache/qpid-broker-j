@@ -68,7 +68,11 @@ abstract class AbstractFirewallRuleImpl implements FirewallRule
     @Override
     public RulePredicate and(RulePredicate other)
     {
-        return other instanceof Any ? this : copy(_previousPredicate.and(other));
+        if (other instanceof Any)
+        {
+            return this;
+        }
+        return copy(_previousPredicate.and(other));
     }
 
     abstract boolean matches(InetAddress addressOfClient);
