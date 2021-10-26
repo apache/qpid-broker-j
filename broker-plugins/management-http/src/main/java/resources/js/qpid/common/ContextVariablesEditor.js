@@ -159,7 +159,6 @@ define(["qpid/common/util",
                 {
                     that._onEdit(inRowIndex);
                 });
-                grid.startup();
                 this._filterBox = registry.byNode(query(".filter", this.domNode)[0]);
                 this._filterBox.on("change", function (value)
                 {
@@ -169,9 +168,26 @@ define(["qpid/common/util",
                     }
                 });
             },
+            startup: function()
+            {
+                this.inherited(arguments);
+                this._grid.startup();
+                this._filter(this._filterBox.value);
+            },
             resize: function ()
             {
-                this._grid.render();
+                if (this._onResizeHandle)
+                {
+                    this._onResizeHandle.remove();
+                }
+                const that = this;
+                this._onResizeHandle = this.defer(function ()
+                {
+                    that._onResizeHandle = null;
+                    that._grid.setQuery({"inherited": that._filterBox.value});
+                    that._grid.sort();
+                    that._grid.update();
+                });
             },
             setData: function (actualValues, allEffectiveValues, inheritedActualValues)
             {
@@ -215,8 +231,9 @@ define(["qpid/common/util",
                         grid.store.newItem(storeItem);
                     }
                     grid.store.save();
+                    grid.sort();
+                    grid.render();
                 }
-                this._filter(this._filterBox.value);
                 this._handleOnChange(actualValues);
             },
             addInheritedContext: function (object)
@@ -257,7 +274,8 @@ define(["qpid/common/util",
                         }
                     }
                     grid.store.save();
-                    this._filter(this._filterBox.value);
+                    grid.sort();
+                    grid.render();
                 }
             },
             removeDynamicallyAddedInheritedContext: function ()
@@ -327,6 +345,7 @@ define(["qpid/common/util",
             },
             onChange: function (newValue)
             {
+                this.inherited(arguments);
             },
             _newItem: function ()
             {
@@ -434,7 +453,7 @@ define(["qpid/common/util",
             },
             _filter: function (value)
             {
-                this._grid.filter({"inherited": value});
+                this._grid.filter({"inherited": value}, true);
             },
             _nextId: function ()
             {
