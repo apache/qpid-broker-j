@@ -34,6 +34,8 @@ abstract class AbstractFirewallRuleImpl implements FirewallRule
         super();
     }
 
+    abstract boolean matches(InetAddress addressOfClient);
+
     @Override
     public boolean matches(final Subject subject)
     {
@@ -47,7 +49,4 @@ abstract class AbstractFirewallRuleImpl implements FirewallRule
         }
         return true;
     }
-
-    abstract boolean matches(InetAddress addressOfClient);
-
 }

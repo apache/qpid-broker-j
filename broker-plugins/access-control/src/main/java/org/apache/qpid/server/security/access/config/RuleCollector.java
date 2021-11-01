@@ -55,6 +55,19 @@ final class RuleCollector
 
     public void addRule(Integer position, Rule rule)
     {
+        // set rule number if needed
+        if (position == null)
+        {
+            if (_rules.isEmpty())
+            {
+                position = 0;
+            }
+            else
+            {
+                position = _rules.lastKey() + INCREMENT;
+            }
+        }
+
         final RuleKey key = new RuleKey(rule);
         if (_ruleSet.containsKey(key))
         {
@@ -71,22 +84,9 @@ final class RuleCollector
             }
         }
 
-        // set rule number if needed
-        if (position == null)
-        {
-            if (_rules.isEmpty())
-            {
-                position = 0;
-            }
-            else
-            {
-                position = _rules.lastKey() + INCREMENT;
-            }
-        }
-
         // save rule
         _rules.put(position, rule);
-        _ruleSet.put(new RuleKey(rule), position);
+        _ruleSet.put(key, position);
     }
 
     void setDefaultResult(final Result defaultResult)

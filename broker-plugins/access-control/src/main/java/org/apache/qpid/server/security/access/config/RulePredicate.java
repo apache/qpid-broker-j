@@ -29,13 +29,30 @@ public interface RulePredicate
 
     default RulePredicate and(RulePredicate other)
     {
+        if (other instanceof Any)
+        {
+            return this;
+        }
+        if (other instanceof None)
+        {
+            return other;
+        }
         Objects.requireNonNull(other);
         return (operation, objectProperties, subject) ->
                 RulePredicate.this.matches(operation, objectProperties, subject)
                 && other.matches(operation, objectProperties, subject);
     }
 
-    default RulePredicate or(RulePredicate other) {
+    default RulePredicate or(RulePredicate other)
+    {
+        if (other instanceof Any)
+        {
+            return other;
+        }
+        if (other instanceof None)
+        {
+            return this;
+        }
         Objects.requireNonNull(other);
         return (operation, objectProperties, subject) ->
                 RulePredicate.this.matches(operation, objectProperties, subject)
@@ -47,9 +64,14 @@ public interface RulePredicate
         return Any.INSTANCE;
     }
 
+    static RulePredicate none()
+    {
+        return None.INSTANCE;
+    }
+
     final class Any implements RulePredicate
     {
-        public static final RulePredicate INSTANCE = new Any();
+        static final RulePredicate INSTANCE = new Any();
 
         private Any()
         {
@@ -62,5 +84,44 @@ public interface RulePredicate
             return true;
         }
 
+        @Override
+        public RulePredicate and(RulePredicate other)
+        {
+            return other;
+        }
+
+        @Override
+        public RulePredicate or(RulePredicate other)
+        {
+            return this;
+        }
+    }
+
+    final class None implements RulePredicate
+    {
+        static final RulePredicate INSTANCE = new None();
+
+        private None()
+        {
+            super();
+        }
+
+        @Override
+        public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+        {
+            return false;
+        }
+
+        @Override
+        public RulePredicate and(RulePredicate other)
+        {
+            return this;
+        }
+
+        @Override
+        public RulePredicate or(RulePredicate other)
+        {
+            return other;
+        }
     }
 }

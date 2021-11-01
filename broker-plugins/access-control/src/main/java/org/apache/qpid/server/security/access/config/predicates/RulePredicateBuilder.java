@@ -18,86 +18,95 @@
  */
 package org.apache.qpid.server.security.access.config.predicates;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.qpid.server.security.access.config.AclRulePredicatesBuilder;
-import org.apache.qpid.server.security.access.config.RulePredicate;
 import org.apache.qpid.server.security.access.config.Property;
+import org.apache.qpid.server.security.access.config.RulePredicate;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 
 public final class RulePredicateBuilder
 {
-    private RulePredicateBuilder()
+    private final FirewallRuleFactory _factory;
+
+    public RulePredicateBuilder(FirewallRuleFactory factory)
     {
         super();
+        _factory = Objects.requireNonNull(factory);
     }
 
-    public static RulePredicate build(Map<Property, Set<?>> properties)
+    public RulePredicateBuilder()
     {
-        return build(new FirewallRuleFactory(), properties);
+        super();
+        _factory = new FirewallRuleFactory();
     }
 
-    public static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Map<Property, Set<?>> properties)
+    public RulePredicate build(Map<Property, ? extends Collection<?>> properties)
     {
         RulePredicate predicate = RulePredicate.any();
-        for (final Map.Entry<Property, Set<?>> entry : properties.entrySet())
+        for (final Map.Entry<Property, ? extends Collection<?>> entry : properties.entrySet())
         {
-            predicate = predicate.and(build(firewallRuleFactory, entry.getKey(), entry.getValue()));
+            predicate = predicate.and(buildPredicate(entry.getKey(), entry.getValue()));
         }
         return predicate;
     }
 
-    public static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Property property, Set<?> values)
+    private RulePredicate buildPredicate(Property property, Collection<?> values)
     {
-        RulePredicate predicate = RulePredicate.any();
+        if (values == null || values.isEmpty())
+        {
+            return RulePredicate.any();
+        }
         switch (property)
         {
             case FROM_HOSTNAME:
-                if (!values.isEmpty())
-                {
-                    predicate = firewallRuleFactory.createForHostname(
-                            values.stream().map(Object::toString).collect(Collectors.toSet()));
-                }
-                break;
+                return _factory.createForHostname(toSet(values));
             case FROM_NETWORK:
-                if (!values.isEmpty())
-                {
-                    predicate = firewallRuleFactory.createForNetwork(
-                            values.stream().map(Object::toString).collect(Collectors.toSet()));
-                }
-                break;
+                return _factory.createForNetwork(toSet(values));
             case ATTRIBUTES:
-                predicate = AttributeNames.newInstance(
-                        values.stream().map(Object::toString).collect(Collectors.toSet()));
-                break;
+                return AttributeNames.newInstance(toSet(values));
             default:
-                for (final Object value : values)
-                {
-                    if (value instanceof String)
-                    {
-                        final String str = (String) value;
-                        if (AclRulePredicatesBuilder.WILD_CARD.equals(str))
-                        {
-                            predicate = predicate.and(AnyValue.newInstance(property));
-                        }
-                        else if (str.endsWith(AclRulePredicatesBuilder.WILD_CARD))
-                        {
-                            predicate = predicate.and(WildCard.newInstance(property,
-                                    str.substring(0, str.length() - AclRulePredicatesBuilder.WILD_CARD_LENGTH)));
-                        }
-                        else
-                        {
-                            predicate = predicate.and(Equal.newInstance(property, str));
-                        }
-                    }
-                    else
-                    {
-                        predicate = predicate.and(Equal.newInstance(property, value));
-                    }
-                }
+                return buildGenericPredicate(property, values);
+        }
+    }
+
+    private Set<String> toSet(Collection<?> hostnames)
+    {
+        return hostnames.stream().map(Object::toString).collect(Collectors.toSet());
+    }
+
+    private RulePredicate buildGenericPredicate(Property property, Collection<?> values)
+    {
+        RulePredicate predicate = RulePredicate.none();
+        for (final Object value : values)
+        {
+            if (value instanceof String)
+            {
+                predicate = predicate.or(string(property, (String) value));
+            }
+            else
+            {
+                predicate = predicate.or(Equal.newInstance(property, value));
+            }
         }
         return predicate;
+    }
+
+    private RulePredicate string(Property property, String value)
+    {
+        if (AclRulePredicatesBuilder.WILD_CARD.equals(value))
+        {
+            return AnyValue.newInstance(property);
+        }
+        if (value.endsWith(AclRulePredicatesBuilder.WILD_CARD))
+        {
+            return WildCard.newInstance(property,
+                    value.substring(0, value.length() - AclRulePredicatesBuilder.WILD_CARD_LENGTH));
+        }
+        return Equal.newInstance(property, value);
     }
 }

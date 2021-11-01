@@ -711,4 +711,14 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals("Rule has unexpected object type", objectType, rule.getObjectType());
         assertEquals("Rule has unexpected predicates", predicates, rule.getPredicates());
     }
+
+    @Test
+    public void testConnectionLimitParsing() throws Exception
+    {
+        validateRule(writeACLConfig("ACL ALLOW all ACCESS VIRTUALHOST connection_limit=10 connection_frequency_limit=12"),
+                Rule.ALL,
+                LegacyOperation.ACCESS,
+                ObjectType.VIRTUALHOST,
+                EMPTY);
+    }
 }

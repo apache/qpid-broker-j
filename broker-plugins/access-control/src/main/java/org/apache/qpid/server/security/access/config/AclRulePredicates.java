@@ -23,16 +23,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.security.access.config.predicates.RulePredicateBuilder;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
@@ -54,29 +53,15 @@ public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
     AclRulePredicates(AclRulePredicatesBuilder builder)
     {
         super();
-        _properties = newProperties(builder);
-        _rulePredicate = RulePredicateBuilder.build(builder.getParsedProperties());
+        _properties = Objects.requireNonNull(builder.newProperties());
+        _rulePredicate = Objects.requireNonNull(builder.newRulePredicate());
     }
 
     AclRulePredicates(FirewallRuleFactory factory, AclRulePredicatesBuilder builder)
     {
         super();
-        _properties = newProperties(builder);
-        _rulePredicate = RulePredicateBuilder.build(factory, builder.getParsedProperties());
-    }
-
-    private Map<Property, Set<Object>> newProperties(AclRulePredicatesBuilder builder)
-    {
-        final Map<Property, Set<Object>> properties = new EnumMap<>(Property.class);
-        for (final Map.Entry<Property, Set<?>> entry : builder.getParsedProperties().entrySet())
-        {
-            final Set<?> values = entry.getValue();
-            if (values != null && !values.isEmpty())
-            {
-                properties.put(entry.getKey(), ImmutableSet.builder().addAll(values).build());
-            }
-        }
-        return properties;
+        _properties = Objects.requireNonNull(builder.newProperties());
+        _rulePredicate = Objects.requireNonNull(builder.newRulePredicate(factory));
     }
 
     public Map<Property, String> getParsedProperties()
