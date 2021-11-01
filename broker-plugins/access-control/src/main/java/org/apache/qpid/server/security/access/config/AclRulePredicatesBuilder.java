@@ -123,6 +123,16 @@ public final class AclRulePredicatesBuilder
         {
             _attributeNames.addAll(splitToSet(value));
         }
+        else if (property == Property.CONNECTION_LIMIT)
+        {
+            LOGGER.warn("The ACL Rule property 'connection_limit' has been deprecated");
+            return false;
+        }
+        else if (property == Property.CONNECTION_FREQUENCY_LIMIT)
+        {
+            LOGGER.warn("The ACL Rule property 'connection_frequency_limit' has been deprecated");
+            return false;
+        }
         else
         {
             _parsedProperties.put(property, Collections.singleton(sanitiseValue(property, value)));

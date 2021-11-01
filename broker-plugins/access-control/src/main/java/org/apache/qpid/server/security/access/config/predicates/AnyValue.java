@@ -47,5 +47,4 @@ final class AnyValue implements RulePredicate
     {
         return objectProperties.get(_property) != null;
     }
-
 }

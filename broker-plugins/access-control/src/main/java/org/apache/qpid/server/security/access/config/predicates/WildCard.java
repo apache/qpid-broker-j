@@ -51,5 +51,4 @@ final class WildCard implements RulePredicate
         final Object value = objectProperties.get(_property);
         return (value instanceof String) && ((String) value).startsWith(_prefix);
     }
-
 }

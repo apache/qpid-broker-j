@@ -29,13 +29,22 @@ public interface RulePredicate
 
     default RulePredicate and(RulePredicate other)
     {
+        if (other instanceof Any)
+        {
+            return this;
+        }
         Objects.requireNonNull(other);
         return (operation, objectProperties, subject) ->
                 RulePredicate.this.matches(operation, objectProperties, subject)
                 && other.matches(operation, objectProperties, subject);
     }
 
-    default RulePredicate or(RulePredicate other) {
+    default RulePredicate or(RulePredicate other)
+    {
+        if (other instanceof Any)
+        {
+            return other;
+        }
         Objects.requireNonNull(other);
         return (operation, objectProperties, subject) ->
                 RulePredicate.this.matches(operation, objectProperties, subject)
@@ -62,5 +71,16 @@ public interface RulePredicate
             return true;
         }
 
+        @Override
+        public RulePredicate and(RulePredicate other)
+        {
+            return Objects.requireNonNull(other);
+        }
+
+        @Override
+        public RulePredicate or(RulePredicate other)
+        {
+            return this;
+        }
     }
 }

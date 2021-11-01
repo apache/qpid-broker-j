@@ -31,7 +31,7 @@ final class AttributeNames implements RulePredicate
 {
     private final Set<String> _attributeNames;
 
-    public static RulePredicate newInstance(Set<String> attributeNames)
+    static RulePredicate newInstance(Set<String> attributeNames)
     {
         return attributeNames.isEmpty() ? RulePredicate.any() : new AttributeNames(attributeNames);
     }
@@ -45,8 +45,7 @@ final class AttributeNames implements RulePredicate
     @Override
     public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        return (operation != LegacyOperation.UPDATE ||
-                _attributeNames.containsAll(objectProperties.getAttributeNames()));
+        return operation != LegacyOperation.UPDATE ||
+                _attributeNames.containsAll(objectProperties.getAttributeNames());
     }
-
 }

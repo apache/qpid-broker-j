@@ -49,7 +49,7 @@ public final class RulePredicateBuilder
         return predicate;
     }
 
-    public static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Property property, Set<?> values)
+    private static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Property property, Set<?> values)
     {
         RulePredicate predicate = RulePredicate.any();
         switch (property)

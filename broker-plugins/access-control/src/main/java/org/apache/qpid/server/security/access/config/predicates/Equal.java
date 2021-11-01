@@ -50,5 +50,4 @@ final class Equal implements RulePredicate
     {
         return _value.equals(objectProperties.get(_property));
     }
-
 }
