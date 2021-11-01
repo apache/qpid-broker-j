@@ -38,8 +38,6 @@ import org.mockito.Mockito;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.config.predicates.AclRulePredicates;
-import org.apache.qpid.server.security.access.config.predicates.AclRulePredicatesBuilder;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AclFileParserTest extends UnitTestBase
@@ -639,16 +637,6 @@ public class AclFileParserTest extends UnitTestBase
 
         validateRule(writeACLConfig("ACL ALLOW user1 ACCESS MANAGEMENT"),
                            "user1", LegacyOperation.ACCESS, ObjectType.MANAGEMENT, EMPTY);
-    }
-
-    @Test
-    public void testDynamicRuleParsing() throws Exception
-    {
-        validateRule(writeACLConfig("ACL ALLOW all ACCESS VIRTUALHOST connection_limit=10 connection_frequency_limit=12"),
-                                    Rule.ALL,
-                                    LegacyOperation.ACCESS,
-                                    ObjectType.VIRTUALHOST,
-                                    EMPTY);
     }
 
     @Test

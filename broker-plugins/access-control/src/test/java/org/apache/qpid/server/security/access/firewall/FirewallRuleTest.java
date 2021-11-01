@@ -23,9 +23,10 @@ import java.util.Collections;
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.security.access.config.FirewallRule;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
-import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
+import org.apache.qpid.server.security.access.config.RulePredicate;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -44,21 +45,21 @@ public class FirewallRuleTest extends UnitTestBase
         final FirewallRule rule1 = s -> s.equals(subject);
         final FirewallRule rule2 = s -> s.equals(subject);
 
-        assertTrue(rule1.and(rule2).test(LegacyOperation.ACCESS, new ObjectProperties(), subject));
-        assertTrue(rule2.and(rule1).test(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertTrue(rule1.and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertTrue(rule2.and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
 
-        assertTrue(rule1.and(RulePredicate.any()).test(LegacyOperation.ACCESS, new ObjectProperties(), subject));
-        assertTrue(RulePredicate.any().and(rule2).test(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertTrue(rule1.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertTrue(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
 
         final Subject anotherSubject = new Subject(false,
                 Collections.singleton(new UsernamePrincipal("name", Mockito.mock(AuthenticationProvider.class))),
                 Collections.emptySet(),
                 Collections.emptySet());
-        assertFalse(rule1.and(rule2).test(LegacyOperation.ACCESS, new ObjectProperties(),anotherSubject));
-        assertFalse(rule2.and(rule1).test(LegacyOperation.ACCESS, new ObjectProperties(),anotherSubject));
+        assertFalse(rule1.and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
+        assertFalse(rule2.and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
 
-        assertFalse(rule1.and(RulePredicate.any()).test(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
-        assertFalse(RulePredicate.any().and(rule1).test(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
+        assertFalse(rule1.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
+        assertFalse(RulePredicate.any().and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
     }
 
     @Test
@@ -68,11 +69,11 @@ public class FirewallRuleTest extends UnitTestBase
         final FirewallRule rule1 = s -> s.equals(subject);
         final FirewallRule rule2 = s -> !s.equals(subject);
 
-        assertFalse(rule1.and(rule2).test(LegacyOperation.ACCESS, new ObjectProperties(), subject));
-        assertFalse(rule2.and(rule1).test(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertFalse(rule1.and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertFalse(rule2.and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
 
-        assertFalse(RulePredicate.any().and(rule2).test(LegacyOperation.ACCESS, new ObjectProperties(), subject));
-        assertFalse(rule2.and(RulePredicate.any()).test(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertFalse(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertFalse(rule2.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
     }
 
 }

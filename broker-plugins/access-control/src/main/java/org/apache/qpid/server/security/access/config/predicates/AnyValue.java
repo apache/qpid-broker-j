@@ -16,23 +16,36 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.qpid.server.security.access.config.predicates;
 
-package org.apache.qpid.server.security.access.firewall;
+import java.util.Objects;
 
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
-import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
+import org.apache.qpid.server.security.access.config.Property;
+import org.apache.qpid.server.security.access.config.RulePredicate;
 
-@FunctionalInterface
-public interface FirewallRule extends RulePredicate
+final class AnyValue implements RulePredicate
 {
-    boolean matches(Subject subject);
+    private final Property _property;
+
+    static RulePredicate newInstance(Property property)
+    {
+        return new AnyValue(property);
+    }
+
+    private AnyValue(Property property)
+    {
+        super();
+        _property = Objects.requireNonNull(property);
+    }
 
     @Override
-    default boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        return matches(subject);
+        return objectProperties.get(_property) != null;
     }
+
 }

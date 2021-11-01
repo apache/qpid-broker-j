@@ -24,7 +24,6 @@ import java.util.Map;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.security.access.firewall.FirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;

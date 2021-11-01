@@ -16,15 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.security.access.config.predicates;
+package org.apache.qpid.server.security.access.config;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.qpid.server.security.access.config.AclRulePredicates;
+import org.apache.qpid.server.security.access.config.AclRulePredicatesBuilder;
 import org.apache.qpid.server.security.access.config.Property;
-import org.apache.qpid.server.security.access.firewall.FirewallRule;
+import org.apache.qpid.server.security.access.config.FirewallRule;
+import org.apache.qpid.server.security.access.config.predicates.TestFirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -36,8 +39,6 @@ import org.mockito.internal.util.collections.Sets;
 
 import static org.apache.qpid.server.security.access.config.Property.ATTRIBUTES;
 import static org.apache.qpid.server.security.access.config.Property.CLASS;
-import static org.apache.qpid.server.security.access.config.Property.CONNECTION_FREQUENCY_LIMIT;
-import static org.apache.qpid.server.security.access.config.Property.CONNECTION_LIMIT;
 import static org.apache.qpid.server.security.access.config.Property.DURABLE;
 import static org.apache.qpid.server.security.access.config.Property.FROM_HOSTNAME;
 import static org.apache.qpid.server.security.access.config.Property.FROM_NETWORK;
@@ -101,20 +102,6 @@ public class AclRulePredicatesTest extends UnitTestBase
         final ArgumentCaptor<Collection<String>> captor = ArgumentCaptor.forClass(Collection.class);
         verify(_firewallRuleFactory).createForNetwork(captor.capture());
         assertEquals(Sets.newSet("network1", "network2"), captor.getValue());
-    }
-
-    @Test
-    public void testParseConnectionLimitRule()
-    {
-        final String limit = "20";
-        _builder.parse(CONNECTION_LIMIT.name(), limit).build(_firewallRuleFactory);
-    }
-
-    @Test
-    public void testParseConnectionFrequencyLimitRule()
-    {
-        final String limit = "20";
-        _builder.parse(CONNECTION_FREQUENCY_LIMIT.name(), limit).build(_firewallRuleFactory);
     }
 
     @Test

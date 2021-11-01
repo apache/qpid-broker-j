@@ -25,8 +25,9 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.Property;
+import org.apache.qpid.server.security.access.config.RulePredicate;
 
-final class WildCard extends AbstractPredicate
+final class WildCard implements RulePredicate
 {
     private final String _prefix;
 
@@ -44,30 +45,11 @@ final class WildCard extends AbstractPredicate
         _prefix = Objects.requireNonNull(prefix);
     }
 
-    private WildCard(Property property, String prefix, RulePredicate subPredicate)
-    {
-        super(subPredicate);
-        _property = Objects.requireNonNull(property);
-        _prefix = Objects.requireNonNull(prefix);
-    }
-
-    private WildCard(WildCard predicate, RulePredicate subPredicate)
-    {
-        this(predicate._property, predicate._prefix, subPredicate);
-    }
-
     @Override
-    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
         final Object value = objectProperties.get(_property);
-        return (value instanceof String) &&
-                ((String) value).startsWith(_prefix) &&
-                _previousPredicate.test(operation, objectProperties, subject);
+        return (value instanceof String) && ((String) value).startsWith(_prefix);
     }
 
-    @Override
-    RulePredicate copy(RulePredicate subPredicate)
-    {
-        return new WildCard(this, subPredicate);
-    }
 }

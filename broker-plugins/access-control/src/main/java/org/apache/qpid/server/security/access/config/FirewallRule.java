@@ -16,33 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.security.access.config.predicates;
 
-import java.util.Objects;
+package org.apache.qpid.server.security.access.config;
 
-abstract class AbstractPredicate implements RulePredicate
+import javax.security.auth.Subject;
+
+@FunctionalInterface
+public interface FirewallRule extends RulePredicate
 {
-    final RulePredicate _previousPredicate;
-
-    abstract RulePredicate copy(RulePredicate subPredicate);
-
-    AbstractPredicate(RulePredicate previousPredicate)
-    {
-        _previousPredicate = Objects.requireNonNull(previousPredicate);
-    }
-
-    AbstractPredicate()
-    {
-        this(RulePredicate.any());
-    }
+    boolean matches(Subject subject);
 
     @Override
-    public RulePredicate and(RulePredicate other)
+    default boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        if (other instanceof Any)
-        {
-            return this;
-        }
-        return copy(_previousPredicate.and(other));
+        return matches(subject);
     }
 }

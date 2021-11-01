@@ -20,7 +20,7 @@ package org.apache.qpid.server.security.access.config.predicates;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.security.access.firewall.FirewallRule;
+import org.apache.qpid.server.security.access.config.FirewallRule;
 
 public class TestFirewallRule implements FirewallRule
 {

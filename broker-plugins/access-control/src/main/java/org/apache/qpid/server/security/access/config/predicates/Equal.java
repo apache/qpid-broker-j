@@ -25,14 +25,15 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.Property;
+import org.apache.qpid.server.security.access.config.RulePredicate;
 
-final class Equal extends AbstractPredicate
+final class Equal implements RulePredicate
 {
     private final Object _value;
 
     private final Property _property;
 
-    static RulePredicate newInstance(Property property, Object value)
+    public static RulePredicate newInstance(Property property, Object value)
     {
         return value == null ? RulePredicate.any() : new Equal(property, value);
     }
@@ -44,28 +45,10 @@ final class Equal extends AbstractPredicate
         _value = Objects.requireNonNull(value);
     }
 
-    private Equal(Property property, Object value, RulePredicate subPredicate)
-    {
-        super(subPredicate);
-        _property = Objects.requireNonNull(property);
-        _value = Objects.requireNonNull(value);
-    }
-
-    private Equal(Equal predicate, RulePredicate subPredicate)
-    {
-        this(predicate._property, predicate._value, subPredicate);
-    }
-
     @Override
-    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        return _value.equals(objectProperties.get(_property)) &&
-                _previousPredicate.test(operation, objectProperties, subject);
+        return _value.equals(objectProperties.get(_property));
     }
 
-    @Override
-    RulePredicate copy(RulePredicate subPredicate)
-    {
-        return new Equal(this, subPredicate);
-    }
 }

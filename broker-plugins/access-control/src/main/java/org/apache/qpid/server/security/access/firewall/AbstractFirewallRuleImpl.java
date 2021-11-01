@@ -21,34 +21,17 @@ package org.apache.qpid.server.security.access.firewall;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Objects;
 
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
-import org.apache.qpid.server.security.access.config.LegacyOperation;
-import org.apache.qpid.server.security.access.config.ObjectProperties;
-import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
+import org.apache.qpid.server.security.access.config.FirewallRule;
 
 abstract class AbstractFirewallRuleImpl implements FirewallRule
 {
-    private final RulePredicate _previousPredicate;
-
     AbstractFirewallRuleImpl()
     {
         super();
-        _previousPredicate = RulePredicate.any();
-    }
-
-    AbstractFirewallRuleImpl(RulePredicate previousPredicate)
-    {
-        _previousPredicate = Objects.requireNonNull(previousPredicate);
-    }
-
-    @Override
-    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
-    {
-        return matches(subject) && _previousPredicate.test(operation, objectProperties, subject);
     }
 
     @Override
@@ -65,17 +48,6 @@ abstract class AbstractFirewallRuleImpl implements FirewallRule
         return true;
     }
 
-    @Override
-    public RulePredicate and(RulePredicate other)
-    {
-        if (other instanceof Any)
-        {
-            return this;
-        }
-        return copy(_previousPredicate.and(other));
-    }
-
     abstract boolean matches(InetAddress addressOfClient);
 
-    abstract RulePredicate copy(RulePredicate subPredicate);
 }

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.security.access.config.predicates;
+package org.apache.qpid.server.security.access.config;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.qpid.server.security.access.config.Property;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 
 import org.slf4j.Logger;
@@ -123,16 +122,6 @@ public final class AclRulePredicatesBuilder
         else if (property == Property.ATTRIBUTES)
         {
             _attributeNames.addAll(splitToSet(value));
-        }
-        else if (property == Property.CONNECTION_LIMIT)
-        {
-            LOGGER.warn("The ACL Rule property 'connection_limit' has been deprecated");
-            return false;
-        }
-        else if (property == Property.CONNECTION_FREQUENCY_LIMIT)
-        {
-            LOGGER.warn("The ACL Rule property 'connection_frequency_limit' has been deprecated");
-            return false;
         }
         else
         {

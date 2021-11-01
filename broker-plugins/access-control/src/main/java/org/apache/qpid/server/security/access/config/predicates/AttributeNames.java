@@ -25,12 +25,13 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
+import org.apache.qpid.server.security.access.config.RulePredicate;
 
-final class AttributeNames extends AbstractPredicate
+final class AttributeNames implements RulePredicate
 {
     private final Set<String> _attributeNames;
 
-    static RulePredicate newInstance(Set<String> attributeNames)
+    public static RulePredicate newInstance(Set<String> attributeNames)
     {
         return attributeNames.isEmpty() ? RulePredicate.any() : new AttributeNames(attributeNames);
     }
@@ -41,23 +42,11 @@ final class AttributeNames extends AbstractPredicate
         _attributeNames = new HashSet<>(attributeNames);
     }
 
-    private AttributeNames(AttributeNames predicate, RulePredicate subPredicate)
-    {
-        super(subPredicate);
-        _attributeNames = predicate._attributeNames;
-    }
-
     @Override
-    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
         return (operation != LegacyOperation.UPDATE ||
-                _attributeNames.containsAll(objectProperties.getAttributeNames())) &&
-                _previousPredicate.test(operation, objectProperties, subject);
+                _attributeNames.containsAll(objectProperties.getAttributeNames()));
     }
 
-    @Override
-    RulePredicate copy(RulePredicate subPredicate)
-    {
-        return new AttributeNames(this, subPredicate);
-    }
 }

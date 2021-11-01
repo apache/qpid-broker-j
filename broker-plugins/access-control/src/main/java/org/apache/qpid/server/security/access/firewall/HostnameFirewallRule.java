@@ -36,8 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
-import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
-
 public class HostnameFirewallRule extends AbstractFirewallRuleImpl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HostnameFirewallRule.class);
@@ -67,13 +65,6 @@ public class HostnameFirewallRule extends AbstractFirewallRuleImpl
         LOGGER.debug("Created {}", this);
     }
 
-    private HostnameFirewallRule(HostnameFirewallRule rule, RulePredicate subPredicate)
-    {
-        super(subPredicate);
-        _hostnames = rule._hostnames;
-        _hostnamePatterns = rule._hostnamePatterns;
-    }
-
     @Override
     boolean matches(InetAddress remote)
     {
@@ -92,12 +83,6 @@ public class HostnameFirewallRule extends AbstractFirewallRuleImpl
         }
         LOGGER.debug("Hostname '{}' matches no configured hostname patterns", hostname);
         return false;
-    }
-
-    @Override
-    RulePredicate copy(RulePredicate subPredicate)
-    {
-        return new HostnameFirewallRule(this, subPredicate);
     }
 
     /**

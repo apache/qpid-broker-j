@@ -25,8 +25,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +32,7 @@ public class NetworkFirewallRule extends AbstractFirewallRuleImpl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkFirewallRule.class);
 
-    private Set<InetNetwork> _networks = new HashSet<>();
+    private final Set<InetNetwork> _networks = new HashSet<>();
 
     public NetworkFirewallRule(String... networks)
     {
@@ -58,12 +56,6 @@ public class NetworkFirewallRule extends AbstractFirewallRuleImpl
         LOGGER.debug("Created {}", this);
     }
 
-    private NetworkFirewallRule(NetworkFirewallRule rule, RulePredicate subPredicate)
-    {
-        super(subPredicate);
-        _networks = rule._networks;
-    }
-
     @Override
     boolean matches(InetAddress ip)
     {
@@ -77,12 +69,6 @@ public class NetworkFirewallRule extends AbstractFirewallRuleImpl
         }
         LOGGER.debug("Client address '{}' does not match any configured networks", ip);
         return false;
-    }
-
-    @Override
-    RulePredicate copy(RulePredicate subPredicate)
-    {
-        return new NetworkFirewallRule(this, subPredicate);
     }
 
     @Override

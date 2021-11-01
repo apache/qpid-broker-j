@@ -35,7 +35,6 @@ import org.junit.Test;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.config.Rule.Builder;
-import org.apache.qpid.server.security.access.config.predicates.AclRulePredicatesBuilder;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.test.utils.UnitTestBase;

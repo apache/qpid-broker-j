@@ -19,66 +19,27 @@
 package org.apache.qpid.server.security.access.config.predicates;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.security.auth.Subject;
-
-import org.apache.qpid.server.security.access.config.LegacyOperation;
-import org.apache.qpid.server.security.access.config.ObjectProperties;
+import org.apache.qpid.server.security.access.config.AclRulePredicatesBuilder;
+import org.apache.qpid.server.security.access.config.RulePredicate;
 import org.apache.qpid.server.security.access.config.Property;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 
-@FunctionalInterface
-public interface RulePredicate
+public final class RulePredicateBuilder
 {
-    boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject);
-
-    default RulePredicate and(RulePredicate other)
+    private RulePredicateBuilder()
     {
-        if (Objects.requireNonNull(other) instanceof Any)
-        {
-            return this;
-        }
-        return (operation, objectProperties, subject) ->
-                RulePredicate.this.test(operation, objectProperties, subject)
-                        && other.test(operation, objectProperties, subject);
+        super();
     }
 
-    static RulePredicate any()
-    {
-        return Any.INSTANCE;
-    }
-
-    final class Any implements RulePredicate
-    {
-        public static final RulePredicate INSTANCE = new Any();
-
-        private Any()
-        {
-            super();
-        }
-
-        @Override
-        public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
-        {
-            return true;
-        }
-
-        @Override
-        public RulePredicate and(RulePredicate other)
-        {
-            return Objects.requireNonNull(other);
-        }
-    }
-
-    static RulePredicate build(Map<Property, Set<?>> properties)
+    public static RulePredicate build(Map<Property, Set<?>> properties)
     {
         return build(new FirewallRuleFactory(), properties);
     }
 
-    static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Map<Property, Set<?>> properties)
+    public static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Map<Property, Set<?>> properties)
     {
         RulePredicate predicate = RulePredicate.any();
         for (final Map.Entry<Property, Set<?>> entry : properties.entrySet())
@@ -88,7 +49,7 @@ public interface RulePredicate
         return predicate;
     }
 
-    static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Property property, Set<?> values)
+    public static RulePredicate build(FirewallRuleFactory firewallRuleFactory, Property property, Set<?> values)
     {
         RulePredicate predicate = RulePredicate.any();
         switch (property)
@@ -111,9 +72,6 @@ public interface RulePredicate
                 predicate = AttributeNames.newInstance(
                         values.stream().map(Object::toString).collect(Collectors.toSet()));
                 break;
-            case CONNECTION_LIMIT:
-            case CONNECTION_FREQUENCY_LIMIT:
-                break;
             default:
                 for (final Object value : values)
                 {
@@ -122,7 +80,7 @@ public interface RulePredicate
                         final String str = (String) value;
                         if (AclRulePredicatesBuilder.WILD_CARD.equals(str))
                         {
-                            predicate = predicate.and(Some.newInstance(property));
+                            predicate = predicate.and(AnyValue.newInstance(property));
                         }
                         else if (str.endsWith(AclRulePredicatesBuilder.WILD_CARD))
                         {

@@ -25,9 +25,6 @@ import java.util.Objects;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.security.access.config.predicates.AclRulePredicates;
-import org.apache.qpid.server.security.access.config.predicates.AclRulePredicatesBuilder;
-import org.apache.qpid.server.security.access.config.predicates.RulePredicate;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 import org.apache.qpid.server.security.access.plugins.AclRule;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
@@ -104,7 +101,7 @@ public class Rule
 
     private boolean propertiesAttributesMatch(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        return _rulePredicate.test(operation, objectProperties, subject);
+        return _rulePredicate.matches(operation, objectProperties, subject);
     }
 
     private boolean operationsMatch(LegacyOperation actionOperation)
@@ -220,12 +217,12 @@ public class Rule
         private ObjectType _object = ObjectType.ALL;
         private RuleOutcome _outcome = RuleOutcome.DENY_LOG;
 
-        private final AclRulePredicatesBuilder _predicates;
+        private final AclRulePredicatesBuilder _aclRulePredicatesBuilder;
 
         public Builder()
         {
             super();
-            _predicates = new AclRulePredicatesBuilder();
+            _aclRulePredicatesBuilder = new AclRulePredicatesBuilder();
         }
 
         public Builder withIdentity(String identity)
@@ -254,13 +251,13 @@ public class Rule
 
         public Builder withPredicate(String key, String value)
         {
-            _predicates.parse(key, value);
+            _aclRulePredicatesBuilder.parse(key, value);
             return this;
         }
 
         public Builder withPredicate(Property key, String value)
         {
-            _predicates.put(key, value);
+            _aclRulePredicatesBuilder.put(key, value);
             return this;
         }
 
@@ -274,11 +271,11 @@ public class Rule
         {
             for (final Map.Entry<Property, Object> entry : properties.getAll().entrySet())
             {
-                _predicates.put(entry.getKey(), entry.getValue().toString());
+                _aclRulePredicatesBuilder.put(entry.getKey(), entry.getValue().toString());
             }
             for (final String name : properties.getAttributeNames())
             {
-                _predicates.put(Property.ATTRIBUTES, name);
+                _aclRulePredicatesBuilder.put(Property.ATTRIBUTES, name);
             }
             return this;
         }
@@ -286,13 +283,13 @@ public class Rule
         public Rule build()
         {
             validate();
-            return new Rule(_identity, _operation, _object, _predicates.build(), _outcome);
+            return new Rule(_identity, _operation, _object, _aclRulePredicatesBuilder.build(), _outcome);
         }
 
         public Rule build(FirewallRuleFactory firewallRuleFactory)
         {
             validate();
-            return new Rule(_identity, _operation, _object, _predicates.build(firewallRuleFactory), _outcome);
+            return new Rule(_identity, _operation, _object, _aclRulePredicatesBuilder.build(firewallRuleFactory), _outcome);
         }
 
         private void validate()

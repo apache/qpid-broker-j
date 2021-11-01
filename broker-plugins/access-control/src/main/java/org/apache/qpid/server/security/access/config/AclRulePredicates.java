@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.security.access.config.predicates;
+package org.apache.qpid.server.security.access.config;
 
 import java.util.AbstractMap;
 import java.util.Collection;
@@ -28,9 +28,7 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.security.access.config.LegacyOperation;
-import org.apache.qpid.server.security.access.config.ObjectProperties;
-import org.apache.qpid.server.security.access.config.Property;
+import org.apache.qpid.server.security.access.config.predicates.RulePredicateBuilder;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 
 import com.google.common.base.Joiner;
@@ -57,14 +55,14 @@ public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
     {
         super();
         _properties = newProperties(builder);
-        _rulePredicate = RulePredicate.build(builder.getParsedProperties());
+        _rulePredicate = RulePredicateBuilder.build(builder.getParsedProperties());
     }
 
     AclRulePredicates(FirewallRuleFactory factory, AclRulePredicatesBuilder builder)
     {
         super();
         _properties = newProperties(builder);
-        _rulePredicate = RulePredicate.build(factory, builder.getParsedProperties());
+        _rulePredicate = RulePredicateBuilder.build(factory, builder.getParsedProperties());
     }
 
     private Map<Property, Set<Object>> newProperties(AclRulePredicatesBuilder builder)
@@ -104,9 +102,9 @@ public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
     }
 
     @Override
-    public boolean test(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
-        return _rulePredicate.test(operation, objectProperties, subject);
+        return _rulePredicate.matches(operation, objectProperties, subject);
     }
 
     @Override

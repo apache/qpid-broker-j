@@ -28,7 +28,6 @@ import java.util.TreeMap;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.config.predicates.AclRulePredicates;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
