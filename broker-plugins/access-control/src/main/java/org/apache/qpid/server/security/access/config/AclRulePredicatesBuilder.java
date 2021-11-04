@@ -125,12 +125,12 @@ public final class AclRulePredicatesBuilder
         }
         else if (property == Property.CONNECTION_LIMIT)
         {
-            LOGGER.warn("The ACL Rule property 'connection_limit' has been deprecated");
+            LOGGER.warn("The ACL Rule property 'connection_limit' was removed and it is not supported anymore");
             return false;
         }
         else if (property == Property.CONNECTION_FREQUENCY_LIMIT)
         {
-            LOGGER.warn("The ACL Rule property 'connection_frequency_limit' has been deprecated");
+            LOGGER.warn("The ACL Rule property 'connection_frequency_limit' was removed and it is not supported anymore");
             return false;
         }
         else
