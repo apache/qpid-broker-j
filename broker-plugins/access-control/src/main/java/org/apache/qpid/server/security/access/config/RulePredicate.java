@@ -58,7 +58,7 @@ public interface RulePredicate
 
     final class Any implements RulePredicate
     {
-        public static final RulePredicate INSTANCE = new Any();
+        static final RulePredicate INSTANCE = new Any();
 
         private Any()
         {
