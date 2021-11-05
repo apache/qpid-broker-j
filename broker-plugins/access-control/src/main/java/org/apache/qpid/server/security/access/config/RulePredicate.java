@@ -74,7 +74,7 @@ public interface RulePredicate
         @Override
         public RulePredicate and(RulePredicate other)
         {
-            return Objects.requireNonNull(other);
+            return other;
         }
 
         @Override
