@@ -33,6 +33,10 @@ public interface RulePredicate
         {
             return this;
         }
+        if (other instanceof None)
+        {
+            return other;
+        }
         Objects.requireNonNull(other);
         return (operation, objectProperties, subject) ->
                 RulePredicate.this.matches(operation, objectProperties, subject)
@@ -45,6 +49,10 @@ public interface RulePredicate
         {
             return other;
         }
+        if (other instanceof None)
+        {
+            return this;
+        }
         Objects.requireNonNull(other);
         return (operation, objectProperties, subject) ->
                 RulePredicate.this.matches(operation, objectProperties, subject)
@@ -54,6 +62,11 @@ public interface RulePredicate
     static RulePredicate any()
     {
         return Any.INSTANCE;
+    }
+
+    static RulePredicate none()
+    {
+        return None.INSTANCE;
     }
 
     final class Any implements RulePredicate
@@ -81,6 +94,34 @@ public interface RulePredicate
         public RulePredicate or(RulePredicate other)
         {
             return this;
+        }
+    }
+
+    final class None implements RulePredicate
+    {
+        static final RulePredicate INSTANCE = new None();
+
+        private None()
+        {
+            super();
+        }
+
+        @Override
+        public boolean matches(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+        {
+            return false;
+        }
+
+        @Override
+        public RulePredicate and(RulePredicate other)
+        {
+            return this;
+        }
+
+        @Override
+        public RulePredicate or(RulePredicate other)
+        {
+            return other;
         }
     }
 }
