@@ -27,8 +27,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.qpid.server.security.access.config.predicates.RulePredicateBuilder;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 
+import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,8 +204,27 @@ public final class AclRulePredicatesBuilder
         }
     }
 
-    Map<Property, Set<?>> getParsedProperties()
+    Map<Property, Set<Object>> newProperties()
     {
-        return Collections.unmodifiableMap(_parsedProperties);
+        final Map<Property, Set<Object>> properties = new EnumMap<>(Property.class);
+        for (final Map.Entry<Property, Set<?>> entry : _parsedProperties.entrySet())
+        {
+            final Set<?> values = entry.getValue();
+            if (!values.isEmpty())
+            {
+                properties.put(entry.getKey(), ImmutableSet.builder().addAll(values).build());
+            }
+        }
+        return properties;
+    }
+
+    RulePredicate newRulePredicate()
+    {
+        return new RulePredicateBuilder().build(_parsedProperties);
+    }
+
+    RulePredicate newRulePredicate(FirewallRuleFactory factory)
+    {
+        return new RulePredicateBuilder(factory).build(_parsedProperties);
     }
 }

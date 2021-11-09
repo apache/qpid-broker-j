@@ -33,30 +33,19 @@ public final class RulePredicateBuilder
 {
     private final FirewallRuleFactory _factory;
 
-    private RulePredicateBuilder(FirewallRuleFactory factory)
+    public RulePredicateBuilder(FirewallRuleFactory factory)
     {
         super();
         _factory = Objects.requireNonNull(factory);
     }
 
-    private RulePredicateBuilder()
+    public RulePredicateBuilder()
     {
         super();
         _factory = new FirewallRuleFactory();
     }
 
-    public static RulePredicate build(Map<Property, ? extends Collection<?>> properties)
-    {
-        return new RulePredicateBuilder().buildPredicates(properties);
-    }
-
-    public static RulePredicate build(FirewallRuleFactory firewallRuleFactory,
-                                      Map<Property, ? extends Collection<?>> properties)
-    {
-        return new RulePredicateBuilder(firewallRuleFactory).buildPredicates(properties);
-    }
-
-    private RulePredicate buildPredicates(Map<Property, ? extends Collection<?>> properties)
+    public RulePredicate build(Map<Property, ? extends Collection<?>> properties)
     {
         RulePredicate predicate = RulePredicate.any();
         for (final Map.Entry<Property, ? extends Collection<?>> entry : properties.entrySet())

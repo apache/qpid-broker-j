@@ -57,6 +57,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     private final Subject _subject = TestPrincipalUtils.createTestSubject("TEST_USER");
 
     private TestFirewallRule _firewallRule;
+    private RulePredicateBuilder _builder;
 
     @Before
     public void setUp() throws Exception
@@ -64,12 +65,13 @@ public class RulePredicateBuilderTest extends UnitTestBase
         _firewallRule = new TestFirewallRule();
         when(_firewallRuleFactory.createForHostname(any())).thenReturn(_firewallRule);
         when(_firewallRuleFactory.createForNetwork(any())).thenReturn(_firewallRule);
+        _builder = new RulePredicateBuilder(_firewallRuleFactory);
     }
 
     @Test
     public void testMatch_Attributes()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(ATTRIBUTES, Arrays.asList("name", "port", "host", "active")));
 
         final ObjectProperties action = new ObjectProperties();
@@ -82,7 +84,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testMatch_Attributes_empty()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(ATTRIBUTES, Collections.emptySet()));
 
         final ObjectProperties action = new ObjectProperties();
@@ -95,7 +97,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testDoesNotMatch_Attributes()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(ATTRIBUTES, Arrays.asList("name", "port")));
 
         final ObjectProperties action = new ObjectProperties();
@@ -109,8 +111,8 @@ public class RulePredicateBuilderTest extends UnitTestBase
     public void testMatch_Hostname()
     {
         _firewallRule.setSubject(_subject);
-        final RulePredicate predicate = RulePredicateBuilder.build(
-                _firewallRuleFactory, Collections.singletonMap(FROM_HOSTNAME, Collections.singleton("localhost")));
+        final RulePredicate predicate = _builder.build(
+                Collections.singletonMap(FROM_HOSTNAME, Collections.singleton("localhost")));
 
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
@@ -119,8 +121,8 @@ public class RulePredicateBuilderTest extends UnitTestBase
     public void testMatch_Hostname_empty()
     {
         _firewallRule.setSubject(_subject);
-        final RulePredicate predicate = RulePredicateBuilder.build(
-                _firewallRuleFactory, Collections.singletonMap(FROM_HOSTNAME, Collections.emptySet()));
+        final RulePredicate predicate = _builder.build(
+                Collections.singletonMap(FROM_HOSTNAME, Collections.emptySet()));
 
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
@@ -128,8 +130,8 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testDoesNotMatch_Hostname()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
-                _firewallRuleFactory, Collections.singletonMap(FROM_HOSTNAME, Collections.singleton("localhost")));
+        final RulePredicate predicate = _builder.build(
+                Collections.singletonMap(FROM_HOSTNAME, Collections.singleton("localhost")));
 
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
@@ -138,8 +140,8 @@ public class RulePredicateBuilderTest extends UnitTestBase
     public void testMatch_Network()
     {
         _firewallRule.setSubject(_subject);
-        final RulePredicate predicate = RulePredicateBuilder.build(
-                _firewallRuleFactory, Collections.singletonMap(FROM_NETWORK, Collections.singleton("localhost")));
+        final RulePredicate predicate = _builder.build(
+                Collections.singletonMap(FROM_NETWORK, Collections.singleton("localhost")));
 
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
@@ -148,8 +150,8 @@ public class RulePredicateBuilderTest extends UnitTestBase
     public void testMatch_Network_empty()
     {
         _firewallRule.setSubject(_subject);
-        final RulePredicate predicate = RulePredicateBuilder.build(
-                _firewallRuleFactory, Collections.singletonMap(FROM_NETWORK, Collections.emptySet()));
+        final RulePredicate predicate = _builder.build(
+                Collections.singletonMap(FROM_NETWORK, Collections.emptySet()));
 
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
@@ -157,8 +159,8 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testDoesNotMatch_Network()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
-                _firewallRuleFactory, Collections.singletonMap(FROM_NETWORK, Collections.singleton("localhost")));
+        final RulePredicate predicate = _builder.build(
+                Collections.singletonMap(FROM_NETWORK, Collections.singleton("localhost")));
 
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
@@ -166,7 +168,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testMatch_Boolean()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(DURABLE, Collections.singleton(Boolean.TRUE)));
         final ObjectProperties op = new ObjectProperties();
         op.put(DURABLE, true);
@@ -176,7 +178,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testDoesNotMatch_Boolean()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(DURABLE, Collections.singleton(Boolean.TRUE)));
         final ObjectProperties op = new ObjectProperties();
         op.put(DURABLE, false);
@@ -186,7 +188,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testMatch_String()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(NAME, Arrays.asList("Exchange.public.*", "Exchange.private.A")));
 
         ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.A");
@@ -199,7 +201,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testDoesNotMatch_String()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(NAME, Arrays.asList("Exchange.public.*", "Exchange.private.A")));
 
         final ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.B");
@@ -209,7 +211,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testMatch_AnyString()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(NAME, Arrays.asList("*", "Exchange.private.ABC")));
 
         final ObjectProperties op = new ObjectProperties(NAME, "ABC");
@@ -219,7 +221,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testDoesNotMatch_AnyString()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(NAME, Arrays.asList("*", "Exchange.private.ABC")));
 
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
@@ -228,7 +230,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testMatch_Mixing()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(DURABLE, Arrays.asList(Boolean.TRUE, "Yes")));
 
         ObjectProperties op = new ObjectProperties();
@@ -243,7 +245,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     @Test
     public void testDoesNotMatch_Mixing()
     {
-        final RulePredicate predicate = RulePredicateBuilder.build(
+        final RulePredicate predicate = _builder.build(
                 Collections.singletonMap(DURABLE, Arrays.asList(Boolean.TRUE, "Y*")));
 
         ObjectProperties op = new ObjectProperties();
@@ -264,7 +266,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
         properties.put(COMPONENT, Collections.singletonList("*"));
         properties.put(METHOD_NAME, Collections.emptyList());
         properties.put(ROUTING_KEY, null);
-        final RulePredicate predicate = RulePredicateBuilder.build(properties);
+        final RulePredicate predicate = _builder.build(properties);
 
         final ObjectProperties op = new ObjectProperties();
         op.put(DURABLE, true);
@@ -282,7 +284,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
         properties.put(COMPONENT, Collections.singletonList("*"));
         properties.put(METHOD_NAME, Collections.emptyList());
         properties.put(ROUTING_KEY, null);
-        final RulePredicate predicate = RulePredicateBuilder.build(properties);
+        final RulePredicate predicate = _builder.build(properties);
 
         ObjectProperties op = new ObjectProperties();
         op.put(DURABLE, false);
