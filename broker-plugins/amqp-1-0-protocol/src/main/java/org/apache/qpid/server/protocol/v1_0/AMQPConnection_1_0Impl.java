@@ -48,8 +48,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -92,6 +90,7 @@ import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy;
+import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicyException;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslCode;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
@@ -119,7 +118,6 @@ import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManag
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.session.AMQPSession;
-import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ByteBufferSender;
@@ -926,86 +924,28 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         try
         {
-            final boolean registerSucceeded = addressSpace.registerConnection(this, (existingConnections, newConnection) ->
-            {
-                boolean proceedWithRegistration = true;
-                if (newConnection instanceof AMQPConnection_1_0Impl && !newConnection.isClosing())
-                {
-                    final List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
-                    for (AMQPConnection<?> existingConnection : StreamSupport.stream(existingConnections.spliterator(), false)
-                            .filter(con -> con instanceof AMQPConnection_1_0)
-                            .filter(con -> !con.isClosing())
-                            .filter(con -> con.getRemoteContainerName().equals(newConnection.getRemoteContainerName()))
-                            .collect(Collectors.toList()))
-                    {
-                        SoleConnectionEnforcementPolicy soleConnectionEnforcementPolicy = null;
-                        if (((AMQPConnection_1_0Impl) existingConnection)._soleConnectionEnforcementPolicy
-                                != null)
-                        {
-                            soleConnectionEnforcementPolicy =
-                                    ((AMQPConnection_1_0Impl) existingConnection)._soleConnectionEnforcementPolicy;
-                        }
-                        else if (((AMQPConnection_1_0Impl) newConnection)._soleConnectionEnforcementPolicy != null)
-                        {
-                            soleConnectionEnforcementPolicy =
-                                    ((AMQPConnection_1_0Impl) newConnection)._soleConnectionEnforcementPolicy;
-                        }
-                        if (SoleConnectionEnforcementPolicy.REFUSE_CONNECTION.equals(soleConnectionEnforcementPolicy))
-                        {
-                            _properties.put(Symbol.valueOf("amqp:connection-establishment-failed"), true);
-                            final Error error = new Error(AmqpError.INVALID_FIELD,
-                                    String.format(
-                                            "Connection closed due to sole-connection-enforcement-policy '%s'",
-                                            String.valueOf(soleConnectionEnforcementPolicy)));
-                            error.setInfo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
-                            newConnection.doOnIOThreadAsync(() -> ((AMQPConnection_1_0Impl) newConnection).closeConnection(error));
-                            proceedWithRegistration = false;
-                            break;
-                        }
-                        else if (SoleConnectionEnforcementPolicy.CLOSE_EXISTING.equals(soleConnectionEnforcementPolicy))
-                        {
-                            final Error error = new Error(AmqpError.RESOURCE_LOCKED,
-                                    String.format(
-                                            "Connection closed due to sole-connection-enforcement-policy '%s'",
-                                            String.valueOf(soleConnectionEnforcementPolicy)));
-                            error.setInfo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true));
-                            rescheduleFutures.add(existingConnection.doOnIOThreadAsync(
-                                    () -> ((AMQPConnection_1_0Impl) existingConnection).closeConnection(error)));
-                            proceedWithRegistration = false;
-                        }
-                    }
-                    if (!rescheduleFutures.isEmpty())
-                    {
-                        doAfter(allAsList(rescheduleFutures), () -> newConnection.doOnIOThreadAsync(() -> receiveOpenInternal(addressSpace)));
-                    }
-                }
-                return proceedWithRegistration;
-            });
+            addressSpace.registerConnection(this);
+            setAddressSpace(addressSpace);
 
-            if (registerSucceeded)
+            if (!addressSpace.authoriseCreateConnection(this))
             {
-                setAddressSpace(addressSpace);
-
-                if (!addressSpace.authoriseCreateConnection(this))
+                closeConnection(AmqpError.NOT_ALLOWED, "Connection refused");
+            }
+            else
+            {
+                switch (_connectionState)
                 {
-                    closeConnection(AmqpError.NOT_ALLOWED, "Connection refused");
-                }
-                else
-                {
-                    switch (_connectionState)
-                    {
-                        case AWAIT_OPEN:
-                            sendOpen(_channelMax, _maxFrameSize);
-                            _connectionState = ConnectionState.OPENED;
-                            break;
-                        case CLOSE_SENT:
-                        case CLOSED:
-                            // already sent our close - probably due to an error
-                            break;
-                        default:
-                            throw new ConnectionScopedRuntimeException(String.format(
-                                    "Unexpected state %s during connection open.", _connectionState));
-                    }
+                    case AWAIT_OPEN:
+                        sendOpen(_channelMax, _maxFrameSize);
+                        _connectionState = ConnectionState.OPENED;
+                        break;
+                    case CLOSE_SENT:
+                    case CLOSED:
+                        // already sent our close - probably due to an error
+                        break;
+                    default:
+                        throw new ConnectionScopedRuntimeException(String.format(
+                                "Unexpected state %s during connection open.", _connectionState));
                 }
             }
         }
@@ -1013,10 +953,47 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             closeConnection(AmqpError.NOT_ALLOWED, e.getMessage());
         }
+        catch (SoleConnectionEnforcementPolicyException e)
+        {
+            handleSoleConnectionEnforcement(addressSpace, e);
+        }
         catch (ConnectionLimitException e)
         {
             LOGGER.debug("User connection limit exceeded", e);
             closeConnection(AmqpError.RESOURCE_LIMIT_EXCEEDED, e.getMessage());
+        }
+    }
+
+    private void handleSoleConnectionEnforcement(final NamedAddressSpace addressSpace,
+                                                 final SoleConnectionEnforcementPolicyException e)
+    {
+        if (isClosing())
+        {
+            return;
+        }
+        if (e.getPolicy() == SoleConnectionEnforcementPolicy.REFUSE_CONNECTION)
+        {
+            _properties.put(Symbol.valueOf("amqp:connection-establishment-failed"), true);
+            final Error error = new Error(AmqpError.INVALID_FIELD,
+                    String.format("Connection closed due to sole-connection-enforcement-policy '%s'", e.getPolicy()));
+            error.setInfo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
+            closeConnection(error);
+        }
+        else if (e.getPolicy() == SoleConnectionEnforcementPolicy.CLOSE_EXISTING)
+        {
+            final Error error = new Error(AmqpError.RESOURCE_LOCKED,
+                    String.format("Connection closed due to sole-connection-enforcement-policy '%s'", e.getPolicy()));
+            error.setInfo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true));
+
+            final List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
+            for (final AMQPConnection_1_0<?> connection : e.getExistingConnections())
+            {
+                if (!connection.isClosing())
+                {
+                    rescheduleFutures.add(connection.doOnIOThreadAsync(() -> connection.close(error)));
+                }
+            }
+            doAfter(allAsList(rescheduleFutures), () -> doOnIOThreadAsync(() -> receiveOpenInternal(addressSpace)));
         }
     }
 
@@ -1882,6 +1859,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         Optional.ofNullable(_openTransactions.remove(txnId))
                 .orElseThrow(() -> new UnknownTransactionException(txnId));
+    }
+
+    @Override
+    public SoleConnectionEnforcementPolicy getSoleConnectionEnforcementPolicy()
+    {
+        return _soleConnectionEnforcementPolicy;
     }
 
     @Override

@@ -34,7 +34,6 @@ import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
-import org.apache.qpid.server.virtualhost.ConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.LinkRegistryModel;
 
 public interface NamedAddressSpace extends Named
@@ -46,10 +45,8 @@ public interface NamedAddressSpace extends Named
 
     MessageDestination getAttainedMessageDestination(String name, boolean mayCreate);
 
-    boolean registerConnection(AMQPConnection<?> connection,
-                               final ConnectionEstablishmentPolicy connectionEstablishmentPolicy);
+    void registerConnection(AMQPConnection<?> connection);
     void deregisterConnection(AMQPConnection<?> connection);
-
 
     String getRedirectHost(AmqpPort<?> port);
 

@@ -64,6 +64,7 @@ import org.apache.qpid.server.protocol.v1_0.framing.SASLFrame;
 import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicyException;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.security.SubjectCreator;
@@ -75,7 +76,6 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
-import org.apache.qpid.server.virtualhost.ConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -121,16 +121,15 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         when(_virtualHost.isActive()).thenReturn(true);
 
         final ArgumentCaptor<AMQPConnection> connectionCaptor = ArgumentCaptor.forClass(AMQPConnection.class);
-        final ArgumentCaptor<ConnectionEstablishmentPolicy> establishmentPolicyCaptor = ArgumentCaptor.forClass(ConnectionEstablishmentPolicy.class);
         doAnswer(new Answer()
         {
             @Override
             public Object answer(final InvocationOnMock invocation) throws Throwable
             {
                 _connection = connectionCaptor.getValue();
-                return null;
+                throw new SoleConnectionEnforcementPolicyException(null, Collections.emptySet());
             }
-        }).when(_virtualHost).registerConnection(connectionCaptor.capture(), establishmentPolicyCaptor.capture());
+        }).when(_virtualHost).registerConnection(connectionCaptor.capture());
         when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
         when(_port.getAddressSpace(anyString())).thenReturn(_virtualHost);
         when(_port.getSubjectCreator(anyBoolean(), anyString())).thenReturn(subjectCreator);
@@ -202,7 +201,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         open.setContainerId("testContainerId");
         _frameWriter.send(new TransportFrame((int) (short) 0, open));
 
-        verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
+        verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal,
@@ -224,7 +223,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         open.setContainerId("testContainerId");
         _frameWriter.send(new TransportFrame((int) (short) 0, open));
 
-        verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
+        verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class));
         verify(_networkConnection).close();
     }
 
@@ -244,7 +243,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         open.setContainerId("testContainerId");
         _frameWriter.send(new TransportFrame((int) (short) 0, open));
 
-        verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
+        verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(authPrincipal);
         assertEquals(authPrincipal, new AuthenticatedPrincipal(principal));
@@ -277,7 +276,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         open.setContainerId("testContainerId");
         _frameWriter.send(new TransportFrame((int) (short) 0, open));
 
-        verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
+        verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal,

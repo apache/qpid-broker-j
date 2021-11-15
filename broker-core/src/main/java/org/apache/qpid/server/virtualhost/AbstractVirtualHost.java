@@ -2646,70 +2646,22 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public boolean registerConnection(final AMQPConnection<?> connection,
-                                      final ConnectionEstablishmentPolicy connectionEstablishmentPolicy)
+    public void registerConnection(final AMQPConnection<?> connection)
     {
-        _connectionLimiter.register(connection);
-        return doSync(registerConnectionAsync(connection, connectionEstablishmentPolicy));
-    }
-
-    public ListenableFuture<Boolean> registerConnectionAsync(final AMQPConnection<?> connection,
-                                                          final ConnectionEstablishmentPolicy connectionEstablishmentPolicy)
-    {
-        return doOnConfigThread(new Task<ListenableFuture<Boolean>, RuntimeException>()
+        if (!_acceptsConnections.get())
         {
-            @Override
-            public ListenableFuture<Boolean> execute()
-            {
-                if (_acceptsConnections.get())
-                {
-                    if (connectionEstablishmentPolicy.mayEstablishNewConnection(_connections, connection))
-                    {
-                        _connections.add(connection);
-                        _totalConnectionCount.incrementAndGet();
-
-                        if (_blocked.get())
-                        {
-                            connection.block();
-                        }
-
-                        connection.pushScheduler(_networkConnectionScheduler);
-                        return Futures.immediateFuture(true);
-                    }
-                    else
-                    {
-                        return Futures.immediateFuture(false);
-                    }
-                }
-                else
-                {
-                    final VirtualHostUnavailableException exception =
-                            new VirtualHostUnavailableException(String.format(
-                                    "VirtualHost '%s' not accepting connections",
-                                    getName()));
-                    return Futures.immediateFailedFuture(exception);
-                }
-            }
-
-            @Override
-            public String getObject()
-            {
-                return AbstractVirtualHost.this.toString();
-            }
-
-            @Override
-            public String getAction()
-            {
-                return "register connection";
-            }
-
-            @Override
-            public String getArguments()
-            {
-                return String.valueOf(connection);
-            }
-        });
-
+            throw new VirtualHostUnavailableException(String.format(
+                    "VirtualHost '%s' not accepting connections",
+                    getName()));
+        }
+        _connectionLimiter.register(connection);
+        _connections.add(connection);
+        _totalConnectionCount.incrementAndGet();
+        if (_blocked.get())
+        {
+            connection.block();
+        }
+        connection.pushScheduler(_networkConnectionScheduler);
     }
 
     @Override
@@ -2721,41 +2673,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         finally
         {
-            doSync(deregisterConnectionAsync(connection));
-
+            connection.popScheduler();
+            _connections.remove(connection);
         }
-    }
-
-    public ListenableFuture<Void> deregisterConnectionAsync(final AMQPConnection<?> connection)
-    {
-        return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
-        {
-            @Override
-            public ListenableFuture<Void> execute()
-            {
-                connection.popScheduler();
-                _connections.remove(connection);
-                return Futures.immediateFuture(null);
-            }
-
-            @Override
-            public String getObject()
-            {
-                return AbstractVirtualHost.this.toString();
-            }
-
-            @Override
-            public String getAction()
-            {
-                return "deregister connection";
-            }
-
-            @Override
-            public String getArguments()
-            {
-                return String.valueOf(connection);
-            }
-        });
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)

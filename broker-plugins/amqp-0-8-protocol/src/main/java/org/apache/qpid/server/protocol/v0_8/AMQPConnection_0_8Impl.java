@@ -79,7 +79,6 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
 public class AMQPConnection_0_8Impl
@@ -984,7 +983,7 @@ public class AMQPConnection_0_8Impl
 
         try
         {
-            addressSpace.registerConnection(this, new NoopConnectionEstablishmentPolicy());
+            addressSpace.registerConnection(this);
             setAddressSpace(addressSpace);
 
             if (addressSpace.authoriseCreateConnection(this))

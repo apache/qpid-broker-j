@@ -15,26 +15,26 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-
 package org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn;
+
+import java.util.Objects;
 
 import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class SoleConnectionEnforcementPolicy implements RestrictedType<UnsignedInteger>
+public enum SoleConnectionEnforcementPolicy implements RestrictedType<UnsignedInteger>
 {
-    public static final SoleConnectionEnforcementPolicy
-            REFUSE_CONNECTION = new SoleConnectionEnforcementPolicy(UnsignedInteger.valueOf(0));
-    public static final SoleConnectionEnforcementPolicy
-            CLOSE_EXISTING = new SoleConnectionEnforcementPolicy(UnsignedInteger.valueOf(1));
+    REFUSE_CONNECTION(0, "refuse-connection"),
+    CLOSE_EXISTING(1, "close-existing");
 
     private final UnsignedInteger _val;
+    private final String _description;
 
-    private SoleConnectionEnforcementPolicy(final UnsignedInteger val)
+    SoleConnectionEnforcementPolicy(int val, String description)
     {
-        _val = val;
+        _val = UnsignedInteger.valueOf(val);
+        _description = Objects.requireNonNull(description);
     }
 
     @Override
@@ -45,39 +45,21 @@ public class SoleConnectionEnforcementPolicy implements RestrictedType<UnsignedI
 
     public static SoleConnectionEnforcementPolicy valueOf(Object obj)
     {
-        if (obj instanceof UnsignedInteger)
+        for (final SoleConnectionEnforcementPolicy policy : values())
         {
-            UnsignedInteger val = (UnsignedInteger) obj;
-
-            if (REFUSE_CONNECTION._val.equals(val))
+            if (policy._val.equals(obj))
             {
-                return REFUSE_CONNECTION;
-            }
-
-            if (CLOSE_EXISTING._val.equals(val))
-            {
-                return CLOSE_EXISTING;
+                return policy;
             }
         }
 
-        final String message = String.format("Cannot convert '%s' into 'sole-connection-enforcement-policy'", obj);
-        throw new IllegalArgumentException(message);
+        throw new IllegalArgumentException(
+                String.format("Cannot convert '%s' into 'sole-connection-enforcement-policy'", obj));
     }
 
     @Override
     public String toString()
     {
-
-        if (this == REFUSE_CONNECTION)
-        {
-            return "refuse-connection";
-        }
-
-        if (this == CLOSE_EXISTING)
-        {
-            return "close-existing";
-        }
-
-        return String.valueOf(_val);
+        return _description;
     }
 }

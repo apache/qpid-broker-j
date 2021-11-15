@@ -15,26 +15,27 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-
 package org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn;
+
+import java.util.Locale;
 
 import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class SoleConnectionDetectionPolicy implements RestrictedType<UnsignedInteger>
+public enum SoleConnectionDetectionPolicy implements RestrictedType<UnsignedInteger>
 {
-    public static final SoleConnectionDetectionPolicy
-            STRONG = new SoleConnectionDetectionPolicy(UnsignedInteger.valueOf(0));
-    public static final SoleConnectionDetectionPolicy
-            WEAK = new SoleConnectionDetectionPolicy(UnsignedInteger.valueOf(1));
+    STRONG(0),
+    WEAK(1);
 
     private final UnsignedInteger _val;
 
-    private SoleConnectionDetectionPolicy(final UnsignedInteger val)
+    private final String _description;
+
+    SoleConnectionDetectionPolicy(int val)
     {
-        _val = val;
+        _val = UnsignedInteger.valueOf(val);
+        _description = name().toLowerCase(Locale.ENGLISH);
     }
 
     @Override
@@ -45,39 +46,21 @@ public class SoleConnectionDetectionPolicy implements RestrictedType<UnsignedInt
 
     public static SoleConnectionDetectionPolicy valueOf(Object obj)
     {
-        if (obj instanceof UnsignedInteger)
+        for (final SoleConnectionDetectionPolicy detectionPolicy : values())
         {
-            UnsignedInteger val = (UnsignedInteger) obj;
-
-            if (STRONG._val.equals(val))
+            if (detectionPolicy._val.equals(obj))
             {
-                return STRONG;
-            }
-
-            if (WEAK._val.equals(val))
-            {
-                return WEAK;
+                return detectionPolicy;
             }
         }
 
-        final String message = String.format("Cannot convert '%s' into 'sole-connection-detection-policy'", obj);
-        throw new IllegalArgumentException(message);
+        throw new IllegalArgumentException(
+                String.format("Cannot convert '%s' into 'sole-connection-detection-policy'", obj));
     }
 
     @Override
     public String toString()
     {
-
-        if (this == STRONG)
-        {
-            return "strong";
-        }
-
-        if (this == WEAK)
-        {
-            return "weak";
-        }
-
-        return String.valueOf(_val);
+        return _description;
     }
 }
