@@ -53,6 +53,9 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.ResourceLimitMessages;
 import org.apache.qpid.server.security.limit.ConnectionLimitException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -973,11 +976,14 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
         if (e.getPolicy() == SoleConnectionEnforcementPolicy.REFUSE_CONNECTION)
         {
+            LOGGER.debug("Closing newly open connection: {}", e.getMessage());
             _properties.put(Symbol.valueOf("amqp:connection-establishment-failed"), true);
             final Error error = new Error(AmqpError.INVALID_FIELD,
                     String.format("Connection closed due to sole-connection-enforcement-policy '%s'", e.getPolicy()));
             error.setInfo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
             closeConnection(error);
+            getEventLogger().message(ResourceLimitMessages.REJECTED(
+                    "Opening", "connection", String.format("container '%s'", e.getContainerID()), e.getMessage()));
         }
         else if (e.getPolicy() == SoleConnectionEnforcementPolicy.CLOSE_EXISTING)
         {
@@ -985,12 +991,17 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     String.format("Connection closed due to sole-connection-enforcement-policy '%s'", e.getPolicy()));
             error.setInfo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true));
 
+            final EventLogger logger = getEventLogger();
             final List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
             for (final AMQPConnection_1_0<?> connection : e.getExistingConnections())
             {
                 if (!connection.isClosing())
                 {
+                    LOGGER.debug("Closing existing connection '{}': {}",
+                            connection.getName(), e.getMessage());
                     rescheduleFutures.add(connection.doOnIOThreadAsync(() -> connection.close(error)));
+                    logger.message(ResourceLimitMessages.INFO(
+                            String.format("Closing existing connection '%s'", connection.getName()), e.getMessage()));
                 }
             }
             doAfter(allAsList(rescheduleFutures), () -> doOnIOThreadAsync(() -> receiveOpenInternal(addressSpace)));

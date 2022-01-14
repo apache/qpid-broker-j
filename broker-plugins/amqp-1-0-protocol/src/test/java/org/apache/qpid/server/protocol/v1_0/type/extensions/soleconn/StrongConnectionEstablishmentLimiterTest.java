@@ -104,7 +104,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         catch (SoleConnectionEnforcementPolicyException e)
         {
             assertEquals(
-                    "Single connection is required due to sole-connection-enforcement-policy 'refuse-connection'",
+                    "Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
                     e.getMessage());
 
             assertEquals(2, e.getExistingConnections().size());
@@ -138,7 +138,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         catch (SoleConnectionEnforcementPolicyException e)
         {
             assertEquals(
-                    "Single connection is required due to sole-connection-enforcement-policy 'close-existing'",
+                    "Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
                     e.getMessage());
 
             assertEquals(1, e.getExistingConnections().size());
@@ -216,7 +216,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         catch (SoleConnectionEnforcementPolicyException e)
         {
             assertEquals(
-                    "Single connection is required due to sole-connection-enforcement-policy 'close-existing'",
+                    "Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
                     e.getMessage());
 
             assertEquals(1, e.getExistingConnections().size());
@@ -255,7 +255,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         catch (SoleConnectionEnforcementPolicyException e)
         {
             assertEquals(
-                    "Single connection is required due to sole-connection-enforcement-policy 'refuse-connection'",
+                    "Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
                     e.getMessage());
 
             assertEquals(1, e.getExistingConnections().size());

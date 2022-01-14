@@ -163,7 +163,7 @@ public class StrongConnectionEstablishmentLimiter implements ConnectionLimiterSe
             if (soleConnectionPolicy != null && !_connections.isEmpty())
             {
                 LOGGER.debug("Single connection is required, sole connection policy: {}", soleConnectionPolicy);
-                throw new SoleConnectionEnforcementPolicyException(soleConnectionPolicy, _connections);
+                throw new SoleConnectionEnforcementPolicyException(soleConnectionPolicy, _connections, _containerId);
             }
 
             final ConnectionSlot underlyingSlot = _underlyingLimiter.register(connection);

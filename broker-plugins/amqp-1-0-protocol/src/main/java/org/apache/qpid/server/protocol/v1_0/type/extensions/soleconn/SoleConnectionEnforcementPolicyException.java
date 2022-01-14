@@ -21,6 +21,7 @@ package org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.qpid.server.protocol.v1_0.AMQPConnection_1_0;
@@ -32,12 +33,18 @@ public class SoleConnectionEnforcementPolicyException extends ConnectionLimitExc
 
     private final SoleConnectionEnforcementPolicy _policy;
 
+    private final String _containerID;
+
     public SoleConnectionEnforcementPolicyException(SoleConnectionEnforcementPolicy policy,
-                                                    Collection<? extends AMQPConnection_1_0<?>> connections)
+                                                    Collection<? extends AMQPConnection_1_0<?>> connections,
+                                                    String containerID)
     {
-        super(String.format("Single connection is required due to sole-connection-enforcement-policy '%s'", policy));
-        _policy = policy;
+        super(String.format(
+                "Single connection with container ID '%s' is required due to sole connection enforcement policy '%s'",
+                containerID, policy));
+        _policy = Objects.requireNonNull(policy);
         _existingConnections = new HashSet<>(connections);
+        _containerID = Objects.requireNonNull(containerID);
     }
 
     public SoleConnectionEnforcementPolicy getPolicy()
@@ -48,5 +55,10 @@ public class SoleConnectionEnforcementPolicyException extends ConnectionLimitExc
     public Set<AMQPConnection_1_0<?>> getExistingConnections()
     {
         return Collections.unmodifiableSet(_existingConnections);
+    }
+
+    public String getContainerID()
+    {
+        return _containerID;
     }
 }

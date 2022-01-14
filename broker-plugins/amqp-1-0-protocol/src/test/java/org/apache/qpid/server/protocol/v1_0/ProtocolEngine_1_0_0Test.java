@@ -127,7 +127,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
             public Object answer(final InvocationOnMock invocation) throws Throwable
             {
                 _connection = connectionCaptor.getValue();
-                throw new SoleConnectionEnforcementPolicyException(null, Collections.emptySet());
+                throw new SoleConnectionEnforcementPolicyException(null, Collections.emptySet(), "abc1");
             }
         }).when(_virtualHost).registerConnection(connectionCaptor.capture());
         when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
