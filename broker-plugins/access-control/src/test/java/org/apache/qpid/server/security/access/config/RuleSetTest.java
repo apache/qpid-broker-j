@@ -22,21 +22,31 @@
 package org.apache.qpid.server.security.access.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.ListIterator;
 
 import javax.security.auth.Subject;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.config.Rule.Builder;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 /**
@@ -99,7 +109,7 @@ public class RuleSetTest extends UnitTestBase
                 .withPredicates(properties)
                 .build());
         ruleSet = createRuleSet();
-        assertEquals(1, ruleSet.getRuleCount());
+        assertEquals(1, ruleSet.size());
         assertEquals(Result.ALLOWED, ruleSet.check(subject, operation, objectType, properties));
     }
 
@@ -108,7 +118,7 @@ public class RuleSetTest extends UnitTestBase
     {
         final RuleSet ruleSet = createRuleSet();
         assertNotNull(ruleSet);
-        assertEquals(ruleSet.getRuleCount(), 0);
+        assertEquals(0, ruleSet.size());
         assertEquals(ruleSet.getDefault(),
                             ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
@@ -325,7 +335,7 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testExchangeCreate()
     {
-        ObjectProperties properties = new ObjectProperties(_exchangeName);
+        final ObjectProperties properties = new ObjectProperties(_exchangeName);
         properties.put(Property.TYPE, _exchangeType);
 
         assertDenyGrantAllow(_testSubject, LegacyOperation.CREATE, ObjectType.EXCHANGE, properties);
@@ -367,7 +377,7 @@ public class RuleSetTest extends UnitTestBase
                 .withPredicates(temporary)
                 .build());
         ruleSet = createRuleSet();
-        assertEquals(1, ruleSet.getRuleCount());
+        assertEquals(1, ruleSet.size());
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
 
@@ -409,7 +419,7 @@ public class RuleSetTest extends UnitTestBase
                 .build());
 
         ruleSet = createRuleSet();
-        assertEquals(2, ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
@@ -450,7 +460,7 @@ public class RuleSetTest extends UnitTestBase
                 .build());
 
         ruleSet = createRuleSet();
-        assertEquals(2, ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
@@ -494,7 +504,7 @@ public class RuleSetTest extends UnitTestBase
                 .build());
 
         ruleSet = createRuleSet();
-        assertEquals(2, ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
@@ -533,7 +543,7 @@ public class RuleSetTest extends UnitTestBase
                 .build());
 
         ruleSet = createRuleSet();
-        assertEquals(2, ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
@@ -584,7 +594,7 @@ public class RuleSetTest extends UnitTestBase
                 .build());
 
         ruleSet = createRuleSet();
-        assertEquals(3, ruleSet.getRuleCount());
+        assertEquals(3, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
@@ -620,7 +630,7 @@ public class RuleSetTest extends UnitTestBase
                 .withPredicates(named)
                 .build());
         ruleSet = createRuleSet();
-        assertEquals(2, ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
@@ -654,7 +664,7 @@ public class RuleSetTest extends UnitTestBase
                 .withPredicates(named)
                 .build());
         ruleSet = createRuleSet();
-        assertEquals(2, ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.size());
 
         assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.ALLOWED,
@@ -674,7 +684,7 @@ public class RuleSetTest extends UnitTestBase
                 .withObject(ObjectType.VIRTUALHOST)
                 .build());
         final RuleSet ruleSet = createRuleSet();
-        assertEquals(1, ruleSet.getRuleCount());
+        assertEquals(1, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(TestPrincipalUtils.createTestSubject("usera"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
@@ -701,7 +711,7 @@ public class RuleSetTest extends UnitTestBase
                 .withObject(ObjectType.VIRTUALHOST)
                 .build());
         final RuleSet ruleSet = createRuleSet();
-        assertEquals(2, ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(TestPrincipalUtils.createTestSubject("usera", allowGroup), LegacyOperation
@@ -720,8 +730,8 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testAllowDeterminedByRuleOrder()
     {
-        String group = "group";
-        String user = "user";
+        final String group = "group";
+        final String user = "user";
 
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(user)
@@ -736,7 +746,7 @@ public class RuleSetTest extends UnitTestBase
                 .withObject(ObjectType.VIRTUALHOST)
                 .build());
         final RuleSet ruleSet = createRuleSet();
-        assertEquals(2, ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                             ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
@@ -749,8 +759,8 @@ public class RuleSetTest extends UnitTestBase
     @Test
     public void testDenyDeterminedByRuleOrder()
     {
-        String group = "aclgroup";
-        String user = "usera";
+        final String group = "aclgroup";
+        final String user = "usera";
 
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(group)
@@ -766,7 +776,7 @@ public class RuleSetTest extends UnitTestBase
                 .build());
 
         final RuleSet ruleSet = createRuleSet();
-        assertEquals(2, ruleSet.getRuleCount());
+        assertEquals(2, ruleSet.size());
 
         assertEquals(Result.DENIED,
                             ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
@@ -847,7 +857,7 @@ public class RuleSetTest extends UnitTestBase
                 .withObject(ObjectType.QUEUE)
                 .build());
         final RuleSet ruleSet = createRuleSet();
-        assertEquals(1, ruleSet.getRuleCount());
+        assertEquals(1, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                      ruleSet.check(_testSubject,
@@ -872,7 +882,7 @@ public class RuleSetTest extends UnitTestBase
                 .withObject(ObjectType.QUEUE)
                 .build());
         final RuleSet ruleSet = createRuleSet();
-        assertEquals(1, ruleSet.getRuleCount());
+        assertEquals(1, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
                      ruleSet.check(_testSubject,
@@ -886,5 +896,720 @@ public class RuleSetTest extends UnitTestBase
                                    ObjectType.QUEUE,
                                    new ObjectProperties(Property.CREATED_BY, "anotherUser")));
 
+    }
+
+    @Test
+    public void testSuppressedRules()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .withPredicate(Property.NAME, "testExchange")
+                .build());
+        _ruleCollector.addRule(2, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withIdentity(Rule.ALL)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+        _ruleCollector.addRule(4, new Builder()
+                .withIdentity(Rule.ALL)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ALL)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(4, ruleSet.size());
+
+        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties("testExchange")));
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties("exchange")));
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties()));
+    }
+
+    @Test
+    public void testPublishToExchange()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withPredicate(Property.NAME, "broadcast")
+                .withPredicate(Property.ROUTING_KEY, "broadcast.*")
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withPredicate(Property.NAME, "broadcast")
+                .withPredicate(Property.ROUTING_KEY, "rs.broadcast.*")
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(7, new Builder()
+                .withPredicate(Property.NAME, "rs.broadcast")
+                .withPredicate(Property.ROUTING_KEY, "rs.broadcast.*")
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ALL)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(4, ruleSet.size());
+
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties()));
+
+        ObjectProperties object = new ObjectProperties("broadcast");
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        object = new ObjectProperties("broadcast");
+        object.put(Property.ROUTING_KEY, "broadcast.public");
+        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        object = new ObjectProperties("broadcast");
+        object.put(Property.ROUTING_KEY, "rs.broadcast.public");
+        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        object = new ObjectProperties("rs.broadcast");
+        object.put(Property.ROUTING_KEY, "rs.broadcast.public");
+        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        object = new ObjectProperties("broadcast");
+        object.put(Property.ROUTING_KEY, "queue");
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        object = new ObjectProperties("brs");
+        object.put(Property.ROUTING_KEY, "rs.broadcast.public");
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        // Another user
+        final Subject testSubject = TestPrincipalUtils.createTestSubject("Java");
+        object = new ObjectProperties("rs.broadcast");
+        object.put(Property.ROUTING_KEY, "rs.broadcast.public");
+        assertEquals(Result.DEFER, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+    }
+
+    @Test
+    public void testPublishToExchange_OwnerBased()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withPredicate(Property.NAME, "broadcast")
+                .withPredicate(Property.ROUTING_KEY, "broadcast.*")
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withPredicate(Property.NAME, "broadcast")
+                .withPredicate(Property.ROUTING_KEY, "rs.broadcast.*")
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(11, new Builder()
+                .withPredicate(Property.NAME, "broadcast")
+                .withPredicate(Property.QUEUE_NAME, "QQ")
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(4, ruleSet.size());
+
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties()));
+
+        // User = owner
+        ObjectProperties object = new ObjectProperties("broadcast");
+        object.put(Property.ROUTING_KEY, "brs");
+        object.setCreatedBy(TEST_USER);
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        object = new ObjectProperties("broadcast");
+        object.put(Property.ROUTING_KEY, "rs.broadcast.public");
+        object.setCreatedBy(TEST_USER);
+        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+    }
+
+    @Test
+    public void testPublishToExchange_OwnerBased_withoutAuthPrincipal()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withPredicate(Property.NAME, "broadcast")
+                .withPredicate(Property.ROUTING_KEY, "broadcast.*")
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withPredicate(Property.NAME,"broadcast")
+                .withPredicate(Property.ROUTING_KEY, "rs.broadcast.*")
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(11, new Builder()
+                .withPredicate(Property.NAME,"broadcast")
+                .withPredicate(Property.QUEUE_NAME, "QQ")
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(4, ruleSet.size());
+
+        // User without authentication principal
+        final Subject notAuthentificated = new Subject(false,
+                Collections.singleton(new UsernamePrincipal(TEST_USER, Mockito.mock(AuthenticationProvider.class))),
+                Collections.emptySet(),
+                Collections.emptySet());
+
+        ObjectProperties object = new ObjectProperties("broadcast");
+        object.put(Property.ROUTING_KEY, "rs.broadcast.public");
+        object.setCreatedBy(TEST_USER);
+        assertEquals(Result.DENIED, ruleSet.check(notAuthentificated, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        object = new ObjectProperties("broadcast");
+        object.put(Property.QUEUE_NAME, "QQ");
+        assertEquals(Result.ALLOWED, ruleSet.check(notAuthentificated, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+    }
+
+    @Test
+    public void testPublishToExchange_OwnerBased_byAnotherUser()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withPredicate(Property.NAME,"broadcast")
+                .withPredicate(Property.ROUTING_KEY, "broadcast.*")
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withPredicate(Property.NAME,"broadcast")
+                .withPredicate(Property.ROUTING_KEY, "rs.broadcast.*")
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(11, new Builder()
+                .withPredicate(Property.NAME,"broadcast")
+                .withPredicate(Property.QUEUE_NAME, "QQ")
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(4, ruleSet.size());
+
+        // Created be other user
+        ObjectProperties object = new ObjectProperties("broadcast");
+        object.put(Property.ROUTING_KEY, "broadcast.public");
+        object.setCreatedBy("another");
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        object = new ObjectProperties("broadcast");
+        object.put(Property.QUEUE_NAME, "QQ");
+        object.setCreatedBy("another");
+        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        // Action is performed by another user
+        final Subject testSubject = TestPrincipalUtils.createTestSubject("Java");
+        object = new ObjectProperties("broadcast");
+        assertEquals(Result.DEFER, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        // Action is performed by another user == owner
+        object = new ObjectProperties("broadcast");
+        object.setCreatedBy("Java");
+        assertEquals(Result.DEFER, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        object = new ObjectProperties("broadcast");
+        object.put(Property.ROUTING_KEY, "rs.broadcast.public");
+        object.setCreatedBy("Java");
+        assertEquals(Result.ALLOWED, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+    }
+
+    @Test
+    public void testPublishToExchange_OwnerBased_withGenericRule()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withPredicate(Property.NAME, "broadcast")
+                .withPredicate(Property.ROUTING_KEY, "broadcast.*")
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withPredicate(Property.NAME, "broadcast")
+                .withPredicate(Property.ROUTING_KEY, "rs.broadcast.*")
+                .withOwner()
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(11, new Builder()
+                .withPredicate(Property.NAME, "broadcast")
+                .withPredicate(Property.QUEUE_NAME, "QQ")
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .build());
+
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        _ruleCollector.addRule(27, new Builder()
+                .withIdentity(Rule.ALL)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(5, ruleSet.size());
+
+        // Action is performed by another user
+        final Subject testSubject = TestPrincipalUtils.createTestSubject("Java");
+
+        ObjectProperties object = new ObjectProperties("broadcast");
+        assertEquals(Result.DENIED, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+
+        // Action is performed by another user == owner
+        object = new ObjectProperties("broadcast");
+        object.setCreatedBy("Java");
+        assertEquals(Result.DENIED, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+    }
+
+    @Test
+    public void testList_UnsupportedException()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .withPredicate(Property.NAME, "broadcast")
+                .build());
+        _ruleCollector.addRule(3, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(Rule.ALL)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ALL)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertEquals(3, ruleSet.size());
+
+        final Rule rule = new Builder()
+                .withIdentity(TEST_USER)
+                .withOperation(LegacyOperation.ACCESS)
+                .withOutcome(RuleOutcome.ALLOW)
+                .build();
+        try
+        {
+            ruleSet.add(rule);
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+
+        try
+        {
+            ruleSet.remove(ruleSet.get(1));
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+
+        try
+        {
+            ruleSet.addAll(Collections.singleton(rule));
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+
+        try
+        {
+            ruleSet.removeAll(new ArrayList<>(ruleSet));
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+
+        try
+        {
+            ruleSet.retainAll(Collections.singleton(rule));
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+
+        try
+        {
+            ruleSet.clear();
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+
+        try
+        {
+            ruleSet.addAll(1, Collections.singleton(rule));
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+
+        try
+        {
+            ruleSet.set(1, rule);
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+
+        try
+        {
+            ruleSet.add(1, rule);
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+
+        try
+        {
+            ruleSet.remove(1);
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            // Nothing to do
+        }
+    }
+
+    @Test
+    public void testList()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .withPredicate(Property.NAME, "broadcast")
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(Rule.ALL)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ALL)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertNotNull(ruleSet);
+        assertEquals(3, ruleSet.size());
+        assertFalse(ruleSet.isEmpty());
+
+        final Rule rule = new Builder()
+                .withIdentity(TEST_USER)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(RuleOutcome.ALLOW)
+                .build();
+
+        final Rule all = new Builder()
+                .withIdentity(Rule.ALL)
+                .withOperation(LegacyOperation.ALL)
+                .withObject(ObjectType.ALL)
+                .withOutcome(RuleOutcome.DENY)
+                .build();
+
+        assertTrue(ruleSet.contains(rule));
+        assertTrue(ruleSet.containsAll(Arrays.asList(rule, all)));
+        assertEquals(rule, ruleSet.get(1));
+        assertEquals(1, ruleSet.indexOf(rule));
+        assertEquals(1, ruleSet.lastIndexOf(rule));
+    }
+
+    @Test
+    public void testList_Arrays()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .withPredicate(Property.NAME, "broadcast")
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(Rule.ALL)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ALL)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertNotNull(ruleSet);
+
+        Object[] array = ruleSet.toArray();
+        Rule[] ruleArray = ruleSet.toArray(new Rule[0]);
+        assertEquals(3, array.length);
+        assertEquals(3, ruleArray.length);
+
+        for (int i = 0; i < array.length; i++)
+        {
+            assertEquals(ruleSet.get(i), array[i]);
+            assertEquals(ruleSet.get(i), ruleArray[i]);
+        }
+    }
+
+    @Test
+    public void testList_Iterators()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .withPredicate(Property.NAME, "broadcast")
+                .build());
+        _ruleCollector.addRule(3, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(Rule.ALL)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ALL)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final RuleSet ruleSet = createRuleSet();
+        assertNotNull(ruleSet);
+
+        int j = 0;
+        for (Rule r : ruleSet)
+        {
+            assertEquals(ruleSet.get(j++), r);
+        }
+
+        ListIterator<Rule> iterator = ruleSet.listIterator();
+        assertNotNull(iterator);
+        while (iterator.hasNext())
+        {
+            assertEquals(ruleSet.get(iterator.nextIndex()), iterator.next());
+            try
+            {
+                iterator.remove();
+                fail("An exception is expected!");
+            }
+            catch (RuntimeException e)
+            {
+                //
+            }
+        }
+
+        iterator = ruleSet.listIterator(1);
+        assertNotNull(iterator);
+        while (iterator.hasNext())
+        {
+            assertEquals(ruleSet.get(iterator.nextIndex()), iterator.next());
+            try
+            {
+                iterator.remove();
+                fail("An exception is expected!");
+            }
+            catch (RuntimeException e)
+            {
+                //
+            }
+        }
+    }
+
+    @Test
+    public void testList_subList()
+    {
+        _ruleCollector.addRule(1, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .withPredicate(Property.NAME, "broadcast")
+                .build());
+
+        _ruleCollector.addRule(3, new Builder()
+                .withIdentity(TEST_USER)
+                .withOutcome(RuleOutcome.ALLOW)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .build());
+
+        _ruleCollector.addRule(17, new Builder()
+                .withIdentity(Rule.ALL)
+                .withOutcome(RuleOutcome.DENY)
+                .withOperation(LegacyOperation.ALL)
+                .withObject(ObjectType.ALL)
+                .build());
+
+        final Rule rule = new Builder()
+                .withIdentity(TEST_USER)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(RuleOutcome.ALLOW)
+                .build();
+
+        final RuleSet ruleSet = createRuleSet();
+        assertNotNull(ruleSet);
+
+        assertNotNull(ruleSet.subList(1, 2));
+        assertEquals(rule, ruleSet.subList(1, 2).get(0));
+
+        try
+        {
+            ruleSet.subList(1, 2).add(rule);
+            fail("An exception is expected!");
+        }
+        catch (RuntimeException e)
+        {
+            //
+        }
+    }
+
+    @Test
+    public void testGetEventLogger()
+    {
+        final Rule rule = new Builder()
+                .withIdentity(TEST_USER)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(RuleOutcome.ALLOW)
+                .build();
+
+        final EventLogger logger = mock(EventLogger.class);
+        final RuleSet ruleSet = RuleSet.newInstance(() -> logger, Collections.singletonList(rule), Result.DENIED);
+        assertNotNull(ruleSet);
+        assertEquals(logger, ruleSet.getEventLogger());
+    }
+
+    @Test
+    public void testGetDefault()
+    {
+        final Rule rule = new Builder()
+                .withIdentity(TEST_USER)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(RuleOutcome.ALLOW)
+                .build();
+
+        final EventLoggerProvider logger = mock(EventLoggerProvider.class);
+        final RuleSet ruleSet = RuleSet.newInstance(logger, Collections.singletonList(rule), Result.ALLOWED);
+        assertNotNull(ruleSet);
+        assertEquals(Result.ALLOWED, ruleSet.getDefault());
     }
 }

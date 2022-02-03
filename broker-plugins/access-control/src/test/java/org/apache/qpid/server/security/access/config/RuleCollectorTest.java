@@ -44,10 +44,9 @@ public class RuleCollectorTest extends UnitTestBase
 
         RuleSet ruleSet = creator.createRuleSet(Mockito.mock(EventLoggerProvider.class));
         assertNotNull(ruleSet);
-        assertEquals(2, ruleSet.getAllRules().size());
-        assertEquals(newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS), ruleSet.getAllRules().get(1));
-        assertEquals(newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE),
-                     ruleSet.getAllRules().get(0));
+        assertEquals(2, ruleSet.size());
+        assertEquals(newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS), ruleSet.get(1));
+        assertEquals(newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE), ruleSet.get(0));
     }
 
     @Test
@@ -61,10 +60,9 @@ public class RuleCollectorTest extends UnitTestBase
 
         RuleSet ruleSet = creator.createRuleSet(Mockito.mock(EventLoggerProvider.class));
         assertNotNull(ruleSet);
-        assertEquals(2, ruleSet.getAllRules().size());
-        assertEquals(newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS), ruleSet.getAllRules().get(1));
-        assertEquals(newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE),
-                     ruleSet.getAllRules().get(0));
+        assertEquals(2, ruleSet.size());
+        assertEquals(newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS), ruleSet.get(1));
+        assertEquals(newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE), ruleSet.get(0));
     }
 
     @Test

@@ -96,7 +96,7 @@ final class RuleCollector
 
     RuleSet createRuleSet(EventLoggerProvider eventLoggerProvider)
     {
-        return new RuleSet(eventLoggerProvider, _rules.values(), _defaultResult);
+        return RuleSet.newInstance(eventLoggerProvider, _rules.values(), _defaultResult);
     }
 
     private static final class RuleKey

@@ -77,6 +77,7 @@ public class RulePredicateTest extends UnitTestBase
 
         assertTrue(rule.matches(LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, action, _subject));
         assertFalse(rule.matches(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, action, _subject));
+        assertTrue(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -97,6 +98,7 @@ public class RulePredicateTest extends UnitTestBase
 
         assertFalse(rule.matches(LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, action, _subject));
         assertTrue(rule.matches(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, action, _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -117,6 +119,7 @@ public class RulePredicateTest extends UnitTestBase
 
         assertFalse(rule.matches(LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, action, _subject));
         assertFalse(rule.matches(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, action, _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -137,6 +140,7 @@ public class RulePredicateTest extends UnitTestBase
         action.put(Property.METHOD_NAME, "publish");
 
         assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -157,6 +161,7 @@ public class RulePredicateTest extends UnitTestBase
 
         assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
         assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties(), _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -176,6 +181,7 @@ public class RulePredicateTest extends UnitTestBase
         action.put(Property.METHOD_NAME, "publish");
 
         assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -196,6 +202,7 @@ public class RulePredicateTest extends UnitTestBase
 
         assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
         assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties(), _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -215,6 +222,7 @@ public class RulePredicateTest extends UnitTestBase
         action.put(Property.METHOD_NAME, "publish");
 
         assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -235,6 +243,7 @@ public class RulePredicateTest extends UnitTestBase
 
         assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
         assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties(), _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -255,6 +264,7 @@ public class RulePredicateTest extends UnitTestBase
         action.put(Property.METHOD_NAME, "publish");
 
         assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -269,6 +279,7 @@ public class RulePredicateTest extends UnitTestBase
                 .withOutcome(RuleOutcome.ALLOW)
                 .build(_firewallRuleFactory);
 
+        assertFalse(rule.anyPropertiesMatch());
         ObjectProperties action = new ObjectProperties();
         action.put(Property.ROUTING_KEY, "generic.public");
         action.setName("broadcast");
@@ -315,6 +326,7 @@ public class RulePredicateTest extends UnitTestBase
         action.put(Property.DURABLE, true);
 
         assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -331,6 +343,7 @@ public class RulePredicateTest extends UnitTestBase
                 .withOutcome(RuleOutcome.ALLOW)
                 .build(_firewallRuleFactory);
 
+        assertFalse(rule.anyPropertiesMatch());
         ObjectProperties action = new ObjectProperties();
         action.put(Property.ROUTING_KEY, "broadcast.public");
         action.setName("broadcast");
@@ -386,6 +399,7 @@ public class RulePredicateTest extends UnitTestBase
                 .build(_firewallRuleFactory);
 
         assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties(), _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 
     @Test
@@ -400,5 +414,6 @@ public class RulePredicateTest extends UnitTestBase
                 .build(_firewallRuleFactory);
 
         assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties(), _subject));
+        assertFalse(rule.anyPropertiesMatch());
     }
 }

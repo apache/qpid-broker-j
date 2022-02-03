@@ -432,22 +432,60 @@ public class RuleTest extends UnitTestBase
     @Test
     public void testIsAll()
     {
-        assertTrue(Rule.isAll("all"));
-        assertTrue(Rule.isAll("All"));
-        assertTrue(Rule.isAll("ALL"));
-        assertFalse(Rule.isAll("any"));
-        assertFalse(Rule.isAll("Any"));
-        assertFalse(Rule.isAll("ANY"));
+        Rule rule = new Rule.Builder().withIdentity("all").build();
+        assertTrue(rule.isForAll());
+        assertTrue(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("All").build();
+        assertTrue(rule.isForAll());
+        assertTrue(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("ALL").build();
+        assertTrue(rule.isForAll());
+        assertTrue(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("any").build();
+        assertFalse(rule.isForAll());
+        assertFalse(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("Any").build();
+        assertFalse(rule.isForAll());
+        assertFalse(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("ANY").build();
+        assertFalse(rule.isForAll());
+        assertFalse(rule.isForOwnerOrAll());
     }
 
     @Test
     public void testIsOwner()
     {
-        assertTrue(Rule.isOwner("owner"));
-        assertTrue(Rule.isOwner("Owner"));
-        assertTrue(Rule.isOwner("OWNER"));
-        assertFalse(Rule.isOwner("any"));
-        assertFalse(Rule.isOwner("Any"));
-        assertFalse(Rule.isOwner("ANY"));
+        Rule rule = new Rule.Builder().withIdentity("owner").build();
+        assertTrue(rule.isForOwner());
+        assertTrue(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("Owner").build();
+        assertTrue(rule.isForOwner());
+        assertTrue(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("OWNER").build();
+        assertTrue(rule.isForOwner());
+        assertTrue(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("any").build();
+        assertFalse(rule.isForOwner());
+        assertFalse(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("Any").build();
+        assertFalse(rule.isForOwner());
+        assertFalse(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withIdentity("ANY").build();
+        assertFalse(rule.isForOwner());
+        assertFalse(rule.isForOwnerOrAll());
+
+        rule = new Rule.Builder().withOwner().build();
+        assertTrue(rule.isForOwner());
+        assertTrue(rule.isForOwnerOrAll());
     }
 }

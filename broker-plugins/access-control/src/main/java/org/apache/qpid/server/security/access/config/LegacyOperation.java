@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import java.util.Locale;
+
 /**
  * An enumeration of all possible actions that can form part of an access control v2 rule.
  */
@@ -38,10 +40,17 @@ public enum LegacyOperation
     SHUTDOWN,
     INVOKE;
 
+    private final String _description;
+
+    LegacyOperation()
+    {
+        final String name = name();
+        _description = name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1).toLowerCase(Locale.ENGLISH);
+    }
+
     @Override
     public String toString()
     {
-        String name = name();
-        return name.charAt(0) + name.substring(1).toLowerCase();
+        return _description;
     }
 }

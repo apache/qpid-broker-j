@@ -47,6 +47,8 @@ public class Rule
     private final AclRulePredicates _predicates;
     private final RuleOutcome _ruleOutcome;
     private final RulePredicate _rulePredicate;
+    private final boolean _isOwner;
+    private final boolean _isAll;
 
     public Rule(AclRule rule)
     {
@@ -64,16 +66,24 @@ public class Rule
         _ruleOutcome = Objects.requireNonNull(ruleOutcome);
         _predicates = Objects.requireNonNull(predicates);
         _rulePredicate = Objects.requireNonNull(predicates.asSinglePredicate());
+
+        _isOwner = OWNER.equalsIgnoreCase(identity);
+        _isAll = ALL.equalsIgnoreCase(identity);
     }
 
-    public static boolean isAll(String identity)
+    public boolean isForAll()
     {
-        return ALL.equalsIgnoreCase(identity);
+        return _isAll;
     }
 
-    public static boolean isOwner(String identity)
+    public boolean isForOwner()
     {
-        return OWNER.equalsIgnoreCase(identity);
+        return _isOwner;
+    }
+
+    public boolean isForOwnerOrAll()
+    {
+        return _isOwner || _isAll;
     }
 
     public String getIdentity()
@@ -96,12 +106,16 @@ public class Rule
     {
         return operationsMatch(actionOperation) &&
                 objectTypesMatch(actionObjectType) &&
-                propertiesAttributesMatch(actionOperation, actionObjectProperties, subject);
+                predicatesMatch(actionOperation, actionObjectProperties, subject);
     }
 
-    private boolean propertiesAttributesMatch(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
+    public boolean predicatesMatch(LegacyOperation operation, ObjectProperties objectProperties, Subject subject)
     {
         return _rulePredicate.matches(operation, objectProperties, subject);
+    }
+
+    public boolean anyPropertiesMatch() {
+        return _rulePredicate.matchesAny();
     }
 
     private boolean operationsMatch(LegacyOperation actionOperation)
@@ -170,12 +184,13 @@ public class Rule
                 ", permission=" + _ruleOutcome + ']';
     }
 
-    private static class AclRuleImpl implements AclRule
+    private static final class AclRuleImpl implements AclRule
     {
         private final Rule _rule;
 
         AclRuleImpl(Rule rule)
         {
+            super();
             _rule = Objects.requireNonNull(rule);
         }
 

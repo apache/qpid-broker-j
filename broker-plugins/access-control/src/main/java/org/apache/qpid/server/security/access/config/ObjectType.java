@@ -18,6 +18,11 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Locale;
+import java.util.Set;
+
 import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.BIND;
@@ -32,18 +37,15 @@ import static org.apache.qpid.server.security.access.config.LegacyOperation.SHUT
 import static org.apache.qpid.server.security.access.config.LegacyOperation.UNBIND;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.UPDATE;
 
-import java.util.EnumSet;
-import java.util.Set;
-
 /**
  * An enumeration of all possible object types that can form part of an access control v2 rule.
- * 
+ * <p>
  * Each object type is valid only for a certain set of {@link LegacyOperation}s, which are passed as a list to
  * the constructor, and can be checked using the {@link #isSupported(LegacyOperation)} method.
  */
 public enum ObjectType
 {
-    ALL(EnumSet.allOf(LegacyOperation.class)),
+    ALL,
     VIRTUALHOSTNODE(LegacyOperation.ALL, CREATE, DELETE, UPDATE, INVOKE),
     VIRTUALHOST(LegacyOperation.ALL, ACCESS, CREATE, DELETE, UPDATE, ACCESS_LOGS, INVOKE),
     MANAGEMENT(LegacyOperation.ALL, ACCESS),
@@ -54,34 +56,41 @@ public enum ObjectType
     GROUP(LegacyOperation.ALL, CREATE, DELETE, UPDATE, INVOKE),
     BROKER(LegacyOperation.ALL, CONFIGURE, ACCESS_LOGS, SHUTDOWN, INVOKE);
 
-    private EnumSet<LegacyOperation> _operations;
+    private final EnumSet<LegacyOperation> _operations;
 
+    private final String _description;
 
-    ObjectType(LegacyOperation first, LegacyOperation... rest)
+    ObjectType(LegacyOperation... rest)
     {
-        this(EnumSet.of(first, rest));
+        _operations = EnumSet.of(LegacyOperation.ALL, rest);
+        _description = description();
     }
 
-    ObjectType(EnumSet<LegacyOperation> operations)
+    ObjectType()
     {
-        _operations = operations;
+        _operations = EnumSet.allOf(LegacyOperation.class);
+        _description = description();
     }
-    
+
+    private String description()
+    {
+        final String name = name();
+        return name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1).toLowerCase(Locale.ENGLISH);
+    }
+
     public Set<LegacyOperation> getOperations()
     {
-        return _operations;
+        return Collections.unmodifiableSet(_operations);
     }
-    
+
     public boolean isSupported(LegacyOperation operation)
     {
         return _operations.contains(operation);
     }
-    
+
     @Override
     public String toString()
     {
-        String name = name();
-        return name.charAt(0) + name.substring(1).toLowerCase();
+        return _description;
     }
-
 }

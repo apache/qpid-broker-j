@@ -23,10 +23,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.qpid.server.security.access.config.AclRulePredicates;
-import org.apache.qpid.server.security.access.config.AclRulePredicatesBuilder;
-import org.apache.qpid.server.security.access.config.Property;
-import org.apache.qpid.server.security.access.config.FirewallRule;
 import org.apache.qpid.server.security.access.config.predicates.TestFirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 import org.apache.qpid.test.utils.UnitTestBase;

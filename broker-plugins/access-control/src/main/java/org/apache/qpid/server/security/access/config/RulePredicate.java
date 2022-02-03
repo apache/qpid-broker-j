@@ -59,6 +59,11 @@ public interface RulePredicate
                 || other.matches(operation, objectProperties, subject);
     }
 
+    default boolean matchesAny()
+    {
+        return false;
+    }
+
     static RulePredicate any()
     {
         return Any.INSTANCE;
@@ -94,6 +99,12 @@ public interface RulePredicate
         public RulePredicate or(RulePredicate other)
         {
             return this;
+        }
+
+        @Override
+        public boolean matchesAny()
+        {
+            return true;
         }
     }
 

@@ -81,7 +81,7 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
         {
             rules.add(new Rule(configuredRule));
         }
-        return new RuleBasedAccessControl(new RuleSet(this, rules, _defaultResult), getModel());
+        return new RuleBasedAccessControl(RuleSet.newInstance(this, rules, _defaultResult), getModel());
     }
 
     public Result getDefaultResult()
@@ -98,7 +98,7 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
     {
         final RuleSet ruleSet = AclFileParser.parse(path, this);
         final List<AclRule> aclRules = new ArrayList<>();
-        for (final Rule rule : ruleSet.getAllRules())
+        for (final Rule rule : ruleSet)
         {
             aclRules.add(rule.asAclRule());
         }
