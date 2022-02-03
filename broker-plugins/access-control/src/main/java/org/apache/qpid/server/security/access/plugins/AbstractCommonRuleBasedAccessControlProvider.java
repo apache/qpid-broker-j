@@ -29,10 +29,12 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.CommonAccessControlProvider;
@@ -139,13 +141,25 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
                 .append(rule.getOperation().name())
                 .append(' ')
                 .append(rule.getObjectType().name());
-        for (final Map.Entry<Property, String> entry : rule.getAttributes().entrySet())
+        for (final Map.Entry<Property, Object> entry : rule.getAttributes().entrySet())
         {
-            sb.append(' ')
-                    .append(entry.getKey().getCanonicalName())
-                    .append("=\"")
-                    .append(entry.getValue())
-                    .append("\"");
+            if (entry.getValue() == null)
+            {
+                continue;
+            }
+            sb.append(' ').append(entry.getKey().getCanonicalName());
+
+            if (entry.getValue() instanceof Collection)
+            {
+                final Collection<?> values = (Collection<?>) entry.getValue();
+                sb.append("=[\"")
+                        .append(values.stream().map(Object::toString).collect(Collectors.joining("\",\"")))
+                        .append("\"]");
+            }
+            else
+            {
+                sb.append("=\"").append(entry.getValue()).append("\"");
+            }
         }
     }
 

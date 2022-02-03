@@ -18,15 +18,13 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.qpid.server.security.access.config.AclRulePredicates;
-import org.apache.qpid.server.security.access.config.AclRulePredicatesBuilder;
-import org.apache.qpid.server.security.access.config.Property;
-import org.apache.qpid.server.security.access.config.FirewallRule;
 import org.apache.qpid.server.security.access.config.predicates.TestFirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -120,21 +118,6 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testParseThrowsExceptionIfHostnameSpecified2Times()
-    {
-        _builder.parse(FROM_NETWORK.name(), "network");
-        try
-        {
-            _builder.parse(FROM_NETWORK.name(), "network2");
-            fail("Exception not thrown");
-        }
-        catch (IllegalStateException e)
-        {
-            // pass
-        }
-    }
-
-    @Test
     public void testParseAttributesRule()
     {
         final String attributes = "attribute1,attribute2";
@@ -167,14 +150,13 @@ public class AclRulePredicatesTest extends UnitTestBase
                 .parse(FROM_NETWORK.name(), "network")
                 .build(_firewallRuleFactory);
 
-        final Map<Property, String> properties = predicates.getParsedProperties();
+        final Map<Property, Object> properties = predicates.getParsedProperties();
 
         assertEquals(3, properties.size());
         assertEquals(properties.get(NAME), "name");
         assertEquals(properties.get(ATTRIBUTES), "attribute1,attribute2");
         assertEquals(properties.get(FROM_NETWORK), "network");
     }
-
 
     @Test
     public void testAttributeNames()
@@ -264,6 +246,29 @@ public class AclRulePredicatesTest extends UnitTestBase
         predicates = _builder.put(Property.TYPE, "EX ").build(_firewallRuleFactory);
         assertEquals(1, predicates.get(Property.TYPE).size());
         assertEquals("EX", Iterables.getOnlyElement(predicates.get(Property.TYPE)));
+    }
+
+    @Test
+    public void testParse_MultiValue()
+    {
+        final String nameA = "name.A";
+        AclRulePredicates predicates = _builder.parse(NAME.name(), nameA).build(_firewallRuleFactory);
+        assertEquals(Collections.singleton(nameA), predicates.get(NAME));
+
+        final String nameB = "name.B";
+        predicates = _builder.parse(NAME.name(), nameB).build(_firewallRuleFactory);
+        assertEquals(new HashSet<>(Arrays.asList(nameA, nameB)), predicates.get(NAME));
+
+        final String nameX = "name.*";
+        predicates = _builder.parse(NAME.name(), nameX).build(_firewallRuleFactory);
+        assertEquals(Collections.singleton(nameX), predicates.get(NAME));
+
+        final String nameC = "name.C";
+        predicates = _builder.parse(NAME.name(), nameC).build(_firewallRuleFactory);
+        assertEquals(Collections.singleton(nameX), predicates.get(NAME));
+
+        predicates = _builder.parse(NAME.name(), "*").build(_firewallRuleFactory);
+        assertEquals(Collections.singleton("*"), predicates.get(NAME));
     }
 
     @Test

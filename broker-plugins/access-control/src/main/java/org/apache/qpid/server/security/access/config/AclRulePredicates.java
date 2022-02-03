@@ -22,6 +22,7 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -37,7 +38,10 @@ import com.google.common.collect.Iterables;
 public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
         implements RulePredicate
 {
-    static final String SEPARATOR = ",";
+    public static final String SEPARATOR = ",";
+
+    private static final Set<Property> JOIN_PROPERTIES =
+            EnumSet.of(Property.ATTRIBUTES, Property.FROM_HOSTNAME, Property.FROM_NETWORK);
 
     private final Map<Property, Set<Object>> _properties;
 
@@ -64,9 +68,9 @@ public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
         _rulePredicate = Objects.requireNonNull(builder.newRulePredicate(factory));
     }
 
-    public Map<Property, String> getParsedProperties()
+    public Map<Property, Object> getParsedProperties()
     {
-        final Map<Property, String> parsed = new EnumMap<>(Property.class);
+        final Map<Property, Object> parsed = new EnumMap<>(Property.class);
         for (final Map.Entry<Property, Set<Object>> entry : _properties.entrySet())
         {
             final Set<Object> values = entry.getValue();
@@ -76,14 +80,28 @@ public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
             }
             else
             {
-                parsed.put(entry.getKey(),
-                        values.stream()
-                                .map(Object::toString)
-                                .sorted()
-                                .collect(Collectors.joining(SEPARATOR)));
+                parsed.put(entry.getKey(), collect(entry.getKey(), values));
             }
         }
         return parsed;
+    }
+
+    private Object collect(Property property, Set<Object> values)
+    {
+        if (JOIN_PROPERTIES.contains(property))
+        {
+            return values.stream()
+                    .map(Object::toString)
+                    .sorted()
+                    .collect(Collectors.joining(SEPARATOR));
+        }
+        else
+        {
+            return values.stream()
+                    .map(Object::toString)
+                    .sorted()
+                    .collect(Collectors.toList());
+        }
     }
 
     @Override

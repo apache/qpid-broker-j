@@ -130,9 +130,14 @@
        ACL rules follow this syntax:
     </para>
     <programlisting>
-     ACL {permission} {&lt;group-name&gt;|&lt;user-name&gt;|ALL} {action|ALL} [object|ALL] [property="&lt;property-value&gt;"]
+     ACL {permission} {&lt;group-name&gt;|&lt;user-name&gt;|ALL} {action|ALL} [object|ALL] [property=&lt;property-values&gt;]
     </programlisting>
 
+    <para>
+      The &lt;property-values&gt; can be a single value property="single value" or a list of comma separated values in brackets
+      property=["value1", "value2", "value3"]. If a property repeats then it will be interpreted as list of values,
+      for example name="n1" name="n2" name="n3" is interpreted as name=["n1", "n2", "n3"].
+    </para>
     <para>
        Comments may be introduced with the hash (#) character and are ignored.  Long lines can be broken with the slash (\) character.
     </para>
@@ -509,12 +514,20 @@
         The following ACL rules are given to the Broker.
       </para>
       <example>
-        <title>Worked example 2 - Simple Messaging - Broker ACL rules</title>
+        <title>Worked example 2a - Simple Messaging - Broker ACL rules</title>
         <programlisting><![CDATA[
 # This gives the operate permission to delete messages on all queues on all virtualhost
 ACL ALLOW operator ACCESS MANAGEMENT
 ACL ALLOW operator INVOKE QUEUE method_name="deleteMessages"
 ACL ALLOW operator INVOKE QUEUE method_name="getMessage*"]]>
+        </programlisting>
+      </example>
+      <example>
+        <title>Worked example 2b - Simple Messaging - Broker ACL rules with multi-value property</title>
+        <programlisting><![CDATA[
+# This gives the operate permission to delete messages on all queues on all virtualhost
+ACL ALLOW operator ACCESS MANAGEMENT
+ACL ALLOW operator INVOKE QUEUE method_name=["deleteMessages", "getMessage*"] ]]>
         </programlisting>
       </example>
       <para>

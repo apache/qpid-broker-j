@@ -22,6 +22,7 @@ package org.apache.qpid.server.security.access.config;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
@@ -124,7 +125,7 @@ public class Rule
         return _object;
     }
 
-    public Map<Property, String> getAttributes()
+    public Map<Property, Object> getAttributes()
     {
         return _predicates.getParsedProperties();
     }
@@ -198,7 +199,7 @@ public class Rule
         }
 
         @Override
-        public Map<Property, String> getAttributes()
+        public Map<Property, Object> getAttributes()
         {
             return _rule.getAttributes();
         }
@@ -258,6 +259,12 @@ public class Rule
         public Builder withPredicate(Property key, String value)
         {
             _aclRulePredicatesBuilder.put(key, value);
+            return this;
+        }
+
+        public Builder withPredicate(String key, Set<String> values)
+        {
+            _aclRulePredicatesBuilder.parse(key, values);
             return this;
         }
 
