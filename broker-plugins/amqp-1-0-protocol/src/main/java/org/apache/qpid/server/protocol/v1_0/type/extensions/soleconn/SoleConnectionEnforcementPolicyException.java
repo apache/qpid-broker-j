@@ -29,6 +29,9 @@ import org.apache.qpid.server.security.limit.ConnectionLimitException;
 
 public class SoleConnectionEnforcementPolicyException extends ConnectionLimitException
 {
+    private static final String MESSAGE =
+            "Single connection with container ID '%s' is required due to sole connection enforcement policy '%s'";
+
     private final Set<AMQPConnection_1_0<?>> _existingConnections;
 
     private final SoleConnectionEnforcementPolicy _policy;
@@ -39,9 +42,7 @@ public class SoleConnectionEnforcementPolicyException extends ConnectionLimitExc
                                                     Collection<? extends AMQPConnection_1_0<?>> connections,
                                                     String containerID)
     {
-        super(String.format(
-                "Single connection with container ID '%s' is required due to sole connection enforcement policy '%s'",
-                containerID, policy));
+        super(String.format(MESSAGE, containerID, policy));
         _policy = Objects.requireNonNull(policy);
         _existingConnections = new HashSet<>(connections);
         _containerID = Objects.requireNonNull(containerID);
