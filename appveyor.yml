@@ -8,14 +8,14 @@ environment:
 install:
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
-      if (!(Test-Path -Path "C:\maven\apache-maven-3.3.9" )) {
+      if (!(Test-Path -Path "C:\maven\apache-maven-3.8.4" )) {
         (new-object System.Net.WebClient).DownloadFile(
-          'http://repo2.maven.org/maven2/org/apache/maven/apache-maven/3.3.9/apache-maven-3.3.9-bin.zip',
+          'https://dlcdn.apache.org/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.zip',
           'C:\maven-bin.zip'
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\maven-bin.zip", "C:\maven")
       }
-  - cmd: SET PATH=C:\maven\apache-maven-3.3.9\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET PATH=C:\maven\apache-maven-3.8.4\bin;%JAVA_HOME%\bin;%PATH%
 
 build_script:
   - mvn clean install -B -DskipTests
@@ -44,4 +44,4 @@ on_finish:
       }
 
 cache:
-  - C:\maven\apache-maven-3.3.9
+  - C:\maven\apache-maven-3.8.4
