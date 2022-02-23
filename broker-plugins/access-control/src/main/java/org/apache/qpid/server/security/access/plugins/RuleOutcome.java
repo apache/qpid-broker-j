@@ -20,32 +20,63 @@
  */
 package org.apache.qpid.server.security.access.plugins;
 
+import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.logging.messages.AccessControlMessages;
+import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.access.config.LegacyOperation;
+import org.apache.qpid.server.security.access.config.ObjectProperties;
+import org.apache.qpid.server.security.access.config.ObjectType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * An enumeration of all possible outcomes that can be applied to an access control v2 rule.
  */
 public enum RuleOutcome
 {
-    ALLOW(true, false),
-    ALLOW_LOG(true, true),
-    DENY(false, false),
-    DENY_LOG(false, true);
+    ALLOW(Result.ALLOWED),
+    ALLOW_LOG(Result.ALLOWED)
+            {
+                @Override
+                public Result logResult(EventLoggerProvider logger, LegacyOperation operation, ObjectType objectType, ObjectProperties objectProperties)
+                {
+                    LOGGER.debug(ACTION_MATCHES_RESULT, this);
+                    logger.getEventLogger().message(AccessControlMessages.ALLOWED(
+                            operation.toString(),
+                            objectType.toString(),
+                            objectProperties.toString()));
+                    return _result;
+                }
+            },
+    DENY(Result.DENIED),
+    DENY_LOG(Result.DENIED)
+            {
+                @Override
+                public Result logResult(EventLoggerProvider logger, LegacyOperation operation, ObjectType objectType, ObjectProperties objectProperties)
+                {
+                    LOGGER.debug(ACTION_MATCHES_RESULT, this);
+                    logger.getEventLogger().message(AccessControlMessages.DENIED(
+                            operation.toString(),
+                            objectType.toString(),
+                            objectProperties.toString()));
+                    return _result;
+                }
+            };
 
-    private final boolean _allowed;
-    private final boolean _logged;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuleOutcome.class);
 
-    RuleOutcome(final boolean allowed, final boolean logged)
+    private static final String ACTION_MATCHES_RESULT = "Action matches. Result: {}";
+
+    final Result _result;
+
+    RuleOutcome(final Result result)
     {
-        _allowed = allowed;
-        _logged = logged;
+        _result = result;
     }
 
-    public boolean isAllowed()
+    public Result logResult(EventLoggerProvider logger, LegacyOperation operation, ObjectType objectType, ObjectProperties objectProperties)
     {
-        return _allowed;
-    }
-
-    public boolean isLogged()
-    {
-        return _logged;
+        LOGGER.debug(ACTION_MATCHES_RESULT, this);
+        return _result;
     }
 }

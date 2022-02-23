@@ -65,14 +65,10 @@ import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.security.access.config.AclFileParser;
-import org.apache.qpid.server.security.access.config.LegacyOperation;
-import org.apache.qpid.server.security.access.config.ObjectProperties;
-import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.security.access.config.Rule;
 import org.apache.qpid.server.security.access.config.RuleSet;
 import org.apache.qpid.server.security.access.plugins.AclRule;
 import org.apache.qpid.server.security.access.plugins.RuleBasedVirtualHostAccessControlProvider;
-import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.group.GroupProviderImpl;
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -852,8 +848,7 @@ public class MessagingACLTest extends JmsTestBase
         try(StringReader stringReader = new StringReader(Arrays.stream(rules).collect(Collectors.joining(LINE_SEPARATOR))))
         {
             RuleSet ruleSet = AclFileParser.parse(stringReader, eventLoggerProvider);
-            final List<Rule> parsedRules = ruleSet.getAllRules();
-            for(final Rule rule: parsedRules)
+            for (final Rule rule: ruleSet)
             {
                 aclRules.add(rule.asAclRule());
             }
