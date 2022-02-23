@@ -19,6 +19,7 @@
 package org.apache.qpid.server.security.access.config;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -29,6 +30,8 @@ import java.util.Set;
 
 import org.apache.qpid.server.security.access.config.predicates.RulePredicateBuilder;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
+import org.apache.qpid.server.security.access.util.PrefixTreeSet;
+import org.apache.qpid.server.security.access.util.WildCardSet;
 
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
@@ -63,7 +66,7 @@ public final class AclRulePredicatesBuilder
         {
             for (final Map.Entry<Property, ?> entry : values.entrySet())
             {
-                addPropertyValue(entry.getKey(), Objects.toString(entry.getValue(), null));
+                addPropertyValues(entry.getKey(), entry.getValue());
             }
         }
     }
@@ -71,16 +74,32 @@ public final class AclRulePredicatesBuilder
     public AclRulePredicatesBuilder()
     {
         super();
+        _hostNames = new HashSet<>();
+        _networks = new HashSet<>();
+        _attributeNames = new HashSet<>();
         for (final Property property : Property.values())
         {
-            _parsedProperties.put(property, Collections.emptySet());
+            if (property == Property.FROM_HOSTNAME)
+            {
+                _parsedProperties.put(property, _hostNames);
+            }
+            else if (property == Property.FROM_NETWORK)
+            {
+                _parsedProperties.put(property, _networks);
+            }
+            else if (property == Property.ATTRIBUTES)
+            {
+                _parsedProperties.put(property, _attributeNames);
+            }
+            else if (Property.isBooleanType(property))
+            {
+                _parsedProperties.put(property, new HashSet<>());
+            }
+            else
+            {
+                _parsedProperties.put(property, new PrefixTreeSet());
+            }
         }
-        _hostNames = new HashSet<>();
-        _parsedProperties.put(Property.FROM_HOSTNAME, _hostNames);
-        _networks = new HashSet<>();
-        _parsedProperties.put(Property.FROM_NETWORK, _networks);
-        _attributeNames = new HashSet<>();
-        _parsedProperties.put(Property.ATTRIBUTES, _attributeNames);
     }
 
     public AclRulePredicates build()
@@ -103,22 +122,50 @@ public final class AclRulePredicatesBuilder
         return this;
     }
 
+    public AclRulePredicatesBuilder parse(String key, Set<String> values)
+    {
+        final Property property = Property.parse(key);
+        for (final String value : values)
+        {
+            if (addPropertyValue(property, value))
+            {
+                LOGGER.debug("Parsed {} with value {}", property, value);
+            }
+        }
+        return this;
+    }
+
     public AclRulePredicatesBuilder put(Property property, String value)
     {
         addPropertyValue(property, value);
         return this;
     }
 
-    private boolean addPropertyValue(final Property property, final String value)
+    private void addPropertyValues(Property property, Object value)
+    {
+        if (value instanceof Collection)
+        {
+            for (final Object v : (Collection<?>) value)
+            {
+                addPropertyValues(property, v);
+            }
+        }
+        else
+        {
+            addPropertyValue(property, Objects.toString(value, null));
+        }
+    }
+
+    private boolean addPropertyValue(Property property, String value)
     {
         if (property == Property.FROM_HOSTNAME)
         {
-            checkFirewallRuleNotAlreadyDefined(property, value, Property.FROM_NETWORK);
+            checkFirewallRule(property, value, Property.FROM_NETWORK);
             _hostNames.addAll(splitToSet(value));
         }
         else if (property == Property.FROM_NETWORK)
         {
-            checkFirewallRuleNotAlreadyDefined(property, value, Property.FROM_HOSTNAME);
+            checkFirewallRule(property, value, Property.FROM_HOSTNAME);
             _networks.addAll(splitToSet(value));
         }
         else if (property == Property.ATTRIBUTES)
@@ -137,27 +184,40 @@ public final class AclRulePredicatesBuilder
         }
         else
         {
-            _parsedProperties.put(property, Collections.singleton(sanitiseValue(property, value)));
+            addPropertyValueImpl(property, value);
         }
         return true;
     }
 
-    private Object sanitiseValue(Property property, String value)
+    private void addPropertyValueImpl(Property property, String value)
     {
         if (value == null)
         {
-            return WILD_CARD;
+            _parsedProperties.put(property, WildCardSet.newSet());
+            return;
         }
         value = value.trim();
         if (value.isEmpty() || WILD_CARD.equals(value))
         {
-            return WILD_CARD;
+            _parsedProperties.put(property, WildCardSet.newSet());
+            return;
         }
+        final Set<?> values = _parsedProperties.get(property);
         if (Property.isBooleanType(property))
         {
-            return parseBoolean(value);
+            ((Set<Object>) values).add(parseBoolean(value));
         }
-        return value;
+        else
+        {
+            if (values instanceof PrefixTreeSet)
+            {
+                ((PrefixTreeSet) values).add(value);
+            }
+            else
+            {
+                ((Set<Object>) values).add(value);
+            }
+        }
     }
 
     private Boolean parseBoolean(String value)
@@ -178,29 +238,23 @@ public final class AclRulePredicatesBuilder
         return Boolean.parseBoolean(value);
     }
 
-    private HashSet<String> splitToSet(String value)
+    private Set<String> splitToSet(String value)
     {
+        if (value == null)
+        {
+            return Collections.emptySet();
+        }
         return new HashSet<>(Arrays.asList(value.split(AclRulePredicates.SEPARATOR)));
     }
 
-    private void checkFirewallRuleNotAlreadyDefined(Property property, String value, Property exclusiveProperty)
+    private void checkFirewallRule(Property property, String value, Property exclusiveProperty)
     {
-        checkPropertyAlreadyDefined(property);
         if (!_parsedProperties.get(exclusiveProperty).isEmpty())
         {
             throw new IllegalStateException(
                     String.format("Cannot parse '%s=%s' because property '%s' has already been defined",
                             property.toString().toLowerCase(Locale.ENGLISH),
                             value, exclusiveProperty));
-        }
-    }
-
-    private void checkPropertyAlreadyDefined(Property property)
-    {
-        if (!_parsedProperties.get(property).isEmpty())
-        {
-            throw new IllegalStateException(String.format("Property '%s' has already been defined",
-                    property.toString().toLowerCase(Locale.ENGLISH)));
         }
     }
 

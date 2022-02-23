@@ -28,6 +28,7 @@ import org.apache.qpid.server.security.access.config.AclRulePredicatesBuilder;
 import org.apache.qpid.server.security.access.config.Property;
 import org.apache.qpid.server.security.access.config.RulePredicate;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
+import org.apache.qpid.server.security.access.util.PrefixTreeSet;
 
 public final class RulePredicateBuilder
 {
@@ -74,13 +75,17 @@ public final class RulePredicateBuilder
         }
     }
 
-    private Set<String> toSet(Collection<?> hostnames)
+    private Set<String> toSet(Collection<?> values)
     {
-        return hostnames.stream().map(Object::toString).collect(Collectors.toSet());
+        return values.stream().map(Object::toString).collect(Collectors.toSet());
     }
 
     private RulePredicate buildGenericPredicate(Property property, Collection<?> values)
     {
+        if (values instanceof PrefixTreeSet && values.size() > 2)
+        {
+            return MultiValue.newInstance(property, ((PrefixTreeSet) values).toPrefixTree());
+        }
         RulePredicate predicate = RulePredicate.none();
         for (final Object value : values)
         {

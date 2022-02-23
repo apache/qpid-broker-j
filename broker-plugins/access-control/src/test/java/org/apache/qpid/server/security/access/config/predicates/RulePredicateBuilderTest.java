@@ -31,6 +31,8 @@ import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.Property;
 import org.apache.qpid.server.security.access.config.RulePredicate;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
+import org.apache.qpid.server.security.access.util.PrefixTreeSet;
+import org.apache.qpid.server.security.access.util.WildCardSet;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -304,5 +306,70 @@ public class RulePredicateBuilderTest extends UnitTestBase
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
 
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
+    }
+
+    @Test
+    public void testMatch_PrefixTree()
+    {
+        final PrefixTreeSet tree = new PrefixTreeSet();
+        tree.addAll(Arrays.asList("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
+        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, tree));
+
+        ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.A");
+        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
+
+        op = new ObjectProperties(NAME, "Exchange.private.B");
+        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
+
+        op = new ObjectProperties(NAME, "Exchange.public.ABC");
+        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
+    }
+
+    @Test
+    public void testDoesNotMatch_PrefixTree()
+    {
+        final PrefixTreeSet tree = new PrefixTreeSet();
+        tree.addAll(Arrays.asList("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
+        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, tree));
+
+        final ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.xyz");
+        assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
+    }
+
+    @Test
+    public void testMatch_PrefixTree_single()
+    {
+        final PrefixTreeSet tree = new PrefixTreeSet();
+        tree.add("Exchange.public.*");
+        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, tree));
+
+        final ObjectProperties op = new ObjectProperties(NAME, "Exchange.public.A");
+        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
+    }
+
+    @Test
+    public void testDoesNotMatch_PrefixTree_single()
+    {
+        final PrefixTreeSet tree = new PrefixTreeSet();
+        tree.add("Exchange.public.*");
+        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, tree));
+
+        final ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.xyz");
+        assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
+    }
+
+    @Test
+    public void testMatch_WildcardSet()
+    {
+        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, WildCardSet.newSet()));
+
+        ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.A");
+        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
+
+        op = new ObjectProperties(NAME, "Exchange.private.B");
+        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
+
+        op = new ObjectProperties(NAME, "Exchange.public.ABC");
+        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 }

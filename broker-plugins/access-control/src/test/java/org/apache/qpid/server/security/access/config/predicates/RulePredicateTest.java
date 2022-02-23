@@ -416,4 +416,61 @@ public class RulePredicateTest extends UnitTestBase
         assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties(), _subject));
         assertFalse(rule.anyPropertiesMatch());
     }
+
+    @Test
+    public void testMatch_Properties_MultiValue()
+    {
+        final Rule rule = _builder
+                .withPredicate(Property.ROUTING_KEY, "broadcast.public")
+                .withPredicate(Property.NAME, "broadcast.A")
+                .withPredicate(Property.NAME, "broadcast.B")
+                .withPredicate(Property.NAME, "broadcast.X.*")
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .withOutcome(RuleOutcome.ALLOW)
+                .build(_firewallRuleFactory);
+
+        ObjectProperties action = new ObjectProperties();
+        action.put(Property.ROUTING_KEY, "broadcast.public");
+        action.put(Property.NAME, "broadcast.A");
+        action.put(Property.METHOD_NAME, "publish");
+
+        assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+
+        action = new ObjectProperties();
+        action.put(Property.ROUTING_KEY, "broadcast.public");
+        action.put(Property.NAME, "broadcast.B");
+        action.put(Property.METHOD_NAME, "publish");
+
+        assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+
+        action = new ObjectProperties();
+        action.put(Property.ROUTING_KEY, "broadcast.public");
+        action.put(Property.NAME, "broadcast.X.new");
+        action.put(Property.METHOD_NAME, "publish");
+
+        assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+    }
+
+    @Test
+    public void testDoesNotMatch_Properties_MultiValue()
+    {
+        final Rule rule = _builder
+                .withPredicate(Property.ROUTING_KEY, "generic.public")
+                .withPredicate(Property.NAME, "broadcast.A")
+                .withPredicate(Property.NAME, "broadcast.B")
+                .withPredicate(Property.NAME, "broadcast.X.*")
+                .withOperation(LegacyOperation.PUBLISH)
+                .withObject(ObjectType.EXCHANGE)
+                .withOutcome(RuleOutcome.ALLOW)
+                .build(_firewallRuleFactory);
+
+        final ObjectProperties action = new ObjectProperties();
+        action.put(Property.ROUTING_KEY, "broadcast.public");
+        action.setName("broadcast");
+        action.put(Property.METHOD_NAME, "publish");
+
+        assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+        assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties(), _subject));
+    }
 }

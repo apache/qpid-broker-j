@@ -114,12 +114,24 @@ define(["dojo/_base/declare",
                                     if (value)
                                     {
                                         markup = "<div class='keyValuePair'>";
-                                        for (var key in value)
+                                        for (let key in value)
                                         {
                                             if (value.hasOwnProperty(key))
                                             {
-                                                markup += "<div>" + entities.encode(String(key)) + "="
-                                                          + entities.encode(String(value[key])) + "</div>";
+                                                const valueList = value[key];
+                                                if (Array.isArray(valueList))
+                                                {
+                                                    for (let item of valueList)
+                                                    {
+                                                        markup += "<div>" + entities.encode(String(key)) + "="
+                                                            + entities.encode(String(item)) + "</div>";
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    markup += "<div>" + entities.encode(String(key)) + "="
+                                                        + entities.encode(String(valueList)) + "</div>";
+                                                }
                                             }
                                         }
                                         markup += "</div>"

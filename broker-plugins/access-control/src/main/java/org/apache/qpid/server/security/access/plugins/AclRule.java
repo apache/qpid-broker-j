@@ -32,8 +32,12 @@ import org.apache.qpid.server.security.access.config.Property;
 public interface AclRule extends ManagedAttributeValue
 {
     String getIdentity();
+
     ObjectType getObjectType();
+
     LegacyOperation getOperation();
-    Map<Property,String> getAttributes();
+
+    Map<Property, Object> getAttributes();
+
     RuleOutcome getOutcome();
 }

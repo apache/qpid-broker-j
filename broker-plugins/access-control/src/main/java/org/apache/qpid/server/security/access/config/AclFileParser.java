@@ -32,25 +32,29 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.config.Rule.Builder;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
+
+import com.google.common.collect.Iterables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class AclFileParser
 {
@@ -81,6 +85,8 @@ public final class AclFileParser
     static final String PROPERTY_NO_VALUE_MSG = "Incomplete property (no value) at line %d";
     static final String GROUP_NOT_SUPPORTED = "GROUP keyword not supported at line %d." +
             " Groups should defined via a Group Provider, not in the ACL file.";
+    static final String PROPERTY_NO_CLOSE_BRACKET_MSG = "Incomplete property (no close bracket) at line %d";
+
     private static final String INVALID_ENUM = "Not a valid %s: %s";
     private static final String INVALID_URL = "Cannot convert %s to a readable resource";
 
@@ -322,7 +328,8 @@ public final class AclFileParser
         while (i.hasNext())
         {
             final String key = i.next().toLowerCase(Locale.ENGLISH);
-            final Boolean value = Boolean.valueOf(readValue(i, line));
+            final Set<String> values = readValue(i, line);
+            final Boolean value = Boolean.valueOf(Iterables.getOnlyElement(values));
 
             if (Boolean.TRUE.equals(value))
             {
@@ -343,7 +350,7 @@ public final class AclFileParser
         }
     }
 
-    private static String readValue(Iterator<String> tokenIterator, int line)
+    private static Set<String> readValue(Iterator<String> tokenIterator, int line)
     {
         if (!tokenIterator.hasNext())
         {
@@ -357,7 +364,27 @@ public final class AclFileParser
         {
             throw new IllegalConfigurationException(String.format(PROPERTY_NO_VALUE_MSG, line));
         }
-        return tokenIterator.next();
+        final String value = tokenIterator.next();
+        if ("[".equals(value))
+        {
+            final Set<String> values = new HashSet<>();
+            String next;
+            while (tokenIterator.hasNext())
+            {
+                next = tokenIterator.next();
+                if (AclRulePredicates.SEPARATOR.equals(next))
+                {
+                    continue;
+                }
+                if ("]".equals(next))
+                {
+                    return values;
+                }
+                values.add(next);
+            }
+            throw new IllegalConfigurationException(String.format(PROPERTY_NO_CLOSE_BRACKET_MSG, line));
+        }
+        return Collections.singleton(value);
     }
 
     private RuleOutcome parsePermission(final String text, final int line)
@@ -381,11 +408,8 @@ public final class AclFileParser
                                             final String typeDescription)
     {
         return Optional.ofNullable(map.get(text.toUpperCase(Locale.ENGLISH)))
-                       .orElseThrow(() -> new IllegalConfigurationException(String.format(PARSE_TOKEN_FAILED_MSG, line),
-                                                                            new IllegalArgumentException(String.format(
-                                                                                    INVALID_ENUM,
-                                                                                    typeDescription,
-                                                                                    text))));
+                .orElseThrow(() -> new IllegalConfigurationException(String.format(PARSE_TOKEN_FAILED_MSG, line),
+                        new IllegalArgumentException(String.format(INVALID_ENUM, typeDescription, text))));
     }
 
     private Reader getReaderFromURLString(String urlString)
