@@ -20,12 +20,15 @@ package org.apache.qpid.server.security.access.firewall;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.security.access.config.FirewallRule;
+import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
+import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 
 abstract class AbstractFirewallRuleImpl implements FirewallRule
 {
@@ -39,13 +42,15 @@ abstract class AbstractFirewallRuleImpl implements FirewallRule
     @Override
     public boolean matches(final Subject subject)
     {
-        for (final ConnectionPrincipal principal : subject.getPrincipals(ConnectionPrincipal.class))
+        final Set<ConnectionPrincipal> connectionPrincipals = subject.getPrincipals(ConnectionPrincipal.class);
+        final Set<ManagementConnectionPrincipal> mgmtConnectionPrincipals = subject.getPrincipals(ManagementConnectionPrincipal.class);
+        if (!connectionPrincipals.isEmpty() || !mgmtConnectionPrincipals.isEmpty())
         {
-            final SocketAddress address = principal.getConnection().getRemoteSocketAddress();
-            if (address instanceof InetSocketAddress)
-            {
-                return matches(((InetSocketAddress) address).getAddress());
-            }
+            return Stream.concat(connectionPrincipals.stream(), mgmtConnectionPrincipals.stream())
+                .map(SocketConnectionPrincipal::getRemoteAddress)
+                .filter(InetSocketAddress.class::isInstance)
+                .map(address -> matches(((InetSocketAddress) address).getAddress()))
+                .findFirst().orElse(true);
         }
         return true;
     }

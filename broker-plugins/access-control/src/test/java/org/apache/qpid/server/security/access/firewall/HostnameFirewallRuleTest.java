@@ -24,11 +24,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Collections;
 
+import com.google.common.collect.ImmutableSet;
+import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.security.access.config.FirewallRule;
+import org.apache.qpid.server.security.access.config.LegacyOperation;
+import org.apache.qpid.server.security.access.config.ObjectProperties;
+import org.apache.qpid.server.security.access.config.RulePredicate;
+import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
+
+import javax.security.auth.Subject;
 
 public class HostnameFirewallRuleTest extends UnitTestBase
 {
@@ -103,5 +115,59 @@ public class HostnameFirewallRuleTest extends UnitTestBase
         assertFalse("Different hostnames should cause rules to be unequal",
                            rule.equals(new HostnameFirewallRule(hostname1, "different-hostname")));
 
+    }
+
+    @Test
+    public void testManagementConnectionPrincipals()
+    {
+        final ManagementConnectionPrincipal managementConnectionPrincipal = mock(ManagementConnectionPrincipal.class);
+        when(managementConnectionPrincipal.getRemoteAddress())
+            .thenReturn(new InetSocketAddress("127.0.0.1", 8000));
+
+        final ManagementConnectionPrincipal invalidManagementConnectionPrincipal = mock(ManagementConnectionPrincipal.class);
+        when(invalidManagementConnectionPrincipal.getRemoteAddress())
+            .thenReturn(new InetSocketAddress("127.0.0.3", 8000));
+
+        final Subject subject = new Subject();
+        final FirewallRule rule1 = new HostnameFirewallRule("127.0.0.1", "localhost");
+        final FirewallRule rule2 = new HostnameFirewallRule("127.0.0.2");
+
+        assertTrue(rule1.and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertTrue(rule2.and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+
+        assertTrue(rule1.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+        assertTrue(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
+
+        final Subject anotherSubject = new Subject(false,
+            ImmutableSet.of(
+                new UsernamePrincipal("name", mock(AuthenticationProvider.class)), managementConnectionPrincipal
+            ),
+            Collections.emptySet(),
+            Collections.emptySet());
+
+        assertTrue(rule1.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
+        assertTrue(RulePredicate.any().and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
+
+        assertFalse(rule1.and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
+        assertFalse(rule2.and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
+
+        assertFalse(rule2.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
+        assertFalse(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
+
+        final Subject invalidSubject = new Subject(false,
+            ImmutableSet.of(
+                new UsernamePrincipal("name", mock(AuthenticationProvider.class)), invalidManagementConnectionPrincipal
+            ),
+            Collections.emptySet(),
+            Collections.emptySet());
+
+        assertFalse(rule1.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));
+        assertFalse(RulePredicate.any().and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));
+
+        assertFalse(rule1.and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));
+        assertFalse(rule2.and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));
+
+        assertFalse(rule2.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));
+        assertFalse(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));
     }
 }
