@@ -23,6 +23,10 @@ package org.apache.qpid.server.store.berkeleydb;
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.JUL_LOGGER_LEVEL_OVERRIDE;
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade
         .LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
+import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD;
+import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT;
+import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD;
+import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
@@ -32,6 +36,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -174,7 +179,12 @@ public class StandardEnvironmentFacadeTest extends UnitTestBase
                                     any(),
                                     eq(JUL_LOGGER_LEVEL_OVERRIDE),
                                     any())).thenReturn(Collections.emptyMap());
-
+        when(sec.getFacadeParameter(eq(Integer.class),
+                                    eq(QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD),
+                                    anyInt())).thenReturn(DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD);
+        when(sec.getFacadeParameter(eq(Long.class),
+                                    eq(QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT),
+                                    anyLong())).thenReturn(DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT);
 
         return new StandardEnvironmentFacade(sec);
     }

@@ -23,6 +23,10 @@ package org.apache.qpid.server.store.berkeleydb.replication;
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.JUL_LOGGER_LEVEL_OVERRIDE;
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
 import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.*;
+import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD;
+import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT;
+import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD;
+import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -36,6 +40,7 @@ import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -1477,6 +1482,13 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         when(node.getFacadeParameter(eq(Boolean.class),
                                      eq(DISABLE_COALESCING_COMMITTER_PROPERTY_NAME),
                                      anyBoolean())).thenReturn(disableCoalescing);
+        when(node.getFacadeParameter(eq(Integer.class),
+                                     eq(QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD),
+                                     anyInt())).thenReturn(DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD);
+        when(node.getFacadeParameter(eq(Long.class),
+                                     eq(QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT),
+                                     anyLong())).thenReturn(DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT);
+
         Map<String, String> repConfig = new HashMap<>();
         repConfig.put(ReplicationConfig.REPLICA_ACK_TIMEOUT, "2 s");
         repConfig.put(ReplicationConfig.INSUFFICIENT_REPLICAS_TIMEOUT, "2 s");
