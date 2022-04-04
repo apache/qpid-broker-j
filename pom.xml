@@ -123,7 +123,7 @@
     <csvjdbc-version>1.0.35</csvjdbc-version>
     <jfreechart-version>1.0.13</jfreechart-version>
 
-    <dojo-version>1.16.3</dojo-version>
+    <dojo-version>1.16.4</dojo-version>
     <dstore-version>1.1.2</dstore-version>
     <dgrid-version>1.2.1</dgrid-version>
 
