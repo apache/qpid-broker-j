@@ -26,26 +26,53 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.filter.SelectorParsingException;
+import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.csv.CSVFormat;
 import org.apache.qpid.server.management.plugin.servlet.query.ConfiguredObjectQuery;
 import org.apache.qpid.server.management.plugin.servlet.query.EvaluationException;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.query.engine.QueryEngine;
+import org.apache.qpid.server.query.engine.evaluator.EvaluationResult;
+import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
+import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
+import org.apache.qpid.server.query.engine.model.QueryRequest;
 
 public abstract class QueryServlet<X extends ConfiguredObject<?>> extends AbstractServlet
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryServlet.class);
 
     private static final CSVFormat CSV_FORMAT = new CSVFormat();
+
+    private QueryEngine _queryEngine;
+
+    @Override
+    public void init() {
+        try
+        {
+            super.init();
+            final ServletContext servletContext = getServletContext();
+            final Broker<?> broker = (Broker<?>) servletContext.getAttribute(HttpManagementUtil.ATTR_BROKER);
+            _queryEngine = new QueryEngine(broker);
+        }
+        catch(Exception e)
+        {
+            LOGGER.error("Error when initializing query servlet", e);
+        }
+    }
 
     @Override
     protected void doGet(HttpServletRequest request,
@@ -56,14 +83,34 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
         performQuery(request, response, managedObject);
     }
 
-
     @Override
-    protected void doPost(HttpServletRequest request,
-                          HttpServletResponse response,
-                          final ConfiguredObject<?> managedObject)
-            throws IOException, ServletException
+    protected void doPost(
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final ConfiguredObject<?> managedObject
+    ) throws IOException
     {
-        performQuery(request, response, managedObject);
+        try
+        {
+            final String content = request.getReader().lines().collect(Collectors.joining());
+            if (content.isEmpty())
+            {
+                performQuery(request, response, managedObject);
+            }
+            else
+            {
+                final QueryRequest queryRequest = new ObjectMapper().readValue(content, QueryRequest.class);
+                final QuerySettings querySettings = queryRequest.toQuerySettings();
+                final QueryEvaluator queryEvaluator = _queryEngine.createEvaluator();
+                final EvaluationResult<List<Map<String, Object>>> result = queryEvaluator.execute(queryRequest.getSql(), querySettings);
+                sendJsonResponse(result, request, response);
+            }
+        }
+        catch (Exception e)
+        {
+            sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            LOGGER.error("Error when executing query", e);
+        }
     }
 
     private void performQuery(final HttpServletRequest request,

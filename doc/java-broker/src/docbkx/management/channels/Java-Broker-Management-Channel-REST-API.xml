@@ -322,6 +322,8 @@ curl --user admin -X PUT  -d '{"durable":true,"type":"priority"}' http://localho
 
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Management-Channel-REST-Query-API.xml"/>
 
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Management-Channel-REST-Query-Engine.xml"/>
+
   <section xml:id="Java-Broker-Management-Channel-REST-API-CORS">
     <title>Cross Origin Resource Sharing (CORS)</title>
     <para> The Broker supports Cross Origin Resource Sharing (CORS)

@@ -1,0 +1,3434 @@
+<?xml version="1.0"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Channel-REST-Query-Engine"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Query Engine</title>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Introduction">
+        <title>Introduction</title>
+        <para>
+            Broker query engine extends existing functionality of broker query API and allows executing complex SQL-like
+            queries against the broker. It allows using predicates combining AND/OR/NOT logical operations, supports
+            aggregation and grouping as well as numerous numeric, datetime and string functions.
+            Currently, querying from multiple object types (domains) in a single query as well as all types of joins
+            are not supported.
+        </para>
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Broker-Configuration">
+        <title>Broker Configuration</title>
+        <para>
+            Some properties influencing the query output can be specified directly in the request, but there are also global
+            properties, affecting the way query engine works.
+        </para>
+        <para>
+            <table>
+                <title>Query Engine Configuration</title>
+                <tgroup cols="2">
+                    <colspec colnum="1" colname="context-property-name" colwidth="1*"/>
+                    <colspec colnum="2" colname="description" colwidth="1*"/>
+                    <thead>
+                        <row>
+                            <entry>Context Property Name</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para>qpid.port.http.query.engine.cacheSize</para>
+                            </entry>
+                            <entry>
+                                <para>Query cache size</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>qpid.port.http.query.engine.maxQueryDepth</para>
+                            </entry>
+                            <entry>
+                                <para>Maximal query depth</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>qpid.port.http.query.engine.zoneId</para>
+                            </entry>
+                            <entry>
+                                <para>Timezone ID</para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </para>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Broker-Configuration-Query-Cache-Size">
+            <title>Query cache size</title>
+            <para>
+                After query is parsed from the SQL string, it is stored into a cache. When the same query will be fired against
+                the query engine, parsing will be omitted and the query structure will be retrieved from cache. By default, query cache
+                size is 1000. This means, that when 1000 different queries will be fired against the query engine, the next one will
+                override the oldest cache entry. When set to 0 or to negative value, query cache will not be used and each query
+                will be parsed.
+            </para>
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Broker-Configuration-Max-Query-Depth">
+            <title>Maximal query depth</title>
+            <para>
+                The longer is the query and the more conditions it contains, the bigger becomes the query depth. To limit query
+                complexity, maximal query depth parameter can be used. By default, maximal query depth is 4096. This should suffice
+                for most queries even complicated ones. If query depth exceeds this limit, following error will
+                be returned:
+            </para>
+            <programlisting language="javascript">
+    {
+        "errorMessage": "Max query depth reached: 4096"
+    }
+            </programlisting>
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Broker-Configuration-Zone-ID">
+            <title>Zone ID</title>
+            <para>
+                Zone ID value should follow the rules described in <link xlink:href="https://docs.oracle.com/javase/8/docs/api/java/time/ZoneId.html#of-java.lang.String-">javadoc</link>.
+                The default value for zone id is "UTC".
+            </para>
+        </section>
+
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Request-Format">
+        <title>Request Format</title>
+        <para>
+            An authorized request should be sent to the following endpoint:
+            POST http://&lt;hostname&gt;:&lt;port&gt;/api/latest/querybroker/broker
+            SQL query should be supplied in the "sql" field of the JSON body:
+        </para>
+        <programlisting language="javascript">
+    {
+        "sql": "select * from broker"
+    }
+        </programlisting>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SQL-Query-Format">
+            <title>SQL Query Format</title>
+            <para>
+                SQL keywords, operators and functions are case-insensitive, so are domain names (object types) specified in
+                the <literal>FROM</literal> clause. Field names specified in the <literal>SELECT</literal> clause are case-sensitive.
+                Following queries are similar:
+            </para>
+            <programlisting language="javascript">
+    {
+        "sql": "SELECT name FROM BROKER"
+    }
+            </programlisting>
+            <programlisting language="javascript">
+    {
+        "sql": "SELECT name FROM broker"
+    }
+            </programlisting>
+            <programlisting language="javascript">
+    {
+        "sql": "select name from broker"
+    }
+            </programlisting>
+            <para>
+                They will return the same output.
+                When an entity field name is written in wrong case or misspelled, an error will be returned.
+                For example, following query
+            </para>
+            <programlisting language="javascript">
+    {
+        "sql": "SELECT NAME FROM BROKER"
+    }
+            </programlisting>
+            <para>
+                has field <literal>NAME</literal> written in upper case, which will result in an error:
+            </para>
+            <programlisting language="javascript">
+    {
+        "errorMessage": "Domain 'BROKER' does not contain field 'NAME'"
+    }
+            </programlisting>
+            <para>
+                In this document many SQL queries are split into several lines for better readability, but JSON format does not support
+                multiline string fields. Therefore, even the long SQL queries should be placed in <literal>sql</literal> field of the JSON body as a
+                single line.
+                Aside from SQL query several configuration parameters can be provided to influence output format:
+            </para>
+            <para>
+                <table>
+                    <title>Additional Request Parameters</title>
+                    <tgroup cols="2">
+                        <colspec colnum="1" colname="field-name" colwidth="1*"/>
+                        <colspec colnum="2" colname="description" colwidth="1*"/>
+                        <thead>
+                            <row>
+                                <entry>Field Name</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry>
+                                    <para>dateTimeFormat</para>
+                                </entry>
+                                <entry>
+                                    <para>Format of the datetime fields, possible values: LONG, STRING</para>
+                                </entry>
+                            </row>
+                            <row>
+                                <entry>
+                                    <para>dateTimePattern</para>
+                                </entry>
+                                <entry>
+                                    <para>Pattern for datetime fields formatting, e.g. yyyy-MM-dd HH:mm:ss</para>
+                                </entry>
+                            </row>
+                            <row>
+                                <entry>
+                                    <para>decimalDigits</para>
+                                </entry>
+                                <entry>
+                                    <para>Amount of decimal digits</para>
+                                </entry>
+                            </row>
+                            <row>
+                                <entry>
+                                    <para>roundingMode</para>
+                                </entry>
+                                <entry>
+                                    <para>Rounding mode for arithmetic operations, possible values UP, DOWN, CEILING, FLOOR,
+                                        HALF_UP, HALF_DOWN, HALF_EVEN, UNNECESSARY
+                                    </para>
+                                </entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </table>
+            </para>
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Datetime-Format">
+            <title>Datetime Format</title>
+            <para>
+                When datetime format is specified as <literal>LONG</literal>, datetime fields will be returned as
+                milliseconds from UNIX epoch. So, following query
+            </para>
+            <programlisting language="javascript">
+    {
+        "sql": "select id, name, createdTime from broker",
+        "dateTimeFormat": "LONG"
+    }
+            </programlisting>
+            <para>
+                returns following result:
+            </para>
+            <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "id": "ce8bbaf0-3efa-4176-889a-7987ac1988cc",
+                "name": "broker",
+                "createdTime": 1645195849272
+            }
+        ],
+        "total": 1
+    }
+            </programlisting>
+            <para>
+                In opposite the query
+            </para>
+            <programlisting language="javascript">
+    {
+        "sql": "select id, name, createdTime from broker",
+        "dateTimeFormat": "STRING"
+    }
+            </programlisting>
+            <para>
+                returns following result:
+            </para>
+            <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "id": "ce8bbaf0-3efa-4176-889a-7987ac1988cc",
+                "name": "broker",
+                "createdTime": "2022-02-18 15:50:49.272"
+            }
+        ],
+        "total": 1
+    }
+            </programlisting>
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Datetime-Pattern">
+            <title>Datetime Pattern</title>
+            <para>
+                The default format of the string datetime representation is "yyyy-MM-DD HH:mm:ss.SSS".
+                It can be changed using the parameter <literal>dateTimePattern</literal>.
+                The query
+            </para>
+            <programlisting language="javascript">
+    {
+        "sql": "select id, name, createdTime from broker",
+        "dateTimeFormat": "STRING",
+        "dateTimePattern": "yyyy/MM/dd HH:mm:ss.SSS"
+    }
+            </programlisting>
+            <para>
+                returns following result
+            </para>
+            <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "id": "ce8bbaf0-3efa-4176-889a-7987ac1988cc",
+                "name": "broker",
+                "createdTime": "2022/02/18 15:50:49.272"
+            }
+        ],
+        "total": 1
+    }
+            </programlisting>
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Decimal-Digits">
+            <title>Decimal Digits</title>
+            <para>
+                By default, decimal digits value is 6, meaning there will be 6 digits after decimal point.
+                For example, following query
+            </para>
+            <programlisting language="javascript">
+    {
+        "sql": "select avg(queueDepthMessages) from queue"
+    }
+            </programlisting>
+            <para>
+                returns following result:
+            </para>
+            <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "avg(queueDepthMessages)": 0.437227
+            }
+        ],
+        "total": 1
+    }
+            </programlisting>
+            <para>
+                This behavior can be changed for each value separately using ROUND or TRUNC functions, but can also be changed for
+                the whole query result by supplying <literal>decimalDigits</literal> parameter. Following query
+            </para>
+            <programlisting language="javascript">
+    {
+        "sql": "select avg(queueDepthMessages) from queue",
+        "decimalDigits": 2
+    }
+            </programlisting>
+            <para>
+                returns following result:
+            </para>
+            <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "avg(queueDepthMessages)": 0.43
+            }
+        ],
+        "total": 1
+    }
+            </programlisting>
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Rounding-Mode">
+            <title>Rounding Mode</title>
+            <para>
+                Rounding mode affects how results of the arithmetic operations will be rounded. The rules of applying different rounding
+                modes can be found in appropriate <link xlink:href="https://docs.oracle.com/javase/8/docs/api/java/math/RoundingMode.html">javadoc</link>.
+                Default rounding mode is HALF_UP. Changing rounding mode will affect division operations, but will not affect results of
+                ROUND() and TRUNC() functions (which always use rounding mode HALF_UP and HALF_DOWN appropriately).
+                Following query
+            </para>
+            <programlisting language="javascript">
+    {
+        "sql": "select 2/3",
+        "decimalDigits": 2,
+        "roundingMode": "DOWN"
+    }
+            </programlisting>
+            <para>
+                uses rounding mode <literal>DOWN</literal> and returns following result:
+            </para>
+            <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "2/3": 0.66
+            }
+        ],
+        "total": 1
+    }
+            </programlisting>
+            <para>
+                When rounding mode will be changed to <literal>UP</literal>
+            </para>
+            <programlisting language="javascript">
+    {
+        "sql": "select 2/3",
+        "decimalDigits": 2,
+        "roundingMode": "UP"
+    }
+            </programlisting>
+            <para>
+                result will be changed as well:
+            </para>
+            <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "2/3": 0.67
+            }
+        ],
+        "total": 1
+    }
+            </programlisting>
+        </section>
+
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Object-Types">
+        <title>Object Types (Domains)</title>
+        <para>
+            Object types or domains to query from are specified in the "FROM" clause. The broker object hierarchy can be retrieved
+            using an endpoint http://&lt;hostname&gt;:&lt;port&gt;/service/metadata
+
+            Alternatively following SQL query can be fired
+        </para>
+        <programlisting language="javascript">
+    {
+        "sql": "select * from domain"
+    }
+        </programlisting>
+        <para>
+            returning similar result:
+        </para>
+        <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "name": "AccessControlProvider"
+            },
+            {
+                "name": "AclRule"
+            },
+            {
+                "name": "AuthenticationProvider"
+            },
+            {
+                "name": "Binding"
+            },
+            {
+                "name": "BrokerConnectionLimitProvider"
+            },
+            {
+                "name": "BrokerLogInclusionRule"
+            },
+            {
+                "name": "BrokerLogger"
+            },
+            {
+                "name": "Certificate"
+            },
+            {
+                "name": "Connection"
+            },
+            {
+                "name": "ConnectionLimitRule"
+            },
+            {
+                "name": "Consumer"
+            },
+            {
+                "name": "Domain"
+            },
+            {
+                "name": "Exchange"
+            },
+            {
+                "name": "Group"
+            },
+            {
+                "name": "GroupMember"
+            },
+            {
+                "name": "GroupProvider"
+            },
+            {
+                "name": "KeyStore"
+            },
+            {
+                "name": "Plugin"
+            },
+            {
+                "name": "Port"
+            },
+            {
+                "name": "Queue"
+            },
+            {
+                "name": "RemoteReplicationNode"
+            },
+            {
+                "name": "Session"
+            },
+            {
+                "name": "TrustStore"
+            },
+            {
+                "name": "User"
+            },
+            {
+                "name": "VirtualHost"
+            },
+            {
+                "name": "VirtualHostAccessControlProvider"
+            },
+            {
+                "name": "VirtualHostAlias"
+            },
+            {
+                "name": "VirtualHostConnectionLimitProvider"
+            },
+            {
+                "name": "VirtualHostLogInclusionRule"
+            },
+            {
+                "name": "VirtualHostLogger"
+            },
+            {
+                "name": "VirtualHostNode"
+            }
+        ],
+        "total": 31
+    }
+        </programlisting>
+        <para>
+            In addition to the object types supported by broker query REST API, following object types (domains)
+            can be used as well:
+        </para>
+        <para>
+            <table>
+                <title>Query Engine Domains</title>
+                <tgroup cols="1">
+                    <colspec colnum="1" colname="domain" colwidth="1*"/>
+                    <thead>
+                        <row>
+                            <entry>Domain</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para>AclRule</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>Binding</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>Certificate</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>ConnectionLimitRule</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>Domain</para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </para>
+        <para>
+            Those objects do not belong to the broker object hierarchy (as they don't descend from ConfiguredObject), they were
+            added to make queries against listed domains more simple.
+            For example, following query
+        </para>
+        <programlisting language="sql">
+    SELECT *
+    FROM AclRule
+    WHERE identity = 'amqp_user1'
+        </programlisting>
+        <para>
+            returns following result:
+        </para>
+        <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "identity": "amqp_user1",
+                "attributes": {},
+                "action": {
+                    "objectType": "VIRTUALHOST",
+                    "properties": {
+                        "name": null,
+                        "empty": true
+                    },
+                    "operation": "ACCESS"
+                },
+                "objectType": null,
+                "operation": null,
+                "outcome": "ALLOW_LOG"
+            },
+            {
+                "identity": "amqp_user1",
+                "attributes": {
+                    "NAME": "request.amqp_user1",
+                    "ROUTING_KEY": "*"
+                    },
+                "action": {
+                    "objectType": "EXCHANGE",
+                    "properties": {
+                        "name": "request.amqp_user1",
+                        "empty": false
+                        },
+                    "operation": "PUBLISH"
+                },
+                "objectType": null,
+                "operation": null,
+                "outcome": "ALLOW"
+            },
+            {
+                "identity": "amqp_user1",
+                "attributes": {
+                    "NAME": "broadcast.amqp_user1.*"
+                    },
+                "action": {
+                    "objectType": "QUEUE",
+                    "properties": {
+                        "name": "broadcast.amqp_user1.*",
+                        "empty": false
+                        },
+                    "operation": "CONSUME"
+                },
+                "objectType": null,
+                "operation": null,
+                "outcome": "ALLOW_LOG"
+            },
+            {
+                "identity": "amqp_user1",
+                "attributes": {
+                    "NAME": "response.amqp_user1"
+                    },
+                "action": {
+                    "objectType": "QUEUE",
+                    "properties": {
+                        "name": "response.amqp_user1",
+                        "empty": false
+                        },
+                    "operation": "CONSUME"
+                },
+                "objectType": null,
+                "operation": null,
+                "outcome": "ALLOW_LOG"
+            }
+        ],
+        "total": 4
+    }
+        </programlisting>
+        <para>
+            Please note, that keyword <literal>FROM</literal> isn't mandatory, it is possible to execute queries without it, when the result shouldn't
+            retrieve any data from broker. Few examples of such queries would be:
+        </para>
+        <programlisting language="sql">
+            SELECT CURRENT_TIMESTAMP()
+        </programlisting>
+        <programlisting language="sql">
+            SELECT DATE(CURRENT_TIMESTAMP())
+        </programlisting>
+        <programlisting language="sql">
+            SELECT (2 + 10) / 3
+        </programlisting>
+        <programlisting language="sql">
+            SELECT 2 * 5 > 12
+        </programlisting>
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Filtering-Results">
+        <title>Filtering Results</title>
+        <para>
+            Filtering is achieved by using different operators groups in a <literal>WHERE</literal> clause. Operators
+            can be divided into comparison operators, conditional operators and logical operators.
+        </para>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Broker-Data-Types">
+            <title>Broker Data Types</title>
+            <para>
+                Broker entities have fields belonging to different java types: primitives (boolean, int, long, double), strings,
+                datetime <link xlink:href="https://docs.oracle.com/javase/8/docs/api/java/util/Date.html">Date</link>,
+                <link xlink:href="https://docs.oracle.com/javase/8/docs/api/java/time/LocalDate.html">LocalDate</link>,
+                <link xlink:href="https://docs.oracle.com/javase/8/docs/api/java/time/LocalDateTime.html">LocalDateTime</link>,
+                <link xlink:href="https://docs.oracle.com/javase/8/docs/api/java/time/Instant.html">Instant</link>.
+                Object IDs are usually of <link xlink:href="https://docs.oracle.com/javase/8/docs/api/java/util/UUID.html">UUID</link> type.
+                Many values are enums.
+
+                When comparing field values, they follow some implicit casting rules: enums and UUIDs are cast to strings,
+                datetime values are cast to <link xlink:href="https://docs.oracle.com/javase/8/docs/api/java/time/Instant.html">Instant</link>,
+                numeric values are cast to <link xlink:href="https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html">BigDecimal</link>.
+
+                When casting string value to date, by default is used pattern "uuuu-MM-dd".
+
+                That allows to run following queries:
+            </para>
+            <programlisting language="sql">
+    SELECT *
+    FROM certificate
+    WHERE DATE(validUntil) = '2020-12-31'
+            </programlisting>
+            <para>
+                Here string value is implicitly cast to Instant and both value are compared as Instant instances.
+                When casting string to datetime, by default is used pattern "uuuu-MM-dd HH:mm:ss" with optional 0-6 second fractions.
+                That allows to run following queries:
+            </para>
+            <programlisting language="sql">
+    SELECT *
+    FROM certificate
+    WHERE DATE(validUntil) > '2020-12-31 23:59:59.999'
+            </programlisting>
+            <para>
+                Here string value is implicitly cast to Instant as well and both value are compared as Instant instances.
+                It is important to compare values of the same type, otherwise an error may be returned or query may be evaluated
+                erroneously. For example, following query
+            </para>
+            <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE durable = 'true'
+            </programlisting>
+            <para>
+                will return an empty result, because field <literal>durable</literal> is of boolean type and comparing boolean value with a string 'true'
+                will always return false. The correct query should be
+            </para>
+            <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE durable = true
+            </programlisting>
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Broker-Keyword-DISTINCT">
+            <title>Keyword DISTINCT</title>
+            <para>
+                To remove duplicates from the results keyword "DISTINCT" can be used. For example, query
+            </para>
+            <programlisting language="sql">
+    SELECT overflowPolicy
+    FROM queue
+            </programlisting>
+            <para>
+                will return results for all queues, but query
+            </para>
+            <programlisting language="sql">
+    SELECT DISTINCT overflowPolicy
+    FROM queue
+            </programlisting>
+            <para>
+                will return only several values.
+            </para>
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Comparison-Operators">
+            <title>Comparison Operators</title>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-BETWEEN">
+                <title>BETWEEN</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-BETWEEN-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The BETWEEN operator selects values within a given range. The values can be numbers, text, or dates. The BETWEEN
+                        operator is inclusive: begin and end values are included.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-BETWEEN-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    BETWEEN(expression1 AND expression2)
+    BETWEEN(expression1, expression2)
+    BETWEEN expression1 AND expression2
+    BETWEEN expression1, expression2
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-BETWEEN-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>BETWEEN Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression1</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Lower threshold</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>expression2</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Higher threshold</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-BETWEEN-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find names of the queues having depth in messages between 1000 and 2000
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        name
+    FROM queue
+    WHERE queueDepthMessages BETWEEN (1000, 2000)
+                    </programlisting>
+                    <para>
+                        Find certificates expiring between 2024-12-01 and 2024-12-31
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM certificate
+    WHERE DATE(validUntil) BETWEEN ('2024-12-01' AND '2024-12-31')
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EQUAL">
+                <title>EQUAL</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EQUAL-Definition">
+                        <title>Definition and Usage</title>
+                        <para>
+                            Equal operator is designated using "=" character. It allows comparison of boolean, datetime,
+                            numeric and string values. Both compared values must have same type.
+                        </para>
+                    </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EQUAL-Syntax">
+                        <title>Syntax</title>
+                        <programlisting language="sql">
+        expression1 = expression2
+                        </programlisting>
+                    </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EQUAL-Parameter-Values">
+                        <title>Parameter Values</title>
+                        <para>
+                            <table>
+                                <title>EQUAL Parameters</title>
+                                <tgroup cols="2">
+                                    <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                    <colspec colnum="2" colname="description" colwidth="1*"/>
+                                    <thead>
+                                        <row>
+                                            <entry>Parameter</entry>
+                                            <entry>Description</entry>
+                                        </row>
+                                    </thead>
+                                    <tbody>
+                                        <row>
+                                            <entry>
+                                                <para>expression1</para>
+                                            </entry>
+                                            <entry>
+                                                <para>Expression to compare to</para>
+                                            </entry>
+                                        </row>
+                                        <row>
+                                            <entry>
+                                                <para>expression2</para>
+                                            </entry>
+                                            <entry>
+                                                <para>Expression to compare with</para>
+                                            </entry>
+                                        </row>
+                                    </tbody>
+                                </tgroup>
+                            </table>
+                        </para>
+                    </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EQUAL-Examples">
+                        <title>Examples</title>
+                        <para>
+                            Find queue by name
+                        </para>
+                        <programlisting language="sql">
+        SELECT *
+        FROM queue
+        WHERE name = 'broadcast.amqp_user1.Public'
+                        </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN">
+                <title>GREATER THAN</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        Greater than operator is designated using ">" character. It allows comparison of datetime,
+                        numeric and string values. Both compared values must have same type.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    expression1 > expression2
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>GREATER THAN Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression1</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare to</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>expression2</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare with</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find queues having message depth greater than 1000
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE queueDepthMessages > 1000
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN-OR-EQUAL">
+                <title>GREATER THAN OR EQUAL</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN-OR-EQUAL-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        Greater than or equal operator is designated using ">=" characters. It allows comparison of
+                        datetime, numeric and string values. Both compared values must have same type.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN-OR-EQUAL-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    expression1 >= expression2
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN-OR-EQUAL-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>GREATER THAN OR EQUAL Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression1</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare to</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>expression2</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare with</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-GREATER-THAN-OR-EQUAL-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find queues having message depth greater than or equal to 1000
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE queueDepthMessages >= 1000
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IN">
+                <title>IN</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IN-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The IN operator allows specifying multiple values in a WHERE clause. The IN operator is a
+                        shorthand for multiple OR conditions.
+                        Alternatively IN operator can be used with a subquery. When a subquery is used, it should
+                        return only one value, otherwise an error will be returned.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IN-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    expression IN (value_1, value_2, ..., value_n)
+    expression IN (SELECT value FROM domain)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IN-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>IN Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare to</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>value_1 - value_n</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Values to compare with</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IN-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find bindings having destination queue belonging to the list
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM binding
+    WHERE destination IN ('broadcast.amqp_user1.Service1', 'broadcast.amqp_user1.Service2', 'broadcast.amqp_user1.Service3')
+                    </programlisting>
+                    <para>
+                        Find bindings having destination queue with message depth between 1000 and 2000
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM binding
+    WHERE destination IN (SELECT name FROM queue WHERE queueDepthMessages BETWEEN (1000, 2000))
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IS-NULL">
+                <title>IS NULL</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IS-NULL-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The IS NULL operator is used to compare ordinary values with NULL values.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IS-NULL-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    expression IS NULL
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IS-NULL-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>IS NULL Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare to NULL</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-IS-NULL-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find queues having NULL description
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE description IS NULL
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN">
+                <title>LESS THAN</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        Less than operator is designated using "&lt;" character. It allows comparison of datetime, numeric and string values.
+                        Both compared values must have same type.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    expression1 &lt; expression2
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>LESS THAN Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression1</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare to</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>expression2</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare with</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find queues having message depth less than 1000
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE queueDepthMessages &lt; 1000
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN-OR-EQUAL">
+                <title>LESS THAN OR EQUAL</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN-OR-EQUAL-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        Less than or equal operator is designated using "&lt;=" characters. It allows comparison of
+                        datetime, numeric and string values. Both compared values must have same type.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN-OR-EQUAL-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    expression1 &lt;= expression2
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN-OR-EQUAL-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>LESS THAN OR EQUAL Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression1</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare to</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>expression2</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare with</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LESS-THAN-OR-EQUAL-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find queues having message depth less than or equal to 1000
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE queueDepthMessages &lt;= 1000
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LIKE">
+                <title>LIKE</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LIKE-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The LIKE operator is used to search for a specified pattern in a string. There are two
+                        wildcards often used in conjunction with the LIKE operator: the percent sign "%" represents
+                        zero, one, or multiple characters; the question mark "?" represents one, single character.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LIKE-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    expression LIKE pattern
+    expression LIKE pattern ESCAPE escapeCharacter
+    expression LIKE (pattern)
+    expression LIKE (pattern ESCAPE escapeCharacter)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LIKE-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>LIKE Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression to compare to</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>pattern</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Pattern to compare against</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>escapeCharacter</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Character used to escape percent sign or question mark</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LIKE-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find queues having name starting with a string "broadcast"
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE name LIKE 'broadcast%'
+                    </programlisting>
+                    <para>
+                        Find queues with name containing string "amqp_user1"
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE name LIKE '%amqp_user1%'
+                    </programlisting>
+                </section>
+
+            </section>
+
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Conditional-Operators">
+            <title>Conditional Operators</title>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CASE">
+                <title>CASE</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CASE-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The CASE statement goes through conditions and returns a value when the first condition is met
+                        (like an if-then-else statement). So, once a condition is true, it will stop reading and return
+                        the result. If no conditions are true, it returns the value in the ELSE clause.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CASE-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    CASE
+        WHEN condition1 THEN result1
+        WHEN condition2 THEN result2
+        WHEN conditionN THEN resultN
+        ELSE result
+    END
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CASE-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>CASE Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>condition1 - conditionN</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Conditions to estimate</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>result1 - resultN</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Results to return</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CASE-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Group queues into good (&lt; 60% of max depth), bad (60% - 90% of max depth) and critical
+                        (> 90% of max depth), count number of queues in each group. Consider queues with unlimited
+                        depth being good.
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        COUNT(*),
+        CASE
+            WHEN maximumQueueDepthMessages != -1 AND maximumQueueDepthBytes != -1
+                AND (queueDepthMessages > maximumQueueDepthMessages * 0.9 OR queueDepthBytes > maximumQueueDepthBytes * 0.9)
+            THEN 'critical'
+            WHEN maximumQueueDepthMessages != -1 AND maximumQueueDepthBytes != -1
+                AND queueDepthMessages BETWEEN (maximumQueueDepthMessages * 0.6 AND maximumQueueDepthMessages * 0.9)
+                OR queueDepthBytes BETWEEN (maximumQueueDepthBytes * 0.6 AND maximumQueueDepthBytes * 0.9)
+            THEN 'bad'
+            ELSE 'good'
+        END AS queueState
+    FROM queue
+    GROUP BY queueState
+                    </programlisting>
+                </section>
+
+            </section>
+
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Logical-Operators">
+            <para>
+                The "AND" and "OR" operators are used to filter records based on more than one condition: the "AND"
+                operator displays a record if all the conditions separated by "AND" are TRUE. The "OR" operator
+                displays a record if any of the conditions separated by "OR" is TRUE. The "NOT" operator displays a
+                record if the condition(s) is NOT TRUE.
+            </para>
+        </section>
+
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Sorting-Results">
+        <title>Sorting Results</title>
+        <para>
+            Default sorting order is ascending, default sorting field is `name` for domains having this field. Results
+            of the following query will be sorted ascending by name:
+        </para>
+        <programlisting language="sql">
+    SELECT *
+    FROM queue
+        </programlisting>
+        <para>Few exceptions are following:</para>
+        <para>
+            <table>
+                <title>Default sorting fields</title>
+                <tgroup cols="2">
+                    <colspec colnum="1" colname="domain" colwidth="1*"/>
+                    <colspec colnum="2" colname="field-name" colwidth="1*"/>
+                    <thead>
+                        <row>
+                            <entry>Domain</entry>
+                            <entry>Default sorting field</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para>AclRule</para>
+                            </entry>
+                            <entry>
+                                <para>identity</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>Certificate</para>
+                            </entry>
+                            <entry>
+                                <para>alias</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>ConnectionLimitRule</para>
+                            </entry>
+                            <entry>
+                                <para>identity</para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </para>
+        <para>Results of the following query will be sorted ascending by alias:</para>
+        <programlisting language="sql">
+    SELECT *
+    FROM certificate
+        </programlisting>
+        <para>
+            To apply another sorting rules clause `ORDER BY` should be used. It may contain one of the fields specified
+            in the `SELECT` clause:
+        </para>
+        <programlisting language="sql">
+    SELECT
+        id, name, state
+    FROM queue
+    ORDER BY name
+        </programlisting>
+        <para>
+            Alternatively it may contain fields not specified in `SELECT` clause:
+        </para>
+        <programlisting language="sql">
+    SELECT
+        id, name, state
+    FROM queue
+    ORDER BY overflowPolicy
+        </programlisting>
+        <para>
+            Instead of using field names or aliases items in the `ORDER BY` clause can also be referenced by ordinal -
+            the numeric value of their order of appearance in the `SELECT` clause. For example, following query
+        </para>
+        <programlisting language="sql">
+    SELECT
+        name, overflowPolicy
+    FROM queue
+    ORDER BY 2 DESC, 1 ASC
+        </programlisting>
+        <para>
+            will return results sorted in descending order by overflow policy and inside the groups with the same overflow policy
+            name results will be sorted by queue name in ascending order.
+        </para>
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Aggregation">
+        <title>Aggregation</title>
+        <para>
+            Aggregation is achieved using functions AVG(), COUNT(), MAX(), MIN() and SUM().
+            It's important to remember, that aggregation functions don't consider NULL values. For example, following query
+        </para>
+        <programlisting language="sql">
+    SELECT COUNT(description)
+    FROM queue
+        </programlisting>
+        <para>
+            will return count of queues having non-null value of a field `description`.
+            To consider NULL values, they should be handled using COALESCE() function or CASE
+            operator:
+        </para>
+        <programlisting language="sql">
+    SELECT COUNT(COALESCE(description, ''))
+    FROM queue
+        </programlisting>
+        <para>Alternatively</para>
+        <programlisting language="sql">
+    SELECT COUNT(CASE WHEN description IS NULL THEN '' ELSE description END)
+    FROM queue
+        </programlisting>
+        <para>Several aggregation functions can be used together in the same query:</para>
+        <programlisting language="sql">
+    SELECT
+        COUNT(*),
+        AVG(queueDepthMessages),
+        SUM(queueDepthMessages),
+        SUM(queueDepthBytes),
+        MIN(queueDepthMessages),
+        MAX(queueDepthMessages),
+        MIN(queueDepthBytes),
+        MAX(queueDepthBytes)
+    FROM queue
+        </programlisting>
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Grouping">
+        <title>Grouping</title>
+        <para>
+            Grouping of the aggregated results can be achieved using the `GROUP BY` clause.
+            For example, following query finds count of ACL rules for each user and output them in descending order:
+        </para>
+        <programlisting language="sql">
+    SELECT
+        COUNT(*) AS cnt, identity
+    FROM aclrule
+    GROUP BY identity
+    ORDER BY 1 DESC
+        </programlisting>
+        <para>The result of the query:</para>
+        <programlisting language="javascript">
+    {
+        "results": [
+            {
+                "cnt": {
+                    "amqp_user1": 6,
+                    "amqp_user2": 4,
+                    "amqp_user3": 4,
+                    ... some results ommited ...
+                    "amqp_user97": 2,
+                    "amqp_user98": 1,
+                    "amqp_user99": 1
+                }
+            }
+        ],
+        "total": 1
+    }
+        </programlisting>
+        <para>
+            To filter the grouped result `HAVING` clause can be used:
+        </para>
+        <programlisting language="sql">
+    SELECT
+        overflowPolicy, COUNT(*)
+    FROM queue
+    GROUP BY overflowPolicy
+    HAVING SUM(queueDepthMessages) > 1000
+        </programlisting>
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Functions">
+        <title>Functions</title>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Aggregation-Functions">
+            <title>Aggregation Functions</title>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-AVG">
+                <title>AVG</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-AVG-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The AVG() function returns the average value of a collection.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-AVG-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    AVG(expression)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-AVG-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>AVG Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression result average value of which should be found</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-AVG-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find average amount of bytes used by queues with names starting with "broadcast"
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        AVG(queueDepthBytes)
+    FROM queue
+    WHERE name LIKE 'broadcast%'
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COUNT">
+                <title>COUNT</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COUNT-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The COUNT() function returns the number of items that matches a specified criterion.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COUNT-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    COUNT(expression)
+    COUNT(DISTINCT expression)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COUNT-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>COUNT Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression result of which should be counted</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COUNT-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find amount of queues with names starting with "broadcast"
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        COUNT (*)
+    FROM queue
+    WHERE name LIKE 'broadcast%'
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MAX">
+                <title>MAX</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MAX-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The MAX() function returns the maximum value of a collection.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MAX-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    MAX(expression)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MAX-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>MAX Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression result maximal value of which should be found</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MAX-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find maximal amount of bytes used by queues with names starting with "broadcast"
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        MAX(queueDepthBytes)
+    FROM queue
+    WHERE name LIKE 'broadcast%'
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MIN">
+                <title>MIN</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MIN-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The MIN() function returns the minimum value of a collection.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MIN-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    MIN(expression)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MIN-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>MIN Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression result minimal value of which should be found</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-MIN-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find minimal amount of bytes used by queues with names starting with "broadcast"
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        MIN(queueDepthBytes)
+    FROM queue
+    WHERE name LIKE 'broadcast%'
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUM">
+                <title>SUM</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUM-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The SUM() function returns the total sum of a numeric collection.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUM-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    SUM(expression)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUM-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>SUM Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Expression result of which should be summed</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUM-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find amount of bytes used by queues having names starting with "broadcast"
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        SUM(queueDepthBytes)
+    FROM queue
+    WHERE name LIKE 'broadcast%'
+                    </programlisting>
+                </section>
+
+            </section>
+
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Datetime-Functions">
+            <title>Datetime Functions</title>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CURRENT_TIMESTAMP">
+                <title>CURRENT_TIMESTAMP</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CURRENT_TIMESTAMP-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The CURRENT_TIMESTAMP() function returns current date and time.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CURRENT_TIMESTAMP-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    CURRENT_TIMESTAMP()
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CURRENT_TIMESTAMP-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>Function has no parameters</para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CURRENT_TIMESTAMP-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find current date and time
+                    </para>
+                    <programlisting language="sql">
+    SELECT CURRENT_TIMESTAMP()
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATE">
+                <title>DATE</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATE-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The DATE() function extracts the date part from a datetime expression.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATE-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    DATE(expression)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATE-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>DATE Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression</para>
+                                        </entry>
+                                        <entry>
+                                            <para>A valid date/datetime value</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATE-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find certificates having validFrom equal to 01. January 2020
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM certificate
+    WHERE DATE(validFrom) = '2020-01-01'
+                    </programlisting>
+                    <para>
+                        Find certificates expiring between 01. January 2020 and 10. January 2020
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM certificate
+    WHERE DATE(validUntil) BETWEEN ('2020-01-01', '2020-01-10')
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEADD">
+                <title>DATEADD</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEADD-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The DATEADD() function adds a time/date interval to a date and returns the date.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEADD-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    DATEADD(TIMEUNIT, VALUE, DATE)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEADD-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>DATEADD Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>TIMEUNIT</para>
+                                        </entry>
+                                        <entry>
+                                            <para>
+                                                The type of time unit to add.
+                                                Can be one of the following values:
+                                                YEAR, MONTH, WEEK, DAY, HOUR, MINUTE, SECOND, MILLISECOND
+                                            </para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>VALUE</para>
+                                        </entry>
+                                        <entry>
+                                            <para>
+                                                The value of the time/date interval to add.
+                                                Both positive and negative values are allowed
+                                            </para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>DATE</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The date to be modified</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEADD-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find certificates expiring in less than 30 days
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM certificate
+    WHERE DATEADD(DAY, -30, validUntil) &lt; CURRENT_TIMESTAMP()
+    LIMIT 10 OFFSET 0
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEDIFF">
+                <title>DATEDIFF</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEDIFF-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The DATEDIFF() function returns the number of time units between two date values.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEDIFF-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    DATEDIFF(TIMEUNIT, DATE1, DATE2)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEDIFF-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>DATEDIFF Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>TIMEUNIT</para>
+                                        </entry>
+                                        <entry>
+                                            <para>
+                                                Time unit to calculate difference.
+                                                Can be one of the following values:
+                                                YEAR, MONTH, WEEK, DAY, HOUR, MINUTE, SECOND, MILLISECOND
+                                            </para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>DATE1</para>
+                                        </entry>
+                                        <entry>
+                                            <para>
+                                                Start date
+                                            </para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>DATE2</para>
+                                        </entry>
+                                        <entry>
+                                            <para>
+                                                End date
+                                            </para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-DATEDIFF-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find certificate aliases and days until expiry
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        alias,
+        DATEDIFF(DAY, CURRENT_TIMESTAMP(), validUntil) AS days_until_expiry
+    FROM certificate
+    LIMIT 10 OFFSET 0
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EXTRACT">
+                <title>EXTRACT</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EXTRACT-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The EXTRACT() function extracts a part from a given date.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EXTRACT-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    EXTRACT(TIMEUNIT FROM DATE)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EXTRACT-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>EXTRACT Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>TIMEUNIT</para>
+                                        </entry>
+                                        <entry>
+                                            <para>
+                                                Time unit to extract.
+                                                Can be one of the following values:
+                                                YEAR, MONTH, WEEK, DAY, HOUR, MINUTE, SECOND, MILLISECOND
+                                            </para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>DATE</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The date to extract a part from</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-EXTRACT-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find certificates issued in January 2020
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM certificate
+    WHERE EXTRACT(YEAR FROM validFrom) = 2020
+    AND EXTRACT(MONTH FROM validFrom) = 1
+    LIMIT 10 OFFSET 0
+                    </programlisting>
+                </section>
+
+            </section>
+
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Null-Functions">
+            <title>NULL Functions</title>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COALESCE">
+                <title>COALESCE</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COALESCE-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The COALESCE() function returns the first non-null value in a list.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COALESCE-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    COALESCE(value_1, value_2, ...., value_n)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COALESCE-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>COALESCE Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>value_1 - value_n</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The values to test</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-COALESCE-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find count of queues having NULL description
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        COUNT(COALESCE(description, 'empty')) AS RESULT
+    FROM queue
+    HAVING COALESCE(description, 'empty') = 'empty'
+                    </programlisting>
+                </section>
+
+            </section>
+
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Numeric-Functions">
+            <title>Numeric Functions</title>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ABS">
+                <title>ABS</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ABS-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The ABS() function returns the absolute value of a number.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ABS-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    ABS(number)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ABS-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>ABS Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>number</para>
+                                        </entry>
+                                        <entry>
+                                            <para>A numeric value</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ABS-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find absolute amount of days after the validFrom date of the certificates
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        ABS(DATEDIFF(DAY, CURRENT_TIMESTAMP(), validFrom))
+    FROM certificate
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ROUND">
+                <title>ROUND</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ROUND-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The ROUND() function takes a numeric parameter and rounds it to the specified number
+                        of decimal places.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ROUND-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    ROUND(number, decimals)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ROUND-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>ROUND Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>number</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The number to be rounded</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>decimals</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The number of decimal places to round to</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-ROUND-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find average queue depth in messages and round result to 2 decimal places
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        ROUND(AVG(queueDepthMessages)) as result
+    FROM queue
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRUNC">
+                <title>TRUNC</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRUNC-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The TRUNC() function takes a numeric parameter and truncates it to the specified number
+                        of decimal places.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRUNC-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    TRUNC(number, decimals)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRUNC-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>TRUNC Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>number</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The number to be truncated</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>decimals</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The number of decimal places to truncate to</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRUNC-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find average queue depth in messages and truncate result to 2 decimal places
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        TRUNC(AVG(queueDepthMessages)) as result
+    FROM queue
+                    </programlisting>
+                </section>
+
+            </section>
+
+        </section>
+
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-String-Functions">
+            <title>String Functions</title>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CONCAT">
+                <title>CONCAT</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CONCAT-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The CONCAT() function takes a variable number of arguments and concatenates them into a single string.
+                        It requires a minimum of one input value, otherwise CONCAT will raise an error. CONCAT implicitly
+                        converts all arguments to string types before concatenation. The implicit conversion to strings follows
+                        the existing rules for data type conversions. If any argument is NULL, CONCAT returns NULL.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CONCAT-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    CONCAT(expression_1, expression_2, expression_3, ..., expression_n)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CONCAT-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>LENGTH Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>expression_1 - expression_n</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The expressions to add together</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-CONCAT-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Output certificate alias and validity dates using format "alias: validFrom - validUntil"
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        CONCAT(alias, ': ', DATE(validFrom), ' - ', DATE(validUntil)) as validity
+    FROM certificate
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LENGTH">
+                <title>LEN / LENGTH</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LENGTH-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The LEN() / LENGTH() function takes a string parameter and returns its length.
+                        The implicit conversion to strings follows the existing rules for data
+                        type conversions. If any argument is NULL, LEN / LENGTH returns 0.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LENGTH-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    LEN(string)
+    LENGTH(string)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LENGTH-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>LENGTH Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>string</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The string to count the length for</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LENGTH-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find certificate aliases having alias length greater than 10
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        alias
+    FROM certificate
+    WHERE LENGTH(alias) > 10
+    LIMIT 10 OFFSET 0
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LOWER">
+                <title>LOWER</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LOWER-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The LOWER() function takes a string parameter and converts it to lower case. The implicit
+                        conversion to strings follows the existing rules for data type conversions.
+                        If argument is NULL, LOWER returns NULL.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LOWER-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    LOWER(string)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LOWER-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>LOWER Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>string</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The string to convert</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LOWER-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Filter connections by principal name (case-insensitive)
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM connection
+    WHERE LOWER(principal) = 'amqp_user1'
+    LIMIT 10 OFFSET 0
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LTRIM">
+                <title>LTRIM</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LTRIM-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The LTRIM() function removes leading spaces from a string.
+                        If argument is NULL, RTRIM returns NULL.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LTRIM-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    LTRIM(string)
+    LTRIM(string, chars)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LTRIM-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>LTRIM Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>string</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The string to remove leading and trailing spaces from</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>chars</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Specific characters to remove</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-LTRIM-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find connection remote addresses
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        LTRIM(remoteAddress, '/') AS remoteAddress
+    FROM connection
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-POSITION">
+                <title>POSITION</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-POSITION-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The POSITION() function takes a search pattern and a source string as parameters and returns
+                        the position of the first occurrence of a pattern in a source string. If the pattern is not
+                        found within the source string, this function returns 0.
+                        Optionally takes third integer parameter, defining from which position search should be started.
+                        Third parameter should be an integer greater than 0. If source string is NULL, returns zero.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-POSITION-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    POSITION(pattern IN source)
+    POSITION(pattern IN source, startIndex)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-POSITION-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>POSITION Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>pattern</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The pattern to search for in source</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>source</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The original string that will be searched</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>startIndex</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The index from which search will be started</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-POSITION-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find queues having string "broadcast" in their names
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM queue
+    WHERE POSITION('broadcast', name) > 0
+    LIMIT 10 OFFSET 0
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-REPLACE">
+                <title>REPLACE</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-REPLACE-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The REPLACE() function replaces all occurrences of a substring within
+                        a string, with a new substring. If source string is NULL, returns NULL.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-REPLACE-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    REPLACE(source, pattern, replacement)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-REPLACE-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>REPLACE Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>source</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The original string</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>pattern</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The substring to be replaced</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>replacement</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The new replacement substring</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-REPLACE-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Output certificate issuer names without leading "CN="
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        REPLACE(issuerName, 'CN=', '') AS issuer
+    FROM certificate
+    LIMIT 10 OFFSET 0
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-RTRIM">
+                <title>RTRIM</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-RTRIM-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The RTRIM() function removes trailing spaces from a string.
+                        If argument is NULL, RTRIM returns NULL.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-RTRIM-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    RTRIM(string)
+    RTRIM(string, chars)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-RTRIM-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>RTRIM Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>string</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The string to remove leading and trailing spaces from</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>chars</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Specific characters to remove</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-RTRIM-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find connection remote addresses
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        RTRIM(remoteAddress)
+    FROM connection
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUBSTRING">
+                <title>SUBSTR / SUBSTRING</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUBSTRING-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The SUBSTRING() function takes a source parameter, a start index parameter and optional
+                        length parameter. Returns substring of a source string from the start index to the end or
+                        using the length parameter. If source string is NULL, return NULL.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUBSTRING-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    SUBSTRING(source, startIndex, length)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUBSTRING-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>SUBSTRING Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>source</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The string to extract from</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>startIndex</para>
+                                        </entry>
+                                        <entry>
+                                            <para>
+                                                The start position. Can be both a positive or negative number. If it is
+                                                a positive number, this function extracts from the beginning of the string.
+                                                If it is a negative number, function extracts from the end of the string
+                                            </para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>length</para>
+                                        </entry>
+                                        <entry>
+                                            <para>
+                                                The number of characters to extract. If omitted, the whole string will
+                                                be returned (from the start position). If zero or negative, an empty
+                                                string is returned
+                                            </para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-SUBSTRING-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find queue names removing from name part before the `.` character
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        SUBSTRING(name, POSITION('.', name) + 1, LEN(name) - POSITION('.', name))
+    FROM queue
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRIM">
+                <title>TRIM</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRIM-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The TRIM() function removes both leading and trailing spaces from a string.
+                        If argument is NULL, TRIM returns NULL.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRIM-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    TRIM(string)
+    TRIM(string, chars)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRIM-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>TRIM Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>string</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The string to remove leading and trailing spaces from</para>
+                                        </entry>
+                                    </row>
+                                    <row>
+                                        <entry>
+                                            <para>chars</para>
+                                        </entry>
+                                        <entry>
+                                            <para>Specific characters to remove</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-TRIM-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Find connections remote addresses removing `/` characters from both sides
+                    </para>
+                    <programlisting language="sql">
+    SELECT
+        TRIM(remoteAddress, '/')
+    FROM connection
+                    </programlisting>
+                </section>
+
+            </section>
+
+            <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-UPPER">
+                <title>UPPER</title>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-UPPER-Definition">
+                    <title>Definition and Usage</title>
+                    <para>
+                        The UPPER() function takes a string parameter and converts it to upper case. The implicit
+                        conversion to strings follows the existing rules for data type conversions. If argument is NULL,
+                        UPPER returns NULL.
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-UPPER-Syntax">
+                    <title>Syntax</title>
+                    <programlisting language="sql">
+    UPPER(string)
+                    </programlisting>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-UPPER-Parameter-Values">
+                    <title>Parameter Values</title>
+                    <para>
+                        <table>
+                            <title>UPPER Parameters</title>
+                            <tgroup cols="2">
+                                <colspec colnum="1" colname="parameter" colwidth="1*"/>
+                                <colspec colnum="2" colname="description" colwidth="1*"/>
+                                <thead>
+                                    <row>
+                                        <entry>Parameter</entry>
+                                        <entry>Description</entry>
+                                    </row>
+                                </thead>
+                                <tbody>
+                                    <row>
+                                        <entry>
+                                            <para>string</para>
+                                        </entry>
+                                        <entry>
+                                            <para>The string to convert</para>
+                                        </entry>
+                                    </row>
+                                </tbody>
+                            </tgroup>
+                        </table>
+                    </para>
+                </section>
+
+                <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-UPPER-Examples">
+                    <title>Examples</title>
+                    <para>
+                        Filter connections by principal name (case-insensitive)
+                    </para>
+                    <programlisting language="sql">
+    SELECT *
+    FROM connection
+    WHERE UPPER(principal) = 'AMQP_USER1'
+    LIMIT 10 OFFSET 0
+                    </programlisting>
+                </section>
+
+            </section>
+
+        </section>
+
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Set-Operations">
+        <title>Set Operations</title>
+        <para>
+            UNION, MINUS and INTERSECT set operations are supported.
+
+            The UNION operator is used to combine the result-set of two or more SELECT statements. Every SELECT statement within
+            UNION must have the same number of columns. The UNION operator selects distinct values by default.
+            To keep duplicates, UNION ALL should be used.
+
+            For example, following query return certificate aliases along with the user names:
+        </para>
+        <programlisting language="sql">
+    SELECT UPPER(alias)
+    FROM certificate
+    UNION
+    SELECT UPPER(name)
+    FROM user
+        </programlisting>
+        <para>
+            The MINUS operator is used to remove the results of right SELECT statement from the results of left SELECT statement.
+            Every SELECT statement within MINUS must have the same number of columns. The MINUS operator selects distinct values by default.
+            To eliminate duplicates, MINUS ALL should be used.
+
+            For example, following query finds queue names, not specified as binding destinations:
+        </para>
+        <programlisting language="sql">
+    SELECT name
+    FROM queue
+    MINUS
+    SELECT destination
+    FROM binding
+        </programlisting>
+        <para>
+            The INTERSECT operation is used to retain the results of right SELECT statement present in the results of left SELECT statement.
+            Every SELECT statement within INTERSECT must have the same number of columns. The INTERSECT operator selects distinct values by default.
+            to eliminate duplicates, INTERSECT ALL should be used.
+
+            For example, following query finds certificate aliases similar with the user names:
+        </para>
+        <programlisting language="sql">
+    SELECT UPPER(alias)
+    FROM certificate
+    INTERSECT
+    SELECT UPPER(name)
+    FROM user
+        </programlisting>
+    </section>
+
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-Engine-Performance-Tips">
+        <title>Performance Tips</title>
+        <para>
+            Try to select entity fields by names instead of using an asterix. For example, this query
+        </para>
+        <programlisting language="sql">
+    SELECT
+        id, name, state, overflowPolicy, expiryPolicy
+    FROM queue
+        </programlisting>
+        <para>
+            will be executed faster than this one:
+        </para>
+        <programlisting language="sql">
+    SELECT *
+    FROM queue
+        </programlisting>
+        <para>Try to use `LIMIT` and `OFFSET` clauses where applicable to reduce the response JSON size:</para>
+        <programlisting language="sql">
+    SELECT
+        id, name, state, overflowPolicy, expiryPolicy
+    FROM queue
+    LIMIT 10 OFFSET 0
+        </programlisting>
+    </section>
+
+</section>

@@ -72,6 +72,21 @@ public interface HttpPort<X extends HttpPort<X>> extends Port<X>
     @ManagedContextDefault(name = TLS_SESSION_CACHE_SIZE, description = "TLS session cache size for HTTP ports.")
     int DEFAULT_TLS_SESSION_CACHE_SIZE = 1000;
 
+    String QUERY_ENGINE_CACHE_SIZE = "qpid.port.http.query.engine.cacheSize";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = QUERY_ENGINE_CACHE_SIZE, description = "Broker query engine cache size.")
+    int DEFAULT_QUERY_ENGINE_CACHE_SIZE = 1000;
+
+    String QUERY_ENGINE_MAX_QUERY_DEPTH = "qpid.port.http.query.engine.maxQueryDepth";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = QUERY_ENGINE_MAX_QUERY_DEPTH, description = "Broker query engine max query depth.")
+    int DEFAULT_QUERY_ENGINE_MAX_QUERY_DEPTH = 4096;
+
+    String QUERY_ENGINE_ZONE_ID = "qpid.port.http.query.engine.zoneId";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = QUERY_ENGINE_ZONE_ID, description = "Broker query engine zone id.")
+    String DEFAULT_QUERY_ENGINE_ZONE_ID = "UTC";
+
     @Override
     @ManagedAttribute( defaultValue = DEFAULT_HTTP_NEED_CLIENT_AUTH)
     boolean getNeedClientAuth();

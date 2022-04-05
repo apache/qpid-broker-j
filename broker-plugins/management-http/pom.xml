@@ -73,6 +73,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-broker-query-engine</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.dojotoolkit</groupId>
       <artifactId>dojo</artifactId>
       <classifier>distribution</classifier>
