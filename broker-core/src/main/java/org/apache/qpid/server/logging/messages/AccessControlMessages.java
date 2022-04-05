@@ -91,16 +91,16 @@ public class AccessControlMessages
 
     /**
      * Log a AccessControl message of the Format:
-     * <pre>ACL-1001 : Allowed : {0} {1} {2}</pre>
+     * <pre>ACL-1001 : Allowed : {0} {1} {2} [{3}]</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage ALLOWED(String param1, String param2, String param3)
+    public static LogMessage ALLOWED(String param1, String param2, String param3, String param4)
     {
         String rawMessage = _messages.getString("ALLOWED");
 
-        final Object[] messageArguments = {param1, param2, param3};
+        final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -331,11 +331,11 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DENIED(String param1, String param2, String param3)
+    public static LogMessage DENIED(String param1, String param2, String param3, String param4)
     {
         String rawMessage = _messages.getString("DENIED");
 
-        final Object[] messageArguments = {param1, param2, param3};
+        final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);

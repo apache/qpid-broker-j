@@ -190,14 +190,14 @@ public class RuleSet implements EventLoggerProvider
                         getEventLogger().message(AccessControlMessages.ALLOWED(
                                 action.getOperation().toString(),
                                 action.getObjectType().toString(),
-                                action.getProperties().toString()));
+                                action.getProperties().toString(), rule.getIdentity().toString()));
                     }
                     else
                     {
                         getEventLogger().message(AccessControlMessages.DENIED(
                                 action.getOperation().toString(),
                                 action.getObjectType().toString(),
-                                action.getProperties().toString()));
+                                action.getProperties().toString(), rule.getIdentity().toString()));
                     }
                 }
 
