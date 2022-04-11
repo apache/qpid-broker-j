@@ -107,7 +107,7 @@
     <logback-version>1.2.7</logback-version>
     <guava-version>30.0-jre</guava-version>
     <fasterxml-jackson-version>2.13.2</fasterxml-jackson-version>
-    <fasterxml-jackson-databind-version>2.13.2</fasterxml-jackson-databind-version>
+    <fasterxml-jackson-databind-version>2.13.2.2</fasterxml-jackson-databind-version>
     <slf4j-version>1.7.36</slf4j-version>
     <jetty-version>9.4.45.v20220203</jetty-version>
 
@@ -128,13 +128,13 @@
     <dgrid-version>1.2.1</dgrid-version>
 
     <!-- test dependency version numbers -->
-    <junit-version>4.13</junit-version>
+    <junit-version>4.13.2</junit-version>
     <mockito-version>3.2.4</mockito-version>
-    <netty-version>4.1.63.Final</netty-version>
+    <netty-version>4.1.75.Final</netty-version>
     <hamcrest-version>2.2</hamcrest-version>
     <maven-core-version>3.5.4</maven-core-version>
     <maven-resolver-version>1.1.1</maven-resolver-version>
-    <httpclient-version>4.5.3</httpclient-version>
+    <httpclient-version>4.5.13</httpclient-version>
     <qpid-jms-client-version>0.61.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.3.4</qpid-jms-client-amqp-0-x-version>
     <jaxb-api-version>2.3.1</jaxb-api-version>
