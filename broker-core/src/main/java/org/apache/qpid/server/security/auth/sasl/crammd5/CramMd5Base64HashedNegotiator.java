@@ -29,13 +29,20 @@ public class CramMd5Base64HashedNegotiator extends AbstractCramMd5Negotiator
     public static final String MECHANISM = "CRAM-MD5-HASHED";
     private static final PasswordTransformer BASE64_PASSWORD_TRANSFORMER = passwordData ->
     {
-        final byte[] passwordBytes = Strings.decodePrivateBase64(new String(passwordData), "CRAM MD5 hashed password");
+        final byte[] passwordBytes = Strings.decodeCharArray(passwordData, "CRAM MD5 hashed password");
         final char[] password = new char[passwordBytes.length];
-        for (int i = 0; i < passwordBytes.length; i++)
+        try
         {
-            password[i] = (char) passwordBytes[i];
+            for (int i = 0; i < passwordBytes.length; i++)
+            {
+                password[i] = (char) passwordBytes[i];
+            }
+            return password;
         }
-        return password;
+        finally
+        {
+            Strings.clearByteArray(passwordBytes);
+        }
     };
 
     public CramMd5Base64HashedNegotiator(final PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider,

@@ -31,14 +31,21 @@ public class CramMd5Base64HexNegotiator extends AbstractCramMd5Negotiator
             {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
     private static final PasswordTransformer BASE64_HEX_PASSWORD_TRANSFORMER = passwordData ->
     {
-        final byte[] passwordBytes = Strings.decodePrivateBase64(new String(passwordData), "CRAM MD5 hex password");
+        final byte[] passwordBytes = Strings.decodeCharArray(passwordData, "CRAM MD5 hex password");
         final char[] password = new char[passwordBytes.length * 2];
-        for (int i = 0; i < passwordBytes.length; i++)
+        try
         {
-            password[2 * i] = HEX_CHARACTERS[(((int) passwordBytes[i]) & 0xf0) >> 4];
-            password[(2 * i) + 1] = HEX_CHARACTERS[(((int) passwordBytes[i]) & 0x0f)];
+            for (int i = 0; i < passwordBytes.length; i++)
+            {
+                password[2 * i] = HEX_CHARACTERS[(((int) passwordBytes[i]) & 0xf0) >> 4];
+                password[(2 * i) + 1] = HEX_CHARACTERS[(((int) passwordBytes[i]) & 0x0f)];
+            }
+            return password;
         }
-        return password;
+        finally
+        {
+            Strings.clearByteArray(passwordBytes);
+        }
     };
 
     public CramMd5Base64HexNegotiator(final PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider,

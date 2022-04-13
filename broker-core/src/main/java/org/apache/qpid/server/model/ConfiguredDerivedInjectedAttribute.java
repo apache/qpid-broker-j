@@ -28,7 +28,9 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.util.ClearableCharSequence;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.Strings;
 
 public class ConfiguredDerivedInjectedAttribute<C extends ConfiguredObject, T>
         extends ConfiguredObjectInjectedAttributeOrStatistic<C, T> implements ConfiguredObjectInjectedAttribute<C, T>
@@ -157,9 +159,11 @@ public class ConfiguredDerivedInjectedAttribute<C extends ConfiguredObject, T>
     @Override
     public boolean isSecureValue(final Object value)
     {
-        Pattern filter;
-        return isSecure() &&
-               ((filter = getSecureValueFilter()) == null || filter.matcher(String.valueOf(value)).matches());
+        try (final ClearableCharSequence charSequence = Strings.toCharSequence(value))
+        {
+            final Pattern filter = getSecureValueFilter();
+            return isSecure() && (filter == null || filter.matcher(charSequence).matches());
+        }
     }
 
 

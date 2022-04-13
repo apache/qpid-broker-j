@@ -26,6 +26,10 @@ import static org.junit.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -99,5 +103,83 @@ public class StringsTest extends UnitTestBase
 
         String actual = Strings.hexDump(ByteBuffer.wrap("12345678123456789".getBytes()));
         assertThat(actual, is(equalTo(expected)));
+    }
+
+    @Test
+    public void toCharSequence()
+    {
+        CharSequence expected = "null";
+        CharSequence actual = Strings.toCharSequence(null).toString();
+        assertThat(expected, is(equalTo(actual)));
+
+        expected = "";
+        actual = Strings.toCharSequence("").toString();
+        assertThat(expected, is(equalTo(actual)));
+
+        Object object = new Object();
+        expected = object.toString();
+        actual = Strings.toCharSequence(object).toString();
+        assertThat(expected, is(equalTo(actual)));
+    }
+
+    @Test
+    public void decodeCharArray()
+    {
+        assertThat(null, is(equalTo(Strings.decodeCharArray(null, null))));
+        assertThat(new byte[]{}, is(equalTo(Strings.decodeCharArray(new char[]{}, null))));
+        assertThat(new byte[]{}, is(equalTo(Strings.decodeCharArray("".toCharArray(), null))));
+
+        final char[] base64 = Base64.getEncoder().encodeToString("test".getBytes(StandardCharsets.UTF_8)).toCharArray();
+        assertThat(new byte[]{116, 101, 115, 116}, is(equalTo(Strings.decodeCharArray(base64, null))));
+    }
+
+    @Test
+    public void split()
+    {
+        assertThat(Collections.emptyList(), is(equalTo(Strings.split(null))));
+        assertThat(Collections.emptyList(), is(equalTo(Strings.split(""))));
+        assertThat(Collections.singletonList("a"), is(equalTo(Strings.split("a"))));
+        assertThat(Collections.singletonList("a "), is(equalTo(Strings.split("a "))));
+        assertThat(Arrays.asList("a", "b"), is(equalTo(Strings.split("a,b"))));
+    }
+
+    @Test
+    public void join()
+    {
+        try
+        {
+            Strings.join(",", (Object[]) null);
+        }
+        catch (NullPointerException e)
+        {
+            assertThat("Items must be not null", is(equalTo(e.getMessage())));
+        }
+
+        try
+        {
+            Strings.join(",", (Iterable<?>) null);
+        }
+        catch (NullPointerException e)
+        {
+            assertThat("Items must be not null", is(equalTo(e.getMessage())));
+        }
+
+        try
+        {
+            Strings.join(null, (Iterable<?>) null);
+        }
+        catch (NullPointerException e)
+        {
+            assertThat("Separator must be not null", is(equalTo(e.getMessage())));
+        }
+
+        assertThat("", is(equalTo(Strings.join(",", new Object[]{}))));
+        assertThat("", is(equalTo(Strings.join(",", new ArrayList<>()))));
+
+        assertThat("a,b,c", is(equalTo(Strings.join(",", new Object[]{"a", "b", "c"}))));
+        assertThat("a,b,c", is(equalTo(Strings.join(",", Arrays.asList("a", "b", "c")))));
+
+        assertThat("a,null,1", is(equalTo(Strings.join(",", new Object[]{"a", null, 1}))));
+        assertThat("a,null,1", is(equalTo(Strings.join(",", Arrays.asList("a", null, 1)))));
     }
 }

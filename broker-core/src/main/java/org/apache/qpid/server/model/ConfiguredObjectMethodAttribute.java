@@ -23,6 +23,9 @@ package org.apache.qpid.server.model;
 import java.lang.reflect.Method;
 import java.util.regex.Pattern;
 
+import org.apache.qpid.server.util.ClearableCharSequence;
+import org.apache.qpid.server.util.Strings;
+
 public abstract class ConfiguredObjectMethodAttribute<C extends ConfiguredObject, T>
         extends  ConfiguredObjectMethodAttributeOrStatistic<C,T>
         implements ConfiguredObjectAttribute<C,T>
@@ -38,21 +41,13 @@ public abstract class ConfiguredObjectMethodAttribute<C extends ConfiguredObject
     }
 
     @Override
-    public boolean isSecureValue(Object value)
+    public boolean isSecureValue(final Object value)
     {
-        if (isSecure())
+        try (final ClearableCharSequence charSequence = Strings.toCharSequence(value))
         {
-            Pattern filter = getSecureValueFilter();
-            if (filter == null)
-            {
-                return  true;
-            }
-            else
-            {
-                return filter.matcher(String.valueOf(value)).matches();
-            }
+            final Pattern filter = getSecureValueFilter();
+            return isSecure() && (filter == null || filter.matcher(charSequence).matches());
         }
-        return false;
     }
 
 }
