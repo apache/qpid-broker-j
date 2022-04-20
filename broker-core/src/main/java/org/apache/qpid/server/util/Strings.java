@@ -20,8 +20,9 @@
  */
 package org.apache.qpid.server.util;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -29,93 +30,73 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 /**
- * Strings
- *
+ * String utilities
  */
-
 public final class Strings
 {
+    /**
+     * Utility class shouldn't be instantiated directly
+     */
     private Strings()
     {
+
     }
 
+    /**
+     * Empty byte array
+     */
     private static final byte[] EMPTY = new byte[0];
 
-    private static final ThreadLocal<char[]> charbuf = new ThreadLocal<char[]>()
-    {
-        @Override
-        public char[] initialValue()
-        {
-            return new char[4096];
-        }
-    };
+    /**
+     * Thread bound character buffer
+     */
+    private static final ThreadLocal<char[]> CHAR_BUFFER = ThreadLocal.withInitial(() -> new char[4096]);
 
-    public static final byte[] toUTF8(String str)
-    {
-        if (str == null)
-        {
-            return EMPTY;
-        }
-        else
-        {
-            final int size = str.length();
-            char[] chars = charbuf.get();
-            if (size > chars.length)
-            {
-                chars = new char[Math.max(size, 2*chars.length)];
-                charbuf.set(chars);
-            }
+    /**
+     * Variable regexp pattern
+     */
+    private static final Pattern VAR = Pattern.compile("\\$\\{([^}]*)}|\\$(\\$)");
 
-            str.getChars(0, size, chars, 0);
-            final byte[] bytes = new byte[size];
-            for (int i = 0; i < size; i++)
-            {
-                if (chars[i] > 127)
-                {
-                    try
-                    {
-                        return str.getBytes("UTF-8");
-                    }
-                    catch (UnsupportedEncodingException e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-                }
+    /**
+     * Null resolver, always returning null
+     */
+    private static final Resolver NULL_RESOLVER = (variable, resolver) -> null;
 
-                bytes[i] = (byte) chars[i];
-            }
-            return bytes;
-        }
-    }
+    /**
+     * Environment variable resolver
+     */
+    public static final Resolver ENV_VARS_RESOLVER = (variable, resolver) -> System.getenv(variable);
 
-    public static final String fromUTF8(byte[] bytes)
-    {
-        try
-        {
-            return new String(bytes, "UTF-8");
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
+    /**
+     * System property resolver
+     */
+    public static final Resolver JAVA_SYS_PROPS_RESOLVER = (variable, resolver) -> System.getProperty(variable);
 
-    private static final Pattern VAR = Pattern.compile("(?:\\$\\{([^\\}]*)\\})|(?:\\$(\\$))");
+    /**
+     * System resolver chaining environment variable and system property resolvers
+     */
+    public static final Resolver SYSTEM_RESOLVER = chain(JAVA_SYS_PROPS_RESOLVER, ENV_VARS_RESOLVER);
 
-    public static Resolver chain(Resolver... resolvers)
+    /**
+     * Chains several resolvers into a ChainedResolver instance
+     *
+     * @param resolvers Resolvers to be chained
+     *
+     * @return Resulting ChainedResolver
+     */
+    public static Resolver chain(final Resolver... resolvers)
     {
         Resolver resolver;
         if(resolvers.length == 0)
         {
-            resolver =  NULL_RESOLVER;
+            resolver = NULL_RESOLVER;
         }
         else
         {
@@ -128,7 +109,52 @@ public final class Strings
         return resolver;
     }
 
-    public static byte[] decodePrivateBase64(String base64String, String description)
+    /**
+     * Converts string to the UTF8 encoded byte array
+     *
+     * @param str Source string
+     *
+     * @return Byte array
+     */
+    public static byte[] toUTF8(final String str)
+    {
+        if (str == null)
+        {
+            return EMPTY;
+        }
+        else
+        {
+            final int size = str.length();
+            char[] chars = CHAR_BUFFER.get();
+            if (size > chars.length)
+            {
+                chars = new char[Math.max(size, 2*chars.length)];
+                CHAR_BUFFER.set(chars);
+            }
+
+            str.getChars(0, size, chars, 0);
+            final byte[] bytes = new byte[size];
+            for (int i = 0; i < size; i++)
+            {
+                if (chars[i] > 127)
+                {
+                    return str.getBytes(StandardCharsets.UTF_8);
+                }
+                bytes[i] = (byte) chars[i];
+            }
+            return bytes;
+        }
+    }
+
+    /**
+     * Decodes base64 encoded string into a byte array
+     *
+     * @param base64String Base64 encoded string
+     * @param description String description provided for logging purposes
+     *
+     * @return Resulting byte array
+     */
+    public static byte[] decodePrivateBase64(final String base64String, final String description)
     {
         if (isInvalidBase64String(base64String))
         {
@@ -136,148 +162,151 @@ public final class Strings
             throw new IllegalArgumentException("Cannot convert " + description +
                     " string to a byte[] - it does not appear to be base64 data");
         }
-
         return Base64.getDecoder().decode(base64String);
     }
 
-    public static byte[] decodeBase64(String base64String)
+    /**
+     * Decodes base64 encoded char array into a byte array
+     *
+     * @param base64Chars Base64 encoded char array
+     * @param description String description provided for logging purposes
+     *
+     * @return Resulting byte array
+     */
+    public static byte[] decodeCharArray(final char[] base64Chars, final String description)
+    {
+        if (base64Chars == null)
+        {
+            return null;
+        }
+        try
+        {
+            final CharBuffer charBuffer = CharBuffer.wrap(base64Chars);
+            final ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(charBuffer);
+            return Base64.getDecoder().decode(byteBuffer).array();
+        }
+        catch (IllegalArgumentException e)
+        {
+            // do not add base64String to exception message as it can contain private data
+            throw new IllegalArgumentException("Cannot convert "
+                                               + description
+                                               + " string to a byte[] - it does not appear to be base64 data");
+        }
+    }
+
+    /**
+     * Fills byte arrays with blank characters
+     *
+     * @param bytes Byte arrays to be cleared
+     */
+    public static void clearByteArray(byte[]... bytes)
+    {
+        for (final byte[] array : bytes)
+        {
+            if (array != null)
+            {
+                Arrays.fill(array, (byte) 0);
+            }
+        }
+    }
+
+    /**
+     * Converts an object to the ClearableCharSequence
+     *
+     * @param object Object to convert
+     *
+     * @return ClearableCharSequence instance
+     */
+    public static ClearableCharSequence toCharSequence(final Object object)
+    {
+        return new ClearableCharSequence(object);
+    }
+
+    /**
+     * Decodes base64 encoded string into a byte array
+     *
+     * @param base64String Base64 encoded string
+     *
+     * @return Resulting byte array
+     */
+    public static byte[] decodeBase64(final String base64String)
     {
         if (isInvalidBase64String(base64String))
         {
             throw new IllegalArgumentException("Cannot convert string '" + base64String +
                     "' to a byte[] - it does not appear to be base64 data");
         }
-
         return Base64.getDecoder().decode(base64String);
     }
 
-    private static boolean isInvalidBase64String(String base64String)
+    /**
+     * Checks if string is valid base64 encoded string or not
+     *
+     * @param base64String Base64 encoded string
+     *
+     * @return True when parameter passed is valid base64 encoded string, false otherwise
+     */
+    private static boolean isInvalidBase64String(final String base64String)
     {
         return !base64String.replaceAll("\\s", "").matches("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$");
     }
 
-    public static interface Resolver
+    /**
+     * Expands string replacing variables it contains with variable values
+     *
+     * @param input Source string
+     * @param resolver Resolver to use
+     *
+     * @return Expanded string
+     */
+    public static String expand(final String input, final Resolver resolver)
     {
-        String resolve(String variable, final Resolver resolver);
+        return expand(input, resolver, new Stack<>(),true);
     }
 
-    private static final Resolver NULL_RESOLVER =
-            new Resolver()
-            {
-                @Override
-                public String resolve(final String variable, final Resolver resolver)
-                {
-                    return null;
-                }
-            };
-
-    public static class MapResolver implements Resolver
+    /**
+     * Expands string replacing variables it contains with variable values
+     *
+     * @param input Source string
+     * @param failOnUnresolved Boolean flag defining if an exception should be thrown in case of failed resolution
+     * @param resolvers Resolvers to use
+     *
+     * @return Expanded string
+     */
+    public static String expand(final String input, final boolean failOnUnresolved, final Resolver... resolvers)
     {
-
-        private final Map<String,String> map;
-
-        public MapResolver(Map<String,String> map)
-        {
-            this.map = map;
-        }
-
-        @Override
-        public String resolve(String variable, final Resolver resolver)
-        {
-            return map.get(variable);
-        }
+        return expand(input, chain(resolvers), new Stack<>(), failOnUnresolved);
     }
 
-    public static class PropertiesResolver implements Resolver
-    {
-
-        private final Properties properties;
-
-        public PropertiesResolver(Properties properties)
-        {
-            this.properties = properties;
-        }
-
-        @Override
-        public String resolve(String variable, final Resolver resolver)
-        {
-            return properties.getProperty(variable);
-        }
-    }
-
-    public static class ChainedResolver implements Resolver
-    {
-        private final Resolver primary;
-        private final Resolver secondary;
-
-        public ChainedResolver(Resolver primary, Resolver secondary)
-        {
-            this.primary = primary;
-            this.secondary = secondary;
-        }
-
-        @Override
-        public String resolve(String variable, final Resolver resolver)
-        {
-            String result = primary.resolve(variable, resolver);
-            if (result == null)
-            {
-                result = secondary.resolve(variable, resolver);
-            }
-            return result;
-        }
-    }
-
-    public static final Resolver ENV_VARS_RESOLVER = new Resolver()
-        {
-            @Override
-            public String resolve(final String variable, final Resolver resolver)
-            {
-                return System.getenv(variable);
-            }
-        };
-
-
-    public static final Resolver JAVA_SYS_PROPS_RESOLVER = new Resolver()
-    {
-        @Override
-        public String resolve(final String variable, final Resolver resolver)
-        {
-            return System.getProperty(variable);
-        }
-    };
-
-
-    public static final Resolver SYSTEM_RESOLVER = chain(JAVA_SYS_PROPS_RESOLVER, ENV_VARS_RESOLVER);
-
-    public static final String expand(String input)
-    {
-        return expand(input, SYSTEM_RESOLVER);
-    }
-
-    public static final String expand(String input, Resolver resolver)
-    {
-        return expand(input, resolver, new Stack<String>(),true);
-    }
-    public static final String expand(String input, boolean failOnUnresolved, Resolver... resolvers)
-    {
-        return expand(input, chain(resolvers), new Stack<String>(), failOnUnresolved);
-    }
-
-    private static final String expand(String input, Resolver resolver, Stack<String> stack, boolean failOnUnresolved)
+    /**
+     * Expands string replacing variables it contains with variable values
+     *
+     * @param input Source string
+     * @param resolver Resolver
+     * @param stack Stack containing variable chain
+     * @param failOnUnresolved Boolean flag defining if an exception should be thrown in case of failed resolution
+     *
+     * @return Expanded string
+     */
+    private static String expand(
+        final String input,
+        final Resolver resolver,
+        final Stack<String> stack,
+        final boolean failOnUnresolved
+    )
     {
         if (input == null)
         {
             return null;
         }
-        Matcher m = VAR.matcher(input);
-        StringBuffer result = new StringBuffer();
+        final Matcher m = VAR.matcher(input);
+        final StringBuffer result = new StringBuffer();
         while (m.find())
         {
-            String var = m.group(1);
+            final String var = m.group(1);
             if (var == null)
             {
-                String esc = m.group(2);
+                final String esc = m.group(2);
                 if ("$".equals(esc))
                 {
                     m.appendReplacement(result, Matcher.quoteReplacement("$"));
@@ -296,10 +325,22 @@ public final class Strings
         return result.toString();
     }
 
-    private static final String resolve(String var,
-                                        Resolver resolver,
-                                        Stack<String> stack,
-                                        final boolean failOnUnresolved)
+    /**
+     * Resolves variable
+     *
+     * @param var Variable name
+     * @param resolver Resolver
+     * @param stack Stack containing variable chain
+     * @param failOnUnresolved Boolean flag defining if an exception should be thrown in case of failed resolution
+     *
+     * @return Resolved variable value
+     */
+    private static String resolve(
+        final String var,
+        final Resolver resolver,
+        final Stack<String> stack,
+        final boolean failOnUnresolved
+    )
     {
         if (stack.contains(var))
         {
@@ -308,10 +349,10 @@ public final class Strings
                                stack));
         }
 
-        String result = resolver.resolve(var, resolver);
+        final String result = resolver.resolve(var, resolver);
         if (result == null)
         {
-            if(failOnUnresolved)
+            if (failOnUnresolved)
             {
                 throw new IllegalArgumentException("no such variable: " + var);
             }
@@ -332,55 +373,58 @@ public final class Strings
         }
     }
 
-    public static final String join(String sep, Iterable items)
+    /**
+     * Joins string representation of an object iterable
+     *
+     * @param sep Separator
+     * @param items Object iterable
+     *
+     * @return Resulting string
+     */
+    public static String join(final String sep, final Iterable<?> items)
     {
-        StringBuilder result = new StringBuilder();
-
-        for (Object o : items)
+        Objects.requireNonNull(sep, "Separator must be not null");
+        Objects.requireNonNull(items, "Items must be not null");
+        final StringBuilder result = new StringBuilder();
+        for (final Object object : items)
         {
             if (result.length() > 0)
             {
                 result.append(sep);
             }
-            result.append(o.toString());
+            result.append(object == null ? "null" : object.toString());
         }
-
         return result.toString();
     }
 
-    public static final String join(String sep, Object[] items)
+    /**
+     * Joins string representation of an object array
+     *
+     * @param sep Separator
+     * @param items Object array
+     *
+     * @return Resulting string
+     */
+    public static String join(final String sep, final Object[] items)
     {
+        Objects.requireNonNull(items, "Items must be not null");
         return join(sep, Arrays.asList(items));
     }
 
-    public static final List<String> split(String listAsString)
+    /**
+     * Splits source string into a liast of tokens separated by comma
+     *
+     * @param listAsString Source string
+     *
+     * @return List of tokens
+     */
+    public static List<String> split(final String listAsString)
     {
-        if(listAsString != null && !"".equals(listAsString))
+        if (listAsString != null && !"".equals(listAsString))
         {
             return Arrays.asList(listAsString.split("\\s*,\\s*"));
         }
         return Collections.emptyList();
-    }
-
-    public static String printMap(Map<String,Object> map)
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<");
-        if (map != null)
-        {
-            for(Map.Entry<String,Object> entry : map.entrySet())
-            {
-                sb.append(entry.getKey()).append(" = ").append(entry.getValue()).append(" ");
-            }
-        }
-        sb.append(">");
-        return sb.toString();
-    }
-
-
-    public static Resolver createSubstitutionResolver(String prefix, LinkedHashMap<String,String> substitutions)
-    {
-        return new StringSubstitutionResolver(prefix, substitutions);
     }
 
     /**
@@ -391,11 +435,11 @@ public final class Strings
      *
      * @param buf - buffer to be dumped.  Buffer will be unchanged.
      */
-    public static String hexDump(ByteBuffer buf)
+    public static String hexDump(final ByteBuffer buf)
     {
-        StringBuilder builder = new StringBuilder();
+        final StringBuilder builder = new StringBuilder();
         int count = 0;
-        for(int p = buf.position(); p < buf.position() + buf.remaining(); p++)
+        for (int p = buf.position(); p < buf.position() + buf.remaining(); p++)
         {
             if (count % 16 == 0)
             {
@@ -414,15 +458,80 @@ public final class Strings
         return builder.toString();
     }
 
+    /**
+     * Creates substitution resolver
+     *
+     * @param prefix Substitution prefix
+     * @param substitutions Map of substituitions
+     *
+     * @return StringSubstitutionResolver
+     */
+    public static Resolver createSubstitutionResolver(final String prefix, final LinkedHashMap<String, String> substitutions)
+    {
+        return new StringSubstitutionResolver(prefix, substitutions);
+    }
+
+    /**
+     * Resolver variable using supplied resolver
+     */
+    public interface Resolver
+    {
+        String resolve(final String variable, final Resolver resolver);
+    }
+
+    /**
+     * Resolves variable from a map.
+     */
+    public static class MapResolver implements Resolver
+    {
+        private final Map<String,String> map;
+
+        public MapResolver(final Map<String,String> map)
+        {
+            this.map = map;
+        }
+
+        @Override
+        public String resolve(final String variable, final Resolver resolver)
+        {
+            return map.get(variable);
+        }
+    }
+
+    /**
+     * Chains two resolvers trying to resolve variable against first one and if unsuccessful against second one
+     */
+    public static class ChainedResolver implements Resolver
+    {
+        private final Resolver primary;
+        private final Resolver secondary;
+
+        public ChainedResolver(final Resolver primary, final Resolver secondary)
+        {
+            this.primary = primary;
+            this.secondary = secondary;
+        }
+
+        @Override
+        public String resolve(final String variable, final Resolver resolver)
+        {
+            final String result = primary.resolve(variable, resolver);
+            return result != null
+                    ? result
+                    : secondary.resolve(variable, resolver);
+        }
+    }
+
+    /**
+     * Resolves substituted variables
+     */
     private static class StringSubstitutionResolver implements Resolver
     {
-
         private final ThreadLocal<Set<String>> _stack = new ThreadLocal<>();
-
         private final LinkedHashMap<String, String> _substitutions;
         private final String _prefix;
 
-        private StringSubstitutionResolver(String prefix, LinkedHashMap<String, String> substitutions)
+        private StringSubstitutionResolver(final String prefix, final LinkedHashMap<String, String> substitutions)
         {
             _prefix = prefix;
             _substitutions = substitutions;
@@ -433,22 +542,18 @@ public final class Strings
         {
             boolean clearStack = false;
             Set<String> currentStack = _stack.get();
-            if(currentStack == null)
+            if (currentStack == null)
             {
                 currentStack = new HashSet<>();
                 _stack.set(currentStack);
                 clearStack = true;
             }
-
             try
             {
-                if(currentStack.contains(variable))
+                if (currentStack.contains(variable))
                 {
                     throw new IllegalArgumentException("The value of attribute " + variable + " is defined recursively");
-
                 }
-
-
                 if (variable.startsWith(_prefix))
                 {
                     currentStack.add(variable);
@@ -457,9 +562,9 @@ public final class Strings
                     String expanded = Strings.expand("${" + variable.substring(_prefix.length()) + "}", resolver,
                                                      stack, false);
                     currentStack.remove(variable);
-                    if(expanded != null)
+                    if (expanded != null)
                     {
-                        for(Map.Entry<String,String> entry : _substitutions.entrySet())
+                        for (final Map.Entry<String,String> entry : _substitutions.entrySet())
                         {
                             expanded = expanded.replace(entry.getKey(), entry.getValue());
                         }
@@ -474,8 +579,7 @@ public final class Strings
             }
             finally
             {
-
-                if(clearStack)
+                if (clearStack)
                 {
                     _stack.remove();
                 }

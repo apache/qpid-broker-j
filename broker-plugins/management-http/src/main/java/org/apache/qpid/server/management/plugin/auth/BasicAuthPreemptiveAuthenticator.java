@@ -57,28 +57,33 @@ public class BasicAuthPreemptiveAuthenticator implements HttpRequestPreemptiveAu
             final String[] tokens = header.split("\\s");
             if (tokens.length >= 2 && "BASIC".equalsIgnoreCase(tokens[0]))
             {
-                boolean isBasicAuthSupported = false;
-                if (request.isSecure())
-                {
-                    isBasicAuthSupported = managementConfiguration.isHttpsBasicAuthenticationEnabled();
-                }
-                else
-                {
-                    isBasicAuthSupported = managementConfiguration.isHttpBasicAuthenticationEnabled();
-                }
+                boolean isBasicAuthSupported = request.isSecure()
+                    ? managementConfiguration.isHttpsBasicAuthenticationEnabled()
+                    : managementConfiguration.isHttpBasicAuthenticationEnabled();
                 if (isBasicAuthSupported)
                 {
-                    final String base64UsernameAndPassword = tokens[1];
-                    final String[] credentials = new String(Strings.decodePrivateBase64(base64UsernameAndPassword,
-                            "basic authentication credentials"), StandardCharsets.UTF_8).split(":", 2);
-                    if (credentials.length == 2)
+                    final byte[] base64EncodedContent = Strings.decodeCharArray(
+                        tokens[1].toCharArray(),
+                        "basic authentication credentials"
+                    );
+                    try
                     {
-                        final String username = credentials[0];
-                        final String password = credentials[1];
-                        final AuthenticationResult authenticationResult = namePasswdAuthProvider.authenticate(username, password);
-                        final SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
-
-                        return result.getSubject();
+                        final String[] decodedHeaderContent =
+                                new String(base64EncodedContent, StandardCharsets.UTF_8).split(":", 2);
+                        if (decodedHeaderContent.length == 2)
+                        {
+                            final String token1 = decodedHeaderContent[0];
+                            final String token2 = decodedHeaderContent[1];
+                            final AuthenticationResult authenticationResult =
+                                    namePasswdAuthProvider.authenticate(token1, token2);
+                            final SubjectAuthenticationResult result =
+                                    subjectCreator.createResultWithGroups(authenticationResult);
+                            return result.getSubject();
+                        }
+                    }
+                    finally
+                    {
+                        Strings.clearByteArray(base64EncodedContent);
                     }
                 }
             }

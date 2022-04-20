@@ -181,6 +181,10 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
             {
                 throw new IllegalArgumentException(e);
             }
+            finally
+            {
+                Strings.clearByteArray(saltedPassword);
+            }
         }
         else if (passwordFields.length == 4)
         {
