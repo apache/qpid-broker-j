@@ -24,7 +24,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.ZoneId;
 
-import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.query.engine.evaluator.DateFormat;
 
 /**
@@ -63,12 +62,12 @@ public class QuerySettings
     /**
      * Maximal amount of queries allowed caching
      */
-    private int _maxQueryCacheSize = HttpPort.DEFAULT_QUERY_ENGINE_CACHE_SIZE;
+    private int _maxQueryCacheSize = 1000;
 
     /**
      * Maximal amount of query tree nodes allowed
      */
-    private int _maxQueryDepth = HttpPort.DEFAULT_QUERY_ENGINE_MAX_QUERY_DEPTH;
+    private int _maxQueryDepth = 4096;
 
     /**
      * Rounding mode used in calculations
@@ -78,7 +77,7 @@ public class QuerySettings
     /**
      * ZoneId used in date/time representation
      */
-    private ZoneId _zoneId = ZoneId.of(HttpPort.DEFAULT_QUERY_ENGINE_ZONE_ID);
+    private ZoneId _zoneId = ZoneId.of("UTC");
 
     public DateFormat getDateTimeFormat()
     {

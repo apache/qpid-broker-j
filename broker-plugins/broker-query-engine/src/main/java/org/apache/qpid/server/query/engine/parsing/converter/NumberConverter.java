@@ -64,7 +64,7 @@ public final class NumberConverter
             .put(Long.class, arg -> arg)
             .put(Number.class, arg -> ((Number) arg).longValue())
             .put(Short.class, arg -> ((Short) arg).longValue())
-            .put(String.class, arg -> Long.parseLong((String)arg))
+            .put(String.class, arg -> ((Double) Double.parseDouble((String)arg)).longValue())
             .build()
         ).build();
 

@@ -47,7 +47,7 @@ public class QueryEngine
     /**
      * Cache holding queries
      */
-    private final Map<String, QueryExpression<?, ?>> _queryCache;
+    private Map<String, QueryExpression<?, ?>> _queryCache;
 
     /**
      * Maximal allowed BigDecimal value.
@@ -58,7 +58,7 @@ public class QueryEngine
     /**
      * Maximal amount of queries allowed caching
      */
-    private final int _maxQueryCacheSize;
+    private int _maxQueryCacheSize;
 
     /**
      * Maximal amount of query tree nodes allowed
@@ -81,15 +81,14 @@ public class QueryEngine
     {
         Objects.requireNonNull(broker, "Broker instance not provided for querying");
         _broker = broker;
-        final HttpPort<?> httpPort = broker.getPorts().stream()
-            .filter(port -> Objects.equals("HTTP", port.getType()))
-            .map(port -> (HttpPort<?>)port)
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("HTTP port not found"));
-        _maxQueryCacheSize = httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_CACHE_SIZE);
-        _maxQueryDepth = httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_MAX_QUERY_DEPTH);
+    }
+
+    /**
+     * Initializes query cache
+     */
+    public void initQueryCache()
+    {
         _queryCache = _maxQueryCacheSize > 0 ? new MaxSizeHashMap<>(_maxQueryCacheSize) : null;
-        _zoneId = ZoneId.of(httpPort.getContextValue(String.class, HttpPort.QUERY_ENGINE_ZONE_ID));
     }
 
     /**
@@ -110,6 +109,10 @@ public class QueryEngine
     public void setMaxBigDecimalValue(final BigDecimal maxBigDecimalValue)
     {
         _maxBigDecimalValue = maxBigDecimalValue;
+    }
+
+    public void setMaxQueryCacheSize(final int maxQueryCacheSize) {
+        _maxQueryCacheSize = maxQueryCacheSize;
     }
 
     public void setMaxQueryDepth(final int maxQueryDepth)

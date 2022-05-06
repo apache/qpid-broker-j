@@ -95,6 +95,21 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     @ManagedContextDefault(name = HTTP_MANAGEMENT_ENABLE_CONTENT_AUTHENTICATION)
     boolean DEFAULT_HTTP_MANAGEMENT_ENABLE_CONTENT_AUTHENTICATION = false;
 
+    String QUERY_ENGINE_CACHE_SIZE = "qpid.port.http.query.engine.cacheSize";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = QUERY_ENGINE_CACHE_SIZE, description = "Broker query engine cache size.")
+    int DEFAULT_QUERY_ENGINE_CACHE_SIZE = 1000;
+
+    String QUERY_ENGINE_MAX_QUERY_DEPTH = "qpid.port.http.query.engine.maxQueryDepth";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = QUERY_ENGINE_MAX_QUERY_DEPTH, description = "Broker query engine max query depth.")
+    int DEFAULT_QUERY_ENGINE_MAX_QUERY_DEPTH = 4096;
+
+    String QUERY_ENGINE_TIMEZONE_ID = "qpid.port.http.query.engine.timezoneId";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = QUERY_ENGINE_TIMEZONE_ID, description = "Broker query engine time zone id.")
+    String DEFAULT_QUERY_ENGINE_TIMEZONE_ID = "UTC";
+
     AuthenticationProvider getAuthenticationProvider(HttpServletRequest request);
     Port<?> getPort(HttpServletRequest request);
 }

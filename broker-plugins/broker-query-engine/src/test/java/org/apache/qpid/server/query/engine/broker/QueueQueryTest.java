@@ -21,7 +21,6 @@
 package org.apache.qpid.server.query.engine.broker;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,6 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.query.engine.QueryEngine;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
@@ -210,30 +208,19 @@ public class QueueQueryTest
     public void queueWithMaxMessages()
     {
         final Broker<?> broker = TestBroker.createBroker();
-        final HttpPort<?> httpPort = broker.getPorts().stream()
-            .filter(HttpPort.class::isInstance)
-            .map(port -> (HttpPort<?>)port)
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("HTTP port not found"));
         final QueryEngine queryEngine = new QueryEngine(broker);
+        queryEngine.setMaxQueryCacheSize(10);
+        queryEngine.setMaxQueryDepth(4096);
         final QuerySettings querySettings = new QuerySettings();
         final QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
 
-        try
-        {
-            when(httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_CACHE_SIZE)).thenReturn(10);
+        String query = "select * from queue where queueDepthMessages = (select max(queueDepthMessages) from queue)";
+        List<Map<String, Object>> result = queryEvaluator.execute(query, querySettings).getResults();
+        assertEquals(10, result.size());
 
-            String query = "select * from queue where queueDepthMessages = (select max(queueDepthMessages) from queue)";
-            List<Map<String, Object>> result = queryEvaluator.execute(query, querySettings).getResults();
-            assertEquals(10, result.size());
+        query = "select * from queue where queueDepthMessages = (select max(queueDepthMessages) from queue)";
+        result = queryEvaluator.execute(query, querySettings).getResults();
+        assertEquals(10, result.size());
 
-            query = "select * from queue where queueDepthMessages = (select max(queueDepthMessages) from queue)";
-            result = queryEvaluator.execute(query, querySettings).getResults();
-            assertEquals(10, result.size());
-        }
-        finally
-        {
-            when(httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_CACHE_SIZE)).thenReturn(1000);
-        }
     }
 }

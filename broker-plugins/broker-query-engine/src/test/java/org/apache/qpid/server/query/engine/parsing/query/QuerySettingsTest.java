@@ -23,7 +23,6 @@ package org.apache.qpid.server.query.engine.parsing.query;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -40,7 +39,6 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.query.engine.QueryEngine;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.DateFormat;
@@ -130,6 +128,7 @@ public class QuerySettingsTest
     {
         QueryEngine queryEngine = new QueryEngine(_broker);
         queryEngine.setMaxBigDecimalValue(BigDecimal.valueOf(100L));
+        queryEngine.setMaxQueryDepth(4096);
         QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
 
         String query = "select 2 * 2 as result";
@@ -258,6 +257,7 @@ public class QuerySettingsTest
     {
         QueryEngine queryEngine = new QueryEngine(_broker);
         queryEngine.setZoneId(ZoneId.of("GMT+2"));
+        queryEngine.setMaxQueryDepth(4096);
         QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
         QuerySettings querySettings = new QuerySettings();
 
@@ -303,39 +303,28 @@ public class QuerySettingsTest
     @Test()
     public void customizeMaxQueryCacheSize()
     {
-        final HttpPort<?> httpPort = _broker.getPorts().stream()
-            .filter(HttpPort.class::isInstance)
-            .map(port -> (HttpPort<?>)port)
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("HTTP port not found"));
 
-        try
+        QueryEngine queryEngine = new QueryEngine(_broker);
+        queryEngine.setMaxQueryCacheSize(10);
+        queryEngine.setMaxQueryDepth(4096);
+        queryEngine.initQueryCache();
+        QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
+
+        QuerySettings querySettings = new QuerySettings();
+
+        String query = "select current_timestamp() as result";
+        queryEvaluator.execute(query, querySettings);
+        assertEquals(1, queryEngine.getCacheSize());
+
+        query = "select current_timestamp() as result";
+        queryEvaluator.execute(query, querySettings);
+        assertEquals(1, queryEngine.getCacheSize());
+
+        for (int i = 0; i < 100; i++)
         {
-            when(httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_CACHE_SIZE)).thenReturn(10);
-
-            QueryEngine queryEngine = new QueryEngine(_broker);
-            QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
-
-            QuerySettings querySettings = new QuerySettings();
-
-            String query = "select current_timestamp() as result";
+            query = "select current_timestamp() as result" + i;
             queryEvaluator.execute(query, querySettings);
-            assertEquals(1, queryEngine.getCacheSize());
-
-            query = "select current_timestamp() as result";
-            queryEvaluator.execute(query, querySettings);
-            assertEquals(1, queryEngine.getCacheSize());
-
-            for (int i = 0; i < 100; i++)
-            {
-                query = "select current_timestamp() as result" + i;
-                queryEvaluator.execute(query, querySettings);
-            }
-            assertEquals(10, queryEngine.getCacheSize());
         }
-        finally
-        {
-            when(httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_CACHE_SIZE)).thenReturn(1000);
-        }
+        assertEquals(10, queryEngine.getCacheSize());
     }
 }

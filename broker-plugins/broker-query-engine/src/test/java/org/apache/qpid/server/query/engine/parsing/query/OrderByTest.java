@@ -22,7 +22,6 @@ package org.apache.qpid.server.query.engine.parsing.query;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +30,6 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.query.engine.QueryEngine;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
@@ -701,32 +699,20 @@ public class OrderByTest
     public void orderCachedQuery()
     {
         final Broker<?> broker = TestBroker.createBroker();
-        final HttpPort<?> httpPort = broker.getPorts().stream()
-            .filter(HttpPort.class::isInstance)
-            .map(port -> (HttpPort<?>)port)
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("HTTP port not found"));
         final QueryEngine queryEngine = new QueryEngine(broker);
+        queryEngine.setMaxQueryCacheSize(10);
+        queryEngine.setMaxQueryDepth(4096);
         final QuerySettings querySettings = new QuerySettings();
         final QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
 
-        try
-        {
-            when(httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_CACHE_SIZE)).thenReturn(10);
+        String query = "select id, name from queue order by overflowPolicy";
+        List<Map<String, Object>> result = queryEvaluator.execute(query, querySettings).getResults();
+        assertEquals(70, result.size());
+        assertEquals(2, result.get(0).keySet().size());
 
-            String query = "select id, name from queue order by overflowPolicy";
-            List<Map<String, Object>> result = queryEvaluator.execute(query, querySettings).getResults();
-            assertEquals(70, result.size());
-            assertEquals(2, result.get(0).keySet().size());
-
-            query = "select id, name from queue order by overflowPolicy";
-            result = queryEvaluator.execute(query, querySettings).getResults();
-            assertEquals(70, result.size());
-            assertEquals(2, result.get(0).keySet().size());
-        }
-        finally
-        {
-            when(httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_CACHE_SIZE)).thenReturn(1000);
-        }
+        query = "select id, name from queue order by overflowPolicy";
+        result = queryEvaluator.execute(query, querySettings).getResults();
+        assertEquals(70, result.size());
+        assertEquals(2, result.get(0).keySet().size());
     }
 }

@@ -23,6 +23,7 @@ package org.apache.qpid.server.query.engine.evaluator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,7 +58,7 @@ public class EvaluationContext
 
     public static final String COMPARATORS = "comparators";
 
-    private final Map<Object, Object> _values = new HashMap<>();
+    private final Map<Object, Object> _values = new ConcurrentHashMap<>();
 
     private final Deque<QueryExpression<?, ?>> _expressions = new LinkedBlockingDeque<>();
 

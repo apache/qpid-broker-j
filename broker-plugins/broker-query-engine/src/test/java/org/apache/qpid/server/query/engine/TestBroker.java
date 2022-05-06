@@ -101,9 +101,6 @@ public class TestBroker
             when(httpPort.getState()).thenReturn(State.ACTIVE);
             when(httpPort.getType()).thenReturn("HTTP");
             when(httpPort.getAttribute(HttpPort.AUTHENTICATION_PROVIDER)).thenReturn(authProvider);
-            when(httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_CACHE_SIZE)).thenReturn(1000);
-            when(httpPort.getContextValue(Integer.class, HttpPort.QUERY_ENGINE_MAX_QUERY_DEPTH)).thenReturn(4096);
-            when(httpPort.getContextValue(String.class, HttpPort.QUERY_ENGINE_ZONE_ID)).thenReturn("UTC");
 
             Collection<Connection> connections = new ArrayList<>();
 

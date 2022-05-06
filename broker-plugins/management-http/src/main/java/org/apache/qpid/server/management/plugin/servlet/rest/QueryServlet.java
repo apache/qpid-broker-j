@@ -23,6 +23,7 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.filter.SelectorParsingException;
+import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.csv.CSVFormat;
 import org.apache.qpid.server.management.plugin.servlet.query.ConfiguredObjectQuery;
@@ -66,7 +68,15 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
             super.init();
             final ServletContext servletContext = getServletContext();
             final Broker<?> broker = (Broker<?>) servletContext.getAttribute(HttpManagementUtil.ATTR_BROKER);
+            final HttpManagementConfiguration<?> config = HttpManagementUtil.getManagementConfiguration(servletContext);
+            final int maxQueryCacheSize = config.getContextValue(Integer.class, HttpManagementConfiguration.QUERY_ENGINE_CACHE_SIZE);
+            final int maxQueryDepth = config.getContextValue(Integer.class, HttpManagementConfiguration.QUERY_ENGINE_MAX_QUERY_DEPTH);
+            final ZoneId zoneId = ZoneId.of(config.getContextValue(String.class, HttpManagementConfiguration.QUERY_ENGINE_TIMEZONE_ID));
             _queryEngine = new QueryEngine(broker);
+            _queryEngine.setMaxQueryDepth(maxQueryDepth);
+            _queryEngine.setMaxQueryCacheSize(maxQueryCacheSize);
+            _queryEngine.setZoneId(zoneId);
+            _queryEngine.initQueryCache();
         }
         catch(Exception e)
         {
