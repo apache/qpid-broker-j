@@ -138,6 +138,7 @@
     <qpid-jms-client-version>0.61.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.3.4</qpid-jms-client-amqp-0-x-version>
     <jaxb-api-version>2.3.1</jaxb-api-version>
+    <nashorn-version>15.3</nashorn-version>
 
     <exec-maven-plugin-version>1.6.0</exec-maven-plugin-version>
     <javacc-maven-plugin-version>2.6</javacc-maven-plugin-version>
@@ -669,6 +670,12 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${mockito-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.openjdk.nashorn</groupId>
+        <artifactId>nashorn-core</artifactId>
+        <version>${nashorn-version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>

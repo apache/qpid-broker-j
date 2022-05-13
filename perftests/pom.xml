@@ -187,6 +187,7 @@
       </plugin>
     </plugins>
   </build>
+
   <profiles>
     <profile>
       <id>addJms11IfNecessary</id>
@@ -413,6 +414,19 @@
           <groupId>org.glassfish.jaxb</groupId>
           <artifactId>jaxb-runtime</artifactId>
           <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>nashorn</id>
+      <activation>
+        <jdk>[15,)</jdk>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.openjdk.nashorn</groupId>
+          <artifactId>nashorn-core</artifactId>
+          <scope>test</scope>
         </dependency>
       </dependencies>
     </profile>
