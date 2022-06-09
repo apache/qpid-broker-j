@@ -43,6 +43,7 @@ import org.apache.qpid.server.query.engine.QueryEngine;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.DateFormat;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
+import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.utils.QuerySettingsBuilder;
@@ -128,7 +129,7 @@ public class QuerySettingsTest
     {
         QueryEngine queryEngine = new QueryEngine(_broker);
         queryEngine.setMaxBigDecimalValue(BigDecimal.valueOf(100L));
-        queryEngine.setMaxQueryDepth(4096);
+        queryEngine.setMaxQueryDepth(DefaultQuerySettings.MAX_QUERY_DEPTH);
         QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
 
         String query = "select 2 * 2 as result";
@@ -239,12 +240,12 @@ public class QuerySettingsTest
     @Test()
     public void customizeZoneIdViaQuerySettings()
     {
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd HH:mm:ss")
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern(DefaultQuerySettings.DATE_TIME_PATTERN)
             .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
-            .toFormatter().withZone(ZoneId.of("UTC"));
+            .toFormatter().withZone(ZoneId.of(DefaultQuerySettings.ZONE_ID));
 
         QueryEvaluator queryEvaluator = new QueryEvaluator(_broker);
-        QuerySettings querySettings = new QuerySettingsBuilder().zoneId(ZoneId.of("UTC")).build();
+        QuerySettings querySettings = new QuerySettingsBuilder().zoneId(ZoneId.of(DefaultQuerySettings.ZONE_ID)).build();
 
         String query = "select current_timestamp() as result";
         List<Map<String, Object>> result = queryEvaluator.execute(query, querySettings).getResults();
@@ -257,12 +258,12 @@ public class QuerySettingsTest
     {
         QueryEngine queryEngine = new QueryEngine(_broker);
         queryEngine.setZoneId(ZoneId.of("GMT+2"));
-        queryEngine.setMaxQueryDepth(4096);
+        queryEngine.setMaxQueryDepth(DefaultQuerySettings.MAX_QUERY_DEPTH);
         QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
         QuerySettings querySettings = new QuerySettings();
 
         Instant expected = LocalDateTime.now().atZone(ZoneId.of("GMT+2")).toInstant();
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern("uuuu-MM-dd HH:mm:ss")
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern(DefaultQuerySettings.DATE_TIME_PATTERN)
            .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
            .toFormatter().withZone(ZoneId.of("GMT+2")).withResolverStyle(ResolverStyle.STRICT);
 
@@ -306,7 +307,7 @@ public class QuerySettingsTest
 
         QueryEngine queryEngine = new QueryEngine(_broker);
         queryEngine.setMaxQueryCacheSize(10);
-        queryEngine.setMaxQueryDepth(4096);
+        queryEngine.setMaxQueryDepth(DefaultQuerySettings.MAX_QUERY_DEPTH);
         queryEngine.initQueryCache();
         QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
 

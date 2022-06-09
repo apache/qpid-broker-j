@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
+import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.utils.QuerySettingsBuilder;
 
@@ -38,7 +39,8 @@ public class CertificateQueryTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
 
-    private final QuerySettings _querySettings = new QuerySettingsBuilder().zoneId(ZoneId.of("UTC")).build();
+    private final QuerySettings _querySettings = new QuerySettingsBuilder()
+        .zoneId(ZoneId.of(DefaultQuerySettings.ZONE_ID)).build();
 
     @Test()
     public void selectAllCertificates()

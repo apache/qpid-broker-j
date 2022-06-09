@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.exception.Errors;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
@@ -169,7 +170,8 @@ public class QueryEvaluator
         ctx.put(EvaluationContext.QUERY_DEPTH, new AtomicInteger(0));
         ctx.put(EvaluationContext.QUERY_SETTINGS, querySettings);
         ctx.put(EvaluationContext.BROKER, _broker);
-        if (querySettings.getDatePattern() != null && !Objects.equals("uuuu-MM-dd HH:mm:ss", querySettings.getDateTimePattern()))
+        if (querySettings.getDatePattern() != null
+            && !Objects.equals(DefaultQuerySettings.DATE_TIME_PATTERN, querySettings.getDateTimePattern()))
         {
             ctx.put(EvaluationContext.QUERY_DATETIME_PATTERN_OVERRIDEN, true);
         }

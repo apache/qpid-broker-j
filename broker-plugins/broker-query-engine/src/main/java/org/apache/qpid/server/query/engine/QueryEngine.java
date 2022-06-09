@@ -111,7 +111,8 @@ public class QueryEngine
         _maxBigDecimalValue = maxBigDecimalValue;
     }
 
-    public void setMaxQueryCacheSize(final int maxQueryCacheSize) {
+    public void setMaxQueryCacheSize(final int maxQueryCacheSize)
+    {
         _maxQueryCacheSize = maxQueryCacheSize;
     }
 

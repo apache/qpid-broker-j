@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.query.engine.QueryEngine;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
+import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 
 public class QueueQueryTest
@@ -210,7 +211,7 @@ public class QueueQueryTest
         final Broker<?> broker = TestBroker.createBroker();
         final QueryEngine queryEngine = new QueryEngine(broker);
         queryEngine.setMaxQueryCacheSize(10);
-        queryEngine.setMaxQueryDepth(4096);
+        queryEngine.setMaxQueryDepth(DefaultQuerySettings.MAX_QUERY_DEPTH);
         final QuerySettings querySettings = new QuerySettings();
         final QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
 
@@ -221,6 +222,5 @@ public class QueueQueryTest
         query = "select * from queue where queueDepthMessages = (select max(queueDepthMessages) from queue)";
         result = queryEvaluator.execute(query, querySettings).getResults();
         assertEquals(10, result.size());
-
     }
 }

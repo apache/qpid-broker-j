@@ -30,6 +30,7 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 
 public interface HttpManagementConfiguration<X extends HttpManagementConfiguration<X>> extends Plugin<X>
 {
@@ -98,17 +99,17 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     String QUERY_ENGINE_CACHE_SIZE = "qpid.port.http.query.engine.cacheSize";
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = QUERY_ENGINE_CACHE_SIZE, description = "Broker query engine cache size.")
-    int DEFAULT_QUERY_ENGINE_CACHE_SIZE = 1000;
+    int DEFAULT_QUERY_ENGINE_CACHE_SIZE = DefaultQuerySettings.MAX_QUERY_CACHE_SIZE;
 
     String QUERY_ENGINE_MAX_QUERY_DEPTH = "qpid.port.http.query.engine.maxQueryDepth";
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = QUERY_ENGINE_MAX_QUERY_DEPTH, description = "Broker query engine max query depth.")
-    int DEFAULT_QUERY_ENGINE_MAX_QUERY_DEPTH = 4096;
+    int DEFAULT_QUERY_ENGINE_MAX_QUERY_DEPTH = DefaultQuerySettings.MAX_QUERY_DEPTH;
 
     String QUERY_ENGINE_TIMEZONE_ID = "qpid.port.http.query.engine.timezoneId";
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = QUERY_ENGINE_TIMEZONE_ID, description = "Broker query engine time zone id.")
-    String DEFAULT_QUERY_ENGINE_TIMEZONE_ID = "UTC";
+    String DEFAULT_QUERY_ENGINE_TIMEZONE_ID = DefaultQuerySettings.ZONE_ID;
 
     AuthenticationProvider getAuthenticationProvider(HttpServletRequest request);
     Port<?> getPort(HttpServletRequest request);

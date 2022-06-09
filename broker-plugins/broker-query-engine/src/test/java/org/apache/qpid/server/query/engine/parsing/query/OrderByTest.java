@@ -33,6 +33,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.query.engine.QueryEngine;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
+import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.exception.QueryEvaluationException;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
@@ -701,7 +702,7 @@ public class OrderByTest
         final Broker<?> broker = TestBroker.createBroker();
         final QueryEngine queryEngine = new QueryEngine(broker);
         queryEngine.setMaxQueryCacheSize(10);
-        queryEngine.setMaxQueryDepth(4096);
+        queryEngine.setMaxQueryDepth(DefaultQuerySettings.MAX_QUERY_DEPTH);
         final QuerySettings querySettings = new QuerySettings();
         final QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
 

@@ -48,6 +48,7 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.port.HttpPort;
+import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.security.CertificateDetails;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
 import org.apache.qpid.server.store.StoredMessage;
@@ -488,7 +489,7 @@ public class TestBroker
 
     protected static Date createDate(String date)
     {
-        final LocalDateTime dateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"));
+        final LocalDateTime dateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern(DefaultQuerySettings.DATE_TIME_PATTERN));
         return Date.from(dateTime.toInstant(ZoneOffset.UTC));
     }
 }

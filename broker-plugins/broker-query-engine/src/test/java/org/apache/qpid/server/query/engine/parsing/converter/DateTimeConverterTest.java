@@ -40,13 +40,14 @@ import org.junit.Test;
 
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContext;
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContextHolder;
+import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 
 public class DateTimeConverterTest
 {
-    private final DateTimeFormatter _formatter = new DateTimeFormatterBuilder().appendPattern("uuuu-MM-dd HH:mm:ss")
+    private final DateTimeFormatter _formatter = new DateTimeFormatterBuilder().appendPattern(DefaultQuerySettings.DATE_TIME_PATTERN)
         .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
-        .toFormatter().withZone(ZoneId.of("UTC")).withResolverStyle(ResolverStyle.STRICT);
+        .toFormatter().withZone(ZoneId.of(DefaultQuerySettings.ZONE_ID)).withResolverStyle(ResolverStyle.STRICT);
 
     @Test()
     public void isDateTime()

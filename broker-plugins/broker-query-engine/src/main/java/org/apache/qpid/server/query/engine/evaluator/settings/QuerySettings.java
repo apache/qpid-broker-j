@@ -36,48 +36,48 @@ public class QuerySettings
     /**
      * Format of date/time representation
      */
-    private DateFormat _dateTimeFormat = DateFormat.STRING;
+    private DateFormat _dateTimeFormat = DefaultQuerySettings.DATE_TIME_FORMAT;
 
     /**
      * Pattern for date string representation
      */
-    private String _datePattern = "uuuu-MM-dd";
+    private String _datePattern = DefaultQuerySettings.DATE_PATTERN;
 
     /**
      * Pattern for date/time string representation
      */
-    private String _dateTimePattern = "uuuu-MM-dd HH:mm:ss";
+    private String _dateTimePattern = DefaultQuerySettings.DATE_TIME_PATTERN;
 
     /**
      * Amount of decimal digits after the point
      */
-    private int _decimalDigits = 6;
+    private int _decimalDigits = DefaultQuerySettings.DECIMAL_DIGITS;
 
     /**
      * Maximal allowed BigDecimal value.
      * Is needed to prevent heap memory consumption when calculating very large numbers.
      */
-    private BigDecimal _maxBigDecimalValue = BigDecimal.valueOf(Double.MAX_VALUE).pow(4);
+    private BigDecimal _maxBigDecimalValue = DefaultQuerySettings.MAX_BIG_DECIMAL_VALUE;
 
     /**
      * Maximal amount of queries allowed caching
      */
-    private int _maxQueryCacheSize = 1000;
+    private int _maxQueryCacheSize = DefaultQuerySettings.MAX_QUERY_CACHE_SIZE;
 
     /**
      * Maximal amount of query tree nodes allowed
      */
-    private int _maxQueryDepth = 4096;
+    private int _maxQueryDepth = DefaultQuerySettings.MAX_QUERY_DEPTH;
 
     /**
      * Rounding mode used in calculations
      */
-    private RoundingMode _roundingMode = RoundingMode.HALF_UP;
+    private RoundingMode _roundingMode = DefaultQuerySettings.ROUNDING_MODE;
 
     /**
      * ZoneId used in date/time representation
      */
-    private ZoneId _zoneId = ZoneId.of("UTC");
+    private ZoneId _zoneId = ZoneId.of(DefaultQuerySettings.ZONE_ID);
 
     public DateFormat getDateTimeFormat()
     {
