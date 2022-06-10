@@ -52,7 +52,7 @@ public class DefaultQuerySettings
 
     /**
      * Maximal allowed BigDecimal value.
-     * Is needed to prevent heap memory consumption when calculating very large numbers.
+     * It is needed to prevent heap memory consumption when calculating very large numbers.
      */
     public static BigDecimal MAX_BIG_DECIMAL_VALUE = BigDecimal.valueOf(Double.MAX_VALUE).pow(4);
 
