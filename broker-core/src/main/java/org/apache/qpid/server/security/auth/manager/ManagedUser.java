@@ -26,7 +26,9 @@ import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
+import org.apache.qpid.server.logging.messages.UserMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -40,7 +42,8 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
 {
     public static final String MANAGED_USER_TYPE = "managed";
 
-    private ConfigModelPasswordManagingAuthenticationProvider<?> _authenticationManager;
+    private final ConfigModelPasswordManagingAuthenticationProvider<?> _authenticationManager;
+
     @ManagedAttributeField
     private String _password;
 
@@ -103,13 +106,34 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     @Override
     public void setPassword(final String password)
     {
-        setAttributes(Collections.<String, Object>singletonMap(User.PASSWORD, password));
+        setAttributes(Collections.singletonMap(User.PASSWORD, password));
     }
 
     @Override
     protected void logOperation(final String operation)
     {
-        ((Container) _authenticationManager.getParent()).getEventLogger().message(AuthenticationProviderMessages.OPERATION(operation));
+        ((Container<?>) _authenticationManager.getParent()).getEventLogger()
+            .message(AuthenticationProviderMessages.OPERATION(operation));
     }
 
+    @Override
+    protected void logCreated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        ((Container<?>) _authenticationManager.getParent()).getEventLogger()
+            .message(UserMessages.CREATE(getName(), outcome.name(), String.valueOf(getActualAttributes())));
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        ((Container<?>) _authenticationManager.getParent()).getEventLogger()
+            .message(UserMessages.DELETE(getName(), outcome.name()));
+    }
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        ((Container<?>) _authenticationManager.getParent()).getEventLogger()
+            .message(UserMessages.UPDATE(getName(), outcome.name(), String.valueOf(getActualAttributes())));
+    }
 }
