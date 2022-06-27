@@ -13,6 +13,9 @@ import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 
+/**
+ * Tests designed to verify the public class {@link DateExpression} functionality
+ */
 public class DateExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

@@ -48,6 +48,9 @@ import org.apache.qpid.server.query.engine.parsing.expression.literal.ConstantEx
 import org.apache.qpid.server.query.engine.parsing.expression.logic.NotExpression;
 import org.apache.qpid.server.query.engine.parsing.query.SelectExpression;
 
+/**
+ * Tests designed to verify the {@link ComparisonExpressionFactory} functionality
+ */
 public class ComparisonExpressionFactoryTest
 {
     @Before()

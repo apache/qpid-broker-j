@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.query.engine.retriever;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.qpid.server.model.Binding;
@@ -50,15 +50,20 @@ public class BindingRetriever<C extends ConfiguredObject<?>> extends ConfiguredO
     /**
      * List of entity field names
      */
-    private final List<String> _fieldNames = Arrays.asList(
-        "exchange", "bindingKey", "name", "type", "arguments", "destination"
-    );
+    private final List<String> _fieldNames = new ImmutableList.Builder<String>()
+        .add("exchange")
+        .add("bindingKey")
+        .add("name")
+        .add("type")
+        .add("arguments")
+        .add("destination")
+        .build();
 
     /**
      * Mapping function for a Binding
      */
     private final BiFunction<ConfiguredObject<?>, Binding, Map<String, Object>> _bindingMapping =
-        (ConfiguredObject<?> parent, Binding binding) ->  ImmutableMap.<String, Object> builder()
+        (ConfiguredObject<?> parent, Binding binding) ->  ImmutableMap.<String, Object>builder()
             .put(_fieldNames.get(0), parent.getName())
             .put(_fieldNames.get(1), binding.getBindingKey())
             .put(_fieldNames.get(2), binding.getName())

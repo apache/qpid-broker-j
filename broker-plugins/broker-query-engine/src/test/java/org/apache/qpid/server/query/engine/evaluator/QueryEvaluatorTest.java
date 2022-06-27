@@ -30,6 +30,9 @@ import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.exception.Errors;
 import org.apache.qpid.server.query.engine.exception.QueryValidationException;
 
+/**
+ * Tests designed to verify the {@link QueryEvaluator} functionality
+ */
 public class QueryEvaluatorTest
 {
     @Test()

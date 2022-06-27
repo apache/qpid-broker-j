@@ -39,6 +39,9 @@ import org.apache.qpid.server.query.engine.parsing.expression.accessor.Delegatin
 import org.apache.qpid.server.query.engine.parsing.expression.accessor.DelegatingObjectAccessor;
 import org.apache.qpid.server.query.engine.parsing.expression.literal.ConstantExpression;
 
+/**
+ * Tests designed to verify the {@link AccessorExpressionFactory} functionality
+ */
 public class AccessorExpressionFactoryTest
 {
     @Before()

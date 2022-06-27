@@ -62,6 +62,9 @@ import org.apache.qpid.server.query.engine.parsing.expression.function.string.Tr
 import org.apache.qpid.server.query.engine.parsing.expression.function.string.UpperExpression;
 import org.apache.qpid.server.query.engine.parsing.expression.literal.ConstantExpression;
 
+/**
+ * Tests designed to verify the {@link FunctionExpressionFactory} functionality
+ */
 public class FunctionExpressionFactoryTest
 {
     @Before()

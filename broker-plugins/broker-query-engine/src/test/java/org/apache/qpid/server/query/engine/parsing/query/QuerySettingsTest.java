@@ -48,6 +48,9 @@ import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.utils.QuerySettingsBuilder;
 
+/**
+ * Tests designed to verify the {@link QuerySettings} functionality
+ */
 public class QuerySettingsTest
 {
     private final Broker<?> _broker = TestBroker.createBroker();

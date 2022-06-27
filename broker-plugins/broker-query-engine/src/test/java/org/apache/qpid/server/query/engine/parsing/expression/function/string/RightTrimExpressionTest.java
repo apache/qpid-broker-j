@@ -40,6 +40,9 @@ import org.apache.qpid.server.query.engine.exception.QueryEvaluationException;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.parsing.converter.DateTimeConverter;
 
+/**
+ * Tests designed to verify the {@link RightTrimExpression} functionality
+ */
 public class RightTrimExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

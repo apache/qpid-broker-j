@@ -35,6 +35,9 @@ import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 
+/**
+ * Tests designed to verify the arithmetic expressions functionality
+ */
 public class ArithmeticExpressionsTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

@@ -587,14 +587,14 @@ ExpressionNode<T, R> comparisonExpression() :
     left = (ExpressionNode<T, R>) ComparisonExpressionFactory.inExpression(left, (SelectExpression) right);
 }
         |
-        LOOKAHEAD(3) <NOT> <IN> <LBRACKET> right = orExpression() { list = new ArrayList<>(); list.add( right ); }
+        LOOKAHEAD(6) <NOT> <IN> <LBRACKET> right = orExpression() { list = new ArrayList<>(); list.add( right ); }
         ( <COMMA> right = orExpression() { list.add( right ); } )* <RBRACKET>
         {
             stringBuilder.append(")");
             left = (ExpressionNode<T, R>) LogicExpressionFactory.negate(LogicExpressionFactory.toFunction(ComparisonExpressionFactory.inExpression(left, list)));
         }
         |
-        LOOKAHEAD(3) <NOT> <IN> <LBRACKET> right = select()  <RBRACKET>
+        LOOKAHEAD(6) <NOT> <IN> <LBRACKET> right = select()  <RBRACKET>
         {
             stringBuilder.append(")");
             left = (ExpressionNode<T, R>) LogicExpressionFactory.negate(LogicExpressionFactory.toFunction(ComparisonExpressionFactory.inExpression(left, (SelectExpression) right)));
@@ -1001,9 +1001,9 @@ ExpressionNode<T, R> functionPosition() :
 {
     t = <POSITION> { builder.append(token.image); } <LBRACKET> { builder.append("("); } ( expr = addExpression()
     { builder.append(expr.getAlias()); args.add(expr); } )?
-    ( LOOKAHEAD(2) ( <IN> { builder.append(token.image); } | <COMMA> { builder.append(token.image); } ) expr = addExpression()
+    ( LOOKAHEAD(2) ( <IN> { builder.append(" " + token.image + " "); } | <COMMA> { builder.append(token.image); } ) expr = addExpression()
     { builder.append(expr.getAlias()); args.add(expr); } ) ?
-    ( <COMMA> expr = addExpression() { builder.append(expr.getAlias()); args.add(expr); } )*
+    ( <COMMA> { builder.append(","); } expr = addExpression() { builder.append(expr.getAlias()); args.add(expr); } )*
     <RBRACKET> { builder.append(")"); }
     {
         String functionName = t.image;

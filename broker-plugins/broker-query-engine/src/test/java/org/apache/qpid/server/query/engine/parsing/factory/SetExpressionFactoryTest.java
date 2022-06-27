@@ -38,6 +38,9 @@ import org.apache.qpid.server.query.engine.parsing.expression.set.MinusExpressio
 import org.apache.qpid.server.query.engine.parsing.expression.set.UnionExpression;
 import org.apache.qpid.server.query.engine.parsing.query.SelectExpression;
 
+/**
+ * Tests designed to verify the {@link SetExpressionFactory} functionality
+ */
 public class SetExpressionFactoryTest
 {
     @Before()

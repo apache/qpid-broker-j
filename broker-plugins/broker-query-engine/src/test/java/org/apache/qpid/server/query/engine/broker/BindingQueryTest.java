@@ -30,6 +30,9 @@ import org.junit.Test;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 
+/**
+ * Tests designed to verify the bindings retrieval
+ */
 public class BindingQueryTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
@@ -72,5 +75,30 @@ public class BindingQueryTest
         List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
         assertEquals(1, result.size());
         assertEquals(10, ((Map<String, Object>) result.get(0).get("count(*)")).get("QUEUE_1"));
+    }
+
+    @Test()
+    public void extractExchangeIdAndDestinationId()
+    {
+        String query = "select "
+            + "exchange, destination, "
+            + "(select id from exchange where name = b.exchange) as exchangeId, "
+            + "(select id from queue where name = b.destination) as destinationId "
+            + "from binding b";
+
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+
+        assertEquals(10, result.size());
+
+        for (Map<String, Object> stringObjectMap : result)
+        {
+            String exchangeQuery = "select id from exchange where name = '" + stringObjectMap.get("exchange") + "'";
+            String exchangeId = (String) _queryEvaluator.execute(exchangeQuery).getResults().get(0).get("id");
+            assertEquals(stringObjectMap.get("exchangeId"), exchangeId);
+
+            String queueQuery = "select id from queue where name = '" + stringObjectMap.get("destination") + "'";
+            String queueId = (String) _queryEvaluator.execute(queueQuery).getResults().get(0).get("id");
+            assertEquals(stringObjectMap.get("destinationId"), queueId);
+        }
     }
 }

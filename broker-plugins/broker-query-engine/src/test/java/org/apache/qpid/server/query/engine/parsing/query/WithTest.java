@@ -32,6 +32,9 @@ import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 
+/**
+ * Tests designed to verify the WITH clause functionality
+ */
 public class WithTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

@@ -37,6 +37,9 @@ import org.apache.qpid.server.query.engine.parsing.expression.literal.NumberLite
 import org.apache.qpid.server.query.engine.parsing.expression.literal.StringLiteralExpression;
 import org.apache.qpid.server.query.engine.parsing.expression.literal.TrueLiteralExpression;
 
+/**
+ * Tests designed to verify the {@link LiteralExpressionFactory} functionality
+ */
 public class LiteralExpressionFactoryTest
 {
     @Before()

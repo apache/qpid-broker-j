@@ -40,6 +40,9 @@ import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.parsing.converter.DateTimeConverter;
 
+/**
+ * Tests designed to verify the {@link UpperExpression} functionality
+ */
 public class UpperExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

@@ -34,6 +34,9 @@ import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.exception.QueryEvaluationException;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 
+/**
+ * Tests designed to verify the public class {@link DateDiffExpression} functionality
+ */
 public class DateDiffExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

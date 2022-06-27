@@ -33,6 +33,9 @@ import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.exception.QueryEvaluationException;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 
+/**
+ * Tests designed to verify the subqueries functionality
+ */
 public class SubqueryTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

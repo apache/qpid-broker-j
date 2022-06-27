@@ -35,12 +35,15 @@ import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettin
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.utils.QuerySettingsBuilder;
 
+/**
+ * Tests designed to verify the certificates retrieval
+ */
 public class CertificateQueryTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
 
     private final QuerySettings _querySettings = new QuerySettingsBuilder()
-        .zoneId(ZoneId.of(DefaultQuerySettings.ZONE_ID)).build();
+            .zoneId(ZoneId.of(DefaultQuerySettings.ZONE_ID)).build();
 
     @Test()
     public void selectAllCertificates()

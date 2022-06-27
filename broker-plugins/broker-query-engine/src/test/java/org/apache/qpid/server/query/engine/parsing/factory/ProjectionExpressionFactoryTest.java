@@ -35,6 +35,9 @@ import org.apache.qpid.server.query.engine.exception.Errors;
 import org.apache.qpid.server.query.engine.exception.QueryValidationException;
 import org.apache.qpid.server.query.engine.parsing.expression.literal.ConstantExpression;
 
+/**
+ * Tests designed to verify the {@link ProjectionExpressionFactory} functionality
+ */
 public class ProjectionExpressionFactoryTest
 {
     @Before()

@@ -33,6 +33,9 @@ import org.apache.qpid.server.query.engine.exception.QueryEvaluationException;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 
+/**
+ * Tests designed to verify the public class {@link AvgExpression} functionality
+ */
 public class AvgExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

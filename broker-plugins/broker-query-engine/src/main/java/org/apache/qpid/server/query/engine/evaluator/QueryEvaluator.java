@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -46,6 +47,7 @@ import org.apache.qpid.server.query.engine.exception.QueryValidationException;
 import org.apache.qpid.server.query.engine.parsing.ExpressionParser;
 import org.apache.qpid.server.query.engine.parsing.ParseException;
 import org.apache.qpid.server.query.engine.parsing.converter.NumberConverter;
+import org.apache.qpid.server.query.engine.parsing.expression.Expression;
 import org.apache.qpid.server.query.engine.parsing.expression.ExpressionNode;
 import org.apache.qpid.server.query.engine.parsing.expression.accessor.MapObjectAccessor;
 import org.apache.qpid.server.query.engine.parsing.expression.set.SetExpression;
@@ -358,7 +360,19 @@ public class QueryEvaluator
         final String alias
     )
     {
+        final AtomicBoolean replaced = new AtomicBoolean(false);
         return (map1, map2) -> {
+
+            if (!replaced.get())
+            {
+                final EvaluationContext ctx = EvaluationContextHolder.getEvaluationContext();
+                final Map<String, Expression<T, R>> aliases = ctx.get(EvaluationContext.QUERY_ALIASES, Map.class);
+                for (final Map.Entry<String, Expression<T, R>> entry : aliases.entrySet())
+                {
+                    entry.setValue(item -> (R) item);
+                }
+                replaced.set(true);
+            }
 
             R object1 = expression.apply((T) map1);
             R object2 = expression.apply((T) map2);

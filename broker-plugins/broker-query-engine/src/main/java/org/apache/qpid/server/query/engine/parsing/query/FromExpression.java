@@ -37,6 +37,7 @@ import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.query.engine.exception.Errors;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.model.Domain;
@@ -50,6 +51,7 @@ import org.apache.qpid.server.query.engine.retriever.ConfiguredObjectRetriever;
 import org.apache.qpid.server.query.engine.retriever.ConnectionLimitRuleRetriever;
 import org.apache.qpid.server.query.engine.retriever.DomainRetriever;
 import org.apache.qpid.server.query.engine.retriever.EntityRetriever;
+import org.apache.qpid.server.query.engine.retriever.SessionRetriever;
 import org.apache.qpid.server.security.access.plugins.AclRule;
 import org.apache.qpid.server.user.connection.limits.plugins.ConnectionLimitRule;
 
@@ -95,6 +97,11 @@ public class FromExpression<T, R extends Stream<?>, C extends ConfiguredObject<?
     private final EntityRetriever<C> _domainRetriever = new DomainRetriever<>();
 
     /**
+     * Retrieves data from Session entities
+     */
+    private final EntityRetriever<C> _sessionRetriever = new SessionRetriever<>();
+
+    /**
      * Additional domains allowed to be queried
      */
     private final Map<Class<?>, EntityRetriever<C>> _allowedClasses = ImmutableMap.<Class<?>, EntityRetriever<C>> builder()
@@ -103,6 +110,7 @@ public class FromExpression<T, R extends Stream<?>, C extends ConfiguredObject<?
         .put(Certificate.class, _certificateRetriever)
         .put(ConnectionLimitRule.class, _connectionLimitRuleRetriever)
         .put(Domain.class, _domainRetriever)
+        .put(Session.class, _sessionRetriever)
         .build();
 
     /**

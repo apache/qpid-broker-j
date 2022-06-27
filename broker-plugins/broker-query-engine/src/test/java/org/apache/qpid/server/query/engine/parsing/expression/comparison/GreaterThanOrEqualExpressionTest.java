@@ -33,6 +33,9 @@ import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.exception.QueryEvaluationException;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 
+/**
+ * Tests designed to verify the public class {@link GreaterThanOrEqualExpression} functionality
+ */
 public class GreaterThanOrEqualExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

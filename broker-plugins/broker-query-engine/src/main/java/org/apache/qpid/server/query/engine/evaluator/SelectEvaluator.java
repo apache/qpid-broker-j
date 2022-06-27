@@ -37,6 +37,7 @@ import org.apache.qpid.server.query.engine.parsing.converter.ImplicitConverter;
 import org.apache.qpid.server.query.engine.parsing.converter.NumberConverter;
 import org.apache.qpid.server.query.engine.parsing.expression.Expression;
 import org.apache.qpid.server.query.engine.parsing.expression.function.aggregation.AbstractAggregationExpression;
+import org.apache.qpid.server.query.engine.parsing.expression.literal.ConstantExpression;
 import org.apache.qpid.server.query.engine.parsing.query.ProjectionExpression;
 import org.apache.qpid.server.query.engine.parsing.collector.CollectorType;
 import org.apache.qpid.server.query.engine.parsing.factory.CollectorFactory;
@@ -69,14 +70,19 @@ public class SelectEvaluator
         LOGGER.debug("Executing select '{}'", selectExpression);
 
         final EvaluationContext ctx = EvaluationContextHolder.getEvaluationContext();
-        if (selectExpression.getFrom() != null && !Objects.equals(selectExpression.getFrom().getAlias(), selectExpression.getFrom().toString()))
-        {
-            ctx.putAlias(selectExpression.getFrom().getAlias(), object -> object);
-        }
+
+        final boolean addAlias = selectExpression.getFrom() != null
+            && !Objects.equals(selectExpression.getFrom().getAlias(), selectExpression.getFrom().toString());
 
         Stream<T> stream = selectExpression.getFrom() == null
             ? Stream.empty()
-            : (Stream<T>) selectExpression.getFrom().get();
+            : (Stream<T>) selectExpression.getFrom().get()
+                .peek(item ->  {
+                    if (addAlias)
+                    {
+                        ctx.putAlias(selectExpression.getFrom().getAlias(), new ConstantExpression<>(item));
+                    }
+                });
 
         if (selectExpression.getWhere() != null)
         {
@@ -108,8 +114,8 @@ public class SelectEvaluator
             .map(ProjectionExpression::getAlias).collect(Collectors.toList());
 
         // when ORDER BY clause has items not contained in the SELECT clause, they should be added there
-        // (and moved during the sorting process)
-        if (!selectExpression.isSelectAll())
+        // (and removed during the sorting process)
+        if (!selectExpression.isSelectAll() && selectExpression.getParent() == null)
         {
             final List<OrderItem<T, R>> orderItems = ctx.get(EvaluationContext.QUERY_ORDERING);
             final List<ProjectionExpression<T, R>> additionalProjections = orderItems == null
@@ -222,7 +228,7 @@ public class SelectEvaluator
      * @return Map representing aggregation result
      */
     @SuppressWarnings("unchecked")
-    private <T, A, R> Map<String, R> groupBy(SelectExpression<T, R> selectExpression, Stream<T> stream)
+    private <T, A, R> Map<String, R> groupBy(final SelectExpression<T, R> selectExpression, final Stream<T> stream)
     {
 
         final List<T> items = stream.collect(Collectors.toList());

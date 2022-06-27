@@ -30,6 +30,9 @@ import org.junit.Test;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 
+/**
+ * Tests designed to verify the {@link AndExpression} functionality
+ */
 public class AndExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

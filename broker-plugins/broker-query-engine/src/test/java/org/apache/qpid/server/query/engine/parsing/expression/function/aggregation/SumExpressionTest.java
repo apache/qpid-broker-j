@@ -32,6 +32,9 @@ import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 
+/**
+ * Tests designed to verify the public class {@link SumExpression} functionality
+ */
 public class SumExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
