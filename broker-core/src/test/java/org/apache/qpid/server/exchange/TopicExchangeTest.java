@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.RoutingResult;
@@ -655,6 +657,27 @@ public class TopicExchangeTest extends UnitTestBase
 
         final RoutingResult<ServerMessage<?>> result2 = _exchange.route(testMessage, queueName, _instanceProperties);
         assertTrue("Message should be be possible to route using old binding", result2.hasRoutes());
+    }
+
+    @Test
+    public void testBindingWithSameDestinationName()
+    {
+        String name = "test123";
+
+        Map<String, Object> queueAttributes = new HashMap<>();
+        queueAttributes.put(Queue.NAME, name);
+        queueAttributes.put(Queue.DURABLE, false);
+        Queue<?> queue = (Queue<?>) _vhost.createChild(Queue.class, queueAttributes);
+
+        Map<String, Object> exchangeAttributes = new HashMap<>();
+        exchangeAttributes.put(Exchange.NAME, name);
+        exchangeAttributes.put(Exchange.DURABLE, false);
+        exchangeAttributes.put(Exchange.TYPE, ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
+        exchangeAttributes.put(Exchange.DURABLE_BINDINGS, Arrays.asList(new BindingImpl("#", name, new HashMap<>())));
+        Exchange<?> exchange = (Exchange<?>) _vhost.createChild(Exchange.class, exchangeAttributes);
+
+        assertEquals(1, queue.getBindingCount());
+        assertEquals(1, exchange.getBindingCount());
     }
 
     private ServerMessage<?> createTestMessage(Map<String, Object> headerValues)

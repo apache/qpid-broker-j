@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -798,12 +799,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     private MessageDestination getOpenedMessageDestination(final String name)
     {
         MessageDestination destination = getVirtualHost().getSystemDestination(name);
-        if(destination == null)
+        if (destination == null)
         {
             destination = getVirtualHost().getChildByName(Exchange.class, name);
         }
-
-        if(destination == null)
+        // handle same exchange and queue name (QPID-8572)
+        if (destination == null || Objects.equals(this, destination))
         {
             destination = getVirtualHost().getChildByName(Queue.class, name);
         }
