@@ -81,14 +81,13 @@ import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
-
 class WebSocketProvider implements AcceptingTransport
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketProvider.class);
     private static final String AMQP_WEBSOCKET_SUBPROTOCOL = "amqp";
 
     private final Transport _transport;
-    private final SslContextFactory _sslContextFactory;
+    private final SslContextFactory.Server _sslContextFactory;
     private final AmqpPort<?> _port;
     private final Broker<?> _broker;
     private final Set<Protocol> _supported;
@@ -188,10 +187,10 @@ class WebSocketProvider implements AcceptingTransport
             public void configure(final WebSocketServletFactory factory)
             {
                 factory.setCreator((req, resp) ->
-                                   {
-                                       resp.setAcceptedSubProtocol(AMQP_WEBSOCKET_SUBPROTOCOL);
-                                       return new AmqpWebSocket();
-                                   });
+                {
+                    resp.setAcceptedSubProtocol(AMQP_WEBSOCKET_SUBPROTOCOL);
+                    return new AmqpWebSocket();
+                });
             }
 
             @Override
@@ -249,7 +248,7 @@ class WebSocketProvider implements AcceptingTransport
 
     }
 
-    private SslContextFactory createSslContextFactory(final AmqpPort<?> port)
+    private SslContextFactory.Server createSslContextFactory(final AmqpPort<?> port)
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server()
         {
@@ -311,10 +310,12 @@ class WebSocketProvider implements AcceptingTransport
         {
             try
             {
-                _sslContextFactory.reload(f -> {
-                    f.setSslContext(_port.getSSLContext());
-                    f.setNeedClientAuth(_port.getNeedClientAuth());
-                    f.setWantClientAuth(_port.getWantClientAuth());
+                _sslContextFactory.reload(f ->
+                {
+                    final SslContextFactory.Server server = (SslContextFactory.Server) f;
+                    server.setSslContext(_port.getSSLContext());
+                    server.setNeedClientAuth(_port.getNeedClientAuth());
+                    server.setWantClientAuth(_port.getWantClientAuth());
                 });
                 return true;
             }
