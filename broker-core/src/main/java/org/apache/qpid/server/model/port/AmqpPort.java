@@ -82,6 +82,12 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 
     String PORT_IGNORE_INVALID_SNI = "qpid.port.amqp.ignoreInvalidSni";
 
+    /**
+     * In Java 17 logic SNI hostname validation became stricter and this flag will not help with the syntax errors
+     * in SNI hostnames provided by client. They will result in SSLPeerUnverifiedException thrown by SSLEngine.
+     * Therefore, usage of this flag is discouraged. It may be deleted in one of the future broker releases.
+     */
+    @Deprecated
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = PORT_IGNORE_INVALID_SNI)
     boolean DEFAULT_PORT_IGNORE_INVALID_SNI = false;
