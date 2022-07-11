@@ -179,6 +179,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     public String _corsAllowHeaders;
 
     @ManagedAttributeField
+    public Set<String> _allowedResponseHeaders;
+
+    @ManagedAttributeField
     public boolean _corsAllowCredentials;
 
     @ManagedAttributeField
@@ -290,6 +293,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     public String getCorsAllowHeaders()
     {
         return _corsAllowHeaders;
+    }
+
+    @Override
+    public Set<String> getAllowedResponseHeaders()
+    {
+        return _allowedResponseHeaders;
     }
 
     @Override

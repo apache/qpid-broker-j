@@ -228,13 +228,16 @@ public class RestServlet extends AbstractServlet
                               final ManagementController controller) throws IOException
     {
         setHeaders(response);
-        Map<String, String> headers = managementResponse.getHeaders();
+        final Map<String, String> headers = managementResponse.getHeaders();
         if (!headers.isEmpty())
         {
-            headers.forEach(response::setHeader);
+            for (final Map.Entry<String, String> entry : headers.entrySet())
+            {
+                addSanitizedResponseHeader(response, entry.getKey(), entry.getValue());
+            }
         }
 
-        Map<String, List<String>> parameters = managementRequest.getParameters();
+        final Map<String, List<String>> parameters = managementRequest.getParameters();
         if (parameters.containsKey(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM))
         {
             String attachmentFilename = managementRequest.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);

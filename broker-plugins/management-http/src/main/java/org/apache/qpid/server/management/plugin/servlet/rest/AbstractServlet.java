@@ -30,7 +30,9 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.zip.GZIPOutputStream;
@@ -75,8 +77,13 @@ public abstract class AbstractServlet extends HttpServlet
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
     public static final String CONTENT_DISPOSITION = "Content-Disposition";
 
+    /**
+     * Allowed response headers
+     */
+    private final Set<String> ALLOWED_RESPONSE_HEADERS = new HashSet<>();
+
     private transient Broker<?> _broker;
-    private transient HttpManagementConfiguration _managementConfiguration;
+    private transient HttpManagementConfiguration<?> _managementConfiguration;
     private transient final ConcurrentMap<ConfiguredObject<?>, ConfiguredObjectFinder> _configuredObjectFinders = new ConcurrentHashMap<>();
 
 
@@ -92,6 +99,7 @@ public abstract class AbstractServlet extends HttpServlet
         ServletContext servletContext = servletConfig.getServletContext();
         _broker = HttpManagementUtil.getBroker(servletContext);
         _managementConfiguration = HttpManagementUtil.getManagementConfiguration(servletContext);
+        ALLOWED_RESPONSE_HEADERS.addAll(_managementConfiguration.getAllowedResponseHeaders());
         super.init();
     }
 
@@ -172,11 +180,12 @@ public abstract class AbstractServlet extends HttpServlet
             String filenameRfc2183 = ensureFilenameIsRfc2183(attachmentFilename);
             if (filenameRfc2183.length() > 0)
             {
-                response.setHeader(CONTENT_DISPOSITION, String.format("attachment; filename=\"%s\"", filenameRfc2183));
+                addSanitizedResponseHeader(response, CONTENT_DISPOSITION, String.format("attachment; filename=\"%s\"", filenameRfc2183));
             }
             else
             {
-                response.setHeader(CONTENT_DISPOSITION, "attachment");  // Agent will allow user to choose a name
+                // Agent will allow user to choose a name
+                addSanitizedResponseHeader(response, CONTENT_DISPOSITION, "attachment");
             }
         }
     }
@@ -443,5 +452,29 @@ public abstract class AbstractServlet extends HttpServlet
         return finder;
     }
 
+    /**
+     * Checks whether header may be added to response, if yes, removes carriage return / line feed characters from
+     * header value and adds it to the response
+     *
+     * @param response HttpServletResponse
+     * @param name Response header name
+     * @param value Response header value
+     *
+     * @return true when header was added to response, false otherwise
+     */
+    protected boolean addSanitizedResponseHeader(final HttpServletResponse response, final String name, String value)
+    {
+        if (ALLOWED_RESPONSE_HEADERS.contains(name))
+        {
+            if (value != null)
+            {
+                value = value.replaceAll("\\R|\\t", " ");;
+            }
+            response.setHeader(name, value);
+            return true;
+        }
+        LOGGER.info("Response header '{}' skipped, is not allowed", name);
+        return false;
+    }
 
 }

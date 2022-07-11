@@ -59,6 +59,12 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     @ManagedAttribute( defaultValue = "Content-Type,Accept,Origin,X-Requested-With,X-Range" )
     String getCorsAllowHeaders();
 
+    @ManagedAttribute( defaultValue = "[\"Access-Control-Allow-Credentials\", \"Access-Control-Allow-Origin\", "
+        + "\"Cache-Control\", \"Content-Encoding\", \"Content-Disposition\", \"Content-Length\", \"Content-Type\", "
+        + "\"Date\", \"Location\", \"Expires\", \"Negotiate\", \"Pragma\", \"Set-Cookie\", \"Transfer-Encoding\", "
+        + "\"Vary\", \"WWW-Authenticate\"]" )
+    Set<String> getAllowedResponseHeaders();
+
     @ManagedAttribute( defaultValue = "true" )
     boolean getCorsAllowCredentials();
 
