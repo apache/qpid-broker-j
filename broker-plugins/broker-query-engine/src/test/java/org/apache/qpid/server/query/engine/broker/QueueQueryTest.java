@@ -34,6 +34,9 @@ import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 
+/**
+ * Tests designed to verify the queues retrieval
+ */
 public class QueueQueryTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
@@ -98,10 +101,10 @@ public class QueueQueryTest
     public void queuesByMessageDepth()
     {
         String query = "select * from queue "
-        + "where maximumQueueDepthMessages != -1 "
-        + "and maximumQueueDepthBytes != -1 "
-        + "and ((queueDepthMessages > maximumQueueDepthMessages * 0.6 and queueDepthMessages < maximumQueueDepthMessages * 0.9)"
-        + "or (queueDepthBytes > maximumQueueDepthBytes * 0.6 and queueDepthBytes < maximumQueueDepthBytes * 0.9))";
+            + "where maximumQueueDepthMessages != -1 "
+            + "and maximumQueueDepthBytes != -1 "
+            + "and ((queueDepthMessages > maximumQueueDepthMessages * 0.6 and queueDepthMessages < maximumQueueDepthMessages * 0.9)"
+            + "or (queueDepthBytes > maximumQueueDepthBytes * 0.6 and queueDepthBytes < maximumQueueDepthBytes * 0.9))";
         List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
         assertEquals(10, result.size());
         for (int i = 50; i < 60; i++)
@@ -110,10 +113,10 @@ public class QueueQueryTest
         }
 
         query = "select * from queue "
-                + "where maximumQueueDepthMessages != -1 "
-                + "and maximumQueueDepthBytes != -1 "
-                + "and (queueDepthMessages > maximumQueueDepthMessages * 0.9"
-                + "or queueDepthBytes > maximumQueueDepthBytes * 0.9)";
+            + "where maximumQueueDepthMessages != -1 "
+            + "and maximumQueueDepthBytes != -1 "
+            + "and (queueDepthMessages > maximumQueueDepthMessages * 0.9"
+            + "or queueDepthBytes > maximumQueueDepthBytes * 0.9)";
         result = _queryEvaluator.execute(query).getResults();
         assertEquals(10, result.size());
         for (int i = 60; i < 70; i++)
@@ -122,8 +125,8 @@ public class QueueQueryTest
         }
 
         query = "select * from queue "
-                + "where maximumQueueDepthMessages != -1 " 
-                + "and maximumQueueDepthBytes != -1 ";
+            + "where maximumQueueDepthMessages != -1 "
+            + "and maximumQueueDepthBytes != -1 ";
         result = _queryEvaluator.execute(query).getResults();
         assertEquals(60, result.size());
         for (int i = 10; i < 70; i++)

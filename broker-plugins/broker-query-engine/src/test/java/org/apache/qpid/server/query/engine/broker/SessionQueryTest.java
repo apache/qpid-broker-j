@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.query.engine.parsing.expression.accessor;
-
+package org.apache.qpid.server.query.engine.broker;
 
 import static org.junit.Assert.assertEquals;
 
@@ -32,38 +31,31 @@ import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 
 /**
- * Tests designed to verify the {@link ChainedObjectAccessor} functionality
+ * Tests designed to verify the sessions retrieval
  */
-public class ChainedAccessorTest
+public class SessionQueryTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
 
     @Test()
-    public void getStatisticsField()
+    public void selectAllSessions()
     {
-        String query = "select statistics.availableMessages from queue where name = 'QUEUE_0'";
+        String query = "select * from session";
         List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
-        assertEquals(1, result.size());
-        assertEquals(0, result.get(0).get("statistics.availableMessages"));
+        assertEquals(30, result.size());
 
-        query = "select statistics['availableMessages'] from queue where name = 'QUEUE_0'";
-        result = _queryEvaluator.execute(query).getResults();
-        assertEquals(1, result.size());
-        assertEquals(0, result.get(0).get("statistics['availableMessages']"));
+        for (Map<String, Object> stringObjectMap : result) {
+            String connectionQuery = "select name from connection where id = '" + stringObjectMap.get("connectionId") + "'";
+            assertEquals(1, _queryEvaluator.execute(connectionQuery).getResults().size());
+        }
     }
 
     @Test()
-    public void getByDomainAlias()
+    public void countSessions()
     {
-        String query = "select q.statistics.availableMessages from queue as q where q.name = 'QUEUE_0'";
+        String query = "select count(*) from session";
         List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
         assertEquals(1, result.size());
-        assertEquals(0, result.get(0).get("q.statistics.availableMessages"));
-
-        query = "select q.statistics['availableMessages'] from queue as q where q.name = 'QUEUE_0'";
-        result =_queryEvaluator.execute(query).getResults();
-        assertEquals(1, result.size());
-        assertEquals(0, result.get(0).get("q.statistics['availableMessages']"));
+        assertEquals(30, result.get(0).get("count(*)"));
     }
-
 }

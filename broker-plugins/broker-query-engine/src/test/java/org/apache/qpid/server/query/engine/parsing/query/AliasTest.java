@@ -30,6 +30,9 @@ import org.junit.Test;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 
+/**
+ * Tests designed to verify the aliases functionality
+ */
 public class AliasTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
@@ -205,7 +208,7 @@ public class AliasTest
     {
         String query = "select e.name from exchange e";
         List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
-        assertEquals(14, result.size());
+        assertEquals(10, result.size());
         assertEquals("e.name", result.get(0).keySet().iterator().next());
     }
 
@@ -231,6 +234,77 @@ public class AliasTest
     }
 
     @Test()
+    public void date()
+    {
+        String query = "select date(validUntil) from certificate";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("date(validUntil)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void dateadd()
+    {
+        String query = "select dateadd(day, -30, validUntil) from certificate";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("dateadd(day, -30, validUntil)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void datediff()
+    {
+        String query = "select datediff(day, current_timestamp(), validUntil) from certificate";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("datediff(day, current_timestamp(), validUntil)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void extract()
+    {
+        String query = "select extract(year from validUntil) from certificate";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("extract(year from validUntil)", result.get(0).keySet().iterator().next());
+
+        query = "select extract(month from validUntil) from certificate";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("extract(month from validUntil)", result.get(0).keySet().iterator().next());
+
+        query = "select extract(week from validUntil) from certificate";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("extract(week from validUntil)", result.get(0).keySet().iterator().next());
+
+        query = "select extract(day from validUntil) from certificate";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("extract(day from validUntil)", result.get(0).keySet().iterator().next());
+
+        query = "select extract(hour from validUntil) from certificate";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("extract(hour from validUntil)", result.get(0).keySet().iterator().next());
+
+        query = "select extract(minute from validUntil) from certificate";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("extract(minute from validUntil)", result.get(0).keySet().iterator().next());
+
+        query = "select extract(second from validUntil) from certificate";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("extract(second from validUntil)", result.get(0).keySet().iterator().next());
+
+        query = "select extract(millisecond from validUntil) from certificate";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(10, result.size());
+        assertEquals("extract(millisecond from validUntil)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
     public void in()
     {
         String query = "select 1 in ('1', 'test', 1.0)";
@@ -240,6 +314,34 @@ public class AliasTest
         query = "select 1 not in ('1', 'test', 1.0)";
         result = _queryEvaluator.execute(query).getResults();
         assertEquals("1 not in ('1','test',1)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void len()
+    {
+        String query = "select len(name) from queue";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals("len(name)", result.get(0).keySet().iterator().next());
+
+        query = "select length(name) from queue";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals("length(name)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void lower()
+    {
+        String query = "select lower(name) from queue";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals("lower(name)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void ltrim()
+    {
+        String query = "select ltrim(name) from queue";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals("ltrim(name)", result.get(0).keySet().iterator().next());
     }
 
     @Test()
@@ -259,6 +361,42 @@ public class AliasTest
     }
 
     @Test()
+    public void position()
+    {
+        String query = "select position('_' in name) from queue";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals("position('_' in name)", result.get(0).keySet().iterator().next());
+
+        query = "select position('_' in name, 1) from queue";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals("position('_' in name,1)", result.get(0).keySet().iterator().next());
+
+        query = "select position('_', name) from queue";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals("position('_',name)", result.get(0).keySet().iterator().next());
+
+        query = "select position('_', name, 1) from queue";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals("position('_',name,1)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void replace()
+    {
+        String query = "select replace(name, '_', '') from queue";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals("replace(name, '_', '')", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void rtrim()
+    {
+        String query = "select rtrim(name) from queue";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals("rtrim(name)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
     public void subquery()
     {
         String query = "select (select count(*) from queue where queueDepthMessages > 0.6 * maximumQueueDepthMessages) from broker";
@@ -267,10 +405,38 @@ public class AliasTest
     }
 
     @Test()
+    public void substring()
+    {
+        String query = "select substring(name, 2) from queue";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals("substring(name, 2)", result.get(0).keySet().iterator().next());
+
+        query = "select substring(name, 2, 5) from queue";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals("substring(name, 2, 5)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
     public void sum()
     {
         String query = "select sum(queueDepthMessages) from queue";
         List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
         assertEquals("sum(queueDepthMessages)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void trim()
+    {
+        String query = "select trim(name) from queue";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals("trim(name)", result.get(0).keySet().iterator().next());
+    }
+
+    @Test()
+    public void upper()
+    {
+        String query = "select upper(name) from queue";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals("upper(name)", result.get(0).keySet().iterator().next());
     }
 }

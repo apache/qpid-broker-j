@@ -37,6 +37,9 @@ import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.parsing.expression.ExpressionNode;
 import org.apache.qpid.server.query.engine.parsing.expression.literal.NullLiteralExpression;
 
+/**
+ * Tests designed to verify the {@link UnaryExpressionFactory} functionality
+ */
 public class UnaryExpressionFactoryTest
 {
     @Before()

@@ -21,12 +21,12 @@
 package org.apache.qpid.server.query.engine.retriever;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -58,16 +58,25 @@ public class CertificateRetriever<C extends ConfiguredObject<?>> extends Configu
     /**
      * List of entity field names
      */
-    private final List<String> _fieldNames = Arrays.asList(
-        "store", "alias", "issuerName", "serialNumber", "hexSerialNumber", "signatureAlgorithm", "subjectAltNames",
-        "subjectName", "validFrom", "validUntil", "version"
-    );
+    private final List<String> _fieldNames = new ImmutableList.Builder<String>()
+        .add("store")
+        .add("alias")
+        .add("issuerName")
+        .add("serialNumber")
+        .add("hexSerialNumber")
+        .add("signatureAlgorithm")
+        .add("subjectAltNames")
+        .add("subjectName")
+        .add("validFrom")
+        .add("validUntil")
+        .add("version")
+        .build();
 
     /**
      * Mapping function for a CertificateDetails
      */
     private final BiFunction<ConfiguredObject<?>, CertificateDetails, Map<String, Object>> certificateMapping =
-        (ConfiguredObject<?> parent, CertificateDetails certificate) -> ImmutableMap.<String, Object> builder()
+        (ConfiguredObject<?> parent, CertificateDetails certificate) -> ImmutableMap.<String, Object>builder()
             .put(_fieldNames.get(0), parent.getName())
             .put(_fieldNames.get(1), certificate.getAlias())
             .put(_fieldNames.get(2), certificate.getIssuerName())

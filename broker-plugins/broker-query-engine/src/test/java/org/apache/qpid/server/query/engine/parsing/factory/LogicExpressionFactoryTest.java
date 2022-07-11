@@ -39,6 +39,9 @@ import org.apache.qpid.server.query.engine.parsing.expression.logic.AndExpressio
 import org.apache.qpid.server.query.engine.parsing.expression.logic.NotExpression;
 import org.apache.qpid.server.query.engine.parsing.expression.logic.OrExpression;
 
+/**
+ * Tests designed to verify the {@link LogicExpressionFactory} functionality
+ */
 public class LogicExpressionFactoryTest
 {
     @Before()

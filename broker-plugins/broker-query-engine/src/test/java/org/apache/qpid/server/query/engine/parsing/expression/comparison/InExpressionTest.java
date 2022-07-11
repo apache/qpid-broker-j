@@ -31,6 +31,9 @@ import org.junit.Test;
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 
+/**
+ * Tests designed to verify the public class {@link InExpression} functionality
+ */
 public class InExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
@@ -211,6 +214,40 @@ public class InExpressionTest
         result = _queryEvaluator.execute(query).getResults();
         assertEquals(1, result.size());
         assertEquals(false, result.get(0).get("result"));
+    }
+
+    @Test()
+    public void notInSelect()
+    {
+        String query = "select 'FLOW_TO_DISK' not in (select distinct overflowPolicy from queue) as result";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals(1, result.size());
+        assertEquals(false, result.get(0).get("result"));
+
+        query = "select 'RING' not in (select distinct overflowPolicy from queue) as result";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(1, result.size());
+        assertEquals(false, result.get(0).get("result"));
+
+        query = "select 'REJECT' not  in (select distinct overflowPolicy from queue) as result";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(1, result.size());
+        assertEquals(false, result.get(0).get("result"));
+
+        query = "select 'PRODUCER_FLOW_CONTROL' not in (select distinct overflowPolicy from queue) as result";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(1, result.size());
+        assertEquals(false, result.get(0).get("result"));
+
+        query = "select 'NONE' not in (select distinct overflowPolicy from queue) as result";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(1, result.size());
+        assertEquals(false, result.get(0).get("result"));
+
+        query = "select 'UNKNOWN' not in (select distinct overflowPolicy from queue) as result";
+        result = _queryEvaluator.execute(query).getResults();
+        assertEquals(1, result.size());
+        assertEquals(true, result.get(0).get("result"));
     }
 
     @Test()

@@ -40,6 +40,9 @@ import org.apache.qpid.server.query.engine.exception.Errors;
 import org.apache.qpid.server.query.engine.parsing.collector.CollectorType;
 import org.apache.qpid.server.query.engine.parsing.expression.accessor.MapObjectAccessor;
 
+/**
+ * Tests designed to verify the {@link CollectorFactory} functionality
+ */
 public class CollectorFactoryTest
 {
     private final List<Map<String, Object>> _entities = Arrays.asList(

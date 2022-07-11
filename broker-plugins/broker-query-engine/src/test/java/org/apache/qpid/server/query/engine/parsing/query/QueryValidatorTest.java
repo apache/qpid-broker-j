@@ -30,6 +30,9 @@ import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.exception.QueryValidationException;
 
+/**
+ * Tests designed to verify the query validation functionality
+ */
 public class QueryValidatorTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

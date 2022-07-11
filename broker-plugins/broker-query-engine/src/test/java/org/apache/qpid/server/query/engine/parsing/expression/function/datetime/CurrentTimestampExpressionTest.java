@@ -36,6 +36,9 @@ import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.parsing.converter.DateTimeConverter;
 import org.apache.qpid.server.query.engine.utils.QuerySettingsBuilder;
 
+/**
+ * Tests designed to verify the public class {@link CurrentTimestampExpression} functionality
+ */
 public class CurrentTimestampExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
@@ -53,7 +56,7 @@ public class CurrentTimestampExpressionTest
     @Test()
     public void comparingDatetimes()
     {
-        QuerySettings querySettings = new QuerySettingsBuilder().zoneId(ZoneId.systemDefault()).build();
+        QuerySettings querySettings = new QuerySettingsBuilder().zoneId(ZoneId.of("UTC")).build();
 
         String query = "select name from virtualhostnode where createdTime < '2001-01-01 12:55:31.000'";
         List<Map<String, Object>> result = _queryEvaluator.execute(query, querySettings).getResults();

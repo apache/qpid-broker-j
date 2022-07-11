@@ -32,6 +32,9 @@ import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.exception.QueryValidationException;
 
+/**
+ * Tests designed to verify the {@link HavingExpression} functionality
+ */
 @SuppressWarnings("unchecked")
 public class HavingTest
 {

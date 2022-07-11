@@ -21,7 +21,6 @@
 package org.apache.qpid.server.query.engine.parsing.expression.function.string;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import java.math.BigDecimal;
@@ -39,6 +38,9 @@ import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.parsing.converter.DateTimeConverter;
 
+/**
+ * Tests designed to verify the public class {@link ConcatExpression} functionality
+ */
 public class ConcatExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());

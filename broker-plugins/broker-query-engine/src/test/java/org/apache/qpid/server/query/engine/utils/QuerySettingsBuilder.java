@@ -26,6 +26,9 @@ import java.time.ZoneId;
 import org.apache.qpid.server.query.engine.evaluator.DateFormat;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 
+/**
+ * Helper class for building {@link QuerySettings} instances
+ */
 public class QuerySettingsBuilder
 {
     private DateFormat _dateTimeFormat;

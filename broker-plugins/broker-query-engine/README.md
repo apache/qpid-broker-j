@@ -76,8 +76,10 @@
      * [UPPER](#upper)
 
 10. [Set Operations](#set-operations)
+
+11. [Subqueries](#subqueries)
    
-11. [Performance Tips](#performance-tips)
+12. [Performance Tips](#performance-tips)
 
 ## Introduction
 
@@ -1847,6 +1849,128 @@ SELECT UPPER(name)
 FROM user
 ```
 
+## Subqueries
+
+When executing subquery parent query domain mat be passed into the subquery using alias.
+
+E.g. this query
+
+```
+SELECT 
+   id, 
+   name, 
+   (SELECT name FROM connection WHERE SUBSTRING(name, 1, POSITION(']' IN name)) = '[' + SUBSTRING(c.name, 1, POSITION('|' IN c.name) - 1) + ']') as connection, 
+   (SELECT id FROM connection WHERE SUBSTRING(name, 1, POSITION(']' IN name)) = '[' + SUBSTRING(c.name, 1, POSITION('|' IN c.name) - 1) + ']') as connectionId, 
+   (SELECT name FROM session WHERE id = c.session.id) as session 
+FROM consumer c
+```
+
+<details>
+  <summary>returns following result (Click to expand).</summary>
+  <p>
+
+```
+{
+    "results": [
+        {
+            "id": "7a4d7a86-652b-4112-b535-61272b936b57",
+            "name": "1|1|qpid-jms:receiver:ID:6bd18833-3c96-4936-b9ee-9dec5f408b5c:1:1:1:broadcast.amqp_user1.public",
+            "connection": "[1] 127.0.0.1:39134",
+            "connectionId": "afbd0480-43b1-4b39-bc00-260c077095f3",
+            "session": "1"
+        }
+    ],
+    "total": 1
+}
+```
+  </p>
+</details>
+
+Query 
+
+```
+SELECT 
+   name, 
+   destination, 
+   (SELECT id FROM queue WHERE name = b.destination) AS destinationId, 
+   exchange,  
+   (SELECT id FROM exchange WHERE name = b.exchange) AS exchangeId 
+FROM binding b 
+WHERE name = 'broadcast.amqp_user1.xxx.#'
+```
+<details>
+  <summary>returns following result (Click to expand).</summary>
+  <p>
+
+```
+{
+    "results": [
+        {
+            "name": "broadcast.amqp_user1.xxx.#",
+            "destination": "broadcast.amqp_user1.xxx",
+            "destinationId": "d5ce9e78-8558-40db-8690-15abf69ab255",
+            "exchange": "broadcast",
+            "exchangeId": "470273aa-7243-4cb7-80ec-13e698c36158"
+        },
+        {
+            "name": "broadcast.amqp_user1.xxx.#",
+            "destination": "broadcast.amqp_user2.xxx",
+            "destinationId": "88357d15-a590-4ccf-aee8-2d5cda77752e",
+            "exchange": "broadcast",
+            "exchangeId": "470273aa-7243-4cb7-80ec-13e698c36158"
+        },
+        {
+            "name": "broadcast.amqp_user1.xxx.#",
+            "destination": "broadcast.amqp_user3.xxx",
+            "destinationId": "c8200f89-2587-4b0c-a8f6-120cda975d03",
+            "exchange": "broadcast",
+            "exchangeId": "470273aa-7243-4cb7-80ec-13e698c36158"
+        }
+    ],
+    "total": 3
+}
+```
+  </p>
+</details>
+
+Query
+
+```
+SELECT 
+   alias, 
+   (SELECT COUNT(id) FROM queue WHERE POSITION(UPPER(c.alias) IN name) > 0) AS queueCount 
+FROM certificate c
+```
+<details>
+  <summary>returns following result (Click to expand).</summary>
+  <p>
+
+```
+{
+    "results": [
+        {
+            "alias": "xxx",
+            "queueCount": 5
+        },
+        {
+            "alias": "xxy",
+            "queueCount": 5
+        },
+        {
+            "alias": "xxz",
+            "queueCount": 7
+        }
+    ],
+    "total": 3
+}
+```
+  </p>
+</details>
+
+
+Please consider that subquery usage may be not performant in case of many objects returned
+either by parent query or by subquery.
+
 ## Performance Tips
 
 Try to select entity fields by names instead of using an asterix. For example, this query
@@ -1866,4 +1990,19 @@ SELECT
     id, name, state, overflowPolicy, expiryPolicy
 FROM queue
 LIMIT 10 OFFSET 0
+```
+When using subqueries avoid to fire the against unfiltered domains. For example, this query
+```
+SELECT 
+   name, 
+   (SELECT id FROM queue WHERE name = b.destination) AS destinationId
+FROM binding b 
+WHERE name = 'broadcast.amqp_user1.xxx.#'
+```
+will be executed faster than this one:
+```
+SELECT 
+   name, 
+   (SELECT id FROM queue WHERE name = b.destination) AS destinationId
+FROM binding b 
 ```

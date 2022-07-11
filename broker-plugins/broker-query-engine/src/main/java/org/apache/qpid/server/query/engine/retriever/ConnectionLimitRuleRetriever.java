@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.query.engine.retriever;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.qpid.server.model.BrokerConnectionLimitProvider;
@@ -53,14 +53,19 @@ public class ConnectionLimitRuleRetriever<C extends ConfiguredObject<?>> extends
     /**
      * List of entity field names
      */
-    private final List<String> _fieldNames = Arrays.asList(
-        "blocked", "countLimit", "frequencyLimit", "frequencyPeriod", "identity", "port"
-    );
+    private final List<String> _fieldNames = new ImmutableList.Builder<String>()
+        .add("blocked")
+        .add("countLimit")
+        .add("frequencyLimit")
+        .add("frequencyPeriod")
+        .add("identity")
+        .add("port")
+        .build();
 
     /**
      * Mapping function for a ConnectionLimitRule
      */
-    private final Function<ConnectionLimitRule, Map<String, Object>> _connectionLimitRuleMapping = rule -> ImmutableMap.<String, Object> builder()
+    private final Function<ConnectionLimitRule, Map<String, Object>> _connectionLimitRuleMapping = rule -> ImmutableMap.<String, Object>builder()
         .put(_fieldNames.get(0), rule.getBlocked())
         .put(_fieldNames.get(1), rule.getCountLimit())
         .put(_fieldNames.get(2), rule.getFrequencyLimit())

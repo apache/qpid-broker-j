@@ -36,11 +36,13 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.apache.qpid.server.query.engine.TestBroker;
-import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.query.engine.exception.QueryEvaluationException;
 import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 
+/**
+ * Tests designed to verify the {@link SubstringExpression} functionality
+ */
 public class SubstringExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
@@ -352,9 +354,9 @@ public class SubstringExpressionTest
     @Test()
     public void dateArgument()
     {
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern(DefaultQuerySettings.DATE_TIME_PATTERN)
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern("uuuu-MM-dd HH:mm:ss")
             .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
-            .toFormatter().withZone(ZoneId.of(DefaultQuerySettings.ZONE_ID)).withResolverStyle(ResolverStyle.STRICT);
+            .toFormatter().withZone(ZoneId.of("UTC")).withResolverStyle(ResolverStyle.STRICT);
 
         String query = "select substring(lastUpdatedTime, 1) as result from queue where name='QUEUE_0'";
         List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();

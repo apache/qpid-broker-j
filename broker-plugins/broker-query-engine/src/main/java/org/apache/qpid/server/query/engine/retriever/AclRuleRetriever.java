@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.query.engine.retriever;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,14 +62,18 @@ public class AclRuleRetriever<C extends ConfiguredObject<?>> extends ConfiguredO
     /**
      * List of entity field names
      */
-    private final List<String> _fieldNames = Arrays.asList(
-        "identity", "attributes", "objectType", "operation", "outcome"
-    );
+    private final List<String> _fieldNames = new ImmutableList.Builder<String>()
+        .add("identity")
+        .add("attributes")
+        .add("objectType")
+        .add("operation")
+        .add("outcome")
+        .build();
 
     /**
      * Mapping function for a Rule
      */
-    private final Function<Rule, Map<String, Object>> _ruleMapping = rule -> ImmutableMap.<String, Object> builder()
+    private final Function<Rule, Map<String, Object>> _ruleMapping = rule -> ImmutableMap.<String, Object>builder()
         .put(_fieldNames.get(0), rule.getIdentity())
         .put(_fieldNames.get(1), rule.getAttributes())
         .put(_fieldNames.get(2), rule.getObjectType())

@@ -31,6 +31,9 @@ import org.apache.qpid.server.query.engine.evaluator.EvaluationContext;
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContextHolder;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 
+/**
+ * Tests designed to verify the {@link NumberExpressionFactory} functionality
+ */
 public class NumberExpressionFactoryTest
 {
 

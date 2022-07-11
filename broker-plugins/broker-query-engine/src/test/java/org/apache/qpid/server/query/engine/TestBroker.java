@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.query.engine;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,7 +30,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -40,24 +38,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.collect.Lists;
 import org.junit.ClassRule;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
-import org.apache.qpid.server.message.AMQMessageHeader;
-import org.apache.qpid.server.message.MessageReference;
-import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.port.HttpPort;
-import org.apache.qpid.server.query.engine.evaluator.settings.DefaultQuerySettings;
 import org.apache.qpid.server.security.CertificateDetails;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
-import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhostnode.memory.MemoryVirtualHostNode;
 import org.apache.qpid.test.utils.tls.TlsResource;
 
+/**
+ * Helper class for creating broker mock
+ */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class TestBroker
 {
@@ -65,6 +61,8 @@ public class TestBroker
     public static final TlsResource TLS_RESOURCE = new TlsResource();
 
     private static Broker<?> _broker;
+
+    private static final List<Connection> connections = new ArrayList<>();
 
     public static Broker<?> createBroker()
     {
@@ -77,7 +75,7 @@ public class TestBroker
 
             _broker = BrokerTestHelper.createBrokerMock();
 
-            List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Broker.class));
+            final List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Broker.class));
             when(_broker.getAttributeNames()).thenReturn(attributeNames);
             when(_broker.getAttribute(eq("name"))).thenReturn("mock");
             when(_broker.getName()).thenReturn("mock");
@@ -87,25 +85,26 @@ public class TestBroker
             attributesMap.put(AuthenticationProvider.TYPE, "SCRAM-SHA-256");
             attributesMap.put(AuthenticationProvider.ID, UUID.randomUUID());
             ScramSHA256AuthenticationManager authProvider =
-                    (ScramSHA256AuthenticationManager) _broker.getObjectFactory()
-                                                              .create(AuthenticationProvider.class,
-                                                                      attributesMap,
-                                                                      _broker);
+                (ScramSHA256AuthenticationManager) _broker.getObjectFactory()
+                    .create(AuthenticationProvider.class, attributesMap, _broker);
             when(_broker.getAuthenticationProviders()).thenReturn(Collections.singletonList(authProvider));
 
-            HttpPort<?> httpPort = mock(HttpPort.class);
+            final List<String> portAttributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Port.class));
+            final HttpPort<?> httpPort = mock(HttpPort.class);
+            when(httpPort.getAttributeNames()).thenReturn(portAttributeNames);
             when(httpPort.getPort()).thenReturn(40606);
             when(httpPort.getBoundPort()).thenReturn(40606);
             when(httpPort.getCreatedBy()).thenReturn("admin");
             when(httpPort.getCreatedTime()).thenReturn(new Date());
             when(httpPort.getName()).thenReturn("httpPort");
+            when(httpPort.getAttribute(Port.NAME)).thenReturn("httpPort");
             when(httpPort.getState()).thenReturn(State.ACTIVE);
             when(httpPort.getType()).thenReturn("HTTP");
             when(httpPort.getAttribute(HttpPort.AUTHENTICATION_PROVIDER)).thenReturn(authProvider);
+            when(httpPort.getStatistics()).thenReturn(new HashMap<>());
 
-            Collection<Connection> connections = new ArrayList<>();
-
-            Port<?> amqpPort = mock(Port.class);
+            final Port<?> amqpPort = mock(Port.class);
+            when(amqpPort.getAttributeNames()).thenReturn(portAttributeNames);
             when(amqpPort.getConnections()).thenReturn(connections);
             when(amqpPort.getChildren(Connection.class)).thenReturn(connections);
             when(amqpPort.getPort()).thenReturn(40206);
@@ -113,173 +112,52 @@ public class TestBroker
             when(amqpPort.getCreatedBy()).thenReturn("admin");
             when(amqpPort.getCreatedTime()).thenReturn(new Date());
             when(amqpPort.getName()).thenReturn("amqpPort");
+            when(amqpPort.getAttribute(Port.NAME)).thenReturn("amqpPort");
             when(amqpPort.getState()).thenReturn(State.ACTIVE);
             when(amqpPort.getType()).thenReturn("AMQP");
+            final Map<String, Object> portStatistics = new HashMap<>();
+            portStatistics.put("connectionCount", 30);
+            portStatistics.put("totalConnectionCount", 30);
+            when(httpPort.getStatistics()).thenReturn(portStatistics);
 
             when(_broker.getPorts()).thenReturn(Arrays.asList(httpPort, amqpPort));
             when(_broker.getChildren(eq(Port.class))).thenReturn(Arrays.asList(httpPort, amqpPort));
 
-            final Map<String, Object> vhnAttributes = new HashMap<>();
-            vhnAttributes.put(VirtualHostNode.TYPE, MemoryVirtualHostNode.VIRTUAL_HOST_NODE_TYPE);
-            vhnAttributes.put(VirtualHostNode.NAME, "default");
-            VirtualHostNode<?> virtualHostNode =
-                    _broker.getObjectFactory().create(VirtualHostNode.class, vhnAttributes, _broker);
+            final List<String> vhnAttributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(VirtualHostNode.class));
+            final VirtualHostNode<?> virtualHostNode = mock(VirtualHostNode.class);
+            when(virtualHostNode.getAttributeNames()).thenReturn(vhnAttributeNames);
+            when(virtualHostNode.getAttribute(VirtualHostNode.ID)).thenReturn(UUID.randomUUID());
+            when(virtualHostNode.getAttribute(eq(VirtualHostNode.NAME))).thenReturn("default");
+            when(virtualHostNode.getAttribute(eq(VirtualHostNode.TYPE))).thenReturn(MemoryVirtualHostNode.VIRTUAL_HOST_NODE_TYPE);
+            when(virtualHostNode.getAttribute(eq(VirtualHostNode.CREATED_TIME))).thenReturn(new Date());
+            when(virtualHostNode.getCreatedTime()).thenReturn(new Date());
 
-            VirtualHostNode mockVirtualHostNode = mock(VirtualHostNode.class);
-            when(mockVirtualHostNode.getAttributeNames()).thenReturn(virtualHostNode.getAttributeNames());
+            final VirtualHostNode mockVirtualHostNode = mock(VirtualHostNode.class);
+            when(mockVirtualHostNode.getAttributeNames()).thenReturn(vhnAttributeNames);
+            when(mockVirtualHostNode.getAttribute(VirtualHostNode.ID)).thenReturn(UUID.randomUUID());
             when(mockVirtualHostNode.getAttribute(eq(VirtualHostNode.NAME))).thenReturn("mock");
             when(mockVirtualHostNode.getAttribute(eq(VirtualHostNode.TYPE))).thenReturn("mock");
             when(mockVirtualHostNode.getAttribute(eq(VirtualHostNode.CREATED_TIME)))
-                .thenReturn(new Date(101, Calendar.JANUARY, 1, 12, 55, 30));
-            when(mockVirtualHostNode.getCreatedTime()).thenReturn(new Date(101, Calendar.JANUARY, 1, 12, 55, 30));
+                .thenReturn(createDate("2001-01-01 12:55:30"));
+            when(mockVirtualHostNode.getCreatedTime()).thenReturn(createDate("2001-01-01 12:55:30"));
 
-            when(_broker.getVirtualHostNodes()).thenReturn(Arrays.asList(mockVirtualHostNode,
-                                                                   mockVirtualHostNode,
-                                                                   virtualHostNode));
-            when(_broker.getChildren(eq(VirtualHostNode.class))).thenReturn(Arrays.asList(virtualHostNode,
-                                                                                    mockVirtualHostNode));
+            when(_broker.getVirtualHostNodes()).thenReturn(
+                Arrays.asList(mockVirtualHostNode, virtualHostNode)
+            );
+            when(_broker.getChildren(eq(VirtualHostNode.class))).thenReturn(
+                Arrays.asList(virtualHostNode, mockVirtualHostNode)
+            );
 
-            final Map<String, Object> vhAttributes = new HashMap<>();
-            vhAttributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-            vhAttributes.put(VirtualHost.NAME, "default");
-            TestMemoryVirtualHost virtualHost =
-                    (TestMemoryVirtualHost) virtualHostNode.createChild(VirtualHost.class, vhAttributes);
-
-            List<Queue> queues = new ArrayList<>();
-            for (int i = 0; i < 10; i++)
-            {
-                Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Queue.ID, UUID.randomUUID());
-                attributes.put(Queue.NAME, "QUEUE_" + i);
-                attributes.put(Queue.LAST_UPDATED_TIME, new Date(2021, Calendar.JANUARY, 0, 0, 0, 0));
-                attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
-                if (i % 2 == 0)
-                {
-                    attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
-                }
-                attributes.put(Queue.DESCRIPTION, "test description 1");
-                queues.add(virtualHost.createChild(Queue.class, attributes));
-            }
-            for (int i = 10; i < 20; i++)
-            {
-                Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Queue.ID, UUID.randomUUID());
-                attributes.put(Queue.NAME, "QUEUE_" + i);
-                attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.REJECT);
-                if (i % 2 == 0)
-                {
-                    attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
-                }
-                attributes.put(Queue.DESCRIPTION, "test description 2");
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 1024 * 1024);
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100);
-                queues.add(virtualHost.createChild(Queue.class, attributes));
-            }
-            for (int i = 20; i < 30; i++)
-            {
-                Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Queue.ID, UUID.randomUUID());
-                attributes.put(Queue.NAME, "QUEUE_" + i);
-                attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.FLOW_TO_DISK);
-                if (i % 2 == 0)
-                {
-                    attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
-                }
-                attributes.put(Queue.DESCRIPTION, "test description 3");
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 1024 * 1024);
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100);
-                queues.add(virtualHost.createChild(Queue.class, attributes));
-            }
-            for (int i = 30; i < 40; i++)
-            {
-                Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Queue.ID, UUID.randomUUID());
-                attributes.put(Queue.NAME, "QUEUE_" + i);
-                attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.PRODUCER_FLOW_CONTROL);
-                if (i % 2 == 0)
-                {
-                    attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
-                }
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 1024 * 1024);
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100);
-                queues.add(virtualHost.createChild(Queue.class, attributes));
-            }
-            for (int i = 40; i < 50; i++)
-            {
-                Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Queue.ID, UUID.randomUUID());
-                attributes.put(Queue.NAME, "QUEUE_" + i);
-                attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.NONE);
-                if (i % 2 == 0)
-                {
-                    attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
-                    attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);
-                }
-                else
-                {
-                    attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.IN_USE);
-                }
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 1024 * 1024);
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100);
-                queues.add(virtualHost.createChild(Queue.class, attributes));
-            }
-            for (int i = 50; i < 60; i++)
-            {
-                Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Queue.ID, UUID.randomUUID());
-                attributes.put(Queue.NAME, "QUEUE_" + i);
-                attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.NONE);
-                if (i % 2 == 0)
-                {
-                    attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
-                    attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);
-                }
-                else
-                {
-                    attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.IN_USE);
-                }
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 1024 * 1024);
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100);
-                Queue queue = virtualHost.createChild(Queue.class, attributes);
-                for (int j = 0; j < 65; j++)
-                {
-                    queue.enqueue(createMessage((long) j), null, null);
-                }
-                queues.add(queue);
-            }
-
-            for (int i = 60; i < 70; i++)
-            {
-                Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Queue.ID, UUID.randomUUID());
-                attributes.put(Queue.NAME, "QUEUE_" + i);
-                attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.NONE);
-                if (i % 2 == 0)
-                {
-                    attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
-                }
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 1024 * 1024);
-                attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100);
-                Queue queue = virtualHost.createChild(Queue.class, attributes);
-                for (int j = 0; j < 95; j++)
-                {
-                    queue.enqueue(createMessage((long) j), null, null);
-                }
-                queues.add(queue);
-            }
-
-            List<Exchange> exchanges = new ArrayList<>();
-            for (int i = 0; i < 10; i++)
-            {
-                Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Exchange.ID, UUID.randomUUID());
-                attributes.put(Exchange.TYPE, ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
-                attributes.put(Exchange.NAME, "EXCHANGE_" + i);
-                attributes.put(Exchange.DESCRIPTION, "test description " + i);
-                Exchange exchange = virtualHost.createChild(Exchange.class, attributes);
-                exchange.bind("QUEUE_1", "#", new HashMap<>(), true);
-                exchanges.add(exchange);
-            }
+            final List<String> vhAttributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(VirtualHost.class));
+            final VirtualHost virtualHost = mock(VirtualHost.class);
+            when(virtualHost.getAttributeNames()).thenReturn(vhAttributeNames);
+            when(virtualHost.getAttribute(VirtualHost.ID)).thenReturn(UUID.randomUUID());
+            when(virtualHost.getAttribute(VirtualHost.TYPE)).thenReturn(TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
+            when(virtualHost.getAttribute(VirtualHost.NAME)).thenReturn("default");
+            when(virtualHostNode.getChildren(eq(VirtualHost.class))).thenReturn(
+                Arrays.asList(virtualHost)
+            );
+            when(virtualHostNode.getVirtualHost()).thenReturn(virtualHost);
 
             for (int i = 1 ; i < 11; i ++)
             {
@@ -294,17 +172,180 @@ public class TestBroker
                 connections.add(createAMQPConnection(i, "127.0.0.3", "principal3"));
             }
 
+            final List<Queue> queues = new ArrayList<>();
+            for (int i = 0; i < 10; i++)
+            {
+                final Queue queue = createQueue(i, OverflowPolicy.RING, "test description 1");
+                queues.add(queue);
+            }
+            for (int i = 10; i < 20; i++)
+            {
+                final Queue queue = createQueue(i, OverflowPolicy.REJECT, "test description 2");
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).thenReturn(1024 * 1024);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES)).thenReturn(100);
+                queues.add(queue);
+            }
+            for (int i = 20; i < 30; i++)
+            {
+                final Queue queue = createQueue(i, OverflowPolicy.FLOW_TO_DISK, "test description 3");
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).thenReturn(1024 * 1024);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES)).thenReturn(100);
+                queues.add(queue);
+            }
+            for (int i = 30; i < 40; i++)
+            {
+                final Queue queue = createQueue(i, OverflowPolicy.PRODUCER_FLOW_CONTROL, null);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).thenReturn(1024 * 1024);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES)).thenReturn(100);
+                queues.add(queue);
+            }
+            for (int i = 40; i < 50; i++)
+            {
+                final Queue queue = createQueue(i, OverflowPolicy.NONE, null);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).thenReturn(1024 * 1024);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES)).thenReturn(100);
+                if (i % 2 == 0)
+                {
+                    when(queue.getAttribute(Queue.EXPIRY_POLICY)).thenReturn(Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
+                    when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.PERMANENT);
+                }
+                else
+                {
+                    when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.IN_USE);
+                }
+                queues.add(queue);
+            }
+            for (int i = 50; i < 60; i++)
+            {
+                final Queue queue = createQueue(i, OverflowPolicy.NONE, null);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).thenReturn(1024 * 1024);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES)).thenReturn(100);
+                if (i % 2 == 0)
+                {
+                    when(queue.getAttribute(Queue.EXPIRY_POLICY)).thenReturn(Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
+                    when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.PERMANENT);
+                }
+                else
+                {
+                    when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.IN_USE);
+                }
+
+                final Map<String, Object> statistics = new HashMap<>();
+                statistics.put("availableMessages", 65);
+                statistics.put("bindingCount", 0);
+                statistics.put("queueDepthMessages", 65);
+                statistics.put("queueDepthBytes", 0);
+                statistics.put("totalExpiredBytes", 0);
+                when(queue.getStatistics()).thenReturn(statistics);
+
+                queues.add(queue);
+            }
+
+            for (int i = 60; i < 70; i++)
+            {
+                final Queue queue = createQueue(i, OverflowPolicy.NONE, null);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).thenReturn(1024 * 1024);
+                when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES)).thenReturn(100);
+
+                final Map<String, Object> statistics = new HashMap<>();
+                statistics.put("availableMessages", 95);
+                statistics.put("bindingCount", 0);
+                statistics.put("queueDepthMessages", 95);
+                statistics.put("queueDepthBytes", 0);
+                statistics.put("totalExpiredBytes", 0);
+                when(queue.getStatistics()).thenReturn(statistics);
+
+                queues.add(queue);
+            }
+            when(virtualHost.getChildren(eq(Queue.class))).thenReturn(queues);
+
+            final List<Exchange> exchanges = new ArrayList<>();
+            for (int i = 0; i < 10; i++)
+            {
+                exchanges.add(creatExchange(i));
+            }
+            when(virtualHost.getChildren(eq(Exchange.class))).thenReturn(exchanges);
+
             final Collection<TrustStore> trustStores = createTruststores();
             when(_broker.getChildren(eq(TrustStore.class))).thenReturn(trustStores);
 
-
+            when(_broker.getAttribute("maximumHeapMemorySize")).thenReturn(10_000_000_000L);
+            when(_broker.getAttribute("maximumDirectMemorySize")).thenReturn(1_500_000_000L);
+            when(_broker.getStatistics()).thenReturn(getBrokerStatistics());
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
 
         return _broker;
+    }
+
+    protected static Queue createQueue(int number, OverflowPolicy overflowPolicy, String description)
+    {
+        final List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Queue.class));
+        final Queue<?> queue = mock(Queue.class);
+        when(queue.getAttributeNames()).thenReturn(attributeNames);
+        when(queue.getAttribute(Queue.ID)).thenReturn(UUID.randomUUID());
+        when(queue.getAttribute(Queue.NAME)).thenReturn("QUEUE_" + number);
+        when(queue.getAttribute(Queue.TYPE)).thenReturn("standard");
+        Date createdTime = new Date();
+        when(queue.getAttribute(Queue.CREATED_TIME)).thenReturn(createdTime);
+        when(queue.getCreatedTime()).thenReturn(createdTime);
+        when(queue.getAttribute(Queue.LAST_UPDATED_TIME)).thenReturn(new Date());
+        when(queue.getAttribute(Queue.OVERFLOW_POLICY)).thenReturn(overflowPolicy);
+        if (number % 2 == 0)
+        {
+            when(queue.getAttribute(Queue.EXPIRY_POLICY)).thenReturn(Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
+        }
+        else
+        {
+            when(queue.getAttribute(Queue.EXPIRY_POLICY)).thenReturn(Queue.ExpiryPolicy.DELETE);
+        }
+        when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.PERMANENT);
+        when(queue.getAttribute(Queue.DESCRIPTION)).thenReturn(description);
+        when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).thenReturn(-1);
+        when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES)).thenReturn(-1);
+
+        Map<String, Object> statistics = new HashMap<>();
+        statistics.put("availableMessages", 0);
+        statistics.put("bindingCount", number == 1 ? 10 : 0);
+        statistics.put("queueDepthMessages", 0);
+        statistics.put("queueDepthBytes", 0);
+        statistics.put("totalExpiredBytes", 0);
+        when(queue.getStatistics()).thenReturn(statistics);
+
+        if (number > 0 && number < 11)
+        {
+            Consumer consumer = createConsumer(number, "QUEUE_" + number);
+            when(queue.getChildren(eq(Consumer.class))).thenReturn(Lists.newArrayList(consumer));
+        }
+
+        return queue;
+    }
+
+    protected static Exchange creatExchange(int number)
+    {
+        final List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Exchange.class));
+        final Exchange<?> exchange = mock(Exchange.class);
+        when(exchange.getAttributeNames()).thenReturn(attributeNames);
+        when(exchange.getAttribute(Exchange.ID)).thenReturn(UUID.randomUUID());
+        when(exchange.getAttribute(Exchange.TYPE)).thenReturn(ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
+        when(exchange.getAttribute(Exchange.NAME)).thenReturn("EXCHANGE_" + number);
+        when(exchange.getName()).thenReturn("EXCHANGE_" + number);
+        when(exchange.getAttribute(Exchange.DESCRIPTION)).thenReturn("test description " + number);
+
+        Binding binding = mock(Binding.class);
+        when(binding.getName()).thenReturn("#");
+        when(binding.getBindingKey()).thenReturn("#");
+        when(binding.getType()).thenReturn("binding");
+        when(binding.getDestination()).thenReturn("QUEUE_1");
+        when(binding.getArguments()).thenReturn(new HashMap<>());
+
+        when(exchange.getAttribute("bindings")).thenReturn(Collections.unmodifiableList(Arrays.asList(binding)));
+        when(exchange.getBindings()).thenReturn(Collections.unmodifiableList(Arrays.asList(binding)));
+
+        return exchange;
     }
 
     protected static Collection<TrustStore> createTruststores()
@@ -442,33 +483,14 @@ public class TestBroker
         return list;
     }
 
-    protected static ServerMessage createMessage(Long id)
-    {
-        AMQMessageHeader header = mock(AMQMessageHeader.class);
-        when(header.getMessageId()).thenReturn(String.valueOf(id));
-        ServerMessage message = mock(ServerMessage.class);
-        when(message.getMessageNumber()).thenReturn(id);
-        when(message.getMessageHeader()).thenReturn(header);
-        when(message.checkValid()).thenReturn(true);
-
-        StoredMessage storedMessage = mock(StoredMessage.class);
-        when(message.getStoredMessage()).thenReturn(storedMessage);
-
-        MessageReference ref = mock(MessageReference.class);
-        when(ref.getMessage()).thenReturn(message);
-
-        when(message.newReference()).thenReturn(ref);
-        when(message.newReference(any(TransactionLogResource.class))).thenReturn(ref);
-
-        return message;
-    }
-
     protected static Connection createAMQPConnection(int number, String hostname, String principal)
     {
         List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Connection.class));
         AMQPConnection<?> connection = mock(AMQPConnection.class);
         when(connection.getAttributeNames()).thenReturn(attributeNames);
-        when(connection.getAttribute(Connection.ID)).thenReturn(UUID.randomUUID());
+        UUID id = UUID.randomUUID();
+        when(connection.getAttribute(Connection.ID)).thenReturn(id);
+        when(connection.getId()).thenReturn(id);
         when(connection.getAttribute(Connection.NAME)).thenReturn(String.format("[%d] %s:%d", number, hostname, (47290 + number)));
         when(connection.getAttribute(Connection.DESCRIPTION)).thenReturn(null);
         when(connection.getAttribute(Connection.TYPE)).thenReturn("AMQP_1_0");
@@ -484,12 +506,68 @@ public class TestBroker
         when(connection.getProtocol()).thenReturn(Protocol.AMQP_1_0);
         when(connection.getAttribute(Connection.REMOTE_ADDRESS)).thenReturn(String.format("/%s:%d", hostname, (47290 + number)));
         when(connection.getAttribute(Connection.TRANSPORT)).thenReturn(Transport.TCP);
+
+        Session session = createSession(0);
+        when(connection.getSessions()).thenReturn(Collections.unmodifiableList(Arrays.asList(session)));
+        when(connection.getChildren(eq(Session.class))).thenReturn(Collections.unmodifiableList(Arrays.asList(session)));
+
         return connection;
+    }
+
+    protected static Consumer<?, ?> createConsumer(int connectionNumber, String queueName)
+    {
+        final List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Consumer.class));
+        final Consumer<?, ?> consumer = mock(Consumer.class);
+        when(consumer.getAttributeNames()).thenReturn(attributeNames);
+        when(consumer.getAttribute(Consumer.ID)).thenReturn(UUID.randomUUID());
+        when(consumer.getAttribute(Consumer.NAME)).thenReturn(
+            String.format("%d|1|qpid-jms:receiver:ID:%s:1:1:1:%s", connectionNumber, UUID.randomUUID(), queueName)
+        );
+        Session session = (Session) connections.get(connectionNumber).getSessions().iterator().next();
+        when(consumer.getSession()).thenReturn(session);
+        when(consumer.getAttribute("session")).thenReturn(session);
+        return consumer;
+    }
+
+    protected static Session<?> createSession(int sessionNumber)
+    {
+        final List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Session.class));
+        final Session<?> session = mock(Session.class);
+        when(session.getAttributeNames()).thenReturn(attributeNames);
+        UUID id = UUID.randomUUID();
+        when(session.getAttribute(Session.ID)).thenReturn(id);
+        when(session.getId()).thenReturn(id);
+        when(session.getAttribute(Session.NAME)).thenReturn(sessionNumber);
+        when(session.getName()).thenReturn(String.valueOf(sessionNumber));
+        when(session.getType()).thenReturn("Session");
+        when(session.getDescription()).thenReturn("test description");
+        when(session.getDesiredState()).thenReturn(State.ACTIVE);
+        when(session.getState()).thenReturn(State.ACTIVE);
+        when(session.isDurable()).thenReturn(true);
+        when(session.getLifetimePolicy()).thenReturn(LifetimePolicy.PERMANENT);
+        when(session.getChannelId()).thenReturn(0);
+        when(session.getLastOpenedTime()).thenReturn(new Date());
+        when(session.isProducerFlowBlocked()).thenReturn(false);
+        when(session.getLastUpdatedTime()).thenReturn(new Date());
+        when(session.getLastUpdatedBy()).thenReturn("admin");
+        when(session.getCreatedBy()).thenReturn("admin");
+        when(session.getCreatedTime()).thenReturn(new Date());
+        when(session.getStatistics()).thenReturn(new HashMap<>());
+        return session;
+    }
+
+    protected static Map<String, Object> getBrokerStatistics()
+    {
+        final Map<String, Object> map = new HashMap<>();
+        map.put("usedHeapMemorySize", 6_000_000_000L);
+        map.put("usedDirectMemorySize", 500_000_000L);
+        map.put("processCpuLoad", 0.052);
+        return map;
     }
 
     protected static Date createDate(String date)
     {
-        final LocalDateTime dateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern(DefaultQuerySettings.DATE_TIME_PATTERN));
+        final LocalDateTime dateTime = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"));
         return Date.from(dateTime.toInstant(ZoneOffset.UTC));
     }
 }

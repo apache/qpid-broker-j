@@ -36,6 +36,9 @@ import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.parsing.expression.ExpressionNode;
 import org.apache.qpid.server.query.engine.parsing.expression.literal.ConstantExpression;
 
+/**
+ * Tests designed to verify the {@link ArithmeticExpressionFactory} functionality
+ */
 public class ArithmeticExpressionFactoryTest
 {
     @Before()

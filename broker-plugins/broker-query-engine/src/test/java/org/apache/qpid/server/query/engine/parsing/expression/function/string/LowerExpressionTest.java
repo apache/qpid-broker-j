@@ -40,6 +40,9 @@ import org.apache.qpid.server.query.engine.exception.QueryParsingException;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.parsing.converter.DateTimeConverter;
 
+/**
+ * Tests designed to verify the public class {@link LowerExpression} functionality
+ */
 public class LowerExpressionTest
 {
     private final QueryEvaluator _queryEvaluator = new QueryEvaluator(TestBroker.createBroker());
