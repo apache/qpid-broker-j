@@ -1565,6 +1565,92 @@
         </row>
       </tbody>
     </tgroup>
-</table>
+  </table>
+
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-ResourceLimit">
+    <title>Resource Limit Log Messages</title>
+    <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
+      <thead>
+        <row>
+          <entry>Message Id</entry>
+          <entry>Message Text / Purpose</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-RL-1001">
+          <entry morerows="1">RL-1001</entry>
+          <entry>Accept</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Connection has been accepted.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-RL-1002">
+          <entry morerows="1">RL-1002</entry>
+          <entry>Reject</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Connection has been rejected.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-RL-1003">
+          <entry morerows="1">RL-1003</entry>
+          <entry>Info</entry>
+        </row>
+        <row>
+          <entry>
+            <para>An informational message regarding connection limits.</para>
+          </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
+
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-User">
+    <title>User Log Messages</title>
+    <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
+      <thead>
+        <row>
+          <entry>Message Id</entry>
+          <entry>Message Text / Purpose</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-USR-1001">
+          <entry morerows="1">USR-1001</entry>
+          <entry>Create</entry>
+        </row>
+        <row>
+          <entry>
+            <para>User has been created.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-USR-1002">
+          <entry morerows="1">USR-1002</entry>
+          <entry>Update</entry>
+        </row>
+        <row>
+          <entry>
+            <para>User has been updated.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-USR-1003">
+          <entry morerows="1">USR-1003</entry>
+          <entry>Delete</entry>
+        </row>
+        <row>
+          <entry>
+            <para>User has been deleted.</para>
+          </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
 
 </appendix>
