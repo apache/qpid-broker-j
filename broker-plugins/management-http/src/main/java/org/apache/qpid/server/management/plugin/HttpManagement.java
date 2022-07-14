@@ -52,14 +52,13 @@ import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.DetectorConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.OptionalSslConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -185,7 +184,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private boolean _compressResponses;
 
     private final Map<HttpPort<?>, ServerConnector> _portConnectorMap = new ConcurrentHashMap<>();
-    private final Map<HttpPort<?>, SslContextFactory> _sslContextFactoryMap = new ConcurrentHashMap<>();
+    private final Map<HttpPort<?>, SslContextFactory.Server> _sslContextFactoryMap = new ConcurrentHashMap<>();
     private final BrokerChangeListener _brokerChangeListener = new BrokerChangeListener();
 
     private volatile boolean _serveUncompressedDojo;
@@ -390,7 +389,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
 
         final Iterable<ContentFactory> contentFactories = new QpidServiceLoader().instancesOf(ContentFactory.class);
-        contentFactories.forEach(f->{
+        contentFactories.forEach(f ->
+        {
             ServletHolder metricsServlet = new ServletHolder(new ContentServlet(f));
             String path = f.getType().toLowerCase();
             root.addServlet(metricsServlet, "/" + path);
@@ -454,7 +454,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                   .stream()
                   .map(Class::getSimpleName)
                   .map(String::toLowerCase)
-                  .forEach(name -> {
+                  .forEach(name ->
+                  {
                       root.addServlet(apiDocsServletHolder, "/apidocs/latest/" + name + "/");
                       root.addServlet(apiDocsServletHolder, "/apidocs/" + version + "/" + name + "/");
                       root.addServlet(apiDocsServletHolder, "/apidocs/latest/" + name);
@@ -518,16 +519,18 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     @Override
     public boolean updateSSLContext(final HttpPort httpPort)
     {
-        final SslContextFactory sslContextFactory = getSslContextFactory(httpPort);
+        final SslContextFactory.Server sslContextFactory = getSslContextFactory(httpPort);
         if ( sslContextFactory != null)
         {
             try
             {
                 final SSLContext sslContext = createSslContext(httpPort);
-                sslContextFactory.reload(f -> {
-                    f.setSslContext(sslContext);
-                    f.setNeedClientAuth(httpPort.getNeedClientAuth());
-                    f.setWantClientAuth(httpPort.getWantClientAuth());
+                sslContextFactory.reload(f ->
+                {
+                    final SslContextFactory.Server server = (SslContextFactory.Server) f;
+                    server.setSslContext(sslContext);
+                    server.setNeedClientAuth(httpPort.getNeedClientAuth());
+                    server.setWantClientAuth(httpPort.getWantClientAuth());
                 });
                 return true;
             }
@@ -539,7 +542,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return false;
     }
 
-    private SslContextFactory getSslContextFactory(final HttpPort httpPort)
+    private SslContextFactory.Server getSslContextFactory(final HttpPort httpPort)
     {
         return _sslContextFactoryMap.get(httpPort);
     }
@@ -566,7 +569,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         ConnectionFactory[] connectionFactories;
         Collection<Transport> transports = port.getTransports();
-        SslContextFactory sslContextFactory = null;
+        SslContextFactory.Server sslContextFactory = null;
         if (!transports.contains(Transport.SSL))
         {
             connectionFactories = new ConnectionFactory[]{httpConnectionFactory};
@@ -578,7 +581,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                     new SslConnectionFactory(sslContextFactory, httpConnectionFactory.getProtocol());
             if (port.getTransports().contains(Transport.TCP))
             {
-                sslConnectionFactory = new OptionalSslConnectionFactory((SslConnectionFactory)sslConnectionFactory, HttpVersion.HTTP_1_1.asString());
+                sslConnectionFactory = new DetectorConnectionFactory((ConnectionFactory.Detecting) sslConnectionFactory);
             }
             connectionFactories = new ConnectionFactory[]{sslConnectionFactory, httpConnectionFactory};
         }
@@ -647,7 +650,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             });
         }
 
-
         int acceptors = connector.getAcceptors();
         int selectors = connector.getSelectorManager().getSelectorCount();
         if (LOGGER.isDebugEnabled())
@@ -680,7 +682,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return connector;
     }
 
-    private SslContextFactory createSslContextFactory(final HttpPort<?> port)
+    private SslContextFactory.Server createSslContextFactory(final HttpPort<?> port)
     {
         SslContextFactory.Server factory = new SslContextFactory.Server()
         {
