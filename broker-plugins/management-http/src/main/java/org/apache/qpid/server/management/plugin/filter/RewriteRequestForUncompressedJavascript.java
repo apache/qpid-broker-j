@@ -22,27 +22,23 @@
 package org.apache.qpid.server.management.plugin.filter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
-import org.apache.qpid.server.management.plugin.HttpManagementUtil;
-import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.plugin.QpidServiceLoader;
-
+/**
+ * Filter is active when context variable "qpid.httpManagement.serveUncompressedDojo" has value true.
+ *
+ * It redirects request from regular dojo file to uncompressed dojo file,
+ * e.g. /dojo/dojo.js => /dojo/dojo.js.uncompressed.js
+ *
+ * Is used mostly for debug purposes.
+ */
 public class RewriteRequestForUncompressedJavascript implements Filter
 {
 
@@ -54,27 +50,25 @@ public class RewriteRequestForUncompressedJavascript implements Filter
     {
     }
 
-
     @Override
     public void destroy()
     {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
-            ServletException
+    public void doFilter(final ServletRequest request,
+                         final ServletResponse response,
+                         final FilterChain chain) throws IOException, ServletException
     {
-
         final String requestURI = ((HttpServletRequest) request).getRequestURI();
-        if (requestURI.endsWith(JS_SUFFIX) && !requestURI.endsWith(UNCOMPRESSED_JS_SUFFIX))
+        if (requestURI.endsWith(JS_SUFFIX) && !requestURI.endsWith(UNCOMPRESSED_JS_SUFFIX) && !requestURI.contains("../"))
         {
-            final String replacementRequestURI = requestURI + UNCOMPRESSED_JS_SUFFIX;
-            request.getRequestDispatcher(replacementRequestURI).forward(request, response);
+            final String uncompressedJsUri = requestURI + UNCOMPRESSED_JS_SUFFIX;
+            request.getRequestDispatcher(uncompressedJsUri).forward(request, response);
         }
         else
         {
             chain.doFilter(request, response);
         }
     }
-
 }
