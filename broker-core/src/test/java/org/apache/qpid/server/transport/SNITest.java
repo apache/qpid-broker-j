@@ -20,7 +20,11 @@
 
 package org.apache.qpid.server.transport;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
+import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -65,6 +69,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.test.utils.JvmVersion;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.apache.qpid.test.utils.tls.AltNameType;
@@ -169,9 +174,16 @@ public class SNITest extends UnitTestBase
     @Test
     public void testBypassInvalidSniHostname() throws Exception
     {
-        performTest(false, "foovalid", "_foo", _fooValid,true);
+        assumeThat(JvmVersion.getVersion(), is(lessThan(17)));
+        performTest(false, "foovalid", "_foo", _fooValid, true);
     }
 
+    @Test(expected = SSLPeerUnverifiedException.class)
+    public void testBypassInvalidSniHostnameWithJava17() throws Exception
+    {
+        assumeThat(JvmVersion.getVersion(), is(greaterThanOrEqualTo(17)));
+        performTest(false, "foovalid", "_foo", _fooValid, true);
+    }
 
     private void performTest(final boolean useMatching,
                              final String defaultAlias,
