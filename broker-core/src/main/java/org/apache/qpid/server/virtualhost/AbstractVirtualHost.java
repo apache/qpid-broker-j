@@ -1374,7 +1374,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
                 if (sourceClass != null)
                 {
-                    final Map<String, Object> attributes = new HashMap<>(policy.getAttributes());
+                    final Map<String, Object> attributes = policy.getAttributes() == null
+                        ? new HashMap<>()
+                        : new HashMap<>(policy.getAttributes());
                     attributes.remove(ConfiguredObject.ID);
                     attributes.put(ConfiguredObject.NAME, name);
                     final Class<? extends ConfiguredObject> childClass = sourceClass;
