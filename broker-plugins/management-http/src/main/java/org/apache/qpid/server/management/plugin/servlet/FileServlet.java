@@ -41,11 +41,10 @@ public class FileServlet extends HttpServlet
 
     private static final String RESOURCES_PREFIX = "/resources";
     private static final Map<String, String> CONTENT_TYPES;
-    
+
     static
     {
-
-        Map<String, String> contentTypes = new HashMap<String, String>();
+        final Map<String, String> contentTypes = new HashMap<>();
         contentTypes.put("js",   "application/javascript");
         contentTypes.put("html", "text/html");
         contentTypes.put("css",  "text/css");
@@ -65,17 +64,18 @@ public class FileServlet extends HttpServlet
         this(RESOURCES_PREFIX, false);
     }
 
-    public FileServlet(String resourcePathPrefix, boolean usePathInfo)
+    public FileServlet(final String resourcePathPrefix, final boolean usePathInfo)
     {
         _resourcePathPrefix = resourcePathPrefix;
         _usePathInfo = usePathInfo;
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(final HttpServletRequest request,
+                         final HttpServletResponse response) throws ServletException, IOException
     {
-        String filename = null;
-        if(_usePathInfo)
+        String filename;
+        if (_usePathInfo)
         {
             filename = request.getPathInfo();
         }
@@ -84,48 +84,34 @@ public class FileServlet extends HttpServlet
             filename = request.getServletPath();
         }
 
-        if(filename.contains("."))
+        if (filename.contains("."))
         {
-            String suffix = filename.substring(filename.lastIndexOf('.')+1);
-            String contentType = CONTENT_TYPES.get(suffix);
-            if(contentType != null)
+            final String suffix = filename.substring(filename.lastIndexOf('.')+1);
+            final String contentType = CONTENT_TYPES.get(suffix);
+            if (contentType != null)
             {
                 response.setContentType(contentType);
             }
         }
 
-        URL resourceURL = getClass().getResource(_resourcePathPrefix + filename);
-        if(resourceURL != null)
+        final URL resourceURL = getClass().getResource(_resourcePathPrefix + filename);
+        if (resourceURL != null && !filename.contains(".."))
         {
             response.setStatus(HttpServletResponse.SC_OK);
-            InputStream fileInput = resourceURL.openStream();
-            try
+            try (final InputStream fileInput = resourceURL.openStream();
+                 final OutputStream output = HttpManagementUtil.getOutputStream(request, response))
             {
                 byte[] buffer = new byte[1024];
-                int read = 0;
-                OutputStream output = HttpManagementUtil.getOutputStream(request, response);
-                try
+                int read;
+                while ((read = fileInput.read(buffer)) != -1)
                 {
-                    while((read = fileInput.read(buffer)) != -1)
-                    {
-                        output.write(buffer, 0, read);
-                    }
+                    output.write(buffer, 0, read);
                 }
-                finally
-                {
-                    output.close();
-                }
-            }
-            finally
-            {
-                fileInput.close();
             }
         }
         else
         {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "unknown file");
         }
-
     }
-
 }
