@@ -117,7 +117,6 @@
 
     <geronimo-jms-1-1-version>1.1.1</geronimo-jms-1-1-version>
     <geronimo-jms-2-0-version>1.0-alpha-2</geronimo-jms-2-0-version>
-    <bcel-version>6.3.1</bcel-version>
 
     <velocity-version>1.4</velocity-version>
     <csvjdbc-version>1.0.35</csvjdbc-version>
@@ -620,11 +619,6 @@
             <artifactId>websocket-client</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.bcel</groupId>
-        <artifactId>bcel</artifactId>
-        <version>${bcel-version}</version>
       </dependency>
       <dependency>
         <groupId>velocity</groupId>
@@ -1564,8 +1558,6 @@
               <excludedScopes>provided,test</excludedScopes>
               <outputDirectory>${license-maven-plugin-output-dir}</outputDirectory>
               <!-- Exclude logback from being checked, it is dual licensed and lists both licenses in META-INF Bundle-License   -->
-              <!-- Exclude BCEL from being checked, it is ALv2 but doesnt have the necessary metadata -->
-              <excludedGroups>org.apache.bcel|ch.qos.logback</excludedGroups>
               <includedLicenses>
                 <includedLicense>Apache Software License, Version 2.0</includedLicense>
                 <includedLicense>The MIT License</includedLicense>

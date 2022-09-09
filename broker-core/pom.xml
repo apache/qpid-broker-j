@@ -56,18 +56,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.bcel</groupId>
-      <artifactId>bcel</artifactId>
-      <exclusions>
-        <exclusion>
-          <!--  Qpid doesn't require BCEL InstructionFinder, so does not need jakarta-regexp. -->
-          <artifactId>jakarta-regexp</artifactId>
-          <groupId>jakarta-regexp</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
