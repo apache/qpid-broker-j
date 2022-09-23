@@ -95,4 +95,9 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Transacted Outbound",
             description = "Total number of messages received by this session within a transaction.", metricName = "transacted_outbound_messages_count")
     long getTransactedMessagesOut();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Producers",
+            description = "Number of producers to this exchange.", metricName = "producers_count")
+    long getProducerCount();
 }

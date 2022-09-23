@@ -111,6 +111,9 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
                       description = "Number of messages received by this exchange.", metricName = "inbound_messages_count")
     long getMessagesIn();
 
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Producers",
+            description = "Number of producers to this exchange.", metricName = "producers_count")
+    long getProducerCount();
 
     @ManagedOperation(changesConfiguredObjectState = true,
                       description = "Bind a given destination to exchange using a given bindingKey and arguments."

@@ -50,6 +50,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -81,7 +82,6 @@ import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.filter.selector.ParseException;
 import org.apache.qpid.server.filter.selector.TokenMgrError;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.QueueMessages;
@@ -279,6 +279,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<LocalTransaction> _transactions = ConcurrentHashMap.newKeySet();
     private final LocalTransaction.LocalTransactionListener _localTransactionListener = _transactions::remove;
+    private final AtomicLong _producerCount = new AtomicLong();
 
     private boolean _closing;
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
@@ -1064,7 +1065,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return super.beforeClose();
     }
 
-
+    @Override
+    public void close()
+    {
+        _producerCount.set(0);
+        super.close();
+    }
 
     <T extends ConsumerTarget<T>> void unregisterConsumer(final QueueConsumerImpl<T> consumer)
     {
@@ -1228,6 +1234,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public int getBindingCount()
     {
         return _bindingCount;
+    }
+
+    @Override
+    public long getProducerCount()
+    {
+        return _producerCount.get();
     }
 
     @Override
@@ -3333,13 +3345,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public <C extends ConfiguredObject> Collection<C> getChildren(final Class<C> clazz)
     {
-        if(clazz == org.apache.qpid.server.model.Consumer.class)
+        if (clazz == org.apache.qpid.server.model.Consumer.class)
         {
             return _queueConsumerManager == null
                     ? Collections.<C>emptySet()
                     : (Collection<C>) Lists.newArrayList(_queueConsumerManager.getAllIterator());
         }
-        else return Collections.emptySet();
+        else return super.getChildren(clazz);
     }
 
     @Override
@@ -3806,17 +3818,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public void linkAdded(final MessageSender sender, final PublishingLink link)
     {
-
         Integer oldValue = _linkedSenders.putIfAbsent(sender, 1);
-        if(oldValue != null)
+        if (oldValue != null)
         {
             _linkedSenders.put(sender, oldValue+1);
         }
-        if( link.TYPE_LINK.equals(link.getType()))
+        if (link.TYPE_LINK.equals(link.getType()))
         {
+            _producerCount.incrementAndGet();
             getEventLogger().message(SenderMessages.CREATE(link.getName(), link.getDestination()));
         }
-        if(Binding.TYPE.equals(link.getType()))
+        if (Binding.TYPE.equals(link.getType()))
         {
             _bindingCount++;
         }
@@ -3830,8 +3842,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             _linkedSenders.put(sender, oldValue-1);
         }
-        if( link.TYPE_LINK.equals(link.getType()))
+        if (link.TYPE_LINK.equals(link.getType()))
         {
+            _producerCount.decrementAndGet();
             getEventLogger().message(SenderMessages.CLOSE(link.getName(), link.getDestination()));
         }
         if(Binding.TYPE.equals(link.getType()))

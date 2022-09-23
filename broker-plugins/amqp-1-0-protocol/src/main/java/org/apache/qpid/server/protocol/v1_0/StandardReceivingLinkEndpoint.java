@@ -32,10 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -46,10 +43,10 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Producer;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.MessageFormatRegistry;
-import org.apache.qpid.server.protocol.v1_0.delivery.DeliveryRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorRuntimeException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -71,7 +68,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.AsyncCommand;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -92,6 +88,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
     private volatile ReceivingDestination _receivingDestination;
     private volatile boolean _rejectedOutcomeSupportedBySource;
+
+    private Producer<?> _producer;
 
     private final PublishingLink _publishingLink = new PublishingLink()
     {
@@ -147,7 +145,6 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         setLinkCredit(UnsignedInteger.valueOf(getReceivingDestination().getCredit()));
         setCreditWindow();
     }
-
 
     private TerminusDurability getDurability()
     {
@@ -285,6 +282,10 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                                                            transaction,
                                                            session.getSecurityToken());
                             outcome = ACCEPTED;
+                            if (_producer != null)
+                            {
+                                _producer.registerMessageDelivered(serverMessage.getSizeIncludingHeader());
+                            }
                         }
                         catch (UnroutableMessageException e)
                         {
@@ -500,14 +501,16 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         {
             if (_receivingDestination != null && _receivingDestination.getMessageDestination() != null)
             {
+                getSession().removeProducer(_publishingLink);
+                _producer = null;
                 _receivingDestination.getMessageDestination().linkRemoved(_messageSender, _publishingLink);
             }
             _receivingDestination = receivingDestination;
-            if(receivingDestination != null && receivingDestination.getMessageDestination() != null)
+            if (receivingDestination != null && receivingDestination.getMessageDestination() != null)
             {
+                _producer = getSession().addProducer(_publishingLink, receivingDestination.getMessageDestination());
                 receivingDestination.getMessageDestination().linkAdded(_messageSender, _publishingLink);
             }
-
         }
     }
 

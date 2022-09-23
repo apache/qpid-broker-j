@@ -107,7 +107,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     private static final Operation PUBLISH_ACTION = Operation.PERFORM_ACTION("publish");
     private final AtomicBoolean _closed = new AtomicBoolean();
 
-    @ManagedAttributeField(beforeSet = "preSetAlternateBinding", afterSet = "postSetAlternateBinding" )
+    @ManagedAttributeField(beforeSet = "preSetAlternateBinding", afterSet = "postSetAlternateBinding")
     private AlternateBinding _alternateBinding;
     @ManagedAttributeField
     private UnroutableMessageBehaviour _unroutableMessageBehaviour;
@@ -123,7 +123,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     //The logSubject for ths exchange
     private LogSubject _logSubject;
-    private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<DestinationReferrer,Boolean>());
+    private final Set<DestinationReferrer> _referrers =
+            Collections.newSetFromMap(new ConcurrentHashMap<DestinationReferrer, Boolean>());
 
     private final AtomicLong _receivedMessageCount = new AtomicLong();
     private final AtomicLong _receivedMessageSize = new AtomicLong();
@@ -131,6 +132,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     private final AtomicLong _routedMessageSize = new AtomicLong();
     private final AtomicLong _droppedMessageCount = new AtomicLong();
     private final AtomicLong _droppedMessageSize = new AtomicLong();
+    private final AtomicLong _producerCount = new AtomicLong();
 
     private final List<Binding> _bindings = new CopyOnWriteArrayList<>();
 
@@ -143,7 +145,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         super(vhost, attributes);
         Set<String> providedAttributeNames = new HashSet<>(attributes.keySet());
         providedAttributeNames.removeAll(getAttributeNames());
-        if(!providedAttributeNames.isEmpty())
+        if (!providedAttributeNames.isEmpty())
         {
             throw new IllegalArgumentException("Unknown attributes provided: " + providedAttributeNames);
         }
@@ -157,7 +159,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         super.onValidate();
 
-        if(!isSystemProcess())
+        if (!isSystemProcess())
         {
             if (isReservedExchangeName(getName()))
             {
@@ -173,11 +175,11 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
         validateOrCreateAlternateBinding(((Exchange<?>) proxyForValidation), false);
 
-        if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
+        if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE) &&
+            proxyForValidation.getDesiredState() == State.DELETED)
         {
             doChecks();
         }
-
     }
 
     private boolean isReservedExchangeName(String name)
@@ -192,7 +194,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         super.validateOnCreate();
         if (getCreatingLinkInfo() != null && !isSystemProcess())
         {
-            throw new IllegalConfigurationException(String.format("Cannot specify creatingLinkInfo for exchange '%s'", getName()));
+            throw new IllegalConfigurationException(String.format("Cannot specify creatingLinkInfo for exchange '%s'",
+                                                                  getName()));
         }
     }
 
@@ -208,7 +211,10 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         super.onOpen();
         final ConfiguredDerivedMethodAttribute<Exchange<?>, Collection<Binding>> durableBindingsAttribute =
-                (ConfiguredDerivedMethodAttribute<Exchange<?>, Collection<Binding>>) getModel().getTypeRegistry().getAttributeTypes(getTypeClass()).get(DURABLE_BINDINGS);
+                (ConfiguredDerivedMethodAttribute<Exchange<?>, Collection<Binding>>) getModel().getTypeRegistry()
+                                                                                               .getAttributeTypes(
+                                                                                                       getTypeClass())
+                                                                                               .get(DURABLE_BINDINGS);
         final Collection<Binding> bindings =
                 durableBindingsAttribute.convertValue(getActualAttributes().get(DURABLE_BINDINGS), this);
         if (bindings != null)
@@ -219,7 +225,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 final MessageDestination messageDestination = getOpenedMessageDestination(b.getDestination());
                 if (messageDestination != null)
                 {
-                    Map<String, Object> arguments = b.getArguments() == null ? Collections.emptyMap() : b.getArguments();
+                    Map<String, Object> arguments =
+                            b.getArguments() == null ? Collections.emptyMap() : b.getArguments();
                     try
                     {
                         onBind(new BindingIdentifier(b.getBindingKey(), messageDestination), arguments);
@@ -240,11 +247,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 final LinkModel link;
                 if (_creatingLinkInfo.isSendingLink())
                 {
-                    link = _virtualHost.getSendingLink(_creatingLinkInfo.getRemoteContainerId(), _creatingLinkInfo.getLinkName());
+                    link = _virtualHost.getSendingLink(_creatingLinkInfo.getRemoteContainerId(),
+                                                       _creatingLinkInfo.getLinkName());
                 }
                 else
                 {
-                    link = _virtualHost.getReceivingLink(_creatingLinkInfo.getRemoteContainerId(), _creatingLinkInfo.getLinkName());
+                    link = _virtualHost.getReceivingLink(_creatingLinkInfo.getRemoteContainerId(),
+                                                         _creatingLinkInfo.getLinkName());
                 }
                 addLifetimeConstraint(link);
             }
@@ -266,7 +275,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             }
             else
             {
-                LOGGER.warn("Cannot find alternate binding destination '{}' for exchange '{}'", alternateDestination, toString());
+                LOGGER.warn("Cannot find alternate binding destination '{}' for exchange '{}'",
+                            alternateDestination,
+                            toString());
             }
         }
     }
@@ -308,19 +319,19 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private void performDelete()
     {
-        if(_closed.compareAndSet(false,true))
+        if (_closed.compareAndSet(false, true))
         {
             performDeleteTasks();
 
-            for(Binding b : _bindings)
+            for (Binding b : _bindings)
             {
                 final MessageDestination messageDestination = getAttainedMessageDestination(b.getDestination());
-                if(messageDestination != null)
+                if (messageDestination != null)
                 {
                     messageDestination.linkRemoved(this, b);
                 }
             }
-            for(MessageSender sender : _linkedSenders.keySet())
+            for (MessageSender sender : _linkedSenders.keySet())
             {
                 sender.destinationRemoved(this);
             }
@@ -334,12 +345,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private void doChecks()
     {
-        if(hasReferrers())
+        if (hasReferrers())
         {
             throw new MessageDestinationIsAlternateException(getName());
         }
 
-        if(isReservedExchangeName(getName()))
+        if (isReservedExchangeName(getName()))
         {
             throw new RequiredExchangeException(getName());
         }
@@ -347,13 +358,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     @Override
     @DoOnConfigThread
-    public void destinationRemoved(@Param(name="destination") final MessageDestination destination)
+    public void destinationRemoved(@Param(name = "destination") final MessageDestination destination)
     {
         Iterator<Binding> bindingIterator = _bindings.iterator();
-        while(bindingIterator.hasNext())
+        while (bindingIterator.hasNext())
         {
             Binding b = bindingIterator.next();
-            if(b.getDestination().equals(destination.getName()))
+            if (b.getDestination().equals(destination.getName()))
             {
                 final Map<String, Object> bindArguments =
                         UNBIND_ARGUMENTS_CREATOR.createMap(b.getBindingKey(), destination);
@@ -362,7 +373,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 _bindings.remove(b);
             }
         }
-        if(!autoDeleteIfNecessary())
+        if (!autoDeleteIfNecessary())
         {
             if (destination.isDurable() && isDurable())
             {
@@ -381,7 +392,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + getName() +"]";
+        return getClass().getSimpleName() + "[" + getName() + "]";
     }
 
     @Override
@@ -391,19 +402,19 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
     @Override
-    public boolean isBound(String bindingKey, Map<String,Object> arguments, Queue<?> queue)
+    public boolean isBound(String bindingKey, Map<String, Object> arguments, Queue<?> queue)
     {
         if (bindingKey == null)
         {
             bindingKey = "";
         }
-        for(Binding b : _bindings)
+        for (Binding b : _bindings)
         {
-            if(bindingKey.equals(b.getBindingKey()) && queue.getName().equals(b.getDestination()))
+            if (bindingKey.equals(b.getBindingKey()) && queue.getName().equals(b.getDestination()))
             {
                 return (b.getArguments() == null || b.getArguments().isEmpty())
-                       ? (arguments == null || arguments.isEmpty())
-                       : b.getArguments().equals(arguments);
+                        ? (arguments == null || arguments.isEmpty())
+                        : b.getArguments().equals(arguments);
             }
         }
         return false;
@@ -417,9 +428,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             bindingKey = "";
         }
 
-        for(Binding b : _bindings)
+        for (Binding b : _bindings)
         {
-            if(bindingKey.equals(b.getBindingKey()) && queue.getName().equals(b.getDestination()))
+            if (bindingKey.equals(b.getBindingKey()) && queue.getName().equals(b.getDestination()))
             {
                 return true;
             }
@@ -435,9 +446,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             bindingKey = "";
         }
 
-        for(Binding b : _bindings)
+        for (Binding b : _bindings)
         {
-            if(bindingKey.equals(b.getBindingKey()))
+            if (bindingKey.equals(b.getBindingKey()))
             {
                 return true;
             }
@@ -448,9 +459,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @Override
     public boolean isBound(Queue<?> queue)
     {
-        for(Binding b : _bindings)
+        for (Binding b : _bindings)
         {
-            if(queue.getName().equals(b.getDestination()))
+            if (queue.getName().equals(b.getDestination()))
             {
                 return true;
             }
@@ -461,12 +472,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @Override
     public boolean isBound(Map<String, Object> arguments, Queue<?> queue)
     {
-        for(Binding b : _bindings)
+        for (Binding b : _bindings)
         {
-            if(queue.getName().equals(b.getDestination()) &&
-               ((b.getArguments() == null || b.getArguments().isEmpty())
-                       ? (arguments == null || arguments.isEmpty())
-                       : b.getArguments().equals(arguments)))
+            if (queue.getName().equals(b.getDestination()) &&
+                ((b.getArguments() == null || b.getArguments().isEmpty())
+                        ? (arguments == null || arguments.isEmpty())
+                        : b.getArguments().equals(arguments)))
             {
                 return true;
             }
@@ -477,11 +488,11 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @Override
     public boolean isBound(Map<String, Object> arguments)
     {
-        for(Binding b : _bindings)
+        for (Binding b : _bindings)
         {
-            if(((b.getArguments() == null || b.getArguments().isEmpty())
-                                   ? (arguments == null || arguments.isEmpty())
-                                   : b.getArguments().equals(arguments)))
+            if (((b.getArguments() == null || b.getArguments().isEmpty())
+                    ? (arguments == null || arguments.isEmpty())
+                    : b.getArguments().equals(arguments)))
             {
                 return true;
             }
@@ -498,12 +509,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             bindingKey = "";
         }
 
-        for(Binding b : _bindings)
+        for (Binding b : _bindings)
         {
-            if(b.getBindingKey().equals(bindingKey) &&
-               ((b.getArguments() == null || b.getArguments().isEmpty())
-                       ? (arguments == null || arguments.isEmpty())
-                       : b.getArguments().equals(arguments)))
+            if (b.getBindingKey().equals(bindingKey) &&
+                ((b.getArguments() == null || b.getArguments().isEmpty())
+                        ? (arguments == null || arguments.isEmpty())
+                        : b.getArguments().equals(arguments)))
             {
                 return true;
             }
@@ -534,7 +545,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @SuppressWarnings("unused")
     private void postSetAlternateBinding()
     {
-        if(_alternateBinding != null)
+        if (_alternateBinding != null)
         {
             _alternateBindingDestination = getOpenedMessageDestination(_alternateBinding.getDestination());
             if (_alternateBindingDestination != null)
@@ -587,6 +598,11 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return getBindings().size();
     }
 
+    @Override
+    public long getProducerCount()
+    {
+        return _producerCount.get();
+    }
 
     @Override
     public <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(final M message,
@@ -655,7 +671,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         }
         finally
         {
-            if(topLevel)
+            if (topLevel)
             {
                 CURRENT_ROUTING.set(null);
             }
@@ -664,9 +680,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
 
     protected abstract <M extends ServerMessage<? extends StorableMessageMetaData>> void doRoute(final M message,
-                                    final String routingAddress,
-                                    final InstanceProperties instanceProperties,
-                                    final RoutingResult<M> result);
+                                                                                                 final String routingAddress,
+                                                                                                 final InstanceProperties instanceProperties,
+                                                                                                 final RoutingResult<M> result);
 
     @Override
     public boolean bind(final String destination,
@@ -695,7 +711,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             throw new IllegalArgumentException(String.format("Destination '%s' is not found.", destination));
         }
 
-        if(arguments == null)
+        if (arguments == null)
         {
             arguments = Collections.emptyMap();
         }
@@ -703,7 +719,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         Binding newBinding = new BindingImpl(bindingKey, destination, arguments);
 
         Binding previousBinding = null;
-        for(Binding b : _bindings)
+        for (Binding b : _bindings)
         {
             if (b.getBindingKey().equals(bindingKey) && b.getDestination().equals(messageDestination.getName()))
             {
@@ -717,9 +733,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             return false;
         }
 
-
         final BindingIdentifier bindingIdentifier = new BindingIdentifier(bindingKey, messageDestination);
-        if(previousBinding != null)
+        if (previousBinding != null)
         {
             onBindingUpdated(bindingIdentifier, arguments);
         }
@@ -738,7 +753,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             _bindings.remove(previousBinding);
         }
         _bindings.add(newBinding);
-        if(isDurable() && messageDestination.isDurable())
+        if (isDurable() && messageDestination.isDurable())
         {
             final Collection<Binding> durableBindings = getDurableBindings();
             attributeSet(DURABLE_BINDINGS, durableBindings, durableBindings);
@@ -751,9 +766,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         List<Binding> bindings = new ArrayList<>();
         final String destinationName = destination.getName();
-        for(Binding b : _bindings)
+        for (Binding b : _bindings)
         {
-            if(b.getDestination().equals(destinationName))
+            if (b.getDestination().equals(destinationName))
             {
                 bindings.add(b);
             }
@@ -765,13 +780,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     public Collection<Binding> getDurableBindings()
     {
         List<Binding> durableBindings;
-        if(isDurable())
+        if (isDurable())
         {
             durableBindings = new ArrayList<>();
             for (Binding b : _bindings)
             {
                 MessageDestination destination = getAttainedMessageDestination(b.getDestination());
-                if(destination != null && destination.isDurable())
+                if (destination != null && destination.isDurable())
                 {
                     durableBindings.add(b);
                 }
@@ -844,7 +859,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             }
         }
         return false;
-
     }
 
     @Override
@@ -913,13 +927,14 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private boolean isAutoDeletePending()
     {
-        return (getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS || getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_LINKS )
-            && getBindingCount() == 0;
+        return (getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS ||
+                getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_LINKS) &&
+                getBindingCount() == 0;
     }
 
 
     @SuppressWarnings("unused")
-    @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
+    @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     private ListenableFuture<Void> activate()
     {
         setState(State.ACTIVE);
@@ -1030,13 +1045,14 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @Override
     public void linkAdded(final MessageSender sender, final PublishingLink link)
     {
-        Integer oldValue = _linkedSenders.putIfAbsent(sender, 1);
-        if(oldValue != null)
+        final Integer oldValue = _linkedSenders.putIfAbsent(sender, 1);
+        if (oldValue != null)
         {
-            _linkedSenders.put(sender, oldValue+1);
+            _linkedSenders.put(sender, oldValue + 1);
         }
-        if( link.TYPE_LINK.equals(link.getType()))
+        if (link.TYPE_LINK.equals(link.getType()))
         {
+            _producerCount.incrementAndGet();
             getEventLogger().message(SenderMessages.CREATE(link.getName(), link.getDestination()));
         }
     }
@@ -1044,15 +1060,23 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @Override
     public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
-        int oldValue = _linkedSenders.remove(sender);
-        if(oldValue != 1)
+        final int oldValue = _linkedSenders.remove(sender);
+        if (oldValue != 1)
         {
-            _linkedSenders.put(sender, oldValue-1);
+            _linkedSenders.put(sender, oldValue - 1);
         }
-        if( link.TYPE_LINK.equals(link.getType()))
+        if (link.TYPE_LINK.equals(link.getType()))
         {
+            _producerCount.decrementAndGet();
             getEventLogger().message(SenderMessages.CLOSE(link.getName(), link.getDestination()));
         }
+    }
+
+    @Override
+    public void close()
+    {
+        _producerCount.set(0);
+        super.close();
     }
 
     private void validateOrCreateAlternateBinding(final Exchange<?> exchange, final boolean mayCreate)
