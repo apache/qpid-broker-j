@@ -46,6 +46,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -705,17 +706,21 @@ public class ConfiguredObjectTypeRegistry
             return _field;
         }
 
-        public Method getPreSettingAction()
+        public void set(ConfiguredObject configuredObject, Object desiredValue) throws IllegalAccessException, InvocationTargetException
         {
-            return _preSettingAction;
-        }
+            if (_preSettingAction != null)
+            {
+                _preSettingAction.invoke(configuredObject);
+            }
 
-        public Method getPostSettingAction()
-        {
-            return _postSettingAction;
+            _field.set(configuredObject, desiredValue);
+
+            if (_postSettingAction != null)
+            {
+                _postSettingAction.invoke(configuredObject);
+            }
         }
     }
-
 
     private <X extends ConfiguredObject> void process(final Class<X> clazz)
     {

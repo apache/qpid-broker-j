@@ -45,7 +45,7 @@ import org.apache.qpid.server.user.connection.limits.config.Rule;
 import org.apache.qpid.server.user.connection.limits.config.RulePredicates.Property;
 import org.apache.qpid.server.user.connection.limits.config.RuleSetCreator;
 
-abstract class AbstractRuleBasedConnectionLimitProvider<C extends AbstractRuleBasedConnectionLimitProvider<C>>
+public abstract class AbstractRuleBasedConnectionLimitProvider<C extends AbstractRuleBasedConnectionLimitProvider<C>>
         extends AbstractConnectionLimitProvider<C> implements RuleBasedConnectionLimitProvider<C>
 {
     private static final String RULES = "rules";
