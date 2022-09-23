@@ -47,9 +47,9 @@ public class GunzipOutputStream extends InflaterOutputStream
     }
 
     @Override
-    public void write(final byte data[], final int offset, final int length) throws IOException
+    public void write (final byte[] data, final int offset, final int length) throws IOException
     {
-        try(ByteArrayInputStream bais = new ByteArrayInputStream(data, offset, length))
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(data, offset, length))
         {
             int b;
             while ((b = bais.read()) != -1)
@@ -92,7 +92,6 @@ public class GunzipOutputStream extends InflaterOutputStream
                     {
                         _trailer.verify(_crc);
                         _streamState = StreamState.DONE;
-                        continue;
                     }
                 }
             }
@@ -109,7 +108,7 @@ public class GunzipOutputStream extends InflaterOutputStream
         ID1, ID2, CM, FLG, MTIME_0, MTIME_1, MTIME_2, MTIME_3, XFL, OS, XLEN_0, XLEN_1, FEXTRA, FNAME, FCOMMENT, CRC16_0, CRC16_1, DONE
     }
 
-    private class GZIPHeader
+    private static class GZIPHeader
     {
         private static final int GZIP_MAGIC_1 = 0x1F;
         private static final int GZIP_MAGIC_2 = 0x8B;
@@ -256,7 +255,7 @@ public class GunzipOutputStream extends InflaterOutputStream
     {
         private static final int TRAILER_SIZE = 8;
         private static final long SIZE_MASK = 0xffffffffL;
-        private byte[] _trailerBytes = new byte[TRAILER_SIZE];
+        private final byte[] _trailerBytes = new byte[TRAILER_SIZE];
         private int _receivedByteIndex;
 
         private boolean trailerByte(int b) throws IOException
