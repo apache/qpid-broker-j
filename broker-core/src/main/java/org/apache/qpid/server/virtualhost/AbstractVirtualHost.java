@@ -3322,7 +3322,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
-    private class StoreEmptyCheckingHandler
+    private static class StoreEmptyCheckingHandler
             implements MessageHandler, MessageInstanceHandler, DistributedTransactionHandler
     {
         private boolean _empty = true;

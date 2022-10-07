@@ -222,7 +222,7 @@ public class UserPreferencesTest extends UnitTestBase
         return queryPreference;
     }
 
-    private class UUIDCollectionMatcher implements ArgumentMatcher<Collection<UUID>>
+    private static class UUIDCollectionMatcher implements ArgumentMatcher<Collection<UUID>>
     {
         private Collection<UUID> _expected;
         private String _failureDescription;
@@ -240,7 +240,7 @@ public class UserPreferencesTest extends UnitTestBase
         }
     }
 
-    private class PreferenceRecordMatcher implements ArgumentMatcher<Collection<PreferenceRecord>>
+    private static class PreferenceRecordMatcher implements ArgumentMatcher<Collection<PreferenceRecord>>
     {
         private final Preference _preference;
 

@@ -208,7 +208,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         return GZIP_ENCODING.equals(contentHeaderBody.getProperties().getEncoding());
     }
 
-    private class MessageContentSourceBody implements AMQBody
+    private static class MessageContentSourceBody implements AMQBody
     {
         public static final byte TYPE = 3;
         private final int _length;

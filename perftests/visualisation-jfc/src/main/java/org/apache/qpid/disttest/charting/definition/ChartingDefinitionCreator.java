@@ -139,7 +139,7 @@ public class ChartingDefinitionCreator
         return _seriesDefinitionCreator.createFromProperties(props);
     }
 
-    private final class CHARTDEF_FILE_FILTER implements FileFilter
+    private static final class CHARTDEF_FILE_FILTER implements FileFilter
     {
         @Override
         public boolean accept(File pathname)

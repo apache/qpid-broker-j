@@ -53,7 +53,7 @@ public class PublishAuthorisationCache
         _publishAuthCacheSize = publishAuthCacheSize;
     }
 
-    private final class PublishAuthKey
+    private static final class PublishAuthKey
     {
         private final MessageDestination _messageDestination;
         private final String _routingKey;

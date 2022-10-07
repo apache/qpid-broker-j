@@ -478,7 +478,7 @@ public class MemoryConsumptionTestClient
         return sentBytes;
     }
 
-    private class MemoryStatistic
+    private static class MemoryStatistic
     {
         private long heapUsage;
         private long directMemoryUsage;

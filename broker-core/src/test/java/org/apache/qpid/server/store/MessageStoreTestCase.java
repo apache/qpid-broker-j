@@ -139,7 +139,8 @@ public abstract class MessageStoreTestCase extends UnitTestBase
 
         DistributedTransactionHandler handler = mock(DistributedTransactionHandler.class);
         _storeReader.visitDistributedTransactions(handler);
-        verify(handler, times(1)).handle(eq(record), argThat(new RecordMatcher(enqueues)), argThat(new DequeueRecordMatcher(dequeues)));
+        verify(handler, times(1)).handle(eq(record), argThat(new RecordMatcher(enqueues)), argThat(new DequeueRecordMatcher(
+                dequeues)));
 
         transaction = _store.newTransaction();
         transaction.removeXid(record);
@@ -149,7 +150,8 @@ public abstract class MessageStoreTestCase extends UnitTestBase
 
         handler = mock(DistributedTransactionHandler.class);
         _storeReader.visitDistributedTransactions(handler);
-        verify(handler, never()).handle(eq(record), argThat(new RecordMatcher(enqueues)), argThat(new DequeueRecordMatcher(dequeues)));
+        verify(handler, never()).handle(eq(record), argThat(new RecordMatcher(enqueues)), argThat(new DequeueRecordMatcher(
+                dequeues)));
     }
 
     @Test
@@ -589,7 +591,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         return enqueueableMessage1;
     }
 
-    private class MessageMetaDataMatcher implements ArgumentMatcher<StoredMessage<?>>
+    private static class MessageMetaDataMatcher implements ArgumentMatcher<StoredMessage<?>>
     {
         private long _messageNumber;
 
@@ -606,7 +608,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         }
     }
 
-    private class QueueFilteringMessageInstanceHandler implements MessageInstanceHandler
+    private static class QueueFilteringMessageInstanceHandler implements MessageInstanceHandler
     {
         private final UUID _queueId;
         private final Set<Long> _enqueuedIds = new HashSet<>();
@@ -637,7 +639,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         }
     }
 
-    private class EnqueueRecordMatcher implements ArgumentMatcher<MessageEnqueueRecord>
+    private static class EnqueueRecordMatcher implements ArgumentMatcher<MessageEnqueueRecord>
     {
         private final UUID _queueId;
         private final long _messageId;
@@ -656,7 +658,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     }
 
 
-    private class RecordMatcher implements ArgumentMatcher<Transaction.EnqueueRecord[]>
+    private static class RecordMatcher implements ArgumentMatcher<Transaction.EnqueueRecord[]>
     {
 
         private final EnqueueRecord[] _expect;
@@ -689,7 +691,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         }
     }
 
-    private class DequeueRecordMatcher implements ArgumentMatcher<Transaction.DequeueRecord[]>
+    private static class DequeueRecordMatcher implements ArgumentMatcher<Transaction.DequeueRecord[]>
     {
 
         private final Transaction.DequeueRecord[] _expect;

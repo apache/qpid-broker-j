@@ -261,7 +261,7 @@ public final class ConfiguredObjectQuery
     }
 
 
-    class OrderByComparator implements Comparator<Object>
+    static class OrderByComparator implements Comparator<Object>
     {
         private final List<OrderByExpression> _orderByExpressions;
 
@@ -339,7 +339,8 @@ public final class ConfiguredObjectQuery
         List<OrderByExpression> orderByExpressions = parseOrderByClause(orderByClause, headersAndValue);
         List<ConfiguredObject<?>> orderedObjects = new ArrayList<>(unorderedResults.size());
         orderedObjects.addAll(unorderedResults);
-        Comparator<Object> comparator = new OrderByComparator(orderByExpressions, headersAndValue.getValueExpressions());
+        Comparator<Object> comparator =
+                new OrderByComparator(orderByExpressions, headersAndValue.getValueExpressions());
         Collections.sort(orderedObjects, comparator);
         return orderedObjects;
     }

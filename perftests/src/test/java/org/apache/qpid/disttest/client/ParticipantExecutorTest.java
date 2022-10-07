@@ -79,7 +79,7 @@ public class ParticipantExecutorTest extends UnitTestBase
     }
 
     /** avoids our unit test needing to use multiple threads */
-    private final class SynchronousExecutor implements Executor
+    private static final class SynchronousExecutor implements Executor
     {
         @Override
         public void execute(Runnable command)

@@ -248,7 +248,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
      * Convert the storage of queue attributes to remove the separate "ARGUMENT" attribute, and flatten the
      * attributes into the map using the model attribute names rather than the wire attribute names
      */
-    private class Upgrader_0_2_to_0_3 extends StoreUpgraderPhase
+    private static class Upgrader_0_2_to_0_3 extends StoreUpgraderPhase
     {
         private static final String ARGUMENTS = "arguments";
 
@@ -354,7 +354,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
      * where exclusive was false it will now be "NONE", and where true it will now be "CONTAINER"
      * ensure OWNER is null unless the exclusivity policy is CONTAINER
      */
-    private class Upgrader_0_3_to_0_4 extends StoreUpgraderPhase
+    private static class Upgrader_0_3_to_0_4 extends StoreUpgraderPhase
     {
         private static final String EXCLUSIVE = "exclusive";
 
@@ -537,7 +537,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
 
     }
 
-    private class Upgrader_2_0_to_3_0 extends StoreUpgraderPhase
+    private static class Upgrader_2_0_to_3_0 extends StoreUpgraderPhase
     {
         public Upgrader_2_0_to_3_0()
         {
@@ -560,7 +560,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         }
 
     }
-    private class Upgrader_3_0_to_6_0 extends StoreUpgraderPhase
+    private static class Upgrader_3_0_to_6_0 extends StoreUpgraderPhase
     {
         public Upgrader_3_0_to_6_0()
         {
@@ -584,7 +584,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
 
     }
 
-    private class Upgrader_6_0_to_6_1 extends StoreUpgraderPhase
+    private static class Upgrader_6_0_to_6_1 extends StoreUpgraderPhase
     {
         public Upgrader_6_0_to_6_1()
         {
@@ -1040,7 +1040,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
     }
 
 
-    private class Upgrader_7_0_to_7_1 extends StoreUpgraderPhase
+    private static class Upgrader_7_0_to_7_1 extends StoreUpgraderPhase
     {
 
         public Upgrader_7_0_to_7_1()
@@ -1064,7 +1064,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         }
     }
 
-    private class Upgrader_7_1_to_8_0 extends StoreUpgraderPhase
+    private static class Upgrader_7_1_to_8_0 extends StoreUpgraderPhase
     {
 
         public Upgrader_7_1_to_8_0()

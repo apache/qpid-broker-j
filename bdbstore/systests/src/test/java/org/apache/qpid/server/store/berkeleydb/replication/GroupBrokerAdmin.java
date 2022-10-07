@@ -476,7 +476,7 @@ public class GroupBrokerAdmin
         }
     }
 
-    private class GroupMember
+    private static class GroupMember
     {
         private final Map<String, Object> _nodeAttributes;
         private final SpawnBrokerAdmin _admin;

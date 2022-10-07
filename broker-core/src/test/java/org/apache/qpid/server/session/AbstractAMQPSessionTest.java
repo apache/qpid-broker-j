@@ -80,7 +80,7 @@ public class AbstractAMQPSessionTest extends UnitTestBase
         when(_connection.getAddressSpace()).thenReturn((VirtualHost)_virtualHost);
         when(_connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(_connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
-        mockAMQPSession = new MockAMQPSession(_connection,123);
+        mockAMQPSession = new MockAMQPSession(_connection, 123);
 
     }
 
@@ -132,7 +132,7 @@ public class AbstractAMQPSessionTest extends UnitTestBase
         verify(_connection).registerTransactedMessageReceived();
     }
 
-    private class MockAMQPSession extends AbstractAMQPSession{
+    private static class MockAMQPSession extends AbstractAMQPSession{
 
         protected MockAMQPSession(final Connection parent, final int sessionId)
         {

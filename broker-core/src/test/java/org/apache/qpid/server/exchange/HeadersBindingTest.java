@@ -50,7 +50,7 @@ public class HeadersBindingTest extends UnitTestBase
 {
 
 
-    private class MockHeader implements AMQMessageHeader
+    private static class MockHeader implements AMQMessageHeader
     {
 
         private final Map<String, Object> _headers = new HashMap<String, Object>();

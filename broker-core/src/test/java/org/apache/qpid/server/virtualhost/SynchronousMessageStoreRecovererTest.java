@@ -185,7 +185,7 @@ public class SynchronousMessageStoreRecovererTest extends UnitTestBase
                 recoverer = new SynchronousMessageStoreRecoverer();
         recoverer.recover(_virtualHost);
 
-        verify(transaction).dequeueMessage(argThat(new MessageEnqueueRecordMatcher(queueId,messageId)));
+        verify(transaction).dequeueMessage(argThat(new MessageEnqueueRecordMatcher(queueId, messageId)));
         verify(transaction, times(1)).commitTranAsync((Void) null);
     }
 
@@ -450,7 +450,7 @@ public class SynchronousMessageStoreRecovererTest extends UnitTestBase
     }
 
 
-    private final class MessageEnqueueRecordMatcher implements ArgumentMatcher<MessageEnqueueRecord>
+    private static final class MessageEnqueueRecordMatcher implements ArgumentMatcher<MessageEnqueueRecord>
     {
         private final long _messageId;
         private final UUID _queueId;
@@ -469,7 +469,7 @@ public class SynchronousMessageStoreRecovererTest extends UnitTestBase
         }
     }
 
-    private class TestMessageEnqueueRecord implements MessageEnqueueRecord
+    private static class TestMessageEnqueueRecord implements MessageEnqueueRecord
     {
         private final UUID _queueId;
         private final long _messageId;

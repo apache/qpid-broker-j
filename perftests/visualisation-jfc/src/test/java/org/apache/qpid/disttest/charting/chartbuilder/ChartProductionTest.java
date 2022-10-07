@@ -124,7 +124,8 @@ public class ChartProductionTest extends UnitTestBase
     @Test
     public void testBarChart() throws Exception
     {
-        ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.BAR, new SampleSeriesBuilder(SIMPLE_SERIES_ROWS));
+        ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.BAR,
+                                                                      new SampleSeriesBuilder(SIMPLE_SERIES_ROWS));
         assertChartTitlesAndWriteToFile(builder);
     }
 
@@ -236,7 +237,7 @@ public class ChartProductionTest extends UnitTestBase
         _writer.writeChartToFileSystem(chart, _chartingDefinition);
     }
 
-    private class SampleSeriesBuilder implements SeriesBuilder
+    private static class SampleSeriesBuilder implements SeriesBuilder
     {
         private DatasetHolder _datasetHolder;
         private SeriesRow[] _sampleSeriesRows = SIMPLE_SERIES_ROWS;

@@ -3646,7 +3646,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return !_referrers.isEmpty();
     }
 
-    private class MessageFinder implements QueueEntryVisitor
+    private static class MessageFinder implements QueueEntryVisitor
     {
         private final long _messageNumber;
         private final boolean _includeHeaders;
@@ -3679,7 +3679,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    private class MessageContentFinder implements QueueEntryVisitor
+    private static class MessageContentFinder implements QueueEntryVisitor
     {
         private final long _messageNumber;
         private boolean _found;

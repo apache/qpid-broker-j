@@ -224,7 +224,7 @@ public class TaskExecutorImpl implements TaskExecutor
         return contextSubject;
     }
 
-    private class TaskLoggingWrapper<T, E extends Exception> implements Task<T, E>
+    private static class TaskLoggingWrapper<T, E extends Exception> implements Task<T, E>
     {
         private final Task<T,E> _task;
 

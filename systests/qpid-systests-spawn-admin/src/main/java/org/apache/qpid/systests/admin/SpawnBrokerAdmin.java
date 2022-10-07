@@ -904,7 +904,7 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
         }
     }
 
-    private final class BrokerSystemOutputHandler implements Runnable
+    private static final class BrokerSystemOutputHandler implements Runnable
     {
         private final Logger LOGGER = LoggerFactory.getLogger(BrokerSystemOutputHandler.class);
 

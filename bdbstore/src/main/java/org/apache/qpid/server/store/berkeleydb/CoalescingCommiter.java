@@ -338,7 +338,7 @@ public class CoalescingCommiter implements Committer
         }
     }
 
-    private class SynchronousCommitThreadJob implements CommitThreadJob
+    private static class SynchronousCommitThreadJob implements CommitThreadJob
     {
         private boolean _done;
         private RuntimeException _exception;

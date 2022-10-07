@@ -111,7 +111,7 @@ public class MalformedMessageTest extends BrokerAdminUsingTestBase
         }
     }
 
-    private class TestMessageTransfer extends Method
+    private static class TestMessageTransfer extends Method
     {
         short packingFlags;
         private String destination;

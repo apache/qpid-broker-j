@@ -186,7 +186,8 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
         String expectedMessage = HighAvailabilityMessages.PRIORITY_CHANGED("10").toString();
         verify(_eventLogger).message(argThat(new LogSubjectMatcher(node1.getVirtualHostNodeLogSubject())),
-                argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.PRIORITY_CHANGED_LOG_HIERARCHY)));
+                argThat(new LogMessageMatcher(expectedMessage,
+                                              HighAvailabilityMessages.PRIORITY_CHANGED_LOG_HIERARCHY)));
     }
 
     @Test
@@ -210,7 +211,8 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
         String expectedMessage = HighAvailabilityMessages.QUORUM_OVERRIDE_CHANGED("1").toString();
         verify(_eventLogger).message(argThat(new LogSubjectMatcher(node1.getVirtualHostNodeLogSubject())),
-                argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.QUORUM_OVERRIDE_CHANGED_LOG_HIERARCHY)));
+                argThat(new LogMessageMatcher(expectedMessage,
+                                              HighAvailabilityMessages.QUORUM_OVERRIDE_CHANGED_LOG_HIERARCHY)));
     }
 
     @Test
@@ -234,7 +236,8 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
         String expectedMessage = HighAvailabilityMessages.DESIGNATED_PRIMARY_CHANGED("true").toString();
         verify(_eventLogger).message(argThat(new LogSubjectMatcher(node1.getVirtualHostNodeLogSubject())),
-                argThat(new LogMessageMatcher(expectedMessage, HighAvailabilityMessages.DESIGNATED_PRIMARY_CHANGED_LOG_HIERARCHY)));
+                argThat(new LogMessageMatcher(expectedMessage,
+                                              HighAvailabilityMessages.DESIGNATED_PRIMARY_CHANGED_LOG_HIERARCHY)));
     }
 
     @Test
@@ -413,7 +416,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         return eventLogger;
     }
 
-    class LogMessageMatcher implements ArgumentMatcher<LogMessage>
+    static class LogMessageMatcher implements ArgumentMatcher<LogMessage>
     {
         private String _expectedMessage;
         private String _expectedMessageFailureDescription = null;
@@ -444,7 +447,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         }
     }
 
-    class LogSubjectMatcher implements ArgumentMatcher<LogSubject>
+    static class LogSubjectMatcher implements ArgumentMatcher<LogSubject>
     {
         private LogSubject _logSubject;
         private String _failureDescription = null;
