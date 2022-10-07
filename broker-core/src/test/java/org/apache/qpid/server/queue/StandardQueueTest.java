@@ -60,7 +60,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         queue.open();
         setQueue(queue);
 
-        ServerMessage message = createMessage(25l);
+        ServerMessage message = createMessage(25L);
         QueueConsumer consumer =
                 (QueueConsumer) getQueue().addConsumer(getConsumerTarget(), null, message.getClass(), "test",
                                                        EnumSet.of(ConsumerOption.ACQUIRES,
@@ -86,7 +86,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         // register consumer
         queue.addConsumer(consumer,
                           null,
-                          createMessage(-1l).getClass(),
+                          createMessage(-1L).getClass(),
                           "test",
                           EnumSet.of(ConsumerOption.ACQUIRES,
                                      ConsumerOption.SEES_REQUEUES), 0);
@@ -98,8 +98,8 @@ public class StandardQueueTest extends AbstractQueueTestBase
         // assert received messages
         List<MessageInstance> messages = consumer.getMessages();
         assertEquals("Only 2 messages should be returned", (long) 2, (long) messages.size());
-        assertEquals("ID of first message should be 1", 1l, (messages.get(0).getMessage()).getMessageNumber());
-        assertEquals("ID of second message should be 3", 3l, (messages.get(1).getMessage()).getMessageNumber());
+        assertEquals("ID of first message should be 1", 1L, (messages.get(0).getMessage()).getMessageNumber());
+        assertEquals("ID of second message should be 3", 3L, (messages.get(1).getMessage()).getMessageNumber());
     }
 
     /**

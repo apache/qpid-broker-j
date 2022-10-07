@@ -89,7 +89,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
 
     @ManagedContextDefault( name = "virtualhost.storeTransactionIdleTimeoutClose")
-    public static final long DEFAULT_STORE_TRANSACTION_IDLE_TIMEOUT_CLOSE = 0l;
+    public static final long DEFAULT_STORE_TRANSACTION_IDLE_TIMEOUT_CLOSE = 0L;
     @ManagedContextDefault( name = "virtualhost.housekeepingThreadCount")
     int DEFAULT_HOUSEKEEPING_THREAD_COUNT = 4;
 
@@ -114,7 +114,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getStoreTransactionIdleTimeoutClose();
 
     @ManagedContextDefault( name = "virtualhost.storeTransactionIdleTimeoutWarn")
-    public static final long DEFAULT_STORE_TRANSACTION_IDLE_TIMEOUT_WARN = 180000l;
+    public static final long DEFAULT_STORE_TRANSACTION_IDLE_TIMEOUT_WARN = 180000L;
 
     @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionIdleTimeoutWarn}",
             description = "The maximum length of time, in milliseconds, that an open store transaction may "
@@ -123,7 +123,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getStoreTransactionIdleTimeoutWarn();
 
     @ManagedContextDefault( name = "virtualhost.storeTransactionOpenTimeoutClose")
-    public static final long DEFAULT_STORE_TRANSACTION_OPEN_TIMEOUT_CLOSE = 0l;
+    public static final long DEFAULT_STORE_TRANSACTION_OPEN_TIMEOUT_CLOSE = 0L;
 
     @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionOpenTimeoutClose}",
             description = "The maximum length of time, in milliseconds, that a store transaction may "
@@ -132,7 +132,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getStoreTransactionOpenTimeoutClose();
 
     @ManagedContextDefault( name = "virtualhost.storeTransactionOpenTimeoutWarn")
-    public static final long DEFAULT_STORE_TRANSACTION_OPEN_TIMEOUT_WARN = 300000l;
+    public static final long DEFAULT_STORE_TRANSACTION_OPEN_TIMEOUT_WARN = 300000L;
 
     @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionOpenTimeoutWarn}",
             description = "The maximum length of time, in milliseconds, that a store transaction may "

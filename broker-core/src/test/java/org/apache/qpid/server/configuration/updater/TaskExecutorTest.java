@@ -123,7 +123,7 @@ public class TaskExecutorTest extends UnitTestBase
         Thread t2 = new Thread(runnable);
         t2.start();
 
-        final long timeout = 2000l;
+        final long timeout = 2000L;
         boolean awaitSubmissions = submitLatch.await(timeout, TimeUnit.MILLISECONDS);
         assertTrue(submitLatch.getCount() + " task(s) have not been submitted within expected time",
                           awaitSubmissions);

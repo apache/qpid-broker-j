@@ -622,7 +622,7 @@ public class BasicContentHeaderProperties
 
     public synchronized void setExpiration(long expiration)
     {
-        if(expiration == 0l)
+        if(expiration == 0L)
         {
             _propertyFlags &= (~EXPIRATION_MASK);
         }

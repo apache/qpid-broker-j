@@ -106,7 +106,7 @@ public class ServerSessionTest extends UnitTestBase
     public void testOverlargeMessageTest() throws Exception
     {
         final Broker<?> broker = mock(Broker.class);
-        when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
+        when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0L);
 
         AmqpPort port = createMockPort();
 
@@ -130,7 +130,7 @@ public class ServerSessionTest extends UnitTestBase
         final Subject subject =
                 new Subject(false, Collections.singleton(principal), Collections.emptySet(), Collections.emptySet());
         when(modelConnection.getSubject()).thenReturn(subject);
-        when(modelConnection.getMaxMessageSize()).thenReturn(1024l);
+        when(modelConnection.getMaxMessageSize()).thenReturn(1024L);
         when(modelConnection.getCreatedTime()).thenReturn(new Date());
         ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP, modelConnection);
         connection.setVirtualHost(_virtualHost);

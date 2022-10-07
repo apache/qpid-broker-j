@@ -63,7 +63,7 @@ import org.apache.qpid.server.util.urlstreamhandler.classpath.Handler;
 public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         extends AbstractConfiguredObject<X> implements SystemConfig<X>, DynamicModel
 {
-    private static final UUID SYSTEM_ID = new UUID(0l, 0l);
+    private static final UUID SYSTEM_ID = new UUID(0L, 0L);
 
     private final Principal _systemPrincipal;
 

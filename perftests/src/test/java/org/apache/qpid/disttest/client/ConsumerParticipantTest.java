@@ -56,7 +56,7 @@ public class ConsumerParticipantTest extends UnitTestBase
     private static final long RECEIVE_TIMEOUT = 100;
     private static final String CLIENT_NAME = "CLIENT_NAME";
     private static final int PAYLOAD_SIZE_PER_MESSAGE = 1024;
-    public static final long MAXIMUM_DURATION = 100l;
+    public static final long MAXIMUM_DURATION = 100L;
 
     private final Message _mockMessage = mock(Message.class);
     private final CreateConsumerCommand _command = new CreateConsumerCommand();

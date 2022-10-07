@@ -42,7 +42,7 @@ public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends QueueManagi
 
     // Default the JE cache to 5% of total memory, but no less than 10Mb
     @ManagedContextDefault(name= QPID_BROKER_BDB_TOTAL_CACHE_SIZE)
-    long DEFAULT_JE_CACHE_SIZE = Math.max(BDB_MIN_CACHE_SIZE, Runtime.getRuntime().maxMemory()/20l);
+    long DEFAULT_JE_CACHE_SIZE = Math.max(BDB_MIN_CACHE_SIZE, Runtime.getRuntime().maxMemory() / 20L);
 
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD, description = "Threshold for amount of messages triggering BDB log flush to the disk")

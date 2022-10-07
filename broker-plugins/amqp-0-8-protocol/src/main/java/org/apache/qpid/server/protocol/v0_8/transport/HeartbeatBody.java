@@ -62,7 +62,7 @@ public class HeartbeatBody implements AMQBody
     @Override
     public long writePayload(final ByteBufferSender sender)
     {
-        return 0l;
+        return 0L;
     }
 
     @Override

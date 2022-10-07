@@ -372,7 +372,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
             restoreCredit(_deferredMessageCredit, _deferredSizeCredit);
 
             _deferredMessageCredit = 0;
-            _deferredSizeCredit = 0l;
+            _deferredSizeCredit = 0L;
         }
     }
 
@@ -530,10 +530,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         switch(flowMode)
         {
             case CREDIT:
-                _creditManager = new CreditCreditManager(0l, 0l);
+                _creditManager = new CreditCreditManager(0L, 0L);
                 break;
             case WINDOW:
-                _creditManager = new WindowCreditManager(0l, 0l);
+                _creditManager = new WindowCreditManager(0L, 0L);
                 break;
             default:
                 // this should never happen, as 0-10 is finalised and so the enum should never change

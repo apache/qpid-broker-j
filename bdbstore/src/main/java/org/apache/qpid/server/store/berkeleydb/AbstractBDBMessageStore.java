@@ -491,7 +491,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             getLogger().info("Lock conflict exception. Retrying (attempt {} of {})", attempts, LOCK_RETRY_ATTEMPTS);
             try
             {
-                Thread.sleep(500l + (long)(500l * _lockConflictRandom.nextDouble()));
+                Thread.sleep(500L + (long)(500L * _lockConflictRandom.nextDouble()));
             }
             catch (InterruptedException ie)
             {

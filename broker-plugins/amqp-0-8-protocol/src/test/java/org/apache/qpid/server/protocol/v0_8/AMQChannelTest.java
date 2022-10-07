@@ -92,13 +92,13 @@ public class AMQChannelTest extends UnitTestBase
 
         _broker = mock(Broker.class);
         when(_broker.getEventLogger()).thenReturn(mock(EventLogger.class));
-        when(_broker.getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)).thenReturn(1l);
+        when(_broker.getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)).thenReturn(1L);
 
         _messageStore = mock(MessageStore.class);
 
         _virtualHost = mock(QueueManagingVirtualHost.class);
         when(_virtualHost.getContextValue(Integer.class, Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE)).thenReturn(1);
-        when(_virtualHost.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(1l);
+        when(_virtualHost.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(1L);
         when(_virtualHost.getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH)).thenReturn(false);
         when(_virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
         when(_virtualHost.getEventLogger()).thenReturn(mock(EventLogger.class));
@@ -172,7 +172,7 @@ public class AMQChannelTest extends UnitTestBase
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(mock(MessageDestination.class));
 
-        long maximumMessageSize = 1024l;
+        long maximumMessageSize = 1024L;
         when(_amqConnection.getMaxMessageSize()).thenReturn(maximumMessageSize);
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 

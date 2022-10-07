@@ -169,7 +169,7 @@ public class SystemLauncher
             if(_systemConfig != null)
             {
                 ListenableFuture<Void> closeResult = _systemConfig.closeAsync();
-                closeResult.get(30000l, TimeUnit.MILLISECONDS);
+                closeResult.get(30000L, TimeUnit.MILLISECONDS);
             }
 
         }

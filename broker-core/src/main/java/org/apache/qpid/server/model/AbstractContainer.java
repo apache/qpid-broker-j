@@ -167,19 +167,19 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
                     {
                         case 'k':
                         case 'K':
-                            maxMemory *= 1024l;
+                            maxMemory *= 1024L;
                             break;
                         case 'm':
                         case 'M':
-                            maxMemory *= 1024l * 1024l;
+                            maxMemory *= 1024L * 1024L;
                             break;
                         case 'g':
                         case 'G':
-                            maxMemory *= 1024l * 1024l * 1024l;
+                            maxMemory *= 1024L * 1024L * 1024L;
                             break;
                         case 't':
                         case 'T':
-                            maxMemory *= 1024l * 1024l * 1024l * 1024l;
+                            maxMemory *= 1024L * 1024L * 1024L * 1024L;
                             break;
                         case 0:
                             // noop

@@ -52,7 +52,7 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
                           + " which connection can hold in memory. If limit is breached, all messages from"
                           + " connection in-flight transactions are flowed to disk including those arriving"
                           + " after breaching the limit.")
-    long DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE = 10l * 1024l * 1024l;
+    long DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE = 10L * 1024L * 1024L;
 
 
     String CLOSE_RESPONSE_TIMEOUT = "connection.closeResponseTimeout";

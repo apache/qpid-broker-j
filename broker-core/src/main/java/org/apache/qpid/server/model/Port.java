@@ -61,7 +61,7 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     String CONNECTION_MAXIMUM_AUTHENTICATION_DELAY = "connection.maximumAuthenticationDelay";
 
     @ManagedContextDefault(name = CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)
-    long DEFAULT_MAX_CONNECTION_AUTHENTICATION_DELAY = 10000l;
+    long DEFAULT_MAX_CONNECTION_AUTHENTICATION_DELAY = 10000L;
     String ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS = "allowConfidentialOperationsOnInsecureChannels";
 
     // Attributes

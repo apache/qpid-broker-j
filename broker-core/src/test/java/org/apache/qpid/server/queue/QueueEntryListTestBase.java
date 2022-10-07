@@ -91,7 +91,7 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
     public void testAddGenericMessage() throws Exception
     {
         final QueueEntryList list = getTestList();
-        final ServerMessage message = createServerMessage(666l);
+        final ServerMessage message = createServerMessage(666L);
         list.add(message, null);
 
         final QueueEntryIterator iter = list.iterator();

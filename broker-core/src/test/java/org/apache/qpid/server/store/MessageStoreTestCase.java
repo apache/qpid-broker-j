@@ -122,7 +122,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     @Test
     public void testAddAndRemoveRecordXid() throws Exception
     {
-        long format = 1l;
+        long format = 1L;
         EnqueueRecord enqueueRecord = getTestRecord(1);
         TestRecord dequeueRecord = getTestRecord(2);
         EnqueueRecord[] enqueues = { enqueueRecord };
@@ -277,7 +277,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     @Test
     public void testVisitDistributedTransactions() throws Exception
     {
-        long format = 1l;
+        long format = 1L;
         byte[] branchId = new byte[] { 2 };
         byte[] globalId = new byte[] { 1 };
         EnqueueRecord enqueueRecord = getTestRecord(1);

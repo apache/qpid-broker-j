@@ -667,7 +667,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     throw new AMQInvalidArgumentException("Cannot parse value " + value + " as a number for filter " + AMQPFilterTypes.REPLAY_PERIOD.toString());
                 }
 
-                final long startingFrom = System.currentTimeMillis() - (1000l * period);
+                final long startingFrom = System.currentTimeMillis() - (1000L * period);
                 if(filterManager == null)
                 {
                     filterManager = new FilterManager();

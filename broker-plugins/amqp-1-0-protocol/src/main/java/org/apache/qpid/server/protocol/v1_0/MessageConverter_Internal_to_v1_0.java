@@ -88,7 +88,9 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 
         header.setDurable(serverMessage.isPersistent());
         header.setPriority(UnsignedByte.valueOf(serverMessage.getMessageHeader().getPriority()));
-        if(serverMessage.getExpiration() != 0l && serverMessage.getArrivalTime() !=0l && serverMessage.getExpiration() >= serverMessage.getArrivalTime())
+        if(serverMessage.getExpiration() != 0L &&
+                serverMessage.getArrivalTime() != 0L &&
+                serverMessage.getExpiration() >= serverMessage.getArrivalTime())
         {
             header.setTtl(UnsignedInteger.valueOf(serverMessage.getExpiration()-serverMessage.getArrivalTime()));
         }

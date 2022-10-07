@@ -122,8 +122,8 @@ public class ResultsTestFixture
         participantAttributes.put(THROUGHPUT, THROUGHPUT_VALUE);
         participantAttributes.put(TIME_TAKEN, 1000);
         participantAttributes.put(ERROR_MESSAGE, "error");
-        participantAttributes.put(MIN_LATENCY, 2l);
-        participantAttributes.put(MAX_LATENCY, 9l);
+        participantAttributes.put(MIN_LATENCY, 2L);
+        participantAttributes.put(MAX_LATENCY, 9L);
         participantAttributes.put(AVERAGE_LATENCY, 4.6f);
         participantAttributes.put(LATENCY_STANDARD_DEVIATION, 2.0f);
         participantAttributes.put(MESSAGE_THROUGHPUT, 2);

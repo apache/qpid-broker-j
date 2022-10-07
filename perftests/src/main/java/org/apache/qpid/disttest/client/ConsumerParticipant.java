@@ -68,7 +68,7 @@ public class ConsumerParticipant implements Participant
     {
         _jmsDelegate = delegate;
         _command = command;
-        _syncReceiveTimeout = _command.getReceiveTimeout() > 0 ? _command.getReceiveTimeout() : 50l;
+        _syncReceiveTimeout = _command.getReceiveTimeout() > 0 ? _command.getReceiveTimeout() : 50L;
         _batchSize = _command.getBatchSize();
         _batchEnabled = _batchSize > 0;
 

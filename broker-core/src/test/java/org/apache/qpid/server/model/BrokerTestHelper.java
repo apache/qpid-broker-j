@@ -135,7 +135,7 @@ public class BrokerTestHelper
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getTypeClass()).thenReturn(Broker.class);
         when(broker.getParent()).thenReturn(systemConfig);
-        when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
+        when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0L);
         when(broker.getFlowToDiskThreshold()).thenReturn(Long.MAX_VALUE);
 
         when(broker.getTaskExecutor()).thenReturn(TASK_EXECUTOR);

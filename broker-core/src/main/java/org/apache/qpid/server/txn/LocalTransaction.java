@@ -73,7 +73,7 @@ public class LocalTransaction implements ServerTransaction
     private final ActivityTimeAccessor _activityTime;
     private final MessageStore _transactionLog;
     private volatile long _txnStartTime = 0L;
-    private volatile long _txnUpdateTime = 0l;
+    private volatile long _txnUpdateTime = 0L;
     private ListenableFuture<Runnable> _asyncTran;
     private volatile boolean _outstandingWork;
     private final LocalTransactionState _finalState;

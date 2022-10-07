@@ -826,7 +826,7 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         int waitCounter = 100;
         while ( remote.getLastKnownReplicationTransactionId() != node1.getLastKnownReplicationTransactionId() && (waitCounter--) != 0)
         {
-            Thread.sleep(100l);
+            Thread.sleep(100L);
         }
         assertEquals("Last transaction was not replicated",
                             Long.valueOf(remote.getLastKnownReplicationTransactionId()),

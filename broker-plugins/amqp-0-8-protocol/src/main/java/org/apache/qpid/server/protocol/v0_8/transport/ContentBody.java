@@ -76,7 +76,7 @@ public class ContentBody implements AMQBody
         }
         else
         {
-            return 0l;
+            return 0L;
         }
     }
 

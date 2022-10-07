@@ -44,7 +44,7 @@ import static org.junit.Assert.assertNull;
 
 public class SeriesStatisticsTest extends UnitTestBase
 {
-    public static Collection<Long> SERIES = Arrays.asList(new Long[] { 2l, 4l, 4l, 4l, 5l, 5l, 7l, 9l, 5l });
+    public static Collection<Long> SERIES = Arrays.asList(new Long[] {2L, 4L, 4L, 4L, 5L, 5L, 7L, 9L, 5L});
 
     @Test
     public void testAggregate()

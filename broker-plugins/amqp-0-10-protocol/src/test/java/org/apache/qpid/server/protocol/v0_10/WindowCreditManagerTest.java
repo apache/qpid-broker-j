@@ -44,7 +44,7 @@ public class WindowCreditManagerTest extends UnitTestBase
         _protocolEngine = mock(ProtocolEngine.class);
         when(_protocolEngine.isTransportBlockedForWriting()).thenReturn(false);
 
-        _creditManager = new WindowCreditManager(0l, 0l);
+        _creditManager = new WindowCreditManager(0L, 0L);
     }
 
     /**

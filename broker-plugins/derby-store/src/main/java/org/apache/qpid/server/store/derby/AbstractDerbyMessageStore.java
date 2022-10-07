@@ -65,7 +65,7 @@ public abstract class AbstractDerbyMessageStore extends AbstractJDBCMessageStore
             _persistentSizeHighThreshold = sizeMonitorSettings.getStoreOverfullSize();
             _persistentSizeLowThreshold = sizeMonitorSettings.getStoreUnderfullSize();
 
-            if (_persistentSizeLowThreshold > _persistentSizeHighThreshold || _persistentSizeLowThreshold < 0l)
+            if (_persistentSizeLowThreshold > _persistentSizeHighThreshold || _persistentSizeLowThreshold < 0L)
             {
                 _persistentSizeLowThreshold = _persistentSizeHighThreshold;
             }
@@ -244,7 +244,7 @@ public abstract class AbstractDerbyMessageStore extends AbstractJDBCMessageStore
             stmt = conn.prepareStatement(sizeQuery);
 
             ResultSet rs = null;
-            long size = 0l;
+            long size = 0L;
 
             try
             {

@@ -55,7 +55,7 @@ public final class UnsignedInteger extends Number implements Comparable<Unsigned
     @Override
     public long longValue()
     {
-        return ((long) _underlying) & 0xFFFFFFFFl;
+        return ((long) _underlying) & 0xFFFFFFFFL;
     }
 
     @Override

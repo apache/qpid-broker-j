@@ -92,7 +92,7 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
         data[6] = _protocolMajor;
         data[7] = _protocolMinor;
         sender.send(QpidByteBuffer.wrap(data));
-        return 8l;
+        return 8L;
     }
 
     @Override

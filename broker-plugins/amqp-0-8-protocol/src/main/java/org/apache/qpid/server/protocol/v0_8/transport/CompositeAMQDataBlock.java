@@ -53,7 +53,7 @@ public class CompositeAMQDataBlock extends AMQDataBlock implements EncodableAMQD
     @Override
     public long writePayload(final ByteBufferSender sender)
     {
-        long size = 0l;
+        long size = 0L;
         for (int i = 0; i < _blocks.length; i++)
         {
             size += _blocks[i].writePayload(sender);
