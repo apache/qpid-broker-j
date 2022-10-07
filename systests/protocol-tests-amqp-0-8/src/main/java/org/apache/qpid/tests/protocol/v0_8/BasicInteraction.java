@@ -46,6 +46,8 @@ import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 public class BasicInteraction
 {
     private final Interaction _interaction;
+    private final Map<String, Object> _consumeArguments = new HashMap<>();
+
     private String _publishExchange;
     private String _publishRoutingKey;
     private boolean _publishMandatory;
@@ -64,16 +66,12 @@ public class BasicInteraction
     private boolean _consumeNoAck;
     private boolean _consumeExclusive;
     private boolean _consumeNoWait;
-    private Map<String, Object> _consumeArguments = new HashMap<>();
     private long _ackDeliveryTag;
     private boolean _ackMultiple;
-
     private String _consumeCancelTag;
     private boolean _consumeCancelNoWait;
-
     private String _getQueueName;
     private boolean _getNoAck;
-
     private boolean _confirmSelectNoWait;
 
     public BasicInteraction(final Interaction interaction)

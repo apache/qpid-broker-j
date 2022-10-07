@@ -51,7 +51,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class Logback1027WorkaroundTurboFilterTest extends UnitTestBase
 {
     private static final String TEST_LOG_MESSAGE = "hello";
-    private Logback1027WorkaroundTurboFilter _filter = new Logback1027WorkaroundTurboFilter();
+    private final Logback1027WorkaroundTurboFilter _filter = new Logback1027WorkaroundTurboFilter();
     private Logger _logger;
     private SnoopingAppender _snoopingAppender;
 
@@ -161,7 +161,7 @@ public class Logback1027WorkaroundTurboFilterTest extends UnitTestBase
     private static class SnoopingAppender implements Appender<ILoggingEvent>
     {
 
-        private List<ILoggingEvent> _events = new ArrayList<>();
+        private final List<ILoggingEvent> _events = new ArrayList<>();
 
         List<ILoggingEvent> getEvents()
         {

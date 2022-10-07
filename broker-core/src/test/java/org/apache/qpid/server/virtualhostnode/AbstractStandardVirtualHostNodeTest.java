@@ -609,7 +609,7 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
 
     private static class TestAbstractVirtualHostNode extends AbstractVirtualHostNode
     {
-        private DurableConfigurationStore _store;
+        private final DurableConfigurationStore _store;
 
         public TestAbstractVirtualHostNode(Broker parent, Map attributes, DurableConfigurationStore store)
         {

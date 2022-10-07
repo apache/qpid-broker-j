@@ -124,8 +124,8 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
 
     private class EntryFinder implements QueueEntryVisitor
     {
+        private final QueueConsumer<?,?> _sub;
         private QueueEntry _entry;
-        private QueueConsumer<?,?> _sub;
 
         EntryFinder(final QueueConsumer<?, ?> sub)
         {

@@ -26,7 +26,7 @@ import java.util.Map;
 
 public class AugumentConnectionUrl implements ClientInstruction
 {
-    private Map<String, String> _connectionUrlConfig;
+    private final Map<String, String> _connectionUrlConfig;
 
     public AugumentConnectionUrl(final Map<String, String> connectionUrlConfig)
     {

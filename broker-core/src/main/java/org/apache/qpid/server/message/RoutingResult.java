@@ -123,7 +123,7 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
         final BaseQueue[] queues = _queues.toArray(new BaseQueue[_queues.size()]);
         txn.enqueue(_queues, _message, new ServerTransaction.EnqueueAction()
         {
-            MessageReference _reference = _message.newReference();
+            final MessageReference _reference = _message.newReference();
 
             @Override
             public void postCommit(MessageEnqueueRecord... records)

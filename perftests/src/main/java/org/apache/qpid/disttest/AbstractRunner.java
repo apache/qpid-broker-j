@@ -40,7 +40,7 @@ public class AbstractRunner
     public static final String JNDI_CONFIG_PROP = "jndi-config";
     public static final String JNDI_CONFIG_DEFAULT = "perftests-jndi.properties";
 
-    private Map<String,String> _cliOptions = new HashMap<String, String>();
+    private final Map<String,String> _cliOptions = new HashMap<String, String>();
     {
         getCliOptions().put(JNDI_CONFIG_PROP, JNDI_CONFIG_DEFAULT);
     }

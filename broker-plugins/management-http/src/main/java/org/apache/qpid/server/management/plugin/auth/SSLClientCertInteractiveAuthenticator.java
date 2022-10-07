@@ -36,7 +36,7 @@ public class SSLClientCertInteractiveAuthenticator implements HttpRequestInterac
     private static final LogoutHandler LOGOUT_HANDLER =
             response -> response.sendRedirect(HttpManagement.DEFAULT_LOGOUT_URL);
 
-    private SSLClientCertPreemptiveAuthenticator _preemptiveAuthenticator = new SSLClientCertPreemptiveAuthenticator();
+    private final SSLClientCertPreemptiveAuthenticator _preemptiveAuthenticator = new SSLClientCertPreemptiveAuthenticator();
 
     @Override
     public AuthenticationHandler getAuthenticationHandler(final HttpServletRequest request,

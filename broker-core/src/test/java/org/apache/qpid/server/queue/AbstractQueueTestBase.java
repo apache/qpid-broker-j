@@ -91,15 +91,16 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.UnknownAlternateBindingException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-
 abstract class AbstractQueueTestBase extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQueueTestBase.class);
+
+    private final String _qname = "qname";
+    private final String _owner = "owner";
+    private final String _routingKey = "routing key";
+
     private Queue<?> _queue;
     private QueueManagingVirtualHost<?> _virtualHost;
-    private String _qname = "qname";
-    private String _owner = "owner";
-    private String _routingKey = "routing key";
     private DirectExchangeImpl _exchange;
     private TestConsumerTarget _consumerTarget = new TestConsumerTarget();  // TODO replace with minimally configured mockito mock
     private QueueConsumer<?,?> _consumer;

@@ -32,6 +32,19 @@ public class ParticipantResultAggregator
     private final String _aggregatedResultName;
     private final Class<? extends ParticipantResult> _targetClass;
 
+    private final NavigableSet<Integer> _encounteredPayloadSizes = new TreeSet<>();
+    private final NavigableSet<Integer> _encounteredIterationNumbers = new TreeSet<>();
+    private final NavigableSet<Integer> _encounteredBatchSizes = new TreeSet<>();
+    private final NavigableSet<Integer> _encounteredAcknowledgeMode = new TreeSet<>();
+    private final NavigableSet<Integer> _encounteredDeliveryModes = new TreeSet<>();
+    private final NavigableSet<Boolean> _encounteredDurableSubscriptions = new TreeSet<>();
+    private final NavigableSet<Boolean> _encounteredTopics = new TreeSet<>();
+    private final NavigableSet<String> _encounteredTestNames = new TreeSet<>();
+    private final NavigableSet<String> _encounteredProviderVersions = new TreeSet<>();
+    private final NavigableSet<String> _encounteredProtocolVersions = new TreeSet<>();
+
+    private final SeriesStatistics _latencyStatistics = new SeriesStatistics();
+
     private long _minStartDate = Long.MAX_VALUE;
     private long _maxEndDate = 0;
     private long _numberOfMessagesProcessed = 0;
@@ -39,19 +52,6 @@ public class ParticipantResultAggregator
 
     private int _totalNumberOfConsumers = 0;
     private int _totalNumberOfProducers = 0;
-
-    private NavigableSet<Integer> _encounteredPayloadSizes = new TreeSet<>();
-    private NavigableSet<Integer> _encounteredIterationNumbers = new TreeSet<>();
-    private NavigableSet<Integer> _encounteredBatchSizes = new TreeSet<>();
-    private NavigableSet<Integer> _encounteredAcknowledgeMode = new TreeSet<>();
-    private NavigableSet<Integer> _encounteredDeliveryModes = new TreeSet<>();
-    private NavigableSet<Boolean> _encounteredDurableSubscriptions = new TreeSet<>();
-    private NavigableSet<Boolean> _encounteredTopics = new TreeSet<>();
-    private NavigableSet<String> _encounteredTestNames = new TreeSet<>();
-    private NavigableSet<String> _encounteredProviderVersions = new TreeSet<>();
-    private NavigableSet<String> _encounteredProtocolVersions = new TreeSet<>();
-
-    private SeriesStatistics _latencyStatistics = new SeriesStatistics();
 
     public ParticipantResultAggregator(Class<? extends ParticipantResult> targetClass, String aggregateResultName)
     {

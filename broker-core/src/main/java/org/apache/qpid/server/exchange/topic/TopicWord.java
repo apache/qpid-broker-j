@@ -25,7 +25,7 @@ public final class TopicWord
 {
     public static final TopicWord ANY_WORD = new TopicWord("*");
     public static final TopicWord WILDCARD_WORD = new TopicWord("#");
-    private String _word;
+    private final String _word;
 
     public TopicWord(String s)
     {

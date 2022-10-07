@@ -53,8 +53,8 @@ import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 public class SubjectCreator
 {
     private final NamedAddressSpace _addressSpace;
-    private AuthenticationProvider<?> _authenticationProvider;
-    private Collection<GroupProvider<?>> _groupProviders;
+    private final AuthenticationProvider<?> _authenticationProvider;
+    private final Collection<GroupProvider<?>> _groupProviders;
 
     public SubjectCreator(AuthenticationProvider<?> authenticationProvider,
                           Collection<GroupProvider<?>> groupProviders,

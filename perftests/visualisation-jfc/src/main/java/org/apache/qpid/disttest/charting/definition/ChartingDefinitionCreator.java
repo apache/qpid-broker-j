@@ -46,7 +46,7 @@ public class ChartingDefinitionCreator
     public static final String Y_AXIS_LOWER_BOUND_KEY = "yAxisLowerBound";
     public static final String Y_AXIS_UPPER_BOUND_KEY = "yAxisUpperBound";
 
-    private SeriesDefinitionCreator _seriesDefinitionCreator = new SeriesDefinitionCreator();
+    private final SeriesDefinitionCreator _seriesDefinitionCreator = new SeriesDefinitionCreator();
 
     public List<ChartingDefinition> createFromFileOrDirectory(String chartingDefinitionFileOrDirectory)
     {

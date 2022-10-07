@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class QueueMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class QueueMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String QUEUE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue";
@@ -88,7 +88,7 @@ public class QueueMessages
         LoggerFactory.getLogger(UNDERFULL_LOG_HIERARCHY);
         LoggerFactory.getLogger(UPDATE_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Queue_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Queue_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -100,12 +100,12 @@ public class QueueMessages
      */
     public static LogMessage CLOSE(String param1)
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = MESSAGES.getString("CLOSE");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -160,12 +160,12 @@ public class QueueMessages
      */
     public static LogMessage CREATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("CREATE");
+        String rawMessage = MESSAGES.getString("CREATE");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -220,12 +220,12 @@ public class QueueMessages
      */
     public static LogMessage DELETE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("DELETE");
+        String rawMessage = MESSAGES.getString("DELETE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -280,12 +280,12 @@ public class QueueMessages
      */
     public static LogMessage DROPPED(Number param1, Number param2, Number param3, Number param4, Number param5)
     {
-        String rawMessage = _messages.getString("DROPPED");
+        String rawMessage = MESSAGES.getString("DROPPED");
 
         final Object[] messageArguments = {param1, param2, param3, param4, param5};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -340,12 +340,12 @@ public class QueueMessages
      */
     public static LogMessage MALFORMED_MESSAGE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("MALFORMED_MESSAGE");
+        String rawMessage = MESSAGES.getString("MALFORMED_MESSAGE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -400,12 +400,12 @@ public class QueueMessages
      */
     public static LogMessage OPEN(String param1, String param2)
     {
-        String rawMessage = _messages.getString("OPEN");
+        String rawMessage = MESSAGES.getString("OPEN");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -460,12 +460,12 @@ public class QueueMessages
      */
     public static LogMessage OPERATION(String param1)
     {
-        String rawMessage = _messages.getString("OPERATION");
+        String rawMessage = MESSAGES.getString("OPERATION");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -520,12 +520,12 @@ public class QueueMessages
      */
     public static LogMessage OVERFULL(Number param1, Number param2, Number param3, Number param4)
     {
-        String rawMessage = _messages.getString("OVERFULL");
+        String rawMessage = MESSAGES.getString("OVERFULL");
 
         final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -580,12 +580,12 @@ public class QueueMessages
      */
     public static LogMessage UNDERFULL(Number param1, Number param2, Number param3, Number param4)
     {
-        String rawMessage = _messages.getString("UNDERFULL");
+        String rawMessage = MESSAGES.getString("UNDERFULL");
 
         final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -640,12 +640,12 @@ public class QueueMessages
      */
     public static LogMessage UPDATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("UPDATE");
+        String rawMessage = MESSAGES.getString("UPDATE");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 

@@ -45,15 +45,13 @@ public class Client implements ResultReporter
     private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
 
     private final ClientJmsDelegate _clientJmsDelegate;
-
     private final CountDownLatch _latch = new CountDownLatch(1);
-    private Visitor _visitor;
     private final AtomicReference<ClientState> _state;
-    private ParticipantExecutorRegistry _participantRegistry = new ParticipantExecutorRegistry();
-    private Set<Participant> _participants = new HashSet<>();
-
+    private final Set<Participant> _participants = new HashSet<>();
     private final ExecutorService _executorService = Executors.newCachedThreadPool(new DaemonThreadFactory());
 
+    private Visitor _visitor;
+    private ParticipantExecutorRegistry _participantRegistry = new ParticipantExecutorRegistry();
 
     public Client(final ClientJmsDelegate delegate) throws NamingException
     {

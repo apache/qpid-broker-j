@@ -481,8 +481,8 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
         private final MessageProducer _senderProducer;
         private final Session _senderSession;
         private final int _numMessages;
+        private final CountDownLatch _sendLatch = new CountDownLatch(1);
         private volatile Exception _exception;
-        private CountDownLatch _sendLatch = new CountDownLatch(1);
 
         MessageSender(MessageProducer producer, Session producerSession, int numMessages, AtomicInteger messageCounter)
         {

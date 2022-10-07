@@ -44,7 +44,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class RequestInfoParserTest extends UnitTestBase
 {
-    private HttpServletRequest _request = mock(HttpServletRequest.class);
+    private final HttpServletRequest _request = mock(HttpServletRequest.class);
 
     @Test
     public void testGetNoHierarchy()

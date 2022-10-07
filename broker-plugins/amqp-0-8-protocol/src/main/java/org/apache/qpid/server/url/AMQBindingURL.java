@@ -34,12 +34,13 @@ public class AMQBindingURL implements BindingURL
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQBindingURL.class);
 
     private final String _url;
+    private final Map<String, String> _options;
+
     private String _exchangeClass = ExchangeDefaults.DIRECT_EXCHANGE_CLASS;
     private String _exchangeName = "";
     private String _destinationName = "";
     private String _queueName = "";
     private String[] _bindingKeys = new String[0];
-    private Map<String, String> _options;
 
     public AMQBindingURL(String url) throws URISyntaxException
     {

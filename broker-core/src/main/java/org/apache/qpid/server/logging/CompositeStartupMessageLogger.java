@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging;
 
 public class CompositeStartupMessageLogger implements MessageLogger
 {
-    private MessageLogger[] _loggers;
+    private final MessageLogger[] _loggers;
     
     public CompositeStartupMessageLogger(MessageLogger[] loggers)
     {

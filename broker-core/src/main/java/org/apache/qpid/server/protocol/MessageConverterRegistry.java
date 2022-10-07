@@ -29,7 +29,8 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 
 public class MessageConverterRegistry
 {
-    private static Map<Class<? extends ServerMessage>, Map<Class<? extends ServerMessage>, MessageConverter>> _converters =
+    private static final Map<Class<? extends ServerMessage>, Map<Class<? extends ServerMessage>, MessageConverter>>
+            CONVERTERS =
             new HashMap<Class<? extends ServerMessage>, Map<Class<? extends ServerMessage>, MessageConverter>>();
 
     static
@@ -37,11 +38,11 @@ public class MessageConverterRegistry
 
         for(MessageConverter<? extends ServerMessage, ? extends ServerMessage> converter : (new QpidServiceLoader()).instancesOf(MessageConverter.class))
         {
-            Map<Class<? extends ServerMessage>, MessageConverter> map = _converters.get(converter.getInputClass());
+            Map<Class<? extends ServerMessage>, MessageConverter> map = CONVERTERS.get(converter.getInputClass());
             if(map == null)
             {
                 map = new HashMap<Class<? extends ServerMessage>, MessageConverter>();
-                _converters.put(converter.getInputClass(), map);
+                CONVERTERS.put(converter.getInputClass(), map);
             }
             map.put(converter.getOutputClass(),converter);
         }
@@ -49,10 +50,10 @@ public class MessageConverterRegistry
 
     public static <M  extends ServerMessage,N  extends ServerMessage> MessageConverter<M, N> getConverter(Class<M> from, Class<N> to)
     {
-        Map<Class<? extends ServerMessage>, MessageConverter> map = _converters.get(from);
+        Map<Class<? extends ServerMessage>, MessageConverter> map = CONVERTERS.get(from);
         if(map == null)
         {
-            map = _converters.get(ServerMessage.class);
+            map = CONVERTERS.get(ServerMessage.class);
         }
         return map == null ? null : map.get(to);
     }

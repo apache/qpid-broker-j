@@ -47,15 +47,14 @@ import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
 public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFilePrincipalDatabase<HashedUser>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Base64MD5PasswordFilePrincipalDatabase.class);
-    private List<String> _mechanisms = Collections.unmodifiableList(Arrays.asList(CramMd5HashedNegotiator.MECHANISM,
-                                                                                  CramMd5HexNegotiator.MECHANISM,
-                                                                                  PlainNegotiator.MECHANISM));
+    private final List<String> _mechanisms = Collections.unmodifiableList(Arrays.asList(CramMd5HashedNegotiator.MECHANISM,
+                                                                                        CramMd5HexNegotiator.MECHANISM,
+                                                                                        PlainNegotiator.MECHANISM));
 
     public Base64MD5PasswordFilePrincipalDatabase(final PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider)
     {
         super(authenticationProvider);
     }
-
 
     /**
      * Used to verify that the presented Password is correct. Currently only used by Management Console

@@ -66,23 +66,21 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class PortFactoryTest extends UnitTestBase
 {
-    private UUID _portId = UUID.randomUUID();
-    private int _portNumber;
-    private Set<String> _tcpStringSet = Collections.singleton(Transport.TCP.name());
-    private Set<Transport> _tcpTransports = Collections.singleton(Transport.TCP);
-    private Set<String> _sslStringSet = Collections.singleton(Transport.SSL.name());
-    private Set<Transport> _sslTransports = Collections.singleton(Transport.SSL);
+    private final UUID _portId = UUID.randomUUID();
+    private final Set<String> _tcpStringSet = Collections.singleton(Transport.TCP.name());
+    private final Set<Transport> _tcpTransports = Collections.singleton(Transport.TCP);
+    private final Set<String> _sslStringSet = Collections.singleton(Transport.SSL.name());
+    private final Set<Transport> _sslTransports = Collections.singleton(Transport.SSL);
+    private final Broker _broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, mock(Principal.class));
+    private final KeyStore _keyStore = mock(KeyStore.class);
+    private final TrustStore _trustStore = mock(TrustStore.class);
+    private final String _authProviderName = "authProvider";
+    private final AuthenticationProvider _authProvider = mock(AuthenticationProvider.class);
 
     private Map<String, Object> _attributes = new HashMap<String, Object>();
-
-    private Broker _broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, mock(Principal.class));
-    private KeyStore _keyStore = mock(KeyStore.class);
-    private TrustStore _trustStore = mock(TrustStore.class);
-    private String _authProviderName = "authProvider";
-    private AuthenticationProvider _authProvider = mock(AuthenticationProvider.class);
+    private int _portNumber;
     private ConfiguredObjectFactoryImpl _factory;
     private Port<?> _port;
-
 
     @Before
     public void setUp() throws Exception

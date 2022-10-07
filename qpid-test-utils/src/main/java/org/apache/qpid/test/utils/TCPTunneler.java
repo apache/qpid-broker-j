@@ -142,8 +142,8 @@ public class TCPTunneler implements AutoCloseable
         private final Collection<TunnelListener> _tunnelListeners;
         private final TunnelListener _notifyingListener;
         private final int _bufferSize;
+        private final ExecutorService _executor;
         private volatile ServerSocket _serverSocket;
-        private volatile ExecutorService _executor;
         private int _actualLocalPort;
 
         public TCPWorker(final int localPort,
@@ -548,7 +548,7 @@ public class TCPTunneler implements AutoCloseable
 
         private class AutoClosingStreamForwarder implements Runnable
         {
-            private StreamForwarder _streamForwarder;
+            private final StreamForwarder _streamForwarder;
 
             public AutoClosingStreamForwarder(StreamForwarder streamForwarder)
             {

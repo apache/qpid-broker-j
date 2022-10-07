@@ -46,7 +46,7 @@ public interface ServerMessageMutatorFactory<T extends ServerMessage> extends Pl
 
     class ServerMessageMutatorFactoryRegistry
     {
-        private static Map<String, ServerMessageMutatorFactory> MUTATOR_FACTORIES =
+        private static final Map<String, ServerMessageMutatorFactory> MUTATOR_FACTORIES =
                 StreamSupport.stream(new QpidServiceLoader().instancesOf(ServerMessageMutatorFactory.class)
                                                             .spliterator(), false).collect(
                         Collectors.toMap(Pluggable::getType, i -> i));

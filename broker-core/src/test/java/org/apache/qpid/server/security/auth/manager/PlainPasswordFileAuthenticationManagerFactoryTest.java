@@ -43,10 +43,10 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class PlainPasswordFileAuthenticationManagerFactoryTest extends UnitTestBase
 {
 
-    private ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
-    private Map<String, Object> _configuration = new HashMap<String, Object>();
+    private final ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
+    private final Map<String, Object> _configuration = new HashMap<String, Object>();
+    private final Broker _broker = BrokerTestHelper.createBrokerMock();
     private File _emptyPasswordFile;
-    private Broker _broker = BrokerTestHelper.createBrokerMock();
 
     @Before
     public void setUp() throws Exception

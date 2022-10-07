@@ -25,8 +25,8 @@ import java.lang.reflect.Type;
 
 public class ParameterizedTypeImpl implements ParameterizedType
 {
-    private Class<?> _rawType;
-    private Type[] _typeArguments;
+    private final Class<?> _rawType;
+    private final Type[] _typeArguments;
 
     public ParameterizedTypeImpl(Class<?> rawType, Class<?>... typeArguments)
     {

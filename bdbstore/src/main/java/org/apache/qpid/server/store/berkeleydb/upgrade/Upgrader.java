@@ -45,8 +45,8 @@ public class Upgrader
 
     static final String VERSION_DB_NAME = "DB_VERSION";
 
-    private Environment _environment;
-    private ConfiguredObject<?> _parent;
+    private final Environment _environment;
+    private final ConfiguredObject<?> _parent;
 
     public Upgrader(Environment environment, ConfiguredObject<?> parent)
     {

@@ -196,7 +196,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final Map<Long, ServerMessage<?>> _recoveredMessages;
         private final Map<Long, StoredMessage<?>> _unusedMessages;
         private final Map<UUID, Integer> _unknownQueuesWithMessages;
-        private Map<Queue<?>, Integer> _queuesWithUnknownMessages;
+        private final Map<Queue<?>, Integer> _queuesWithUnknownMessages;
 
         private MessageInstanceVisitor(final QueueManagingVirtualHost<?> virtualHost,
                                        final MessageStore store,

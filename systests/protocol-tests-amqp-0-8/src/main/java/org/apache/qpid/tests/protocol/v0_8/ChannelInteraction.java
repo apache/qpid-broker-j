@@ -28,7 +28,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenBody;
 
 public class ChannelInteraction
 {
-    private Interaction _interaction;
+    private final Interaction _interaction;
 
     public ChannelInteraction(final Interaction interaction)
     {

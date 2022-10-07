@@ -38,16 +38,17 @@ public class TlsHelper
     private static final String DN_CLIENT_APP1 = "CN=app1@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA";
     private static final String DN_CLIENT_APP2 = "CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA";
     private static final String CERT_ALIAS_ROOT_CA = "rootca";
-    public static final String CERT_ALIAS_APP1 = "app1";
-    public static final String CERT_ALIAS_APP2 = "app2";
     private static final String BROKER_ALIAS = "java-broker";
 
-    private Path _brokerKeyStore;
-    private Path _brokerTrustStore;
-    private Path _clientKeyStore;
-    private Path _clientTrustStore;
-    private X509Certificate _caCertificate;
-    private KeyCertificatePair _clientKeyPair1;
+    public static final String CERT_ALIAS_APP1 = "app1";
+    public static final String CERT_ALIAS_APP2 = "app2";
+
+    private final Path _brokerKeyStore;
+    private final Path _brokerTrustStore;
+    private final Path _clientKeyStore;
+    private final Path _clientTrustStore;
+    private final X509Certificate _caCertificate;
+    private final KeyCertificatePair _clientKeyPair1;
     private final KeyCertificatePair _caPair;
 
     public TlsHelper(TlsResource tlsResource) throws Exception

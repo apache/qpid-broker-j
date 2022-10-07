@@ -83,9 +83,8 @@ import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 public class BDBHAVirtualHostNodeTest extends UnitTestBase
 {
     private final static Logger LOGGER = LoggerFactory.getLogger(BDBHAVirtualHostNodeTest.class);
-
+    private final PortHelper _portHelper = new PortHelper();
     private BDBHAVirtualHostNodeTestHelper _helper;
-    private PortHelper _portHelper = new PortHelper();
 
     @Before
     public void setUp() throws Exception

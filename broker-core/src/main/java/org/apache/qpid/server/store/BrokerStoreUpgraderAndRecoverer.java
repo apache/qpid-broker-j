@@ -48,8 +48,6 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerStoreUpgraderAndRecoverer.class);
 
-
-
     public static final String VIRTUALHOSTS = "virtualhosts";
     private final SystemConfig<?> _systemConfig;
 
@@ -445,7 +443,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 
     private static class Upgrader_6_0_to_6_1 extends StoreUpgraderPhase
     {
-        private boolean _hasAcl = false;
+        private final boolean _hasAcl = false;
         private UUID _rootRecordId;
 
         public Upgrader_6_0_to_6_1()
@@ -556,7 +554,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
     private static class Upgrader_6_1_to_7_0 extends StoreUpgraderPhase
     {
 
-        private Map<String,String> BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT = new HashMap<>();
+        private final Map<String,String> BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT = new HashMap<>();
         {
             BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT.put("connection.sessionCountLimit", "qpid.port.sessionCountLimit");
             BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT.put("connection.heartBeatDelay", "qpid.port.heartbeatDelay");
@@ -1004,8 +1002,8 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 
     private static class MutableEntry
     {
+        private final Object _value;
         private String _key;
-        private Object _value;
 
         public MutableEntry(String key, Object value)
         {

@@ -28,10 +28,10 @@ import ch.qos.logback.core.helpers.CyclicBuffer;
 
 public class RecordEventAppender extends AppenderBase<ILoggingEvent>
 {
+    private final int _size;
+    private final AtomicLong _recordId;
 
     private CyclicBuffer<LogRecord> _buffer;
-    private final int _size;
-    private AtomicLong _recordId;
 
     RecordEventAppender(final int size)
     {

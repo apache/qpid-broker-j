@@ -27,8 +27,8 @@ import org.apache.qpid.server.store.Transaction.EnqueueRecord;
 
 public class TestRecord implements EnqueueRecord, Transaction.DequeueRecord, MessageEnqueueRecord
 {
-    private TransactionLogResource _queue;
-    private EnqueueableMessage _message;
+    private final TransactionLogResource _queue;
+    private final EnqueueableMessage _message;
 
     public TestRecord(TransactionLogResource queue, EnqueueableMessage message)
     {

@@ -24,7 +24,8 @@ import java.util.concurrent.ThreadFactory;
 
 public final class DaemonThreadFactory implements ThreadFactory
 {
-    private String _threadName;
+    private final String _threadName;
+
     public DaemonThreadFactory(String threadName)
     {
         _threadName = threadName;

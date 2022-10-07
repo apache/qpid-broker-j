@@ -326,17 +326,18 @@ public class AbruptClientDisconnectTest extends JmsTestBase
         {
         }
     }
+
     private class Producer implements Runnable
     {
         private final Runnable _runnable;
         private final Session _session;
         private final MessageProducer _messageProducer;
         private final int _numberOfMessagesToInvokeRunnableAfter;
+        private final AtomicBoolean _closed = new AtomicBoolean();
+
         private volatile int _publishedMessageCounter;
         private volatile Exception _exception;
         private volatile Thread _thread;
-
-        private AtomicBoolean _closed = new AtomicBoolean();
 
         Producer(Connection connection, Destination queue, int acknowledgeMode,
                  int numberOfMessagesToInvokeRunnableAfter, Runnable runnableToInvoke)
@@ -407,10 +408,11 @@ public class AbruptClientDisconnectTest extends JmsTestBase
         private final Session _session;
         private final MessageConsumer _messageConsumer;
         private final int _numberOfMessagesToInvokeRunnableAfter;
+        private final AtomicBoolean _closed = new AtomicBoolean();
+
         private volatile int _consumedMessageCounter;
         private volatile Exception _exception;
         private volatile Thread _thread;
-        private AtomicBoolean _closed = new AtomicBoolean();
         private volatile int _lastSeenMessageIndex;
 
         Consumer(Connection connection,

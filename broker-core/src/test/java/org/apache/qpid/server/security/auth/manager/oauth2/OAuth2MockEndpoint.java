@@ -30,8 +30,8 @@ import javax.servlet.http.HttpServletResponse;
 
 class OAuth2MockEndpoint
 {
+    private final Map<String, String> _expectedParameters = new HashMap<>();
     private HttpServletResponse _servletResponse;
-    private Map<String, String> _expectedParameters = new HashMap<>();
     private String _expectedMethod;
     private String _responseString;
     private int _responseCode = 200;

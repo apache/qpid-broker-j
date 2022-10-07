@@ -51,7 +51,7 @@ public class Slf4jLoggingHandler extends Handler
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Slf4jLoggingHandler.class);
 
-    private static Pattern NOT_DELETED_DUE_TO_PROTECTION = Pattern.compile("Cleaner has ([0-9]+) files not deleted because they are protected.*");
+    private static final Pattern NOT_DELETED_DUE_TO_PROTECTION = Pattern.compile("Cleaner has ([0-9]+) files not deleted because they are protected.*");
 
     private final ConcurrentMap<String,Logger> _loggers = new ConcurrentHashMap<>();
     private final int _logHandlerCleanerProtectedFilesLimit;

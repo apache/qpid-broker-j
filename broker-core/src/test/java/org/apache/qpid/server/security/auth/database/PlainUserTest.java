@@ -34,8 +34,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class PlainUserTest extends UnitTestBase
 {
 
-    private String USERNAME = "username";
-    private String PASSWORD = "password";
+    private final String USERNAME = "username";
+    private final String PASSWORD = "password";
 
     @Test
     public void testTooLongArrayConstructor()

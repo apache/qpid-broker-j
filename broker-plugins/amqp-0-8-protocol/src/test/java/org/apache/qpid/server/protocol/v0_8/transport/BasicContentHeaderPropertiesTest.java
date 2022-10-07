@@ -37,10 +37,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class BasicContentHeaderPropertiesTest extends UnitTestBase
 {
-
+    private final String _testString = "This is a test string";
     private BasicContentHeaderProperties _testProperties;
     private FieldTable _testTable;
-    private String _testString = "This is a test string";
 
     /**
      * Currently only test setting/getting String, int and boolean props

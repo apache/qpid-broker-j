@@ -44,11 +44,12 @@ class MockStoreTransaction implements Transaction
 {
     enum TransactionState {NOT_STARTED, STARTED, COMMITTED, ABORTED};
 
+    private final boolean _throwExceptionOnQueueOp;
+
     private TransactionState _state = TransactionState.NOT_STARTED;
 
     private int _numberOfEnqueuedMessages = 0;
     private int _numberOfDequeuedMessages = 0;
-    private boolean _throwExceptionOnQueueOp;
 
     public MockStoreTransaction(boolean throwExceptionOnQueueOp)
     {

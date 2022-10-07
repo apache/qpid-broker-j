@@ -39,14 +39,13 @@ import org.apache.qpid.server.model.StatisticUnit;
 
 public class QpidCollector extends Collector
 {
-    private final static MetricFamilySamples IGNORED = new MetricFamilySamples(null, null, null, null);
+    private static final MetricFamilySamples IGNORED = new MetricFamilySamples(null, null, null, null);
     static final String COUNT_SUFFIX = "count";
     static final String TOTAL_SUFFIX = "total";
     private final Predicate<ConfiguredObjectStatistic<?,?>> _includeStatisticFilter;
     private final Predicate<String> _includeMetricFilter;
-    private ConfiguredObject<?> _root;
-    private Model _model;
-
+    private final ConfiguredObject<?> _root;
+    private final Model _model;
 
     QpidCollector(final ConfiguredObject<?> root,
                   final Predicate<ConfiguredObjectStatistic<?,?>> includeStatisticFilter,

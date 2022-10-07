@@ -28,11 +28,12 @@ public abstract class ParticipantConfig
 
     public static final String DURATION_OVERRIDE_SYSTEM_PROPERTY = "qpid.disttest.duration";
 
-    private String _destinationName;
+    private final String _destinationName;
+    private final String _name;
+    private final int _batchSize;
+
     private boolean _isTopic;
     private long _numberOfMessages;
-    private String _name;
-    private int _batchSize;
     private long _maximumDuration;
 
     public ParticipantConfig()

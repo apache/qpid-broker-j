@@ -65,6 +65,14 @@ public class LoggingOutputStream extends OutputStream
      */
     private static final int DEFAULT_BUFFER_LENGTH = 2048;
     /**
+     * The category to write to.
+     */
+    private final Logger logger;
+    /**
+     * The priority to use when writing to the Category.
+     */
+    private final Level level;
+    /**
      * Used to maintain the contract of [EMAIL PROTECTED] #close()}.
      */
     private boolean hasBeenClosed = false;
@@ -83,15 +91,6 @@ public class LoggingOutputStream extends OutputStream
      * Remembers the size of the buffer for speed.
      */
     private int bufLength;
-    /**
-     * The category to write to.
-     */
-    private Logger logger;
-
-    /**
-     * The priority to use when writing to the Category.
-     */
-    private Level level;
 
     /**
      * Creates the LoggingOutputStream to flush to the given Category.

@@ -59,20 +59,20 @@ public class UpgradeFrom7To8 extends AbstractStoreUpgrade
 {
     private static final TypeReference<HashMap<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<HashMap<String,Object>>(){};
 
-    @SuppressWarnings("serial")
-    private Map<String, String> _defaultExchanges = new HashMap<String, String>()
+    private static final DatabaseEntry MESSAGE_METADATA_SEQ_KEY = new DatabaseEntry("MESSAGE_METADATA_SEQ_KEY".getBytes(Charset.forName("UTF-8")));
+
+    private static final SequenceConfig MESSAGE_METADATA_SEQ_CONFIG = SequenceConfig.DEFAULT.
+                setAllowCreate(true).
+                setWrap(true).
+                setCacheSize(100000);
+
+    private final Map<String, String> _defaultExchanges = new HashMap<String, String>()
     {{
         put("amq.direct", "direct");
         put("amq.topic", "topic");
         put("amq.fanout", "fanout");
         put("amq.match", "headers");
     }};
-
-    private static final DatabaseEntry MESSAGE_METADATA_SEQ_KEY = new DatabaseEntry("MESSAGE_METADATA_SEQ_KEY".getBytes(Charset.forName("UTF-8")));
-    private static SequenceConfig MESSAGE_METADATA_SEQ_CONFIG = SequenceConfig.DEFAULT.
-                setAllowCreate(true).
-                setWrap(true).
-                setCacheSize(100000);
 
     @Override
     public void performUpgrade(Environment environment, UpgradeInteractionHandler handler, ConfiguredObject<?> parent)

@@ -410,11 +410,11 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         private static final String DLQ_ENABLED_ARGUMENT = "x-qpid-dlq-enabled";
         private static final String  DEFAULT_DLE_NAME_SUFFIX = "_DLE";
 
-        private Map<String, String> _missingAmqpExchanges = new HashMap<String, String>(DEFAULT_EXCHANGES);
-        private ConfiguredObjectRecord _virtualHostRecord;
+        private final Map<String, String> _missingAmqpExchanges = new HashMap<String, String>(DEFAULT_EXCHANGES);
+        private final Map<UUID, String> _queuesMissingAlternateExchange = new HashMap<>();
+        private final Map<String, ConfiguredObjectRecord> _exchanges = new HashMap<>();
 
-        private Map<UUID, String> _queuesMissingAlternateExchange = new HashMap<>();
-        private Map<String, ConfiguredObjectRecord> _exchanges = new HashMap<>();
+        private ConfiguredObjectRecord _virtualHostRecord;
 
         public Upgrader_0_4_to_2_0()
         {
@@ -617,7 +617,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         private final Map<UUID, ConfiguredObjectRecord> _exchanges = new HashMap<>();
         private final Map<UUID, String> _queues = new HashMap<>();
         private final Map<String, List<Map<String,Object>>> _queueBindings = new HashMap<>();
-        private Set<UUID> _destinationsWithAlternateExchange = new HashSet<>();
+        private final Set<UUID> _destinationsWithAlternateExchange = new HashSet<>();
 
 
         public Upgrader_6_1_to_7_0()

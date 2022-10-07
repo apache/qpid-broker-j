@@ -24,11 +24,11 @@ import org.apache.qpid.disttest.message.CreateConsumerCommand;
 
 public class ConsumerConfig extends ParticipantConfig
 {
-    private boolean _isDurableSubscription;
-    private boolean _isBrowsingSubscription;
-    private String _selector;
-    private boolean _noLocal;
-    private boolean _synchronous;
+    private final boolean _isDurableSubscription;
+    private final boolean _isBrowsingSubscription;
+    private final String _selector;
+    private final boolean _noLocal;
+    private final boolean _synchronous;
     private boolean _evaluateLatency;
 
     public ConsumerConfig()

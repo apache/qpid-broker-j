@@ -31,11 +31,11 @@ import org.apache.qpid.server.transport.network.TransportEncryption;
 
 class TCPandSSLTransport implements AcceptingTransport
 {
+    private final AmqpPort<?> _port;
+    private final Set<Protocol> _supported;
+    private final Protocol _defaultSupportedProtocolReply;
     private NonBlockingNetworkTransport _networkTransport;
     private volatile Set<Transport> _transports;
-    private AmqpPort<?> _port;
-    private Set<Protocol> _supported;
-    private Protocol _defaultSupportedProtocolReply;
     private NetworkConnectionScheduler _scheduler;
 
     TCPandSSLTransport(final Set<Transport> transports,

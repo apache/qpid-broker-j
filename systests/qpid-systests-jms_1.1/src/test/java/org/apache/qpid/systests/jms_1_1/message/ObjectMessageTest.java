@@ -486,8 +486,8 @@ public class ObjectMessageTest extends JmsTestBase
 
     private static class A implements Serializable
     {
-        private String sValue;
-        private int iValue;
+        private final String sValue;
+        private final int iValue;
 
         A(int i, String s)
         {
@@ -515,7 +515,7 @@ public class ObjectMessageTest extends JmsTestBase
 
     private static class B extends A
     {
-        private long time;
+        private final long time;
 
         B(int i, String s)
         {

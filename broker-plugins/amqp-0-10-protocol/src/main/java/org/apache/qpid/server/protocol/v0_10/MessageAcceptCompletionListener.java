@@ -31,8 +31,8 @@ public class MessageAcceptCompletionListener implements Method.CompletionListene
     private final MessageInstance _entry;
     private final ServerSession _session;
     private final MessageInstanceConsumer _consumer;
+    private final boolean _restoreCredit;
     private long _messageSize;
-    private boolean _restoreCredit;
 
     public MessageAcceptCompletionListener(ConsumerTarget_0_10 sub,
                                            final MessageInstanceConsumer consumer,

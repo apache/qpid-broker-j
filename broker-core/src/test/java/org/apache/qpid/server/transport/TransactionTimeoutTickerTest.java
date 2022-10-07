@@ -18,7 +18,6 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.server.transport;
 
 import static org.junit.Assert.assertEquals;
@@ -40,12 +39,12 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class TransactionTimeoutTickerTest extends UnitTestBase
 {
+    private final Supplier<Long> _dateSupplier = mock(Supplier.class);
+    private final Action<Long> _notificationAction = mock(Action.class);
+    private final long _timeoutValue = 100;
+    private final long _notificationRepeatPeriod = 5000;
 
     private TransactionTimeoutTicker _ticker;
-    private Supplier<Long> _dateSupplier = mock(Supplier.class);
-    private Action<Long> _notificationAction = mock(Action.class);
-    private long _timeoutValue = 100;
-    private long _notificationRepeatPeriod = 5000;
 
     @Test
     public void testTickWhenNoTransaction() throws Exception

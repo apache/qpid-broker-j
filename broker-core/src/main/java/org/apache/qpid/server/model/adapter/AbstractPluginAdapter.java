@@ -31,7 +31,7 @@ import org.apache.qpid.server.model.Plugin;
 
 public abstract class AbstractPluginAdapter<X extends Plugin<X>> extends AbstractConfiguredObject<X> implements Plugin<X>
 {
-    private Broker _broker;
+    private final Broker _broker;
 
     protected AbstractPluginAdapter(Map<String, Object> attributes, Broker broker)
     {

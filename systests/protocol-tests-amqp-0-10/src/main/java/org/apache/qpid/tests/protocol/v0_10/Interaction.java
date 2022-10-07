@@ -45,15 +45,15 @@ public class Interaction extends AbstractInteraction<Interaction>
 {
     private final BrokerAdmin _brokerAdmin;
     private final BrokerAdmin.PortType _portType;
+    private final ConnectionInteraction _connectionInteraction;
+    private final SessionInteraction _sessionInteraction;
+    private final MessageInteraction _messageInteraction;
+    private final ExecutionInteraction _executionInteraction;
+    private final QueueInteraction _queueInteraction;
+    private final ExchangeInteraction _exchangeInteraction;
+    private final TxInteraction _txInteraction;
     private byte[] _protocolHeader;
-    private ConnectionInteraction _connectionInteraction;
-    private SessionInteraction _sessionInteraction;
-    private MessageInteraction _messageInteraction;
-    private ExecutionInteraction _executionInteraction;
-    private QueueInteraction _queueInteraction;
-    private ExchangeInteraction _exchangeInteraction;
     private int _channelId;
-    private TxInteraction _txInteraction;
 
     public Interaction(final FrameTransport frameTransport,
                        final BrokerAdmin brokerAdmin,

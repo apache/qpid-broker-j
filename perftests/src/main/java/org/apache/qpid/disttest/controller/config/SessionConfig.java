@@ -34,10 +34,10 @@ public class SessionConfig
     private static final List<ProducerConfig> EMPTY_PRODUCER_LIST = Collections.emptyList();
     private static final List<ConsumerConfig> EMPTY_CONSUMER_LIST = Collections.emptyList();
 
-    private int _acknowledgeMode;
-    private String _sessionName;
-    private List<ProducerConfig> _producers;
-    private List<ConsumerConfig> _consumers;
+    private final int _acknowledgeMode;
+    private final String _sessionName;
+    private final List<ProducerConfig> _producers;
+    private final List<ConsumerConfig> _consumers;
 
     public SessionConfig()
     {

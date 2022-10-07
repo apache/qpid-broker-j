@@ -56,15 +56,14 @@ import org.apache.qpid.test.utils.PortHelper;
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-
 /**
  * Class to test that specific VHN operations result in the expected Operational Log message(s) being performed.
  */
 public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 {
+    private final PortHelper _portHelper = new PortHelper();
     private BDBHAVirtualHostNodeTestHelper _helper;
     private EventLogger _eventLogger;
-    private PortHelper _portHelper = new PortHelper();
 
     @Before
     public void setUp() throws Exception
@@ -418,9 +417,9 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
     static class LogMessageMatcher implements ArgumentMatcher<LogMessage>
     {
-        private String _expectedMessage;
+        private final String _expectedMessage;
         private String _expectedMessageFailureDescription = null;
-        private String _expectedHierarchy;
+        private final String _expectedHierarchy;
         private String _expectedHierarchyFailureDescription = null;
 
         public LogMessageMatcher(String expectedMessage, String expectedHierarchy)
@@ -449,7 +448,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
     static class LogSubjectMatcher implements ArgumentMatcher<LogSubject>
     {
-        private LogSubject _logSubject;
+        private final LogSubject _logSubject;
         private String _failureDescription = null;
 
         public LogSubjectMatcher(LogSubject logSubject)

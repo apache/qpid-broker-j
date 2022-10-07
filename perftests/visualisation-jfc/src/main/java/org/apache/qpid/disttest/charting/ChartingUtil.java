@@ -77,7 +77,7 @@ public class ChartingUtil
     public static final String JDBC_URL_DEFAULT = null;
 
 
-    private Map<String,String> _cliOptions = new HashMap<String, String>();
+    private final Map<String,String> _cliOptions = new HashMap<String, String>();
 
     {
         _cliOptions.put(OUTPUT_DIR_PROP, OUTPUT_DIR_DEFAULT);

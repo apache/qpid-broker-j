@@ -87,7 +87,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         extends AbstractConfiguredObject<X> implements TrustStore<X>
 {
-    private static Logger LOGGER = LoggerFactory.getLogger(AbstractTrustStore.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTrustStore.class);
 
     protected static final long ONE_DAY = 24L * 60L * 60L * 1000L;
 

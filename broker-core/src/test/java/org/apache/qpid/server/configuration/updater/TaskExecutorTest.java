@@ -346,7 +346,7 @@ public class TaskExecutorTest extends UnitTestBase
 
     private class NeverEndingCallable implements Task<Void, RuntimeException>
     {
-        private CountDownLatch _waitLatch;
+        private final CountDownLatch _waitLatch;
 
         public NeverEndingCallable(CountDownLatch waitLatch)
         {

@@ -24,20 +24,17 @@ import org.apache.qpid.server.transport.ByteBufferSender;
 
 public class CompositeAMQDataBlock extends AMQDataBlock implements EncodableAMQDataBlock
 {
-
-    private AMQDataBlock[] _blocks;
+    private final AMQDataBlock[] _blocks;
 
     public CompositeAMQDataBlock(AMQDataBlock[] blocks)
     {
         _blocks = blocks;
     }
 
-
     public AMQDataBlock[] getBlocks()
     {
         return _blocks;
     }
-
 
     @Override
     public long getSize()

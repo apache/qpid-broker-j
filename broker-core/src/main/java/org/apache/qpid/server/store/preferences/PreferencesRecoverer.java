@@ -40,7 +40,7 @@ import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 public class PreferencesRecoverer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(PreferencesRecoverer.class);
-    private TaskExecutor _executor;
+    private final TaskExecutor _executor;
 
     public PreferencesRecoverer(final TaskExecutor executor)
     {

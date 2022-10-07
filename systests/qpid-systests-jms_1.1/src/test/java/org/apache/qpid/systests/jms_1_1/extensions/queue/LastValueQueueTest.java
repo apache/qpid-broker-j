@@ -18,7 +18,6 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
 import static org.junit.Assert.assertEquals;
@@ -421,14 +420,12 @@ public class LastValueQueueTest extends JmsTestBase
     {
         static final String SHUTDOWN = "SHUTDOWN";
 
-
         private final Queue _queue;
+        private final Map<String, Integer> _messageSequenceNumbersByKey = new HashMap<>();
+        private final CountDownLatch _quarterOfMessagesSentLatch = new CountDownLatch(MSG_COUNT / 4);
+        private final int _numberOfUniqueKeyValues;
 
         private volatile Exception _exception;
-
-        private Map<String, Integer> _messageSequenceNumbersByKey = new HashMap<>();
-        private CountDownLatch _quarterOfMessagesSentLatch = new CountDownLatch(MSG_COUNT / 4);
-        private int _numberOfUniqueKeyValues;
 
         BackgroundMessageProducer(Queue queue, final int numberOfUniqueKeyValues)
         {

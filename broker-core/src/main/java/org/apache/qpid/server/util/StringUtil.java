@@ -35,7 +35,7 @@ public class StringUtil
     private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
    
-    private Random _random = new SecureRandom();
+    private final Random _random = new SecureRandom();
 
     public static String elideDataUrl(final String path)
     {

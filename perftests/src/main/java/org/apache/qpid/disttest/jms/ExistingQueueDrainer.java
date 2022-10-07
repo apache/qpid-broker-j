@@ -33,7 +33,7 @@ import java.util.List;
 public class ExistingQueueDrainer implements QueueCreator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExistingQueueDrainer.class);
-    private static int _drainPollTimeout = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
+    private static final int DRAIN_POLL_TIMEOUT = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
 
     @Override
     public void createQueues(Connection connection, Session session, List<QueueConfig> configs)
@@ -95,7 +95,7 @@ public class ExistingQueueDrainer implements QueueCreator
             MessageConsumer messageConsumer = session.createConsumer(session.createQueue(queueName));
             try
             {
-                while (messageConsumer.receive(_drainPollTimeout) != null)
+                while (messageConsumer.receive(DRAIN_POLL_TIMEOUT) != null)
                 {
                     counter++;
                 }

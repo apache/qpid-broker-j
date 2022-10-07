@@ -17,7 +17,6 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.tests.protocol.v1_0;
 
 import static org.apache.qpid.server.security.auth.manager.AbstractScramAuthenticationManager.PLAIN;
@@ -115,6 +114,9 @@ public class Interaction extends AbstractInteraction<Interaction>
     private final SaslResponse _saslResponse;
     private final BrokerAdmin _brokerAdmin;
     private final BrokerAdmin.PortType _portType;
+    private final Map<Class, FrameBody> _latestResponses = new HashMap<>();
+    private final AtomicLong _receivedDeliveryCount = new AtomicLong();
+    private final AtomicLong _coordinatorCredits = new AtomicLong();
     private byte[] _protocolHeader;
     private UnsignedShort _connectionChannel;
     private UnsignedShort _sessionChannel;
@@ -123,9 +125,6 @@ public class Interaction extends AbstractInteraction<Interaction>
     private Object _decodedLatestDelivery;
     private UnsignedInteger _latestDeliveryId;
     private Map<String, Object> _latestDeliveryApplicationProperties;
-    private Map<Class, FrameBody> _latestResponses = new HashMap<>();
-    private AtomicLong _receivedDeliveryCount = new AtomicLong();
-    private AtomicLong _coordinatorCredits = new AtomicLong();
     private InteractionTransactionalState _transactionalState;
 
     Interaction(final FrameTransport frameTransport, final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType)

@@ -44,18 +44,17 @@ public class DtxBranch
 
     private final Xid _xid;
     private final List<ServerTransaction.Action> _postTransactionActions = new ArrayList<ServerTransaction.Action>();
-    private       State                          _state = State.ACTIVE;
-    private long _timeout;
-    private Map<AMQPSession<?,?>, State> _associatedSessions = new HashMap<>();
+    private final Map<AMQPSession<?,?>, State> _associatedSessions = new HashMap<>();
     private final List<EnqueueRecord> _enqueueRecords = new ArrayList<>();
     private final List<DequeueRecord> _dequeueRecords = new ArrayList<>();
+    private final DtxRegistry _dtxRegistry;
 
+    private State _state = State.ACTIVE;
+    private long _timeout;
     private Transaction _transaction;
     private long _expiration;
     private ScheduledFuture<?> _timeoutFuture;
-    private final DtxRegistry _dtxRegistry;
     private Transaction.StoredXidRecord _storedXidRecord;
-
 
     public enum State
     {

@@ -55,7 +55,7 @@ public class ConfiguredObjectExpressionFactory
 {
 
     private static final String PARENT_ATTR = "$parent";
-    private static Set<String> SPECIAL_ATTRIBUTES = new HashSet<>(Arrays.asList(PARENT_ATTR));
+    private static final Set<String> SPECIAL_ATTRIBUTES = new HashSet<>(Arrays.asList(PARENT_ATTR));
     private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
     private static final DatatypeFactory DATATYPE_FACTORY;
 

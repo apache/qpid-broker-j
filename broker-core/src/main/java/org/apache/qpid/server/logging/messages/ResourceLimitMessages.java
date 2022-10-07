@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class ResourceLimitMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class ResourceLimitMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String RESOURCELIMIT_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "resourcelimit";
@@ -74,7 +74,7 @@ public class ResourceLimitMessages
         LoggerFactory.getLogger(INFO_LOG_HIERARCHY);
         LoggerFactory.getLogger(REJECTED_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.ResourceLimit_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.ResourceLimit_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -86,12 +86,12 @@ public class ResourceLimitMessages
      */
     public static LogMessage ACCEPTED(String param1, String param2, String param3, String param4)
     {
-        String rawMessage = _messages.getString("ACCEPTED");
+        String rawMessage = MESSAGES.getString("ACCEPTED");
 
         final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -146,12 +146,12 @@ public class ResourceLimitMessages
      */
     public static LogMessage INFO(String param1, String param2)
     {
-        String rawMessage = _messages.getString("INFO");
+        String rawMessage = MESSAGES.getString("INFO");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -206,12 +206,12 @@ public class ResourceLimitMessages
      */
     public static LogMessage REJECTED(String param1, String param2, String param3, String param4)
     {
-        String rawMessage = _messages.getString("REJECTED");
+        String rawMessage = MESSAGES.getString("REJECTED");
 
         final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 

@@ -27,7 +27,7 @@ import org.apache.qpid.disttest.results.aggregation.TestResultAggregator;
 
 public class ResultsForAllTests
 {
-    private List<ITestResult> _results = new ArrayList<ITestResult>();
+    private final List<ITestResult> _results = new ArrayList<ITestResult>();
     private boolean _hasErrors;
 
     public List<ITestResult> getTestResults()

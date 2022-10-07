@@ -64,7 +64,7 @@ public class ConfiguredObjectTypeRegistry
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfiguredObjectTypeRegistry.class);
 
-    private static Map<String, Integer> STANDARD_FIRST_FIELDS_ORDER = new HashMap<>();
+    private static final Map<String, Integer> STANDARD_FIRST_FIELDS_ORDER = new HashMap<>();
 
     private static final ConcurrentMap<Class<?>, Class<? extends ConfiguredObject>> CATEGORY_CACHE =
             new ConcurrentHashMap<>();
@@ -87,7 +87,7 @@ public class ConfiguredObjectTypeRegistry
 
     }
 
-    private static Map<String, Integer> STANDARD_LAST_FIELDS_ORDER = new HashMap<>();
+    private static final Map<String, Integer> STANDARD_LAST_FIELDS_ORDER = new HashMap<>();
 
     static
     {

@@ -33,10 +33,10 @@ public class ConnectionInteraction
 
     private final Interaction _interaction;
     private final ConnectionSecureOk _secureOk;
-    private ConnectionStartOk _startOk;
-    private ConnectionTuneOk _tuneOk;
-    private ConnectionOpen _open;
-    private ConnectionHeartbeat _connectionHeartbeat;
+    private final ConnectionStartOk _startOk;
+    private final ConnectionTuneOk _tuneOk;
+    private final ConnectionOpen _open;
+    private final ConnectionHeartbeat _connectionHeartbeat;
 
     public ConnectionInteraction(final Interaction interaction)
     {

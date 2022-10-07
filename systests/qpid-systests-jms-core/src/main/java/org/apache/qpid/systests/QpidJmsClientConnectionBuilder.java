@@ -17,7 +17,6 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.systests;
 
 import java.io.UnsupportedEncodingException;
@@ -43,12 +42,12 @@ import javax.naming.NamingException;
 public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
 {
     private static final AtomicInteger CLIENTID_COUNTER = new AtomicInteger();
+    private final Map<String, Object> _options;
+    private final List<Integer> _failoverPorts = new ArrayList<>();
     private String _host;
     private int _port;
-    private Map<String, Object> _options;
     private boolean _enableTls;
     private boolean _enableFailover;
-    private final List<Integer> _failoverPorts = new ArrayList<>();
     private String _transport = "amqp";
 
     QpidJmsClientConnectionBuilder()

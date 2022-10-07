@@ -38,8 +38,8 @@ import static org.junit.Assert.assertEquals;
 
 
 public class ConfigFileHelperTest extends UnitTestBase {
+    private final ConfigFileHelper _configFileHelper = new ConfigFileHelper();
     private File _testDir;
-    private ConfigFileHelper _configFileHelper = new ConfigFileHelper();
 
     @Before
     public void setUp() throws Exception {

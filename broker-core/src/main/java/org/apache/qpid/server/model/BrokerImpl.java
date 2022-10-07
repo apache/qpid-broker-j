@@ -98,11 +98,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerImpl.class);
     private static final Logger DIRECT_MEMORY_USAGE_LOGGER = LoggerFactory.getLogger("org.apache.qpid.server.directMemory.broker");
-
     private static final Pattern MODEL_VERSION_PATTERN = Pattern.compile("^\\d+\\.\\d+$");
-
     private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
-
     public static final String MANAGEMENT_MODE_AUTHENTICATION = "MANAGEMENT_MODE_AUTHENTICATION";
 
     private final Thread _shutdownHook = new Thread(new ShutdownService(), "QpidBrokerShutdownHook");
@@ -112,8 +109,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private final BrokerPrincipal _principal;
 
-    private AuthenticationProvider<?> _managementModeAuthenticationProvider;
-
     private final AtomicLong _messagesIn = new AtomicLong();
     private final AtomicLong _messagesOut = new AtomicLong();
     private final AtomicLong _transactedMessagesIn = new AtomicLong();
@@ -121,6 +116,11 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private final AtomicLong _bytesIn = new AtomicLong();
     private final AtomicLong _bytesOut = new AtomicLong();
     private final AtomicLong _maximumMessageSize = new AtomicLong();
+    private final boolean _virtualHostPropertiesNodeEnabled;
+    private final AddressSpaceRegistry _addressSpaceRegistry = new AddressSpaceRegistry();
+    private final ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
+    private final AccessControl _accessControl;
+    private final AtomicBoolean _directMemoryExceedsThresholdReported = new AtomicBoolean();
 
     @ManagedAttributeField
     private int _shutdownTimeout;
@@ -129,14 +129,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @ManagedAttributeField
     private boolean _messageCompressionEnabled;
 
+    private AuthenticationProvider<?> _managementModeAuthenticationProvider;
     private PreferenceStore _preferenceStore;
-
-    private final boolean _virtualHostPropertiesNodeEnabled;
     private Collection<BrokerLogger> _brokerLoggersToClose;
     private int _networkBufferSize = DEFAULT_NETWORK_BUFFER_SIZE;
-    private final AddressSpaceRegistry _addressSpaceRegistry = new AddressSpaceRegistry();
-    private ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
-    private final AccessControl _accessControl;
     private TaskExecutor _preferenceTaskExecutor;
     private String _documentationUrl;
     private long _compactMemoryThreshold;
@@ -147,8 +143,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private ScheduledFuture<?> _assignTargetSizeSchedulingFuture;
     private volatile ScheduledFuture<?> _statisticsReportingFuture;
     private long _housekeepingCheckPeriod;
-
-    private final AtomicBoolean _directMemoryExceedsThresholdReported = new AtomicBoolean();
 
     @ManagedObjectFactoryConstructor
     public BrokerImpl(Map<String, Object> attributes,

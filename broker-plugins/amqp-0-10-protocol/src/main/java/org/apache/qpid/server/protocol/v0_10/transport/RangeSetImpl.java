@@ -30,7 +30,7 @@ import java.util.ListIterator;
 public class RangeSetImpl implements RangeSet
 {
 
-    private List<Range> ranges;
+    private final List<Range> ranges;
 
     public RangeSetImpl()
     {

@@ -25,7 +25,7 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 
 public class MessageMetaDataTypeRegistry
 {
-    private static MessageMetaDataType[] values;
+    private static final MessageMetaDataType[] VALUES;
 
     static
     {
@@ -41,25 +41,25 @@ public class MessageMetaDataTypeRegistry
                 maxOrdinal = type.ordinal();
             }
         }
-        values = new MessageMetaDataType[maxOrdinal+1];
+        VALUES = new MessageMetaDataType[maxOrdinal + 1];
         for(MessageMetaDataType type : new QpidServiceLoader().instancesOf(MessageMetaDataType.class))
         {
-            if(values[type.ordinal()] != null)
+            if(VALUES[type.ordinal()] != null)
             {
                 throw new IllegalStateException("Multiple MessageDataType ("
-                                                 +values[type.ordinal()].getClass().getName()
-                                                 +", "
-                                                 + type.getClass().getName()
-                                                 + ") defined for the same ordinal value: " + type.ordinal());
+                                                + VALUES[type.ordinal()].getClass().getName()
+                                                + ", "
+                                                + type.getClass().getName()
+                                                + ") defined for the same ordinal value: " + type.ordinal());
             }
-            values[type.ordinal()] = type;
+            VALUES[type.ordinal()] = type;
         }
     }
 
 
     public static MessageMetaDataType fromOrdinal(int ordinal)
     {
-        return values[ordinal];
+        return VALUES[ordinal];
     }
 
 }

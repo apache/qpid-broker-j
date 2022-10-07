@@ -60,7 +60,6 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.UUIDGenerator;
-import org.apache.qpid.server.protocol.v0_8.FieldTableFactory;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.AMQShortStringEncoding;
@@ -68,8 +67,20 @@ import org.apache.qpid.server.store.berkeleydb.FieldTableEncoding;
 
 public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(UpgradeFrom5To6.class);
+
+    private static final Set<String> DEFAULT_EXCHANGES_SET =
+            new HashSet<String>(Arrays.asList(
+                    ExchangeDefaults.DEFAULT_EXCHANGE_NAME,
+                    ExchangeDefaults.FANOUT_EXCHANGE_NAME,
+                    ExchangeDefaults.HEADERS_EXCHANGE_NAME,
+                    ExchangeDefaults.TOPIC_EXCHANGE_NAME,
+                    ExchangeDefaults.DIRECT_EXCHANGE_NAME));
+
+    private static final String ARGUMENTS = "arguments";
+
+    private static final boolean MOVE_NON_EXCLUSIVE_QUEUE_OWNER_TO_DESCRIPTION =
+            Boolean.parseBoolean(System.getProperty("qpid.move_non_exclusive_queue_owner_to_description", Boolean.TRUE.toString()));
 
     static final String OLD_CONTENT_DB_NAME = "messageContentDb_v5";
     static final String NEW_CONTENT_DB_NAME = "MESSAGE_CONTENT";
@@ -88,19 +99,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     static final String OLD_BRIDGES_DB_NAME = "bridges_v5";
     static final String OLD_LINKS_DB_NAME = "links_v5";
 
-    private static final Set<String> DEFAULT_EXCHANGES_SET =
-            new HashSet<String>(Arrays.asList(
-                    ExchangeDefaults.DEFAULT_EXCHANGE_NAME,
-                    ExchangeDefaults.FANOUT_EXCHANGE_NAME,
-                    ExchangeDefaults.HEADERS_EXCHANGE_NAME,
-                    ExchangeDefaults.TOPIC_EXCHANGE_NAME,
-                    ExchangeDefaults.DIRECT_EXCHANGE_NAME));
-
-    private static final String ARGUMENTS = "arguments";
-
-    private MapJsonSerializer _serializer = new MapJsonSerializer();
-
-    private static final boolean _moveNonExclusiveQueueOwnerToDescription = Boolean.parseBoolean(System.getProperty("qpid.move_non_exclusive_queue_owner_to_description", Boolean.TRUE.toString()));
+    private final MapJsonSerializer _serializer = new MapJsonSerializer();
 
     /**
      * Upgrades from a v5 database to a v6 database
@@ -564,7 +563,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     private boolean moveNonExclusiveOwnerToDescription(String owner,
             boolean exclusive)
     {
-        return exclusive == false && owner != null && _moveNonExclusiveQueueOwnerToDescription;
+        return exclusive == false && owner != null && MOVE_NON_EXCLUSIVE_QUEUE_OWNER_TO_DESCRIPTION;
     }
 
     private UpgradeConfiguredObjectRecord createExchangeConfiguredObjectRecord(String exchangeName, String exchangeType,
@@ -760,8 +759,8 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 
     static class UpgradeConfiguredObjectRecord
     {
-        private String _attributes;
-        private String _type;
+        private final String _attributes;
+        private final String _type;
 
         public UpgradeConfiguredObjectRecord(String type, String attributes)
         {
@@ -961,8 +960,8 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 
     static class OldQueueEntryKey
     {
-        private AMQShortString _queueName;
-        private long _messageId;
+        private final AMQShortString _queueName;
+        private final long _messageId;
 
         public OldQueueEntryKey(AMQShortString queueName, long messageId)
         {
@@ -1003,8 +1002,8 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 
     static class NewQueueEntryKey
     {
-        private UUID _queueId;
-        private long _messageId;
+        private final UUID _queueId;
+        private final long _messageId;
 
         public NewQueueEntryKey(UUID queueId, long messageId)
         {
@@ -1070,8 +1069,8 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     static class NewRecordImpl
     {
 
-        private long _messageNumber;
-        private UUID _queueId;
+        private final long _messageNumber;
+        private final UUID _queueId;
 
         public NewRecordImpl(UUID queueId, long messageNumber)
         {
@@ -1142,8 +1141,8 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     static class OldRecordImpl
     {
 
-        private long _messageNumber;
-        private String _queueName;
+        private final long _messageNumber;
+        private final String _queueName;
 
         public OldRecordImpl(String queueName, long messageNumber)
         {

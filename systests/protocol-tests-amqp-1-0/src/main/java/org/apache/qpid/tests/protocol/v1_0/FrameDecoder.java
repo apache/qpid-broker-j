@@ -138,8 +138,8 @@ public class FrameDecoder implements InputDecoder
 
     private class MyConnectionHandler implements ConnectionHandler
     {
+        private final Queue<Response<?>> _responseQueue = new ConcurrentLinkedQueue<>();
         private volatile int _frameSize = 512;
-        private Queue<Response<?>> _responseQueue = new ConcurrentLinkedQueue<>();
 
         @Override
         public void receiveOpen(final int channel, final Open close)

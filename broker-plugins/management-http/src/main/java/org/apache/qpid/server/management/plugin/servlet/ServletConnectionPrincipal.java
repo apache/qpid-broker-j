@@ -46,7 +46,7 @@ public class ServletConnectionPrincipal implements ManagementConnectionPrincipal
 
     private final InetSocketAddress _address;
     private final String _sessionId;
-    private ServletRequestMetaData _metadata;
+    private final ServletRequestMetaData _metadata;
 
     public ServletConnectionPrincipal(HttpServletRequest request)
     {

@@ -44,11 +44,11 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class SimpleLDAPAuthenticationManagerFactoryTest extends UnitTestBase
 {
-    private ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
-    private Map<String, Object> _configuration = new HashMap<String, Object>();
-    private Broker _broker = BrokerTestHelper.createBrokerMock();
+    private final ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
+    private final Map<String, Object> _configuration = new HashMap<String, Object>();
+    private final Broker _broker = BrokerTestHelper.createBrokerMock();
 
-    private TrustStore _trustStore = mock(TrustStore.class);
+    private final TrustStore _trustStore = mock(TrustStore.class);
 
     @Before
     public void setUp() throws Exception

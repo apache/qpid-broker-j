@@ -43,12 +43,12 @@ import org.apache.qpid.server.model.ConfiguredObject;
 
 public class BrokerController extends LegacyCategoryController
 {
-    public static final String TYPE = "Broker";
     private static final String CONNECTION_SESSION_COUNT_LIMIT = "connection.sessionCountLimit";
     private static final String CONNECTION_HEART_BEAT_DELAY = "connection.heartBeatDelay";
     private static final String CONNECTION_CLOSE_WHEN_NO_ROUTE = "connection.closeWhenNoRoute";
+    private static final Map<String, String> BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT = new HashMap<>();
 
-    private static Map<String, String> BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT = new HashMap<>();
+    public static final String TYPE = "Broker";
 
     static
     {

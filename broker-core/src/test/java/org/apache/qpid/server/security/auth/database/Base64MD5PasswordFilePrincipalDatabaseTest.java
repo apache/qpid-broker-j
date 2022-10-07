@@ -51,7 +51,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPassword
 
     private static final String PASSWORD = "guest";
     private static final String PASSWORD_B64MD5HASHED = "CE4DQ6BIb/BVMN9scFyLtA==";
-    private static char[] PASSWORD_MD5_CHARS;
+    private static final char[] PASSWORD_MD5_CHARS;
     private static final String PRINCIPAL_USERNAME = "testUserPrincipal";
     private static final Principal PRINCIPAL = new UsernamePrincipal(PRINCIPAL_USERNAME, null);
     private Base64MD5PasswordFilePrincipalDatabase _database;

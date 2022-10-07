@@ -74,11 +74,12 @@ public class OrdinaryTestRunnerTest extends UnitTestBase
     private static final long COMMAND_RESPONSE_TIMEOUT = 1000;
     private static final long TEST_RESULT_TIMEOUT = 2000;
 
+    private final Set<CommandListener> _spiedCommandListeners = new HashSet<>();
+
     private OrdinaryTestRunner _testRunner;
     private TestInstance _testInstance;
     private ControllerJmsDelegate _respondingJmsDelegate;
     private ParticipatingClients _participatingClients;
-    private Set<CommandListener> _spiedCommandListeners = new HashSet<>();
 
     @Before
     public void setUp() throws Exception

@@ -33,6 +33,7 @@ import org.apache.qpid.server.transport.AggregateTicker;
 @PluggableService
 public class ProtocolEngineCreator_0_10 implements ProtocolEngineCreator
 {
+    private static final ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_0_10();
 
     private static final byte[] AMQP_0_10_HEADER =
             new byte[] { (byte) 'A',
@@ -44,7 +45,6 @@ public class ProtocolEngineCreator_0_10 implements ProtocolEngineCreator
                          (byte) 0,
                          (byte) 10
             };
-
 
     public ProtocolEngineCreator_0_10()
     {
@@ -82,8 +82,6 @@ public class ProtocolEngineCreator_0_10 implements ProtocolEngineCreator
     {
         return null;
     }
-
-    private static ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_0_10();
 
     public static ProtocolEngineCreator getInstance()
     {

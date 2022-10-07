@@ -55,10 +55,10 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class BrokerMemoryLoggerTest extends UnitTestBase
 {
+    private final ConfiguredObjectRecord _brokerEntry = mock(ConfiguredObjectRecord.class);
+    private final UUID _brokerId = UUID.randomUUID();
     private TaskExecutor _taskExecutor;
     private SystemConfig<JsonSystemConfigImpl> _systemConfig;
-    private ConfiguredObjectRecord _brokerEntry = mock(ConfiguredObjectRecord.class);
-    private UUID _brokerId = UUID.randomUUID();
 
     @Before
     public void setUp() throws Exception

@@ -26,9 +26,9 @@ import org.apache.qpid.server.model.Binding;
 
 public class BindingImpl implements Binding
 {
-    private String _bindingKey;
-    private String _destination;
-    private Map<String, Object> _arguments;
+    private final String _bindingKey;
+    private final String _destination;
+    private final Map<String, Object> _arguments;
 
     public BindingImpl(final String bindingKey,
                        final String destination,

@@ -58,7 +58,6 @@ import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-
 /**
  * Tests the public methods of PrincipalDatabaseAuthenticationManager.
  */
@@ -66,10 +65,11 @@ public class PrincipalDatabaseAuthenticationManagerTest extends UnitTestBase
 {
     private static final String MOCK_MECH_NAME = "MOCK-MECH-NAME";
 
+    private final SaslNegotiator _saslNegotiator = mock(SaslNegotiator.class);
+
     private PrincipalDatabaseAuthenticationManager _manager = null; // Class under test
     private PrincipalDatabase _principalDatabase;
     private String _passwordFileLocation;
-    private SaslNegotiator _saslNegotiator = mock(SaslNegotiator.class);
 
     @Before
     public void setUp() throws Exception

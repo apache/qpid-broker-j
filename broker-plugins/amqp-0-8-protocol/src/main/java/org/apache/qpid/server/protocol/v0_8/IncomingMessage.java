@@ -32,6 +32,8 @@ public class IncomingMessage
 {
 
     private final MessagePublishInfo _messagePublishInfo;
+    private final List<ContentBody> _contentChunks = new ArrayList<ContentBody>();
+
     private ContentHeaderBody _contentHeaderBody;
     private MessageDestination _messageDestination;
 
@@ -39,7 +41,6 @@ public class IncomingMessage
      * Keeps a track of how many bytes we have received in body frames
      */
     private long _bodyLengthReceived = 0;
-    private List<ContentBody> _contentChunks = new ArrayList<ContentBody>();
 
     public IncomingMessage(MessagePublishInfo info)
     {

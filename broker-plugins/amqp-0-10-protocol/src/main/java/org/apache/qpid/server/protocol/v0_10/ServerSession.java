@@ -118,15 +118,24 @@ public class ServerSession extends SessionInvoker
     private final int commandLimit = Integer.getInteger("qpid.session.command_limit", 64 * 1024);
     private final Object commandsLock = new Object();
     private final Object stateLock = new Object();
+    private final Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
+    private final AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
+    private final long _blockingTimeout;
+    private final ServerConnection connection;
+    private final Binary name;
+    private final ServerSessionDelegate delegate;
+    private final Map<Integer,Method> commands = new HashMap<>();
+    private final int byteLimit = Integer.getInteger("qpid.session.byte_limit", 1024 * 1024);
+    private final Semaphore credit = new Semaphore(0);
+    private final Map<Integer,ResultFuture<?>> results = new HashMap<>();
+    private final SortedMap<Integer, MessageDispositionChangeListener> _messageDispositionListenerMap =
+            new ConcurrentSkipListMap<>();
+
     private Session_0_10 _modelObject;
     private long _blockTime;
-    private long _blockingTimeout;
     private boolean _wireBlockingState;
-    private ServerConnection connection;
-    private Binary name;
     private boolean closing;
     private int channel;
-    private ServerSessionDelegate delegate;
     private boolean incomingInit;
     // incoming command count
     private int commandsIn;
@@ -135,26 +144,15 @@ public class ServerSession extends SessionInvoker
     private int syncPoint;
     // outgoing command count
     private int commandsOut = 0;
-    private Map<Integer,Method> commands = new HashMap<>();
     private int commandBytes = 0;
-    private int byteLimit = Integer.getInteger("qpid.session.byte_limit", 1024 * 1024);
     private int maxComplete = commandsOut - 1;
     private State state = NEW;
-    private Semaphore credit = new Semaphore(0);
     private Thread resumer = null;
     private boolean transacted = false;
     private SessionDetachCode detachCode;
     private boolean _isNoReplay = false;
-    private Map<Integer,ResultFuture<?>> results = new HashMap<>();
     private org.apache.qpid.server.protocol.v0_10.transport.ExecutionException exception = null;
-
-    private final SortedMap<Integer, MessageDispositionChangeListener> _messageDispositionListenerMap =
-            new ConcurrentSkipListMap<>();
-
     private volatile ServerTransaction _transaction;
-    private Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
-
-    private AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
 
     public ServerSession(ServerConnection connection, ServerSessionDelegate delegate, Binary name, long expiry)
     {

@@ -30,7 +30,7 @@ import org.apache.qpid.server.transport.TransportException;
 public class SessionException extends TransportException
 {
 
-    private ExecutionException exception;
+    private final ExecutionException exception;
 
     public SessionException(String message, ExecutionException exception, Throwable cause)
     {

@@ -36,7 +36,7 @@ import ch.qos.logback.core.spi.FilterReply;
 
 public class CompositeFilter extends Filter<ILoggingEvent>
 {
-    private List<Filter<ILoggingEvent>> _filterList = new CopyOnWriteArrayList<>();
+    private final List<Filter<ILoggingEvent>> _filterList = new CopyOnWriteArrayList<>();
     private final AtomicLong _warnCount = new AtomicLong();
     private final AtomicLong _errorCount = new AtomicLong();
 

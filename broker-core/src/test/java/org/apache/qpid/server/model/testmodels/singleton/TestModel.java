@@ -33,13 +33,13 @@ import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 public class TestModel extends Model
 {
     private static final Model INSTANCE = new TestModel();
-    private Class<? extends ConfiguredObject>[] _supportedClasses =
+    private final Class<? extends ConfiguredObject>[] _supportedClasses =
             new Class[] {
                     TestSingleton.class
             };
 
     private final ConfiguredObjectFactory _objectFactory;
-    private ConfiguredObjectTypeRegistry _registry;
+    private final ConfiguredObjectTypeRegistry _registry;
 
     private TestModel()
     {

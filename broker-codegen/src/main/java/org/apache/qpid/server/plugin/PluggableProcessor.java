@@ -52,7 +52,7 @@ import org.apache.qpid.server.License;
 
 public class PluggableProcessor extends AbstractProcessor
 {
-    private Map<String, Set<String>> factoryImplementations = new HashMap<>();
+    private final Map<String, Set<String>> factoryImplementations = new HashMap<>();
 
 
     @Override

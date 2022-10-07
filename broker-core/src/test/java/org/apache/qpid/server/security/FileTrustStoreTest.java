@@ -581,9 +581,9 @@ public class FileTrustStoreTest extends UnitTestBase
 
     private static class StoreAndCrl<T>
     {
-        private T _store;
-        private T _crl;
-        private KeyCertificatePair _ca;
+        private final T _store;
+        private final T _crl;
+        private final KeyCertificatePair _ca;
 
         private StoreAndCrl(final T store, final T crl, KeyCertificatePair ca)
         {

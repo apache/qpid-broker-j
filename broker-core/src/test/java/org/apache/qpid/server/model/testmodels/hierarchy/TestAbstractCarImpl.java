@@ -17,7 +17,6 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
@@ -34,13 +33,14 @@ import org.apache.qpid.server.model.Model;
 
 public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> extends AbstractConfiguredObject<X> implements TestCar<X>
 {
+    private final EventLogger _eventLogger;
+
+    private final AtomicInteger _mileage = new AtomicInteger();
+
     @ManagedAttributeField
     private Colour _bodyColour;
     @ManagedAttributeField
     private Colour _interiorColour;
-    private EventLogger _eventLogger;
-
-    private AtomicInteger _mileage = new AtomicInteger();
 
     private volatile boolean _rejectStateChange;
 

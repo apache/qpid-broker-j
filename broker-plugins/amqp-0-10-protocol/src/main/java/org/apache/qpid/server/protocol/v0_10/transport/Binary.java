@@ -24,18 +24,14 @@ import static org.apache.qpid.server.transport.util.Functions.str;
 
 import java.nio.ByteBuffer;
 
-
 /**
  * Binary
- *
  */
-
 public final class Binary
 {
-
-    private byte[] bytes;
-    private int offset;
-    private int size;
+    private final byte[] bytes;
+    private final int offset;
+    private final int size;
     private int hash = 0;
 
     public Binary(byte[] bytes, int offset, int size)

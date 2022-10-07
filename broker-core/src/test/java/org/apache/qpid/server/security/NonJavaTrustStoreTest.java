@@ -248,9 +248,9 @@ public class NonJavaTrustStoreTest extends UnitTestBase
 
     private static class CertificateAndCrl<T>
     {
-        private T _certificate;
-        private T _crl;
-        private KeyCertificatePair _ca;
+        private final T _certificate;
+        private final T _crl;
+        private final KeyCertificatePair _ca;
 
         private CertificateAndCrl(final T certificate, final T crl, KeyCertificatePair ca)
         {

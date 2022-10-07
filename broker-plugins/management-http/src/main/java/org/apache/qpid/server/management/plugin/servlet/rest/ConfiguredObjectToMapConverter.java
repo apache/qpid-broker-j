@@ -43,16 +43,17 @@ import org.apache.qpid.server.model.Named;
 public class ConfiguredObjectToMapConverter
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfiguredObjectToMapConverter.class);
-    /** Name of the key used for the statistics map */
-    public static final String STATISTICS_MAP_KEY = "statistics";
 
-    private static Set<String> CONFIG_EXCLUDED_ATTRIBUTES =
+    private static final Set<String> CONFIG_EXCLUDED_ATTRIBUTES =
             new HashSet<>(Arrays.asList(ConfiguredObject.ID,
                                         ConfiguredObject.DURABLE,
                                         ConfiguredObject.CREATED_BY,
                                         ConfiguredObject.CREATED_TIME,
                                         ConfiguredObject.LAST_UPDATED_BY,
                                         ConfiguredObject.LAST_UPDATED_TIME));
+
+    /** Name of the key used for the statistics map */
+    public static final String STATISTICS_MAP_KEY = "statistics";
 
     public Map<String, Object> convertObjectToMap(final ConfiguredObject<?> confObject,
                                                   Class<? extends ConfiguredObject> clazz,

@@ -64,6 +64,8 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     private final PreferenceStore _preferenceStore =
             new NoopPreferenceStoreFactoryService().createInstance(null, Collections.<String, Object>emptyMap());
 
+    private final Deque<HashSet<String>> _lastReportedSetAttributes = new ArrayDeque<>();
+
     @ManagedAttributeField
     private String _automatedPersistedValue;
 
@@ -114,8 +116,6 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
 
     @ManagedAttributeField
     private String _attrWithDefaultFromContextMaterializeInit;
-
-    private Deque<HashSet<String>> _lastReportedSetAttributes = new ArrayDeque<>();
 
     @ManagedObjectFactoryConstructor
     public TestSingletonImpl(final Map<String, Object> attributes)

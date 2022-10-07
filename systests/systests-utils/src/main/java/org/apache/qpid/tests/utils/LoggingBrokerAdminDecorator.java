@@ -33,7 +33,7 @@ import org.apache.qpid.test.utils.LogbackPropertyValueDiscriminator;
 public class LoggingBrokerAdminDecorator implements BrokerAdmin
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggingBrokerAdminDecorator.class);
-    private BrokerAdmin _delegate;
+    private final BrokerAdmin _delegate;
 
     public LoggingBrokerAdminDecorator(final BrokerAdmin delegate)
     {

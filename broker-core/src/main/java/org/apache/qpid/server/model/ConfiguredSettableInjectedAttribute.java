@@ -56,7 +56,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
     private final String _description;
     private final String[] _validValues;
     private final String _validValuePattern;
-    private Initialization _initialization;
+    private final Initialization _initialization;
 
     public ConfiguredSettableInjectedAttribute(final String name,
                                                final Class<T> type,

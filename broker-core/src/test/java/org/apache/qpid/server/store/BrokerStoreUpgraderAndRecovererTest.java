@@ -1075,7 +1075,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
 
     static class DurableConfigurationStoreStub implements DurableConfigurationStore
     {
-        private ConfiguredObjectRecord[] records;
+        private final ConfiguredObjectRecord[] records;
 
         public DurableConfigurationStoreStub(ConfiguredObjectRecord... records)
         {
@@ -1144,7 +1144,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
 
     private static class RecordRetrievingConfiguredObjectRecordHandler implements ConfiguredObjectRecordHandler
     {
-        private List<ConfiguredObjectRecord> _records = new ArrayList<>();
+        private final List<ConfiguredObjectRecord> _records = new ArrayList<>();
 
         @Override
         public void handle(final ConfiguredObjectRecord record)

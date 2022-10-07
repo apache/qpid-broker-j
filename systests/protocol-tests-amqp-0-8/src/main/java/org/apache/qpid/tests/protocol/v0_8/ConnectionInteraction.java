@@ -50,7 +50,6 @@ public class ConnectionInteraction
     private int _tuneOkHeartbeat;
     private String _openVirtualHost;
 
-    private int _closeReplyCode = ErrorCodes.REPLY_SUCCESS;
     private String _closeReplyText;
     private int _closeClassId;
     private int _closeMethodId;
@@ -129,8 +128,9 @@ public class ConnectionInteraction
 
     public Interaction close() throws Exception
     {
+        int closeReplyCode = ErrorCodes.REPLY_SUCCESS;
         return _interaction.sendPerformative(new ConnectionCloseBody(_interaction.getProtocolVersion(),
-                                                                     _closeReplyCode,
+                                                                     closeReplyCode,
                                                                      AMQShortString.valueOf(_closeReplyText),
                                                                      _closeClassId,
                                                                      _closeMethodId));

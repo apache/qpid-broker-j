@@ -82,11 +82,11 @@ public class TimeZoneServlet extends AbstractServlet
 
     public static class TimeZoneDetails
     {
-        private String id;
-        private String name;
-        private int offset;
-        private String city;
-        private String region;
+        private final String id;
+        private final String name;
+        private final int offset;
+        private final String city;
+        private final String region;
 
         public TimeZoneDetails(String id, String name, int offset, String city, String region)
         {

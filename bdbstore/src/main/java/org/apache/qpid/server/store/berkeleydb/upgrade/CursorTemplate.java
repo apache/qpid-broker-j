@@ -30,9 +30,9 @@ import com.sleepycat.je.Transaction;
 
 public class CursorTemplate
 {
-    private Database _database;
-    private Transaction _transaction;
-    private DatabaseEntryCallback _databaseEntryCallback;
+    private final Database _database;
+    private final Transaction _transaction;
+    private final DatabaseEntryCallback _databaseEntryCallback;
     private Cursor _cursor;
     private boolean _iterating;
 

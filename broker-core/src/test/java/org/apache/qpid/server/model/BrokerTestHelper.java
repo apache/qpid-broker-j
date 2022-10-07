@@ -75,19 +75,19 @@ public class BrokerTestHelper
                                                               Collections.emptySet());
 
 
-    private static List<VirtualHost> _createdVirtualHosts = new ArrayList<>();
+    private static final List<VirtualHost> CREATED_VIRTUAL_HOSTS = new ArrayList<>();
 
     private static final TaskExecutor TASK_EXECUTOR = new CurrentThreadTaskExecutor();
-    private static Runnable _closeVirtualHosts = new Runnable()
+    private static final Runnable CLOSE_VIRTUAL_HOSTS = new Runnable()
     {
         @Override
         public void run()
         {
-            for (VirtualHost virtualHost : _createdVirtualHosts)
+            for (VirtualHost virtualHost : CREATED_VIRTUAL_HOSTS)
             {
                 virtualHost.close();
             }
-            _createdVirtualHosts.clear();
+            CREATED_VIRTUAL_HOSTS.clear();
         }
     };
 
@@ -178,9 +178,9 @@ public class BrokerTestHelper
                 host = (AbstractVirtualHost) objectFactory.create(VirtualHost.class, attributes, virtualHostNode );
         host.start();
         when(virtualHostNode.getVirtualHost()).thenReturn(host);
-        _createdVirtualHosts.add(host);
+        CREATED_VIRTUAL_HOSTS.add(host);
 
-        testBase.registerTearDown(_closeVirtualHosts);
+        testBase.registerTearDown(CLOSE_VIRTUAL_HOSTS);
         return host;
     }
 

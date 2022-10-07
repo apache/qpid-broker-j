@@ -31,6 +31,8 @@ public enum Transport
     WSS(true),
     SCTP;
 
+    private final boolean _secure;
+
     Transport()
     {
         this(false);
@@ -40,8 +42,6 @@ public enum Transport
     {
         _secure = secure;
     }
-
-    private boolean _secure;
 
     public final boolean isSecure()
     {

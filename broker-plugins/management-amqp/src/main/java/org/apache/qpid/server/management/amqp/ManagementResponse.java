@@ -40,11 +40,11 @@ class ManagementResponse implements MessageInstance
 {
     private final ManagementNodeConsumer _consumer;
     private final MessageReference _messageReference;
+    private final InternalMessage _message;
     private int _deliveryCount;
     private boolean _isRedelivered;
     private boolean _isDelivered;
     private boolean _isDeleted;
-    private InternalMessage _message;
 
     ManagementResponse(final ManagementNodeConsumer consumer,
                        final InternalMessage message)

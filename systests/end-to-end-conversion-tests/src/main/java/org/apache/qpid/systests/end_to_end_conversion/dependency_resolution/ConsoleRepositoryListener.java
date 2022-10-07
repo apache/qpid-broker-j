@@ -28,7 +28,7 @@ import org.eclipse.aether.RepositoryEvent;
 public class ConsoleRepositoryListener extends AbstractRepositoryListener
 {
 
-    private PrintStream _out;
+    private final PrintStream _out;
 
     public ConsoleRepositoryListener()
     {

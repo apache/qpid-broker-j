@@ -23,8 +23,8 @@ import org.apache.qpid.disttest.message.Command;
 
 public class CommandForClient
 {
-    private String _clientName;
-    private Command _command;
+    private final String _clientName;
+    private final Command _command;
 
     public CommandForClient(String clientName, Command command)
     {

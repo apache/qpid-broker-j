@@ -24,28 +24,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.client.property.ListPropertyValue;
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.json.JsonHandler;
 
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.After;
 import org.junit.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertNotNull;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class JsonHandlerTest extends UnitTestBase
 {
@@ -55,9 +47,7 @@ public class JsonHandlerTest extends UnitTestBase
     @Before
     public void setUp() throws Exception
     {
-
         _jsonHandler = new JsonHandler();
-
         _testCommand = new SendChristmasCards(CommandType.START_TEST, Collections.singletonMap(SendChristmasCards.CardType.FUNNY, 5));
         _testCommand._persons = Arrays.asList(new Person("Phil"), new Person("Andrew"));
     }
@@ -141,8 +131,7 @@ public class JsonHandlerTest extends UnitTestBase
     static class SendChristmasCards extends Command
     {
         enum CardType {FUNNY, TRADITIONAL}
-
-        private Map<CardType, Integer> _cardTypes;
+        private final Map<CardType, Integer> _cardTypes;
         private List<Person> _persons;
 
         public SendChristmasCards()
@@ -202,7 +191,7 @@ public class JsonHandlerTest extends UnitTestBase
      */
     static class Person
     {
-        private String _firstName;
+        private final String _firstName;
 
         public Person()
         {

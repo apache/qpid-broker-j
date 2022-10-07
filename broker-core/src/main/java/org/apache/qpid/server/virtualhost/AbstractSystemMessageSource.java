@@ -54,10 +54,10 @@ import org.apache.qpid.server.util.StateChangeListener;
 
 public abstract class AbstractSystemMessageSource implements MessageSource
 {
+    private final List<Consumer<?>> _consumers = new CopyOnWriteArrayList<>();
     protected final UUID _id;
     protected final String _name;
     protected final NamedAddressSpace _addressSpace;
-    private List<Consumer<?>> _consumers = new CopyOnWriteArrayList<>();
 
     public AbstractSystemMessageSource(String name, final NamedAddressSpace addressSpace)
     {
@@ -231,11 +231,11 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     {
         private final Consumer _consumer;
         private final MessageReference _messageReference;
+        private final InternalMessage _message;
         private int _deliveryCount;
         private boolean _isRedelivered;
         private boolean _isDelivered;
         private boolean _isDeleted;
-        private InternalMessage _message;
 
         PropertiesMessageInstance(final Consumer consumer, final InternalMessage message)
         {

@@ -31,7 +31,7 @@ import org.apache.qpid.server.transport.TransportException;
 public class ConnectionException extends TransportException
 {
 
-    private ConnectionClose close;
+    private final ConnectionClose close;
 
     public ConnectionException(String message, ConnectionClose close, Throwable cause)
     {

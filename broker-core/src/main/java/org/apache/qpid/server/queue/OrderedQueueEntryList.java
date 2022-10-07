@@ -48,7 +48,7 @@ public abstract class OrderedQueueEntryList extends AbstractQueueEntryList
     static final AtomicReferenceFieldUpdater<OrderedQueueEntry, OrderedQueueEntry>
                 _nextUpdater = OrderedQueueEntry._nextUpdater;
 
-    private AtomicLong _scavenges = new AtomicLong(0L);
+    private final AtomicLong _scavenges = new AtomicLong(0L);
     private final long _scavengeCount;
     private final AtomicReference<QueueEntry> _unscavengedHWM = new AtomicReference<QueueEntry>();
 

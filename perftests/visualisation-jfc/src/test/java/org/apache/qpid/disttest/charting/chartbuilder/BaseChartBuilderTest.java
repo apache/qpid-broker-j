@@ -63,14 +63,14 @@ public class BaseChartBuilderTest extends UnitTestBase
     private static final String Y_TITLE = "Y_TITLE";
 
     @SuppressWarnings("unchecked")
-    private List<SeriesDefinition> _seriesDefinitions = mock(List.class);
+    private final List<SeriesDefinition> _seriesDefinitions = mock(List.class);
 
-    private ChartingDefinition _chartingDefinition = mock(ChartingDefinition.class);
-    private SeriesStrokeAndPaintApplier _strokeAndPaintApplier = mock(SeriesStrokeAndPaintApplier.class);
-    private DatasetHolder _datasetHolder = mock(DatasetHolder.class);
-    private SeriesPainter _seriesPainter = mock(SeriesPainter.class);
+    private final ChartingDefinition _chartingDefinition = mock(ChartingDefinition.class);
+    private final SeriesStrokeAndPaintApplier _strokeAndPaintApplier = mock(SeriesStrokeAndPaintApplier.class);
+    private final DatasetHolder _datasetHolder = mock(DatasetHolder.class);
+    private final SeriesPainter _seriesPainter = mock(SeriesPainter.class);
 
-    private SeriesBuilder _seriesBuilder = mock(SeriesBuilder.class);
+    private final SeriesBuilder _seriesBuilder = mock(SeriesBuilder.class);
 
     private JFreeChart _jFreeChart;
 
@@ -120,8 +120,8 @@ public class BaseChartBuilderTest extends UnitTestBase
      */
     private abstract class ChartBuilder extends BaseChartBuilder
     {
-        private SeriesStrokeAndPaintApplier _seriesStrokeAndPaintApplier;
-        private DatasetHolder _datasetHolder;
+        private final SeriesStrokeAndPaintApplier _seriesStrokeAndPaintApplier;
+        private final DatasetHolder _datasetHolder;
 
         private ChartBuilder(SeriesBuilder seriesBuilder, SeriesStrokeAndPaintApplier seriesStrokeAndPaintApplier, DatasetHolder datasetHolder)
         {

@@ -53,11 +53,11 @@ import static org.junit.Assert.assertNull;
 
 public class ResultsCsvWriterTest extends UnitTestBase
 {
-    private CSVFormatter _csvFormater = mock(CSVFormatter.class);
+    private final CSVFormatter _csvFormater = mock(CSVFormatter.class);
 
-    private File _outputDir = TestFileUtils.createTestDirectory();
+    private final File _outputDir = TestFileUtils.createTestDirectory();
 
-    private ResultsCsvWriter _resultsFileWriter = new ResultsCsvWriter(_outputDir);
+    private final ResultsCsvWriter _resultsFileWriter = new ResultsCsvWriter(_outputDir);
 
     @Before
     public void setUp() throws Exception

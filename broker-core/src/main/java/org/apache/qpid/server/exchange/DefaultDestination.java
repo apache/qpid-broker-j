@@ -44,7 +44,7 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
 
     private static final Operation PUBLISH_ACTION = Operation.PERFORM_ACTION("publish");
     private final AccessControl _accessControl;
-    private QueueManagingVirtualHost<?> _virtualHost;
+    private final QueueManagingVirtualHost<?> _virtualHost;
 
     public DefaultDestination(QueueManagingVirtualHost<?> virtualHost, final AccessControl accessControl)
     {

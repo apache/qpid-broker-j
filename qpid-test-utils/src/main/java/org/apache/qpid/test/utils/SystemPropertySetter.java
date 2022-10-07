@@ -26,7 +26,7 @@ import org.junit.rules.ExternalResource;
 
 public class SystemPropertySetter extends ExternalResource
 {
-    private Map<String, String> _storedProperties = new HashMap<>();
+    private final Map<String, String> _storedProperties = new HashMap<>();
 
     @Override
     public synchronized void after()

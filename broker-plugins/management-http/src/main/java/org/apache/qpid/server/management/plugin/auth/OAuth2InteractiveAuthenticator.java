@@ -78,7 +78,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
         ERROR_RESPONSES = Collections.unmodifiableMap(errorResponses);
     }
 
-    private SecureRandom _random = new SecureRandom();
+    private final SecureRandom _random = new SecureRandom();
 
     @Override
     public String getType()

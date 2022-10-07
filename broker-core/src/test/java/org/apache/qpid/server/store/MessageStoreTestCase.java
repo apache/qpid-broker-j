@@ -593,7 +593,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
 
     private static class MessageMetaDataMatcher implements ArgumentMatcher<StoredMessage<?>>
     {
-        private long _messageNumber;
+        private final long _messageNumber;
 
         MessageMetaDataMatcher(long messageNumber)
         {

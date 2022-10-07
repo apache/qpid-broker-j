@@ -47,7 +47,7 @@ import org.apache.qpid.server.model.Model;
 
 public class LatestManagementControllerAdapter implements ManagementController
 {
-    private ManagementController _latestManagementController;
+    private final ManagementController _latestManagementController;
 
     public LatestManagementControllerAdapter(final ManagementController latestManagementController)
     {
@@ -283,7 +283,7 @@ public class LatestManagementControllerAdapter implements ManagementController
     private class LegacyConfiguredObjectObject implements LegacyConfiguredObject
     {
         private final Map<String, Object> _actualAttributes;
-        private ConfiguredObject<?> _configuredObject;
+        private final ConfiguredObject<?> _configuredObject;
 
         LegacyConfiguredObjectObject(final ConfiguredObject<?> configuredObject)
         {

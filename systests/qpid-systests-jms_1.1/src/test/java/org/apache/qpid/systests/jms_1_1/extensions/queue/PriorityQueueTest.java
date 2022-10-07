@@ -258,11 +258,11 @@ public class PriorityQueueTest extends JmsTestBase
     {
         private static final Logger LOGGER = LoggerFactory.getLogger(PriorityQueueTest.ReflectingMessageListener.class);
 
-        private Session _producerSession;
-        private Session _consumerSession;
-        private CountDownLatch _latch;
-        private MessageProducer _producer;
-        private long _origCount;
+        private final Session _producerSession;
+        private final Session _consumerSession;
+        private final CountDownLatch _latch;
+        private final MessageProducer _producer;
+        private final long _origCount;
         private Throwable _lastThrown;
 
         ReflectingMessageListener(final Session producerSession, final MessageProducer producer,

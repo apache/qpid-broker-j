@@ -31,8 +31,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class EventManagerTest extends UnitTestBase
 {
-    private EventManager _eventManager = new EventManager();
-    private EventListener _mockListener = mock(EventListener.class);
+    private final EventManager _eventManager = new EventManager();
+    private final EventListener _mockListener = mock(EventListener.class);
 
     @Test
     public void testEventListenerFires()

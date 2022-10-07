@@ -66,15 +66,12 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
     private final String _name;
     private final String _targetAddress;
-
-
-    private volatile FlowCreditManager_0_10 _creditManager;
-
     private final MessageAcceptMode _acceptMode;
     private final MessageAcquireMode _acquireMode;
-    private volatile MessageFlowMode _flowMode;
     private final ServerSession _session;
 
+    private volatile MessageFlowMode _flowMode;
+    private volatile FlowCreditManager_0_10 _creditManager;
     private volatile int _deferredMessageCredit;
     private volatile long _deferredSizeCredit;
 
@@ -149,9 +146,9 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
     public static class AddMessageDispositionListenerAction implements Runnable
     {
+        private final ServerSession _session;
         private MessageTransfer _xfr;
         private ServerSession.MessageDispositionChangeListener _action;
-        private ServerSession _session;
 
         public AddMessageDispositionListenerAction(ServerSession session)
         {

@@ -34,9 +34,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class HashedUserTest extends UnitTestBase
 {
 
-    private String USERNAME = "username";
-    private String PASSWORD = "password";
-    private String B64_ENCODED_PASSWORD = "cGFzc3dvcmQ=";
+    private final String USERNAME = "username";
+    private final String PASSWORD = "password";
+    private final String B64_ENCODED_PASSWORD = "cGFzc3dvcmQ=";
 
     @Test
     public void testToLongArrayConstructor()

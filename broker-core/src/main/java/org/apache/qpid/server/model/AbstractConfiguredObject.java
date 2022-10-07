@@ -3999,7 +3999,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         private final Class<? extends ConfiguredObject> _category;
         private final ConfiguredObject<?> _parent   ;
-        private Map<String, Object> _attributes;
+        private final Map<String, Object> _attributes;
 
         AuthorisationProxyInvocationHandler(Map<String, Object> attributes,
                                             Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes,

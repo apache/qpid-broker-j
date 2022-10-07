@@ -42,10 +42,10 @@ import static org.junit.Assert.assertNull;
 
 public class ParticipantRegistryTest extends UnitTestBase
 {
-    private ParticipantExecutorRegistry _participantRegistry = new ParticipantExecutorRegistry();
+    private final ParticipantExecutorRegistry _participantRegistry = new ParticipantExecutorRegistry();
 
-    private ParticipantExecutor _testParticipant1 = mock(ParticipantExecutor.class);
-    private ParticipantExecutor _testParticipant2 = mock(ParticipantExecutor.class);
+    private final ParticipantExecutor _testParticipant1 = mock(ParticipantExecutor.class);
+    private final ParticipantExecutor _testParticipant2 = mock(ParticipantExecutor.class);
 
     @Test
     public void testAdd()

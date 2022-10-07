@@ -285,8 +285,8 @@ public class LinkRegistryImpl<S extends BaseSource, T extends BaseTarget> implem
                 }
             }
 
-            private Map<String, LinkDump> _sendingLinks = new LinkedHashMap<>();
-            private Map<String, LinkDump> _receivingLinks = new LinkedHashMap<>();
+            private final Map<String, LinkDump> _sendingLinks = new LinkedHashMap<>();
+            private final Map<String, LinkDump> _receivingLinks = new LinkedHashMap<>();
 
 
             public Map<String, LinkDump> getSendingLinks()
@@ -300,7 +300,7 @@ public class LinkRegistryImpl<S extends BaseSource, T extends BaseTarget> implem
             }
         }
 
-        private Map<String, ContainerDump> _containers = new LinkedHashMap<>();
+        private final Map<String, ContainerDump> _containers = new LinkedHashMap<>();
 
         public Map<String, ContainerDump> getContainers()
         {

@@ -68,7 +68,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     private static final String MYUSER = "myuser";
     private static final String MYUSER_SERIALIZATION = TestPrincipalUtils.getTestPrincipalSerialization(MYUSER);
 
-    private RestUserPreferenceHandler _handler = new RestUserPreferenceHandler(DEFAULT_PREFERENCE_OPERATION_TIMEOUT);
+    private final RestUserPreferenceHandler _handler = new RestUserPreferenceHandler(DEFAULT_PREFERENCE_OPERATION_TIMEOUT);
     private ConfiguredObject<?> _configuredObject;
     private UserPreferences _userPreferences;
     private Subject _subject;

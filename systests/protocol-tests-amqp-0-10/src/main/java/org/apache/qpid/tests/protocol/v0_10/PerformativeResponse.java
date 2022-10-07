@@ -25,7 +25,7 @@ import org.apache.qpid.tests.protocol.Response;
 
 public class PerformativeResponse implements Response<Method>
 {
-    private Method _method;
+    private final Method _method;
 
     public PerformativeResponse(final Method method)
     {

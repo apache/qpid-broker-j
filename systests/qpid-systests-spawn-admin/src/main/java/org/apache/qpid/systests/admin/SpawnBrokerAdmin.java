@@ -1007,8 +1007,8 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
 
     private static class ListeningPort
     {
-        private String _transport;
-        private int _port;
+        private final String _transport;
+        private final int _port;
 
         ListeningPort(final String transport, final int port)
         {

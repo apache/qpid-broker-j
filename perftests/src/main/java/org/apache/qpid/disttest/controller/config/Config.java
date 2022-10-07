@@ -25,7 +25,7 @@ import java.util.List;
 
 public class Config
 {
-    private List<TestConfig> _tests;
+    private final List<TestConfig> _tests;
 
     public Config()
     {
