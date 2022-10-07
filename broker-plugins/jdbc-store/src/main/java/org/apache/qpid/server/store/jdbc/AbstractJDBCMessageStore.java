@@ -1204,6 +1204,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         return _bytesEvacuatedFromMemory.get();
     }
 
+    @Override
+    public void resetStatistics()
+    {
+        _bytesEvacuatedFromMemory.set(0L);
+    }
+
     protected class JDBCTransaction implements Transaction
     {
         private final ConnectionWrapper _connWrapper;

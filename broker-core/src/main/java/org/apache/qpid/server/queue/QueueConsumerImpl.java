@@ -512,6 +512,14 @@ class QueueConsumerImpl<T extends ConsumerTarget>
     }
 
     @Override
+    public void resetStatistics()
+    {
+        _deliveredBytes.set(0L);
+        _deliveredCount.set(0L);
+        _target.resetStatistics();
+    }
+
+    @Override
     public void acquisitionRemoved(final QueueEntry node)
     {
         _target.acquisitionRemoved(node);

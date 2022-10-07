@@ -68,33 +68,48 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
-            description = "Total size of all messages received by this session.", metricName = "inbound_bytes_count")
+            description = "Total size of all messages received by this session.",
+            metricName = "inbound_bytes_count",
+            resettable = true)
     long getBytesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound",
-            description = "Total size of all messages delivered by this session.", metricName = "outbound_bytes_count")
+            description = "Total size of all messages delivered by this session.",
+            metricName = "outbound_bytes_count",
+            resettable = true)
     long getBytesOut();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
-            description = "Total number of messages delivered by this session.", metricName = "inbound_messages_count")
+            description = "Total number of messages delivered by this session.",
+            metricName = "inbound_messages_count",
+            resettable = true)
     long getMessagesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound",
-            description = "Total number of messages received by this session.", metricName = "outbound_messages_count")
+            description = "Total number of messages received by this session.",
+            metricName = "outbound_messages_count",
+            resettable = true)
     long getMessagesOut();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Transacted Inbound",
-            description = "Total number of messages delivered by this session within a transaction.", metricName = "transacted_inbound_messages_count")
+            description = "Total number of messages delivered by this session within a transaction.",
+            metricName = "transacted_inbound_messages_count",
+            resettable = true)
     long getTransactedMessagesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Transacted Outbound",
-            description = "Total number of messages received by this session within a transaction.", metricName = "transacted_outbound_messages_count")
+            description = "Total number of messages received by this session within a transaction.",
+            metricName = "transacted_outbound_messages_count",
+            resettable = true)
     long getTransactedMessagesOut();
+
+    @ManagedOperation(description = "Resets session statistics", changesConfiguredObjectState = true)
+    void resetStatistics();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Producers",

@@ -1109,6 +1109,17 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
     @Override
+    public void resetStatistics()
+    {
+        _receivedMessageCount.set(0);
+        _receivedMessageSize.set(0);
+        _routedMessageCount.set(0);
+        _routedMessageSize.set(0);
+        _droppedMessageCount.set(0);
+        _droppedMessageSize.set(0);
+    }
+
+    @Override
     protected void logCreated(final Map<String, Object> attributes,
                               final Outcome outcome)
     {

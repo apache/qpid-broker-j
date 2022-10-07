@@ -29,10 +29,14 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.security.Principal;
+import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+
+import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
@@ -46,6 +50,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogFileDetails;
+import org.apache.qpid.server.logging.LogLevel;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -55,6 +60,7 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.AccessControl;
@@ -241,6 +247,70 @@ public class VirtualHostLoggerTest extends UnitTestBase
         logger.stopLogging();
     }
 
+    @Test
+    public void testStatistics()
+    {
+        final String loggerName = getTestName();
+        final VirtualHostFileLogger<?> logger = (VirtualHostFileLogger<?>) createVirtualHostLogger();
+        logger.open();
+
+        final Logger messageLogger = LoggerFactory.getLogger(loggerName);
+
+        assertEquals(0L, logger.getWarnCount());
+        assertEquals(0L, logger.getErrorCount());
+
+        final VirtualHostLogInclusionRule<?> warnFilter = logger.createChild(
+                VirtualHostLogInclusionRule.class,
+                createInclusionRuleAttributes(loggerName, LogLevel.WARN));
+
+        final Subject subject = new Subject(false, Set.of(_virtualHost.getPrincipal()), Set.of(), Set.of());
+        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
+        {
+            messageLogger.warn("warn");
+            return null;
+        });
+
+        assertEquals(1L, logger.getWarnCount());
+        assertEquals(0L, logger.getErrorCount());
+
+        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
+        {
+            messageLogger.error("error");
+            return null;
+        });
+        assertEquals(1L, logger.getWarnCount());
+        assertEquals(1L, logger.getErrorCount());
+
+        warnFilter.delete();
+
+        final VirtualHostLogInclusionRule<?> errorFilter = logger.createChild(
+                VirtualHostLogInclusionRule.class,
+                createInclusionRuleAttributes(loggerName, LogLevel.ERROR));
+
+        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
+        {
+            messageLogger.warn("warn");
+            return null;
+        });
+        assertEquals(1L, logger.getWarnCount());
+        assertEquals(1L, logger.getErrorCount());
+
+        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
+        {
+            messageLogger.error("error");
+            return null;
+        });
+        assertEquals(1L, logger.getWarnCount());
+        assertEquals(2L, logger.getErrorCount());
+
+        logger.resetStatistics();
+
+        assertEquals(0L, logger.getWarnCount());
+        assertEquals(0L, logger.getErrorCount());
+
+        errorFilter.delete();
+    }
+
     private VirtualHostFileLogger createErrorredLogger()
     {
         Map<String, Object> attributes = new HashMap<>();
@@ -270,4 +340,13 @@ public class VirtualHostLoggerTest extends UnitTestBase
         return _virtualHost.createChild(VirtualHostLogger.class, attributes);
     }
 
+    private Map<String, Object> createInclusionRuleAttributes(final String loggerName,
+                                                              final LogLevel logLevel)
+    {
+        return Map.of(
+                VirtualHostNameAndLevelLogInclusionRule.LOGGER_NAME, loggerName,
+                VirtualHostNameAndLevelLogInclusionRule.LEVEL, logLevel,
+                VirtualHostNameAndLevelLogInclusionRule.NAME, "test",
+                ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
+    }
 }

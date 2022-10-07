@@ -28,6 +28,7 @@ import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.ManagedStatistic;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -199,8 +200,12 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT,
             label = "Total Connections",
             description = "Total number of connections made through this port since broker startup",
-            metricName = "aggregate_connection_count")
+            metricName = "aggregate_connection_count",
+            resettable = true)
     long getTotalConnectionCount();
+
+    @ManagedOperation(description = "Resets port statistics", changesConfiguredObjectState = true)
+    void resetStatistics();
 
     @DerivedAttribute(description = "Maximum time allowed for a new connection to send a protocol header."
                                     + " If the connection does not send a protocol header within this time,"

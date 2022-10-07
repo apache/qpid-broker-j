@@ -65,6 +65,8 @@ public interface MessageStore
 
     long getBytesEvacuatedFromMemory();
 
+    void resetStatistics();
+
     /**
      * Is this store capable of persisting the data
      *

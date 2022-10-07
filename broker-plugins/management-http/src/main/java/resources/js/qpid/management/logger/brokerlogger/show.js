@@ -19,11 +19,12 @@
  *
  */
 define(["qpid/common/util",
+        "dijit/registry",
         "dojo/query",
         "dojo/_base/lang",
         "dojo/text!logger/brokerlogger/show.html",
         "qpid/common/CategoryTabExtension",
-        "dojo/domReady!"], function (util, query, lang, template, CategoryTabExtension)
+        "dojo/domReady!"], function (util, registry, query, lang, template, CategoryTabExtension)
 {
     function BrokerLogger(params)
     {
@@ -40,6 +41,8 @@ define(["qpid/common/util",
     BrokerLogger.prototype.postParse = function (containerNode)
     {
         this.virtualHostLogEventExcludedCheckboxContainer = query(".virtualHostLogEventExcluded", containerNode)[0];
+        this._resetStatisticsButton = registry.byNode(query(".resetStatistics", containerNode)[0]);
+        this._resetStatisticsButton.on("click", lang.hitch(this, this.resetStatistics));
     }
 
     BrokerLogger.prototype.update = function (restData)
@@ -48,6 +51,15 @@ define(["qpid/common/util",
         this.virtualHostLogEventExcludedCheckboxContainer.innerHTML =
             util.buildCheckboxMarkup(data.virtualHostLogEventExcluded);
         CategoryTabExtension.prototype.update.call(this, restData);
+    }
+
+    BrokerLogger.prototype.resetStatistics = function ()
+    {
+        util.resetStatistics(this.management,
+                             this.modelObj,
+                             this._resetStatisticsButton,
+                             "BrokerLogger",
+                             this.modelObj.name);
     }
 
     return BrokerLogger;

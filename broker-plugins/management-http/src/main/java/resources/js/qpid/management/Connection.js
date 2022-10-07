@@ -228,7 +228,7 @@ define(["dojo/parser",
             {
                 return;
             }
-
+            const that = this;
             this.management.load(this.modelObj, { excludeInheritedContext: true, depth: 0})
                 .then(lang.hitch(this, function (data)
                 {
@@ -238,8 +238,9 @@ define(["dojo/parser",
                     {
                         this.connectionStatistics = new StatisticsWidget({
                             category:  "Connection",
+                            modelObj: that.modelObj,
                             type: null,
-                            management: this.management,
+                            management: that.management,
                             defaultStatistics: ["messagesIn", "messagesOut", "lastIoTime"]
                         });
                         this.connectionStatistics.placeAt(this.connectionStatisticsNode);

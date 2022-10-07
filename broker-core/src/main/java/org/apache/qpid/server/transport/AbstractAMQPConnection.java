@@ -72,6 +72,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.network.NetworkConnection;
@@ -740,6 +741,26 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     public long getTransactedMessagesOut()
     {
         return _transactedMessagesOut.get();
+    }
+
+    @Override
+    public void resetStatistics()
+    {
+        _lastMessageInboundTime = System.currentTimeMillis();
+        _lastMessageOutboundTime = System.currentTimeMillis();
+
+        _bytesIn.set(0L);
+        _bytesOut.set(0L);
+        _messagesIn.set(0L);
+        _messagesOut.set(0L);
+        _transactedMessagesIn.set(0L);
+        _transactedMessagesOut.set(0L);
+        _localTransactionBegins.set(0L);
+        _localTransactionRollbacks.set(0L);
+
+        getChildren(Session.class).stream()
+                .filter(AbstractAMQPSession.class::isInstance).map(session -> (AbstractAMQPSession<?, ?>) session)
+                .forEach(AbstractAMQPSession::resetStatistics);
     }
 
     public AccessControlContext getAccessControllerContext()

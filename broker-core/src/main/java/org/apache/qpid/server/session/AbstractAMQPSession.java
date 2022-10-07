@@ -388,6 +388,17 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     }
 
     @Override
+    public void resetStatistics()
+    {
+        _bytesIn.set(0L);
+        _bytesOut.set(0L);
+        _messagesIn.set(0L);
+        _messagesOut.set(0L);
+        _transactedMessagesIn.set(0L);
+        _transactedMessagesOut.set(0L);
+    }
+
+    @Override
     public long getProducerCount()
     {
         return _producerCount.get();

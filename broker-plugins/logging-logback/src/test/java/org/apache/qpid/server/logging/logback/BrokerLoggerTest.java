@@ -104,7 +104,10 @@ public class BrokerLoggerTest extends UnitTestBase
     {
         try
         {
-            _brokerLogger.delete();
+            if (_brokerLogger != null)
+            {
+                _brokerLogger.delete();
+            }
             _taskExecutor.stopImmediately();
         }
         finally
@@ -241,6 +244,11 @@ public class BrokerLoggerTest extends UnitTestBase
         messageLogger.error("error");
         assertEquals(1L, _brokerLogger.getWarnCount());
         assertEquals(2L, _brokerLogger.getErrorCount());
+
+        _brokerLogger.resetStatistics();
+
+        assertEquals(0L, _brokerLogger.getWarnCount());
+        assertEquals(0L, _brokerLogger.getErrorCount());
 
         errorFilter.delete();
     }

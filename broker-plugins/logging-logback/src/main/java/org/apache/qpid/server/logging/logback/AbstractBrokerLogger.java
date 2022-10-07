@@ -58,6 +58,4 @@ public abstract class AbstractBrokerLogger<X extends AbstractBrokerLogger<X>> ex
     {
         return _virtualHostLogEventExcluded;
     }
-
-
 }

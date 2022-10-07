@@ -89,6 +89,12 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return 0;
     }
 
+    @Override
+    public void resetStatistics()
+    {
+
+    }
+
     public Queue<?> getQueue()
     {
         return queue;

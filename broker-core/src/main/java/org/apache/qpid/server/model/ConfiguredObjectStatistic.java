@@ -33,4 +33,6 @@ public interface ConfiguredObjectStatistic<C extends ConfiguredObject, T extends
     String getMetricName();
 
     boolean isMetricDisabled();
+
+    boolean isResettable();
 }

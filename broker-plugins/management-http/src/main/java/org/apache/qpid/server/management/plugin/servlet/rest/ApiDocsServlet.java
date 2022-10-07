@@ -378,7 +378,7 @@ public class ApiDocsServlet extends AbstractServlet
     {
         writer.println("<table class=\"statistics\">");
         writer.println("<thead>");
-        writer.println("<tr><th class=\"name\">Statistic Name</th><th class=\"type\">Type</th><th class=\"units\">Units</th><th class=\"statisticType\">Stat Type</th><th class=\"description\">Description</th></tr>");
+        writer.println("<tr><th class=\"name\">Statistic Name</th><th class=\"type\">Type</th><th class=\"units\">Units</th><th class=\"statisticType\">Stat Type</th><th class=\"statisticResettable\">Resettable</th><th class=\"description\">Description</th></tr>");
         writer.println("</thead>");
         writer.println("<tbody>");
 
@@ -392,6 +392,8 @@ public class ApiDocsServlet extends AbstractServlet
                            + statistic.getUnits()
                            + "</td><td class=\"stattype\">"
                            + statistic.getStatisticType()
+                           + "</td><td class=\"resettable\">"
+                           + statistic.isResettable()
                            + "</td><td class=\"description\">"
                            + statistic.getDescription()
                            + "</td></tr>");

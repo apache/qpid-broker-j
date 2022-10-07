@@ -42,12 +42,17 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.MessageReference;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
@@ -341,5 +346,30 @@ public class BrokerTestHelper
     public static <X extends ConfiguredObject> X mockAsSystemPrincipalSource(Class<X> clazz)
     {
         return mockWithSystemPrincipal(clazz, SYSTEM_PRINCIPAL);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static ServerMessage<?> createMessage(final Long id)
+    {
+        final AMQMessageHeader header = mock(AMQMessageHeader.class);
+        when(header.getMessageId()).thenReturn(String.valueOf(id));
+
+        final ServerMessage<?> message = mock(ServerMessage.class);
+        when(message.getMessageNumber()).thenReturn(id);
+        when(message.getMessageHeader()).thenReturn(header);
+        when(message.checkValid()).thenReturn(true);
+        when(message.getSizeIncludingHeader()).thenReturn(100L);
+        when(message.getArrivalTime()).thenReturn(System.currentTimeMillis());
+
+        final StoredMessage storedMessage = mock(StoredMessage.class);
+        when(message.getStoredMessage()).thenReturn(storedMessage);
+
+        final MessageReference ref = mock(MessageReference.class);
+        when(ref.getMessage()).thenReturn(message);
+
+        when(message.newReference()).thenReturn(ref);
+        when(message.newReference(any(TransactionLogResource.class))).thenReturn(ref);
+
+        return message;
     }
 }

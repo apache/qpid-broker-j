@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
+import java.util.Map;
 
 import javax.security.auth.Subject;
 
@@ -252,4 +253,34 @@ public class AMQPConnection_0_8Test extends UnitTestBase
                           conn.isClosing());
     }
 
+    @Test
+    public void resetStatistics()
+    {
+        final AMQPConnection_0_8Impl connection =
+                new AMQPConnection_0_8Impl(_broker, _network, _port, _transport, _protocol, 0, _ticker);
+        connection.create();
+        connection.setAddressSpace(_virtualHost);
+        connection.registerMessageReceived(100L);
+        connection.registerMessageDelivered(100L);
+        connection.registerTransactedMessageReceived();
+        connection.registerTransactedMessageDelivered();
+
+        final Map<String, Object> statisticsBeforeReset = connection.getStatistics();
+        assertEquals(100L, statisticsBeforeReset.get("bytesIn"));
+        assertEquals(100L, statisticsBeforeReset.get("bytesOut"));
+        assertEquals(1L, statisticsBeforeReset.get("messagesIn"));
+        assertEquals(1L, statisticsBeforeReset.get("messagesOut"));
+        assertEquals(1L, statisticsBeforeReset.get("transactedMessagesIn"));
+        assertEquals(1L, statisticsBeforeReset.get("transactedMessagesOut"));
+
+        connection.resetStatistics();
+
+        final Map<String, Object> statisticsAfterReset = connection.getStatistics();
+        assertEquals(0L, statisticsAfterReset.get("bytesIn"));
+        assertEquals(0L, statisticsAfterReset.get("bytesOut"));
+        assertEquals(0L, statisticsAfterReset.get("messagesIn"));
+        assertEquals(0L, statisticsAfterReset.get("messagesOut"));
+        assertEquals(0L, statisticsAfterReset.get("transactedMessagesIn"));
+        assertEquals(0L, statisticsAfterReset.get("transactedMessagesOut"));
+    }
 }
