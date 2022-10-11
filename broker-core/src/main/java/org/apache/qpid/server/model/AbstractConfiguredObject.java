@@ -486,24 +486,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         try
         {
             final ConfiguredAutomatedAttribute attribute = (ConfiguredAutomatedAttribute) _attributeTypes.get(name);
-            if(value == null && !"".equals(attribute.defaultValue()))
+            if (value == null && !"".equals(attribute.defaultValue()))
             {
                 value = attribute.defaultValue();
             }
             ConfiguredObjectTypeRegistry.AutomatedField field = _automatedFields.get(name);
-
-            if(field.getPreSettingAction() != null)
-            {
-                field.getPreSettingAction().invoke(this);
-            }
-
             Object desiredValue = attribute.convert(value, this);
-            field.getField().set(this, desiredValue);
-
-            if(field.getPostSettingAction() != null)
-            {
-                field.getPostSettingAction().invoke(this);
-            }
+            field.set(this, desiredValue);
         }
         catch (IllegalAccessException e)
         {
@@ -511,7 +500,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
         catch (InvocationTargetException e)
         {
-            if(e.getCause() instanceof RuntimeException)
+            if (e.getCause() instanceof RuntimeException)
             {
                 throw (RuntimeException) e.getCause();
             }

@@ -38,7 +38,7 @@ import org.apache.qpid.server.security.limit.ConnectionLimiter;
 import org.apache.qpid.server.user.connection.limits.config.RuleSetCreator;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
-abstract class AbstractConnectionLimitProvider<X extends AbstractConnectionLimitProvider<X>>
+public abstract class AbstractConnectionLimitProvider<X extends AbstractConnectionLimitProvider<X>>
         extends AbstractConfiguredObject<X> implements ConnectionLimitProvider<X>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConnectionLimitProvider.class);

@@ -33,7 +33,7 @@ import org.apache.qpid.server.user.connection.limits.config.FileParser;
 import org.apache.qpid.server.user.connection.limits.config.Rule;
 import org.apache.qpid.server.user.connection.limits.config.RuleSetCreator;
 
-abstract class AbstractFileBasedConnectionLimitProvider<C extends AbstractFileBasedConnectionLimitProvider<C>>
+public abstract class AbstractFileBasedConnectionLimitProvider<C extends AbstractFileBasedConnectionLimitProvider<C>>
         extends AbstractConnectionLimitProvider<C> implements FileBasedConnectionLimitProvider<C>
 {
     static final String FILE_PROVIDER_TYPE = "ConnectionLimitFile";
