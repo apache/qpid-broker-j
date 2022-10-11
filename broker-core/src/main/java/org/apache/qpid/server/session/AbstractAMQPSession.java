@@ -39,6 +39,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -50,12 +51,16 @@ import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.Producer;
+import org.apache.qpid.server.model.ProducerImpl;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
@@ -63,6 +68,7 @@ import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
                                           X extends ConsumerTarget<X>>
@@ -93,6 +99,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     private final AtomicLong _transactedMessagesOut = new AtomicLong();
     private final AtomicLong _bytesIn = new AtomicLong();
     private final AtomicLong _bytesOut = new AtomicLong();
+    private final AtomicLong _producerCount = new AtomicLong();
 
     protected AbstractAMQPSession(final Connection<?> parent, final int sessionId)
     {
@@ -378,6 +385,67 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     {
         _transactedMessagesIn.incrementAndGet();
         _connection.registerTransactedMessageReceived();
+    }
+
+    @Override
+    public long getProducerCount()
+    {
+        return _producerCount.get();
+    }
+
+    public Producer<?> addProducer(final PublishingLink link, final MessageDestination messageDestination)
+    {
+        if (link.TYPE_LINK.equals(link.getType()))
+        {
+            _producerCount.incrementAndGet();
+            return createProducer(this, link, messageDestination);
+        }
+        return null;
+    }
+
+    public void removeProducer(final PublishingLink link)
+    {
+        final Producer<?> producer = getChildByName(Producer.class, link.getName());
+        if (producer != null)
+        {
+            producer.deleteNoChecks();
+            _producerCount.decrementAndGet();
+        }
+    }
+
+    private Producer<?> createProducer(final AbstractAMQPSession<?, ?> session,
+                                       final PublishingLink publishingLink,
+                                       final MessageDestination messageDestination)
+            throws ConnectionScopedRuntimeException
+    {
+        return getTaskExecutor().run(new Task<Producer<?>, ConnectionScopedRuntimeException>()
+        {
+            @Override
+            public Producer<?> execute()
+            {
+                return new ProducerImpl<>(session, publishingLink, messageDestination);
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractAMQPSession.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "create producer";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return "session=" + session +
+                       ", publishingLink=" + publishingLink +
+                       ", messageDestination=" + messageDestination;
+            }
+        });
     }
 
     @Override

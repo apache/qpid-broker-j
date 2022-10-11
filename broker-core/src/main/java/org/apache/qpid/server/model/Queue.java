@@ -372,7 +372,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false, skipAclCheck = true)
     Collection<PublishingLink> getPublishingLinks();
 
-
     @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false, skipAclCheck = true)
     Collection<QueueConsumer<?,?>> getConsumers();
@@ -518,6 +517,10 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Malformed",
             description = "Total number of enqueued malformed messages.", metricName = "malformed_messages_count")
     long getTotalMalformedMessages();
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Producers",
+            description = "Number of producers to this queue.", metricName = "producers_count")
+    long getProducerCount();
 
     @ManagedOperation(description = "move messages from this queue to another", changesConfiguredObjectState = false)
     List<Long> moveMessages(@Param(name = "destination", description = "The queue to which the messages should be moved", mandatory = true) Queue<?> destination,

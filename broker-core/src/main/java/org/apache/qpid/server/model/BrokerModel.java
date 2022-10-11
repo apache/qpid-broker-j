@@ -80,6 +80,9 @@ public final class BrokerModel extends Model
      * 8.0
      *    Added new broker statistics: processCpuTime, processCpuLoad
      *    Added new context variables for queues and exchanges to configure behaviour on unknown declared arguments
+     *
+     * 9.0
+     *    Introduced PublishProducer as a child of Exchange and PointToPointProducer as child of Queue
      */
     public static final int MODEL_MAJOR_VERSION = 9;
     public static final int MODEL_MINOR_VERSION = 0;
@@ -137,6 +140,8 @@ public final class BrokerModel extends Model
         addRelationship(Group.class, GroupMember.class);
 
         addRelationship(Connection.class, Session.class);
+
+        addRelationship(Session.class, Producer.class);
 
         addRelationship(Queue.class, Consumer.class);
 
