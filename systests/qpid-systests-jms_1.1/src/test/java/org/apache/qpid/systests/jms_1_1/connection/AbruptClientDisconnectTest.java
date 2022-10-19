@@ -285,7 +285,7 @@ public class AbruptClientDisconnectTest extends JmsTestBase
         }
     }
 
-    private class ClientMonitor implements TCPTunneler.TunnelListener
+    private static class ClientMonitor implements TCPTunneler.TunnelListener
     {
         private final CountDownLatch _closeLatch = new CountDownLatch(1);
 

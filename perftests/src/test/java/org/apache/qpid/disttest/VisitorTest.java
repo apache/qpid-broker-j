@@ -85,7 +85,7 @@ public class VisitorTest extends UnitTestBase
         }
     }
 
-    class TestVisitor extends Visitor
+    static class TestVisitor extends Visitor
     {
         String _string = null;
         TestCommand _testCommand = null;
@@ -101,7 +101,7 @@ public class VisitorTest extends UnitTestBase
         }
     }
 
-    class TestCommand extends Command
+    static class TestCommand extends Command
     {
 
         public TestCommand()

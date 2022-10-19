@@ -456,7 +456,7 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
 
         DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        AbstractVirtualHostNode node = new TestAbstractVirtualHostNode( _broker, attributes, store);
+        AbstractVirtualHostNode node = new TestAbstractVirtualHostNode(_broker, attributes, store);
         node.open();
         assertEquals("Unexpected node state", State.ERRORED, node.getState());
         node.close();
@@ -607,7 +607,7 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         };
     }
 
-    private class TestAbstractVirtualHostNode extends AbstractVirtualHostNode
+    private static class TestAbstractVirtualHostNode extends AbstractVirtualHostNode
     {
         private DurableConfigurationStore _store;
 

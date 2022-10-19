@@ -701,7 +701,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         _unacknowledgedCount.decrementAndGet();
     }
 
-    private class DoNothingAction implements UnsettledAction
+    private static class DoNothingAction implements UnsettledAction
     {
         public DoNothingAction()
         {

@@ -122,7 +122,7 @@ public class QpidExceptionTest extends UnitTestBase
     /**
      * Private class that extends AMQException but does not have a default exception.
      */
-    private class AMQExceptionSubclass extends QpidException
+    private static class AMQExceptionSubclass extends QpidException
     {
 
         public AMQExceptionSubclass(String msg)

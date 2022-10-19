@@ -114,7 +114,8 @@ public class MessageListenerTest extends JmsTestBase
 
             final MessageConsumer consumer = session.createConsumer(queue);
             final int messageToReceivedBeforeConnectionStop = MSG_COUNT / 2;
-            CountingMessageListener countingMessageListener = new CountingMessageListener(MSG_COUNT, messageToReceivedBeforeConnectionStop);
+            CountingMessageListener countingMessageListener =
+                    new CountingMessageListener(MSG_COUNT, messageToReceivedBeforeConnectionStop);
             consumer.setMessageListener(countingMessageListener);
 
             countingMessageListener.awaitMessages(getReceiveTimeout());
@@ -148,7 +149,8 @@ public class MessageListenerTest extends JmsTestBase
 
             final MessageConsumer consumer = session.createConsumer(queue);
             final int messageToReceivedBeforeConnectionStop = MSG_COUNT / 2;
-            CountingMessageListener countingMessageListener1 = new CountingMessageListener(MSG_COUNT, messageToReceivedBeforeConnectionStop);
+            CountingMessageListener countingMessageListener1 =
+                    new CountingMessageListener(MSG_COUNT, messageToReceivedBeforeConnectionStop);
             consumer.setMessageListener(countingMessageListener1);
 
             countingMessageListener1.awaitMessages(getReceiveTimeout());
@@ -156,7 +158,8 @@ public class MessageListenerTest extends JmsTestBase
             connection.stop();
             assertTrue("Too few messages received after Connection#stop()", countingMessageListener1.getReceivedCount() >= messageToReceivedBeforeConnectionStop);
 
-            CountingMessageListener countingMessageListener2 = new CountingMessageListener(countingMessageListener1.getOutstandingCount());
+            CountingMessageListener countingMessageListener2 =
+                    new CountingMessageListener(countingMessageListener1.getOutstandingCount());
 
             consumer.setMessageListener(countingMessageListener2);
             connection.start();
@@ -184,7 +187,8 @@ public class MessageListenerTest extends JmsTestBase
 
             final MessageConsumer consumer = session.createConsumer(queue);
             final int messageToReceivedBeforeConnectionStop = MSG_COUNT / 2;
-            CountingMessageListener countingMessageListener = new CountingMessageListener(MSG_COUNT, messageToReceivedBeforeConnectionStop);
+            CountingMessageListener countingMessageListener =
+                    new CountingMessageListener(MSG_COUNT, messageToReceivedBeforeConnectionStop);
             consumer.setMessageListener(countingMessageListener);
 
             countingMessageListener.awaitMessages(getReceiveTimeout());
@@ -216,7 +220,8 @@ public class MessageListenerTest extends JmsTestBase
 
             final MessageConsumer consumer = session.createConsumer(queue);
             final int messageToReceivedBeforeConnectionStop = MSG_COUNT / 2;
-            CountingMessageListener countingMessageListener = new CountingMessageListener(MSG_COUNT, messageToReceivedBeforeConnectionStop);
+            CountingMessageListener countingMessageListener =
+                    new CountingMessageListener(MSG_COUNT, messageToReceivedBeforeConnectionStop);
             consumer.setMessageListener(countingMessageListener);
 
             countingMessageListener.awaitMessages(getReceiveTimeout());
@@ -295,7 +300,7 @@ public class MessageListenerTest extends JmsTestBase
         }
     }
 
-    private final class CountingMessageListener implements MessageListener
+    private static final class CountingMessageListener implements MessageListener
     {
         private final AtomicInteger _receivedCount;
         private final AtomicInteger _outstandingMessageCount;

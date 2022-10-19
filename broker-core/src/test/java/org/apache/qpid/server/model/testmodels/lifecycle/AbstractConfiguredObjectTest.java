@@ -357,13 +357,21 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
             @Override
             public void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue, Object newAttributeValue)
             {
-                events.add(new ChangeEvent(EventType.ATTRIBUTE_SET, object, attributeName, oldAttributeValue, newAttributeValue));
+                events.add(new ChangeEvent(EventType.ATTRIBUTE_SET,
+                                           object,
+                                           attributeName,
+                                           oldAttributeValue,
+                                           newAttributeValue));
             }
 
             @Override
             public void stateChanged(ConfiguredObject<?> object, State oldState, State newState)
             {
-                events.add(new ChangeEvent(EventType.STATE_CHANGED, object, ConfiguredObject.DESIRED_STATE, oldState, newState));
+                events.add(new ChangeEvent(EventType.STATE_CHANGED,
+                                           object,
+                                           ConfiguredObject.DESIRED_STATE,
+                                           oldState,
+                                           newState));
             }
         });
 
@@ -377,11 +385,19 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         ChangeEvent event1 = events.get(1);
 
         assertEquals("Unexpected first event: " + event0,
-                            new ChangeEvent(EventType.STATE_CHANGED, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE, State.DELETED),
+                     new ChangeEvent(EventType.STATE_CHANGED,
+                                     configuredObject,
+                                     Exchange.DESIRED_STATE,
+                                     State.ACTIVE,
+                                     State.DELETED),
                             event0);
 
         assertEquals("Unexpected second event: " + event1,
-                            new ChangeEvent(EventType.ATTRIBUTE_SET, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE, State.DELETED),
+                     new ChangeEvent(EventType.ATTRIBUTE_SET,
+                                     configuredObject,
+                                     Exchange.DESIRED_STATE,
+                                     State.ACTIVE,
+                                     State.DELETED),
                             event1);
     }
 
@@ -391,7 +407,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         STATE_CHANGED
     }
 
-    private class ChangeEvent
+    private static class ChangeEvent
     {
         private final ConfiguredObject<?> _source;
         private final String _attributeName;

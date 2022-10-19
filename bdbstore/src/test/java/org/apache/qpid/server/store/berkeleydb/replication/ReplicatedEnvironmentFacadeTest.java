@@ -554,13 +554,15 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
     public void testRemoveNodeFromGroup() throws Exception
     {
         TestStateChangeListener stateChangeListener = new TestStateChangeListener();
-        ReplicatedEnvironmentFacade environmentFacade = addNode(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, stateChangeListener, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade environmentFacade = addNode(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, stateChangeListener,
+                                                                new NoopReplicationGroupListener());
         assertTrue("Environment was not created", stateChangeListener.awaitForStateChange(State.MASTER,
                                                                                           _timeout, TimeUnit.SECONDS));
 
         String node2Name = TEST_NODE_NAME + "_2";
         String node2NodeHostPort = "localhost:" + _portHelper.getNextAvailable();
-        ReplicatedEnvironmentFacade ref2 = createReplica(node2Name, node2NodeHostPort, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade ref2 = createReplica(node2Name, node2NodeHostPort,
+                                                         new NoopReplicationGroupListener());
 
         assertEquals("Unexpected group members count",
                      (long) 2,
@@ -653,7 +655,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         int replica1Port = _portHelper.getNextAvailable();
         String node1NodeHostPort = "localhost:" + replica1Port;
         masterEnvironment.setPermittedNodes(Arrays.asList(masterEnvironment.getHostPort(), node1NodeHostPort));
-        ReplicatedEnvironmentFacade replica = createReplica(replicaName, node1NodeHostPort, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade replica = createReplica(replicaName, node1NodeHostPort,
+                                                            new NoopReplicationGroupListener());
 
         assertTrue("Node should be added", nodeAddedLatch.await(_timeout, TimeUnit.SECONDS));
 
@@ -722,7 +725,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         // make sure that node is re-elected as MASTER on second start-up
         ReplicatedEnvironmentConfiguration config = createReplicatedEnvironmentConfiguration(TEST_NODE_NAME, TEST_NODE_HOST_PORT, TEST_DESIGNATED_PRIMARY);
         when(config.getPriority()).thenReturn(2);
-        createReplicatedEnvironmentFacade(TEST_NODE_NAME, stateChangeListener, new NoopReplicationGroupListener(), config);
+        createReplicatedEnvironmentFacade(TEST_NODE_NAME, stateChangeListener,
+                                          new NoopReplicationGroupListener(), config);
 
         assertTrue("Master was not started", masterLatch.await(_timeout, TimeUnit.SECONDS));
 
@@ -731,8 +735,10 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         int replica2Port = _portHelper.getNextAvailable();
         String node2NodeHostPort = "localhost:" + replica2Port;
 
-        ReplicatedEnvironmentFacade replica1 = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
-        ReplicatedEnvironmentFacade replica2 = createReplica(TEST_NODE_NAME + "_2", node2NodeHostPort, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade replica1 = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort,
+                                                             new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade replica2 = createReplica(TEST_NODE_NAME + "_2", node2NodeHostPort,
+                                                             new NoopReplicationGroupListener());
 
         // close replicas
         replica1.close();
@@ -781,7 +787,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
 
         int replica1Port = _portHelper.getNextAvailable();
         String node1NodeHostPort = "localhost:" + replica1Port;
-        ReplicatedEnvironmentFacade secondNode = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade secondNode = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort,
+                                                               new NoopReplicationGroupListener());
         assertEquals("Unexpected state", State.REPLICA.name(), secondNode.getNodeState());
 
         int replica2Port = _portHelper.getNextAvailable();
@@ -805,7 +812,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
             }
         };
         ReplicatedEnvironmentFacade thirdNode = addNode(TEST_NODE_NAME + "_2", node2NodeHostPort, TEST_DESIGNATED_PRIMARY,
-                                                        testStateChangeListener, new NoopReplicationGroupListener());
+                                                        testStateChangeListener,
+                                                        new NoopReplicationGroupListener());
         assertTrue("Environment did not become a replica", replicaStateLatch.await(_timeout, TimeUnit.SECONDS));
         assertEquals((long) 3, (long) thirdNode.getNumberOfElectableGroupMembers());
 
@@ -843,7 +851,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
 
         int replica1Port = _portHelper.getNextAvailable();
         String node1NodeHostPort = "localhost:" + replica1Port;
-        ReplicatedEnvironmentFacade secondNode = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade secondNode = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort,
+                                                               new NoopReplicationGroupListener());
         assertEquals("Unexpected state", State.REPLICA.name(), secondNode.getNodeState());
 
         int replica2Port = _portHelper.getNextAvailable();
@@ -976,13 +985,15 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         DatabaseConfig createConfig = createDatabaseConfig();
 
         TestStateChangeListener masterListener = new TestStateChangeListener();
-        ReplicatedEnvironmentFacade node1 = addNode(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, masterListener, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade node1 = addNode(TEST_NODE_NAME, TEST_NODE_HOST_PORT, true, masterListener,
+                                                    new NoopReplicationGroupListener());
         assertTrue("Environment was not created", masterListener.awaitForStateChange(State.MASTER,
                                                                                      _timeout, TimeUnit.SECONDS));
 
         String replicaNodeHostPort = "localhost:" + _portHelper.getNextAvailable();
         String replicaName = TEST_NODE_NAME + 1;
-        ReplicatedEnvironmentFacade node2 = createReplica(replicaName, replicaNodeHostPort, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade node2 = createReplica(replicaName, replicaNodeHostPort,
+                                                          new NoopReplicationGroupListener());
 
         Database db = node1.openDatabase("mydb", createConfig);
 
@@ -1002,7 +1013,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         LOGGER.debug("RESTARTING " + replicaName);
         // Restart the node2, making it primary so it becomes master
         TestStateChangeListener node2StateChangeListener = new TestStateChangeListener();
-        node2 = addNode(replicaName, replicaNodeHostPort, true, node2StateChangeListener, new NoopReplicationGroupListener());
+        node2 = addNode(replicaName, replicaNodeHostPort, true, node2StateChangeListener,
+                        new NoopReplicationGroupListener());
         boolean awaitForStateChange = node2StateChangeListener.awaitForStateChange(State.MASTER,
                                                                                    _timeout, TimeUnit.SECONDS);
         assertTrue(replicaName + " did not go into desired state; current actual state is "
@@ -1049,7 +1061,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         int port = _portHelper.getNextAvailable();
         String node2NodeHostPort = host + ":" + port;
 
-        final ReplicatedEnvironmentFacade replica = createReplica(nodeName2, node2NodeHostPort, new NoopReplicationGroupListener() );
+        final ReplicatedEnvironmentFacade replica = createReplica(nodeName2, node2NodeHostPort,
+                                                                  new NoopReplicationGroupListener());
 
         // close the master
         master.close();
@@ -1087,7 +1100,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         int port = _portHelper.getNextAvailable();
         String node2NodeHostPort = host + ":" + port;
 
-        final ReplicatedEnvironmentFacade replica = createReplica(nodeName2, node2NodeHostPort, new NoopReplicationGroupListener() );
+        final ReplicatedEnvironmentFacade replica = createReplica(nodeName2, node2NodeHostPort,
+                                                                  new NoopReplicationGroupListener());
 
         // close the master
         master.close();
@@ -1132,8 +1146,10 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
 
         master.setPermittedNodes(Arrays.asList(master.getHostPort(), node1NodeHostPort, node2NodeHostPort));
 
-        ReplicatedEnvironmentFacade replica1 = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
-        ReplicatedEnvironmentFacade replica2 = createReplica(TEST_NODE_NAME + "_2", node2NodeHostPort, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade replica1 = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort,
+                                                             new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade replica2 = createReplica(TEST_NODE_NAME + "_2", node2NodeHostPort,
+                                                             new NoopReplicationGroupListener());
 
         replica1.close();
         replica2.close();
@@ -1179,7 +1195,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
 
         master.setPermittedNodes(Arrays.asList(master.getHostPort(), replicaNodeHostPort));
 
-        ReplicatedEnvironmentFacade replica1 = createReplica(TEST_NODE_NAME + "_1", replicaNodeHostPort, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade replica1 = createReplica(TEST_NODE_NAME + "_1", replicaNodeHostPort,
+                                                             new NoopReplicationGroupListener());
         replica1.close();
 
         assertTrue("Node that was master did not become detached after the replica closed",
@@ -1374,7 +1391,7 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
     }
     private ReplicatedEnvironmentFacade createMaster(final boolean disableCoalescing) throws Exception
     {
-        return createMaster(new NoopReplicationGroupListener(),disableCoalescing);
+        return createMaster(new NoopReplicationGroupListener(), disableCoalescing);
     }
     private ReplicatedEnvironmentFacade createMaster(ReplicationGroupListener replicationGroupListener) throws Exception
     {
@@ -1497,7 +1514,7 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         return node;
     }
 
-    class NoopReplicationGroupListener implements ReplicationGroupListener
+    static class NoopReplicationGroupListener implements ReplicationGroupListener
     {
 
         @Override

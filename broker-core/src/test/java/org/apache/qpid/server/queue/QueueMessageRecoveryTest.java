@@ -62,7 +62,7 @@ public class QueueMessageRecoveryTest extends UnitTestBase
         // Simple deterministic test to prove that interleaved recovery and new publishing onto a queue is correctly
         // handled
         final List<ServerMessage<?>> messageList = new ArrayList<>();
-        TestQueue queue = new TestQueue(Collections.singletonMap(Queue.NAME, (Object)"test"), _vhost, messageList);
+        TestQueue queue = new TestQueue(Collections.singletonMap(Queue.NAME, (Object) "test"), _vhost, messageList);
 
         queue.open();
 
@@ -118,7 +118,8 @@ public class QueueMessageRecoveryTest extends UnitTestBase
     {
 
         final List<ServerMessage<?>> messageList = new ArrayList<>();
-        final TestQueue queue = new TestQueue(Collections.singletonMap(Queue.NAME, (Object) "test"), _vhost, messageList);
+        final TestQueue queue =
+                new TestQueue(Collections.singletonMap(Queue.NAME, (Object) "test"), _vhost, messageList);
 
         queue.open();
 
@@ -195,7 +196,7 @@ public class QueueMessageRecoveryTest extends UnitTestBase
         return msg;
     }
 
-    private class TestQueue extends AbstractQueue<TestQueue>
+    private static class TestQueue extends AbstractQueue<TestQueue>
     {
 
         private final List<ServerMessage<?>> _messageList;

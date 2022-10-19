@@ -93,7 +93,7 @@ public class WebSocketFrameTransport extends FrameTransport
         return this;
     }
 
-    private class WebSocketFramingOutputHandler extends ChannelOutboundHandlerAdapter
+    private static class WebSocketFramingOutputHandler extends ChannelOutboundHandlerAdapter
     {
         private boolean _splitFrames;
 
@@ -141,7 +141,7 @@ public class WebSocketFrameTransport extends FrameTransport
         }
     }
 
-    private class WebSocketDeframingInputHandler extends ChannelInboundHandlerAdapter
+    private static class WebSocketDeframingInputHandler extends ChannelInboundHandlerAdapter
     {
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg)
@@ -164,7 +164,7 @@ public class WebSocketFrameTransport extends FrameTransport
         }
     }
 
-    public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>
+    public static class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>
     {
 
         private final WebSocketClientHandshaker _handshaker;

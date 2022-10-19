@@ -47,7 +47,7 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FanoutExchangeImpl.class);
 
-    private final class BindingSet
+    private static final class BindingSet
     {
         private final Map<MessageDestination, Map<BindingIdentifier, String>> _unfilteredDestinations;
         private final Map<MessageDestination, Map<BindingIdentifier, FilterManagerReplacementRoutingKeyTuple>>

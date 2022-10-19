@@ -103,7 +103,9 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
             }
             catch (IllegalArgumentException e)
             {
-                return new FailedAuthenticationHandler(400, "Some request parameters are included more than once " + request, e);
+                return new FailedAuthenticationHandler(400,
+                                                       "Some request parameters are included more than once " + request,
+                                                       e);
             }
 
             String error = requestParameters.get("error");
@@ -121,7 +123,8 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                 {
                     LOGGER.warn("Authorization endpoint failed, error : '{}', error description '{}'",
                                 error, errorDescription);
-                    return new FailedAuthenticationHandler(responseCode, String.format("Authorization request failed :'%s'", error));
+                    return new FailedAuthenticationHandler(responseCode,
+                                                           String.format("Authorization request failed :'%s'", error));
                 }
             }
 
@@ -145,7 +148,8 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                 if (state == null)
                 {
                     LOGGER.warn("Deny login attempt with wrong state: {}", state);
-                    return new FailedAuthenticationHandler(400, "No state set on request with authorization code grant: "
+                    return new FailedAuthenticationHandler(400,
+                                                           "No state set on request with authorization code grant: "
                                                            + request);
                 }
                 if (!checkState(request, state))
@@ -359,7 +363,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
         return ERROR_RESPONSES.containsKey(error) ? ERROR_RESPONSES.get(error) : 500;
     }
 
-    class FailedAuthenticationHandler implements AuthenticationHandler
+    static class FailedAuthenticationHandler implements AuthenticationHandler
     {
         private final int _errorCode;
         private final Throwable _throwable;

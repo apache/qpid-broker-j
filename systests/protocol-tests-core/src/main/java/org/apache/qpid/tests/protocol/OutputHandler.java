@@ -116,7 +116,7 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
         super.flush(ctx);
     }
 
-    class ByteBufferPromisePair
+    static class ByteBufferPromisePair
     {
         private ByteBuffer byteBuffer;
         private ChannelPromise channelPromise;

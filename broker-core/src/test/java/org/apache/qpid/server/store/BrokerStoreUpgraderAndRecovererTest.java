@@ -742,7 +742,8 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
                                                                             trustStoreAttributes3,
                                                                             parents);
 
-        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, trustStore1, trustStore2, trustStore3);
+        DurableConfigurationStore dcs =
+                new DurableConfigurationStoreStub(_brokerRecord, trustStore1, trustStore2, trustStore3);
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
         List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
@@ -802,7 +803,8 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
                                                                            jmxPluginAttributes,
                                                                            parents);
 
-        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, jmxPort, rmiPort, jmxManagement);
+        DurableConfigurationStore dcs =
+                new DurableConfigurationStoreStub(_brokerRecord, jmxPort, rmiPort, jmxManagement);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
         List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
@@ -1071,7 +1073,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
         return results;
     }
 
-    class DurableConfigurationStoreStub implements DurableConfigurationStore
+    static class DurableConfigurationStoreStub implements DurableConfigurationStore
     {
         private ConfiguredObjectRecord[] records;
 
@@ -1140,7 +1142,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
         }
     }
 
-    private class RecordRetrievingConfiguredObjectRecordHandler implements ConfiguredObjectRecordHandler
+    private static class RecordRetrievingConfiguredObjectRecordHandler implements ConfiguredObjectRecordHandler
     {
         private List<ConfiguredObjectRecord> _records = new ArrayList<>();
 

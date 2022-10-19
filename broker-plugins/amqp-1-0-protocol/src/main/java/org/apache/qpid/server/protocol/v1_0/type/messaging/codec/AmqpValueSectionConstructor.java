@@ -64,7 +64,7 @@ public class AmqpValueSectionConstructor implements DescribedTypeConstructor<Amq
     }
 
 
-    private class LazyConstructor extends AbstractLazyConstructor<AmqpValueSection>
+    private static class LazyConstructor extends AbstractLazyConstructor<AmqpValueSection>
     {
         LazyConstructor(final int originalPosition)
         {

@@ -48,7 +48,7 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DirectExchangeImpl.class);
 
-    private final class BindingSet
+    private static final class BindingSet
     {
         private final Map<MessageDestination, String> _unfilteredDestinations;
         private final Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> _filteredDestinations;
@@ -138,7 +138,8 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
                 unfilteredDestinations = new HashMap<>(_unfilteredDestinations);
                 Object replacementRoutingKey = arguments == null ? null : arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY);
                 unfilteredDestinations.put(destination, replacementRoutingKey == null ? null : String.valueOf(replacementRoutingKey));
-                return new BindingSet(Collections.unmodifiableMap(unfilteredDestinations), Collections.unmodifiableMap(filteredDestinations));
+                return new BindingSet(Collections.unmodifiableMap(unfilteredDestinations),
+                                      Collections.unmodifiableMap(filteredDestinations));
             }
         }
 

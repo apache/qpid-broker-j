@@ -66,7 +66,7 @@ public class HillClimber
         double nextLower();
     }
 
-    private abstract class AbstractStepPolicy implements StepPolicy
+    private abstract static class AbstractStepPolicy implements StepPolicy
     {
         protected double _value;
         protected double _stepSize;

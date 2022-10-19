@@ -216,7 +216,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         }
 
     }
-    private class Upgrader_2_0_to_3_0 extends StoreUpgraderPhase
+    private static class Upgrader_2_0_to_3_0 extends StoreUpgraderPhase
     {
         public Upgrader_2_0_to_3_0()
         {
@@ -304,7 +304,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         }
 
     }
-    private class Upgrader_3_0_to_6_0 extends StoreUpgraderPhase
+    private static class Upgrader_3_0_to_6_0 extends StoreUpgraderPhase
     {
         private String _defaultVirtualHost;
         private final Set<ConfiguredObjectRecord> _knownBdbHaVirtualHostNode = new HashSet<>();
@@ -443,7 +443,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 
     }
 
-    private class Upgrader_6_0_to_6_1 extends StoreUpgraderPhase
+    private static class Upgrader_6_0_to_6_1 extends StoreUpgraderPhase
     {
         private boolean _hasAcl = false;
         private UUID _rootRecordId;
@@ -553,7 +553,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 
     }
 
-    private class Upgrader_6_1_to_7_0 extends StoreUpgraderPhase
+    private static class Upgrader_6_1_to_7_0 extends StoreUpgraderPhase
     {
 
         private Map<String,String> BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT = new HashMap<>();
@@ -688,7 +688,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         }
     }
 
-    private class Upgrader_7_0_to_7_1 extends StoreUpgraderPhase
+    private static class Upgrader_7_0_to_7_1 extends StoreUpgraderPhase
     {
 
         public Upgrader_7_0_to_7_1()
@@ -712,7 +712,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         }
     }
 
-    private class Upgrader_7_1_to_8_0 extends StoreUpgraderPhase
+    private static class Upgrader_7_1_to_8_0 extends StoreUpgraderPhase
     {
 
         public Upgrader_7_1_to_8_0()

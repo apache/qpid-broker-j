@@ -84,7 +84,7 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
     }
 
 
-    private class LazyConstructor extends AbstractLazyConstructor<DataSection>
+    private static class LazyConstructor extends AbstractLazyConstructor<DataSection>
     {
         private final int _sizeBytes;
 
