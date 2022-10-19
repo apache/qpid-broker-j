@@ -71,7 +71,7 @@ public class HttpManagementTest extends UnitTestBase
         attributes.put(HttpManagement.HTTP_SASL_AUTHENTICATION_ENABLED, false);
         attributes.put(HttpManagement.HTTPS_SASL_AUTHENTICATION_ENABLED, true);
         attributes.put(HttpManagement.NAME, getTestName());
-        attributes.put(HttpManagement.TIME_OUT, 10000l);
+        attributes.put(HttpManagement.TIME_OUT, 10000L);
         attributes.put(ConfiguredObject.ID, _id);
         attributes.put(HttpManagement.DESIRED_STATE, State.QUIESCED);
         _management = new HttpManagement(attributes, _broker);
@@ -81,7 +81,7 @@ public class HttpManagementTest extends UnitTestBase
     @Test
     public void testGetSessionTimeout()
     {
-        assertEquals("Unexpected session timeout", 10000l, (long) _management.getSessionTimeout());
+        assertEquals("Unexpected session timeout", 10000L, (long) _management.getSessionTimeout());
     }
 
     @Test

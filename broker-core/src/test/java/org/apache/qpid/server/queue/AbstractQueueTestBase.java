@@ -818,77 +818,77 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         Map<String,Object> attributes = new HashMap<>(_arguments);
         attributes.put(Queue.NAME,"testTtlOverrideMaximumTTl");
-        attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 10000l);
+        attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 10000L);
 
         Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
-        assertEquals("TTL has not been overridden", 60000l, getExpirationOnQueue(queue, 50000l, 0l));
+        assertEquals("TTL has not been overridden", 60000L, getExpirationOnQueue(queue, 50000L, 0L));
 
-        assertEquals("TTL has not been overridden", 60000l, getExpirationOnQueue(queue, 50000l, 65000l));
+        assertEquals("TTL has not been overridden", 60000L, getExpirationOnQueue(queue, 50000L, 65000L));
 
-        assertEquals("TTL has been incorrectly overridden", 55000l, getExpirationOnQueue(queue, 50000l, 55000l));
+        assertEquals("TTL has been incorrectly overridden", 55000L, getExpirationOnQueue(queue, 50000L, 55000L));
 
-        long tooLateExpiration = System.currentTimeMillis() + 20000l;
+        long tooLateExpiration = System.currentTimeMillis() + 20000L;
 
         assertTrue("TTL has not been overridden",
-                          tooLateExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
+                          tooLateExpiration != getExpirationOnQueue(queue, 0L, tooLateExpiration));
 
-        long acceptableExpiration = System.currentTimeMillis() + 5000l;
+        long acceptableExpiration = System.currentTimeMillis() + 5000L;
 
         assertEquals("TTL has been incorrectly overriden",
                             acceptableExpiration,
-                            getExpirationOnQueue(queue, 0l, acceptableExpiration));
+                            getExpirationOnQueue(queue, 0L, acceptableExpiration));
 
         // Test the scenarios where only the minimum TTL has been set
 
         attributes = new HashMap<>(_arguments);
         attributes.put(Queue.NAME,"testTtlOverrideMinimumTTl");
-        attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000l);
+        attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000L);
 
         queue = _virtualHost.createChild(Queue.class, attributes);
 
-        assertEquals("TTL has been overridden incorrectly", 0l, getExpirationOnQueue(queue, 50000l, 0l));
+        assertEquals("TTL has been overridden incorrectly", 0L, getExpirationOnQueue(queue, 50000L, 0L));
 
-        assertEquals("TTL has been overridden incorrectly", 65000l, getExpirationOnQueue(queue, 50000l, 65000l));
+        assertEquals("TTL has been overridden incorrectly", 65000L, getExpirationOnQueue(queue, 50000L, 65000L));
 
-        assertEquals("TTL has not been overriden", 60000l, getExpirationOnQueue(queue, 50000l, 55000l));
+        assertEquals("TTL has not been overriden", 60000L, getExpirationOnQueue(queue, 50000L, 55000L));
 
-        long unacceptableExpiration = System.currentTimeMillis() + 5000l;
+        long unacceptableExpiration = System.currentTimeMillis() + 5000L;
 
         assertTrue("TTL has not been overridden",
-                          unacceptableExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
+                          unacceptableExpiration != getExpirationOnQueue(queue, 0L, tooLateExpiration));
 
-        acceptableExpiration = System.currentTimeMillis() + 20000l;
+        acceptableExpiration = System.currentTimeMillis() + 20000L;
 
         assertEquals("TTL has been incorrectly overridden",
                             acceptableExpiration,
-                            getExpirationOnQueue(queue, 0l, acceptableExpiration));
+                            getExpirationOnQueue(queue, 0L, acceptableExpiration));
 
         // Test the scenarios where both the minimum and maximum TTL have been set
 
         attributes = new HashMap<>(_arguments);
         attributes.put(Queue.NAME,"testTtlOverrideBothTTl");
-        attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000l);
-        attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 20000l);
+        attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000L);
+        attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 20000L);
 
         queue = _virtualHost.createChild(Queue.class, attributes);
 
-        assertEquals("TTL has not been overridden", 70000l, getExpirationOnQueue(queue, 50000l, 0l));
+        assertEquals("TTL has not been overridden", 70000L, getExpirationOnQueue(queue, 50000L, 0L));
 
-        assertEquals("TTL has been overridden incorrectly", 65000l, getExpirationOnQueue(queue, 50000l, 65000l));
+        assertEquals("TTL has been overridden incorrectly", 65000L, getExpirationOnQueue(queue, 50000L, 65000L));
 
-        assertEquals("TTL has not been overridden", 60000l, getExpirationOnQueue(queue, 50000l, 55000l));
+        assertEquals("TTL has not been overridden", 60000L, getExpirationOnQueue(queue, 50000L, 55000L));
     }
 
     @Test
     public void testOldestMessage()
     {
         Queue<?> queue = getQueue();
-        queue.enqueue(createMessage(1l, (byte)1, Collections.singletonMap("sortKey", (Object) "Z"), 10l), null, null);
-        queue.enqueue(createMessage(2l, (byte)4, Collections.singletonMap("sortKey", (Object) "M"), 100l), null, null);
-        queue.enqueue(createMessage(3l, (byte)9, Collections.singletonMap("sortKey", (Object) "A"), 1000l), null, null);
+        queue.enqueue(createMessage(1L, (byte)1, Collections.singletonMap("sortKey", (Object) "Z"), 10L), null, null);
+        queue.enqueue(createMessage(2L, (byte)4, Collections.singletonMap("sortKey", (Object) "M"), 100L), null, null);
+        queue.enqueue(createMessage(3L, (byte)9, Collections.singletonMap("sortKey", (Object) "A"), 1000L), null, null);
 
-        assertEquals(10l, queue.getOldestMessageArrivalTime());
+        assertEquals(10L, queue.getOldestMessageArrivalTime());
     }
 
     @Test
@@ -902,19 +902,19 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         queue.setAttributes(attributes);
 
         ServerMessage message = createMessage(Long.valueOf(24), 50, 50);
-        when(message.getArrivalTime()).thenReturn(10l);
+        when(message.getArrivalTime()).thenReturn(10L);
         queue.enqueue(message, null, null);
         message = createMessage(Long.valueOf(25), 50, 50);
-        when(message.getArrivalTime()).thenReturn(50l);
+        when(message.getArrivalTime()).thenReturn(50L);
         queue.enqueue(message, null, null);
         message = createMessage(Long.valueOf(26), 50, 50);
-        when(message.getArrivalTime()).thenReturn(200l);
+        when(message.getArrivalTime()).thenReturn(200L);
         queue.enqueue(message, null, null);
 
         assertEquals("Wrong number of messages in queue", (long) 3, (long) queue.getQueueDepthMessages());
         assertEquals("Wrong size of messages in queue", (long) 300, queue.getQueueDepthBytes());
         assertEquals("Wrong oldest message",
-                            10l,
+                     10L,
                             ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
     }
 
@@ -929,25 +929,25 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         queue.setAttributes(attributes);
 
         ServerMessage message = createMessage(Long.valueOf(24), 10, 10);
-        when(message.getArrivalTime()).thenReturn(10l);
+        when(message.getArrivalTime()).thenReturn(10L);
         queue.enqueue(message, null, null);
         message = createMessage(Long.valueOf(25), 10, 10);
-        when(message.getArrivalTime()).thenReturn(50l);
+        when(message.getArrivalTime()).thenReturn(50L);
         queue.enqueue(message, null, null);
         message = createMessage(Long.valueOf(26), 10, 10);
-        when(message.getArrivalTime()).thenReturn(200l);
+        when(message.getArrivalTime()).thenReturn(200L);
         queue.enqueue(message, null, null);
         message = createMessage(Long.valueOf(27), 10, 10);
-        when(message.getArrivalTime()).thenReturn(500l);
+        when(message.getArrivalTime()).thenReturn(500L);
         queue.enqueue(message, null, null);
         message = createMessage(Long.valueOf(28), 10, 10);
-        when(message.getArrivalTime()).thenReturn(1000l);
+        when(message.getArrivalTime()).thenReturn(1000L);
         queue.enqueue(message, null, null);
 
         assertEquals("Wrong number of messages in queue", (long) 4, (long) queue.getQueueDepthMessages());
         assertEquals("Wrong size of messages in queue", (long) 80, queue.getQueueDepthBytes());
         assertEquals("Wrong oldest message",
-                            50l,
+                     50L,
                             ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
     }
 
@@ -963,29 +963,29 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         queue.setAttributes(attributes);
 
         ServerMessage message = createMessage(Long.valueOf(24), 10, 10);
-        when(message.getArrivalTime()).thenReturn(10l);
+        when(message.getArrivalTime()).thenReturn(10L);
         queue.enqueue(message, null, null);
         message = createMessage(Long.valueOf(25), 10, 10);
-        when(message.getArrivalTime()).thenReturn(50l);
+        when(message.getArrivalTime()).thenReturn(50L);
         queue.enqueue(message, null, null);
         message = createMessage(Long.valueOf(26), 20, 10);
-        when(message.getArrivalTime()).thenReturn(200l);
+        when(message.getArrivalTime()).thenReturn(200L);
         queue.enqueue(message, null, null);
         message = createMessage(Long.valueOf(27), 20, 10);
-        when(message.getArrivalTime()).thenReturn(200l);
+        when(message.getArrivalTime()).thenReturn(200L);
         queue.enqueue(message, null, null);
 
         assertEquals("Wrong number of messages in queue", (long) 4, (long) queue.getQueueDepthMessages());
         assertEquals("Wrong size of messages in queue", (long) 100, queue.getQueueDepthBytes());
 
         message = createMessage(Long.valueOf(27), 20, 10);
-        when(message.getArrivalTime()).thenReturn(500l);
+        when(message.getArrivalTime()).thenReturn(500L);
         queue.enqueue(message, null, null);
 
         assertEquals("Wrong number of messages in queue", (long) 3, (long) queue.getQueueDepthMessages());
         assertEquals("Wrong size of messages in queue", (long) 90, queue.getQueueDepthBytes());
         assertEquals("Wrong oldest message",
-                            200l,
+                     200L,
                             ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
     }
 
@@ -1369,7 +1369,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     {
         final List<QueueEntry> entries = new ArrayList<>();
 
-        ServerMessage message = createMessage(1l);
+        ServerMessage message = createMessage(1L);
         when(message.getArrivalTime()).thenReturn(arrivalTime);
         when(message.getExpiration()).thenReturn(expiration);
         queue.enqueue(message,null, null);

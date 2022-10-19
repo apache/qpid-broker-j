@@ -115,7 +115,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         Map<Class,Object> secureValues = new HashMap<Class, Object>();
         secureValues.put(String.class, SECURED_STRING_VALUE);
         secureValues.put(Integer.class, 0);
-        secureValues.put(Long.class, 0l);
+        secureValues.put(Long.class, 0L);
         secureValues.put(Byte.class, (byte)0);
         secureValues.put(Short.class, (short)0);
         secureValues.put(Double.class, (double)0);

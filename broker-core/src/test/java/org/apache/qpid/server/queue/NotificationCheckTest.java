@@ -48,7 +48,7 @@ public class NotificationCheckTest extends UnitTestBase
     @Test
     public void testMessageCountAlertFires() throws Exception
     {
-        when(_queue.getAlertThresholdQueueDepthMessages()).thenReturn(1000l);
+        when(_queue.getAlertThresholdQueueDepthMessages()).thenReturn(1000L);
         when(_queue.getQueueDepthMessages()).thenReturn(999, 1000, 1001);
 
         MESSAGE_COUNT_ALERT.notifyIfNecessary(_message, _queue, _listener);
@@ -64,8 +64,8 @@ public class NotificationCheckTest extends UnitTestBase
     @Test
     public void testMessageSizeAlertFires() throws Exception
     {
-        when(_queue.getAlertThresholdMessageSize()).thenReturn(1024l);
-        when(_message.getSizeIncludingHeader()).thenReturn(1023l, 1024l, 1025l);
+        when(_queue.getAlertThresholdMessageSize()).thenReturn(1024L);
+        when(_message.getSizeIncludingHeader()).thenReturn(1023L, 1024L, 1025L);
 
         MESSAGE_SIZE_ALERT.notifyIfNecessary(_message, _queue, _listener);
         verifyNoInteractions(_listener);
@@ -81,7 +81,7 @@ public class NotificationCheckTest extends UnitTestBase
     public void testMessageAgeAlertFires() throws Exception
     {
         long now = System.currentTimeMillis();
-        when(_queue.getAlertThresholdMessageAge()).thenReturn(1000l);
+        when(_queue.getAlertThresholdMessageAge()).thenReturn(1000L);
         when(_queue.getOldestMessageArrivalTime()).thenReturn(now, now - 15000);
 
         MESSAGE_AGE_ALERT.notifyIfNecessary(_message, _queue, _listener);
@@ -95,8 +95,8 @@ public class NotificationCheckTest extends UnitTestBase
     @Test
     public void testQueueDepthAlertFires() throws Exception
     {
-        when(_queue.getAlertThresholdQueueDepthBytes()).thenReturn(1024l);
-        when(_queue.getQueueDepthBytes()).thenReturn(1023l, 1024l, 2048l);
+        when(_queue.getAlertThresholdQueueDepthBytes()).thenReturn(1024L);
+        when(_queue.getQueueDepthBytes()).thenReturn(1023L, 1024L, 2048L);
 
         QUEUE_DEPTH_ALERT.notifyIfNecessary(_message, _queue, _listener);
         verifyNoInteractions(_listener);

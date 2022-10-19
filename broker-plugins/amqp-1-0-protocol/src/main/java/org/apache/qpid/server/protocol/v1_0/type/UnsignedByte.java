@@ -62,7 +62,7 @@ public final class UnsignedByte extends Number implements Comparable<UnsignedByt
     @Override
     public long longValue()
     {
-        return ((long) _underlying) & 0xFFl;
+        return ((long) _underlying) & 0xFFL;
     }
 
     @Override

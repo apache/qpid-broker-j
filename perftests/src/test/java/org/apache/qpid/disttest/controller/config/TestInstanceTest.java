@@ -64,10 +64,10 @@ public class TestInstanceTest extends UnitTestBase
     {
         _noOpCommand = mock(NoOpCommand.class);
         _createProducerCommand = mock(CreateProducerCommand.class);
-        when(_createProducerCommand.getMaximumDuration()).thenReturn(1l);
+        when(_createProducerCommand.getMaximumDuration()).thenReturn(1L);
 
         _createConsumerCommand = mock(CreateConsumerCommand.class);
-        when(_createConsumerCommand.getMaximumDuration()).thenReturn(1l);
+        when(_createConsumerCommand.getMaximumDuration()).thenReturn(1L);
     }
 
     @Test

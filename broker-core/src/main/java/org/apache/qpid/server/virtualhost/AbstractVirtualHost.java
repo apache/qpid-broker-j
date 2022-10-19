@@ -2928,7 +2928,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 return;
             }
 
-            long usagePercent = (100l * (totalSpace - freeSpace)) / totalSpace;
+            long usagePercent = (100L * (totalSpace - freeSpace)) / totalSpace;
 
             if (_fileSystemFull && (usagePercent < _fileSystemMaxUsagePercent))
             {

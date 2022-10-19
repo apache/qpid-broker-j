@@ -577,7 +577,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         reportDirectMemoryAboveThresholdIfExceeded();
         LOGGER.debug("Assigning target sizes based on total target {}", _flowToDiskThreshold);
-        long totalSize = 0l;
+        long totalSize = 0L;
         Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
         Map<QueueManagingVirtualHost<?>, Long> vhs = new HashMap<>();
         for (VirtualHostNode<?> vhn : vhns)

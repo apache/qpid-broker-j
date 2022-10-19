@@ -102,20 +102,20 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
 
     private static BigDecimal constructFrom128(long high, long low)
     {
-        int sign = ((high & 0x8000000000000000l) == 0) ? 1 : -1;
+        int sign = ((high & 0x8000000000000000L) == 0) ? 1 : -1;
 
         int exponent = 0;
         long significand = high;
 
-        if((high & 0x6000000000000000l) != 0x6000000000000000l)
+        if((high & 0x6000000000000000L) != 0x6000000000000000L)
         {
-            exponent = ((int) ((high & 0x7FFE000000000000l) >> 49)) - 6176;
-            significand = high & 0x0001ffffffffffffl;
+            exponent = ((int) ((high & 0x7FFE000000000000L) >> 49)) - 6176;
+            significand = high & 0x0001ffffffffffffL;
         }
-        else if((high &  0x7800000000000000l) != 0x7800000000000000l)
+        else if((high & 0x7800000000000000L) != 0x7800000000000000L)
         {
-            exponent = ((int)((high & 0x1fff800000000000l)>>47)) - 6176;
-            significand = (0x00007fffffffffffl & high) | 0x0004000000000000l;
+            exponent = ((int)((high & 0x1fff800000000000L) >> 47)) - 6176;
+            significand = (0x00007fffffffffffL & high) | 0x0004000000000000L;
         }
         else
         {
@@ -133,7 +133,7 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
         {
             bigDecimal = bigDecimal.add(TWO_TO_THE_SIXTY_FOUR.add(new BigDecimal(low)));
         }
-        if(((high & 0x8000000000000000l) != 0))
+        if(((high & 0x8000000000000000L) != 0))
         {
             bigDecimal = bigDecimal.negate();
         }
@@ -144,20 +144,20 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
 
     private static BigDecimal constructFrom64(final long val)
     {
-        int sign = ((val & 0x8000000000000000l) == 0) ? 1 : -1;
+        int sign = ((val & 0x8000000000000000L) == 0) ? 1 : -1;
 
         int exponent = 0;
         long significand = val;
 
-        if((val & 0x6000000000000000l) != 0x6000000000000000l)
+        if((val & 0x6000000000000000L) != 0x6000000000000000L)
         {
-            exponent = ((int) ((val & 0x7FE0000000000000l) >> 53)) - 398;
-            significand = val & 0x001fffffffffffffl;
+            exponent = ((int) ((val & 0x7FE0000000000000L) >> 53)) - 398;
+            significand = val & 0x001fffffffffffffL;
         }
-        else if((val &  0x7800000000000000l) != 0x7800000000000000l)
+        else if((val & 0x7800000000000000L) != 0x7800000000000000L)
         {
-            exponent = ((int)((val & 0x1ff8000000000000l)>>51)) - 398;
-            significand = (0x0007ffffffffffffl & val) | 0x0020000000000000l;
+            exponent = ((int)((val & 0x1ff8000000000000L) >> 51)) - 398;
+            significand = (0x0007ffffffffffffL & val) | 0x0020000000000000L;
         }
         else
         {

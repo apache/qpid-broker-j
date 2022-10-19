@@ -214,7 +214,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
         final DatabaseEntry value = new DatabaseEntry();
         byte[] globalId = { 1 };
         byte[] branchId = { 2 };
-        Xid xid = new Xid(1l, globalId, branchId);
+        Xid xid = new Xid(1L, globalId, branchId);
         XidBinding xidBinding = XidBinding.getInstance();
         xidBinding.objectToEntry(xid, value);
         return value;

@@ -51,10 +51,10 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
 {
-    private static final long BROKER_CREATE_TIME = 1401385808828l;
+    private static final long BROKER_CREATE_TIME = 1401385808828L;
     private static final String BROKER_NAME = "Broker";
     private static final String VIRTUALHOST_NAME = "test";
-    private static final long VIRTUALHOST_CREATE_TIME = 1401385905260l;
+    private static final long VIRTUALHOST_CREATE_TIME = 1401385905260L;
     private static final String VIRTUALHOST_CREATED_BY = "webadmin";
 
     private ConfiguredObjectRecord _brokerRecord;
@@ -1041,7 +1041,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
         Map<String,Object> expectedAttributes = new HashMap<>();
         expectedAttributes.put("name", "Broker");
         expectedAttributes.put("modelVersion", BrokerModel.MODEL_VERSION);
-        expectedAttributes.put("createdTime", 1401385808828l);
+        expectedAttributes.put("createdTime", 1401385808828L);
         assertEquals("Unexpected broker attributes", expectedAttributes, upgradedBrokerRecord.getAttributes());
     }
 

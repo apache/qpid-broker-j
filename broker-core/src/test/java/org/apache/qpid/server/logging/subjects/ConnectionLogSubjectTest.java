@@ -35,7 +35,7 @@ import org.apache.qpid.server.transport.AMQPConnection;
 public class ConnectionLogSubjectTest extends AbstractTestLogSubject
 {
 
-    private static final long CONNECTION_ID = 456l;
+    private static final long CONNECTION_ID = 456L;
     private static final String USER = "InternalTestProtocolSession";
     private static final String IP_STRING = "127.0.0.1:1";
     private static final String VHOST = "test";

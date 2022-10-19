@@ -159,7 +159,7 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
         long expiration = 999999999;
         _testProperties.setExpiration(expiration);
         assertEquals(expiration, _testProperties.getExpiration());
-        expiration = 0l;
+        expiration = 0L;
         _testProperties.setExpiration(expiration);
         assertEquals(expiration, _testProperties.getExpiration());
     }

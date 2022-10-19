@@ -307,7 +307,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                             exception(session, method, ExecutionErrorCode.ILLEGAL_ARGUMENT, "Cannot parse value " + value + " as a number for filter " + AMQPFilterTypes.REPLAY_PERIOD.toString());
                             return;
                         }
-                        final long startingFrom = System.currentTimeMillis() - (1000l * period);
+                        final long startingFrom = System.currentTimeMillis() - (1000L * period);
                         if(filterManager == null)
                         {
                             filterManager = new FilterManager();

@@ -216,19 +216,19 @@ public class BrokerLoggerTest extends UnitTestBase
         String loggerName = getTestName();
         Logger messageLogger = LoggerFactory.getLogger(loggerName);
 
-        assertEquals(0l, _brokerLogger.getWarnCount());
-        assertEquals(0l, _brokerLogger.getErrorCount());
+        assertEquals(0L, _brokerLogger.getWarnCount());
+        assertEquals(0L, _brokerLogger.getErrorCount());
 
         attributes = createBrokerNameAndLevelLogInclusionRuleAttributes(loggerName, LogLevel.WARN);
         BrokerLogInclusionRule warnFilter = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
 
         messageLogger.warn("warn");
-        assertEquals(1l, _brokerLogger.getWarnCount());
-        assertEquals(0l, _brokerLogger.getErrorCount());
+        assertEquals(1L, _brokerLogger.getWarnCount());
+        assertEquals(0L, _brokerLogger.getErrorCount());
 
         messageLogger.error("error");
-        assertEquals(1l, _brokerLogger.getWarnCount());
-        assertEquals(1l, _brokerLogger.getErrorCount());
+        assertEquals(1L, _brokerLogger.getWarnCount());
+        assertEquals(1L, _brokerLogger.getErrorCount());
 
         warnFilter.delete();
 
@@ -236,11 +236,11 @@ public class BrokerLoggerTest extends UnitTestBase
         BrokerLogInclusionRule errorFilter = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
 
         messageLogger.warn("warn");
-        assertEquals(1l, _brokerLogger.getWarnCount());
-        assertEquals(1l, _brokerLogger.getErrorCount());
+        assertEquals(1L, _brokerLogger.getWarnCount());
+        assertEquals(1L, _brokerLogger.getErrorCount());
         messageLogger.error("error");
-        assertEquals(1l, _brokerLogger.getWarnCount());
-        assertEquals(2l, _brokerLogger.getErrorCount());
+        assertEquals(1L, _brokerLogger.getWarnCount());
+        assertEquals(2L, _brokerLogger.getErrorCount());
 
         errorFilter.delete();
     }

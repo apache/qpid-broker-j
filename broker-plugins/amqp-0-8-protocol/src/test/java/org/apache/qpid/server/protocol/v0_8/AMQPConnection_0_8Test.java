@@ -111,7 +111,7 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getEventLogger()).thenReturn(value);
-        when(_broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
+        when(_broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0L);
 
         _virtualHostNode = mock(VirtualHostNode.class);
         when(_virtualHostNode.getParent()).thenReturn(_broker);
@@ -131,7 +131,7 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         when(_virtualHost.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHost.getPrincipal()).thenReturn(virtualHostPrincipal);
         when(_virtualHost.getContextValue(Integer.class, Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE)).thenReturn(1024);
-        when(_virtualHost.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(1024l);
+        when(_virtualHost.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(1024L);
         when(_virtualHost.getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH)).thenReturn(false);
         when(_virtualHost.authoriseCreateConnection(any(AMQPConnection.class))).thenReturn(true);
         when(_virtualHost.getEventLogger()).thenReturn(value);
@@ -154,7 +154,7 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         when(_port.getModel()).thenReturn(model);
         when(_port.getAuthenticationProvider()).thenReturn(authenticationProvider);
         when(_port.getAddressSpace(VIRTUAL_HOST_NAME)).thenReturn(_virtualHost);
-        when(_port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)).thenReturn(2500l);
+        when(_port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)).thenReturn(2500L);
         when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(Connection.DEFAULT_MAX_MESSAGE_SIZE);
         when(_port.getSubjectCreator(eq(false), anyString())).thenReturn(subjectCreator);
 
