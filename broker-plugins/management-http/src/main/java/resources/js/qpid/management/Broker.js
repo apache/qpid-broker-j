@@ -1014,6 +1014,7 @@ define(["dojo/parser",
                     {
                         that.brokerStatistics = new qpid.common.StatisticsWidget({
                             category:  "Broker",
+                            modelObj: that.brokerObj,
                             type: null,
                             management: that.controller.management,
                             defaultStatistics: ["messagesIn", "messagesOut"]

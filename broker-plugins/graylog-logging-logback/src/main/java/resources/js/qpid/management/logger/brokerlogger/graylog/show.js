@@ -49,7 +49,10 @@ define(["qpid/common/util",
             util.updateAttributeNodes(this.attributeContainers, restData, util.updateBooleanAttributeNode,
                 (containerObject, data, utl) => util.updateMapAttributeNode(containerObject, data, utl, fieldTemplate));
             const bufferUsage = String(restData["statistics"]["appenderBufferUsage"]);
-            this.appenderBufferUsage.forEach(node => node.innerHTML = bufferUsage);
+            if (this.appenderBufferUsage)
+            {
+                this.appenderBufferUsage.forEach(node => node.innerHTML = bufferUsage);
+            }
         }
 
         return Graylog;

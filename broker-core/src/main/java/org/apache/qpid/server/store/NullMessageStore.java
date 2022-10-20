@@ -109,6 +109,12 @@ public abstract class NullMessageStore implements MessageStore, DurableConfigura
     }
 
     @Override
+    public void resetStatistics()
+    {
+        // ignore
+    }
+
+    @Override
     public Transaction newTransaction()
     {
         return null;

@@ -1171,5 +1171,27 @@ define(["dojo/_base/xhr",
             }
         }
 
+        util.resetStatistics = function (management, modelObj, resetStatisticsButton, category, name)
+        {
+            if (confirm("Are you sure you want to reset statistics for " + category + " '" + name + "'?"))
+            {
+                resetStatisticsButton.set("disabled", true);
+                const obj =
+                {
+                    type: category.toLowerCase(),
+                    name: "resetStatistics",
+                    parent: modelObj
+                };
+                const url = management.buildObjectURL(obj) +
+                            (category === "Broker" ? "/resetStatistics" : "");
+                management.post({url: url}, {})
+                    .then(null, management.xhrErrorHandler)
+                    .always(function ()
+                    {
+                        resetStatisticsButton.set("disabled", false);
+                    });
+            }
+        }
+
         return util;
     });

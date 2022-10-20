@@ -135,6 +135,11 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         }
     }
 
+    public void resetStatistics()
+    {
+        _compositeFilter.resetStatistics();
+    }
+
     protected Appender<ILoggingEvent> getAppender()
     {
         return ROOT_LOGGER.getAppender(getName());

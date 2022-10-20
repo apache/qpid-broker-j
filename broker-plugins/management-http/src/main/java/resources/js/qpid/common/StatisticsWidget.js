@@ -28,6 +28,7 @@ define(["dojox/lang/functional/object",
         "dojo/on",
         "dojo/mouse",
         "dojo/number",
+        "dojo/query",
         "dstore/Memory",
         'dstore/Trackable',
         "dojox/html/entities",
@@ -37,6 +38,7 @@ define(["dojox/lang/functional/object",
         "dijit/Tooltip",
         "dijit/registry",
         "qpid/common/formatter",
+        "qpid/common/util",
         "dojo/text!common/StatisticsWidget.html",
         "dijit/form/ToggleButton",
         "dojo/domReady!"],
@@ -50,6 +52,7 @@ define(["dojox/lang/functional/object",
               on,
               mouse,
               number,
+              query,
               Memory,
               Trackable,
               entities,
@@ -59,6 +62,7 @@ define(["dojox/lang/functional/object",
               Tooltip,
               registry,
               formatter,
+              util,
               template) {
 
         return declare("qpid.common.StatisticsWidget",
@@ -75,9 +79,11 @@ define(["dojox/lang/functional/object",
 
                 statisticsPane: null,
                 allStatsToggle: null,
+                resetStatisticsButton: null,
 
                 // constructor arguments
                 category: null,
+                modelObj: null,
                 type: null,
                 management: null,
                 defaultStatistics: null,
@@ -208,6 +214,7 @@ define(["dojox/lang/functional/object",
 
                     this.statisticsPane.on("show", lang.hitch(this, this.resize));
                     this.allStatsToggle.on("change", lang.hitch(this, this._onStatsToggleChange));
+                    this.resetStatisticsButton.on("click", lang.hitch(this, this.resetStatistics));
                 },
                 startup: function ()
                 {
@@ -445,6 +452,14 @@ define(["dojox/lang/functional/object",
                             Tooltip.hide(rowNode);
                         });
                     }
+                },
+                resetStatistics: function()
+                {
+                    util.resetStatistics(this.management,
+                                         this.modelObj,
+                                         this.resetStatisticsButton,
+                                         this.category,
+                                         this.modelObj.name);
                 }
             });
     });

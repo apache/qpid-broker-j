@@ -201,7 +201,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             units = StatisticUnit.BYTES,
             label = "Inbound",
             description = "Total size of all messages received by the Broker.",
-            metricName = "inbound_bytes_count")
+            metricName = "inbound_bytes_count",
+            resettable = true)
     long getBytesIn();
 
     @SuppressWarnings("unused")
@@ -209,7 +210,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             units = StatisticUnit.BYTES,
             label = "Outbound",
             description = "Total size of all messages delivered by the Broker.",
-            metricName = "outbound_bytes_count")
+            metricName = "outbound_bytes_count",
+            resettable = true)
     long getBytesOut();
 
     @SuppressWarnings("unused")
@@ -217,7 +219,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             units = StatisticUnit.MESSAGES,
             label = "Inbound",
             description = "Total number of messages received by the Broker.",
-            metricName = "inbound_messages_count")
+            metricName = "inbound_messages_count",
+            resettable = true)
     long getMessagesIn();
 
     @SuppressWarnings("unused")
@@ -225,7 +228,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             units = StatisticUnit.MESSAGES,
             label = "Outbound",
             description = "Total number of messages delivered by the Broker.",
-            metricName = "outbound_messages_count")
+            metricName = "outbound_messages_count",
+            resettable = true)
     long getMessagesOut();
 
 
@@ -234,7 +238,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             units = StatisticUnit.MESSAGES,
             label = "Transacted Inbound",
             description = "Total number of messages delivered by the Broker within a transaction.",
-            metricName = "inbound_transacted_messages_count")
+            metricName = "inbound_transacted_messages_count",
+            resettable = true)
     long getTransactedMessagesIn();
 
     @SuppressWarnings("unused")
@@ -242,8 +247,12 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             units = StatisticUnit.MESSAGES,
             label = "Transacted Outbound",
             description = "Total number of messages received by the Broker within a transaction.",
-            metricName = "outbound_transacted_messages_count")
+            metricName = "outbound_transacted_messages_count",
+            resettable = true)
     long getTransactedMessagesOut();
+
+    @ManagedOperation(description = "Resets broker statistics", changesConfiguredObjectState = true)
+    void resetStatistics();
 
     @ManagedOperation(nonModifying = true,
             description = "Initiates an orderly shutdown of the Broker.",
@@ -332,7 +341,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             units = StatisticUnit.BYTES,
             label = "Maximum recorded size of inbound messages",
             description = "Maximum size of messages published into the Broker since start-up.",
-            metricName = "inbound_message_size_high_watermark")
+            metricName = "inbound_message_size_high_watermark",
+            resettable = true)
     long getInboundMessageSizeHighWatermark();
 
     @ManagedOperation(nonModifying = true,

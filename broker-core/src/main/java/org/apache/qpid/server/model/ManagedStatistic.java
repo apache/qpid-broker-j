@@ -35,4 +35,5 @@ public @interface ManagedStatistic
     StatisticType statisticType();
     String metricName()  default "";
     boolean metricDisabled() default false;
+    boolean resettable() default false;
 }

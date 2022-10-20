@@ -57,92 +57,92 @@ final class QueueStatistics
     private final AtomicInteger _malformedCount = new AtomicInteger();
     private final AtomicLong _malformedSize = new AtomicLong();
 
-    public final int getQueueCount()
+    public int getQueueCount()
     {
         return _queueCount.get();
     }
 
-    public final long getQueueSize()
+    public long getQueueSize()
     {
         return _queueSize.get();
     }
 
-    public final int getUnackedCount()
+    public int getUnackedCount()
     {
         return _unackedCount.get();
     }
 
-    public final long getUnackedSize()
+    public long getUnackedSize()
     {
         return _unackedSize.get();
     }
 
-    public final int getAvailableCount()
+    public int getAvailableCount()
     {
         return _availableCount.get();
     }
 
-    public final long getAvailableSize()
+    public long getAvailableSize()
     {
         return _availableSize.get();
     }
 
-    public final long getEnqueueCount()
+    public long getEnqueueCount()
     {
         return _enqueueCount.get();
     }
 
-    public final long getEnqueueSize()
+    public long getEnqueueSize()
     {
         return _enqueueSize.get();
     }
 
-    public final long getDequeueCount()
+    public long getDequeueCount()
     {
         return _dequeueCount.get();
     }
 
-    public final long getDequeueSize()
+    public long getDequeueSize()
     {
         return _dequeueSize.get();
     }
 
-    public final long getPersistentEnqueueCount()
+    public long getPersistentEnqueueCount()
     {
         return _persistentEnqueueCount.get();
     }
 
-    public final long getPersistentEnqueueSize()
+    public long getPersistentEnqueueSize()
     {
         return _persistentEnqueueSize.get();
     }
 
-    public final long getPersistentDequeueCount()
+    public long getPersistentDequeueCount()
     {
         return _persistentDequeueCount.get();
     }
 
-    public final long getPersistentDequeueSize()
+    public long getPersistentDequeueSize()
     {
         return _persistentDequeueSize.get();
     }
 
-    public final int getQueueCountHwm()
+    public int getQueueCountHwm()
     {
         return _queueCountHwm.get();
     }
 
-    public final long getQueueSizeHwm()
+    public long getQueueSizeHwm()
     {
         return _queueSizeHwm.get();
     }
 
-    public final int getAvailableCountHwm()
+    public int getAvailableCountHwm()
     {
         return _availableCountHwm.get();
     }
 
-    public final long getAvailableSizeHwm()
+    public long getAvailableSizeHwm()
     {
         return _availableSizeHwm.get();
     }
@@ -257,5 +257,41 @@ final class QueueStatistics
     {
         _malformedCount.incrementAndGet();
         _malformedSize.addAndGet(size);
+    }
+
+    void reset()
+    {
+        _queueCountHwm.set(_queueCount.get());
+        // _queueCount shouldn't be reset
+
+        _queueSizeHwm.set(_queueSize.get());
+        // _queueSize shouldn't be reset
+
+        // _unackedCount shouldn't be reset
+        // _unackedSize shouldn't be reset
+
+        _availableCountHwm.set(_availableCount.get());
+        // _availableCount shouldn't be reset
+
+        _availableSizeHwm.set(_availableSize.get());
+        // _availableSize shouldn't be reset
+
+        _dequeueCount.set(0L);
+        _dequeueSize.set(0L);
+
+        _enqueueCount.set(0L);
+        _enqueueSize.set(0L);
+
+        _persistentEnqueueCount.set(0L);
+        _persistentEnqueueSize.set(0L);
+
+        _persistentDequeueCount.set(0L);
+        _persistentDequeueSize.set(0L);
+
+        _expiredCount.set(0);
+        _expiredSize.set(0L);
+
+        _malformedCount.set(0);
+        _malformedSize.set(0L);
     }
 }

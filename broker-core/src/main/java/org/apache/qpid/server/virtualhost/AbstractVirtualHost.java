@@ -1572,6 +1572,25 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _defaultDestination;
     }
 
+    @Override
+    public void resetStatistics()
+    {
+        _totalConnectionCount.set(0L);
+        _maximumMessageSize.set(0L);
+
+        _bytesIn.set(0L);
+        _bytesOut.set(0L);
+        _messagesIn.set(0L);
+        _messagesOut.set(0L);
+        _transactedMessagesIn.set(0L);
+        _transactedMessagesOut.set(0L);
+
+        _messageStore.resetStatistics();
+
+        getChildren(VirtualHostLogger.class).forEach(VirtualHostLogger::resetStatistics);
+        getChildren(Queue.class).forEach(Queue::resetStatistics);
+        getChildren(Exchange.class).forEach(Exchange::resetStatistics);
+    }
 
     private ListenableFuture<Exchange<?>> addExchangeAsync(Map<String,Object> attributes)
             throws ReservedExchangeNameException,

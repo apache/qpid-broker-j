@@ -78,4 +78,10 @@ public final class ConfiguredObjectMethodStatistic<C extends ConfiguredObject, T
     {
         return _annotation.metricDisabled();
     }
+
+    @Override
+    public boolean isResettable()
+    {
+        return _annotation.resettable();
+    }
 }

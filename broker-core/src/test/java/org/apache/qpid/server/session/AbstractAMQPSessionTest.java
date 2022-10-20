@@ -21,13 +21,11 @@
 package org.apache.qpid.server.session;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.net.InetSocketAddress;
 import java.security.Principal;
-import java.util.UUID;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
@@ -38,7 +36,6 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -46,9 +43,7 @@ import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -132,7 +127,37 @@ public class AbstractAMQPSessionTest extends UnitTestBase
         verify(_connection).registerTransactedMessageReceived();
     }
 
-    private static class MockAMQPSession extends AbstractAMQPSession{
+    @Test
+    public void resetStatistics()
+    {
+        mockAMQPSession.resetStatistics();
+
+        mockAMQPSession.registerMessageDelivered(100);
+        mockAMQPSession.registerMessageReceived(100);
+        mockAMQPSession.registerTransactedMessageDelivered();
+        mockAMQPSession.registerTransactedMessageReceived();
+
+        final Map<String, Object> statisticsBeforeReset = mockAMQPSession.getStatistics();
+        assertEquals(100L, statisticsBeforeReset.get("bytesIn"));
+        assertEquals(100L, statisticsBeforeReset.get("bytesOut"));
+        assertEquals(1L, statisticsBeforeReset.get("messagesIn"));
+        assertEquals(1L, statisticsBeforeReset.get("messagesOut"));
+        assertEquals(1L, statisticsBeforeReset.get("transactedMessagesIn"));
+        assertEquals(1L, statisticsBeforeReset.get("transactedMessagesOut"));
+
+        mockAMQPSession.resetStatistics();
+
+        final Map<String, Object> statisticsAfterReset = mockAMQPSession.getStatistics();
+        assertEquals(0L, statisticsAfterReset.get("bytesIn"));
+        assertEquals(0L, statisticsAfterReset.get("bytesOut"));
+        assertEquals(0L, statisticsAfterReset.get("messagesIn"));
+        assertEquals(0L, statisticsAfterReset.get("messagesOut"));
+        assertEquals(0L, statisticsAfterReset.get("transactedMessagesIn"));
+        assertEquals(0L, statisticsAfterReset.get("transactedMessagesOut"));
+    }
+
+    private static class MockAMQPSession extends AbstractAMQPSession
+    {
 
         protected MockAMQPSession(final Connection parent, final int sessionId)
         {

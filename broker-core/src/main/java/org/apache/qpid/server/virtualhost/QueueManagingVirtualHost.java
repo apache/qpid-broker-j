@@ -224,40 +224,54 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getConnectionCount();
 
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Total Connections",
-            description = "Total number of messaging connections made to this virtualhost since broker startup", metricName = "aggregate_connection_count")
+            description = "Total number of messaging connections made to this virtualhost since broker startup",
+            metricName = "aggregate_connection_count",
+            resettable = true)
     long getTotalConnectionCount();
 
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
-                      description = "Total size of all messages received by this virtualhost.", metricName = "inbound_bytes_count")
+            description = "Total size of all messages received by this virtualhost.",
+            metricName = "inbound_bytes_count",
+            resettable = true)
     long getBytesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound",
-                      description = "Total size of all messages delivered by this virtualhost.", metricName = "outbound_bytes_count")
+            description = "Total size of all messages delivered by this virtualhost.",
+            metricName = "outbound_bytes_count",
+            resettable = true)
     long getBytesOut();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
-                      description = "Total number of messages received by this virtualhost.", metricName = "inbound_messages_count")
+            description = "Total number of messages received by this virtualhost.",
+            metricName = "inbound_messages_count",
+            resettable = true)
     long getMessagesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound",
-                      description = "Total number of messages delivered by this virtualhost.", metricName = "outbound_messages_count")
+            description = "Total number of messages delivered by this virtualhost.",
+            metricName = "outbound_messages_count",
+            resettable = true)
     long getMessagesOut();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
             label = "Transacted Inbound",
-            description = "Total number of messages delivered by this virtualhost within a transaction.", metricName = "inbound_transacted_messages_count")
+            description = "Total number of messages delivered by this virtualhost within a transaction.",
+            metricName = "inbound_transacted_messages_count",
+            resettable = true)
     long getTransactedMessagesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
             label = "Transacted Outbound",
-            description = "Total number of messages received by this virtualhost within a transaction.", metricName = "outbound_transacted_messages_count")
+            description = "Total number of messages received by this virtualhost within a transaction.",
+            metricName = "outbound_transacted_messages_count",
+            resettable = true)
     long getTransactedMessagesOut();
 
     @SuppressWarnings("unused")
@@ -284,15 +298,21 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Evacuated Message Bytes",
-                      description = "Total Number of Bytes Evacuated from Memory Due to Flow to Disk.")
+            description = "Total Number of Bytes Evacuated from Memory Due to Flow to Disk.",
+            resettable = true)
     long getBytesEvacuatedFromMemory();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.BYTES,
             label = "Maximum recorded size of inbound messages",
-            description = "Maximum size of message published into the Virtual Host since start-up.", metricName = "inbound_message_size_high_water_mark")
+            description = "Maximum size of message published into the Virtual Host since start-up.",
+            metricName = "inbound_message_size_high_water_mark",
+            resettable = true)
     long getInboundMessageSizeHighWatermark();
+
+    @ManagedOperation(description = "Resets Virtual Host statistics", changesConfiguredObjectState = true)
+    void resetStatistics();
 
     @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)

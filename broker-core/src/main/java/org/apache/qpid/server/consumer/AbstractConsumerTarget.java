@@ -228,6 +228,13 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
         return _unacknowledgedBytes.longValue();
     }
 
+    @Override
+    public void resetStatistics()
+    {
+        _unacknowledgedCount.set(0L);
+        _unacknowledgedBytes.set(0L);
+    }
+
     protected abstract void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch);
 
 

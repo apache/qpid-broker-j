@@ -302,6 +302,12 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
         }
 
         @Override
+        public void resetStatistics()
+        {
+            _underlying.resetStatistics();
+        }
+
+        @Override
         public AMQPSession getSession()
         {
             return _underlying.getSession();

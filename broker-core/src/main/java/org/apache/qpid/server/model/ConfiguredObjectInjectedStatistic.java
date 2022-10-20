@@ -165,4 +165,10 @@ final public class ConfiguredObjectInjectedStatistic<C extends ConfiguredObject,
     {
         return _metricDisabled;
     }
+
+    @Override
+    public boolean isResettable()
+    {
+        return false;
+    }
 }

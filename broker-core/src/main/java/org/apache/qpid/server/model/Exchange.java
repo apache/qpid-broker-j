@@ -88,27 +88,35 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     // Statistics
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings",
-                      description = "Current number of bindings to this exchange.", metricName = "bindings_total")
+            description = "Current number of bindings to this exchange.", metricName = "bindings_total")
     long getBindingCount();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Dropped",
-                      description = "Total size of all unroutable messages dropped by this exchange.", metricName = "dropped_bytes_count")
+            description = "Total size of all unroutable messages dropped by this exchange.",
+            metricName = "dropped_bytes_count",
+            resettable = true)
     long getBytesDropped();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
-                      description = "Total size of messages received by this exchange.", metricName = "inbound_bytes_count")
+            description = "Total size of messages received by this exchange.",
+            metricName = "inbound_bytes_count",
+            resettable = true)
     long getBytesIn();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Dropped",
-                      description = "Number of unroutable messages dropped by this exchange.", metricName = "dropped_messages_count")
+            description = "Number of unroutable messages dropped by this exchange.",
+            metricName = "dropped_messages_count",
+            resettable = true)
     long getMessagesDropped();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
-                      description = "Number of messages received by this exchange.", metricName = "inbound_messages_count")
+            description = "Number of messages received by this exchange.",
+            metricName = "inbound_messages_count",
+            resettable = true)
     long getMessagesIn();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Producers",
@@ -128,6 +136,8 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     boolean unbind(@Param(name="destination", mandatory = true) String destination,
                    @Param(name="bindingKey", mandatory = true) String bindingKey);
 
+    @ManagedOperation(changesConfiguredObjectState = true, description = "Resets exchange statistics")
+    void resetStatistics();
 
     /**
      * @return true if the exchange will be deleted after all queues have been detached
