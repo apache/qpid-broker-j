@@ -203,7 +203,7 @@ public class ConcatExpressionTest
         catch (Exception e)
         {
             assertEquals(QueryParsingException.class, e.getClass());
-            assertEquals("Parameters of function 'CONCAT' invalid (invalid types: [UnmodifiableRandomAccessList])", e.getMessage());
+            assertEquals("Parameters of function 'CONCAT' invalid (invalid types: [List12])", e.getMessage());
         }
     }
 }
