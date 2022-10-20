@@ -166,7 +166,7 @@ public class BetweenExpressionTest
         catch (Exception e)
         {
             assertEquals(QueryEvaluationException.class, e.getClass());
-            assertEquals("Objects of types 'UnmodifiableRandomAccessList' and 'HashMap' can not be compared", e.getMessage());
+            assertEquals("Objects of types 'List12' and 'HashMap' can not be compared", e.getMessage());
         }
     }
 

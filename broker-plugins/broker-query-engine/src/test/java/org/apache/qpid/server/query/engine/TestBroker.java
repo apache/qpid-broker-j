@@ -31,25 +31,37 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.common.collect.Lists;
-import org.junit.ClassRule;
-
 import org.apache.qpid.server.exchange.ExchangeDefaults;
-import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.OverflowPolicy;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.Session;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.security.CertificateDetails;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
-import org.apache.qpid.server.virtualhostnode.memory.MemoryVirtualHostNode;
-import org.apache.qpid.test.utils.tls.TlsResource;
+import org.apache.qpid.server.virtualhostnode.TestVirtualHostNode;
 
 /**
  * Helper class for creating broker mock
@@ -57,9 +69,6 @@ import org.apache.qpid.test.utils.tls.TlsResource;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class TestBroker
 {
-    @ClassRule
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static Broker<?> _broker;
 
     private static final List<Connection> connections = new ArrayList<>();
@@ -84,10 +93,10 @@ public class TestBroker
             attributesMap.put(AuthenticationProvider.NAME, "ScramSHA256AuthenticationManager");
             attributesMap.put(AuthenticationProvider.TYPE, "SCRAM-SHA-256");
             attributesMap.put(AuthenticationProvider.ID, UUID.randomUUID());
-            ScramSHA256AuthenticationManager authProvider =
+            final ScramSHA256AuthenticationManager authProvider =
                 (ScramSHA256AuthenticationManager) _broker.getObjectFactory()
                     .create(AuthenticationProvider.class, attributesMap, _broker);
-            when(_broker.getAuthenticationProviders()).thenReturn(Collections.singletonList(authProvider));
+            when(_broker.getAuthenticationProviders()).thenReturn(List.of(authProvider));
 
             final List<String> portAttributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Port.class));
             final HttpPort<?> httpPort = mock(HttpPort.class);
@@ -128,7 +137,7 @@ public class TestBroker
             when(virtualHostNode.getAttributeNames()).thenReturn(vhnAttributeNames);
             when(virtualHostNode.getAttribute(VirtualHostNode.ID)).thenReturn(UUID.randomUUID());
             when(virtualHostNode.getAttribute(eq(VirtualHostNode.NAME))).thenReturn("default");
-            when(virtualHostNode.getAttribute(eq(VirtualHostNode.TYPE))).thenReturn(MemoryVirtualHostNode.VIRTUAL_HOST_NODE_TYPE);
+            when(virtualHostNode.getAttribute(eq(VirtualHostNode.TYPE))).thenReturn(TestVirtualHostNode.VIRTUAL_HOST_NODE_TYPE);
             when(virtualHostNode.getAttribute(eq(VirtualHostNode.CREATED_TIME))).thenReturn(new Date());
             when(virtualHostNode.getCreatedTime()).thenReturn(new Date());
 
@@ -154,9 +163,7 @@ public class TestBroker
             when(virtualHost.getAttribute(VirtualHost.ID)).thenReturn(UUID.randomUUID());
             when(virtualHost.getAttribute(VirtualHost.TYPE)).thenReturn(TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
             when(virtualHost.getAttribute(VirtualHost.NAME)).thenReturn("default");
-            when(virtualHostNode.getChildren(eq(VirtualHost.class))).thenReturn(
-                Arrays.asList(virtualHost)
-            );
+            when(virtualHostNode.getChildren(eq(VirtualHost.class))).thenReturn(List.of(virtualHost));
             when(virtualHostNode.getVirtualHost()).thenReturn(virtualHost);
 
             for (int i = 1 ; i < 11; i ++)
@@ -289,7 +296,7 @@ public class TestBroker
         when(queue.getAttribute(Queue.ID)).thenReturn(UUID.randomUUID());
         when(queue.getAttribute(Queue.NAME)).thenReturn("QUEUE_" + number);
         when(queue.getAttribute(Queue.TYPE)).thenReturn("standard");
-        Date createdTime = new Date();
+        final Date createdTime = new Date();
         when(queue.getAttribute(Queue.CREATED_TIME)).thenReturn(createdTime);
         when(queue.getCreatedTime()).thenReturn(createdTime);
         when(queue.getAttribute(Queue.LAST_UPDATED_TIME)).thenReturn(new Date());
@@ -307,7 +314,7 @@ public class TestBroker
         when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).thenReturn(-1);
         when(queue.getAttribute(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES)).thenReturn(-1);
 
-        Map<String, Object> statistics = new HashMap<>();
+        final Map<String, Object> statistics = new HashMap<>();
         statistics.put("availableMessages", 0);
         statistics.put("bindingCount", number == 1 ? 10 : 0);
         statistics.put("queueDepthMessages", 0);
@@ -317,8 +324,8 @@ public class TestBroker
 
         if (number > 0 && number < 11)
         {
-            Consumer consumer = createConsumer(number, "QUEUE_" + number);
-            when(queue.getChildren(eq(Consumer.class))).thenReturn(Lists.newArrayList(consumer));
+            final Consumer consumer = createConsumer(number, "QUEUE_" + number);
+            when(queue.getChildren(eq(Consumer.class))).thenReturn(new ArrayList<>(List.of(consumer)));
         }
 
         return queue;
@@ -335,15 +342,15 @@ public class TestBroker
         when(exchange.getName()).thenReturn("EXCHANGE_" + number);
         when(exchange.getAttribute(Exchange.DESCRIPTION)).thenReturn("test description " + number);
 
-        Binding binding = mock(Binding.class);
+        final Binding binding = mock(Binding.class);
         when(binding.getName()).thenReturn("#");
         when(binding.getBindingKey()).thenReturn("#");
         when(binding.getType()).thenReturn("binding");
         when(binding.getDestination()).thenReturn("QUEUE_1");
         when(binding.getArguments()).thenReturn(new HashMap<>());
 
-        when(exchange.getAttribute("bindings")).thenReturn(Collections.unmodifiableList(Arrays.asList(binding)));
-        when(exchange.getBindings()).thenReturn(Collections.unmodifiableList(Arrays.asList(binding)));
+        when(exchange.getAttribute("bindings")).thenReturn(List.of(binding));
+        when(exchange.getBindings()).thenReturn(List.of(binding));
 
         return exchange;
     }
@@ -374,7 +381,7 @@ public class TestBroker
         when(certificateDetails1.getIssuerName()).thenReturn("CN=aaa_mock");
         when(certificateDetails1.getSerialNumber()).thenReturn(String.valueOf(1L));
         when(certificateDetails1.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails1.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails1.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails1.getSubjectName()).thenReturn("CN=aaa_mock");
         when(certificateDetails1.getValidFrom()).thenReturn(createDate("2020-01-01 00:00:00"));
         when(certificateDetails1.getValidUntil()).thenReturn(createDate("2022-12-31 23:59:59"));
@@ -386,7 +393,7 @@ public class TestBroker
         when(certificateDetails2.getIssuerName()).thenReturn("CN=bbb_mock");
         when(certificateDetails2.getSerialNumber()).thenReturn(String.valueOf(100L));
         when(certificateDetails2.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails2.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails2.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails2.getSubjectName()).thenReturn("CN=bbb_mock");
         when(certificateDetails2.getValidFrom()).thenReturn(createDate("2020-01-02 00:00:00"));
         when(certificateDetails2.getValidUntil()).thenReturn(createDate("2023-01-01 23:59:59"));
@@ -397,7 +404,7 @@ public class TestBroker
         when(certificateDetails3.getIssuerName()).thenReturn("CN=ccc_mock");
         when(certificateDetails3.getSerialNumber()).thenReturn(String.valueOf(1000L));
         when(certificateDetails3.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails3.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails3.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails3.getSubjectName()).thenReturn("CN=ccc_mock");
         when(certificateDetails3.getValidFrom()).thenReturn(createDate("2020-01-03 00:00:00"));
         when(certificateDetails3.getValidUntil()).thenReturn(createDate("2023-01-02 23:59:59"));
@@ -408,7 +415,7 @@ public class TestBroker
         when(certificateDetails4.getIssuerName()).thenReturn("CN=ddd_mock");
         when(certificateDetails4.getSerialNumber()).thenReturn(String.valueOf(10_000L));
         when(certificateDetails4.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails4.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails4.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails4.getSubjectName()).thenReturn("CN=ddd_mock");
         when(certificateDetails4.getValidFrom()).thenReturn(createDate("2020-01-04 00:00:00"));
         when(certificateDetails4.getValidUntil()).thenReturn(createDate("2023-01-03 23:59:59"));
@@ -419,7 +426,7 @@ public class TestBroker
         when(certificateDetails5.getIssuerName()).thenReturn("CN=eee_mock");
         when(certificateDetails5.getSerialNumber()).thenReturn(String.valueOf(100_000L));
         when(certificateDetails5.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails5.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails5.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails5.getSubjectName()).thenReturn("CN=eee_mock");
         when(certificateDetails5.getValidFrom()).thenReturn(createDate("2020-01-05 00:00:00"));
         when(certificateDetails5.getValidUntil()).thenReturn(createDate("2023-01-04 23:59:59"));
@@ -430,7 +437,7 @@ public class TestBroker
         when(certificateDetails6.getIssuerName()).thenReturn("CN=fff_mock");
         when(certificateDetails6.getSerialNumber()).thenReturn(String.valueOf(1000_000L));
         when(certificateDetails6.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails6.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails6.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails6.getSubjectName()).thenReturn("CN=fff_mock");
         when(certificateDetails6.getValidFrom()).thenReturn(createDate("2020-01-06 00:00:00"));
         when(certificateDetails6.getValidUntil()).thenReturn(createDate("2023-01-05 23:59:59"));
@@ -441,7 +448,7 @@ public class TestBroker
         when(certificateDetails7.getIssuerName()).thenReturn("CN=ggg_mock");
         when(certificateDetails7.getSerialNumber()).thenReturn(String.valueOf(10_000_000L));
         when(certificateDetails7.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails7.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails7.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails7.getSubjectName()).thenReturn("CN=ggg_mock");
         when(certificateDetails7.getValidFrom()).thenReturn(createDate("2020-01-07 00:00:00"));
         when(certificateDetails7.getValidUntil()).thenReturn(createDate("2023-01-06 23:59:59"));
@@ -452,7 +459,7 @@ public class TestBroker
         when(certificateDetails8.getIssuerName()).thenReturn("CN=hhh_mock");
         when(certificateDetails8.getSerialNumber()).thenReturn(String.valueOf(100_000_000L));
         when(certificateDetails8.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails8.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails8.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails8.getSubjectName()).thenReturn("CN=hhh_mock");
         when(certificateDetails8.getValidFrom()).thenReturn(createDate("2020-01-08 00:00:00"));
         when(certificateDetails8.getValidUntil()).thenReturn(createDate("2023-01-07 23:59:59"));
@@ -463,7 +470,7 @@ public class TestBroker
         when(certificateDetails9.getIssuerName()).thenReturn("CN=iii_mock");
         when(certificateDetails9.getSerialNumber()).thenReturn(String.valueOf(1000_000_000L));
         when(certificateDetails9.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails9.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails9.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails9.getSubjectName()).thenReturn("CN=iii_mock");
         when(certificateDetails9.getValidFrom()).thenReturn(createDate("2020-01-09 00:00:00"));
         when(certificateDetails9.getValidUntil()).thenReturn(createDate("2023-01-08 23:59:59"));
@@ -474,7 +481,7 @@ public class TestBroker
         when(certificateDetails10.getIssuerName()).thenReturn("CN=jjj_mock");
         when(certificateDetails10.getSerialNumber()).thenReturn(new BigInteger("17593798617727720249").toString(10));
         when(certificateDetails10.getSignatureAlgorithm()).thenReturn("SHA512withRSA");
-        when(certificateDetails10.getSubjectAltNames()).thenReturn(Collections.emptyList());
+        when(certificateDetails10.getSubjectAltNames()).thenReturn(List.of());
         when(certificateDetails10.getSubjectName()).thenReturn("CN=jjj_mock");
         when(certificateDetails10.getValidFrom()).thenReturn(createDate("2020-01-10 00:00:00"));
         when(certificateDetails10.getValidUntil()).thenReturn(createDate("2023-01-09 23:59:59"));
@@ -485,10 +492,10 @@ public class TestBroker
 
     protected static Connection createAMQPConnection(int number, String hostname, String principal)
     {
-        List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Connection.class));
+        final List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Connection.class));
         AMQPConnection<?> connection = mock(AMQPConnection.class);
         when(connection.getAttributeNames()).thenReturn(attributeNames);
-        UUID id = UUID.randomUUID();
+        final UUID id = UUID.randomUUID();
         when(connection.getAttribute(Connection.ID)).thenReturn(id);
         when(connection.getId()).thenReturn(id);
         when(connection.getAttribute(Connection.NAME)).thenReturn(String.format("[%d] %s:%d", number, hostname, (47290 + number)));
@@ -507,9 +514,9 @@ public class TestBroker
         when(connection.getAttribute(Connection.REMOTE_ADDRESS)).thenReturn(String.format("/%s:%d", hostname, (47290 + number)));
         when(connection.getAttribute(Connection.TRANSPORT)).thenReturn(Transport.TCP);
 
-        Session session = createSession(0);
-        when(connection.getSessions()).thenReturn(Collections.unmodifiableList(Arrays.asList(session)));
-        when(connection.getChildren(eq(Session.class))).thenReturn(Collections.unmodifiableList(Arrays.asList(session)));
+        final Session session = createSession(0);
+        when(connection.getSessions()).thenReturn(List.of(session));
+        when(connection.getChildren(eq(Session.class))).thenReturn(List.of(session));
 
         return connection;
     }
@@ -523,7 +530,7 @@ public class TestBroker
         when(consumer.getAttribute(Consumer.NAME)).thenReturn(
             String.format("%d|1|qpid-jms:receiver:ID:%s:1:1:1:%s", connectionNumber, UUID.randomUUID(), queueName)
         );
-        Session session = (Session) connections.get(connectionNumber).getSessions().iterator().next();
+        final Session session = (Session) connections.get(connectionNumber).getSessions().iterator().next();
         when(consumer.getSession()).thenReturn(session);
         when(consumer.getAttribute("session")).thenReturn(session);
         return consumer;
@@ -534,7 +541,7 @@ public class TestBroker
         final List<String> attributeNames = new ArrayList<>(_broker.getModel().getTypeRegistry().getAttributeNames(Session.class));
         final Session<?> session = mock(Session.class);
         when(session.getAttributeNames()).thenReturn(attributeNames);
-        UUID id = UUID.randomUUID();
+        final UUID id = UUID.randomUUID();
         when(session.getAttribute(Session.ID)).thenReturn(id);
         when(session.getId()).thenReturn(id);
         when(session.getAttribute(Session.NAME)).thenReturn(sessionNumber);
