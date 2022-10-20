@@ -100,7 +100,28 @@ import org.apache.qpid.server.message.RejectType;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
-import org.apache.qpid.server.model.*;
+
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.AlternateBinding;
+import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.ExclusivityPolicy;
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.OverflowPolicy;
+import org.apache.qpid.server.model.PublishingLink;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.QueueNotificationListener;
+import org.apache.qpid.server.model.RestContentHeader;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
@@ -309,8 +330,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         super.onCreate();
 
-        if(isDurable() && (getLifetimePolicy()  == LifetimePolicy.DELETE_ON_CONNECTION_CLOSE
-                           || getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END))
+        if (isDurable() && (getLifetimePolicy()  == LifetimePolicy.DELETE_ON_CONNECTION_CLOSE ||
+                getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END))
         {
             Subject.doAs(getSubjectWithAddedSystemRights(),
                          (PrivilegedAction<Object>) () -> {
@@ -1466,6 +1487,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public long getTotalEnqueuedMessages()
     {
         return _queueStatistics.getEnqueueCount();
+    }
+
+    @Override
+    public void resetStatistics()
+    {
+        _queueStatistics.reset();
+        getConsumers().forEach(Consumer::resetStatistics);
     }
 
     private void setLastSeenEntry(final QueueConsumer<?,?> sub, final QueueEntry entry)

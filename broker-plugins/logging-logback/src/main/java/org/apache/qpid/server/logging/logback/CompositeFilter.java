@@ -105,4 +105,10 @@ public class CompositeFilter extends Filter<ILoggingEvent>
     {
         return _warnCount.get();
     }
+
+    public void resetStatistics()
+    {
+        _errorCount.set(0L);
+        _warnCount.set(0L);
+    }
 }

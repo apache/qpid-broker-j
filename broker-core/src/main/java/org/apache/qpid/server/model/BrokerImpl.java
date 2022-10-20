@@ -65,6 +65,7 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
@@ -983,6 +984,27 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     public String getDocumentationUrl()
     {
         return _documentationUrl;
+    }
+
+    @Override
+    public void resetStatistics()
+    {
+        _maximumMessageSize.set(0L);
+
+        _bytesIn.set(0L);
+        _bytesOut.set(0L);
+        _messagesIn.set(0L);
+        _messagesOut.set(0L);
+        _transactedMessagesIn.set(0L);
+        _transactedMessagesOut.set(0L);
+
+        getChildren(BrokerLogger.class).forEach(BrokerLogger::resetStatistics);
+        getChildren(Port.class).stream()
+                .filter(AmqpPort.class::isInstance).map(port -> (AmqpPort<?>) port)
+                .forEach(AmqpPort::resetStatistics);
+        getVirtualHostNodes().stream().map(VirtualHostNode::getVirtualHost)
+                .filter(QueueManagingVirtualHost.class::isInstance).map(vh -> (QueueManagingVirtualHost<?>) vh)
+                .forEach(QueueManagingVirtualHost::resetStatistics);
     }
 
     @Override

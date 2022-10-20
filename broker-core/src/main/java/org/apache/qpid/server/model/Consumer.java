@@ -69,10 +69,18 @@ public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> ext
                         + "consumers.  Priority 2147483647 is the highest priority.")
     int getPriority();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound", metricName = "outbound_bytes_count")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.BYTES,
+            label = "Outbound",
+            metricName = "outbound_bytes_count",
+            resettable = true)
     long getBytesOut();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound", metricName = "outbound_messages_count")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.MESSAGES,
+            label = "Outbound",
+            metricName = "outbound_messages_count",
+            resettable = true)
     long getMessagesOut();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Prefetch")
@@ -80,6 +88,9 @@ public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> ext
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetch")
     long getUnacknowledgedMessages();
+
+    @ManagedOperation(description = "Resets consumer statistics", changesConfiguredObjectState = true)
+    void resetStatistics();
 
     long getConsumerNumber();
 

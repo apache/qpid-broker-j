@@ -25,9 +25,20 @@ public interface VirtualHostLogger <X extends VirtualHostLogger<X>> extends Conf
 {
     void stopLogging();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Errors", metricName = "errors_count")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.COUNT,
+            label = "Errors",
+            metricName = "errors_count",
+            resettable = true)
     long getErrorCount();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Warnings", metricName = "warnings_count")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE,
+            units = StatisticUnit.COUNT,
+            label = "Warnings",
+            metricName = "warnings_count",
+            resettable = true)
     long getWarnCount();
+
+    @ManagedOperation(description = "Resets VirtualHostLogger statistics", changesConfiguredObjectState = true)
+    void resetStatistics();
 }

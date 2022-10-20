@@ -282,6 +282,7 @@ define(["dojo/_base/xhr",
                     {
                         thisObj.exchangeStatistics = new StatisticsWidget({
                             category:  "Exchange",
+                            modelObj: thisObj.modelObj,
                             type: thisObj.exchangeData.type,
                             management: thisObj.management,
                             defaultStatistics: ["messagesIn", "messagesDropped"]

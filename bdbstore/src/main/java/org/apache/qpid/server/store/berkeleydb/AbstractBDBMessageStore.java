@@ -263,6 +263,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     }
 
     @Override
+    public void resetStatistics()
+    {
+        _bytesEvacuatedFromMemory.set(0L);
+    }
+
+    @Override
     public org.apache.qpid.server.store.Transaction newTransaction()
     {
         checkMessageStoreOpen();

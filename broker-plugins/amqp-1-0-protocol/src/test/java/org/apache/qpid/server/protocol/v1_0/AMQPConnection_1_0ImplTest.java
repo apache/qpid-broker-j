@@ -23,12 +23,14 @@ package org.apache.qpid.server.protocol.v1_0;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.SocketAddress;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -155,5 +157,35 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
         {
             // pass
         }
+    }
+
+    @Test
+    public void resetStatistics()
+    {
+        final AMQPConnection_1_0Impl connection =
+                new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
+        connection.setAddressSpace(_virtualHost);
+        connection.registerMessageReceived(100L);
+        connection.registerMessageDelivered(100L);
+        connection.registerTransactedMessageReceived();
+        connection.registerTransactedMessageDelivered();
+
+        final Map<String, Object> statisticsBeforeReset = connection.getStatistics();
+        assertEquals(100L, statisticsBeforeReset.get("bytesIn"));
+        assertEquals(100L, statisticsBeforeReset.get("bytesOut"));
+        assertEquals(1L, statisticsBeforeReset.get("messagesIn"));
+        assertEquals(1L, statisticsBeforeReset.get("messagesOut"));
+        assertEquals(1L, statisticsBeforeReset.get("transactedMessagesIn"));
+        assertEquals(1L, statisticsBeforeReset.get("transactedMessagesOut"));
+
+        connection.resetStatistics();
+
+        final Map<String, Object> statisticsAfterReset = connection.getStatistics();
+        assertEquals(0L, statisticsAfterReset.get("bytesIn"));
+        assertEquals(0L, statisticsAfterReset.get("bytesOut"));
+        assertEquals(0L, statisticsAfterReset.get("messagesIn"));
+        assertEquals(0L, statisticsAfterReset.get("messagesOut"));
+        assertEquals(0L, statisticsAfterReset.get("transactedMessagesIn"));
+        assertEquals(0L, statisticsAfterReset.get("transactedMessagesOut"));
     }
 }

@@ -19,11 +19,12 @@
  *
  */
 define(["qpid/common/util",
+        "dijit/registry",
         "dojo/query",
         "dojo/_base/lang",
         "dojo/text!logger/virtualhostlogger/show.html",
         "qpid/common/CategoryTabExtension",
-        "dojo/domReady!"], function (util, query, lang, template, CategoryTabExtension)
+        "dojo/domReady!"], function (util, registry, query, lang, template, CategoryTabExtension)
 {
     function VirtualHostLogger(params)
     {
@@ -35,5 +36,22 @@ define(["qpid/common/util",
         CategoryTabExtension.call(this, categoryExtensionParams);
     }
 
-    return util.extend(VirtualHostLogger, CategoryTabExtension);
+    util.extend(VirtualHostLogger, CategoryTabExtension);
+
+    VirtualHostLogger.prototype.postParse = function (containerNode)
+    {
+        this._resetStatisticsButton = registry.byNode(query(".resetStatistics", containerNode)[0]);
+        this._resetStatisticsButton.on("click", lang.hitch(this, this.resetStatistics));
+    }
+
+    VirtualHostLogger.prototype.resetStatistics = function ()
+    {
+        util.resetStatistics(this.management,
+                             this.modelObj,
+                             this._resetStatisticsButton,
+                             "VirtualHostLogger",
+                             this.modelObj.name);
+    }
+
+    return VirtualHostLogger;
 });

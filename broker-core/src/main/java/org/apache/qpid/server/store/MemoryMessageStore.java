@@ -355,6 +355,12 @@ public class MemoryMessageStore implements MessageStore
     }
 
     @Override
+    public void resetStatistics()
+    {
+        // ignore
+    }
+
+    @Override
     public Transaction newTransaction()
     {
         return new MemoryMessageStoreTransaction();

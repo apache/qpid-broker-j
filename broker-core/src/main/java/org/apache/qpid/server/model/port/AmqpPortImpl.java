@@ -49,6 +49,7 @@ import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.logging.subjects.PortLogSubject;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.DefaultVirtualHostAlias;
 import org.apache.qpid.server.model.HostNameAlias;
@@ -624,6 +625,13 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public long getProtocolHandshakeTimeout()
     {
         return _protocolHandshakeTimeout;
+    }
+
+    @Override
+    public void resetStatistics()
+    {
+        _totalConnectionCount.set(0L);
+        getChildren(Connection.class).forEach(Connection::resetStatistics);
     }
 
     @Override

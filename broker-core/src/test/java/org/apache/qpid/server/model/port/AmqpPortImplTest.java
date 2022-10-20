@@ -351,6 +351,29 @@ public class AmqpPortImplTest extends UnitTestBase
         assertFalse(_port.acceptNewConnectionAndIncrementCount(new InetSocketAddress("example.org", 0)));
     }
 
+    @Test
+    public void resetStatistics()
+    {
+        final Map<String, Object> attributes = Map.of(
+                AmqpPort.PORT, 0,
+                AmqpPort.NAME, getTestName(),
+                AmqpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME,
+                AmqpPort.MAX_OPEN_CONNECTIONS, 10,
+                AmqpPort.CONTEXT, Map.of(AmqpPort.OPEN_CONNECTIONS_WARN_PERCENT, "80"));
+        _port = new AmqpPortImpl(attributes, _broker);
+        _port.create();
+
+        _port.acceptNewConnectionAndIncrementCount(new InetSocketAddress("example.org", 0));
+
+        final Map<String, Object> statisticsBeforeReset = _port.getStatistics();
+        assertEquals(1L, statisticsBeforeReset.get("totalConnectionCount"));
+
+        _port.resetStatistics();
+
+        final Map<String, Object> statisticsAfterReset = _port.getStatistics();
+        assertEquals(0L, statisticsAfterReset.get("totalConnectionCount"));
+    }
+
     private AmqpPortImpl createPort(final String portName)
     {
         return createPort(portName, Collections.emptyMap());

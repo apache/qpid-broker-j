@@ -671,6 +671,7 @@ define(["dojo/_base/declare",
                     {
                         thisObj.queueStatistics = new StatisticsWidget({
                             category:  "Queue",
+                            modelObj: thisObj.modelObj,
                             type: thisObj.queueData.type,
                             management: thisObj.management,
                             defaultStatistics: ["totalEnqueuedMessages", "totalDequeuedMessages",

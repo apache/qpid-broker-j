@@ -247,6 +247,40 @@ public class BrokerImplTest extends UnitTestBase
         verify(_preferenceStore).replace(Collections.singleton(preferenceId), Collections.EMPTY_SET);
     }
 
+    @Test
+    public void resetStatistics()
+    {
+        final Map<String, Object> brokerAttributes = Map.of(
+                "name", "Broker",
+                Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION,
+                Broker.DURABLE, true);
+        _brokerImpl = new BrokerImpl(brokerAttributes, _systemConfig);
+        _brokerImpl.open();
+
+        _brokerImpl.registerMessageDelivered(100L);
+        _brokerImpl.registerMessageReceived(100L);
+        _brokerImpl.registerTransactedMessageDelivered();
+        _brokerImpl.registerTransactedMessageReceived();
+
+        final Map<String, Object> statisticsBeforeReset = _brokerImpl.getStatistics();
+        assertEquals(100L, statisticsBeforeReset.get("bytesIn"));
+        assertEquals(100L, statisticsBeforeReset.get("bytesOut"));
+        assertEquals(1L, statisticsBeforeReset.get("messagesIn"));
+        assertEquals(1L, statisticsBeforeReset.get("messagesOut"));
+        assertEquals(1L, statisticsBeforeReset.get("transactedMessagesIn"));
+        assertEquals(1L, statisticsBeforeReset.get("transactedMessagesOut"));
+
+        _brokerImpl.resetStatistics();
+
+        final Map<String, Object> statisticsAfterReset = _brokerImpl.getStatistics();
+        assertEquals(0L, statisticsAfterReset.get("bytesIn"));
+        assertEquals(0L, statisticsAfterReset.get("bytesOut"));
+        assertEquals(0L, statisticsAfterReset.get("messagesIn"));
+        assertEquals(0L, statisticsAfterReset.get("messagesOut"));
+        assertEquals(0L, statisticsAfterReset.get("transactedMessagesIn"));
+        assertEquals(0L, statisticsAfterReset.get("transactedMessagesOut"));
+    }
+
     private Collection<Preference> getPreferencesAs(final Subject testUserSubject)
     {
         return Subject.doAs(testUserSubject, new PrivilegedAction<Collection<Preference>>()

@@ -730,6 +730,7 @@ define(["dojo/parser",
             {
                 this.virtualhostStatistics = new StatisticsWidget({
                     category: "VirtualHost",
+                    modelObj: this.modelObj,
                     type: this.vhostData.type,
                     management: this.management,
                     defaultStatistics: ["messagesIn", "messagesOut", "totalDepthOfQueuesMessages"]

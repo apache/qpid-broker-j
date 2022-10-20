@@ -128,6 +128,7 @@ define(["dojo/query",
         {
             this.portStatistics = new StatisticsWidget({
                 category: "Port",
+                modelObj: this.modelObj,
                 type: restData.type,
                 management: this.management,
                 defaultStatistics: ["connectionCount", "totalConnectionCount"]
