@@ -179,7 +179,7 @@
     <module>broker-plugins/amqp-msg-conv-0-8-to-0-10</module>
     <module>broker-plugins/amqp-msg-conv-0-8-to-1-0</module>
     <module>broker-plugins/amqp-msg-conv-0-10-to-1-0</module>
-    <module>broker-plugins/broker-query-engine</module>
+    <module>broker-plugins/query-engine</module>
     <module>broker-plugins/derby-store</module>
     <module>broker-plugins/jdbc-provider-bone</module>
     <module>broker-plugins/jdbc-store</module>
@@ -401,7 +401,7 @@
 
       <dependency>
         <groupId>org.apache.qpid</groupId>
-        <artifactId>qpid-broker-query-engine</artifactId>
+        <artifactId>qpid-broker-plugins-query-engine</artifactId>
         <version>${project.version}</version>
       </dependency>
 
