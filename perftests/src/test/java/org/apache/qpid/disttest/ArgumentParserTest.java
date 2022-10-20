@@ -55,7 +55,7 @@ public class ArgumentParserTest extends UnitTestBase
     public static final String JNDI_CONFIG_DEFAULT = "jndi.properties";
     public static final String DISTRIBUTED_DEFAULT = "false";
 
-    private Map<String,String> _options = new HashMap<String, String>();
+    private final Map<String,String> _options = new HashMap<String, String>();
 
     private ArgumentParser _parser;
 

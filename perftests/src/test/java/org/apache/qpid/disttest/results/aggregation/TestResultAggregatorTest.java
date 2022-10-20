@@ -80,7 +80,7 @@ public class TestResultAggregatorTest extends UnitTestBase
 
     private static final int BATCH_SIZE = 3;
 
-    private TestResultAggregator _aggregator = new TestResultAggregator();
+    private final TestResultAggregator _aggregator = new TestResultAggregator();
 
     @Test
     public void testAggregateResultsForTwoConsumerAndOneProducer() throws Exception

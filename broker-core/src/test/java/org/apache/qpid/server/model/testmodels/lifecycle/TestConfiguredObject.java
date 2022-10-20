@@ -194,12 +194,11 @@ public class TestConfiguredObject extends AbstractConfiguredObject
 
     public static class TestConfiguredObjectModel extends  Model
     {
+        private static final Collection<Class<? extends ConfiguredObject>> CATEGORIES = Collections.<Class<? extends ConfiguredObject>>singleton(TestConfiguredObject.class);
+        private static final TestConfiguredObjectModel INSTANCE = new TestConfiguredObjectModel();
 
-        private Collection<Class<? extends ConfiguredObject>> CATEGORIES = Collections.<Class<? extends ConfiguredObject>>singleton(TestConfiguredObject.class);
-        private ConfiguredObjectFactoryImpl _configuredObjectFactory;
-
-        private static TestConfiguredObjectModel INSTANCE = new TestConfiguredObjectModel();
-        private ConfiguredObjectTypeRegistry _configuredObjectTypeRegistry;
+        private final ConfiguredObjectFactoryImpl _configuredObjectFactory;
+        private final ConfiguredObjectTypeRegistry _configuredObjectTypeRegistry;
 
         private TestConfiguredObjectModel()
         {

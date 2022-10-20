@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class SenderMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class SenderMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String SENDER_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "sender";
@@ -72,7 +72,7 @@ public class SenderMessages
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Sender_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Sender_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -84,12 +84,12 @@ public class SenderMessages
      */
     public static LogMessage CLOSE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = MESSAGES.getString("CLOSE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -144,12 +144,12 @@ public class SenderMessages
      */
     public static LogMessage CREATE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("CREATE");
+        String rawMessage = MESSAGES.getString("CREATE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 

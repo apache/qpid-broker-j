@@ -51,9 +51,7 @@ public class ConstantExpression<T> implements Expression<T>
     public static final BooleanConstantExpression TRUE = new BooleanConstantExpression(Boolean.TRUE);
     public static final BooleanConstantExpression FALSE = new BooleanConstantExpression(Boolean.FALSE);
 
-
-
-    private Object _value;
+    private final Object _value;
 
     public static <E> ConstantExpression<E> NULL()
     {

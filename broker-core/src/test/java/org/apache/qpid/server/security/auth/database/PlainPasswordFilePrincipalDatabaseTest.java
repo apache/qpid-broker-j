@@ -49,11 +49,9 @@ import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.AbstractScramAuthenticationManager;
 public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFilePrincipalDatabaseTest
 {
-
-
-    private Principal _principal = new UsernamePrincipal(TEST_USERNAME, null);
+    private final Principal _principal = new UsernamePrincipal(TEST_USERNAME, null);
+    private final List<File> _testPwdFiles = new ArrayList<File>();
     private PlainPasswordFilePrincipalDatabase _database;
-    private List<File> _testPwdFiles = new ArrayList<File>();
 
     @Before
     public void setUp() throws Exception

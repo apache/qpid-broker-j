@@ -39,16 +39,15 @@ import org.apache.qpid.server.transport.AMQPConnection;
 
 public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
 {
+    private final String tag = "mocktag";
+    private final Queue<?> queue = null;
+    private final ArrayList<MessageInstance> _messages = new ArrayList<>();
+    private final AMQPSession _sessionModel = mock(AMQPSession.class);
 
     private boolean _closed = false;
-    private String tag = "mocktag";
-    private Queue<?> queue = null;
     private State _state = State.OPEN;
-    private ArrayList<MessageInstance> _messages = new ArrayList<>();
-
     private boolean _isActive = true;
     private MessageInstanceConsumer _consumer;
-    private AMQPSession _sessionModel = mock(AMQPSession.class);
     private boolean _notifyDesired;
 
     public TestConsumerTarget()

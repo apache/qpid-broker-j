@@ -71,9 +71,9 @@ public class InjectedAttributeTest extends UnitTestBase
     private static class TestInjector implements ConfiguredObjectAttributeInjector
     {
 
-        private Collection<ConfiguredObjectInjectedAttribute<?, ?>> _injectedAttributes;
-        private Collection<ConfiguredObjectInjectedStatistic<?, ?>> _injectedStatistics;
-        private Collection<ConfiguredObjectInjectedOperation<?>> _injectedOperations;
+        private final Collection<ConfiguredObjectInjectedAttribute<?, ?>> _injectedAttributes;
+        private final Collection<ConfiguredObjectInjectedStatistic<?, ?>> _injectedStatistics;
+        private final Collection<ConfiguredObjectInjectedOperation<?>> _injectedOperations;
 
         private TestInjector(ConfiguredObjectInjectedAttribute<?, ?>... attributes)
         {

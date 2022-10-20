@@ -89,9 +89,9 @@ public class ChartProductionTest extends UnitTestBase
 
     private static final String RETAIN_TEST_CHARTS = "retainTestCharts";
 
-    private SeriesDefinition _seriesDefinition = mock(SeriesDefinition.class);
-    private ChartingDefinition _chartingDefinition = mock(ChartingDefinition.class);
-    private ChartWriter _writer = new ChartWriter();
+    private final SeriesDefinition _seriesDefinition = mock(SeriesDefinition.class);
+    private final ChartingDefinition _chartingDefinition = mock(ChartingDefinition.class);
+    private final ChartWriter _writer = new ChartWriter();
 
     @Before
     public void setUp() throws Exception

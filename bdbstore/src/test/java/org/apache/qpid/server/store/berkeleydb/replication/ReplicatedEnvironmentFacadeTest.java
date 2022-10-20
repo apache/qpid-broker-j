@@ -100,14 +100,11 @@ import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-
 public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatedEnvironmentFacadeTest.class);
-    private int _timeout = 30;
 
     private final PortHelper _portHelper = new PortHelper();
-
     private final String TEST_GROUP_NAME = "testGroupName";
     private final String TEST_NODE_NAME = "testNodeName";
     private final int TEST_NODE_PORT = _portHelper.getNextAvailable();
@@ -117,11 +114,12 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
     private final boolean TEST_DESIGNATED_PRIMARY = false;
     private final int TEST_PRIORITY = 1;
     private final int TEST_ELECTABLE_GROUP_OVERRIDE = 0;
-
-    private File _storePath;
     private final Map<String, ReplicatedEnvironmentFacade> _nodes = new HashMap<String, ReplicatedEnvironmentFacade>();
+    private final CopyOnWriteArrayList<Throwable> _unhandledExceptions = new CopyOnWriteArrayList<>();
+
+    private int _timeout = 30;
+    private File _storePath;
     private Thread.UncaughtExceptionHandler _defaultUncaughtExceptionHandler;
-    private CopyOnWriteArrayList<Throwable> _unhandledExceptions = new CopyOnWriteArrayList<>();
 
     @Before
     public void setUp() throws Exception

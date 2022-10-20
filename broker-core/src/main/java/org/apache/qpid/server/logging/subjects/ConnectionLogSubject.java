@@ -33,7 +33,7 @@ public class ConnectionLogSubject extends AbstractLogSubject
 {
 
     // The Session this Actor is representing
-    private AMQPConnection<?> _connection;
+    private final AMQPConnection<?> _connection;
 
     public ConnectionLogSubject(AMQPConnection<?> connection)
     {

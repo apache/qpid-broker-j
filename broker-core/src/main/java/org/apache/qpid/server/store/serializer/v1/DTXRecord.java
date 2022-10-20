@@ -196,8 +196,8 @@ class DTXRecord implements Record
 
     static class DequeueRecordImpl implements Transaction.DequeueRecord, MessageEnqueueRecord
     {
-        private UUID _queueId;
-        private long _messageNumber;
+        private final UUID _queueId;
+        private final long _messageNumber;
 
         public DequeueRecordImpl(final long messageNumber,
                                  final UUID queueId)

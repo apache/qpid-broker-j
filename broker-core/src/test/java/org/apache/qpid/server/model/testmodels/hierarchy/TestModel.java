@@ -36,7 +36,7 @@ import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 public class TestModel extends Model
 {
     private static final Model INSTANCE = new TestModel();
-    private Class<? extends ConfiguredObject>[] _supportedCategories =
+    private final Class<? extends ConfiguredObject>[] _supportedCategories =
             new Class[] {
                     TestCar.class,
                     TestEngine.class,
@@ -44,7 +44,7 @@ public class TestModel extends Model
             };
 
     private final ConfiguredObjectFactory _objectFactory;
-    private ConfiguredObjectTypeRegistry _registry;
+    private final ConfiguredObjectTypeRegistry _registry;
 
     private TestModel()
     {

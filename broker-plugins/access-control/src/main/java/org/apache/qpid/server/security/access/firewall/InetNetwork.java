@@ -27,8 +27,8 @@ class InetNetwork
      * RFC 1519, which describe CIDR: Classless Inter-Domain Routing.
      */
 
-    private InetAddress network;
-    private InetAddress netmask;
+    private final InetAddress network;
+    private final InetAddress netmask;
 
     public InetNetwork(InetAddress ip, InetAddress netmask)
     {

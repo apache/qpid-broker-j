@@ -37,17 +37,17 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 
 public class MessageMetaData_0_10 implements StorableMessageMetaData
 {
-    private final Header _header;
-    private DeliveryProperties _deliveryProps;
-    private MessageProperties _messageProps;
-    private MessageTransferHeader _messageHeader;
-    private int _bodySize;
-
     private static final int ENCODER_SIZE = 1 << 10;
+
+    private static final MessageMetaDataType_0_10 TYPE = new MessageMetaDataType_0_10();
 
     public static final MessageMetaDataType.Factory<MessageMetaData_0_10> FACTORY = new MetaDataFactory();
 
-    private static final MessageMetaDataType_0_10 TYPE = new MessageMetaDataType_0_10();
+    private final Header _header;
+    private final DeliveryProperties _deliveryProps;
+    private final MessageProperties _messageProps;
+    private final MessageTransferHeader _messageHeader;
+    private final int _bodySize;
 
     private volatile QpidByteBuffer _encoded;
 

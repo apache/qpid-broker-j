@@ -63,9 +63,9 @@ public class SeriesDefinitionCreatorTest extends UnitTestBase
     private static final String TEST_SERIES_2_LEGEND = "SERIES_2_LEGEND";
     private static final String TEST_SERIES_2_DIR = "SERIES_2_DIR";
 
-    private Properties _properties = new Properties();
+    private final Properties _properties = new Properties();
 
-    private SeriesDefinitionCreator _seriesDefinitionLoader = new SeriesDefinitionCreator();
+    private final SeriesDefinitionCreator _seriesDefinitionLoader = new SeriesDefinitionCreator();
 
     @Before
     public void setUp() throws Exception

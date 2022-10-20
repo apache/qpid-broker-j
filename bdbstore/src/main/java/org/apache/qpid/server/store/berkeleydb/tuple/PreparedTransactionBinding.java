@@ -123,8 +123,8 @@ public class PreparedTransactionBinding
     private static class EnqueueRecordImpl implements Transaction.EnqueueRecord, TransactionLogResource, EnqueueableMessage
     {
 
-        private long _messageNumber;
-        private UUID _queueId;
+        private final long _messageNumber;
+        private final UUID _queueId;
 
         EnqueueRecordImpl(UUID queueId, long messageNumber)
         {

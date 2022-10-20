@@ -40,15 +40,12 @@ import java.util.TimeZone;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.db.ResultsDbWriter.Clock;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.results.ResultsTestFixture;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.After;
 import org.junit.Test;
@@ -67,17 +64,18 @@ import static org.junit.Assert.assertNull;
 
 public class ResultsDbWriterTest extends UnitTestBase
 {
-    private static final long _dummyTimestamp = 1234;
+    private static final long DUMMY_TIMESTAMP = 1234;
+
+    private final Clock _clock = mock(Clock.class);
+    private final ResultsTestFixture _resultsTestFixture = new ResultsTestFixture();
 
     private File _tempDbDirectory;
-    private Clock _clock = mock(Clock.class);
-    private ResultsTestFixture _resultsTestFixture = new ResultsTestFixture();
 
     @Before
     public void setUp() throws Exception
     {
         _tempDbDirectory = createTestDirectory();
-        when(_clock.currentTimeMillis()).thenReturn(_dummyTimestamp);
+        when(_clock.currentTimeMillis()).thenReturn(DUMMY_TIMESTAMP);
     }
 
 
@@ -169,7 +167,7 @@ public class ResultsDbWriterTest extends UnitTestBase
             assertEquals(participantResult.getParticipantName(), rs.getString(PARTICIPANT_NAME.getDisplayName()));
             assertEquals(participantResult.getThroughput(), (Object) rs.getDouble(THROUGHPUT.getDisplayName()));
             assertEquals(expectedRunId, rs.getString(ResultsDbWriter.RUN_ID));
-            assertEquals(new Timestamp(_dummyTimestamp), rs.getTimestamp(ResultsDbWriter.INSERTED_TIMESTAMP));
+            assertEquals(new Timestamp(DUMMY_TIMESTAMP), rs.getTimestamp(ResultsDbWriter.INSERTED_TIMESTAMP));
         }
         finally
         {

@@ -42,8 +42,9 @@ public class ChartWriter
 
     static final String SUMMARY_FILE_NAME = "chart-summary.html";
 
+    private final SortedMap<File,ChartingDefinition> _chartFilesToChartDef = new TreeMap<File, ChartingDefinition>();
+
     private File _chartDirectory = new File(".");
-    private SortedMap<File,ChartingDefinition> _chartFilesToChartDef = new TreeMap<File, ChartingDefinition>();
 
     public void writeChartToFileSystem(JFreeChart chart, ChartingDefinition chartDef)
     {

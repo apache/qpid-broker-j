@@ -50,8 +50,8 @@ public class MessageProvider
     public static final String[] STANDARD_JMS_PROPERTIES = { "correlationID", DELIVERY_MODE,
             "expiration", "messageID", PRIORITY, "redelivered", "replyTo", "timestamp", "type", TTL };
 
-    private Map<String, PropertyValue> _messageProperties;
-    private ConcurrentMap<Integer, Future<String>> _payloads;
+    private final Map<String, PropertyValue> _messageProperties;
+    private final ConcurrentMap<Integer, Future<String>> _payloads;
 
     public MessageProvider(Map<String, PropertyValue> messageProperties)
     {

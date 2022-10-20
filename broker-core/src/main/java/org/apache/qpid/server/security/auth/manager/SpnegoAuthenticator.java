@@ -216,7 +216,7 @@ public class SpnegoAuthenticator
                 TokenCarryingPrincipal principal = new TokenCarryingPrincipal()
                 {
 
-                    private Map<String, String> _tokens = Collections.singletonMap(RESPONSE_AUTH_HEADER_NAME,
+                    private final Map<String, String> _tokens = Collections.singletonMap(RESPONSE_AUTH_HEADER_NAME,
                                                                                    NEGOTIATE_PREFIX + Base64.getEncoder()
                                                                                                             .encodeToString(outToken));
 

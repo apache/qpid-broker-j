@@ -46,8 +46,6 @@ import static org.junit.Assert.assertNull;
 
 public class ParticipantResultAggregatorTest extends UnitTestBase
 {
-    private ParticipantResultAggregator _aggregator = new ParticipantResultAggregator(ParticipantResult.class, AGGREGATED_RESULT_NAME);
-
     private static final String TEST_NAME = "TEST_NAME";
     private static final String AGGREGATED_RESULT_NAME = "AGGREGATED_RESULT_NAME";
     private static final String PROVIDER_VERSION = "PROVIDER_VERSION";
@@ -69,6 +67,8 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
 
     private static final double EXPECTED_AGGREGATED_ALL_THROUGHPUT = ((OVERALL_PROCESSED)/1024)/((OVERALL_TIMETAKEN)/1000);
     private static final int EXPECTED_AGGREGATED_MESSAGE_THROUGHPUT = (int)(OVERALL_NUMBER_OF_MESSAGES_PROCESSED * 1000.0d/OVERALL_TIMETAKEN);
+
+    private final ParticipantResultAggregator _aggregator = new ParticipantResultAggregator(ParticipantResult.class, AGGREGATED_RESULT_NAME);
 
     @Test
     public void testStartAndEndDateForOneParticipantResult()

@@ -35,9 +35,9 @@ import org.eclipse.aether.transfer.TransferResource;
 public class ConsoleTransferListener extends AbstractTransferListener
 {
 
-    private PrintStream _out;
+    private final PrintStream _out;
 
-    private Map<TransferResource, Long> _downloads = new ConcurrentHashMap<>();
+    private final Map<TransferResource, Long> _downloads = new ConcurrentHashMap<>();
 
     private int _lastLength;
 

@@ -40,7 +40,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleBasedAccessControl.class);
     private final LegacyAccessControlAdapter _adapter;
 
-    private RuleSet _ruleSet;
+    private final RuleSet _ruleSet;
 
     public RuleBasedAccessControl(RuleSet rs, final Model model)
     {

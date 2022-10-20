@@ -27,8 +27,8 @@ import java.util.UUID;
 
 public class ConfiguredObjectRecordImpl implements ConfiguredObjectRecord
 {
-    private UUID _id;
-    private String _type;
+    private final UUID _id;
+    private final String _type;
     private final Map<String,Object> _attributes;
     private final Map<String,UUID> _parents;
 

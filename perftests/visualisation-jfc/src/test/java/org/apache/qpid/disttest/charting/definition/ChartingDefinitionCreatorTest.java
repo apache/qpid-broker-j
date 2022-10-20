@@ -67,7 +67,7 @@ public class ChartingDefinitionCreatorTest extends UnitTestBase
 
     private static final String SYSTEM_PROPERTY_NAME = "ChartingDefinitionSysProp";
 
-    private ChartingDefinitionCreator _chartingDefinitionLoader = new ChartingDefinitionCreator();
+    private final ChartingDefinitionCreator _chartingDefinitionLoader = new ChartingDefinitionCreator();
     private File _testTempDir;
 
     @Before

@@ -46,9 +46,9 @@ import org.slf4j.LoggerFactory;
 
 class TrustAnchorValidatingTrustManager implements X509TrustManager
 {
-    private static Logger LOGGER = LoggerFactory.getLogger(TrustAnchorValidatingTrustManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TrustAnchorValidatingTrustManager.class);
 
-    private String _trustStoreName;
+    private final String _trustStoreName;
     private final X509TrustManager _x509TrustManager;
     private final Set<TrustAnchor> _trustAnchors;
     private final Set<Certificate> _otherCerts;

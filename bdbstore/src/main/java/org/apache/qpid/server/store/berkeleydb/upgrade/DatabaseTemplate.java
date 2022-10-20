@@ -31,10 +31,10 @@ public class DatabaseTemplate
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseTemplate.class);
 
-    private Environment _environment;
-    private String _sourceDatabaseName;
-    private String _targetDatabaseName;
-    private Transaction _parentTransaction;
+    private final Environment _environment;
+    private final String _sourceDatabaseName;
+    private final String _targetDatabaseName;
+    private final Transaction _parentTransaction;
 
     public DatabaseTemplate(Environment environment, String sourceDatabaseName, Transaction transaction)
     {

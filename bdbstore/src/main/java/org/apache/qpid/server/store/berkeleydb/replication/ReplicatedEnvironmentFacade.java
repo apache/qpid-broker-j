@@ -2429,7 +2429,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     private static class EnvironmentStateHolder implements AppStateMonitor
     {
-        private byte[] _data;
+        private final byte[] _data;
 
         private EnvironmentStateHolder(byte[] data)
         {

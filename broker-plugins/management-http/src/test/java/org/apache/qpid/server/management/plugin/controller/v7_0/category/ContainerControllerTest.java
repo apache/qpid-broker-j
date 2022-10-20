@@ -37,9 +37,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ContainerControllerTest extends UnitTestBase
 {
+    private static final String MODEL_VERSION = "7.0";
     private LegacyCategoryControllerFactory _factory;
     private LegacyManagementController _nextVersionManagementController;
-    private String MODEL_VERSION = "7.0";
 
     @Before
     public void setUp()

@@ -224,7 +224,7 @@ public class UserPreferencesTest extends UnitTestBase
 
     private static class UUIDCollectionMatcher implements ArgumentMatcher<Collection<UUID>>
     {
-        private Collection<UUID> _expected;
+        private final Collection<UUID> _expected;
         private String _failureDescription;
 
         private UUIDCollectionMatcher(final Collection<UUID> expected)

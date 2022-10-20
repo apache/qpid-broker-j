@@ -298,7 +298,7 @@ public class ObjectMessageClassAllowlistingTest extends JmsTestBase
     {
         return new Serializable()
         {
-            private int _field = field;
+            private final int _field = field;
 
             @Override
             public int hashCode()

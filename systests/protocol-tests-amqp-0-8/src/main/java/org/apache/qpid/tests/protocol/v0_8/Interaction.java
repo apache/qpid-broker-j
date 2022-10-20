@@ -45,15 +45,16 @@ public class Interaction extends AbstractInteraction<Interaction>
 {
     private final BrokerAdmin _brokerAdmin;
     private final BrokerAdmin.PortType _portType;
+    private final int _maximumPayloadSize = 512;
+    private final ConnectionInteraction _connectionInteraction;
+    private final ChannelInteraction _channelInteraction;
+    private final QueueInteraction _queueInteraction;
+    private final BasicInteraction _basicInteraction;
+    private final TxInteraction _txInteraction;
+    private final ExchangeInteraction _exchangeInteraction;
+
     private byte[] _protocolHeader;
     private int _channelId;
-    private int _maximumPayloadSize = 512;
-    private ConnectionInteraction _connectionInteraction;
-    private ChannelInteraction _channelInteraction;
-    private QueueInteraction _queueInteraction;
-    private BasicInteraction _basicInteraction;
-    private TxInteraction _txInteraction;
-    private ExchangeInteraction _exchangeInteraction;
 
     Interaction(final FrameTransport transport, final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType)
     {

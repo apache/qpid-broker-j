@@ -48,9 +48,9 @@ import static org.junit.Assert.assertEquals;
 
 public class ResultsXmlWriterTest extends UnitTestBase
 {
-    private File _outputDir = TestFileUtils.createTestDirectory();
+    private final File _outputDir = TestFileUtils.createTestDirectory();
 
-    private ResultsWriter _resultsFileWriter = new ResultsXmlWriter(_outputDir);
+    private final ResultsWriter _resultsFileWriter = new ResultsXmlWriter(_outputDir);
 
     @Before
     public void setUp() throws Exception

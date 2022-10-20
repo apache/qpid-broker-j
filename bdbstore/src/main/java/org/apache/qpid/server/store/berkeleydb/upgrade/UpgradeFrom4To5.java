@@ -702,8 +702,8 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
 
     static final class MessageContentKey
     {
-        private long _messageId;
-        private int _chunk;
+        private final long _messageId;
+        private final int _chunk;
 
         public MessageContentKey(long messageId, int chunkNo)
         {
@@ -770,8 +770,8 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
 
     static final class QueueEntryKey
     {
-        private AMQShortString _queueName;
-        private long _messageId;
+        private final AMQShortString _queueName;
+        private final long _messageId;
 
         public QueueEntryKey(AMQShortString queueName, long messageId)
         {

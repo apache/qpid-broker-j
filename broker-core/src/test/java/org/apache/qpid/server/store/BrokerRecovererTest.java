@@ -51,11 +51,10 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class BrokerRecovererTest extends UnitTestBase
 {
-    private ConfiguredObjectRecord _brokerEntry = mock(ConfiguredObjectRecord.class);
+    private final ConfiguredObjectRecord _brokerEntry = mock(ConfiguredObjectRecord.class);
+    private final UUID _brokerId = UUID.randomUUID();
+    private final UUID _authenticationProvider1Id = UUID.randomUUID();
 
-    private UUID _brokerId = UUID.randomUUID();
-    private AuthenticationProvider<?> _authenticationProvider1;
-    private UUID _authenticationProvider1Id = UUID.randomUUID();
     private SystemConfig<?> _systemConfig;
     private TaskExecutor _taskExecutor;
 
@@ -86,9 +85,9 @@ public class BrokerRecovererTest extends UnitTestBase
                 .getId()));
 
         //Add a base AuthenticationProvider for all tests
-        _authenticationProvider1 = mock(AuthenticationProvider.class);
-        when(_authenticationProvider1.getName()).thenReturn("authenticationProvider1");
-        when(_authenticationProvider1.getId()).thenReturn(_authenticationProvider1Id);
+        AuthenticationProvider<?> authenticationProvider1 = mock(AuthenticationProvider.class);
+        when(authenticationProvider1.getName()).thenReturn("authenticationProvider1");
+        when(authenticationProvider1.getId()).thenReturn(_authenticationProvider1Id);
     }
 
     @After
@@ -281,7 +280,7 @@ public class BrokerRecovererTest extends UnitTestBase
         UnresolvedConfiguredObject<? extends ConfiguredObject> recover =
                 _systemConfig.getObjectFactory().recover(_brokerEntry, _systemConfig);
 
-        Broker<?> broker = (Broker<?>) recover.resolve();
+        Broker<?> broker = (Broker) recover.resolve();
         broker.open();
         assertEquals("Unexpected broker state", State.ERRORED, broker.getState());
     }
@@ -300,7 +299,7 @@ public class BrokerRecovererTest extends UnitTestBase
 
             UnresolvedConfiguredObject<? extends ConfiguredObject> recover =
                     _systemConfig.getObjectFactory().recover(_brokerEntry, _systemConfig);
-            Broker<?> broker = (Broker<?>) recover.resolve();
+            Broker<?> broker = (Broker) recover.resolve();
             broker.open();
             assertEquals("Unexpected broker state", State.ERRORED, broker.getState());
         }

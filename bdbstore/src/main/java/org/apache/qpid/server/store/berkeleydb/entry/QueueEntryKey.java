@@ -24,8 +24,8 @@ import java.util.UUID;
 
 public class QueueEntryKey
 {
-    private UUID _queueId;
-    private long _messageId;
+    private final UUID _queueId;
+    private final long _messageId;
 
     public QueueEntryKey(UUID queueId, long messageId)
     {

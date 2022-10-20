@@ -359,7 +359,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
 
     private static class UnderlyingStoreRecoveringObjectRecordHandler implements ConfiguredObjectRecordHandler
     {
-        private List<ConfiguredObjectRecord> _recoveredRecords = new ArrayList<>();
+        private final List<ConfiguredObjectRecord> _recoveredRecords = new ArrayList<>();
 
         @Override
         public void handle(final ConfiguredObjectRecord record)

@@ -58,7 +58,7 @@ public class ControllerJmsDelegate
     private final Session _commandSession;
     private final QueueCreator _queueCreator;
 
-    private List<CommandListener> _commandListeners = new CopyOnWriteArrayList<CommandListener>();
+    private final List<CommandListener> _commandListeners = new CopyOnWriteArrayList<CommandListener>();
 
     public ControllerJmsDelegate(final Context context) throws NamingException, JMSException
     {

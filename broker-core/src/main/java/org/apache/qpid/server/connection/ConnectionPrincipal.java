@@ -34,7 +34,7 @@ public class ConnectionPrincipal implements SocketConnectionPrincipal
     private static final long serialVersionUID = 1L;
 
     private final AMQPConnection<?> _connection;
-    private AmqpConnectionMetaData _metadata;
+    private final AmqpConnectionMetaData _metadata;
 
     public ConnectionPrincipal(final AMQPConnection<?> connection)
     {

@@ -590,26 +590,26 @@ public class RestStressTestClient
     {
         private static final Set<String> REQUIRED = new HashSet<>(Arrays.asList("brokerUrl", "username", "password"));
 
-        private String brokerUrl = null;
-        private String username = null;
-        private String password = null;
-        private String saslMechanism = null;
+        private final String brokerUrl = null;
+        private final String username = null;
+        private final String password = null;
+        private final String saslMechanism = null;
 
-        private String virtualHostNode = null;
-        private String virtualHost = null;
-        private String queueName = null;
-        private String exchangeName = null;
+        private final String virtualHostNode = null;
+        private final String virtualHost = null;
+        private final String queueName = null;
+        private final String exchangeName = null;
 
-        private int repetitions = 1;
+        private final int repetitions = 1;
 
-        private boolean createQueue = false;
-        private boolean deleteQueue = false;
-        private boolean uniqueQueues = false;
-        private boolean bindQueue = false;
+        private final boolean createQueue = false;
+        private final boolean deleteQueue = false;
+        private final boolean uniqueQueues = false;
+        private final boolean bindQueue = false;
 
-        private boolean logout = true;
+        private final boolean logout = true;
 
-        private boolean trustAll = false;
+        private final boolean trustAll = false;
 
         public Arguments()
         {

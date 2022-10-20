@@ -29,10 +29,9 @@ import org.apache.qpid.disttest.message.Command;
 
 public class ClientConfig
 {
-
-    private List<ConnectionConfig> _connections;
-    private List<MessageProviderConfig> _messageProviders;
-    private String _name;
+    private final List<ConnectionConfig> _connections;
+    private final List<MessageProviderConfig> _messageProviders;
+    private final String _name;
 
     public ClientConfig()
     {

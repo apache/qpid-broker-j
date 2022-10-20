@@ -33,6 +33,7 @@ class VirtualHostUserOrConnectionLogInclusionRuleImpl
         extends AbstractPredicateLogInclusionRule<VirtualHostUserOrConnectionLogInclusionRuleImpl>
         implements VirtualHostUserOrConnectionLogInclusionRule<VirtualHostUserOrConnectionLogInclusionRuleImpl>
 {
+    private final ConnectionAndUserPredicate _predicate = new ConnectionAndUserPredicate();
 
     @ManagedAttributeField(afterSet = "afterAttributeSet")
     private String _connectionName;
@@ -40,8 +41,6 @@ class VirtualHostUserOrConnectionLogInclusionRuleImpl
     private String _remoteContainerId;
     @ManagedAttributeField(afterSet = "afterAttributeSet")
     private String _username;
-
-    private ConnectionAndUserPredicate _predicate = new ConnectionAndUserPredicate();
 
     @ManagedObjectFactoryConstructor
     protected VirtualHostUserOrConnectionLogInclusionRuleImpl(final Map<String, Object> attributes,

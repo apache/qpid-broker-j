@@ -45,7 +45,7 @@ import static org.junit.Assert.assertNull;
 
 public class ChartBuilderFactoryTest extends UnitTestBase
 {
-    private SeriesBuilder _seriesBuilder = mock(SeriesBuilder.class);
+    private final SeriesBuilder _seriesBuilder = mock(SeriesBuilder.class);
 
     @Test
     public void testLineChart()

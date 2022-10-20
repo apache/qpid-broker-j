@@ -60,11 +60,11 @@ public class MemoryMessageStore implements MessageStore
 
     private final class MemoryMessageStoreTransaction implements Transaction
     {
-        private Map<UUID, Set<Long>> _localEnqueueMap = new HashMap<UUID, Set<Long>>();
-        private Map<UUID, Set<Long>> _localDequeueMap = new HashMap<UUID, Set<Long>>();
+        private final Map<UUID, Set<Long>> _localEnqueueMap = new HashMap<UUID, Set<Long>>();
+        private final Map<UUID, Set<Long>> _localDequeueMap = new HashMap<UUID, Set<Long>>();
 
-        private Map<Xid, DistributedTransactionRecords> _localDistributedTransactionsRecords = new HashMap<Xid, DistributedTransactionRecords>();
-        private Set<Xid> _localDistributedTransactionsRemoves = new HashSet<Xid>();
+        private final Map<Xid, DistributedTransactionRecords> _localDistributedTransactionsRecords = new HashMap<Xid, DistributedTransactionRecords>();
+        private final Set<Xid> _localDistributedTransactionsRemoves = new HashSet<Xid>();
 
         @Override
         public <X> ListenableFuture<X> commitTranAsync(final X val)
@@ -203,8 +203,8 @@ public class MemoryMessageStore implements MessageStore
     }
     private static final class DistributedTransactionRecords
     {
-        private Transaction.EnqueueRecord[] _enqueues;
-        private Transaction.DequeueRecord[] _dequeues;
+        private final Transaction.EnqueueRecord[] _enqueues;
+        private final Transaction.DequeueRecord[] _dequeues;
 
         public DistributedTransactionRecords(Transaction.EnqueueRecord[] enqueues, Transaction.DequeueRecord[] dequeues)
         {

@@ -31,12 +31,12 @@ public class ProducerConfig extends ParticipantConfig
 
     public static final String MESSAGE_SIZE_OVERRIDE_SYSTEM_PROPERTY = "qpid.disttest.messageSize";
 
-    private int _deliveryMode;
-    private int _messageSize;
-    private int _priority;
-    private long _timeToLive;
-    private long _interval;
-    private String _messageProviderName;
+    private final int _deliveryMode;
+    private final int _messageSize;
+    private final int _priority;
+    private final long _timeToLive;
+    private final long _interval;
+    private final String _messageProviderName;
 
     public ProducerConfig()
     {

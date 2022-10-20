@@ -27,7 +27,7 @@ public class PlainUser implements PasswordPrincipal
     private static final long serialVersionUID = 1L;
 
     private final AuthenticationProvider<?> _authenticationProvider;
-    private String _name;
+    private final String _name;
     private char[] _password;
     private boolean _modified = false;
     private boolean _deleted = false;

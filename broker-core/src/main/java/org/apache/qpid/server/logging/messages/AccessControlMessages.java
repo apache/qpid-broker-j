@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class AccessControlMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class AccessControlMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String ACCESSCONTROL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol";
@@ -86,7 +86,7 @@ public class AccessControlMessages
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(UPDATE_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.AccessControl_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.AccessControl_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -98,12 +98,12 @@ public class AccessControlMessages
      */
     public static LogMessage ALLOWED(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("ALLOWED");
+        String rawMessage = MESSAGES.getString("ALLOWED");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -158,12 +158,12 @@ public class AccessControlMessages
      */
     public static LogMessage CLOSE(String param1)
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = MESSAGES.getString("CLOSE");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -218,12 +218,12 @@ public class AccessControlMessages
      */
     public static LogMessage CREATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("CREATE");
+        String rawMessage = MESSAGES.getString("CREATE");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -278,12 +278,12 @@ public class AccessControlMessages
      */
     public static LogMessage DELETE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("DELETE");
+        String rawMessage = MESSAGES.getString("DELETE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -338,12 +338,12 @@ public class AccessControlMessages
      */
     public static LogMessage DENIED(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("DENIED");
+        String rawMessage = MESSAGES.getString("DENIED");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -398,12 +398,12 @@ public class AccessControlMessages
      */
     public static LogMessage LOADED(String param1)
     {
-        String rawMessage = _messages.getString("LOADED");
+        String rawMessage = MESSAGES.getString("LOADED");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -458,12 +458,12 @@ public class AccessControlMessages
      */
     public static LogMessage OPEN(String param1, String param2)
     {
-        String rawMessage = _messages.getString("OPEN");
+        String rawMessage = MESSAGES.getString("OPEN");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -518,12 +518,12 @@ public class AccessControlMessages
      */
     public static LogMessage OPERATION(String param1)
     {
-        String rawMessage = _messages.getString("OPERATION");
+        String rawMessage = MESSAGES.getString("OPERATION");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -578,12 +578,12 @@ public class AccessControlMessages
      */
     public static LogMessage UPDATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("UPDATE");
+        String rawMessage = MESSAGES.getString("UPDATE");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 

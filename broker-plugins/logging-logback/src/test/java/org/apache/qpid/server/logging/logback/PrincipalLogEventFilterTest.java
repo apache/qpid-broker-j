@@ -37,9 +37,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class PrincipalLogEventFilterTest extends UnitTestBase
 {
+    private final ILoggingEvent _event = mock(ILoggingEvent.class);
 
     private PrincipalLogEventFilter _principalLogEventFilter;
-    private ILoggingEvent _event = mock(ILoggingEvent.class);
     private Subject _subject;
     private Principal _principal;
 

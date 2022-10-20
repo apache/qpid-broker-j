@@ -31,7 +31,7 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 public class FrameTransport extends AbstractFrameTransport<Interaction>
 {
     private final byte[] _protocolHeader;
-    private ProtocolVersion _protocolVersion;
+    private final ProtocolVersion _protocolVersion;
     private final BrokerAdmin.PortType _portType;
     private final BrokerAdmin _brokerAdmin;
 

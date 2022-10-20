@@ -24,7 +24,7 @@ import java.net.URISyntaxException;
 
 public class URLSyntaxException extends URISyntaxException
 {
-    private int _length;
+    private final int _length;
 
     public URLSyntaxException(String url, String error, int index, int length)
     {

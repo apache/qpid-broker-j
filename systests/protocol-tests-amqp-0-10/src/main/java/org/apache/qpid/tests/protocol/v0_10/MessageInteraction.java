@@ -38,12 +38,12 @@ import org.apache.qpid.server.protocol.v0_10.transport.RangeSet;
 public class MessageInteraction
 {
     private final Interaction _interaction;
-    private MessageTransfer _transfer;
-    private MessageSubscribe _subscribe;
-    private MessageCancel _cancel;
-    private MessageFlow _flow;
-    private MessageAccept _accept;
-    private MessageAcquire _acquire;
+    private final MessageTransfer _transfer;
+    private final MessageSubscribe _subscribe;
+    private final MessageCancel _cancel;
+    private final MessageFlow _flow;
+    private final MessageAccept _accept;
+    private final MessageAcquire _acquire;
 
     public MessageInteraction(final Interaction interaction)
     {

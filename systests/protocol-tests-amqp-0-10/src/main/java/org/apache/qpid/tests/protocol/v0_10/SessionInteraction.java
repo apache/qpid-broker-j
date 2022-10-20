@@ -29,10 +29,10 @@ import org.apache.qpid.server.protocol.v0_10.transport.SessionFlush;
 public class SessionInteraction
 {
     private final Interaction _interaction;
-    private SessionAttach _attach;
-    private SessionDetach _detach;
-    private SessionCommandPoint _commandPoint;
-    private SessionFlush _flush;
+    private final SessionAttach _attach;
+    private final SessionDetach _detach;
+    private final SessionCommandPoint _commandPoint;
+    private final SessionFlush _flush;
 
     public SessionInteraction(final Interaction interaction)
     {

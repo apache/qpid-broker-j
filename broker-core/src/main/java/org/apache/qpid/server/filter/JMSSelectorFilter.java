@@ -34,8 +34,8 @@ public class JMSSelectorFilter implements MessageFilter
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(JMSSelectorFilter.class);
 
-    private String _selector;
-    private BooleanExpression _matcher;
+    private final String _selector;
+    private final BooleanExpression _matcher;
 
     public JMSSelectorFilter(String selector) throws ParseException, TokenMgrError, SelectorParsingException
     {

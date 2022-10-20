@@ -33,7 +33,7 @@ import org.apache.qpid.systests.end_to_end_conversion.client.MessagingInstructio
 
 public class ClientInstructionBuilder
 {
-    private List<ClientInstruction> _clientInstructions = new ArrayList<>();
+    private final List<ClientInstruction> _clientInstructions = new ArrayList<>();
     private MessageDescription _latestMessageDescription;
 
     public ClientInstructionBuilder configureConnectionUrl(final Map<String, String> connectionUrlConfig)

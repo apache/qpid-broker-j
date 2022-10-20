@@ -47,8 +47,8 @@ import static org.junit.Assert.assertNull;
 
 public class AggregatorTest extends UnitTestBase
 {
-    private Aggregator _aggregator = new Aggregator();
-    private TestResultAggregator _testResultAggregator = mock(TestResultAggregator.class);
+    private final Aggregator _aggregator = new Aggregator();
+    private final TestResultAggregator _testResultAggregator = mock(TestResultAggregator.class);
 
     @Before
     public void setUp() throws Exception

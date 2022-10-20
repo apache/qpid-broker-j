@@ -43,8 +43,8 @@ public abstract class AbstractPasswordFilePrincipalDatabaseTest extends UnitTest
     protected static final String TEST_PASSWORD = "testPassword";
     protected static final char[] TEST_PASSWORD_CHARS = TEST_PASSWORD.toCharArray();
 
-    private List<File> _testPwdFiles = new ArrayList<File>();
-    private Principal _principal = new UsernamePrincipal(TEST_USERNAME, null);
+    private final List<File> _testPwdFiles = new ArrayList<File>();
+    private final Principal _principal = new UsernamePrincipal(TEST_USERNAME, null);
 
     protected abstract AbstractPasswordFilePrincipalDatabase getDatabase();
 

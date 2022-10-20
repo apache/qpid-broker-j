@@ -17,7 +17,6 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.tests.protocol.v1_0;
 
 import java.util.ArrayList;
@@ -34,9 +33,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 
 public class MessageEncoder
 {
+    private final List<String> _data = new LinkedList<>();
     private Properties _properties;
     private Header _header;
-    private List<String> _data = new LinkedList<>();
     private Map<String, Object> _applicationProperties;
 
     public void addData(final String data)

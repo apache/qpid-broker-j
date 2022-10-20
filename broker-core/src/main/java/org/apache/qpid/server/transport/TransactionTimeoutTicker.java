@@ -35,7 +35,7 @@ public class TransactionTimeoutTicker implements Ticker, SchedulingDelayNotifica
     private final Supplier<Long> _timeSupplier;
     private final long _notificationRepeatPeriod;
 
-    private AtomicLong _accumulatedSchedulingDelay = new AtomicLong();
+    private final AtomicLong _accumulatedSchedulingDelay = new AtomicLong();
     /** The time the ticker will next procedure the notification */
     private volatile long _nextNotificationTime = 0;
     /** Last transaction time stamp seen by this ticker.  */

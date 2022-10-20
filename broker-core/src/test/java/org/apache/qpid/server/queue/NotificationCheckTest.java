@@ -41,9 +41,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class NotificationCheckTest extends UnitTestBase
 {
 
-    private ServerMessage<?> _message = mock(ServerMessage.class);
-    private Queue<?> _queue = mock(Queue.class);
-    private QueueNotificationListener _listener = mock(QueueNotificationListener .class);
+    private final ServerMessage<?> _message = mock(ServerMessage.class);
+    private final Queue<?> _queue = mock(Queue.class);
+    private final QueueNotificationListener _listener = mock(QueueNotificationListener .class);
 
     @Test
     public void testMessageCountAlertFires() throws Exception

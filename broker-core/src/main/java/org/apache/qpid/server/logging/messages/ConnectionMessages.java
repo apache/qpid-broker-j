@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class ConnectionMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class ConnectionMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String CONNECTION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection";
@@ -90,7 +90,7 @@ public class ConnectionMessages
         LoggerFactory.getLogger(OPEN_TXN_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Connection_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Connection_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -102,12 +102,12 @@ public class ConnectionMessages
      */
     public static LogMessage CLIENT_VERSION_LOG(String param1)
     {
-        String rawMessage = _messages.getString("CLIENT_VERSION_LOG");
+        String rawMessage = MESSAGES.getString("CLIENT_VERSION_LOG");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -162,12 +162,12 @@ public class ConnectionMessages
      */
     public static LogMessage CLIENT_VERSION_REJECT(String param1)
     {
-        String rawMessage = _messages.getString("CLIENT_VERSION_REJECT");
+        String rawMessage = MESSAGES.getString("CLIENT_VERSION_REJECT");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -222,7 +222,7 @@ public class ConnectionMessages
      */
     public static LogMessage CLOSE(String param1, boolean opt1)
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = MESSAGES.getString("CLOSE");
         StringBuffer msg = new StringBuffer();
 
         // Split the formatted message up on the option values so we can
@@ -250,7 +250,7 @@ public class ConnectionMessages
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -305,7 +305,7 @@ public class ConnectionMessages
      */
     public static LogMessage DROPPED_CONNECTION()
     {
-        String rawMessage = _messages.getString("DROPPED_CONNECTION");
+        String rawMessage = MESSAGES.getString("DROPPED_CONNECTION");
 
         final String message = rawMessage;
 
@@ -360,7 +360,7 @@ public class ConnectionMessages
      */
     public static LogMessage IDLE_CLOSE(String param1, boolean opt1)
     {
-        String rawMessage = _messages.getString("IDLE_CLOSE");
+        String rawMessage = MESSAGES.getString("IDLE_CLOSE");
         StringBuffer msg = new StringBuffer();
 
         // Split the formatted message up on the option values so we can
@@ -388,7 +388,7 @@ public class ConnectionMessages
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -443,12 +443,12 @@ public class ConnectionMessages
      */
     public static LogMessage IDLE_TXN(Number param1)
     {
-        String rawMessage = _messages.getString("IDLE_TXN");
+        String rawMessage = MESSAGES.getString("IDLE_TXN");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -503,12 +503,12 @@ public class ConnectionMessages
      */
     public static LogMessage LARGE_TRANSACTION_WARN(Number param1, Number param2)
     {
-        String rawMessage = _messages.getString("LARGE_TRANSACTION_WARN");
+        String rawMessage = MESSAGES.getString("LARGE_TRANSACTION_WARN");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -563,7 +563,7 @@ public class ConnectionMessages
      */
     public static LogMessage MODEL_DELETE()
     {
-        String rawMessage = _messages.getString("MODEL_DELETE");
+        String rawMessage = MESSAGES.getString("MODEL_DELETE");
 
         final String message = rawMessage;
 
@@ -618,7 +618,7 @@ public class ConnectionMessages
      */
     public static LogMessage OPEN(String param1, String param2, String param3, String param4, String param5, String param6, boolean opt1, boolean opt2, boolean opt3, boolean opt4)
     {
-        String rawMessage = _messages.getString("OPEN");
+        String rawMessage = MESSAGES.getString("OPEN");
         StringBuffer msg = new StringBuffer();
 
         // Split the formatted message up on the option values so we can
@@ -676,7 +676,7 @@ public class ConnectionMessages
         final Object[] messageArguments = {param1, param2, param3, param4, param5, param6};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -731,12 +731,12 @@ public class ConnectionMessages
      */
     public static LogMessage OPEN_TXN(Number param1)
     {
-        String rawMessage = _messages.getString("OPEN_TXN");
+        String rawMessage = MESSAGES.getString("OPEN_TXN");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -791,12 +791,12 @@ public class ConnectionMessages
      */
     public static LogMessage OPERATION(String param1)
     {
-        String rawMessage = _messages.getString("OPERATION");
+        String rawMessage = MESSAGES.getString("OPERATION");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 

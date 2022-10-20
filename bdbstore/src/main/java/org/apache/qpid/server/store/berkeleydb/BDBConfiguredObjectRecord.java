@@ -32,7 +32,7 @@ public class BDBConfiguredObjectRecord implements ConfiguredObjectRecord
     private final UUID _id;
     private final String _type;
     private final Map<String,Object> _attributes;
-    private Map<String, UUID> _parents = new HashMap<>();
+    private final Map<String, UUID> _parents = new HashMap<>();
 
     public BDBConfiguredObjectRecord(final UUID id, final String type, final Map<String, Object> attributes)
     {

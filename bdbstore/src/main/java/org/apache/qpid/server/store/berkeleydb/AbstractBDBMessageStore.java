@@ -1333,10 +1333,11 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
     private class BDBTransaction implements org.apache.qpid.server.store.Transaction
     {
-        private Transaction _txn;
-        private int _storeSizeIncrease;
+        private final Transaction _txn;
         private final List<Runnable> _preCommitActions = new ArrayList<>();
         private final List<Runnable> _postCommitActions = new ArrayList<>();
+
+        private int _storeSizeIncrease;
 
         private BDBTransaction() throws StoreException
         {

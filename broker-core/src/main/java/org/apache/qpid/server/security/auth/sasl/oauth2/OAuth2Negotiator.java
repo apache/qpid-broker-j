@@ -41,7 +41,7 @@ public class OAuth2Negotiator implements SaslNegotiator
     public static final String MECHANISM = "XOAUTH2";
     private static final String BEARER_PREFIX = "Bearer ";
     private final NamedAddressSpace _addressSpace;
-    private OAuth2AuthenticationProvider<?> _authenticationProvider;
+    private final OAuth2AuthenticationProvider<?> _authenticationProvider;
     private volatile State _state = State.INITIAL;
 
     public OAuth2Negotiator(OAuth2AuthenticationProvider<?> authenticationProvider,

@@ -43,12 +43,15 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-
 /**
  */
 public class HeadersBindingTest extends UnitTestBase
 {
-
+    private final Map<String,Object> bindHeaders = new HashMap<String,Object>();
+    private final MockHeader matchHeaders = new MockHeader();
+    private int _count = 0;
+    private Queue<?> _queue;
+    private Exchange<?> _exchange;
 
     private static class MockHeader implements AMQMessageHeader
     {
@@ -167,12 +170,6 @@ public class HeadersBindingTest extends UnitTestBase
             _headers.put(key,value);
         }
     }
-
-    private Map<String,Object> bindHeaders = new HashMap<String,Object>();
-    private MockHeader matchHeaders = new MockHeader();
-    private int _count = 0;
-    private Queue<?> _queue;
-    private Exchange<?> _exchange;
 
     @Before
     public void setUp() throws Exception

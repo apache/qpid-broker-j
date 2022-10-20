@@ -31,9 +31,9 @@ public class TestInstance
 {
     private static final IterationValue EMPTY_ITERATION_VALUES = new IterationValue();
 
-    private TestConfig _testConfig;
-    private IterationValue _iterationValue;
-    private int _iterationNumber;
+    private final TestConfig _testConfig;
+    private final IterationValue _iterationValue;
+    private final int _iterationNumber;
     private double _producerRate;
 
     public TestInstance(TestConfig testConfig, int iterationNumber, IterationValue iterationValue)

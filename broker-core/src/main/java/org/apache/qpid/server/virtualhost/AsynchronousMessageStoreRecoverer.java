@@ -89,7 +89,6 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
     private static class AsynchronousRecoverer
     {
-
         public static final int THREAD_POOL_SHUTDOWN_TIMEOUT = 5000;
         private final QueueManagingVirtualHost<?> _virtualHost;
         private final EventLogger _eventLogger;
@@ -108,7 +107,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                                                                         QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(Executors.defaultThreadFactory())));
 
         private final MessageStore.MessageStoreReader _storeReader;
-        private AtomicBoolean _continueRecovery = new AtomicBoolean(true);
+        private final AtomicBoolean _continueRecovery = new AtomicBoolean(true);
 
         private AsynchronousRecoverer(final QueueManagingVirtualHost<?> virtualHost)
         {

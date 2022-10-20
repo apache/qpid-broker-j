@@ -49,18 +49,18 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQDecoder.class);
     public static final int FRAME_HEADER_SIZE = 7;
+    public static final int FRAME_MIN_SIZE = 4096;
+
     private final T _methodProcessor;
 
     /** Holds the protocol initiation decoder. */
-    private ProtocolInitiation.Decoder _piDecoder = new ProtocolInitiation.Decoder();
+    private final ProtocolInitiation.Decoder _piDecoder = new ProtocolInitiation.Decoder();
 
     /** Flag to indicate whether this decoder needs to handle protocol initiation. */
     private boolean _expectProtocolInitiation;
 
-
     private boolean _firstRead = true;
 
-    public static final int FRAME_MIN_SIZE = 4096;
     private int _maxFrameSize = FRAME_MIN_SIZE;
 
     /**

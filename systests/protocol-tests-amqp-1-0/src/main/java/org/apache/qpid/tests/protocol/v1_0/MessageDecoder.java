@@ -17,7 +17,6 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.tests.protocol.v1_0;
 
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.convertValue;
@@ -55,15 +54,15 @@ public class MessageDecoder
                                                                                                           .registerMessagingLayer();
     private static final SectionDecoderRegistry SECTION_DECODER_REGISTRY = AMQP_DESCRIBED_TYPE_REGISTRY
                                                                                                     .getSectionDecoderRegistry();
-    private List<QpidByteBuffer> _fragments = new LinkedList<>();
-    private SectionDecoder _sectionDecoder = new SectionDecoderImpl(SECTION_DECODER_REGISTRY);
+    private final List<QpidByteBuffer> _fragments = new LinkedList<>();
+    private final SectionDecoder _sectionDecoder = new SectionDecoderImpl(SECTION_DECODER_REGISTRY);
+    private final List<EncodingRetainingSection<?>> _dataSections = new ArrayList<>();
     private HeaderSection _headerSection = null;
     private PropertiesSection _propertiesSection = null;
     private DeliveryAnnotationsSection _deliveryAnnotationsSection = null;
     private MessageAnnotationsSection _messageAnnotationsSection = null;
     private ApplicationPropertiesSection _applicationPropertiesSection = null;
     private FooterSection _footerSection = null;
-    private List<EncodingRetainingSection<?>> _dataSections = new ArrayList<>();
     private long _contentSize;
     private boolean _parsed;
 

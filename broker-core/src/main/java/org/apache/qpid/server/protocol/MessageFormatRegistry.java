@@ -32,10 +32,10 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 
 public class MessageFormatRegistry
 {
-    private static Map<Integer, MessageFormat<? extends ServerMessage<?>>> INPUT_CONVERTERS =
+    private static final Map<Integer, MessageFormat<? extends ServerMessage<?>>> INPUT_CONVERTERS =
             new HashMap<>();
 
-    private static Map<Class<? extends ServerMessage<?>>, MessageFormat<? extends ServerMessage<?>>> OUTPUT_CONVERTERS =
+    private static final Map<Class<? extends ServerMessage<?>>, MessageFormat<? extends ServerMessage<?>>> OUTPUT_CONVERTERS =
             new HashMap<>();
 
 

@@ -29,8 +29,8 @@ import org.apache.qpid.disttest.message.CreateConnectionCommand;
 
 public class ConnectionConfig
 {
+    private final List<SessionConfig> _sessions;
     private String _name;
-    private List<SessionConfig> _sessions;
     private String _factory;
 
     public ConnectionConfig()

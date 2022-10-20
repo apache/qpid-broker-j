@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class ManagementConsoleMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class ManagementConsoleMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String MANAGEMENTCONSOLE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole";
@@ -82,7 +82,7 @@ public class ManagementConsoleMessages
         LoggerFactory.getLogger(STARTUP_LOG_HIERARCHY);
         LoggerFactory.getLogger(STOPPED_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.ManagementConsole_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.ManagementConsole_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -94,12 +94,12 @@ public class ManagementConsoleMessages
      */
     public static LogMessage CLOSE(String param1)
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = MESSAGES.getString("CLOSE");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -154,12 +154,12 @@ public class ManagementConsoleMessages
      */
     public static LogMessage LISTENING(String param1, String param2, Number param3)
     {
-        String rawMessage = _messages.getString("LISTENING");
+        String rawMessage = MESSAGES.getString("LISTENING");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -214,12 +214,12 @@ public class ManagementConsoleMessages
      */
     public static LogMessage OPEN(String param1)
     {
-        String rawMessage = _messages.getString("OPEN");
+        String rawMessage = MESSAGES.getString("OPEN");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -274,12 +274,12 @@ public class ManagementConsoleMessages
      */
     public static LogMessage READY(String param1)
     {
-        String rawMessage = _messages.getString("READY");
+        String rawMessage = MESSAGES.getString("READY");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -334,12 +334,12 @@ public class ManagementConsoleMessages
      */
     public static LogMessage SHUTTING_DOWN(String param1, Number param2)
     {
-        String rawMessage = _messages.getString("SHUTTING_DOWN");
+        String rawMessage = MESSAGES.getString("SHUTTING_DOWN");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -394,12 +394,12 @@ public class ManagementConsoleMessages
      */
     public static LogMessage STARTUP(String param1)
     {
-        String rawMessage = _messages.getString("STARTUP");
+        String rawMessage = MESSAGES.getString("STARTUP");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -454,12 +454,12 @@ public class ManagementConsoleMessages
      */
     public static LogMessage STOPPED(String param1)
     {
-        String rawMessage = _messages.getString("STOPPED");
+        String rawMessage = MESSAGES.getString("STOPPED");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 

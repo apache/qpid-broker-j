@@ -39,7 +39,7 @@ public class PlainNegotiator implements SaslNegotiator
     public static final String MECHANISM = "PLAIN";
     private static final Charset UTF8 = StandardCharsets.UTF_8;
 
-    private UsernamePasswordAuthenticationProvider _usernamePasswordAuthenticationProvider;
+    private final UsernamePasswordAuthenticationProvider _usernamePasswordAuthenticationProvider;
     private volatile State _state = State.INITIAL;
     private volatile String _username;
 

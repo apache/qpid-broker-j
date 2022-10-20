@@ -40,8 +40,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class BrokerControllerTest extends UnitTestBase
 {
+    private static final String MODEL_VERSION = "6.1";
     private LegacyManagementController _legacyVersionManagementController;
-    private String MODEL_VERSION = "6.1";
 
     @Before
     public void setUp()

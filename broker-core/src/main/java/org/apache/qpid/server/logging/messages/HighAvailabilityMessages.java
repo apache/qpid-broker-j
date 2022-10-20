@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class HighAvailabilityMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class HighAvailabilityMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String HIGHAVAILABILITY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "highavailability";
@@ -98,7 +98,7 @@ public class HighAvailabilityMessages
         LoggerFactory.getLogger(TRANSFER_MASTER_LOG_HIERARCHY);
         LoggerFactory.getLogger(UPDATE_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.HighAvailability_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.HighAvailability_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -110,12 +110,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage ADDED(String param1, String param2)
     {
-        String rawMessage = _messages.getString("ADDED");
+        String rawMessage = MESSAGES.getString("ADDED");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -170,12 +170,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage CREATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("CREATE");
+        String rawMessage = MESSAGES.getString("CREATE");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -230,12 +230,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage DELETE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("DELETE");
+        String rawMessage = MESSAGES.getString("DELETE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -290,12 +290,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage DESIGNATED_PRIMARY_CHANGED(String param1)
     {
-        String rawMessage = _messages.getString("DESIGNATED_PRIMARY_CHANGED");
+        String rawMessage = MESSAGES.getString("DESIGNATED_PRIMARY_CHANGED");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -350,12 +350,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage INTRUDER_DETECTED(String param1, String param2)
     {
-        String rawMessage = _messages.getString("INTRUDER_DETECTED");
+        String rawMessage = MESSAGES.getString("INTRUDER_DETECTED");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -410,12 +410,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage JOINED(String param1, String param2)
     {
-        String rawMessage = _messages.getString("JOINED");
+        String rawMessage = MESSAGES.getString("JOINED");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -470,12 +470,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage LEFT(String param1, String param2)
     {
-        String rawMessage = _messages.getString("LEFT");
+        String rawMessage = MESSAGES.getString("LEFT");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -530,7 +530,7 @@ public class HighAvailabilityMessages
      */
     public static LogMessage NODE_ROLLEDBACK()
     {
-        String rawMessage = _messages.getString("NODE_ROLLEDBACK");
+        String rawMessage = MESSAGES.getString("NODE_ROLLEDBACK");
 
         final String message = rawMessage;
 
@@ -585,12 +585,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage PRIORITY_CHANGED(String param1)
     {
-        String rawMessage = _messages.getString("PRIORITY_CHANGED");
+        String rawMessage = MESSAGES.getString("PRIORITY_CHANGED");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -645,7 +645,7 @@ public class HighAvailabilityMessages
      */
     public static LogMessage QUORUM_LOST()
     {
-        String rawMessage = _messages.getString("QUORUM_LOST");
+        String rawMessage = MESSAGES.getString("QUORUM_LOST");
 
         final String message = rawMessage;
 
@@ -700,12 +700,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage QUORUM_OVERRIDE_CHANGED(String param1)
     {
-        String rawMessage = _messages.getString("QUORUM_OVERRIDE_CHANGED");
+        String rawMessage = MESSAGES.getString("QUORUM_OVERRIDE_CHANGED");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -760,12 +760,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage REMOVED(String param1, String param2)
     {
-        String rawMessage = _messages.getString("REMOVED");
+        String rawMessage = MESSAGES.getString("REMOVED");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -820,12 +820,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage ROLE_CHANGED(String param1, String param2, String param3, String param4)
     {
-        String rawMessage = _messages.getString("ROLE_CHANGED");
+        String rawMessage = MESSAGES.getString("ROLE_CHANGED");
 
         final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -880,12 +880,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage TRANSFER_MASTER(String param1, String param2)
     {
-        String rawMessage = _messages.getString("TRANSFER_MASTER");
+        String rawMessage = MESSAGES.getString("TRANSFER_MASTER");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -940,12 +940,12 @@ public class HighAvailabilityMessages
      */
     public static LogMessage UPDATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("UPDATE");
+        String rawMessage = MESSAGES.getString("UPDATE");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 

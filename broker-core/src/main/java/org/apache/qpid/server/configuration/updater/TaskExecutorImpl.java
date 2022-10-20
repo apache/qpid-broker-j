@@ -348,7 +348,7 @@ public class TaskExecutorImpl implements TaskExecutor
 
     private static class ImmediateFuture<T> implements Future<T>
     {
-        private T _result;
+        private final T _result;
 
         public ImmediateFuture(T result)
         {

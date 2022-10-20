@@ -44,10 +44,9 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
 {
     private static final String NON_AMQP_MESSAGE = "Non-AMQP Message";
     private final Object _messageBody;
-    private InternalMessageHeader _header;
-    private String _initialRoutingAddress = "";
+    private final InternalMessageHeader _header;
     private final String _destinationName;
-
+    private String _initialRoutingAddress = "";
 
     public InternalMessage(final StoredMessage<InternalMessageMetaData> handle,
                            final InternalMessageHeader header,

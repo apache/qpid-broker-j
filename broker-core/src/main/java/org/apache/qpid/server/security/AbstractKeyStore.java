@@ -51,7 +51,7 @@ import org.apache.qpid.server.model.State;
 public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
         extends AbstractConfiguredObject<X> implements KeyStore<X>
 {
-    private static Logger LOGGER = LoggerFactory.getLogger(AbstractKeyStore.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractKeyStore.class);
 
     protected static final long ONE_DAY = 24L * 60L * 60L * 1000L;
 

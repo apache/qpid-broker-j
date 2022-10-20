@@ -27,14 +27,13 @@ import java.util.UUID;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_10.transport.AbstractEncoder;
 
-
 public final class ServerEncoder extends AbstractEncoder
 {
     public static final int DEFAULT_CAPACITY = 256 * 1024;
     private final boolean _useDirectMemory;
     private final int _threshold;
+    private final int _initialCapacity;
     private QpidByteBuffer _out;
-    private int _initialCapacity;
 
     public ServerEncoder()
     {

@@ -27,7 +27,7 @@ import org.apache.qpid.server.security.auth.sasl.AbstractSaslServerNegotiator;
 public class ScramNegotiator extends AbstractSaslServerNegotiator implements SaslNegotiator
 {
     private final ScramSaslServer _saslServer;
-    private AuthenticationProvider<?> _authenticationProvider;
+    private final AuthenticationProvider<?> _authenticationProvider;
 
     public ScramNegotiator(final AuthenticationProvider<?> authenticationProvider,
                            final ScramSaslServerSource scramSaslServerSource,

@@ -22,14 +22,14 @@ import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
 
 public class JdbcUrlGenerator
 {
-    private String _providedJdbdUrl;
-
-    public static final String DEFAULT_JDBC_DRIVER_NAME = "org.relique.jdbc.csv.CsvDriver";
-
     /**
      * Used to create the JDBC URL if one has not been passed in.
      */
     private static final String CSV_JDBC_URL_BASE = "jdbc:relique:csv:";
+
+    public static final String DEFAULT_JDBC_DRIVER_NAME = "org.relique.jdbc.csv.CsvDriver";
+
+    private final String _providedJdbdUrl;
 
     /**
      * @param providedJdbcUrl the JDBC URL. Provide null if the value should be

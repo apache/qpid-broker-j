@@ -33,7 +33,7 @@ public class MessageTransferMessageMutator implements ServerMessageMutator<Messa
 {
     private final MessageTransferMessage _message;
     private final MessageStore _messageStore;
-    private MessageProperties _messageProperties;
+    private final MessageProperties _messageProperties;
     private DeliveryProperties _deliveryProperties;
 
     MessageTransferMessageMutator(final MessageTransferMessage message, final MessageStore messageStore)

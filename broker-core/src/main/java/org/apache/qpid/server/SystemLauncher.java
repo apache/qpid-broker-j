@@ -64,7 +64,6 @@ import org.apache.qpid.server.util.urlstreamhandler.classpath.Handler;
 
 public class SystemLauncher
 {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemLauncher.class);
     private static final String DEFAULT_INITIAL_PROPERTIES_LOCATION = "classpath:system.properties";
 
@@ -76,17 +75,13 @@ public class SystemLauncher
         Handler.register();
     }
 
-
-    private EventLogger _eventLogger;
-    private final TaskExecutor _taskExecutor = new TaskExecutorImpl();
-
-    private volatile SystemConfig _systemConfig;
-
-    private SystemLauncherListener _listener;
-
+    private final SystemLauncherListener _listener;
     private final Principal _systemPrincipal = new SystemPrincipal();
     private final Subject _brokerTaskSubject;
+    private final TaskExecutor _taskExecutor = new TaskExecutorImpl();
 
+    private EventLogger _eventLogger;
+    private volatile SystemConfig _systemConfig;
 
     public SystemLauncher(SystemLauncherListener listener)
     {

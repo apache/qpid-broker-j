@@ -65,7 +65,7 @@ import org.apache.qpid.disttest.controller.config.QueueConfig;
 public class QpidRestAPIQueueCreator implements QueueCreator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QpidRestAPIQueueCreator.class);
-    private static int _drainPollTimeout = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
+    private static final int DRAIN_POLL_TIMEOUT = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
 
     private final HttpHost _management;
     private final String _virtualhostnode;
@@ -190,7 +190,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
             MessageConsumer messageConsumer = session.createConsumer(session.createQueue(queueName));
             try
             {
-                while (messageConsumer.receive(_drainPollTimeout) != null)
+                while (messageConsumer.receive(DRAIN_POLL_TIMEOUT) != null)
                 {
                     counter++;
                 }

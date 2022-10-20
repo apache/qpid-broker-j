@@ -29,7 +29,7 @@ public enum StatisticUnit
     TIME_DURATION("time duration");
 
 
-    private String _name;
+    private final String _name;
 
     StatisticUnit(final String name)
     {

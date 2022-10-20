@@ -47,7 +47,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ConfiguredObjectTypeRegistryTest extends UnitTestBase
 {
-    private ConfiguredObjectTypeRegistry _typeRegistry = TestModel.getInstance().getTypeRegistry();
+    private final ConfiguredObjectTypeRegistry _typeRegistry = TestModel.getInstance().getTypeRegistry();
 
     @Test
     public void testTypeSpecialisations()

@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class MessageStoreMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class MessageStoreMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String MESSAGESTORE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "messagestore";
@@ -84,7 +84,7 @@ public class MessageStoreMessages
         LoggerFactory.getLogger(STORE_LOCATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(UNDERFULL_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.MessageStore_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.MessageStore_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -96,7 +96,7 @@ public class MessageStoreMessages
      */
     public static LogMessage CLOSED()
     {
-        String rawMessage = _messages.getString("CLOSED");
+        String rawMessage = MESSAGES.getString("CLOSED");
 
         final String message = rawMessage;
 
@@ -151,7 +151,7 @@ public class MessageStoreMessages
      */
     public static LogMessage CREATED()
     {
-        String rawMessage = _messages.getString("CREATED");
+        String rawMessage = MESSAGES.getString("CREATED");
 
         final String message = rawMessage;
 
@@ -206,7 +206,7 @@ public class MessageStoreMessages
      */
     public static LogMessage OVERFULL()
     {
-        String rawMessage = _messages.getString("OVERFULL");
+        String rawMessage = MESSAGES.getString("OVERFULL");
 
         final String message = rawMessage;
 
@@ -261,12 +261,12 @@ public class MessageStoreMessages
      */
     public static LogMessage RECOVERED(Number param1)
     {
-        String rawMessage = _messages.getString("RECOVERED");
+        String rawMessage = MESSAGES.getString("RECOVERED");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -321,7 +321,7 @@ public class MessageStoreMessages
      */
     public static LogMessage RECOVERY_COMPLETE()
     {
-        String rawMessage = _messages.getString("RECOVERY_COMPLETE");
+        String rawMessage = MESSAGES.getString("RECOVERY_COMPLETE");
 
         final String message = rawMessage;
 
@@ -376,7 +376,7 @@ public class MessageStoreMessages
      */
     public static LogMessage RECOVERY_START()
     {
-        String rawMessage = _messages.getString("RECOVERY_START");
+        String rawMessage = MESSAGES.getString("RECOVERY_START");
 
         final String message = rawMessage;
 
@@ -431,12 +431,12 @@ public class MessageStoreMessages
      */
     public static LogMessage STORE_LOCATION(String param1)
     {
-        String rawMessage = _messages.getString("STORE_LOCATION");
+        String rawMessage = MESSAGES.getString("STORE_LOCATION");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -491,7 +491,7 @@ public class MessageStoreMessages
      */
     public static LogMessage UNDERFULL()
     {
-        String rawMessage = _messages.getString("UNDERFULL");
+        String rawMessage = MESSAGES.getString("UNDERFULL");
 
         final String message = rawMessage;
 

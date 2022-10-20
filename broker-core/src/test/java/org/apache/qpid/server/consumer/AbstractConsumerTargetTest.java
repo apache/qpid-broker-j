@@ -55,12 +55,12 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AbstractConsumerTargetTest extends UnitTestBase
 {
+    private final AMQPConnection<?> _connection = mock(AMQPConnection.class);
+    private final AMQPSession<?,TestAbstractConsumerTarget> _session = mock(AMQPSession.class);
 
     private TestAbstractConsumerTarget _consumerTarget;
     private Consumer _consumer;
     private MessageSource _messageSource;
-    private AMQPConnection<?> _connection = mock(AMQPConnection.class);
-    private AMQPSession<?,TestAbstractConsumerTarget> _session = mock(AMQPSession.class);
     private MessageInstance _messageInstance;
 
     @Before

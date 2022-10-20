@@ -33,6 +33,7 @@ class BrokerUserOrConnectionLogInclusionRuleImpl
         extends AbstractPredicateLogInclusionRule<BrokerUserOrConnectionLogInclusionRuleImpl>
         implements BrokerUserOrConnectionLogInclusionRule<BrokerUserOrConnectionLogInclusionRuleImpl>
 {
+    private final ConnectionAndUserPredicate _predicate = new ConnectionAndUserPredicate();
 
     @ManagedAttributeField(afterSet = "afterAttributeSet")
     private String _connectionName;
@@ -40,8 +41,6 @@ class BrokerUserOrConnectionLogInclusionRuleImpl
     private String _remoteContainerId;
     @ManagedAttributeField(afterSet = "afterAttributeSet")
     private String _username;
-
-    private ConnectionAndUserPredicate _predicate = new ConnectionAndUserPredicate();
 
     @ManagedObjectFactoryConstructor
     BrokerUserOrConnectionLogInclusionRuleImpl(final Map<String, Object> attributes,

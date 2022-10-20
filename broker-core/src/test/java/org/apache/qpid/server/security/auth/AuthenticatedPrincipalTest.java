@@ -35,10 +35,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AuthenticatedPrincipalTest extends UnitTestBase
 {
-
-    private AuthenticatedPrincipal _authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("name",
-                                                                                                              null));
-
+    private final AuthenticatedPrincipal _authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("name",
+                                                                                                                    null));
     @Test
     public void testGetAuthenticatedPrincipalFromSubject()
     {

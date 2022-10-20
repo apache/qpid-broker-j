@@ -158,7 +158,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                    MessageGroupManager.ConsumerResetHelper,
                    TransactionMonitor
 {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQueue.class);
 
     private static final QueueNotificationListener NULL_NOTIFICATION_LISTENER = new QueueNotificationListener()
@@ -175,19 +174,52 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private static final String UTF8 = StandardCharsets.UTF_8.name();
     private static final Operation PUBLISH_ACTION = Operation.PERFORM_ACTION("publish");
 
+    private static final AtomicIntegerFieldUpdater<AbstractQueue> LIVE_CONSUMERS_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(AbstractQueue.class, "_liveConsumers");
+
+    private static final int RECOVERING = 1;
+    private static final int COMPLETING_RECOVERY = 2;
+    private static final int RECOVERED = 3;
+
     private final QueueManagingVirtualHost<?> _virtualHost;
     private final DeletedChildListener _deletedChildListener = new DeletedChildListener();
 
-    private QueueConsumerManagerImpl _queueConsumerManager;
+    private final QueueConsumerManagerImpl _queueConsumerManager;
+
+    private final AtomicInteger _activeSubscriberCount = new AtomicInteger();
+
+    private final QueueStatistics _queueStatistics = new QueueStatistics();
+
+    private final Set<NotificationCheck> _notificationChecks =
+            Collections.synchronizedSet(EnumSet.noneOf(NotificationCheck.class));
+
+    private final AtomicBoolean _stopped = new AtomicBoolean(false);
+
+    private final AtomicBoolean _deleted = new AtomicBoolean(false);
+    private final SettableFuture<Integer> _deleteQueueDepthFuture = SettableFuture.create();
+
+    private final List<Action<? super X>> _deleteTaskList = new CopyOnWriteArrayList<>();
+
+    private final LogSubject _logSubject;
+
+    private final CopyOnWriteArrayList<Binding> _bindings = new CopyOnWriteArrayList<>();
+    private final ConcurrentMap<MessageSender, Integer> _linkedSenders = new ConcurrentHashMap<>();
+    private final long[] _lastNotificationTimes = new long[NotificationCheck.values().length];
+
+    private final AtomicInteger _recovering = new AtomicInteger(RECOVERING);
+    private final AtomicInteger _enqueuingWhileRecovering = new AtomicInteger(0);
+    private final ConcurrentLinkedQueue<EnqueueRequest> _postRecoveryQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
+    private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
+    private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<LocalTransaction> _transactions = ConcurrentHashMap.newKeySet();
+    private final LocalTransaction.LocalTransactionListener _localTransactionListener = _transactions::remove;
+    private final AtomicLong _producerCount = new AtomicLong();
 
     @ManagedAttributeField( beforeSet = "preSetAlternateBinding", afterSet = "postSetAlternateBinding")
     private AlternateBinding _alternateBinding;
 
     private volatile QueueConsumer<?,?> _exclusiveSubscriber;
-
-    private final AtomicInteger _activeSubscriberCount = new AtomicInteger();
-
-    private final QueueStatistics _queueStatistics = new QueueStatistics();
 
     /** max allowed size(KB) of a single message */
     @ManagedAttributeField( afterSet = "updateAlertChecks" )
@@ -220,22 +252,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private Object _exclusiveOwner; // could be connection, session, Principal or a String for the container name
 
-    private final Set<NotificationCheck> _notificationChecks =
-            Collections.synchronizedSet(EnumSet.noneOf(NotificationCheck.class));
-
-    private AtomicBoolean _stopped = new AtomicBoolean(false);
-
-    private final AtomicBoolean _deleted = new AtomicBoolean(false);
-    private final SettableFuture<Integer> _deleteQueueDepthFuture = SettableFuture.create();
-
-    private final List<Action<? super X>> _deleteTaskList = new CopyOnWriteArrayList<>();
-
-    private LogSubject _logSubject;
-
     @ManagedAttributeField
     private boolean _noLocal;
 
-    private final CopyOnWriteArrayList<Binding> _bindings = new CopyOnWriteArrayList<>();
     private Map<String, Object> _arguments;
 
     /** the maximum delivery count for each message on this queue or 0 if maximum delivery count is not to be enforced. */
@@ -244,11 +263,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private MessageGroupManager _messageGroupManager;
 
-    private final ConcurrentMap<MessageSender, Integer> _linkedSenders = new ConcurrentHashMap<>();
-
-
     private QueueNotificationListener  _notificationListener = NULL_NOTIFICATION_LISTENER;
-    private final long[] _lastNotificationTimes = new long[NotificationCheck.values().length];
 
     @ManagedAttributeField
     private String _messageGroupKeyOverride;
@@ -284,23 +299,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @ManagedAttributeField
     private volatile int _maximumLiveConsumers;
 
-    private static final AtomicIntegerFieldUpdater<AbstractQueue> LIVE_CONSUMERS_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(AbstractQueue.class, "_liveConsumers");
     private volatile int _liveConsumers;
-
-    private static final int RECOVERING = 1;
-    private static final int COMPLETING_RECOVERY = 2;
-    private static final int RECOVERED = 3;
-
-    private final AtomicInteger _recovering = new AtomicInteger(RECOVERING);
-    private final AtomicInteger _enqueuingWhileRecovering = new AtomicInteger(0);
-    private final ConcurrentLinkedQueue<EnqueueRequest> _postRecoveryQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
-    private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
-    private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private final Set<LocalTransaction> _transactions = ConcurrentHashMap.newKeySet();
-    private final LocalTransaction.LocalTransactionListener _localTransactionListener = _transactions::remove;
-    private final AtomicLong _producerCount = new AtomicLong();
 
     private boolean _closing;
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
@@ -331,8 +330,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         super.onCreate();
 
-        if(isDurable() && (getLifetimePolicy() == LifetimePolicy.DELETE_ON_CONNECTION_CLOSE
-                            || getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END))
+        if (isDurable() && (getLifetimePolicy()  == LifetimePolicy.DELETE_ON_CONNECTION_CLOSE ||
+                getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END))
         {
             Subject.doAs(getSubjectWithAddedSystemRights(),
                          (PrivilegedAction<Object>) () -> {
@@ -582,13 +581,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if (isHoldOnPublishEnabled())
         {
             _holdMethods.add(new HoldMethod()
-                            {
-                                @Override
-                                public boolean isHeld(final MessageReference<?> messageReference, final long evaluationTime)
-                                {
-                                    return messageReference.getMessage().getMessageHeader().getNotValidBefore() >= evaluationTime;
-                                }
-                            });
+            {
+                @Override
+                public boolean isHeld(final MessageReference<?> messageReference, final long evaluationTime)
+                {
+                    return messageReference.getMessage().getMessageHeader().getNotValidBefore() >= evaluationTime;
+                }
+            });
         }
 
         if (getAlternateBinding() != null)
@@ -818,11 +817,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     @Override
     public <T extends ConsumerTarget<T>> QueueConsumerImpl<T> addConsumer(final T target,
-                                         final FilterManager filters,
-                                         final Class<? extends ServerMessage> messageClass,
-                                         final String consumerName,
-                                         final EnumSet<ConsumerOption> optionSet,
-                                         final Integer priority)
+                                                                          final FilterManager filters,
+                                                                          final Class<? extends ServerMessage> messageClass,
+                                                                          final String consumerName,
+                                                                          final EnumSet<ConsumerOption> optionSet,
+                                                                          final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused, QueueDeleted
     {
@@ -866,8 +865,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             return queueConsumer;
         }
         catch (ExistingExclusiveConsumer | ConsumerAccessRefused
-                | ExistingConsumerPreventsExclusive | QueueDeleted
-                | RuntimeException e)
+               | ExistingConsumerPreventsExclusive | QueueDeleted
+               | RuntimeException e)
         {
             throw e;
         }
@@ -881,11 +880,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     private <T extends ConsumerTarget<T>> QueueConsumerImpl<T> addConsumerInternal(final T target,
-                                                  FilterManager filters,
-                                                  final Class<? extends ServerMessage> messageClass,
-                                                  final String consumerName,
-                                                  EnumSet<ConsumerOption> optionSet,
-                                                  final Integer priority)
+                                                                                   FilterManager filters,
+                                                                                   final Class<? extends ServerMessage> messageClass,
+                                                                                   final String consumerName,
+                                                                                   EnumSet<ConsumerOption> optionSet,
+                                                                                   final Integer priority)
             throws ExistingExclusiveConsumer, ConsumerAccessRefused,
                    ExistingConsumerPreventsExclusive, QueueDeleted
     {
@@ -1024,12 +1023,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         QueueConsumerImpl<T> consumer = new QueueConsumerImpl<>(this,
-                                                           target,
-                                                           consumerName,
-                                                           filters,
-                                                           messageClass,
-                                                           optionSet,
-                                                           priority);
+                                                                target,
+                                                                consumerName,
+                                                                filters,
+                                                                messageClass,
+                                                                optionSet,
+                                                                priority);
 
         _exclusiveOwner = exclusiveOwner;
 
@@ -1507,7 +1506,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             QueueContext._lastSeenUpdater.set(subContext, entry);
             if(releasedEntry == entry)
             {
-               QueueContext._releasedUpdater.compareAndSet(subContext, releasedEntry, null);
+                QueueContext._releasedUpdater.compareAndSet(subContext, releasedEntry, null);
             }
         }
     }
@@ -2035,38 +2034,38 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 sender.destinationRemoved(this);
             }
 
-                Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
+            Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
 
-                while (consumerIterator.hasNext())
+            while (consumerIterator.hasNext())
+            {
+                QueueConsumer<?,?> consumer = consumerIterator.next();
+
+                if (consumer != null)
                 {
-                    QueueConsumer<?,?> consumer = consumerIterator.next();
-
-                    if (consumer != null)
-                    {
-                        consumer.queueDeleted();
-                    }
+                    consumer.queueDeleted();
                 }
+            }
 
-                final List<QueueEntry> entries = getMessagesOnTheQueue(new AcquireAllQueueEntryFilter());
+            final List<QueueEntry> entries = getMessagesOnTheQueue(new AcquireAllQueueEntryFilter());
 
-                routeToAlternate(entries);
+            routeToAlternate(entries);
 
-                preSetAlternateBinding();
-                _alternateBinding = null;
+            preSetAlternateBinding();
+            _alternateBinding = null;
 
-                _stopped.set(true);
-                _queueHouseKeepingTask.cancel();
+            _stopped.set(true);
+            _queueHouseKeepingTask.cancel();
 
-                performQueueDeleteTasks();
+            performQueueDeleteTasks();
 
-                _deleteQueueDepthFuture.set(queueDepthMessages);
+            _deleteQueueDepthFuture.set(queueDepthMessages);
 
             _transactions.clear();
-            }
-            catch(Throwable e)
-            {
-                _deleteQueueDepthFuture.setException(e);
-            }
+        }
+        catch(Throwable e)
+        {
+            _deleteQueueDepthFuture.setException(e);
+        }
     }
 
     private void deleteAfterCompletionOfDischargingTransactions()
@@ -3420,12 +3419,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     private static final String[] NON_NEGATIVE_NUMBERS = {
-        ALERT_REPEAT_GAP,
-        ALERT_THRESHOLD_MESSAGE_AGE,
-        ALERT_THRESHOLD_MESSAGE_SIZE,
-        ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,
-        ALERT_THRESHOLD_QUEUE_DEPTH_BYTES,
-        MAXIMUM_DELIVERY_ATTEMPTS
+            ALERT_REPEAT_GAP,
+            ALERT_THRESHOLD_MESSAGE_AGE,
+            ALERT_THRESHOLD_MESSAGE_SIZE,
+            ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,
+            ALERT_THRESHOLD_QUEUE_DEPTH_BYTES,
+            MAXIMUM_DELIVERY_ATTEMPTS
     };
 
     @Override

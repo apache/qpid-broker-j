@@ -33,11 +33,11 @@ import org.slf4j.LoggerFactory;
 public class ClientRunner extends AbstractRunner
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientRunner.class);
-    public static final String NUM_OF_CLIENTS_PROP = "number-of-clients";
-
-    public static final String NUM_OF_CLIENTS_DEFAULT = "1";
     private static final int AWAIT_SHUTDOWN_TIMEOUT = 30000;
-    private Collection<Thread> _clientThreads = new ArrayList<>();
+    private final Collection<Thread> _clientThreads = new ArrayList<>();
+
+    public static final String NUM_OF_CLIENTS_PROP = "number-of-clients";
+    public static final String NUM_OF_CLIENTS_DEFAULT = "1";
 
     public ClientRunner()
     {

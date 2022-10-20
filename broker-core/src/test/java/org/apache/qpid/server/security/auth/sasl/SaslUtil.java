@@ -34,7 +34,7 @@ import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
 public class SaslUtil
 {
 
-    private static byte SEPARATOR = 0;
+    private static final byte SEPARATOR = 0;
 
     public static byte[] generatePlainClientResponse(String userName, String userPassword) throws Exception
     {

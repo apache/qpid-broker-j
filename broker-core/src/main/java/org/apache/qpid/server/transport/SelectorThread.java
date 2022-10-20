@@ -65,7 +65,8 @@ class SelectorThread extends Thread
     private final NetworkConnectionScheduler _scheduler;
 
     private final BlockingQueue<Runnable> _workQueue = new LinkedBlockingQueue<>();
-    private final  AtomicInteger _nextSelectorTaskIndex = new AtomicInteger();
+    private final AtomicInteger _nextSelectorTaskIndex = new AtomicInteger();
+    private final SelectionTask[] _selectionTasks;
 
     public final class SelectionTask implements Runnable
     {
@@ -380,8 +381,6 @@ class SelectorThread extends Thread
         }
     }
 
-    private SelectionTask[] _selectionTasks;
-
     SelectorThread(final NetworkConnectionScheduler scheduler, final int numberOfSelectors) throws IOException
     {
         _scheduler = scheduler;
@@ -516,7 +515,7 @@ class SelectorThread extends Thread
 
         private final NetworkConnectionScheduler _scheduler;
         private final NonBlockingConnection _connection;
-        private AtomicBoolean _running = new AtomicBoolean();
+        private final AtomicBoolean _running = new AtomicBoolean();
 
         public ConnectionProcessor(final NetworkConnectionScheduler scheduler, final NonBlockingConnection connection)
         {

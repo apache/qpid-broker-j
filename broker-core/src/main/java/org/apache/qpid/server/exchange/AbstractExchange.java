@@ -105,26 +105,16 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             new FixedKeyMapCreator("bindingKey", "destination");
 
     private static final Operation PUBLISH_ACTION = Operation.PERFORM_ACTION("publish");
+
     private final AtomicBoolean _closed = new AtomicBoolean();
 
-    @ManagedAttributeField(beforeSet = "preSetAlternateBinding", afterSet = "postSetAlternateBinding")
-    private AlternateBinding _alternateBinding;
-    @ManagedAttributeField
-    private UnroutableMessageBehaviour _unroutableMessageBehaviour;
-    @ManagedAttributeField
-    private CreatingLinkInfo _creatingLinkInfo;
-
-    private QueueManagingVirtualHost<?> _virtualHost;
-
-    /**
-     * Whether the exchange is automatically deleted once all queues have detached from it
-     */
-    private boolean _autoDelete;
-
-    //The logSubject for ths exchange
-    private LogSubject _logSubject;
     private final Set<DestinationReferrer> _referrers =
             Collections.newSetFromMap(new ConcurrentHashMap<DestinationReferrer, Boolean>());
+
+    private final QueueManagingVirtualHost<?> _virtualHost;
+
+    //The logSubject for ths exchange
+    private final LogSubject _logSubject;
 
     private final AtomicLong _receivedMessageCount = new AtomicLong();
     private final AtomicLong _receivedMessageSize = new AtomicLong();
@@ -138,6 +128,19 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private final ConcurrentMap<MessageSender, Integer> _linkedSenders = new ConcurrentHashMap<>();
     private final List<Action<? super Deletable<?>>> _deleteTaskList = new CopyOnWriteArrayList<>();
+
+    @ManagedAttributeField(beforeSet = "preSetAlternateBinding", afterSet = "postSetAlternateBinding" )
+    private AlternateBinding _alternateBinding;
+    @ManagedAttributeField
+    private UnroutableMessageBehaviour _unroutableMessageBehaviour;
+    @ManagedAttributeField
+    private CreatingLinkInfo _creatingLinkInfo;
+
+    /**
+     * Whether the exchange is automatically deleted once all queues have detached from it
+     */
+    private boolean _autoDelete;
+
     private volatile MessageDestination _alternateBindingDestination;
 
     public AbstractExchange(Map<String, Object> attributes, QueueManagingVirtualHost<?> vhost)
@@ -929,7 +932,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         return (getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS ||
                 getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_LINKS) &&
-                getBindingCount() == 0;
+               getBindingCount() == 0;
     }
 
 

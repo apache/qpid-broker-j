@@ -33,9 +33,9 @@ import org.apache.qpid.server.protocol.ProtocolVersion;
 
 public class BasicRecoverSyncBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
-    private int _methodId;
-
     public static final int CLASS_ID =  60;
+
+    private final int _methodId;
 
     // Fields declared in specification
     private final byte _bitfield0; // [requeue]

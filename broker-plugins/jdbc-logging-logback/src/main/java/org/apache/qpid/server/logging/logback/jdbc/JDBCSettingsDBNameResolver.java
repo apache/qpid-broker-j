@@ -25,7 +25,7 @@ import org.apache.qpid.server.store.jdbc.JDBCSettings;
 
 class JDBCSettingsDBNameResolver implements DBNameResolver
 {
-    private JDBCSettings _settings;
+    private final JDBCSettings _settings;
 
     JDBCSettingsDBNameResolver(final JDBCSettings settings)
     {

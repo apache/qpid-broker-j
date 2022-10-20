@@ -55,7 +55,7 @@ public abstract class AbstractUpgradeTestCase extends UnitTestBase
 {
     protected static final class StaticAnswerHandler implements UpgradeInteractionHandler
     {
-        private UpgradeInteractionResponse _response;
+        private final UpgradeInteractionResponse _response;
 
         public StaticAnswerHandler(UpgradeInteractionResponse response)
         {

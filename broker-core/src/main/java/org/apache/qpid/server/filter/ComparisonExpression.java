@@ -72,7 +72,7 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
     static class LikeExpression<E> extends UnaryExpression<E> implements BooleanExpression<E>
     {
 
-        private Pattern likePattern;
+        private final Pattern likePattern;
 
         public LikeExpression(Expression<E> right, String like, int escape)
         {

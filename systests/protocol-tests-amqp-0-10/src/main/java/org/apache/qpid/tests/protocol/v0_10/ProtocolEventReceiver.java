@@ -38,7 +38,7 @@ public class ProtocolEventReceiver
 {
     private final Queue<Response<?>> _events = new ConcurrentLinkedQueue<>();
     private final byte[] _headerBytes;
-    private FrameSizeObserver _frameSizeObserver;
+    private final FrameSizeObserver _frameSizeObserver;
 
     public ProtocolEventReceiver(final byte[] headerBytes,
                                  final FrameSizeObserver frameSizeObserver)

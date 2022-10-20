@@ -32,7 +32,8 @@ import org.apache.qpid.server.protocol.v0_8.transport.ExchangeDeleteBody;
 
 public class ExchangeInteraction
 {
-    private Interaction _interaction;
+    private final Interaction _interaction;
+    private final boolean _deleteNoWait = false;
     private String _declareExchange = "amq.direct";
     private String _declareType = "direct";
     private boolean _declarePassive = false;
@@ -47,7 +48,6 @@ public class ExchangeInteraction
 
     private String _deleteExchange;
     private boolean _deleteIfUnused = false;
-    private boolean _deleteNoWait = false;
 
     public ExchangeInteraction(final Interaction interaction)
     {

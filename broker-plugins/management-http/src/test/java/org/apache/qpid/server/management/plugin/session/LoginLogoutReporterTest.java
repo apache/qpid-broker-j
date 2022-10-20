@@ -41,14 +41,13 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class LoginLogoutReporterTest extends UnitTestBase
 {
+    private final Subject _subject = new Subject();
+    private final MessageLogger _logger = mock(MessageLogger.class);
     private LoginLogoutReporter _loginLogoutReport;
-    private Subject _subject = new Subject();
-    private MessageLogger _logger = mock(MessageLogger.class);
 
     @Before
     public void setUp() throws Exception
     {
-
         _subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("mockusername", null)));
         when(_logger.isEnabled()).thenReturn(true);
         when(_logger.isMessageEnabled(anyString())).thenReturn(true);

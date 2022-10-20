@@ -77,7 +77,7 @@ import java.util.regex.Pattern;
 public class CommandLineParser
 {
     /** Holds a mapping from command line option names to detailed information about those options. */
-    private Map<String, CommandLineOption> optionMap = new HashMap<String, CommandLineOption>();
+    private final Map<String, CommandLineOption> optionMap = new HashMap<String, CommandLineOption>();
 
     /** Holds a list of parsing errors. */
     private List<String> parsingErrors = new ArrayList<String>();

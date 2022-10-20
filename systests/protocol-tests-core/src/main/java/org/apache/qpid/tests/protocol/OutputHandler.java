@@ -33,7 +33,7 @@ import io.netty.channel.ChannelPromise;
 public class OutputHandler extends ChannelOutboundHandlerAdapter
 {
     private final OutputEncoder _outputEncoder;
-    private Queue<ByteBufferPromisePair> _cachedEncodedFramePromisePairs;
+    private final Queue<ByteBufferPromisePair> _cachedEncodedFramePromisePairs;
     private int _encodedSize;
 
     OutputHandler(final OutputEncoder outputEncoder)
@@ -118,8 +118,8 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
 
     static class ByteBufferPromisePair
     {
-        private ByteBuffer byteBuffer;
-        private ChannelPromise channelPromise;
+        private final ByteBuffer byteBuffer;
+        private final ChannelPromise channelPromise;
 
         ByteBufferPromisePair(final ByteBuffer byteBuffer, final ChannelPromise channelPromise)
         {

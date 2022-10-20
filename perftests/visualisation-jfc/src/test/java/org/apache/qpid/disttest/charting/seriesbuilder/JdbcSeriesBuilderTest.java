@@ -56,7 +56,7 @@ public class JdbcSeriesBuilderTest extends UnitTestBase
     private static final Integer TEST_SERIES1_STROKE_WIDTH = 3;
     private static final String TEST_SERIES1_SHAPE_NAME = "cross";
 
-    private DatasetHolder _seriesWalkerCallback = mock(DatasetHolder.class);
+    private final DatasetHolder _seriesWalkerCallback = mock(DatasetHolder.class);
 
     private File _testTempDir;
 

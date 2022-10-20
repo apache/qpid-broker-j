@@ -26,10 +26,20 @@ import java.util.Map;
 
 public class MapWriter extends AbstractMapWriter<Map>
 {
+    private static final Factory<Map> FACTORY = new Factory<Map>()
+    {
+
+        @Override
+        public ValueWriter<Map> newInstance(final Registry registry,
+                                            final Map object)
+        {
+            return new MapWriter(registry, object);
+        }
+    };
+
     private final Map _map;
     private Object _value;
     private Iterator<Map.Entry> _iterator;
-
 
     private MapWriter(final Registry registry, final Map object)
     {
@@ -73,18 +83,6 @@ public class MapWriter extends AbstractMapWriter<Map>
         _iterator = _map.entrySet().iterator();
         _value = null;
     }
-
-
-    private static Factory<Map> FACTORY = new Factory<Map>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Map> newInstance(final Registry registry,
-                                                                                    final Map object)
-                                                {
-                                                    return new MapWriter(registry, object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

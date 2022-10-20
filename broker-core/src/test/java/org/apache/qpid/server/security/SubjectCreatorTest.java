@@ -55,18 +55,18 @@ public class SubjectCreatorTest extends UnitTestBase
     private static final UsernamePrincipal USERNAME_PRINCIPAL = new UsernamePrincipal("username", null);
     private static final String PASSWORD = "password";
 
-    private AuthenticationProvider<?> _authenticationProvider = mock(AuthenticationProvider.class);
+    private final AuthenticationProvider<?> _authenticationProvider = mock(AuthenticationProvider.class);
 
-    private GroupProvider<?> _groupManager1 = mock(GroupProvider.class);
-    private GroupProvider<?> _groupManager2 = mock(GroupProvider.class);
+    private final GroupProvider<?> _groupManager1 = mock(GroupProvider.class);
+    private final GroupProvider<?> _groupManager2 = mock(GroupProvider.class);
 
-    private Principal _group1 = mock(Principal.class);
-    private Principal _group2 = mock(Principal.class);
+    private final Principal _group1 = mock(Principal.class);
+    private final Principal _group2 = mock(Principal.class);
+    private final SaslNegotiator _testSaslNegotiator = mock(SaslNegotiator.class);
+    private final byte[] _saslResponseBytes = PASSWORD.getBytes();
 
     private SubjectCreator _subjectCreator;
     private AuthenticationResult _authenticationResult;
-    private SaslNegotiator _testSaslNegotiator = mock(SaslNegotiator.class);
-    private byte[] _saslResponseBytes = PASSWORD.getBytes();
     private EventLogger _eventLogger;
 
     @Before

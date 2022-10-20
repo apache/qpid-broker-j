@@ -54,10 +54,10 @@ public class ConfiguredObjectRegistrationGenerator extends AbstractProcessor
 
     public static final String MANAGED_OBJECT_CANONICAL_NAME = "org.apache.qpid.server.model.ManagedObject";
 
-    private Map<String, Set<String>> _managedObjectClasses = new HashMap<>();
+    private final Map<String, Set<String>> _managedObjectClasses = new HashMap<>();
 
-    private Map<String, String> _typeMap = new HashMap<>();
-    private Map<String, String> _categoryMap = new HashMap<>();
+    private final Map<String, String> _typeMap = new HashMap<>();
+    private final Map<String, String> _categoryMap = new HashMap<>();
     private boolean _elementProcessingDone;
 
     @Override

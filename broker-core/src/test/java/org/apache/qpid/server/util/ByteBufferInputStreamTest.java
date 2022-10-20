@@ -34,7 +34,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ByteBufferInputStreamTest extends UnitTestBase
 {
-    private byte[] _data = {2, 1, 5, 3, 4};
+    private final byte[] _data = {2, 1, 5, 3, 4};
     private ByteBufferInputStream _inputStream;
 
     @Before

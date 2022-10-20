@@ -34,7 +34,8 @@ import org.apache.qpid.server.protocol.v0_8.transport.QueueUnbindBody;
 
 public class QueueInteraction
 {
-    private Interaction _interaction;
+    private final Interaction _interaction;
+    private final Map<String, Object> _unbindArguments = new HashMap<>();
     private String _declareName;
     private boolean _declarePassive;
     private boolean _declareDurable;
@@ -59,7 +60,6 @@ public class QueueInteraction
     private String _unbindQueueName;
     private String _unbindExchangeName;
     private String _unbindRoutingKey;
-    private Map<String, Object> _unbindArguments = new HashMap<>();
 
     public QueueInteraction(final Interaction interaction)
     {

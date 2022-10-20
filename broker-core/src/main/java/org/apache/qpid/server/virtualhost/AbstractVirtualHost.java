@@ -181,36 +181,20 @@ import org.apache.qpid.server.util.Strings;
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
         implements QueueManagingVirtualHost<X>
 {
+    private static final String USE_ASYNC_RECOVERY = "use_async_message_store_recovery";
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractVirtualHost.class);
+    private static final Logger DIRECT_MEMORY_USAGE_LOGGER = LoggerFactory.getLogger("org.apache.qpid.server.directMemory.virtualhost");
+    private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
+
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
-
-
     private final Set<AMQPConnection<?>> _connections = newSetFromMap(new ConcurrentHashMap<AMQPConnection<?>, Boolean>());
     private final AccessControlContext _housekeepingJobContext;
     private final AccessControlContext _fileSystemSpaceCheckerJobContext;
     private final AtomicBoolean _acceptsConnections = new AtomicBoolean(false);
-    private volatile TaskExecutor _preferenceTaskExecutor;
-    private volatile boolean _deleteRequested;
     private final ConcurrentMap<String, Cache> _caches = new ConcurrentHashMap<>();
-
-    private enum BlockingType { STORE, FILESYSTEM };
-
-    private static final String USE_ASYNC_RECOVERY = "use_async_message_store_recovery";
-
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractVirtualHost.class);
-    private static final Logger DIRECT_MEMORY_USAGE_LOGGER = LoggerFactory.getLogger("org.apache.qpid.server.directMemory.virtualhost");
-
-    private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
-
-    private volatile ScheduledThreadPoolExecutor _houseKeepingTaskExecutor;
-    private volatile ScheduledFuture<?> _statisticsReportingFuture;
-
     private final Broker<?> _broker;
-
     private final DtxRegistry _dtxRegistry;
-
     private final SystemNodeRegistry _systemNodeRegistry = new SystemNodeRegistry();
-
     private final AtomicLong _messagesIn = new AtomicLong();
     private final AtomicLong _messagesOut = new AtomicLong();
     private final AtomicLong _transactedMessagesIn = new AtomicLong();
@@ -219,38 +203,19 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AtomicLong _bytesOut = new AtomicLong();
     private final AtomicLong _totalConnectionCount = new AtomicLong();
     private final AtomicLong _maximumMessageSize = new AtomicLong();
-
-    private volatile LinkRegistryModel _linkRegistry;
-    private AtomicBoolean _blocked = new AtomicBoolean();
-
+    private final AtomicBoolean _blocked = new AtomicBoolean();
     private final Map<String, MessageDestination> _systemNodeDestinations =
             Collections.synchronizedMap(new HashMap<String,MessageDestination>());
-
     private final Map<String, MessageSource> _systemNodeSources =
             Collections.synchronizedMap(new HashMap<String,MessageSource>());
-
     private final EventLogger _eventLogger;
-
     private final VirtualHostNode<?> _virtualHostNode;
-
     private final AtomicLong _targetSize = new AtomicLong(100 * 1024 * 1024);
-
-    private MessageStoreLogSubject _messageStoreLogSubject;
-
     private final Set<BlockingType> _blockingReasons = Collections.synchronizedSet(EnumSet.noneOf(BlockingType.class));
-
-    private NetworkConnectionScheduler _networkConnectionScheduler;
-
     private final VirtualHostPrincipal _principal;
-
-    private ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
-
+    private final ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
     private final AccessControl _accessControl;
-
-    private volatile boolean _createDefaultExchanges;
-
     private final AtomicBoolean _directMemoryExceedsTargetReported = new AtomicBoolean();
-
     private final AccessControl _systemUserAllowed = new SubjectFixedResultAccessControl(new ResultCalculator()
     {
         @Override
@@ -259,8 +224,19 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             return isSystemSubject(subject) ? Result.ALLOWED : Result.DEFER;
         }
     }, Result.DEFER);
-
     private final VirtualHostConnectionLimiter _connectionLimiter;
+    private final MessageDestination _defaultDestination;
+    private final FileSystemSpaceChecker _fileSystemSpaceChecker;
+
+    private volatile TaskExecutor _preferenceTaskExecutor;
+    private volatile boolean _deleteRequested;
+    private enum BlockingType { STORE, FILESYSTEM };
+    private volatile ScheduledThreadPoolExecutor _houseKeepingTaskExecutor;
+    private volatile ScheduledFuture<?> _statisticsReportingFuture;
+    private volatile LinkRegistryModel _linkRegistry;
+    private MessageStoreLogSubject _messageStoreLogSubject;
+    private NetworkConnectionScheduler _networkConnectionScheduler;
+    private volatile boolean _createDefaultExchanges;
 
     @ManagedAttributeField
     private boolean _queue_deadLetterQueueEnabled;
@@ -306,11 +282,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private boolean _useAsyncRecoverer;
 
-    private MessageDestination _defaultDestination;
-
     private MessageStore _messageStore;
     private MessageStoreRecoverer _messageStoreRecoverer;
-    private final FileSystemSpaceChecker _fileSystemSpaceChecker;
     private int _fileSystemMaxUsagePercent;
     private Collection<VirtualHostLogger> _virtualHostLoggersToClose;
     private PreferenceStore _preferenceStore;

@@ -127,15 +127,45 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
     };
     private static final String ALTERNATE_EXCHANGE = "alternateExchange";
+
+    private static final AMQShortString IMMEDIATE_DELIVERY_REPLY_TEXT =
+            AMQShortString.createAMQShortString("Immediate delivery is not possible.");
+
     private final DefaultQueueAssociationClearingTask
             _defaultQueueAssociationClearingTask = new DefaultQueueAssociationClearingTask();
 
     private final int _channelId;
 
-
     private final Pre0_10CreditManager _creditManager;
     private final boolean _forceMessageValidation;
 
+    /** Maps from consumer tag to subscription instance. Allows us to unsubscribe from a queue. */
+    private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<AMQShortString, ConsumerTarget_0_8>();
+
+    private final MessageStore _messageStore;
+
+    private final java.util.Queue<AsyncCommand> _unfinishedCommandsQueue = new ConcurrentLinkedQueue<>();
+
+    private final UnacknowledgedMessageMap _unacknowledgedMessageMap;
+
+    private final AtomicBoolean _suspended = new AtomicBoolean(false);
+
+    private final AMQPConnection_0_8 _connection;
+    private final AtomicBoolean _closing = new AtomicBoolean(false);
+
+    private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
+
+    private final AtomicBoolean _blocking = new AtomicBoolean(false);
+
+    private final List<MessageConsumerAssociation> _resendList = new ArrayList<>();
+
+    private final ClientDeliveryMethod _clientDeliveryMethod;
+
+    private final ImmediateAction _immediateAction = new ImmediateAction();
+
+    private final CachedFrame _txCommitOkFrame;
+
+    private final long _blockingTimeout;
 
     /**
      * The delivery tag is unique per channel. This is pre-incremented before putting into the deliver frame so that
@@ -156,39 +186,11 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
      */
     private IncomingMessage _currentMessage;
 
-    /** Maps from consumer tag to subscription instance. Allows us to unsubscribe from a queue. */
-    private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<AMQShortString, ConsumerTarget_0_8>();
-
-    private final MessageStore _messageStore;
-
-    private final java.util.Queue<AsyncCommand> _unfinishedCommandsQueue = new ConcurrentLinkedQueue<>();
-
-    private final UnacknowledgedMessageMap _unacknowledgedMessageMap;
-
-    private final AtomicBoolean _suspended = new AtomicBoolean(false);
-
     private volatile ServerTransaction _transaction;
-
-    private final AMQPConnection_0_8 _connection;
-    private final AtomicBoolean _closing = new AtomicBoolean(false);
-
-    private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
-
-    private final AtomicBoolean _blocking = new AtomicBoolean(false);
-
 
     private volatile boolean _rollingBack;
 
-    private List<MessageConsumerAssociation> _resendList = new ArrayList<>();
-    private static final
-    AMQShortString IMMEDIATE_DELIVERY_REPLY_TEXT =
-            AMQShortString.createAMQShortString("Immediate delivery is not possible.");
-
-    private final ClientDeliveryMethod _clientDeliveryMethod;
-
-    private final ImmediateAction _immediateAction = new ImmediateAction();
     private long _blockTime;
-    private long _blockingTimeout;
     private boolean _confirmOnPublish;
     private long _confirmedMessageCounter;
 
@@ -203,7 +205,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
      */
     private boolean _logChannelFlowMessages = true;
 
-    private final CachedFrame _txCommitOkFrame;
     private boolean _channelFlow = true;
 
     public AMQChannel(AMQPConnection_0_8 connection, int channelId, final MessageStore messageStore)

@@ -56,8 +56,9 @@ import org.apache.qpid.server.util.FileHelper;
 public class FileBasedGroupProviderImpl
         extends AbstractCaseAwareGroupProvider<FileBasedGroupProviderImpl> implements FileBasedGroupProvider<FileBasedGroupProviderImpl>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedGroupProviderImpl.class);
+
     public static final String GROUP_FILE_PROVIDER_TYPE = "GroupFile";
-    private static Logger LOGGER = LoggerFactory.getLogger(FileBasedGroupProviderImpl.class);
 
     private final Container<?> _container;
 

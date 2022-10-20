@@ -101,12 +101,34 @@ import org.apache.qpid.server.util.StateChangeListener;
 class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ManagementNode.class);
+    private static final int STATUS_CODE_CREATED = 201;
+    private static final InstanceProperties CONSUMED_INSTANCE_PROPERTIES = prop -> null;
+    private static final Comparator<? super ConfiguredObject<?>> OBJECT_COMPARATOR =
+            (Comparator<ConfiguredObject<?>>) (o1, o2) ->
+            {
+                if (o1 == o2)
+                {
+                    return 0;
+                }
+                int result = o1.getCategoryClass().getSimpleName().compareTo(o2.getCategoryClass().getSimpleName());
+                if (result == 0)
+                {
+                    result = o1.getName().compareTo(o2.getName());
+                }
+                if (result == 0)
+                {
+                    result = o1.getId().compareTo(o2.getId());
+                }
+                return result;
+            };
+
+    static final String OBJECT_PATH = "object-path";
+    static final String QPID_TYPE = "qpid-type";
 
     public static final String IDENTITY_ATTRIBUTE = "identity";
     public static final String INDEX_ATTRIBUTE = "index";
     public static final String KEY_ATTRIBUTE = "key";
     public static final String ACTUALS_ATTRIBUTE = "actuals";
-
     public static final String TYPE_ATTRIBUTE = "type";
     public static final String OPERATION_HEADER = "operation";
     public static final String SELF_NODE_NAME = "self";
@@ -124,12 +146,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     public static final String ATTRIBUTES_HEADER = "attributes";
     public static final String ATTRIBUTE_NAMES = "attributeNames";
     public static final String RESULTS = "results";
-    static final String OBJECT_PATH = "object-path";
-    static final String QPID_TYPE = "qpid-type";
-
-
     public static final int STATUS_CODE_OK = 200;
-    private static final int STATUS_CODE_CREATED = 201;
     public static final int STATUS_CODE_NO_CONTENT = 204;
     public static final int STATUS_CODE_BAD_REQUEST = 400;
     public static final int STATUS_CODE_FORBIDDEN = 403;
@@ -137,39 +154,14 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     public static final int STATUS_CODE_CONFLICT = 409;
     public static final int STATUS_CODE_INTERNAL_ERROR = 500;
     public static final int STATUS_CODE_NOT_IMPLEMENTED = 501;
-    private static final Comparator<? super ConfiguredObject<?>> OBJECT_COMPARATOR =
-            new Comparator<ConfiguredObject<?>>()
-            {
-                @Override
-                public int compare(final ConfiguredObject<?> o1, final ConfiguredObject<?> o2)
-                {
-                    if(o1 == o2)
-                    {
-                        return 0;
-                    }
-                    int result = o1.getCategoryClass().getSimpleName().compareTo(o2.getCategoryClass().getSimpleName());
-                    if(result == 0)
-                    {
-                        result = o1.getName().compareTo(o2.getName());
-                    }
-                    if(result == 0)
-                    {
-                        result = o1.getId().compareTo(o2.getId());
-                    }
-                    return result;
-                }
-            };
-
 
     private final NamedAddressSpace _addressSpace;
-
     private final UUID _id;
-
     private final ConfiguredObject<?> _managedObject;
     private final Model _model;
     private final Map<Class<? extends ConfiguredObject>, ConfiguredObjectOperation<?>> _associatedChildrenOperations = new HashMap<>();
     private final ConfiguredObjectFinder _configuredObjectFinder;
-    private List<ManagementNodeConsumer> _consumers = new CopyOnWriteArrayList<>();
+    private final List<ManagementNodeConsumer> _consumers = new CopyOnWriteArrayList<>();
 
     private final Set<Class<? extends ConfiguredObject>> _managedCategories = new HashSet<>();
     private final Map<String, Class<? extends ConfiguredObject>> _managedTypes = new HashMap<>();
@@ -178,8 +170,6 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     private final ManagementOutputConverter _managementOutputConverter;
 
     private final ManagementInputConverter _managementInputConverter;
-
-    private static final InstanceProperties CONSUMED_INSTANCE_PROPERTIES = prop -> null;
 
     ManagementNode(final NamedAddressSpace addressSpace,
                    final ConfiguredObject<?> configuredObject)

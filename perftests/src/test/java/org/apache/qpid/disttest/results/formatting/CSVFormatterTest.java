@@ -46,7 +46,7 @@ import static org.junit.Assert.assertNull;
 
 public class CSVFormatterTest extends UnitTestBase
 {
-    private CSVFormatter _formatter = new CSVFormatter();
+    private final CSVFormatter _formatter = new CSVFormatter();
 
     @Test
     public void testResultsFileWithWithOneRow() throws Exception

@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class UserMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class UserMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String USER_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "user";
@@ -74,7 +74,7 @@ public class UserMessages
         LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(UPDATE_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.User_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.User_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -86,12 +86,12 @@ public class UserMessages
      */
     public static LogMessage CREATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("CREATE");
+        String rawMessage = MESSAGES.getString("CREATE");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -146,12 +146,12 @@ public class UserMessages
      */
     public static LogMessage DELETE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("DELETE");
+        String rawMessage = MESSAGES.getString("DELETE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -206,12 +206,12 @@ public class UserMessages
      */
     public static LogMessage UPDATE(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("UPDATE");
+        String rawMessage = MESSAGES.getString("UPDATE");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 

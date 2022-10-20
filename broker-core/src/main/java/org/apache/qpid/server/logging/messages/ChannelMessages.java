@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class ChannelMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class ChannelMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String CHANNEL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "channel";
@@ -92,7 +92,7 @@ public class ChannelMessages
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(PREFETCH_SIZE_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Channel_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Channel_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -104,7 +104,7 @@ public class ChannelMessages
      */
     public static LogMessage CLOSE()
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = MESSAGES.getString("CLOSE");
 
         final String message = rawMessage;
 
@@ -159,12 +159,12 @@ public class ChannelMessages
      */
     public static LogMessage CLOSE_FORCED(Number param1, String param2)
     {
-        String rawMessage = _messages.getString("CLOSE_FORCED");
+        String rawMessage = MESSAGES.getString("CLOSE_FORCED");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -219,7 +219,7 @@ public class ChannelMessages
      */
     public static LogMessage CREATE()
     {
-        String rawMessage = _messages.getString("CREATE");
+        String rawMessage = MESSAGES.getString("CREATE");
 
         final String message = rawMessage;
 
@@ -274,12 +274,12 @@ public class ChannelMessages
      */
     public static LogMessage DEADLETTERMSG(Number param1, String param2)
     {
-        String rawMessage = _messages.getString("DEADLETTERMSG");
+        String rawMessage = MESSAGES.getString("DEADLETTERMSG");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -334,12 +334,12 @@ public class ChannelMessages
      */
     public static LogMessage DISCARDMSG_NOALTEXCH(Number param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("DISCARDMSG_NOALTEXCH");
+        String rawMessage = MESSAGES.getString("DISCARDMSG_NOALTEXCH");
 
         final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -394,12 +394,12 @@ public class ChannelMessages
      */
     public static LogMessage DISCARDMSG_NOROUTE(Number param1, String param2)
     {
-        String rawMessage = _messages.getString("DISCARDMSG_NOROUTE");
+        String rawMessage = MESSAGES.getString("DISCARDMSG_NOROUTE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -454,12 +454,12 @@ public class ChannelMessages
      */
     public static LogMessage FLOW(String param1)
     {
-        String rawMessage = _messages.getString("FLOW");
+        String rawMessage = MESSAGES.getString("FLOW");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -514,7 +514,7 @@ public class ChannelMessages
      */
     public static LogMessage FLOW_CONTROL_IGNORED()
     {
-        String rawMessage = _messages.getString("FLOW_CONTROL_IGNORED");
+        String rawMessage = MESSAGES.getString("FLOW_CONTROL_IGNORED");
 
         final String message = rawMessage;
 
@@ -569,12 +569,12 @@ public class ChannelMessages
      */
     public static LogMessage FLOW_ENFORCED(String param1)
     {
-        String rawMessage = _messages.getString("FLOW_ENFORCED");
+        String rawMessage = MESSAGES.getString("FLOW_ENFORCED");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -629,7 +629,7 @@ public class ChannelMessages
      */
     public static LogMessage FLOW_REMOVED()
     {
-        String rawMessage = _messages.getString("FLOW_REMOVED");
+        String rawMessage = MESSAGES.getString("FLOW_REMOVED");
 
         final String message = rawMessage;
 
@@ -684,12 +684,12 @@ public class ChannelMessages
      */
     public static LogMessage OPERATION(String param1)
     {
-        String rawMessage = _messages.getString("OPERATION");
+        String rawMessage = MESSAGES.getString("OPERATION");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -744,12 +744,12 @@ public class ChannelMessages
      */
     public static LogMessage PREFETCH_SIZE(Number param1, Number param2)
     {
-        String rawMessage = _messages.getString("PREFETCH_SIZE");
+        String rawMessage = MESSAGES.getString("PREFETCH_SIZE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 

@@ -40,8 +40,8 @@ import org.apache.qpid.server.logging.LogMessage;
  */
 public class BrokerMessages
 {
-    private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    private static final ResourceBundle MESSAGES;
+    private static final Locale CURRENT_LOCALE;
 
     static
     {
@@ -59,7 +59,7 @@ public class BrokerMessages
             }
             locale = new Locale(language, country, variant);
         }
-        _currentLocale = locale;
+        CURRENT_LOCALE = locale;
     }
 
     public static final String BROKER_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker";
@@ -94,7 +94,7 @@ public class BrokerMessages
         LoggerFactory.getLogger(STARTUP_LOG_HIERARCHY);
         LoggerFactory.getLogger(STOPPED_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Broker_logmessages", _currentLocale);
+        MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Broker_logmessages", CURRENT_LOCALE);
     }
 
     /**
@@ -106,12 +106,12 @@ public class BrokerMessages
      */
     public static LogMessage CONFIG(String param1)
     {
-        String rawMessage = _messages.getString("CONFIG");
+        String rawMessage = MESSAGES.getString("CONFIG");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -166,12 +166,12 @@ public class BrokerMessages
      */
     public static LogMessage FAILED_CHILDREN(String param1)
     {
-        String rawMessage = _messages.getString("FAILED_CHILDREN");
+        String rawMessage = MESSAGES.getString("FAILED_CHILDREN");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -226,12 +226,12 @@ public class BrokerMessages
      */
     public static LogMessage FATAL_ERROR(String param1)
     {
-        String rawMessage = _messages.getString("FATAL_ERROR");
+        String rawMessage = MESSAGES.getString("FATAL_ERROR");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -286,12 +286,12 @@ public class BrokerMessages
      */
     public static LogMessage LISTENING(String param1, Number param2)
     {
-        String rawMessage = _messages.getString("LISTENING");
+        String rawMessage = MESSAGES.getString("LISTENING");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -346,12 +346,12 @@ public class BrokerMessages
      */
     public static LogMessage MANAGEMENT_MODE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("MANAGEMENT_MODE");
+        String rawMessage = MESSAGES.getString("MANAGEMENT_MODE");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -406,12 +406,12 @@ public class BrokerMessages
      */
     public static LogMessage MAX_MEMORY(Number param1, Number param2)
     {
-        String rawMessage = _messages.getString("MAX_MEMORY");
+        String rawMessage = MESSAGES.getString("MAX_MEMORY");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -466,12 +466,12 @@ public class BrokerMessages
      */
     public static LogMessage OPERATION(String param1)
     {
-        String rawMessage = _messages.getString("OPERATION");
+        String rawMessage = MESSAGES.getString("OPERATION");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -526,12 +526,12 @@ public class BrokerMessages
      */
     public static LogMessage PLATFORM(String param1, String param2, String param3, String param4, String param5, String param6)
     {
-        String rawMessage = _messages.getString("PLATFORM");
+        String rawMessage = MESSAGES.getString("PLATFORM");
 
         final Object[] messageArguments = {param1, param2, param3, param4, param5, param6};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -586,12 +586,12 @@ public class BrokerMessages
      */
     public static LogMessage PROCESS(String param1)
     {
-        String rawMessage = _messages.getString("PROCESS");
+        String rawMessage = MESSAGES.getString("PROCESS");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -646,7 +646,7 @@ public class BrokerMessages
      */
     public static LogMessage READY()
     {
-        String rawMessage = _messages.getString("READY");
+        String rawMessage = MESSAGES.getString("READY");
 
         final String message = rawMessage;
 
@@ -701,12 +701,12 @@ public class BrokerMessages
      */
     public static LogMessage SHUTTING_DOWN(String param1, Number param2)
     {
-        String rawMessage = _messages.getString("SHUTTING_DOWN");
+        String rawMessage = MESSAGES.getString("SHUTTING_DOWN");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -761,12 +761,12 @@ public class BrokerMessages
      */
     public static LogMessage STARTUP(String param1, String param2)
     {
-        String rawMessage = _messages.getString("STARTUP");
+        String rawMessage = MESSAGES.getString("STARTUP");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
 
         final String message = formatter.format(messageArguments);
 
@@ -821,7 +821,7 @@ public class BrokerMessages
      */
     public static LogMessage STOPPED()
     {
-        String rawMessage = _messages.getString("STOPPED");
+        String rawMessage = MESSAGES.getString("STOPPED");
 
         final String message = rawMessage;
 

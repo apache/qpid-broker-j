@@ -1017,8 +1017,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
 
         private final JDBCEnqueueRecord _record;
-        private long _messageNumber;
-        private UUID _queueId;
+        private final long _messageNumber;
+        private final UUID _queueId;
 
         public RecordImpl(UUID queueId, long messageNumber)
         {

@@ -33,7 +33,7 @@ public class TestTemperatureSensorImpl extends TestAbstractSensorImpl<TestTemper
 
     public static final String TEST_TEMPERATURE_SENSOR_TYPE = "temperature";
 
-    private AtomicInteger _alertCount = new AtomicInteger();
+    private final AtomicInteger _alertCount = new AtomicInteger();
 
     @ManagedObjectFactoryConstructor
     protected TestTemperatureSensorImpl(final Map<String, Object> attributes,final TestInstrumentPanel<?> parent)

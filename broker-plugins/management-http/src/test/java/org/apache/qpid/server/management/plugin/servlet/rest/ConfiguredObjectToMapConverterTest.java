@@ -71,8 +71,8 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
             "test-${" + PARENT_CONTEXT_PROPERTY2_NAME + "}";
     private static final String CHILD_CONTEXT_PROPERTY_EFFECTIVE_VALUE =
             "test-" + PARENT_CONTEXT_PROPERTY2_EFFECTIVE_VALUE;
-    private ConfiguredObjectToMapConverter _converter = new ConfiguredObjectToMapConverter();
-    private ConfiguredObject _configuredObject = mock(ConfiguredObject.class);
+    private final ConfiguredObjectToMapConverter _converter = new ConfiguredObjectToMapConverter();
+    private final ConfiguredObject _configuredObject = mock(ConfiguredObject.class);
 
     @Before
     public void setUp() throws Exception

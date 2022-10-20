@@ -52,11 +52,11 @@ public class GroupJmsTestBase extends UnitTestBase
     private static final int FAILOVER_CONNECTDELAY = 1000;
     static final int SHORT_FAILOVER_CYCLECOUNT = 2;
     static final int SHORT_FAILOVER_CONNECTDELAY = 200;
-
+    private static final AtomicReference<Class<?>> TEST_CLASS = new AtomicReference<>();
     private static final Logger LOGGER = LoggerFactory.getLogger(GroupJmsTestBase.class);
+
     private static JmsProvider _jmsProvider;
     private static GroupBrokerAdmin _groupBrokerAdmin;
-    private static AtomicReference<Class<?>> _testClass = new AtomicReference<>();
 
     @BeforeClass
     public static void setUpTestBase()
@@ -69,8 +69,8 @@ public class GroupJmsTestBase extends UnitTestBase
     @AfterClass
     public static void tearDownTestBase()
     {
-        Class<?> testClass = _testClass.get();
-        if (testClass != null && _testClass.compareAndSet(testClass, null))
+        Class<?> testClass = TEST_CLASS.get();
+        if (testClass != null && TEST_CLASS.compareAndSet(testClass, null))
         {
             _groupBrokerAdmin.afterTestClass(testClass);
         }
@@ -82,7 +82,7 @@ public class GroupJmsTestBase extends UnitTestBase
         @Override
         protected void before()
         {
-            if (_testClass.compareAndSet(null, GroupJmsTestBase.this.getClass() ))
+            if (TEST_CLASS.compareAndSet(null, GroupJmsTestBase.this.getClass()))
             {
                 _groupBrokerAdmin = new GroupBrokerAdmin();
                 _groupBrokerAdmin.beforeTestClass(GroupJmsTestBase.this.getClass());

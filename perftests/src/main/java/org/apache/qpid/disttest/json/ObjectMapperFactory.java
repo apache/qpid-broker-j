@@ -128,7 +128,7 @@ public class ObjectMapperFactory
     public static class PropertyValueDeserializer extends JsonDeserializer<PropertyValue>
     {
         private static final String DEF_FIELD = "@def";
-        private PropertyValueFactory _factory = new PropertyValueFactory();
+        private final PropertyValueFactory _factory = new PropertyValueFactory();
 
         @Override
         public PropertyValue deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext)

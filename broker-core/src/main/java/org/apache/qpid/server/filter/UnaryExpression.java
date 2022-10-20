@@ -35,7 +35,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
 {
 
     private static final BigDecimal BD_LONG_MIN_VALUE = BigDecimal.valueOf(Long.MIN_VALUE);
-    private Expression<T> right;
+    private final Expression<T> right;
 
     public static <E> Expression<E> createNegate(Expression<E> left)
     {

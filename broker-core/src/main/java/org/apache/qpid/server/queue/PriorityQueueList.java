@@ -241,7 +241,7 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
                 return new PriorityQueueEntry((PriorityQueueList) list);
             }
         };
-        private int _listPriority;
+        private final int _listPriority;
 
         public PriorityQueueEntrySubList(PriorityQueueImpl queue, int listPriority)
         {

@@ -21,26 +21,15 @@ package org.apache.qpid.disttest.controller;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.DistributedTestException;
 
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.After;
 import org.junit.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ClientRegistryTest extends UnitTestBase
 {
@@ -48,9 +37,9 @@ public class ClientRegistryTest extends UnitTestBase
     private static final String CLIENT2_REGISTERED_NAME = "CLIENT2_REGISTERED_NAME";
     private static final String CLIENT3_REGISTERED_NAME = "CLIENT3_REGISTERED_NAME";
 
-    private long _awaitDelay = 100;
+    private final ClientRegistry _clientRegistry = new ClientRegistry();
 
-    private ClientRegistry _clientRegistry = new ClientRegistry();
+    private long _awaitDelay = 100;
 
     @Before
     public void setUp() throws Exception

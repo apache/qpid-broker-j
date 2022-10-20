@@ -46,7 +46,7 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
     private final long _notValidBefore;
     private final String _type;
     private final String _replyTo;
-    private long _arrivalTime;
+    private final long _arrivalTime;
 
     public InternalMessageHeader(final Map<String, Object> headers,
                                  final String correlationId,

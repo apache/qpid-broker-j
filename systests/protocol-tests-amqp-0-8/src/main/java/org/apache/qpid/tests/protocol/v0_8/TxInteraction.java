@@ -27,7 +27,7 @@ import org.apache.qpid.tests.protocol.AbstractInteraction;
 
 public class TxInteraction
 {
-    private Interaction _interaction;
+    private final Interaction _interaction;
 
     public TxInteraction(final Interaction interaction)
     {

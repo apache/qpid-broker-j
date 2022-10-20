@@ -64,7 +64,7 @@ public enum ParticipantAttribute
     PROVIDER_VERSION("providerVersion"),
     PROTOCOL_VERSION("protocolVersion");
 
-    private String _displayName;
+    private final String _displayName;
     private String _decimalFormat;
 
     ParticipantAttribute(String displayName)

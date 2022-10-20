@@ -60,17 +60,16 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnectionDelegate.class);
     static final String MESSAGE_DIGEST_SHA1 = "SHA-1";
     static final int BASE64_LIMIT = 64;
+
     private final AmqpPort<?> _port;
+    private final List<Object> _mechanisms;
+    private final Broker<?> _broker;
+    private final int _maxNoOfChannels;
+    private final SubjectCreator _subjectCreator;
+    private final int _maximumFrameSize;
 
     private List<Object> _locales;
-    private List<Object> _mechanisms;
-
-    private final Broker<?> _broker;
-    private int _maxNoOfChannels;
     private Map<String,Object> _clientProperties;
-    private final SubjectCreator _subjectCreator;
-    private int _maximumFrameSize;
-
     private boolean _compressionSupported;
     private volatile SaslNegotiator _saslNegotiator;
 
@@ -86,7 +85,6 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
 
     private volatile ConnectionState _state = ConnectionState.INIT;
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
-
 
     public ServerConnectionDelegate(AmqpPort<?> port, boolean secure, final String selectedHost)
     {

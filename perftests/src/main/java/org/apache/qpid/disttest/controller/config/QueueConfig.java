@@ -23,9 +23,9 @@ import java.util.Map;
 
 public class QueueConfig
 {
+    private final Map<String, Object> _attributes;
     private String _name;
     private boolean _durable;
-    private Map<String, Object> _attributes;
 
     public QueueConfig()
     {
