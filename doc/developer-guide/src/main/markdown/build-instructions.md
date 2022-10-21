@@ -66,8 +66,8 @@ For complete reference and documentation on Maven please visit the following onl
 
 ### Java
 
-The build requires a Java 8 or later. You should set the `JAVA_HOME` environment variable and include its `bin` directory
-in your `PATH`.
+The build requires a Java 11 or later. You should set the `JAVA_HOME` environment variable and include its `bin`
+directory in your `PATH`.
 
 Check java version by executing the following at your command prompt.
 

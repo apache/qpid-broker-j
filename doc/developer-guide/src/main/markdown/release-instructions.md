@@ -41,8 +41,8 @@ would result in failures to publish release artifacts into staging maven repo.
 
 ### Java
 
-JDK 1.8 is required to compile java classes. Install latest 1.8 JDK. At the moment of writing this document JDK version
-1.8.0_192  was the latest one.
+JDK 11 is required to compile java classes. Install latest 11 JDK. At the moment of writing this document JDK version
+11.0.17 was the latest one.
 
 ### Git
 
