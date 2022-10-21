@@ -23,9 +23,14 @@
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Instrumentation">
     <title>Broker Instrumentation</title>
     <para>The Apache Qpid Broker-J heavy relies on java reflection mechanism. A static instrumentation agent
-        can be used to replace method.invoke() reflection calls with static final MethodHandle.invokeExact().</para>
-    <para>To use instrumentation agent following JVM argument should be added to the broker start
-        parameters:</para>
-    <para>-javaagent:$BROKER_DIR/lib/broker-instrumentation.jar</para>
+        can be used to replace <literal>method.invoke()</literal> reflection calls with static final
+        <literal>MethodHandle.invokeExact()</literal>.</para>
+    <para>To use instrumentation agent following JVM argument should be added to the broker start parameters:</para>
+    <screen>-javaagent:$BROKER_DIR/lib/qpid-broker-instrumentation-${broker-version}.jar</screen>
+    <para>List of classes to instrument can be supplied as a comma separated list:</para>
+    <screen>-javaagent:$BROKER_DIR/lib/qpid-broker-instrumentation-${broker-version}.jar=ConfiguredObjectMethodAttributeOrStatistic</screen>
+    <screen>-javaagent:$BROKER_DIR/lib/qpid-broker-instrumentation-${broker-version}.jar=ConfiguredObjectMethodAttributeOrStatistic,ConfiguredObjectMethodOperation</screen>
+    <screen>-javaagent:$BROKER_DIR/lib/qpid-broker-instrumentation-${broker-version}.jar=ConfiguredObjectMethodAttributeOrStatistic,ConfiguredObjectMethodOperation,AutomatedField</screen>
+    <para>When no arguments supplied, all classes will be instrumented.</para>
 
 </section>

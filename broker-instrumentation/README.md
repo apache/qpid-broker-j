@@ -10,21 +10,21 @@ To use instrumentation agent following JVM argument should be added to the broke
 parameters:
 
 ```
--javaagent:$BROKER_DIR/lib/broker-instrumentation-9.0.0-SNAPSHOT.jar
+-javaagent:$BROKER_DIR/lib/qpid-broker-instrumentation-${broker-version}.jar
 ```
 
 List of classes to instrument can be supplied as a comma separated list:
 
 ```
--javaagent:$BROKER_DIR/lib/broker-instrumentation-9.0.0-SNAPSHOT.jar=ConfiguredObjectMethodAttributeOrStatistic
+-javaagent:$BROKER_DIR/lib/qpid-broker-instrumentation-${broker-version}.jar=ConfiguredObjectMethodAttributeOrStatistic
 ```
 
 ```
--javaagent:$BROKER_DIR/lib/broker-instrumentation-9.0.0-SNAPSHOT.jar=ConfiguredObjectMethodAttributeOrStatistic,ConfiguredObjectMethodOperation
+-javaagent:$BROKER_DIR/lib/qpid-broker-instrumentation-${broker-version}.jar=ConfiguredObjectMethodAttributeOrStatistic,ConfiguredObjectMethodOperation
 ```
 
 ```
--javaagent:$BROKER_DIR/lib/broker-instrumentation-9.0.0-SNAPSHOT.jar=ConfiguredObjectMethodAttributeOrStatistic,ConfiguredObjectMethodOperation,AutomatedField
+-javaagent:$BROKER_DIR/lib/qpid-broker-instrumentation-${broker-version}.jar=ConfiguredObjectMethodAttributeOrStatistic,ConfiguredObjectMethodOperation,AutomatedField
 ```
 
 When no arguments supplied, all classes will be instrumented.
