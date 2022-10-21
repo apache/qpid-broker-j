@@ -25,9 +25,9 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>qpid-broker-query-engine</artifactId>
-  <name>Apache Qpid Broker-J Query Engine</name>
-  <description>Broker-J Query Engine</description>
+  <artifactId>qpid-broker-plugins-query-engine</artifactId>
+  <name>Apache Qpid Broker-J Query Engine Plug-In</name>
+  <description>Query engine plug-in</description>
 
   <dependencies>
     <dependency>
