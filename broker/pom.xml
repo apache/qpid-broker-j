@@ -51,6 +51,12 @@
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
+      <artifactId>broker-instrumentation</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-access-control</artifactId>
       <scope>runtime</scope>
     </dependency>
