@@ -25,9 +25,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>broker-instrumentation</artifactId>
+    <artifactId>qpid-broker-instrumentation</artifactId>
     <name>Apache Qpid Broker-J Instrumentation</name>
-    <description>Broker instrumentation</description>
+    <description>Broker static instrumentation agent</description>
 
     <dependencies>
         <dependency>

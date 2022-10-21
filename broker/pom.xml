@@ -51,7 +51,7 @@
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
-      <artifactId>broker-instrumentation</artifactId>
+      <artifactId>qpid-broker-instrumentation</artifactId>
       <scope>runtime</scope>
     </dependency>
 
