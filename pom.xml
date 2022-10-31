@@ -104,41 +104,42 @@
 
     <bdb-version>7.4.5</bdb-version>
     <derby-version>10.14.2.0</derby-version>
-    <logback-version>1.2.7</logback-version>
-    <guava-version>30.0-jre</guava-version>
-    <fasterxml-jackson-version>2.13.2</fasterxml-jackson-version>
-    <fasterxml-jackson-databind-version>2.13.4.1</fasterxml-jackson-databind-version>
+    <logback-version>1.2.11</logback-version>
+    <logback-db-version>1.2.11.1</logback-db-version>
+    <guava-version>31.1-jre</guava-version>
+    <fasterxml-jackson-version>2.13.4</fasterxml-jackson-version>
+    <fasterxml-jackson-databind-version>2.13.4.2</fasterxml-jackson-databind-version>
     <slf4j-version>1.7.36</slf4j-version>
-    <jetty-version>9.4.45.v20220203</jetty-version>
+    <jetty-version>9.4.49.v20220914</jetty-version>
 
     <!-- dependency version numbers -->
-    <bonecp-version>0.7.1.RELEASE</bonecp-version>
-    <commons-cli-version>1.4</commons-cli-version>
+    <bonecp-version>0.8.0.RELEASE</bonecp-version>
+    <commons-cli-version>1.5.0</commons-cli-version>
 
     <geronimo-jms-1-1-version>1.1.1</geronimo-jms-1-1-version>
     <geronimo-jms-2-0-version>1.0-alpha-2</geronimo-jms-2-0-version>
-    <asm-version>9.3</asm-version>
+    <asm-version>9.4</asm-version>
 
     <velocity-version>1.4</velocity-version>
     <csvjdbc-version>1.0.35</csvjdbc-version>
     <jfreechart-version>1.0.13</jfreechart-version>
 
-    <dojo-version>1.16.4</dojo-version>
+    <dojo-version>1.17.2</dojo-version>
     <dstore-version>1.1.2</dstore-version>
-    <dgrid-version>1.2.1</dgrid-version>
+    <dgrid-version>1.3.3</dgrid-version>
 
     <!-- test dependency version numbers -->
     <junit-version>4.13.2</junit-version>
-    <mockito-version>3.2.4</mockito-version>
-    <netty-version>4.1.77.Final</netty-version>
+    <mockito-version>4.8.1</mockito-version>
+    <netty-version>4.1.84.Final</netty-version>
     <hamcrest-version>2.2</hamcrest-version>
-    <maven-core-version>3.5.4</maven-core-version>
-    <maven-resolver-version>1.1.1</maven-resolver-version>
+    <maven-core-version>3.8.6</maven-core-version>
+    <maven-resolver-version>1.8.2</maven-resolver-version>
     <httpclient-version>4.5.13</httpclient-version>
     <qpid-jms-client-version>0.61.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.3.4</qpid-jms-client-amqp-0-x-version>
     <jaxb-api-version>2.3.1</jaxb-api-version>
-    <nashorn-version>15.3</nashorn-version>
+    <nashorn-version>15.4</nashorn-version>
 
     <exec-maven-plugin-version>1.6.0</exec-maven-plugin-version>
     <javacc-maven-plugin-version>2.6</javacc-maven-plugin-version>
@@ -156,10 +157,10 @@
     <maven-jar-plugin-version>3.1.0</maven-jar-plugin-version>
     <maven-surefire-report-plugin-version>2.22.0</maven-surefire-report-plugin-version>
     <h2.version>1.4.200</h2.version>
-    <apache-directory-version>2.0.0.AM25</apache-directory-version>
-    <kerby-version>2.0.1</kerby-version>
-    <bcprov-version>1.68</bcprov-version>
-    <bcpkix-version>1.68</bcpkix-version>
+    <apache-directory-version>2.0.0.AM26</apache-directory-version>
+    <kerby-version>2.0.2</kerby-version>
+    <bcprov-version>1.70</bcprov-version>
+    <bcpkix-version>1.70</bcpkix-version>
     <logback-gelf-version>3.0.0</logback-gelf-version>
     <prometheus-client-version>0.9.0</prometheus-client-version>
 
@@ -543,6 +544,16 @@
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
         <version>${logback-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback.db</groupId>
+        <artifactId>logback-core-db</artifactId>
+        <version>${logback-db-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback.db</groupId>
+        <artifactId>logback-classic-db</artifactId>
+        <version>${logback-db-version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
