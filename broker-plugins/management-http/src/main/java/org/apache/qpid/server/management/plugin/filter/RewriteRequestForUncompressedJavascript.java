@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServletRequest;
  * Filter is active when context variable "qpid.httpManagement.serveUncompressedDojo" has value true.
  *
  * It redirects request from regular dojo file to uncompressed dojo file,
- * e.g. /dojo/dojo.js => /dojo/dojo.js.uncompressed.js
+ * e.g. /dojo/dojo.js =&gt; /dojo/dojo.js.uncompressed.js.
  *
  * Is used mostly for debug purposes.
  */

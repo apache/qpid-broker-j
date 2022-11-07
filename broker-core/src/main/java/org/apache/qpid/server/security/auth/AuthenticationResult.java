@@ -25,12 +25,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-
 /**
  * Encapsulates the result of an attempt to authenticate using an {@link org.apache.qpid.server.model.AuthenticationProvider}.
  * <p>
  * The authentication status describes the overall outcome.
- * <p>
+ * </p>
  * <ol>
  *  <li>If authentication status is SUCCESS, at least one {@link Principal} will be populated.
  *  </li>

@@ -42,7 +42,6 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
  * An exchange that binds queues based on a set of required headers and header values
  * and routes messages to these queues by matching the headers of the message against
  * those with which the queues were bound.
- * <p>
  * <pre>
  * The Headers Exchange
  *

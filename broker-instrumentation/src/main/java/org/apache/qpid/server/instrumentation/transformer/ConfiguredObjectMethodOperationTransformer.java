@@ -62,7 +62,7 @@ import org.apache.qpid.server.instrumentation.metadata.MethodDescription;
  *         MH_3 = lookup.unreflect(method);
  *     }
  *
- *     ConfiguredObjectMethodOperation(final Class<C> clazz,
+ *     ConfiguredObjectMethodOperation(final Class&lt;C&gt; clazz,
  *                                     final Method operation,
  *                                     final ConfiguredObjectTypeRegistry typeRegistry)
  *     {
@@ -75,7 +75,7 @@ import org.apache.qpid.server.instrumentation.metadata.MethodDescription;
  *         _hashcode = _signature.hashCode();
  *     }
  *
- *     public Object perform(C subject, Map<String, Object> parameters)
+ *     public Object perform(C subject, Map&lt;String, Object&gt; parameters)
  *     {
  *         //
  *         // original code

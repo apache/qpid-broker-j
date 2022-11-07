@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.pool;
 
-
 import javax.security.auth.Subject;
 
 import java.security.PrivilegedAction;
@@ -29,8 +28,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * <code>ThreadFactory</code> to create threads with empty inherited  <code>java.security.AccessControlContext</code>
- * <p></p>
+ * <code>ThreadFactory</code> to create threads with empty inherited <code>java.security.AccessControlContext</code>.
+ * <br/>
  * It delegates thread creation to <code>Executors</code> default thread factory.
  */
 public class SuppressingInheritedAccessControlContextThreadFactory implements ThreadFactory
