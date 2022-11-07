@@ -33,17 +33,17 @@ import org.slf4j.event.Level;
  */
 
 /**
- * An OutputStream that flushes out to a Category.<p>
- * <p/>
+ * An OutputStream that flushes out to a Category.
+ * <br><br>
  * Note that no data is written out to the Category until the stream is
- * flushed or closed.<p>
- * <p/>
+ * flushed or closed.
+ * <br><br>
  * Example:<pre>
  * // make sure everything sent to System.err is logged
  * System.setErr(new PrintStream(new
  * LoggingOutputStream(Logger.getRootCategory(),
  * Level.WARN), true));
- * <p/>
+ * <br>
  * // make sure everything sent to System.out is also logged
  * System.setOut(new PrintStream(new
  * LoggingOutputStream(Logger.getRootCategory(),

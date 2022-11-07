@@ -40,7 +40,7 @@ import org.apache.qpid.server.instrumentation.metadata.MethodDescription;
 
 /**
  * Transforms org.apache.qpid.server.model.ConfiguredObjectTypeRegistry$AutomatedField class.
- * <p>
+ * <br>
  * Class structure after transformation:
  * <pre>
  * static class AutomatedField

@@ -533,16 +533,11 @@ public class CommandLineParser
      * are numbered from 1, such that the parsed properties contain values for the keys "1", "2", ... This method
      * converts any free arguments declared using the 'name=value' syntax into properties with key 'name', value
      * 'value'.
-     *
-     * <p/>For example the comand line:
-     * <pre>
-     * ... debug=true
-     * </pre>
-     *
-     * <p/>After parsing has properties:
+     * <br><br>For example the command line:
+     * <pre>... debug=true</pre>
+     * <br>After parsing has properties:
      * <pre>[[1, debug=true]]</pre>
-     *
-     * <p/>After applying this method the properties are:
+     * <br>After applying this method the properties are:
      * <pre>[[1, debug=true], [debug, true]]</pre>
      *
      * @param properties The parsed command line properties.

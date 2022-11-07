@@ -36,7 +36,7 @@ import org.apache.qpid.server.instrumentation.metadata.MethodDescription;
 
 /**
  * Transforms org.apache.qpid.server.model.ConfiguredObjectMethodAttributeOrStatistic class.
- * <p>
+ * <br>
  * Class structure after transformation:
  * <pre>
  * abstract class ConfiguredObjectMethodAttributeOrStatistic
