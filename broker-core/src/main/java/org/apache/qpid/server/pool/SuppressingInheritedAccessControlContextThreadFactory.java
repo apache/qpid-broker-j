@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <code>ThreadFactory</code> to create threads with empty inherited <code>java.security.AccessControlContext</code>.
- * <br/>
+ * <br>
  * It delegates thread creation to <code>Executors</code> default thread factory.
  */
 public class SuppressingInheritedAccessControlContextThreadFactory implements ThreadFactory

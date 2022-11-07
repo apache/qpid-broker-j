@@ -129,7 +129,7 @@ public class CoalescingCommiter implements Committer
      * continuing, but it is the responsibility of this thread to tell the commit operations when they have been
      * completed by calling back on their {@link org.apache.qpid.server.store.berkeleydb.CoalescingCommiter.BDBCommitFutureResult#complete()} and {@link org.apache.qpid.server.store.berkeleydb.CoalescingCommiter.BDBCommitFutureResult#abort} methods.
      *
-     * <p/><table id="crc"><caption>CRC Card</caption> <tr><th> Responsibilities <th> Collaborations </table>
+     * <br><table id="crc"><caption>CRC Card</caption> <tr><th> Responsibilities <th> Collaborations </table>
      */
     private static class CommitThread extends Thread
     {
