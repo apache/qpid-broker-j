@@ -604,7 +604,7 @@ public class CommandLineParser
      *
      * @param args        The command line.
      * @param commandLine The command line parser.
-     * @param properties  The properties object to inject all parsed properties into (optional may be <tt>null</tt>).
+     * @param properties  The properties object to inject all parsed properties into (optional may be <code>null</code>).
      *
      * @return A set of properties containing all name=value pairs from the command line.
      */

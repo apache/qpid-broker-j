@@ -269,11 +269,13 @@ public class CompositeUsernamePasswordAuthenticationManagerImpl
     }
 
     /**
-     * MD5 => ["PLAIN", "CRAM-MD5-HASHED", "CRAM-MD5-HEX"]
-     * Plain => ["PLAIN", "CRAM-MD5", "SCRAM-SHA-1", "SCRAM-SHA-256"]
-     * SCRAM-SHA-1 => ["PLAIN", "SCRAM-SHA-1"]
-     * SCRAM-SHA-256 => ["PLAIN", "SCRAM-SHA-256"]
-     * SimpleLDAP => ["PLAIN"]
+     * <ul>
+     *     <li>MD5 =&gt; ["PLAIN", "CRAM-MD5-HASHED", "CRAM-MD5-HEX"]</li>
+     *     <li>Plain =&gt; ["PLAIN", "CRAM-MD5", "SCRAM-SHA-1", "SCRAM-SHA-256"]</li>
+     *     <li>SCRAM-SHA-1 =&gt; ["PLAIN", "SCRAM-SHA-1"]</li>
+     *     <li>SCRAM-SHA-256 =&gt; ["PLAIN", "SCRAM-SHA-256"]</li>
+     *     <li>SimpleLDAP =&gt; ["PLAIN"]</li>
+     * </ul>
      *
      * @return List of mechanism names
      */
