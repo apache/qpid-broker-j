@@ -65,7 +65,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
     /**
      * Creates a new AMQP decoder.
-     * @param expectProtocolInitiation <tt>true</tt> if this decoder needs to handle protocol initiation.
+     * @param expectProtocolInitiation <code>true</code> if this decoder needs to handle protocol initiation.
      * @param methodProcessor method processor
      */
     protected AMQDecoder(boolean expectProtocolInitiation, T methodProcessor)
@@ -76,11 +76,11 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
 
     /**
-     * Sets the protocol initation flag, that determines whether decoding is handled by the data decoder of the protocol
-     * initation decoder. This method is expected to be called with <tt>false</tt> once protocol initation completes.
+     * Sets the protocol initiation flag, that determines whether decoding is handled by the data decoder of the protocol
+     * initiation decoder. This method is expected to be called with <code>false</code> once protocol initiation completes.
      *
-     * @param expectProtocolInitiation <tt>true</tt> to use the protocol initiation decoder, <tt>false</tt> to use the
-     *                                data decoder.
+     * @param expectProtocolInitiation <code>true</code> to use the protocol initiation decoder, <code>false</code> to
+     *                                 use the data decoder.
      */
     public void setExpectProtocolInitiation(boolean expectProtocolInitiation)
     {
