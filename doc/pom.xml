@@ -176,7 +176,7 @@
                         <descriptors>
                             <descriptor>${project.basedir}/../src/main/assembly/html.xml</descriptor>
                         </descriptors>
-                        <tarLongFileMode>gnu</tarLongFileMode>
+                        <tarLongFileMode>posix</tarLongFileMode>
                         <appendAssemblyId>false</appendAssemblyId>
                     </configuration>
                     <executions>
