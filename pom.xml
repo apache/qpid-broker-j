@@ -133,7 +133,7 @@
     <mockito-version>4.8.1</mockito-version>
     <netty-version>4.1.84.Final</netty-version>
     <hamcrest-version>2.2</hamcrest-version>
-    <maven-core-version>3.8.6</maven-core-version>
+    <maven-resolver-provider-version>3.8.6</maven-resolver-provider-version>
     <maven-resolver-version>1.8.2</maven-resolver-version>
     <httpclient-version>4.5.13</httpclient-version>
     <qpid-jms-client-version>0.61.0</qpid-jms-client-version>
@@ -752,12 +752,18 @@
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
-        <artifactId>maven-core</artifactId>
-        <version>${maven-core-version}</version>
+        <artifactId>maven-resolver-provider</artifactId>
+        <version>${maven-resolver-provider-version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.maven.resolver</groupId>
-        <artifactId>maven-resolver-api</artifactId>
+        <artifactId>maven-resolver-impl</artifactId>
         <version>${maven-resolver-version}</version>
       </dependency>
       <dependency>
