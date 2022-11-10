@@ -54,7 +54,7 @@
               <descriptors>
                 <descriptor>src/main/assembly/bin.xml</descriptor>
               </descriptors>
-              <tarLongFileMode>posix</tarLongFileMode>
+              <tarLongFileMode>gnu</tarLongFileMode>
             </configuration>
           </execution>
         </executions>
@@ -80,7 +80,7 @@
                   <descriptors>
                     <descriptor>src/main/assembly/src.xml</descriptor>
                   </descriptors>
-                  <tarLongFileMode>posix</tarLongFileMode>
+                  <tarLongFileMode>gnu</tarLongFileMode>
                 </configuration>
               </execution>
             </executions>
