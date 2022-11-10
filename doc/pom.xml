@@ -176,7 +176,11 @@
                         <descriptors>
                             <descriptor>${project.basedir}/../src/main/assembly/html.xml</descriptor>
                         </descriptors>
-                        <tarLongFileMode>posix</tarLongFileMode>
+                        <!-- 7-zip/mc truncates path to 100 characters in 'posix' mode
+                                 - https://sourceforge.net/p/sevenzip/bugs/2228/
+                                 - https://github.com/apache/qpid-broker-j/pull/161
+                             'gnu' value causes a packaging issue on OSes where the user ID is greater than 2097151. -->
+                        <tarLongFileMode>gnu</tarLongFileMode>
                         <appendAssemblyId>false</appendAssemblyId>
                     </configuration>
                     <executions>
