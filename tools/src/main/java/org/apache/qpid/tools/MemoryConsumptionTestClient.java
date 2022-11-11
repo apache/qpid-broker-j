@@ -122,7 +122,7 @@ public class MemoryConsumptionTestClient
         options.put(JMX_PORT_ARG, JMX_PORT_DEFAULT);
         options.put(JMX_USER_ARG, "");
         options.put(JMX_USER_PASSWORD_ARG, "");
-        options.put(JMX_GARBAGE_COLLECTOR_MBEAN, "java.lang:type=GarbageCollector,name=ConcurrentMarkSweep");
+        options.put(JMX_GARBAGE_COLLECTOR_MBEAN, "java.lang:type=GarbageCollector,name=G1 Old Generation");
 
         if(args.length == 1 &&
                 (args[0].equals("-h") || args[0].equals("--help") || args[0].equals("help")))

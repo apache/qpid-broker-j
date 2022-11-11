@@ -85,7 +85,7 @@
         <row xml:id="Java-Broker-Appendix-Environment-Variables-Qpid-Java-Gc">
           <entry>QPID_JAVA_GC</entry>
           <entry>
-            <literal>-XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC</literal>
+            <literal>-XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC</literal>
           </entry>
           <entry>
             <para>This is the preferred mechanism for customising garbage collection behaviour. The
