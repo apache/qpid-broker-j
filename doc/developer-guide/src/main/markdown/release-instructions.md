@@ -55,17 +55,10 @@ Sources are kept in a Git repository. Thus a git client is required.
 
         git clone https://gitbox.apache.org/repos/asf/qpid-broker-j.git qpid-broker-j
     * For bugfix release
-        * if support branch does not exist, cut the support branch and set the correct version in maven.
-          For example, here are the  commands to cut branch '8.0.x'
+        * if support branch exists (e.g as there are changes on main not to be included), check it out instead
 
-                git clone https://gitbox.apache.org/repos/asf/qpid-broker-j.git qpid-broker-j
-                cd ./qpid-broker-j
-                git checkout -b 8.0.x
-                git push -u origin 8.0.x
-        * if branch exists, checkout branch sources
-
-                git clone -b 8.0.x https://gitbox.apache.org/repos/asf/qpid-broker-j.git 8.0.x
-                cd 8.0.x
+                git clone -b 9.0.x https://gitbox.apache.org/repos/asf/qpid-broker-j.git 9.0.x
+                cd 9.0.x
 2.  Run RAT tool to verify that all source files have license headers
 
         mvn  apache-rat:check
@@ -146,37 +139,37 @@ Sources are kept in a Git repository. Thus a git client is required.
             gpg --verify apache-qpid-broker-j-$version-src.tar.gz.asc
     * Send an email into **users@qpid.apache.org** about RC availability with links to the maven staging repository
       and qpid dev staging area folder containing source and binary bundles.
-9.  If RC is OK and voting passes, publish release artifacts:
-    * send a email to **users@qpid.apache.org** to close the vote. This should include the number of binding and
-      non-binding votes, the result, and a link to the voting thread (use Apache services -
-      [this](https://mail-archives.apache.org/mod_mbox/qpid-users/) or
-      [this](https://lists.apache.org/list.html?users@qpid.apache.org)).
+9.  If RC is OK and voting passes (minimum 3 PMC/binding +1 votes, as well as net +ve overall), publish release artifacts:
+    * send a RESULT email to **users@qpid.apache.org** to close the vote. This should include the number of binding and
+      non-binding votes, noting the result.
     * promote maven staging artifacts from staging repository into the world by pressing Release button in
       [Apache Nexus UI](https://repository.apache.org/#stagingRepositories).
     * copy source and binary bundles and their signatures/checksum files form dev staging are into
       release distribution area.
 
-            svn cp -m "Publish x.y.z release artifacts" https://dist.apache.org/repos/dist/dev/qpid/broker-j/x.y.z-rc1 \
+            svn cp -m "Publish x.y.z release artifacts" https://dist.apache.org/repos/dist/dev/qpid/broker-j/x.y.z-rc \
              https://dist.apache.org/repos/dist/release/qpid/broker-j/x.y.z
-      If voting does not pass, resolve found issues, drop staging repository, delete svn tag and repeat instructions
+      If voting does not pass, resolve found issues, drop staging repository, delete git tag and repeat instructions
       from step 8 until voting passes.
-10. Wait for 24 hours after closing the vote
+10. Wait until release is visible on the CDN and Maven Central after closing the vote.
+    * <https://dlcdn.apache.org/qpid/broker-j/>
+    * <https://repo1.maven.org/maven2/org/apache/qpid/qpid-broker/>
 11. Update Qpid web site pages for new release of Qpid Broker-J component and publish new release documentation
     following instructions [in site README.md](https://gitbox.apache.org/repos/asf?p=qpid-site.git;a=blob;f=README.md).
     Here are sample commands which could be used to create 7.0.0 release pages on the website based on the 7.0.0 tag.
 
-        git clone https://gitbox.apache.org/repos/asf/qpid-site.git site
-        cd ./site
-        make gen-broker-j-release RELEASE=7.0.0 ISSUES_RELEASE=qpid-java-broker-7.0.0
-        vim ./input/releases/qpid-broker-j-7.0.0/release-notes.md # headline major enhancements and new features
+        git clone https://gitbox.apache.org/repos/asf/qpid-site.git
+        cd ./qpid-site
+        make gen-broker-j-release RELEASE=9.0.0
         vim ./input/_transom_config.py              # Update the current release pointer
-        vim ./input/releases/index.md               # Add current release, move the previous
+        vim ./input/releases/index.md               # Add current release, move the previous into list below
+        vim ./input/releases/qpid-broker-j-9.0.0/release-notes.md # Optionally headline major enhancements and new features
         make render
-        make check-links
+        make check-links                            # Is run in CI, optional.
         make publish
         git add input/
         git add content/
-        git commit -m "Update site for Qpid Broker-J release 7.0.0"
+        git commit -m "Update site for Qpid Broker-J release 9.0.0"
         git push
 12. Mark release as released in JIRA and close any unresolved JIRAs if required
 13. Send the release notification email into  **users@qpid.apache.org**, **dev@qpid.apache.org** and
@@ -185,8 +178,8 @@ Sources are kept in a Git repository. Thus a git client is required.
      set to one's apache.org address. Gmail can be set-up to do so via use of the ASF mail relay.
      The details how to set up apache account to use ASF mail relay can be found in the following resources
       * <https://blogs.apache.org/infra/entry/committers_mail_relay_service>
-      * <https://reference.apache.org/committer/email#sendingemailfromyourapacheorgemailaddress>
-      * <http://gmailblog.blogspot.co.uk/2009/07/send-mail-from-another-address-without.html>
+      * <https://infra.apache.org/committer-email.html>
+      * <https://gmail.googleblog.com/2009/07/send-mail-from-another-address-without.html>
 14. Remove the previous release binaries from <https://dist.apache.org/repos/dist/release/qpid/broker-j>
     when a new one is announced.
-15. Create jenkins jobs for new major/minor version if required
+15. Update jenkins jobs if required.
