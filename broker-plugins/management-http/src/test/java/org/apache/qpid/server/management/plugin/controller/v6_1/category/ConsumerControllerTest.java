@@ -25,8 +25,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -38,8 +37,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementException;
 import org.apache.qpid.server.management.plugin.ManagementResponse;
@@ -47,11 +46,7 @@ import org.apache.qpid.server.management.plugin.ResponseType;
 import org.apache.qpid.server.management.plugin.controller.ControllerManagementResponse;
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
 import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ConsumerControllerTest extends UnitTestBase
@@ -61,7 +56,7 @@ public class ConsumerControllerTest extends UnitTestBase
     private ConsumerController _controller;
     private ConfiguredObject<?> _root;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _managementController = mock(LegacyManagementController.class);

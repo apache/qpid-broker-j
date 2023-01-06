@@ -36,8 +36,8 @@ import org.apache.qpid.server.security.access.util.WildCardSet;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.qpid.server.security.access.config.Property.ATTRIBUTES;
 import static org.apache.qpid.server.security.access.config.Property.COMPONENT;
@@ -47,8 +47,8 @@ import static org.apache.qpid.server.security.access.config.Property.FROM_NETWOR
 import static org.apache.qpid.server.security.access.config.Property.METHOD_NAME;
 import static org.apache.qpid.server.security.access.config.Property.NAME;
 import static org.apache.qpid.server.security.access.config.Property.ROUTING_KEY;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -61,7 +61,7 @@ public class RulePredicateBuilderTest extends UnitTestBase
     private TestFirewallRule _firewallRule;
     private RulePredicateBuilder _builder;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _firewallRule = new TestFirewallRule();

@@ -19,8 +19,8 @@
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
 import static org.apache.qpid.systests.Utils.INDEX;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -109,12 +109,11 @@ public class OverflowPolicyTestBase extends JmsTestBase
                                                                 "getStatistics",
                                                                 "org.apache.qpid.Queue",
                                                                 arguments);
-        assertNotNull("Statistics is null", statistics);
-        assertTrue("Statistics is not map", statistics instanceof Map);
+        assertNotNull(statistics, "Statistics is null");
+        assertTrue(statistics instanceof Map, "Statistics is not map");
         @SuppressWarnings("unchecked")
         Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
-        assertTrue(String.format("%s is not present", statisticsName),
-                   statisticsMap.get(statisticsName) instanceof Number);
+        assertTrue(statisticsMap.get(statisticsName) instanceof Number, String.format("%s is not present", statisticsName));
         return ((Number) statisticsMap.get(statisticsName));
     }
 

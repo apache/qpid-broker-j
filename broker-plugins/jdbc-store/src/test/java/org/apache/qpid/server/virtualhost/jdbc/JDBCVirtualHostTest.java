@@ -19,9 +19,8 @@
 
 package org.apache.qpid.server.virtualhost.jdbc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,13 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.VirtualHost;
@@ -50,14 +48,14 @@ public class JDBCVirtualHostTest extends UnitTestBase
     private CurrentThreadTaskExecutor _taskExecutor;
     private String _connectionURL;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         _taskExecutor.stopImmediately();
@@ -68,7 +66,7 @@ public class JDBCVirtualHostTest extends UnitTestBase
     }
 
     @Test
-    public void testInvalidTableNamePrefix() throws Exception
+    public void testInvalidTableNamePrefix()
     {
         final VirtualHostNode vhn = BrokerTestHelper.createVirtualHostNodeMock("testNode",
                                                                                true,
@@ -99,8 +97,7 @@ public class JDBCVirtualHostTest extends UnitTestBase
         {
             try
             {
-                jdbcVirtualHost.setAttributes(Collections.<String, Object>singletonMap("tableNamePrefix",
-                                                                                       invalidPrefix));
+                jdbcVirtualHost.setAttributes(Collections.singletonMap("tableNamePrefix", invalidPrefix));
                 fail(String.format("Should not be able to set prefix to '%s'", invalidPrefix));
             }
             catch (IllegalConfigurationException e)
@@ -125,6 +122,6 @@ public class JDBCVirtualHostTest extends UnitTestBase
         ((JDBCContainer)vh).addDeleteAction(object -> deleted.set(true));
 
         vh.delete();
-        assertEquals("Delete action was not invoked", true, deleted.get());
+        assertTrue(deleted.get(), "Delete action was not invoked");
     }
 }

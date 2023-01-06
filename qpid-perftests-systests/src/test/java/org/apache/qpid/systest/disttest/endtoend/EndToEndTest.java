@@ -32,8 +32,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -49,9 +48,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.Assertions;
 
 import org.apache.qpid.disttest.ControllerRunner;
 import org.apache.qpid.disttest.DistributedTestException;
@@ -65,7 +66,6 @@ import org.apache.qpid.tests.http.HttpTestBase;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.ConfigItem;
 import org.apache.qpid.test.utils.TestFileUtils;
-
 
 @ConfigItem(name = "qpid.initialConfigurationLocation", value = DEFAULT_BROKER_CONFIG )
 public class EndToEndTest extends HttpTestBase
@@ -81,7 +81,7 @@ public class EndToEndTest extends HttpTestBase
     private File _outputDir;
     private File _jndiConfigFile;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         System.setProperty("perftests.manangement-url", String.format("http://localhost:%d", getBrokerAdmin().getBrokerAddress(
@@ -90,14 +90,14 @@ public class EndToEndTest extends HttpTestBase
         System.setProperty("perftests.broker-virtualhost", getVirtualHost());
         System.setProperty(QpidQueueCreatorFactory.QUEUE_CREATOR_CLASS_NAME_SYSTEM_PROPERTY, QpidRestAPIQueueCreator.class.getName());
         _outputDir = createTemporaryOutputDirectory();
-        assumeThat("Output dir must not exist", _outputDir.isDirectory(), is(equalTo(true)));
+        assumeTrue(_outputDir.isDirectory(), "Output dir must not exist");
         _jndiConfigFile = getJNDIPropertiesFile();
         QpidRestAPIQueueCreator queueCreator = new QpidRestAPIQueueCreator();
-        QueueConfig queueConfig = new QueueConfig("controllerqueue", true, Collections.<String, Object>emptyMap());
-        queueCreator.createQueues(null, null, Collections.<QueueConfig>singletonList(queueConfig));
+        QueueConfig queueConfig = new QueueConfig("controllerqueue", true, Collections.emptyMap());
+        queueCreator.createQueues(null, null, Collections.singletonList(queueConfig));
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         try
@@ -258,7 +258,7 @@ public class EndToEndTest extends HttpTestBase
         try
         {
             runController(arguments);
-            fail("Exception not thrown");
+            Assertions.fail("Exception not thrown");
         }
         catch (DistributedTestException e)
         {
@@ -377,7 +377,7 @@ public class EndToEndTest extends HttpTestBase
         return csvLine.split(",", DONT_STRIP_EMPTY_LAST_FIELD_FLAG);
     }
 
-    private File createTemporaryOutputDirectory() throws IOException
+    private File createTemporaryOutputDirectory()
     {
         String tmpDir = System.getProperty("java.io.tmpdir");
         File csvDir = new File(tmpDir, getTestName() + "_" + System.currentTimeMillis());

@@ -20,15 +20,13 @@
 
 package org.apache.qpid.server.protocol.v1_0.store.bdb;
 
-
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.*;
+
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD;
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT;
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD;
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -39,16 +37,17 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 import com.google.common.io.Files;
+
 import com.sleepycat.je.CacheMode;
-import org.junit.Before;
+
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreTestCase;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
-import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentConfiguration;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentFacade;
 import org.apache.qpid.server.util.FileUtils;
@@ -60,10 +59,11 @@ public class BDBLinkStoreTest extends LinkStoreTestCase
     private File _storeFolder;
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
         super.setUp();
     }
 
@@ -91,7 +91,7 @@ public class BDBLinkStoreTest extends LinkStoreTestCase
                                     anyLong())).thenReturn(DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT);
        _facade = new StandardEnvironmentFacade(configuration);
 
-        BDBEnvironmentContainer environmentContainer = mock(BDBEnvironmentContainer.class);
+        BDBEnvironmentContainer<?> environmentContainer = mock(BDBEnvironmentContainer.class);
         when(environmentContainer.getEnvironmentFacade()).thenReturn(_facade);
         return new BDBLinkStore(environmentContainer);
     }

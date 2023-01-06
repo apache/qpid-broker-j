@@ -32,9 +32,8 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.typeCompatibleWith;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -43,9 +42,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -79,13 +79,13 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 {
     private static final int MIN_MAX_FRAME_SIZE = 512;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
-    @Ignore("QPID-7845")
+    @Disabled("QPID-7845")
     @Test
     @SpecificationTest(section = "2.6.13",
             description = "When a suspended link having unsettled deliveries is resumed, the unsettled field from the"
@@ -144,7 +144,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         }
     }
 
-    @Ignore("QPID-7845")
+    @Disabled("QPID-7845")
     @Test
     @SpecificationTest(section = "2.7.3",
             description = "If the local unsettled map is too large to be encoded within a frame of the agreed maximum"
@@ -213,7 +213,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                 final Error error = responseEnd.getError();
                 assertThat(error, is(notNullValue()));
                 assertThat(error.getCondition().getValue(), is(equalTo(AmqpError.FRAME_SIZE_TOO_SMALL)));
-                assumeTrue("Broker does not support incomplete unsettled",  false);
+                assumeTrue(false, "Broker does not support incomplete unsettled");
             }
             else if (latestResponse.getBody() instanceof Attach)
             {
@@ -236,7 +236,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         }
     }
 
-    @Ignore("QPID-7845")
+    @Disabled("QPID-7845")
     @Test
     @SpecificationTest(section = "2.7.3", description =
             "If set to true [incomplete-unsettled] indicates that the unsettled map provided is not complete. "
@@ -299,7 +299,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                           .attachIncompleteUnsettled(true)
                                                           .attach().consumeResponse(End.class, Attach.class)
                                                           .getLatestResponse();
-            assumeThat(latestResponse.getBody(), is(instanceOf(Attach.class)));
+            assumeTrue(is(instanceOf(Attach.class)).matches(latestResponse.getBody()));
 
             // 5. ensure attach has incomplete-unsettled
             final Attach responseAttach = (Attach) latestResponse.getBody();
@@ -318,7 +318,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         }
     }
 
-    @Ignore("QPID-7845")
+    @Disabled("QPID-7845")
     @Test
     @SpecificationTest(section = "2.7.3", description =
             "If set to true [incomplete-unsettled] indicates that the unsettled map provided is not complete. "
@@ -353,7 +353,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                        .assertLatestResponse(Attach.class, this::assumeReceiverSettlesSecond);
 
             Attach attach = interaction.getLatestResponse(Attach.class);
-            assumeThat(attach.getSndSettleMode(), is(equalTo(SenderSettleMode.UNSETTLED)));
+            assumeTrue(is(equalTo(SenderSettleMode.UNSETTLED)).matches(attach.getSndSettleMode()));
 
             interaction.flowIncomingWindow(UnsignedInteger.valueOf(Integer.MAX_VALUE))
                        .flowLinkCredit(UnsignedInteger.valueOf(Integer.MAX_VALUE))
@@ -397,7 +397,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                     .attachIncompleteUnsettled(true)
                                                     .attach().consumeResponse(End.class, Attach.class)
                                                     .getLatestResponse();
-            assumeThat(latestResponse.getBody(), is(instanceOf(Attach.class)));
+            assumeTrue(is(instanceOf(Attach.class)).matches(latestResponse.getBody()));
 
             final Attach resumingAttach = (Attach) latestResponse.getBody();
             final Map<Binary, DeliveryState> remoteUnsettled = resumingAttach.getUnsettled();
@@ -485,12 +485,12 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             Attach attach = interaction.getLatestResponse(Attach.class);
 
             Map<Binary, DeliveryState> unsettled = attach.getUnsettled();
-            assumeThat(unsettled, notNullValue());
+            assumeTrue(notNullValue().matches(unsettled));
             assertThat(unsettled.entrySet(), empty());
         }
     }
 
-    @Ignore("QPID-7845")
+    @Disabled("QPID-7845")
     @Test
     @SpecificationTest(section = "2.6.13", description = "When a suspended link having unsettled deliveries is resumed,"
                                                          + " the unsettled field from the attach frame will carry"
@@ -513,7 +513,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                      .attach().consumeResponse();
 
             Attach attach = interaction.getLatestResponse(Attach.class);
-            assumeThat(attach.getSndSettleMode(), is(equalTo(SenderSettleMode.UNSETTLED)));
+            assumeTrue(is(equalTo(SenderSettleMode.UNSETTLED)).matches(attach.getSndSettleMode()));
 
             interaction.flowIncomingWindow(UnsignedInteger.ONE)
                        .flowLinkCredit(UnsignedInteger.ONE)
@@ -576,7 +576,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         }
     }
 
-    @Ignore("QPID-7845")
+    @Disabled("QPID-7845")
     @Test
     @SpecificationTest(section = "2.6.13", description = "When a suspended link having unsettled deliveries is resumed,"
                                                          + " the unsettled field from the attach frame will carry"
@@ -598,7 +598,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                                                      .attach().consumeResponse();
 
             Attach attach = interaction.getLatestResponse(Attach.class);
-            assumeThat(attach.getSndSettleMode(), is(equalTo(SenderSettleMode.UNSETTLED)));
+            assumeTrue(is(equalTo(SenderSettleMode.UNSETTLED)).matches(attach.getSndSettleMode()));
 
             interaction.flowIncomingWindow(UnsignedInteger.ONE)
                        .flowLinkCredit(UnsignedInteger.ONE)
@@ -657,7 +657,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
         }
     }
 
-    @Ignore("QPID-7845")
+    @Disabled("QPID-7845")
     @Test
     @SpecificationTest(section = "2.6.13",
             description = "When a suspended link having unsettled deliveries is resumed, the unsettled field from the"
@@ -751,6 +751,6 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
     private void assumeReceiverSettlesSecond(final Attach attach)
     {
-        assumeThat(attach.getRcvSettleMode(), Matchers.is(Matchers.equalTo(ReceiverSettleMode.SECOND)));
+        assumeTrue(Matchers.is(Matchers.equalTo(ReceiverSettleMode.SECOND)).matches(attach.getRcvSettleMode()));
     }
 }

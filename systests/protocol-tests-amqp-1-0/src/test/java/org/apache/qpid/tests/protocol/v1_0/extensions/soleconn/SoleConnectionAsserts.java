@@ -34,10 +34,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.hamcrest.collection.IsMapContaining.hasKey;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
-
 
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
@@ -58,8 +57,8 @@ class SoleConnectionAsserts
 
     static void assumeSoleConnectionCapability(Open open)
     {
-        assumeThat(open.getOfferedCapabilities(), is(notNullValue()));
-        assumeThat(open.getOfferedCapabilities(), hasItemInArray(SOLE_CONNECTION_FOR_CONTAINER));
+        assumeTrue(is(notNullValue()).matches(open.getOfferedCapabilities()));
+        assumeTrue(hasItemInArray(SOLE_CONNECTION_FOR_CONTAINER).matches(open.getOfferedCapabilities()));
     }
 
     static void assertSoleConnectionCapability(Open open)
@@ -70,8 +69,8 @@ class SoleConnectionAsserts
 
     static void assumeEnforcementPolicyCloseExisting(Open open)
     {
-        assumeThat(open.getProperties(), is(notNullValue()));
-        assumeThat(open.getProperties(), hasEntry(SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING.getValue()));
+        assumeTrue(is(notNullValue()).matches(open.getProperties()));
+        assumeTrue(hasEntry(SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING.getValue()).matches(open.getProperties()));
     }
 
     static void assertEnforcementPolicyCloseExisting(Open open)
@@ -82,18 +81,16 @@ class SoleConnectionAsserts
 
     static void assumeEnforcementPolicyRefuse(Open open)
     {
-        assumeThat(open.getProperties(), is(notNullValue()));
-        assumeThat(open.getProperties(),
-                   anyOf(hasEntry(SOLE_CONNECTION_ENFORCEMENT_POLICY, REFUSE_CONNECTION.getValue()),
-                         is(not(hasKey(SOLE_CONNECTION_ENFORCEMENT_POLICY)))));
+        assumeTrue(is(notNullValue()).matches(open.getProperties()));
+        assumeTrue(anyOf(hasEntry(SOLE_CONNECTION_ENFORCEMENT_POLICY, REFUSE_CONNECTION.getValue()),
+                         is(not(hasKey(SOLE_CONNECTION_ENFORCEMENT_POLICY)))).matches(open.getProperties()));
     }
 
     static void assumeDetectionPolicyStrong(Open open)
     {
-        assumeThat(open.getProperties(), is(notNullValue()));
-        assumeThat(open.getProperties(),
-                   anyOf(hasEntry(SOLE_CONNECTION_DETECTION_POLICY, SoleConnectionDetectionPolicy.STRONG.getValue()),
-                         is(not(hasKey(SOLE_CONNECTION_DETECTION_POLICY)))));
+        assumeTrue(is(notNullValue()).matches(open.getProperties()));
+        assumeTrue(anyOf(hasEntry(SOLE_CONNECTION_DETECTION_POLICY, SoleConnectionDetectionPolicy.STRONG.getValue()),
+                         is(not(hasKey(SOLE_CONNECTION_DETECTION_POLICY)))).matches(open.getProperties()));
     }
 
     static void assertConnectionEstablishmentFailed(final Open open)
@@ -105,11 +102,10 @@ class SoleConnectionAsserts
 
     static void assumeConnectionEstablishmentFailed(final Open open)
     {
-        assumeThat(open.getProperties(), is(notNullValue()));
-        assumeThat(open.getProperties(), hasKey(CONNECTION_ESTABLISHMENT_FAILED));
+        assumeTrue(is(notNullValue()).matches(open.getProperties()));
+        assumeTrue(hasKey(CONNECTION_ESTABLISHMENT_FAILED).matches(open.getProperties()));
         assertThat(open.getProperties(), hasEntry(CONNECTION_ESTABLISHMENT_FAILED, true));
     }
-
 
     static void assertResourceLocked(final Close close)
     {
@@ -117,7 +113,6 @@ class SoleConnectionAsserts
         assertThat(close.getError().getCondition(), is(equalTo(AmqpError.RESOURCE_LOCKED)));
         assertThat(close.getError().getInfo(), is(equalTo(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT, true))));
     }
-
 
     static void assertInvalidContainerId(final Close close)
     {

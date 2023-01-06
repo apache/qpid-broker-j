@@ -18,12 +18,12 @@
  */
 package org.apache.qpid.disttest.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.Collections;
 import java.util.Date;
 
 import javax.jms.DeliveryMode;
-
-import org.junit.Assert;
 
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
@@ -32,22 +32,10 @@ import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.ProducerParticipantResult;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ParticipantResultFactoryTest extends UnitTestBase
 {
@@ -69,7 +57,7 @@ public class ParticipantResultFactoryTest extends UnitTestBase
 
     private ParticipantResultFactory _participantResultFactory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
 
@@ -112,12 +100,12 @@ public class ParticipantResultFactoryTest extends UnitTestBase
 
         assertCommonResultProperties(result);
 
-        assertEquals((long) deliveryMode, (long) result.getDeliveryMode());
-        assertEquals((long) acknowledgeMode, (long) result.getAcknowledgeMode());
-        assertEquals((long) priority, (long) result.getPriority());
+        assertEquals(deliveryMode, (long) result.getDeliveryMode());
+        assertEquals(acknowledgeMode, (long) result.getAcknowledgeMode());
+        assertEquals(priority, (long) result.getPriority());
         assertEquals(producerInterval, result.getInterval());
         assertEquals(timeToLive, result.getTimeToLive());
-        assertEquals((long) totalNumberOfConsumers, (long) result.getTotalNumberOfConsumers());
+        assertEquals(totalNumberOfConsumers, (long) result.getTotalNumberOfConsumers());
     }
 
     @Test
@@ -158,7 +146,7 @@ public class ParticipantResultFactoryTest extends UnitTestBase
                                                                                        PAYLOAD_SIZE,
                                                                                        TOTAL_PAYLOAD_PROCESSED,
                                                                                        START, END,
-                                                                                       Collections.<Long>emptyList(),
+                                                                                       Collections.emptyList(),
                                                                                        PROVIDER_VERSION,
                                                                                        PROTOCOL_VERSION);
 
@@ -170,8 +158,8 @@ public class ParticipantResultFactoryTest extends UnitTestBase
         assertEquals(isSelector, result.isSelector());
         assertEquals(noLocal, result.isNoLocal());
         assertEquals(synchronousConsumer, result.isSynchronousConsumer());
-        assertEquals((long) totalNumberOfConsumers, (long) result.getTotalNumberOfConsumers());
-        assertEquals((long) totalNumberOfProducers, (long) result.getTotalNumberOfProducers());
+        assertEquals(totalNumberOfConsumers, (long) result.getTotalNumberOfConsumers());
+        assertEquals(totalNumberOfProducers, (long) result.getTotalNumberOfProducers());
     }
 
     @Test
@@ -195,12 +183,12 @@ public class ParticipantResultFactoryTest extends UnitTestBase
     {
         assertEquals(PARTICIPANT_NAME, result.getParticipantName());
         assertEquals(REGISTERED_CLIENT_NAME, result.getRegisteredClientName());
-        assertEquals((long) BATCH_SIZE, (long) result.getBatchSize());
+        assertEquals(BATCH_SIZE, (long) result.getBatchSize());
         assertEquals(MAXIMUM_DURATION, result.getMaximumDuration());
         assertEquals(TIME_TAKEN, result.getTimeTaken());
-        assertEquals((long) NUMBER_OF_MESSAGES_PROCESSED, result.getNumberOfMessagesProcessed());
+        assertEquals(NUMBER_OF_MESSAGES_PROCESSED, result.getNumberOfMessagesProcessed());
         assertEquals(TOTAL_PAYLOAD_PROCESSED, result.getTotalPayloadProcessed());
-        assertEquals((long) PAYLOAD_SIZE, (long) result.getPayloadSize());
+        assertEquals(PAYLOAD_SIZE, (long) result.getPayloadSize());
         assertEquals(PROVIDER_VERSION, result.getProviderVersion());
         assertEquals(PROTOCOL_VERSION, result.getProtocolVersion());
     }

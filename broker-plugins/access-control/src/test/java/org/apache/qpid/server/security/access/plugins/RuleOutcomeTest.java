@@ -18,7 +18,10 @@
  */
 package org.apache.qpid.server.security.access.plugins;
 
-import junit.framework.TestCase;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogMessage;
@@ -26,16 +29,19 @@ import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.ObjectType;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-public class RuleOutcomeTest extends TestCase
+public class RuleOutcomeTest
 {
     private EventLogger _logger;
     private EventLoggerProvider _provider;
 
-    @Override
+    @BeforeEach
     public void setUp()
     {
         _logger = Mockito.mock(EventLogger.class);

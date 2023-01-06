@@ -20,19 +20,18 @@
  */
 package org.apache.qpid.server.configuration.startup;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -53,23 +52,24 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class VirtualHostCreationTest extends UnitTestBase
 {
+    @SuppressWarnings("rawtypes")
     private VirtualHostNode _virtualHostNode;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings({"rawtypes"})
     public void setUp() throws Exception
     {
-
-        EventLogger eventLogger = mock(EventLogger.class);
-        TaskExecutor executor = CurrentThreadTaskExecutor.newStartedInstance();
-        SystemConfig systemConfig = mock(SystemConfig.class);
-        ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
+        final EventLogger eventLogger = mock(EventLogger.class);
+        final TaskExecutor executor = CurrentThreadTaskExecutor.newStartedInstance();
+        final SystemConfig systemConfig = mock(SystemConfig.class);
+        final ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(systemConfig.getObjectFactory()).thenReturn(objectFactory);
         when(systemConfig.getModel()).thenReturn(objectFactory.getModel());
         when(systemConfig.getEventLogger()).thenReturn(eventLogger);
         when(systemConfig.getTaskExecutor()).thenReturn(executor);
         when(systemConfig.getChildExecutor()).thenReturn(executor);
 
-        Broker broker = mock(Broker.class);
+        final Broker broker = mock(Broker.class);
         when(broker.getObjectFactory()).thenReturn(objectFactory);
         when(broker.getModel()).thenReturn(objectFactory.getModel());
         when(broker.getCategoryClass()).thenReturn(Broker.class);
@@ -90,48 +90,41 @@ public class VirtualHostCreationTest extends UnitTestBase
     @Test
     public void testCreateVirtualHostFromStoreConfigAttributes()
     {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(VirtualHost.NAME, getTestName());
-        attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-        attributes.put(VirtualHost.ID, UUID.randomUUID());
-
-        VirtualHost<?> host = new TestMemoryVirtualHost(attributes, _virtualHostNode);
+        final Map<String, Object> attributes = Map.of(VirtualHost.NAME, getTestName(),
+                VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
+                VirtualHost.ID, randomUUID());
+        final VirtualHost<?> host = new TestMemoryVirtualHost(attributes, _virtualHostNode);
         host.open();
 
-        assertNotNull("Null is returned", host);
-        assertEquals("Unexpected name", getTestName(), host.getName());
+        assertNotNull(host, "Null is returned");
+        assertEquals(getTestName(), host.getName(), "Unexpected name");
         host.close();
     }
 
     @Test
     public void testCreateWithoutMandatoryAttributesResultsInException()
     {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(VirtualHost.NAME, getTestName());
-        attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-        String[] mandatoryAttributes = {VirtualHost.NAME};
-
+        final Map<String, Object> attributes = Map.of(VirtualHost.NAME, getTestName(),
+                VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
+        final String[] mandatoryAttributes = { VirtualHost.NAME };
         checkMandatoryAttributesAreValidated(mandatoryAttributes, attributes);
     }
 
-    public void checkMandatoryAttributesAreValidated(String[] mandatoryAttributes, Map<String, Object> attributes)
+    public void checkMandatoryAttributesAreValidated(final String[] mandatoryAttributes,
+                                                     final Map<String, Object> attributes)
     {
-        for (String name : mandatoryAttributes)
+        for (final String name : mandatoryAttributes)
         {
-            Map<String, Object> copy = new HashMap<String, Object>(attributes);
+            final Map<String, Object> copy = new HashMap<>(attributes);
             copy.remove(name);
-            copy.put(ConfiguredObject.ID, UUID.randomUUID());
+            copy.put(ConfiguredObject.ID, randomUUID());
             try
             {
-                VirtualHost<?> host = new TestMemoryVirtualHost(copy, _virtualHostNode);
+                final VirtualHost<?> host = new TestMemoryVirtualHost(copy, _virtualHostNode);
                 host.open();
                 fail("Cannot create a virtual host without a mandatory attribute " + name);
             }
-            catch(IllegalConfigurationException e)
-            {
-                // pass
-            }
-            catch(IllegalArgumentException e)
+            catch(IllegalConfigurationException | IllegalArgumentException e)
             {
                 // pass
             }

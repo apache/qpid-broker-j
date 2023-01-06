@@ -37,7 +37,7 @@ public class TestPetrolEngineImpl
     private Collection<TestSensor<?>> _temperatureSensors;
 
     @ManagedObjectFactoryConstructor
-    public TestPetrolEngineImpl(final Map<String, Object> attributes, TestCar<?> parent)
+    public TestPetrolEngineImpl(final Map<String, Object> attributes, final TestCar<?> parent)
     {
         super(parent, attributes);
     }

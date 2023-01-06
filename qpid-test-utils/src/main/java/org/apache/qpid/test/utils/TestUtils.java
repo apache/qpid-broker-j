@@ -24,32 +24,47 @@ package org.apache.qpid.test.utils;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.lang.reflect.Method;
+
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class TestUtils
 {
     public static String dumpThreads()
     {
-        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
-        StringBuilder dump = new StringBuilder();
+        final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        final ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
+        final StringBuilder dump = new StringBuilder();
         dump.append(String.format("%n"));
-        for (ThreadInfo threadInfo : threadInfos)
+        for (final ThreadInfo threadInfo : threadInfos)
         {
             dump.append(threadInfo);
         }
 
-        long[] deadLocks = threadMXBean.findDeadlockedThreads();
+        final long[] deadLocks = threadMXBean.findDeadlockedThreads();
         if (deadLocks != null && deadLocks.length > 0)
         {
-            ThreadInfo[] deadlockedThreads = threadMXBean.getThreadInfo(deadLocks);
+            final ThreadInfo[] deadlockedThreads = threadMXBean.getThreadInfo(deadLocks);
             dump.append(String.format("%n"));
             dump.append("Deadlock is detected!");
             dump.append(String.format("%n"));
-            for (ThreadInfo threadInfo : deadlockedThreads)
+            for (final ThreadInfo threadInfo : deadlockedThreads)
             {
                 dump.append(threadInfo);
             }
         }
         return dump.toString();
+    }
+
+    public static Class<?> getTestClass(final ExtensionContext extensionContext)
+    {
+        return extensionContext.getTestClass()
+                .orElseThrow(() -> new RuntimeException("Failed to resolve test class"));
+    }
+
+    public static Method getTestMethod(final ExtensionContext extensionContext)
+    {
+        return extensionContext.getTestMethod()
+                .orElseThrow(() -> new RuntimeException("Failed to resolve test method"));
     }
 }

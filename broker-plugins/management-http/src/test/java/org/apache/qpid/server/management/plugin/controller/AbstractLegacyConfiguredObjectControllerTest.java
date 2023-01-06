@@ -37,8 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.ManagementRequest;
@@ -50,7 +50,6 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AbstractLegacyConfiguredObjectControllerTest extends UnitTestBase
 {
-
     private static final String TEST_VERSION = "testVersion";
     private static final String TEST_CATEGORY = "testCategory";
     private static final String TEST_CATEGORY_2 = "testCategory2";
@@ -61,7 +60,7 @@ public class AbstractLegacyConfiguredObjectControllerTest extends UnitTestBase
     private ConfiguredObject<?> _root;
     private TypeController _typeController;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _nextVersionManagementController = mock(ManagementController.class);

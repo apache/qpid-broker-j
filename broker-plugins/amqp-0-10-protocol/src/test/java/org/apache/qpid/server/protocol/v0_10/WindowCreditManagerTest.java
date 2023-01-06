@@ -20,14 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -35,14 +35,12 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class WindowCreditManagerTest extends UnitTestBase
 {
     private WindowCreditManager _creditManager;
-    private ProtocolEngine _protocolEngine;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
-        _protocolEngine = mock(ProtocolEngine.class);
-        when(_protocolEngine.isTransportBlockedForWriting()).thenReturn(false);
+        ProtocolEngine protocolEngine = mock(ProtocolEngine.class);
+        when(protocolEngine.isTransportBlockedForWriting()).thenReturn(false);
 
         _creditManager = new WindowCreditManager(0L, 0L);
     }
@@ -56,45 +54,45 @@ public class WindowCreditManagerTest extends UnitTestBase
     @Test
     public void testRestoreCreditDecrementsUsedCountAfterCreditClear()
     {
-        assertEquals("unexpected credit value", (long) 0, _creditManager.getMessageCredit());
-        assertEquals("unexpected credit value", (long) 0, _creditManager.getBytesCredit());
+        assertEquals(0, _creditManager.getMessageCredit(), "unexpected credit value");
+        assertEquals(0, _creditManager.getBytesCredit(), "unexpected credit value");
 
         //give some message credit
         _creditManager.addCredit(1, 0);
-        assertFalse("Manager should not 'haveCredit' due to having 0 bytes credit", _creditManager.hasCredit());
-        assertEquals("unexpected credit value", (long) 1, _creditManager.getMessageCredit());
-        assertEquals("unexpected credit value", (long) 0, _creditManager.getBytesCredit());
+        assertFalse(_creditManager.hasCredit(), "Manager should not 'haveCredit' due to having 0 bytes credit");
+        assertEquals(1, _creditManager.getMessageCredit(), "unexpected credit value");
+        assertEquals(0, _creditManager.getBytesCredit(), "unexpected credit value");
 
         //give some bytes credit
         _creditManager.addCredit(0, 1);
-        assertTrue("Manager should 'haveCredit'", _creditManager.hasCredit());
-        assertEquals("unexpected credit value", (long) 1, _creditManager.getMessageCredit());
-        assertEquals("unexpected credit value", (long) 1, _creditManager.getBytesCredit());
+        assertTrue(_creditManager.hasCredit(), "Manager should 'haveCredit'");
+        assertEquals(1, _creditManager.getMessageCredit(), "unexpected credit value");
+        assertEquals(1, _creditManager.getBytesCredit(), "unexpected credit value");
 
         //use all the credit
         _creditManager.useCreditForMessage(1);
-        assertEquals("unexpected credit value", (long) 0, _creditManager.getBytesCredit());
-        assertEquals("unexpected credit value", (long) 0, _creditManager.getMessageCredit());
-        assertFalse("Manager should not 'haveCredit'", _creditManager.hasCredit());
+        assertEquals(0, _creditManager.getBytesCredit(), "unexpected credit value");
+        assertEquals(0, _creditManager.getMessageCredit(), "unexpected credit value");
+        assertFalse(_creditManager.hasCredit(), "Manager should not 'haveCredit'");
 
         //clear credit out (eg from a message.stop command)
         _creditManager.clearCredit();
-        assertEquals("unexpected credit value", (long) 0, _creditManager.getBytesCredit());
-        assertEquals("unexpected credit value", (long) 0, _creditManager.getMessageCredit());
-        assertFalse("Manager should not 'haveCredit'", _creditManager.hasCredit());
+        assertEquals(0, _creditManager.getBytesCredit(), "unexpected credit value");
+        assertEquals(0, _creditManager.getMessageCredit(), "unexpected credit value");
+        assertFalse(_creditManager.hasCredit(), "Manager should not 'haveCredit'");
 
         //restore credit (e.g the original message transfer command got completed)
         //this should not increase credit, because it is now limited to 0
         _creditManager.restoreCredit(1, 1);
-        assertEquals("unexpected credit value", (long) 0, _creditManager.getBytesCredit());
-        assertEquals("unexpected credit value", (long) 0, _creditManager.getMessageCredit());
-        assertFalse("Manager should not 'haveCredit'", _creditManager.hasCredit());
+        assertEquals(0, _creditManager.getBytesCredit(), "unexpected credit value");
+        assertEquals(0, _creditManager.getMessageCredit(), "unexpected credit value");
+        assertFalse(_creditManager.hasCredit(), "Manager should not 'haveCredit'");
 
         //give more credit to open the window again
         _creditManager.addCredit(1, 1);
-        assertEquals("unexpected credit value", (long) 1, _creditManager.getBytesCredit());
-        assertEquals("unexpected credit value", (long) 1, _creditManager.getMessageCredit());
-        assertTrue("Manager should 'haveCredit'", _creditManager.hasCredit());
+        assertEquals(1, _creditManager.getBytesCredit(), "unexpected credit value");
+        assertEquals(1, _creditManager.getMessageCredit(), "unexpected credit value");
+        assertTrue(_creditManager.hasCredit(), "Manager should 'haveCredit'");
     }
 
     @Test

@@ -20,11 +20,10 @@
 package org.apache.qpid.server.store.derby;
 
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.assertRecords;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,12 +40,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,27 +70,27 @@ public class DerbyPreferenceStoreTest extends UnitTestBase
     private String _connectionUrl;
     private Connection _testConnection;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setup()
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.DERBY)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.DERBY));
 
         _updater = mock(PreferenceStoreUpdater.class);
         when(_updater.getLatestVersion()).thenReturn(BrokerModel.MODEL_VERSION);
 
         final ConfiguredObject<?> parent = mock(ConfiguredObject.class);
-        when(parent.getContext()).thenReturn(Collections.<String, String>emptyMap());
-        when(parent.getContextKeys(anyBoolean())).thenReturn(Collections.<String>emptySet());
+        when(parent.getContext()).thenReturn(Collections.emptyMap());
+        when(parent.getContextKeys(anyBoolean())).thenReturn(Collections.emptySet());
 
         _connectionUrl = DerbyUtils.createConnectionUrl(getTestName(), "memory:");
         _preferenceStore = new DerbyTestPreferenceStore(_connectionUrl);
 
-        _testRecords = Arrays.<PreferenceRecord>asList(
-                new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "test")),
-                new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "test1")));
+        _testRecords = Arrays.asList(
+                new PreferenceRecordImpl(UUID.randomUUID(), Collections.singletonMap("name", "test")),
+                new PreferenceRecordImpl(UUID.randomUUID(), Collections.singletonMap("name", "test1")));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -133,14 +135,14 @@ public class DerbyPreferenceStoreTest extends UnitTestBase
 
         ModelVersion storedVersion = _preferenceStore.getPreferencesVersion();
 
-        assertEquals("Unexpected version", BrokerModel.MODEL_VERSION, storedVersion.toString());
+        assertEquals(BrokerModel.MODEL_VERSION, storedVersion.toString(), "Unexpected version");
     }
 
     @Test
     public void testOpenAndLoadEmptyStore() throws Exception
     {
         Collection<PreferenceRecord> records = _preferenceStore.openAndLoad(_updater);
-        assertEquals("Unexpected number of records", (long) 0, (long) records.size());
+        assertEquals(0, (long) records.size(), "Unexpected number of records");
 
         _testConnection = DriverManager.getConnection(_connectionUrl);
 
@@ -160,12 +162,12 @@ public class DerbyPreferenceStoreTest extends UnitTestBase
             }
         }
 
-        assertEquals("Unexpected versions size", (long) 1, (long) versions.size());
-        assertEquals("Unexpected version", BrokerModel.MODEL_VERSION, versions.get(0));
+        assertEquals(1, (long) versions.size(), "Unexpected versions size");
+        assertEquals(BrokerModel.MODEL_VERSION, versions.get(0), "Unexpected version");
     }
 
     @Test
-    public void testOpenAndLoadNonEmptyStore() throws Exception
+    public void testOpenAndLoadNonEmptyStore()
     {
         populateTestData();
         Collection<PreferenceRecord> records = _preferenceStore.openAndLoad(_updater);
@@ -174,7 +176,7 @@ public class DerbyPreferenceStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testClose() throws Exception
+    public void testClose()
     {
         _preferenceStore.openAndLoad(_updater);
         _preferenceStore.close();
@@ -209,7 +211,7 @@ public class DerbyPreferenceStoreTest extends UnitTestBase
         _preferenceStore.openAndLoad(_updater);
 
         Collection<PreferenceRecord> testRecords = new ArrayList<>();
-        testRecords.add(new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "newOne")));
+        testRecords.add(new PreferenceRecordImpl(UUID.randomUUID(), Collections.singletonMap("name", "newOne")));
 
         _preferenceStore.replace(Collections.singleton(_testRecords.get(0).getId()), testRecords);
 
@@ -222,7 +224,7 @@ public class DerbyPreferenceStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testUpdateFailIfNotOpened() throws Exception
+    public void testUpdateFailIfNotOpened()
     {
         populateTestData();
         try
@@ -238,12 +240,12 @@ public class DerbyPreferenceStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testReplaceFailIfNotOpened() throws Exception
+    public void testReplaceFailIfNotOpened()
     {
         populateTestData();
         try
         {
-            _preferenceStore.replace(Collections.<UUID>emptyList(), _testRecords);
+            _preferenceStore.replace(Collections.emptyList(), _testRecords);
             fail("Business operation on not opened store should fail");
         }
         catch (IllegalStateException e)

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.FileReader;
 import java.util.List;
 import java.util.Map;
@@ -28,62 +30,43 @@ import java.util.TreeMap;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.junit.Assert;
 
 import org.apache.qpid.test.utils.TestFileUtils;
 
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class JavaScriptConfigEvaluatorTest extends UnitTestBase
 {
-    private void performTest(Map configAsObject) throws Exception
+    private void performTest(Map configAsObject)
     {
         // Tests are produced by the QPID.iterations js function
         List<?> countries = getPropertyAsList(configAsObject, "_countries");
-        assertEquals("Unexpected number of countries", (long) 2, (long) countries.size());
+        assertEquals(2, (long) countries.size(), "Unexpected number of countries");
 
         Map country0 = (Map) countries.get(0);
-        assertEquals("Unexpected country name", "Country", country0.get("_name"));
-        assertEquals("Unexpected country iteration number",
-                            (long) 0,
-                            (long) ((Number) country0.get("_iterationNumber")).intValue());
+        assertEquals("Country", country0.get("_name"), "Unexpected country name");
+        assertEquals(0, (long) ((Number) country0.get("_iterationNumber")).intValue(),
+                "Unexpected country iteration number");
 
         List<?> regions = getPropertyAsList(country0, "_regions");
-        assertEquals("Unexpected number of regions", (long) 2, (long) regions.size());
+        assertEquals(2, (long) regions.size(), "Unexpected number of regions");
         // Region names are produced by the QPID.times js function
         Map region0 = (Map) regions.get(0);
-        assertEquals("Unexpected region name", "repeatingRegion0", region0.get("_name"));
-        assertEquals("Unexpected region name", "repeatingRegion1", ((Map)regions.get(1)).get("_name"));
+        assertEquals("repeatingRegion0", region0.get("_name"), "Unexpected region name");
+        assertEquals("repeatingRegion1", ((Map)regions.get(1)).get("_name"), "Unexpected region name");
         // Iterating attribute are produced by the QPID.iterations js function
-        assertEquals("Unexpected iterating attribute",
-                            "0",
-                            ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"));
+        assertEquals("0", ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"),
+                "Unexpected iterating attribute");
 
         Map country1 = (Map) countries.get(1);
         regions = getPropertyAsList(country1, "_regions");
         region0 = (Map) regions.get(0);
-        assertEquals("Unexpected country iteration number",
-                            (long) 1,
-                            (long) ((Number) country1.get("_iterationNumber")).intValue());
-        assertEquals("Unexpected iterating attribute",
-                            "1",
-                            ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"));
+        assertEquals(1, ((Number) country1.get("_iterationNumber")).intValue(),
+                "Unexpected country iteration number");
+        assertEquals("1", ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"),
+                "Unexpected iterating attribute");
     }
 
     @Test
@@ -110,7 +93,6 @@ public class JavaScriptConfigEvaluatorTest extends UnitTestBase
     }
 
     private List<?> getPropertyAsList(Map configAsMap, String property)
-            throws Exception
     {
         return (List<?>)configAsMap.get(property);
     }

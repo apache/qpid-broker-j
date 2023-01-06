@@ -25,16 +25,15 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
@@ -60,8 +59,7 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class BasicTest extends BrokerAdminUsingTestBase
 {
-
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -194,7 +192,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
             assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(1)));
         }
 
-        assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
         getBrokerAdmin().restart();
         assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(1)));
 

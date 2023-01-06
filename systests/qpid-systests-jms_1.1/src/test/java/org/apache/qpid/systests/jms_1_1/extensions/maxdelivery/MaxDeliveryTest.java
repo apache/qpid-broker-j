@@ -24,12 +24,12 @@ import static org.apache.qpid.systests.Utils.INDEX;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +49,8 @@ import javax.jms.QueueBrowser;
 import javax.jms.Session;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.systests.JmsTestBase;
@@ -84,13 +85,11 @@ public class MaxDeliveryTest extends JmsTestBase
             do
             {
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message '%d' was not received in delivery attempt %d",
-                                            expectedMessageIndex,
-                                            deliveryAttempt), message);
+                assertNotNull(message, String.format("Message '%d' was not received in delivery attempt %d",
+                        expectedMessageIndex, deliveryAttempt));
                 int index = message.getIntProperty(INDEX);
-                assertEquals(String.format("Unexpected message index (delivery attempt %d)", deliveryAttempt),
-                             expectedMessageIndex,
-                             index);
+                assertEquals(expectedMessageIndex, index,
+                        String.format("Unexpected message index (delivery attempt %d)", deliveryAttempt));
 
                 deliveryCounter++;
 
@@ -118,9 +117,9 @@ public class MaxDeliveryTest extends JmsTestBase
             while (expectedMessageIndex != numberOfMessages);
 
             int numberOfEvenMessages = numberOfMessages / 2 + 1;
-            assertEquals("Unexpected total delivery counter",
-                         numberOfEvenMessages * MAX_DELIVERY_ATTEMPTS + (numberOfMessages - numberOfEvenMessages),
-                         deliveryCounter);
+            assertEquals(numberOfEvenMessages * MAX_DELIVERY_ATTEMPTS + (numberOfMessages - numberOfEvenMessages),
+                    deliveryCounter,
+                    "Unexpected total delivery counter");
 
             verifyDeadLetterQueueMessages(connection, dlqNAme, numberOfEvenMessages);
         }
@@ -159,9 +158,8 @@ public class MaxDeliveryTest extends JmsTestBase
                 try
                 {
                     int index = message.getIntProperty(INDEX);
-                    assertEquals(String.format("Unexpected message index (delivery attempt %d)", deliveryAttempt.get()),
-                                 expectedMessageIndex.get(),
-                                 index);
+                    assertEquals(expectedMessageIndex.get(), index,
+                            String.format("Unexpected message index (delivery attempt %d)", deliveryAttempt.get()));
 
                     // dlq all even messages
                     if (index % 2 == 0)
@@ -194,9 +192,9 @@ public class MaxDeliveryTest extends JmsTestBase
                 }
             });
 
-            assertTrue("Messages were not received in timely manner",
-                       deliveryLatch.await(expectedNumberOfDeliveries * getReceiveTimeout(), TimeUnit.MILLISECONDS));
-            assertNull("Unexpected throwable in MessageListener", messageListenerThrowable.get());
+            assertTrue(deliveryLatch.await(expectedNumberOfDeliveries * getReceiveTimeout(), TimeUnit.MILLISECONDS),
+                    "Messages were not received in timely manner");
+            assertNull(messageListenerThrowable.get(), "Unexpected throwable in MessageListener");
 
             verifyDeadLetterQueueMessages(connection, dlqName, numberOfEvenMessages);
         }
@@ -209,7 +207,7 @@ public class MaxDeliveryTest extends JmsTestBase
     @Test
     public void browsingDoesNotIncrementDeliveryCount() throws Exception
     {
-        assumeThat(getBrokerAdmin().isManagementSupported(), is(true));
+        assumeTrue(getBrokerAdmin().isManagementSupported());
 
         final String queueName = getTestName();
         getBrokerAdmin().createQueue(queueName);
@@ -244,9 +242,7 @@ public class MaxDeliveryTest extends JmsTestBase
                                                final String dlqName,
                                                final int numberOfEvenMessages) throws Exception
     {
-        assertEquals("Unexpected number of total messages",
-                     numberOfEvenMessages,
-                     getTotalDepthOfQueuesMessages());
+        assertEquals(numberOfEvenMessages, getTotalDepthOfQueuesMessages(), "Unexpected number of total messages");
 
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue = session.createQueue(dlqName);
@@ -255,7 +251,7 @@ public class MaxDeliveryTest extends JmsTestBase
         for (int i = 0; i < numberOfEvenMessages; i++)
         {
             Message message = consumer.receive(getReceiveTimeout());
-            assertEquals("Unexpected DLQ message index", i * 2, message.getIntProperty(INDEX));
+            assertEquals(i * 2, message.getIntProperty(INDEX), "Unexpected DLQ message index");
         }
     }
 

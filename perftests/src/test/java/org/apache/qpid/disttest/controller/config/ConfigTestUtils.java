@@ -19,8 +19,8 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -34,16 +34,16 @@ public class ConfigTestUtils
         final CommandForClient commandForClient = commandsForClients.get(index);
         assertEquals(expectedRegisteredClientName, commandForClient.getClientName());
         final Command command = commandForClient.getCommand();
-        assertTrue("Command " + index + " is of class " + command.getClass() + " but expecting " + expectedCommandClass,
-                expectedCommandClass.isAssignableFrom(command.getClass()));
+        assertTrue(expectedCommandClass.isAssignableFrom(command.getClass()),
+                "Command " + index + " is of class " + command.getClass() + " but expecting " + expectedCommandClass);
     }
 
     public static <C extends Command> void assertCommandEquals(final List<Command> commands, final int index, final Class<C> expectedCommandClass)
     {
         @SuppressWarnings("unchecked")
         C command = (C) getCommand(commands, index); //explicit cast added to get round oracle compiler bug (id 6302954)
-        assertTrue("Command " + index + " is of class " + command.getClass() + " but expecting " + expectedCommandClass,
-                expectedCommandClass.isAssignableFrom(command.getClass()));
+        assertTrue(expectedCommandClass.isAssignableFrom(command.getClass()),
+                "Command " + index + " is of class " + command.getClass() + " but expecting " + expectedCommandClass);
     }
 
     public static <C extends Command>  C getCommand(final List<Command> commands, final int index)

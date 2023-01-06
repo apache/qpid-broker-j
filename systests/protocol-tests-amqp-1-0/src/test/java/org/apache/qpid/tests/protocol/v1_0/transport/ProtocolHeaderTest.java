@@ -19,15 +19,12 @@
 
 package org.apache.qpid.tests.protocol.v1_0.transport;
 
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -51,7 +48,7 @@ public class ProtocolHeaderTest extends BrokerAdminUsingTestBase
                                              .protocolHeader(protocolHeader)
                                              .negotiateProtocol().consumeResponse()
                                              .getLatestResponse(byte[].class);
-            assertArrayEquals("Unexpected protocol header response", protocolHeader, response);
+            assertArrayEquals(protocolHeader, response, "Unexpected protocol header response");
         }
     }
 
@@ -62,7 +59,7 @@ public class ProtocolHeaderTest extends BrokerAdminUsingTestBase
                           + "(and version) and then close the socket.")
     public void unacceptableProtocolIdSent_SaslAcceptable() throws Exception
     {
-        assumeThat(getBrokerAdmin().isSASLSupported(), is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().isSASLSupported());
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
 
@@ -72,7 +69,7 @@ public class ProtocolHeaderTest extends BrokerAdminUsingTestBase
                                              .negotiateProtocol().consumeResponse()
                                              .getLatestResponse(byte[].class);
             byte[] expectedSaslHeaderBytes = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
-            assertArrayEquals("Unexpected protocol header response", expectedSaslHeaderBytes, response);
+            assertArrayEquals(expectedSaslHeaderBytes, response, "Unexpected protocol header response");
 
             transport.assertNoMoreResponses();
         }

@@ -23,8 +23,8 @@ package org.apache.qpid.tests.http.userprefs;
 
 import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,8 +34,10 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+
 import com.google.common.collect.Lists;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.preferences.QueryPreferenceValue;
 import org.apache.qpid.server.model.preferences.Preference;
@@ -67,27 +69,29 @@ public class UserPreferencesRestTest extends HttpTestBase
 
         Map<String, Object> prefDetails = getHelper().getJsonAsMap(fullUrl);
 
-        assertEquals("Unexpected pref name", prefName, prefDetails.get(Preference.NAME_ATTRIBUTE));
-        assertEquals("Unexpected pref description", prefDescription, prefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
-        assertEquals("Unexpected pref type", prefType, prefDetails.get(Preference.TYPE_ATTRIBUTE));
-        assertEquals("Unexpected pref value", prefValueAttributes, prefDetails.get(Preference.VALUE_ATTRIBUTE));
-        assertTrue("Unexpected pref owner", ((String) prefDetails.get(Preference.OWNER_ATTRIBUTE)).startsWith(getBrokerAdmin().getValidUsername() + "@"));
+        assertEquals(prefName, prefDetails.get(Preference.NAME_ATTRIBUTE), "Unexpected pref name");
+        assertEquals(prefDescription, prefDetails.get(Preference.DESCRIPTION_ATTRIBUTE),
+                "Unexpected pref description");
+        assertEquals(prefType, prefDetails.get(Preference.TYPE_ATTRIBUTE), "Unexpected pref type");
+        assertEquals(prefValueAttributes, prefDetails.get(Preference.VALUE_ATTRIBUTE),
+                "Unexpected pref value");
+        assertTrue(((String) prefDetails.get(Preference.OWNER_ATTRIBUTE)).startsWith(getBrokerAdmin().getValidUsername() + "@"),
+                "Unexpected pref owner");
 
         String typeUrl = String.format("virtualhost/userpreferences/%s", prefType);
-        assertEquals("Unexpected preference returned from type url",
-                              prefDetails,
-                              getHelper().getJsonAsSingletonList(typeUrl));
+        assertEquals(prefDetails, getHelper().getJsonAsSingletonList(typeUrl),
+                "Unexpected preference returned from type url");
 
         String allUrl = "virtualhost/userpreferences";
         final Map<String, Object> allMap = getHelper().getJsonAsMap(allUrl);
-        assertEquals("Unexpected number of types in all url response", 1, allMap.size());
-        assertTrue("Expected type not found in all url response. Found : " + allMap.keySet(),
-                            allMap.containsKey(prefType));
+        assertEquals(1, allMap.size(), "Unexpected number of types in all url response");
+        assertTrue(allMap.containsKey(prefType),
+                "Expected type not found in all url response. Found : " + allMap.keySet());
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> prefs = (List<Map<String, Object>>) allMap.get(prefType);
-        assertEquals("Unexpected number of preferences", 1, prefs.size());
+        assertEquals(1, prefs.size(), "Unexpected number of preferences");
 
-        assertEquals("Unexpected preference returned from all url", prefDetails, prefs.get(0));
+        assertEquals(prefDetails, prefs.get(0), "Unexpected preference returned from all url");
     }
 
     @Test
@@ -111,27 +115,29 @@ public class UserPreferencesRestTest extends HttpTestBase
 
         Map<String, Object> prefDetails = getHelper().getJsonAsMap(fullUrl);
 
-        assertEquals("Unexpected pref name", prefName, prefDetails.get(Preference.NAME_ATTRIBUTE));
-        assertEquals("Unexpected pref description", prefDescription, prefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
-        assertEquals("Unexpected pref type", prefType, prefDetails.get(Preference.TYPE_ATTRIBUTE));
-        assertEquals("Unexpected pref value", prefValueAttributes, prefDetails.get(Preference.VALUE_ATTRIBUTE));
-        assertTrue("Unexpected pref owner", ((String) prefDetails.get(Preference.OWNER_ATTRIBUTE)).startsWith(getBrokerAdmin().getValidUsername() + "@"));
+        assertEquals(prefName, prefDetails.get(Preference.NAME_ATTRIBUTE), "Unexpected pref name");
+        assertEquals(prefDescription, prefDetails.get(Preference.DESCRIPTION_ATTRIBUTE),
+                "Unexpected pref description");
+        assertEquals(prefType, prefDetails.get(Preference.TYPE_ATTRIBUTE), "Unexpected pref type");
+        assertEquals(prefValueAttributes, prefDetails.get(Preference.VALUE_ATTRIBUTE),
+                "Unexpected pref value");
+        assertTrue(((String) prefDetails.get(Preference.OWNER_ATTRIBUTE)).startsWith(getBrokerAdmin().getValidUsername() + "@"),
+                "Unexpected pref owner");
 
         String typeUrl = String.format("virtualhost/userpreferences/%s", prefType);
-        assertEquals("Unexpected preference returned from type url",
-                              prefDetails,
-                              getHelper().getJsonAsSingletonList(typeUrl));
+        assertEquals(prefDetails, getHelper().getJsonAsSingletonList(typeUrl),
+                "Unexpected preference returned from type url");
 
         String allUrl = "virtualhost/userpreferences";
         final Map<String, Object> allMap = getHelper().getJsonAsMap(allUrl);
-        assertEquals("Unexpected number of types in all url response", 1, allMap.size());
-        assertTrue("Expected type not found in all url response. Found : " + allMap.keySet(),
-                            allMap.containsKey(prefType));
+        assertEquals(1, allMap.size(), "Unexpected number of types in all url response");
+        assertTrue(allMap.containsKey(prefType),
+                "Expected type not found in all url response. Found : " + allMap.keySet());
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> prefs = (List<Map<String, Object>>) allMap.get(prefType);
-        assertEquals("Unexpected number of preferences", 1, prefs.size());
+        assertEquals(1, prefs.size(), "Unexpected number of preferences");
 
-        assertEquals("Unexpected preference returned from all url", prefDetails, prefs.get(0));
+        assertEquals(prefDetails, prefs.get(0), "Unexpected preference returned from all url");
     }
 
 
@@ -159,27 +165,29 @@ public class UserPreferencesRestTest extends HttpTestBase
         Map<String, List<Map<String, Object>>> allPrefs = getHelper().getJson(rootUrl, MAP_TYPE_REF, SC_OK);
 
         Map<String, Object> prefDetails = allPrefs.get(prefType).get(0);
-        assertEquals("Unexpected pref name", prefName, prefDetails.get(Preference.NAME_ATTRIBUTE));
-        assertEquals("Unexpected pref description", prefDescription, prefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
-        assertEquals("Unexpected pref type", prefType, prefDetails.get(Preference.TYPE_ATTRIBUTE));
-        assertEquals("Unexpected pref value", prefValueAttributes, prefDetails.get(Preference.VALUE_ATTRIBUTE));
-        assertTrue("Unexpected pref owner", ((String) prefDetails.get(Preference.OWNER_ATTRIBUTE)).startsWith(getBrokerAdmin().getValidUsername() + "@"));
+        assertEquals(prefName, prefDetails.get(Preference.NAME_ATTRIBUTE), "Unexpected pref name");
+        assertEquals(prefDescription, prefDetails.get(Preference.DESCRIPTION_ATTRIBUTE),
+                "Unexpected pref description");
+        assertEquals(prefType, prefDetails.get(Preference.TYPE_ATTRIBUTE), "Unexpected pref type");
+        assertEquals(prefValueAttributes, prefDetails.get(Preference.VALUE_ATTRIBUTE),
+                "Unexpected pref value");
+        assertTrue(((String) prefDetails.get(Preference.OWNER_ATTRIBUTE)).startsWith(getBrokerAdmin().getValidUsername() + "@"),
+                "Unexpected pref owner");
 
         String typeUrl = String.format("virtualhost/userpreferences/%s", prefType);
-        assertEquals("Unexpected preference returned from type url",
-                              prefDetails,
-                              getHelper().getJsonAsSingletonList(typeUrl));
+        assertEquals(prefDetails, getHelper().getJsonAsSingletonList(typeUrl),
+                "Unexpected preference returned from type url");
 
         String allUrl = "virtualhost/userpreferences";
         final Map<String, Object> allMap = getHelper().getJsonAsMap(allUrl);
-        assertEquals("Unexpected number of types in all url response", 1, allMap.size());
-        assertTrue("Expected type not found in all url response. Found : " + allMap.keySet(),
-                            allMap.containsKey(prefType));
+        assertEquals(1, allMap.size(), "Unexpected number of types in all url response");
+        assertTrue(allMap.containsKey(prefType),
+                "Expected type not found in all url response. Found : " + allMap.keySet());
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> prefs = (List<Map<String, Object>>) allMap.get(prefType);
-        assertEquals("Unexpected number of preferences", 1, prefs.size());
+        assertEquals(1, prefs.size(), "Unexpected number of preferences");
 
-        assertEquals("Unexpected preference returned from all url", prefDetails, prefs.get(0));
+        assertEquals(prefDetails, prefs.get(0), "Unexpected preference returned from all url");
     }
 
     @Test
@@ -220,24 +228,23 @@ public class UserPreferencesRestTest extends HttpTestBase
 
         String allUrl = "virtualhost/userpreferences";
         final Map<String, Object> allMap = getHelper().getJsonAsMap(allUrl);
-        assertEquals("Unexpected number of types in all url response", 2, allMap.size());
-        assertTrue("Expected type not found in all url response. Found : " + allMap.keySet(),
-                   allMap.containsKey(prefType1) && allMap.containsKey(prefType2));
+        assertEquals(2, allMap.size(), "Unexpected number of types in all url response");
+        assertTrue(allMap.containsKey(prefType1) && allMap.containsKey(prefType2),
+                "Expected type not found in all url response. Found : " + allMap.keySet());
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> pref1s = (List<Map<String, Object>>) allMap.get(prefType1);
-        assertEquals("Unexpected number of preferences", 1, pref1s.size());
+        assertEquals(1, pref1s.size(), "Unexpected number of preferences");
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> pref2s = (List<Map<String, Object>>) allMap.get(prefType2);
-        assertEquals("Unexpected number of preferences", 2, pref2s.size());
+        assertEquals(2, pref2s.size(), "Unexpected number of preferences");
 
-        assertEquals("Unexpected preference returned from all url for type1. Found : " + pref1s.get(0).get(Preference.NAME_ATTRIBUTE),
-                              pref1Name,
-                              pref1s.get(0).get(Preference.NAME_ATTRIBUTE));
+        assertEquals(pref1Name, pref1s.get(0).get(Preference.NAME_ATTRIBUTE),
+                "Unexpected preference returned from all url for type1. Found : " + pref1s.get(0).get(Preference.NAME_ATTRIBUTE));
         Set<String> pref2Names = new HashSet<>();
         pref2Names.add((String) pref2s.get(0).get(Preference.NAME_ATTRIBUTE));
         pref2Names.add((String) pref2s.get(1).get(Preference.NAME_ATTRIBUTE));
-        assertTrue("Unexpected preference returned from all url for type2. Found : " + pref2Names,
-                   pref2Names.contains(pref2Name) && pref2Names.contains(pref3Name));
+        assertTrue(pref2Names.contains(pref2Name) && pref2Names.contains(pref3Name),
+                "Unexpected preference returned from all url for type2. Found : " + pref2Names);
     }
 
     @Test
@@ -256,8 +263,9 @@ public class UserPreferencesRestTest extends HttpTestBase
 
         Map<String, Object> storedPreference = getHelper().getJsonAsMap(fullUrl);
 
-        assertEquals("Unexpected pref name", prefName, storedPreference.get(Preference.NAME_ATTRIBUTE));
-        assertEquals("Unexpected pref description", prefDescription, storedPreference.get(Preference.DESCRIPTION_ATTRIBUTE));
+        assertEquals(prefName, storedPreference.get(Preference.NAME_ATTRIBUTE), "Unexpected pref name");
+        assertEquals(prefDescription, storedPreference.get(Preference.DESCRIPTION_ATTRIBUTE),
+                "Unexpected pref description");
 
         Map<String, Object> updatePreference = new HashMap<>(storedPreference);
         updatePreference.put(Preference.DESCRIPTION_ATTRIBUTE, "new description");
@@ -265,8 +273,10 @@ public class UserPreferencesRestTest extends HttpTestBase
 
         Map<String, Object> rereadPrefDetails = getHelper().getJsonAsMap(fullUrl);
 
-        assertEquals("Unexpected id on updated pref", storedPreference.get(Preference.ID_ATTRIBUTE), rereadPrefDetails.get(Preference.ID_ATTRIBUTE));
-        assertEquals("Unexpected description on updated pref", "new description", rereadPrefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
+        assertEquals(storedPreference.get(Preference.ID_ATTRIBUTE), rereadPrefDetails.get(Preference.ID_ATTRIBUTE),
+                "Unexpected id on updated pref");
+        assertEquals("new description", rereadPrefDetails.get(Preference.DESCRIPTION_ATTRIBUTE),
+                "Unexpected description on updated pref");
     }
 
     @Test
@@ -300,13 +310,17 @@ public class UserPreferencesRestTest extends HttpTestBase
         }
 
         Map<String, List<Map<String, Object>>> original = getHelper().getJson(rootUrl, MAP_TYPE_REF, SC_OK);
-        assertEquals("Unexpected number of types in root map", 2, original.size());
+        assertEquals(2, original.size(), "Unexpected number of types in root map");
 
-        assertEquals("Unexpected number of " + pref1Type + " preferences", 1, original.get(pref1Type).size());
-        assertEquals(pref1Type + " preference has unexpected name", pref1Name, original.get(pref1Type).iterator().next().get(Preference.NAME_ATTRIBUTE));
+        assertEquals(1, original.get(pref1Type).size(),
+                "Unexpected number of " + pref1Type + " preferences");
+        assertEquals(pref1Name, original.get(pref1Type).iterator().next().get(Preference.NAME_ATTRIBUTE),
+                pref1Type + " preference has unexpected name");
 
-        assertEquals("Unexpected number of " + pref2Type + " preferences", 1, original.get(pref2Type).size());
-        assertEquals(pref2Type + " preference has unexpected name", pref2Name, original.get(pref2Type).iterator().next().get(Preference.NAME_ATTRIBUTE));
+        assertEquals(1, original.get(pref2Type).size(),
+                "Unexpected number of " + pref2Type + " preferences");
+        assertEquals(pref2Name, original.get(pref2Type).iterator().next().get(Preference.NAME_ATTRIBUTE),
+                pref2Type + " preference has unexpected name");
 
         final String pref3Name = "mypref3";
         final String pref4Name = "mypref4";
@@ -336,13 +350,15 @@ public class UserPreferencesRestTest extends HttpTestBase
         }
 
         Map<String, List<Map<String, Object>>> reread = getHelper().getJson(rootUrl, MAP_TYPE_REF, SC_OK);
-        assertEquals("Unexpected number of types in root map after replacement", 2, reread.size());
+        assertEquals(2, reread.size(), "Unexpected number of types in root map after replacement");
 
-        assertEquals("Unexpected number of " + pref1Type + " preferences", 1, reread.get(pref1Type).size());
-        assertEquals(pref1Type + " preference has unexpected name", pref3Name, reread.get(pref1Type).iterator().next().get(Preference.NAME_ATTRIBUTE));
+        assertEquals(1, reread.get(pref1Type).size(), "Unexpected number of " + pref1Type + " preferences");
+        assertEquals(pref3Name, reread.get(pref1Type).iterator().next().get(Preference.NAME_ATTRIBUTE),
+                pref1Type + " preference has unexpected name");
 
-        assertEquals("Unexpected number of " + pref3Type + " preferences", 1, reread.get(pref3Type).size());
-        assertEquals(pref3Type + " preference has unexpected name", pref4Name, reread.get(pref3Type).iterator().next().get(Preference.NAME_ATTRIBUTE));
+        assertEquals(1, reread.get(pref3Type).size(), "Unexpected number of " + pref3Type + " preferences");
+        assertEquals(pref4Name, reread.get(pref3Type).iterator().next().get(Preference.NAME_ATTRIBUTE),
+                pref3Type + " preference has unexpected name");
     }
 
     @Test
@@ -365,8 +381,9 @@ public class UserPreferencesRestTest extends HttpTestBase
 
         Map<String, Object> storedPreference = getHelper().getJsonAsMap(fullUrl);
 
-        assertEquals("Unexpected pref name", prefName, storedPreference.get(Preference.NAME_ATTRIBUTE));
-        assertEquals("Unexpected pref description", prefDescription, storedPreference.get(Preference.DESCRIPTION_ATTRIBUTE));
+        assertEquals(prefName, storedPreference.get(Preference.NAME_ATTRIBUTE), "Unexpected pref name");
+        assertEquals(prefDescription, storedPreference.get(Preference.DESCRIPTION_ATTRIBUTE),
+                "Unexpected pref description");
 
         // Update via url to type
         Map<String, Object> updatePreference = new HashMap<>(storedPreference);
@@ -376,12 +393,10 @@ public class UserPreferencesRestTest extends HttpTestBase
 
         Map<String, Object> rereadPrefDetails = getHelper().getJsonAsMap(fullUrl);
 
-        assertEquals("Unexpected id on updated pref, update 1",
-                              storedPreference.get(Preference.ID_ATTRIBUTE),
-                              rereadPrefDetails.get(Preference.ID_ATTRIBUTE));
-        assertEquals("Unexpected description on updated pref, update 1",
-                              "update 1",
-                              rereadPrefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
+        assertEquals(storedPreference.get(Preference.ID_ATTRIBUTE), rereadPrefDetails.get(Preference.ID_ATTRIBUTE),
+                "Unexpected id on updated pref, update 1");
+        assertEquals("update 1", rereadPrefDetails.get(Preference.DESCRIPTION_ATTRIBUTE),
+                "Unexpected description on updated pref, update 1");
 
         // Update via url to root
         updatePreference = new HashMap<>(rereadPrefDetails);
@@ -392,9 +407,8 @@ public class UserPreferencesRestTest extends HttpTestBase
 
         rereadPrefDetails = getHelper().getJsonAsMap(fullUrl);
 
-        assertEquals("Unexpected description on updated pref, update 2",
-                              "update 2",
-                              rereadPrefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
+        assertEquals("update 2", rereadPrefDetails.get(Preference.DESCRIPTION_ATTRIBUTE),
+                "Unexpected description on updated pref, update 2");
     }
 
     @Test
@@ -415,5 +429,4 @@ public class UserPreferencesRestTest extends HttpTestBase
         getHelper().submitRequest(fullUrl, "DELETE", SC_OK);
         getHelper().submitRequest(fullUrl, "GET", SC_NOT_FOUND);
     }
-
 }

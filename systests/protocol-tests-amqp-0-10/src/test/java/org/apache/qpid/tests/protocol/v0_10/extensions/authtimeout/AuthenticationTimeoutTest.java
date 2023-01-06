@@ -23,9 +23,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
@@ -42,8 +42,7 @@ public class AuthenticationTimeoutTest extends BrokerAdminUsingTestBase
     @Test
     public void authenticationTimeout() throws Exception
     {
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported(ConnectionInteraction.SASL_MECHANISM_PLAIN),
-                   is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().isSASLMechanismSupported(ConnectionInteraction.SASL_MECHANISM_PLAIN));
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();

@@ -21,10 +21,9 @@
 
 package org.apache.qpid.tests.http.query;
 
-
 import javax.servlet.http.HttpServletResponse;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.tests.http.HttpTestBase;

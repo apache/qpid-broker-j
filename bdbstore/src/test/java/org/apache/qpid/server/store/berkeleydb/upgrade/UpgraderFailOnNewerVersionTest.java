@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.sleepycat.bind.tuple.IntegerBinding;
 import com.sleepycat.je.Cursor;
@@ -29,8 +29,9 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.OperationStatus;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -45,7 +46,7 @@ public class UpgraderFailOnNewerVersionTest extends AbstractUpgradeTestCase
         return "bdbstore-v999";
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         super.setUp();
@@ -76,9 +77,9 @@ public class UpgraderFailOnNewerVersionTest extends AbstractUpgradeTestCase
     }
 
     @Test
-    public void testUpgrade() throws Exception
+    public void testUpgrade()
     {
-        assertEquals("Unexpected store version", 999, getStoreVersion());
+        assertEquals(999, getStoreVersion(), "Unexpected store version");
         try
         {
             _upgrader.upgradeIfNecessary();
@@ -86,8 +87,8 @@ public class UpgraderFailOnNewerVersionTest extends AbstractUpgradeTestCase
         }
         catch(ServerScopedRuntimeException ex)
         {
-            assertEquals("Incorrect exception thrown", "Database version 999 is higher than the most recent known version: "
-                                                        + BDBConfigurationStore.VERSION, ex.getMessage());
+            assertEquals("Database version 999 is higher than the most recent known version: " +
+                         BDBConfigurationStore.VERSION, ex.getMessage(), "Incorrect exception thrown");
         }
     }
 

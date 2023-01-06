@@ -25,7 +25,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -40,8 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementException;
 import org.apache.qpid.server.management.plugin.ManagementResponse;
@@ -60,7 +60,7 @@ public class BindingControllerTest extends UnitTestBase
     private BindingController _controller;
     private ConfiguredObject<?> _root;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _managementController = mock(LegacyManagementController.class);

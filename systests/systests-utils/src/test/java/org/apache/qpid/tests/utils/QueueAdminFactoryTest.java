@@ -22,12 +22,12 @@
 package org.apache.qpid.tests.utils;
 
 import static org.apache.qpid.tests.utils.QueueAdminFactory.QUEUE_ADMIN_TYPE_PROPERTY_NAME;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -36,14 +36,14 @@ public class QueueAdminFactoryTest extends UnitTestBase
     private QueueAdminFactory _factory;
     private String _preservedAdminType;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _factory = new QueueAdminFactory();
         _preservedAdminType = System.getProperty(QUEUE_ADMIN_TYPE_PROPERTY_NAME);
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if (_preservedAdminType == null)

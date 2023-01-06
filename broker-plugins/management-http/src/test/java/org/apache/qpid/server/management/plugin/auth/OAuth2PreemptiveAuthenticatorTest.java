@@ -18,15 +18,14 @@
  */
 package org.apache.qpid.server.management.plugin.auth;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.net.URISyntaxException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Set;
@@ -34,8 +33,8 @@ import java.util.Set;
 import javax.security.auth.Subject;
 import javax.servlet.http.HttpServletRequest;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.model.port.HttpPort;
@@ -59,7 +58,7 @@ public class OAuth2PreemptiveAuthenticatorTest extends UnitTestBase
     private HttpManagementConfiguration _mockConfiguration;
     private HttpPort _mockPort;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _mockPort = mock(HttpPort.class);
@@ -72,62 +71,60 @@ public class OAuth2PreemptiveAuthenticatorTest extends UnitTestBase
     }
 
     @Test
-    public void testAttemptAuthenticationSuccessful() throws Exception
+    public void testAttemptAuthenticationSuccessful()
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getServerName()).thenReturn("localhost");
         when(mockRequest.getHeader("Authorization")).thenReturn("Bearer " + TEST_VALID_ACCESS_TOKEN);
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
-        assertNotNull("Authenticator failed unexpectedly", subject);
+        assertNotNull(subject, "Authenticator failed unexpectedly");
         final Set<Principal> principals = subject.getPrincipals();
-        assertEquals("Subject created with unexpected principal",
-                            TEST_AUTHORIZED_USER,
-                            principals.iterator().next().getName());
+        assertEquals(TEST_AUTHORIZED_USER, principals.iterator().next().getName(),
+                "Subject created with unexpected principal");
 
     }
 
     @Test
-    public void testAttemptAuthenticationUnauthorizedUser() throws Exception
+    public void testAttemptAuthenticationUnauthorizedUser()
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getServerName()).thenReturn("localhost");
         when(mockRequest.getHeader("Authorization")).thenReturn("Bearer " + TEST_UNAUTHORIZED_ACCESS_TOKEN);
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
-        assertNotNull("Authenticator failed unexpectedly", subject);
+        assertNotNull(subject, "Authenticator failed unexpectedly");
         final Set<Principal> principals = subject.getPrincipals();
-        assertEquals("Subject created with unexpected principal",
-                            TEST_UNAUTHORIZED_USER,
-                            principals.iterator().next().getName());
+        assertEquals(TEST_UNAUTHORIZED_USER, principals.iterator().next().getName(),
+                "Subject created with unexpected principal");
     }
 
     @Test
-    public void testAttemptAuthenticationInvalidToken() throws Exception
+    public void testAttemptAuthenticationInvalidToken()
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getServerName()).thenReturn("localhost");
         when(mockRequest.getHeader("Authorization")).thenReturn("Bearer " + TEST_INVALID_ACCESS_TOKEN);
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
-        assertNull("Authenticator did not fail with invalid access token", subject);
+        assertNull(subject, "Authenticator did not fail with invalid access token");
     }
 
     @Test
-    public void testAttemptAuthenticationMissingHeader() throws Exception
+    public void testAttemptAuthenticationMissingHeader()
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
-        assertNull("Authenticator did not failed without authentication header", subject);
+        assertNull(subject, "Authenticator did not failed without authentication header");
     }
 
     @Test
-    public void testAttemptAuthenticationMalformedHeader() throws Exception
+    public void testAttemptAuthenticationMalformedHeader()
     {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getHeader("Authorization")).thenReturn("malformed Bearer " + TEST_UNAUTHORIZED_ACCESS_TOKEN);
         Subject subject = _authenticator.attemptAuthentication(mockRequest, _mockConfiguration);
-        assertNull("Authenticator did not failed with malformed authentication header", subject);
+        assertNull(subject, "Authenticator did not failed with malformed authentication header");
     }
 
-    private OAuth2AuthenticationProvider<?> createMockOAuth2AuthenticationProvider(final HttpPort mockPort) throws URISyntaxException
+    private OAuth2AuthenticationProvider<?> createMockOAuth2AuthenticationProvider(final HttpPort mockPort)
     {
         OAuth2AuthenticationProvider authenticationProvider = mock(OAuth2AuthenticationProvider.class);
         SubjectCreator mockSubjectCreator = mock(SubjectCreator.class);

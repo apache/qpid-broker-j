@@ -29,8 +29,8 @@ import java.security.SecureRandom;
 
 import javax.crypto.spec.SecretKeySpec;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -38,7 +38,7 @@ public class AESKeyFileEncrypterFactoryTest extends UnitTestBase
 {
     private AESKeyFileEncrypterFactory _factory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _factory = new AESKeyFileEncrypterFactory();
@@ -62,7 +62,6 @@ public class AESKeyFileEncrypterFactoryTest extends UnitTestBase
     {
         final byte[] keyData = new byte[32];
         new SecureRandom().nextBytes(keyData);
-        final SecretKeySpec secretKey = new SecretKeySpec(keyData, "AES");
-        return secretKey;
+        return new SecretKeySpec(keyData, "AES");
     }
 }

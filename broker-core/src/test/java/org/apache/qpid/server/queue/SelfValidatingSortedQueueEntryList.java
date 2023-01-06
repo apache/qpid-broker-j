@@ -19,7 +19,7 @@
  */
 package org.apache.qpid.server.queue;
 
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.queue.SortedQueueEntry.Colour;
@@ -31,7 +31,7 @@ import org.apache.qpid.server.store.MessageEnqueueRecord;
  */
 public class SelfValidatingSortedQueueEntryList extends SortedQueueEntryList
 {
-    public SelfValidatingSortedQueueEntryList(SortedQueueImpl queue)
+    public SelfValidatingSortedQueueEntryList(final SortedQueueImpl queue)
     {
         super(queue, queue.getQueueStatistics());
     }
@@ -42,7 +42,9 @@ public class SelfValidatingSortedQueueEntryList extends SortedQueueEntryList
         return super.getQueue();
     }
 
-    @Override /** Overridden to automatically check queue properties before and after. */
+    /** Overridden to automatically check queue properties before and after. */
+    @Override
+    @SuppressWarnings("rawtypes")
     public SortedQueueEntry add(final ServerMessage message, final MessageEnqueueRecord enqueueRecord)
     {
         assertQueueProperties(); //before add
@@ -51,8 +53,9 @@ public class SelfValidatingSortedQueueEntryList extends SortedQueueEntryList
         return result;
     }
 
-    @Override /** Overridden to automatically check queue properties before and after. */
-    public void entryDeleted(QueueEntry entry)
+    /** Overridden to automatically check queue properties before and after. */
+    @Override
+    public void entryDeleted(final QueueEntry entry)
     {
         assertQueueProperties(); //before delete
         super.entryDeleted(entry);
@@ -69,9 +72,9 @@ public class SelfValidatingSortedQueueEntryList extends SortedQueueEntryList
 
     public void assertRootIsBlack()
     {
-        if(!isNodeColour(getRoot(), Colour.BLACK))
+        if (!isNodeColour(getRoot(), Colour.BLACK))
         {
-            Assert.fail("Root Not Black");
+            fail("Root Not Black");
         }
     }
 
@@ -82,32 +85,31 @@ public class SelfValidatingSortedQueueEntryList extends SortedQueueEntryList
 
     public void assertTreeIntegrity(final SortedQueueEntry node)
     {
-        if(node == null)
+        if (node == null)
         {
             return;
         }
-        if(node.getLeft() != null)
+        if (node.getLeft() != null)
         {
-            if(node.getLeft().getParent() == node)
+            if (node.getLeft().getParent() == node)
             {
                 assertTreeIntegrity(node.getLeft());
             }
             else
             {
-                Assert.fail("Tree integrity compromised");
+                fail("Tree integrity compromised");
             }
         }
-        if(node.getRight() != null)
+        if (node.getRight() != null)
         {
-            if(node.getRight().getParent() == node)
+            if (node.getRight().getParent() == node)
             {
                 assertTreeIntegrity(node.getRight());
             }
             else
             {
-                Assert.fail("Tree integrity compromised");
+                fail("Tree integrity compromised");
             }
-
         }
     }
 
@@ -118,19 +120,19 @@ public class SelfValidatingSortedQueueEntryList extends SortedQueueEntryList
 
     public int assertLeavesSameBlackPath(final SortedQueueEntry node)
     {
-        if(node == null)
+        if (node == null)
         {
             return 1;
         }
         final int left = assertLeavesSameBlackPath(node.getLeft());
         final int right = assertLeavesSameBlackPath(node.getLeft());
-        if(left == right)
+        if (left == right)
         {
             return isNodeColour(node, Colour.BLACK) ? 1 + left : left;
         }
         else
         {
-            Assert.fail("Unequal paths to leaves");
+            fail("Unequal paths to leaves");
             return 1; //compiler
         }
     }
@@ -142,26 +144,25 @@ public class SelfValidatingSortedQueueEntryList extends SortedQueueEntryList
 
     public void assertChildrenOfRedAreBlack(final SortedQueueEntry node)
     {
-        if(node == null)
+        if (node == null)
         {
             return;
         }
-        else if(node.getColour() == Colour.BLACK)
+        if (node.getColour() == Colour.BLACK)
         {
             assertChildrenOfRedAreBlack(node.getLeft());
             assertChildrenOfRedAreBlack(node.getRight());
         }
         else
         {
-            if(isNodeColour(node.getLeft(), Colour.BLACK)
-                    && isNodeColour(node.getRight(), Colour.BLACK))
+            if (isNodeColour(node.getLeft(), Colour.BLACK) && isNodeColour(node.getRight(), Colour.BLACK))
             {
                 assertChildrenOfRedAreBlack(node.getLeft());
                 assertChildrenOfRedAreBlack(node.getRight());
             }
             else
             {
-                Assert.fail("Children of Red are not both black");
+                fail("Children of Red are not both black");
             }
         }
     }

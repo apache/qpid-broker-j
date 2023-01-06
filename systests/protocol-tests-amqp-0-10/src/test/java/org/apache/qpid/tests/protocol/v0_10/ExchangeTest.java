@@ -26,13 +26,12 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 
-import org.hamcrest.Matchers;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.protocol.v0_10.transport.ExchangeBoundResult;
@@ -154,7 +153,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                        .consumeResponse(SessionCompleted.class);
         }
 
-        assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
         getBrokerAdmin().restart();
 
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
@@ -341,7 +340,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
             description =
                     "A client MUST NOT be allowed to bind a non-existent and unnamed queue (i.e. empty queue name)"
                     + " to an exchange.")
-    @Ignore("spec requires INVALID_ARGUMENT error but NOT_FOUND is returned")
+    @Disabled("spec requires INVALID_ARGUMENT error but NOT_FOUND is returned")
     public void exchangeBindEmptyQueue() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -374,7 +373,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
             description =
                     "A client MUST NOT be allowed to bind a non-existent and unnamed queue (i.e. empty queue name)"
                     + " to an exchange.")
-    @Ignore("spec requires INVALID_ARGUMENT error but NOT_FOUND is returned")
+    @Disabled("spec requires INVALID_ARGUMENT error but NOT_FOUND is returned")
     public void exchangeBindNonExistingQueue() throws Exception
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -531,7 +530,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                           + "  the server MUST restore such bindings after a server restart.")
     public void exchangeBindMultipleBindings() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {

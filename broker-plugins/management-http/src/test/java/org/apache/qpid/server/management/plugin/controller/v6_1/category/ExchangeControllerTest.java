@@ -30,8 +30,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
@@ -45,7 +45,7 @@ public class ExchangeControllerTest extends UnitTestBase
 {
     private LegacyManagementController _legacyManagementController;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _legacyManagementController = mock(LegacyManagementController.class);

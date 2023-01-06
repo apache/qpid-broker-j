@@ -38,15 +38,14 @@ import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 
 /**
  * In these tests, the ruleset is configured programmatically rather than from an external file.
@@ -64,7 +63,7 @@ public class RuleBasedAccessControlTest extends UnitTestBase
     private UnitTestMessageLogger _messageLogger;
     private EventLogger _eventLogger;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _messageLogger = new UnitTestMessageLogger();
@@ -189,19 +188,17 @@ public class RuleBasedAccessControlTest extends UnitTestBase
                          @Override
                          public Object run()
                          {
-                             assertEquals("Expecting zero messages before test",
-                                                 (long) 0,
-                                                 (long) _messageLogger.getLogMessages().size());
+                             assertEquals(0, (long) _messageLogger.getLogMessages().size(),
+                                     "Expecting zero messages before test");
 
                              final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST,
                                                                      EMPTY);
                              assertEquals(Result.DENIED, result);
 
-                             assertEquals("Expecting one message before test",
-                                                 (long) 1,
-                                                 (long) _messageLogger.getLogMessages().size());
-                             assertTrue("Logged message does not contain expected string",
-                                               _messageLogger.messageContains(0, "ACL-1002"));
+                             assertEquals(1, (long) _messageLogger.getLogMessages().size(),
+                                     "Expecting one message before test");
+                             assertTrue(_messageLogger.messageContains(0, "ACL-1002"),
+                                     "Logged message does not contain expected string");
                              return null;
                          }
                      });
@@ -328,8 +325,6 @@ public class RuleBasedAccessControlTest extends UnitTestBase
             @Override
             public Object run() throws Exception
             {
-
-
                 RuleSet mockRuleSet = mock(RuleSet.class);
                 when(mockRuleSet.check(
                         subject,
@@ -347,7 +342,6 @@ public class RuleBasedAccessControlTest extends UnitTestBase
         });
 
     }
-
 
     /**
      * Tests that a grant access method rule allows any access operation to be performed on a specified component

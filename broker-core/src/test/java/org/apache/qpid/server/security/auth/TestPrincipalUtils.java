@@ -26,11 +26,9 @@ import static org.mockito.Mockito.when;
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,7 +36,7 @@ public class TestPrincipalUtils
 {
     public static final String TEST_AUTH_PROVIDER_TYPE = "TestAuthProviderType";
     public static final String TEST_AUTH_PROVIDER_NAME = "testAuthProvider";
-    private static final AuthenticationProvider TEST_AUTH_PROVIDER = mock(AuthenticationProvider.class);
+    private static final AuthenticationProvider<?> TEST_AUTH_PROVIDER = mock(AuthenticationProvider.class);
 
     static
     {
@@ -51,14 +49,13 @@ public class TestPrincipalUtils
      */
     public static Subject createTestSubject(final String username, final String... groups)
     {
-        final Set<Principal> principals = new HashSet<Principal>(1 + groups.length);
+        final Set<Principal> principals = new HashSet<>(1 + groups.length);
         principals.add(new AuthenticatedPrincipal(new UsernamePrincipal(username, TEST_AUTH_PROVIDER)));
         for (String group : groups)
         {
             principals.add(new GroupPrincipal(group, TEST_AUTH_PROVIDER));
         }
-
-        return new Subject(false, principals, Collections.EMPTY_SET, Collections.EMPTY_SET);
+        return new Subject(false, principals, Set.of(), Set.of());
     }
 
     public static String getTestPrincipalSerialization(final String principalName)

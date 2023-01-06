@@ -20,29 +20,26 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import javax.security.auth.login.AccountNotFoundException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -56,37 +53,23 @@ abstract class ManagedAuthenticationManagerTestBase extends UnitTestBase
 {
     private static final String TEST_USER_NAME = "admin";
     private static final String TEST_USER_PASSWORD = "admin";
+
     private ConfigModelPasswordManagingAuthenticationProvider<?> _authManager;
+    private Broker<?> _broker;
 
-
-    private Broker _broker;
-    private TaskExecutor _executor;
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        _executor = new CurrentThreadTaskExecutor();
-        _executor.start();
-        _broker = BrokerTestHelper.createBrokerMock();
-        when(_broker.getTaskExecutor()).thenReturn(_executor);
-        when(_broker.getChildExecutor()).thenReturn(_executor);
-        final Map<String, Object> attributesMap = new HashMap<String, Object>();
-        attributesMap.put(AuthenticationProvider.NAME, getTestName());
-        attributesMap.put(AuthenticationProvider.ID, UUID.randomUUID());
+        _broker = BrokerTestHelper.createNewBrokerMock();
+        final Map<String, Object> attributesMap = Map.of(AuthenticationProvider.NAME, getTestName(),
+                AuthenticationProvider.ID, randomUUID());
         _authManager = createAuthManager(attributesMap);
         _authManager.open();
     }
 
+    protected abstract ConfigModelPasswordManagingAuthenticationProvider<?> createAuthManager(final Map<String, Object> attributesMap);
 
-    @After
-    public void tearDown() throws Exception
-    {
-        _executor.stop();
-    }
-
-    protected abstract ConfigModelPasswordManagingAuthenticationProvider createAuthManager(final Map<String, Object> attributesMap);
-
-    public Broker getBroker()
+    public Broker<?> getBroker()
     {
         return _broker;
     }
@@ -96,98 +79,83 @@ abstract class ManagedAuthenticationManagerTestBase extends UnitTestBase
         return _authManager;
     }
 
-
     @Test
     public void testMechanisms()
     {
-        assertFalse("PLAIN authentication should not be available on an insecure connection", _authManager.getAvailableMechanisms(false).contains("PLAIN"));
-        assertTrue("PLAIN authentication should be available on a secure connection", _authManager.getAvailableMechanisms(true).contains("PLAIN"));
+        assertFalse(_authManager.getAvailableMechanisms(false).contains("PLAIN"),
+                "PLAIN authentication should not be available on an insecure connection");
+        assertTrue(_authManager.getAvailableMechanisms(true).contains("PLAIN"),
+                "PLAIN authentication should be available on a secure connection");
     }
 
     @Test
     public void testAddChildAndThenDelete() throws ExecutionException, InterruptedException
     {
         // No children should be present before the test starts
-        assertEquals("No users should be present before the test starts", 0, _authManager.getChildren(User.class).size());
-        assertEquals("No users should be present before the test starts", 0, _authManager.getUsers().size());
+        assertEquals(0, _authManager.getChildren(User.class).size(),
+                "No users should be present before the test starts");
+        assertEquals(0, _authManager.getUsers().size(), "No users should be present before the test starts");
 
-        final Map<String, Object> childAttrs = new HashMap<String, Object>();
-
+        final Map<String, Object> childAttrs = new HashMap<>();
         childAttrs.put(User.NAME, getTestName());
         childAttrs.put(User.PASSWORD, "password");
-        User user = _authManager.addChildAsync(User.class, childAttrs).get();
-        assertNotNull("User should be created but addChild returned null", user);
+        final User<?> user = _authManager.addChildAsync(User.class, childAttrs).get();
+        assertNotNull(user, "User should be created but addChild returned null");
         assertEquals(getTestName(), user.getName());
-        if(!isPlain())
+        if (!isPlain())
         {
             // password shouldn't actually be the given string, but instead hashed value
-            assertFalse("Password shouldn't actually be the given string, but instead hashed value",
-                        "password".equals(user.getPassword()));
+            assertNotEquals("password", user.getPassword(),
+                    "Password shouldn't actually be the given string, but instead hashed value");
         }
 
-        AuthenticationResult authResult =
-                _authManager.authenticate(getTestName(), "password");
+        AuthenticationResult authResult = _authManager.authenticate(getTestName(), "password");
 
-        assertEquals("User should authenticate with given password", AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus(),
+                "User should authenticate with given password");
 
-        assertEquals("Manager should have exactly one user child",1, _authManager.getChildren(User.class).size());
-        assertEquals("Manager should have exactly one user child",1, _authManager.getUsers().size());
+        assertEquals(1, _authManager.getChildren(User.class).size(), "Manager should have exactly one user child");
+        assertEquals(1, _authManager.getUsers().size(), "Manager should have exactly one user child");
 
 
         user.delete();
 
-        assertEquals("No users should be present after child deletion", 0, _authManager.getChildren(User.class).size());
+        assertEquals(0, _authManager.getChildren(User.class).size(),
+                "No users should be present after child deletion");
 
 
         authResult = _authManager.authenticate(getTestName(), "password");
-        assertEquals("User should no longer authenticate with given password", AuthenticationResult.AuthenticationStatus.ERROR, authResult.getStatus());
-
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, authResult.getStatus(),
+                "User should no longer authenticate with given password");
     }
 
     @Test
-    public void testCreateUser() throws ExecutionException, InterruptedException
+    public void testCreateUser()
     {
-        assertEquals("No users should be present before the test starts", 0, _authManager.getChildren(User.class).size());
-        assertTrue(_authManager.createUser(getTestName(), "password", Collections.<String, String>emptyMap()));
-        assertEquals("Manager should have exactly one user child",1, _authManager.getChildren(User.class).size());
-        User user = _authManager.getChildren(User.class).iterator().next();
+        assertEquals(0, _authManager.getChildren(User.class).size(),
+                "No users should be present before the test starts");
+        assertTrue(_authManager.createUser(getTestName(), "password", Map.of()));
+        assertEquals(1, _authManager.getChildren(User.class).size(),
+                "Manager should have exactly one user child");
+        final User<?> user = _authManager.getChildren(User.class).iterator().next();
         assertEquals(getTestName(), user.getName());
-        if(!isPlain())
+        if (!isPlain())
         {
             // password shouldn't actually be the given string, but instead salt and the hashed value
-            assertFalse("Password shouldn't actually be the given string, but instead salt and the hashed value",
-                        "password".equals(user.getPassword()));
+            assertNotEquals("password", user.getPassword(),
+                    "Password shouldn't actually be the given string, but instead salt and the hashed value");
         }
-        final Map<String, Object> childAttrs = new HashMap<String, Object>();
+        final Map<String, Object> childAttrs = Map.of(User.NAME, getTestName(),
+                User.PASSWORD, "password");
 
-        childAttrs.put(User.NAME, getTestName());
-        childAttrs.put(User.PASSWORD, "password");
-        try
-        {
-            user = _authManager.addChildAsync(User.class, childAttrs).get();
-            fail("Should not be able to create a second user with the same name");
-        }
-        catch(IllegalArgumentException e)
-        {
-            // pass
-        }
-        try
-        {
-            _authManager.deleteUser(getTestName());
-        }
-        catch (AccountNotFoundException e)
-        {
-            fail("AccountNotFoundException thrown when none was expected: " + e.getMessage());
-        }
-        try
-        {
-            _authManager.deleteUser(getTestName());
-            fail("AccountNotFoundException not thrown when was expected");
-        }
-        catch (AccountNotFoundException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> _authManager.addChildAsync(User.class, childAttrs).get(),
+                "Should not be able to create a second user with the same name");
+        assertDoesNotThrow(() -> _authManager.deleteUser(getTestName()),
+                "AccountNotFoundException thrown when none was expected");
+        assertThrows(AccountNotFoundException.class,
+                () -> _authManager.deleteUser(getTestName()),
+                "AccountNotFoundException not thrown when none was expected");
     }
 
     protected abstract boolean isPlain();
@@ -195,87 +163,94 @@ abstract class ManagedAuthenticationManagerTestBase extends UnitTestBase
     @Test
     public void testUpdateUser()
     {
-        assertTrue(_authManager.createUser(getTestName(), "password", Collections.<String, String>emptyMap()));
-        assertTrue(_authManager.createUser(getTestName()+"_2", "password", Collections.<String, String>emptyMap()));
-        assertEquals("Manager should have exactly two user children",2, _authManager.getChildren(User.class).size());
+        assertTrue(_authManager.createUser(getTestName(), "password", Map.of()));
+        assertTrue(_authManager.createUser(getTestName() + "_2", "password", Map.of()));
+        assertEquals(2, _authManager.getChildren(User.class).size(),
+                "Manager should have exactly two user children");
 
         AuthenticationResult authResult = _authManager.authenticate(getTestName(), "password");
 
-        assertEquals("User should authenticate with given password", AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus(),
+                "User should authenticate with given password");
         authResult = _authManager.authenticate(getTestName()+"_2", "password");
-        assertEquals("User should authenticate with given password", AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus(),
+                "User should authenticate with given password");
 
-        for(User user : _authManager.getChildren(User.class))
+        for (final User<?> user : _authManager.getChildren(User.class))
         {
-            if(user.getName().equals(getTestName()))
+            if (user.getName().equals(getTestName()))
             {
-                user.setAttributes(Collections.singletonMap(User.PASSWORD, "newpassword"));
+                user.setAttributes(Map.of(User.PASSWORD, "newpassword"));
             }
         }
 
         authResult = _authManager.authenticate(getTestName(), "newpassword");
-        assertEquals("User should authenticate with updated password", AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus(),
+                "User should authenticate with updated password");
         authResult = _authManager.authenticate(getTestName()+"_2", "password");
-        assertEquals("User should authenticate with original password", AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus(),
+                "User should authenticate with original password");
 
         authResult = _authManager.authenticate(getTestName(), "password");
-        assertEquals("User not authenticate with original password", AuthenticationResult.AuthenticationStatus.ERROR, authResult.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, authResult.getStatus(),
+                "User not authenticate with original password");
 
-        for(User user : _authManager.getChildren(User.class))
+        for (final User<?> user : _authManager.getChildren(User.class))
         {
-            if(user.getName().equals(getTestName()))
+            if (user.getName().equals(getTestName()))
             {
                 user.setPassword("newerpassword");
             }
         }
 
         authResult = _authManager.authenticate(getTestName(), "newerpassword");
-        assertEquals("User should authenticate with updated password", AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, authResult.getStatus(),
+                "User should authenticate with updated password");
     }
 
     @Test
-    public void testGetMechanisms() throws Exception
+    public void testGetMechanisms()
     {
-        assertFalse("Should support at least one mechanism", _authManager.getMechanisms().isEmpty());
+        assertFalse(_authManager.getMechanisms().isEmpty(), "Should support at least one mechanism");
     }
 
     @Test
-    public void testAuthenticateValidCredentials() throws Exception
+    public void testAuthenticateValidCredentials()
     {
-        _authManager.createUser(TEST_USER_NAME, TEST_USER_PASSWORD, Collections.<String, String>emptyMap());
-        AuthenticationResult result = _authManager.authenticate(TEST_USER_NAME, TEST_USER_PASSWORD);
-        assertEquals("Unexpected result status", AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
-        assertEquals("Unexpected result principal", TEST_USER_NAME, result.getMainPrincipal().getName());
+        _authManager.createUser(TEST_USER_NAME, TEST_USER_PASSWORD, Map.of());
+        final AuthenticationResult result = _authManager.authenticate(TEST_USER_NAME, TEST_USER_PASSWORD);
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus(),
+                "Unexpected result status");
+        assertEquals(TEST_USER_NAME, result.getMainPrincipal().getName(), "Unexpected result principal");
     }
 
     @Test
-    public void testAuthenticateInvalidCredentials() throws Exception
+    public void testAuthenticateInvalidCredentials()
     {
-        _authManager.createUser(TEST_USER_NAME, TEST_USER_PASSWORD, Collections.<String, String>emptyMap());
-        AuthenticationResult result = _authManager.authenticate(TEST_USER_NAME, TEST_USER_PASSWORD + "1");
-        assertEquals("Unexpected result status", AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
-        assertNull("Unexpected result principal", result.getMainPrincipal());
+        _authManager.createUser(TEST_USER_NAME, TEST_USER_PASSWORD, Map.of());
+        final AuthenticationResult result = _authManager.authenticate(TEST_USER_NAME, TEST_USER_PASSWORD + "1");
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus(), "Unexpected result status");
+        assertNull(result.getMainPrincipal(), "Unexpected result principal");
     }
 
     @Test
-    public void testAllSaslMechanisms() throws Exception
+    public void testAllSaslMechanisms()
     {
         final SaslSettings saslSettings = mock(SaslSettings.class);
         when(saslSettings.getLocalFQDN()).thenReturn("testhost.example.com");
-        for (String mechanism : _authManager.getMechanisms())
+        for (final String mechanism : _authManager.getMechanisms())
         {
             final SaslNegotiator negotiator = _authManager.createSaslNegotiator(mechanism, saslSettings, null);
-            assertNotNull(String.format("Could not create SASL negotiator for mechanism '%s'", mechanism), negotiator);
+            assertNotNull(negotiator, String.format("Could not create SASL negotiator for mechanism '%s'", mechanism));
         }
     }
 
     @Test
-    public void testUnsupportedSaslMechanisms() throws Exception
+    public void testUnsupportedSaslMechanisms()
     {
         final SaslSettings saslSettings = mock(SaslSettings.class);
         when(saslSettings.getLocalFQDN()).thenReturn("testhost.example.com");
         final SaslNegotiator negotiator = _authManager.createSaslNegotiator("UNSUPPORTED MECHANISM", saslSettings, null);
-        assertNull("Should not be able to create SASL negotiator for unsupported mechanism", negotiator);
+        assertNull(negotiator, "Should not be able to create SASL negotiator for unsupported mechanism");
     }
-
 }

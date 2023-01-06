@@ -24,13 +24,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -49,11 +49,11 @@ public class SaslAuthenticationTimeoutTest extends BrokerAdminUsingTestBase
     private static final Symbol PLAIN = Symbol.getSymbol("PLAIN");
     private static final byte[] SASL_AMQP_HEADER_BYTES = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
-        assumeThat(getBrokerAdmin().isSASLSupported(), is(true));
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN.toString()), is(true));
+        assumeTrue(getBrokerAdmin().isSASLSupported());
+        assumeTrue(getBrokerAdmin().isSASLMechanismSupported(PLAIN.toString()));
     }
 
     @Test

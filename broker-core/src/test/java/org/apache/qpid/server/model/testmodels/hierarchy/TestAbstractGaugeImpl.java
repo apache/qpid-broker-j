@@ -46,6 +46,7 @@ public abstract class TestAbstractGaugeImpl<X extends TestAbstractGaugeImpl<X>> 
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
+    @SuppressWarnings({"unused"})
     private ListenableFuture<Void> onActivate()
     {
         setState(State.ACTIVE);

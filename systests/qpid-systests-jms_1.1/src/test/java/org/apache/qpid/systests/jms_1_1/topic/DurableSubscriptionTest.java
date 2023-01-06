@@ -20,10 +20,10 @@ package org.apache.qpid.systests.jms_1_1.topic;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -42,12 +42,12 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
 
-public class DurableSubscribtionTest extends JmsTestBase
+public class DurableSubscriptionTest extends JmsTestBase
 {
     @Test
     public void publishedMessagesAreSavedAfterSubscriberClose() throws Exception
@@ -186,7 +186,7 @@ public class DurableSubscribtionTest extends JmsTestBase
             nonDurableSubscriberSession.commit();
             durableSubscriberSession2.commit();
 
-            assertEquals("Message count should be 0", 0, getTotalDepthOfQueuesMessages());
+            assertEquals(0, getTotalDepthOfQueuesMessages(), "Message count should be 0");
 
             durableSubscriber2.close();
             durableSubscriberSession2.unsubscribe(subscriptionName);
@@ -197,7 +197,7 @@ public class DurableSubscribtionTest extends JmsTestBase
         }
 
         int numberOfQueuesAfterTest = getQueueCount();
-        assertEquals("Unexpected number of queues", numberOfQueuesBeforeTest, numberOfQueuesAfterTest);
+        assertEquals(numberOfQueuesBeforeTest, numberOfQueuesAfterTest, "Unexpected number of queues");
     }
 
     @Test
@@ -219,8 +219,8 @@ public class DurableSubscribtionTest extends JmsTestBase
             subscriberSession.commit();
 
             Message message =  subscriber.receive(getReceiveTimeout());
-            assertTrue("TextMessage should be received", message instanceof TextMessage);
-            assertEquals("Unexpected message", "Test", ((TextMessage)message).getText());
+            assertTrue(message instanceof TextMessage, "TextMessage should be received");
+            assertEquals("Test", ((TextMessage)message).getText(), "Unexpected message");
             subscriberSession.commit();
             subscriber.close();
             subscriberSession.unsubscribe(subscriptionName);
@@ -287,7 +287,7 @@ public class DurableSubscribtionTest extends JmsTestBase
     @Test
     public void testDurableSubscribeWithTemporaryTopic() throws Exception
     {
-        assumeThat("Not investigated - fails on AMQP 1.0", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Not investigated - fails on AMQP 1.0");
         Connection connection = getConnection();
         try
         {
@@ -350,9 +350,8 @@ public class DurableSubscribtionTest extends JmsTestBase
 
                 Message durableSubscriberMessage = noLocalSubscriber.receive(getReceiveTimeout());
                 assertTrue(durableSubscriberMessage instanceof TextMessage);
-                assertEquals("Unexpected local message received",
-                             "Message2",
-                             ((TextMessage) durableSubscriberMessage).getText());
+                assertEquals("Message2", ((TextMessage) durableSubscriberMessage).getText(),
+                        "Unexpected local message received");
                 noLocalSession.commit();
             }
             finally
@@ -374,9 +373,8 @@ public class DurableSubscribtionTest extends JmsTestBase
 
                     final Message durableSubscriberMessage = noLocalSubscriber.receive(getReceiveTimeout());
                     assertTrue(durableSubscriberMessage instanceof TextMessage);
-                    assertEquals("Unexpected local message received",
-                                 "Message3",
-                                 ((TextMessage) durableSubscriberMessage).getText());
+                    assertEquals("Message3", ((TextMessage) durableSubscriberMessage).getText(),
+                            "Unexpected local message received");
                     noLocalSession.commit();
                 }
                 finally
@@ -436,16 +434,14 @@ public class DurableSubscribtionTest extends JmsTestBase
 
                     Message durableSubscriberMessage = noLocalSubscriber.receive(getReceiveTimeout());
                     assertTrue(durableSubscriberMessage instanceof TextMessage);
-                    assertEquals("Unexpected local message received",
-                                 "Message2",
-                                 ((TextMessage) durableSubscriberMessage).getText());
+                    assertEquals("Message2", ((TextMessage) durableSubscriberMessage).getText(),
+                            "Unexpected local message received");
                     noLocalSession.commit();
 
                     Message nonDurableSubscriberMessage = subscriber.receive(getReceiveTimeout());
                     assertTrue(nonDurableSubscriberMessage instanceof TextMessage);
-                    assertEquals("Unexpected message received",
-                                 "Message1",
-                                 ((TextMessage) nonDurableSubscriberMessage).getText());
+                    assertEquals("Message1", ((TextMessage) nonDurableSubscriberMessage).getText(),
+                            "Unexpected message received");
 
                     session.commit();
                     noLocalSubscriber.close();
@@ -472,7 +468,7 @@ public class DurableSubscribtionTest extends JmsTestBase
     @Test
     public void testResubscribeWithChangedNoLocal() throws Exception
     {
-        assumeThat("QPID-8068", getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()), "QPID-8068");
         String subscriptionName = getTestName() + "_sub";
         Topic topic = createTopic(getTestName());
         String clientId = "testClientId";
@@ -491,8 +487,8 @@ public class DurableSubscribtionTest extends JmsTestBase
             connection.start();
 
             Message receivedMessage = durableSubscriber.receive(getReceiveTimeout());
-            assertTrue("TextMessage should be received", receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message received", "A", ((TextMessage)receivedMessage).getText());
+            assertTrue(receivedMessage instanceof TextMessage, "TextMessage should be received");
+            assertEquals("A", ((TextMessage)receivedMessage).getText(), "Unexpected message received");
 
             session.commit();
         }
@@ -522,8 +518,9 @@ public class DurableSubscribtionTest extends JmsTestBase
             }
 
             Message noLocalSubscriberMessage = noLocalSubscriber2.receive(getReceiveTimeout());
-            assertTrue("TextMessage should be received", noLocalSubscriberMessage instanceof TextMessage);
-            assertEquals("Unexpected message received", "C", ((TextMessage)noLocalSubscriberMessage).getText());
+            assertTrue(noLocalSubscriberMessage instanceof TextMessage, "TextMessage should be received");
+            assertEquals("C", ((TextMessage)noLocalSubscriberMessage).getText(),
+                    "Unexpected message received");
         }
         finally
         {
@@ -540,7 +537,7 @@ public class DurableSubscribtionTest extends JmsTestBase
     @Test
     public void testMessageSelectorRecoveredOnBrokerRestart() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         final Topic topic = createTopic(getTestName());
 
@@ -600,8 +597,8 @@ public class DurableSubscribtionTest extends JmsTestBase
                 }
                 else
                 {
-                    assertTrue(String.format("Received message %d with not matching selector", i),
-                               message.getStringProperty("testprop").equals("true"));
+                    assertEquals("true", message.getStringProperty("testprop"),
+                            String.format("Received message %d with not matching selector", i));
                 }
             }
             subscriber.close();
@@ -624,7 +621,7 @@ public class DurableSubscribtionTest extends JmsTestBase
     @Test
     public void testChangeSubscriberToHaveSelector() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         final String subscriptionName = getTestName() + "_sub";
         Topic topic = createTopic(getTestName());
@@ -644,7 +641,8 @@ public class DurableSubscribtionTest extends JmsTestBase
             subscriberConnection.start();
             Message receivedMessage = subscriber.receive(getReceiveTimeout());
             assertTrue(receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message content", "Message1", ((TextMessage) receivedMessage).getText());
+            assertEquals("Message1", ((TextMessage) receivedMessage).getText(),
+                    "Unexpected message content");
 
             subscriber.close();
             session.close();
@@ -675,7 +673,8 @@ public class DurableSubscribtionTest extends JmsTestBase
 
             Message receivedMessage = subscriber.receive(getReceiveTimeout());
             assertTrue(receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message content", "Message4", ((TextMessage) receivedMessage).getText());
+            assertEquals("Message4", ((TextMessage) receivedMessage).getText(),
+                    "Unexpected message content");
 
             subscriber.close();
             session.close();
@@ -724,8 +723,8 @@ public class DurableSubscribtionTest extends JmsTestBase
                 }
                 else
                 {
-                    assertTrue(String.format("Received message %d with not matching selector", i),
-                               message.getStringProperty("testprop").equals("true"));
+                    assertEquals("true", message.getStringProperty("testprop"),
+                            String.format("Received message %d with not matching selector", i));
                 }
             }
 
@@ -739,7 +738,6 @@ public class DurableSubscribtionTest extends JmsTestBase
         }
     }
 
-
     /**
      * create and register a durable subscriber with a message selector and then unsubscribe it
      * create and register a durable subscriber without a message selector and then close it
@@ -751,7 +749,7 @@ public class DurableSubscribtionTest extends JmsTestBase
     @Test
     public void testChangeSubscriberToHaveNoSelector() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         final String subscriptionName = getTestName() + "_sub";
         Topic topic = createTopic(getTestName());
@@ -781,7 +779,8 @@ public class DurableSubscribtionTest extends JmsTestBase
 
             Message receivedMessage = subscriber.receive(getReceiveTimeout());
             assertTrue(receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message content", "Message2", ((TextMessage) receivedMessage).getText());
+            assertEquals("Message2", ((TextMessage) receivedMessage).getText(),
+                    "Unexpected message content");
 
             subscriber.close();
             session.close();
@@ -859,7 +858,7 @@ public class DurableSubscribtionTest extends JmsTestBase
     @Test
     public void testResubscribeWithChangedSelector() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         String subscriptionName = getTestName() + "_sub";
         Topic topic = createTopic(getTestName());
@@ -886,7 +885,7 @@ public class DurableSubscribtionTest extends JmsTestBase
 
             Message receivedMessage = subscriberA.receive(getReceiveTimeout());
             assertTrue(receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message content", "Message2", ((TextMessage) receivedMessage).getText());
+            assertEquals("Message2", ((TextMessage) receivedMessage).getText(), "Unexpected message content");
 
             // Send another 1 matching message and 1 non-matching message
             message = session.createTextMessage("Message3");
@@ -916,7 +915,8 @@ public class DurableSubscribtionTest extends JmsTestBase
             // changing the selector should have cleared the queue so we expect message 6 instead of message 4
             receivedMessage = subscriberB.receive(getReceiveTimeout());
             assertTrue(receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message content", "Message6", ((TextMessage) receivedMessage).getText());
+            assertEquals("Message6", ((TextMessage) receivedMessage).getText(),
+                    "Unexpected message content");
 
             // publish a message to be consumed after restart
             message = session.createTextMessage("Message7");
@@ -949,7 +949,7 @@ public class DurableSubscribtionTest extends JmsTestBase
             //check the dur sub's underlying queue now has msg count 1
             Message receivedMessage = subscriberC.receive(getReceiveTimeout());
             assertTrue(receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message content", "Message8", ((TextMessage) receivedMessage).getText());
+            assertEquals("Message8", ((TextMessage) receivedMessage).getText(), "Unexpected message content");
 
             subscriberC.close();
             session.unsubscribe(subscriptionName);

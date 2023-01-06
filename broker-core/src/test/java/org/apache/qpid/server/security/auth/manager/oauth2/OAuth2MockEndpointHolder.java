@@ -21,21 +21,19 @@
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.SSLEngine;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import junit.framework.TestCase;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -54,7 +52,7 @@ class OAuth2MockEndpointHolder
 
     OAuth2MockEndpointHolder(final String keyStorePath, final String keyStorePassword, final String keyStoreType) throws IOException
     {
-        this(Collections.emptyMap(), keyStorePath, keyStorePassword, keyStoreType);
+        this(Map.of(), keyStorePath, keyStorePassword, keyStoreType);
     }
 
     private OAuth2MockEndpointHolder(final Map<String, OAuth2MockEndpoint> endpoints,
@@ -106,8 +104,7 @@ class OAuth2MockEndpointHolder
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request,
-                               HttpServletResponse response) throws IOException,
-                                                                    ServletException
+                               HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
 
@@ -115,18 +112,15 @@ class OAuth2MockEndpointHolder
                 {
                     final OAuth2MockEndpoint
                             mockEndpoint = _endpoints.get(request.getPathInfo());
-                    TestCase.assertNotNull(String.format("Could not find mock endpoint for request path '%s'",
-                                                         request.getPathInfo()), mockEndpoint);
-                    if (mockEndpoint != null)
-                    {
-                        mockEndpoint.handleRequest(request, response);
-                    }
+                    assertNotNull(mockEndpoint, String.format("Could not find mock endpoint for request path '%s'",
+                                                              request.getPathInfo()));
+                    mockEndpoint.handleRequest(request, response);
                 }
                 catch (Throwable t)
                 {
                     response.setStatus(500);
                     response.getOutputStream().write(String.format("{\"error\":\"test failure\",\"error_description\":\"%s\"}", t)
-                                                           .getBytes(OAuth2AuthenticationProviderImplTest.UTF8));
+                            .getBytes(OAuth2AuthenticationProviderImplTest.UTF8));
                 }
             }
         });
@@ -155,9 +149,9 @@ class OAuth2MockEndpointHolder
 
     private List<String> getSystemPropertyAsList(final String propertyName, final String defaultValue)
     {
-        String listAsString = System.getProperty(propertyName, defaultValue);
-        List<String> listOfStrings = Collections.emptyList();
-        if(listAsString != null && !"".equals(listAsString))
+        final String listAsString = System.getProperty(propertyName, defaultValue);
+        List<String> listOfStrings = List.of();
+        if (listAsString != null && !"".equals(listAsString))
         {
             try
             {

@@ -20,21 +20,19 @@
  */
 package org.apache.qpid.server.logging.messages;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
 import org.apache.qpid.server.logging.subjects.TestBlankSubject;
-import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractTestMessages extends UnitTestBase
 {
@@ -43,18 +41,11 @@ public abstract class AbstractTestMessages extends UnitTestBase
     protected LogSubject _logSubject = new TestBlankSubject();
     private EventLogger _eventLogger;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        BrokerTestHelper.setUp();
         _logger = new UnitTestMessageLogger();
         _eventLogger = new EventLogger(_logger);
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        BrokerTestHelper.tearDown();
     }
 
     protected List<Object> getLog()
@@ -83,19 +74,14 @@ public abstract class AbstractTestMessages extends UnitTestBase
         return _logger.getLogMessages();
     }
 
-    protected void validateLogMessage(List<Object> logs, String tag, String[] expected)
+    protected void validateLogMessage(final List<Object> logs, final String tag, final String[] expected)
     {
         validateLogMessage(logs, tag, false, expected);
     }
 
-    protected void validateLogMessageNoSubject(List<Object> logs, String tag, String[] expected)
+    protected void validateLogMessageNoSubject(final List<Object> logs, final String tag, final String[] expected)
     {
         validateLogMessage(logs, tag, null, false, expected);
-    }
-
-    protected void validateLogMessageNoSubject(List<Object> logs, String tag, boolean useStringForNull, String[] expected)
-    {
-        validateLogMessage(logs, tag, null, useStringForNull, expected);
     }
 
     /**
@@ -107,59 +93,62 @@ public abstract class AbstractTestMessages extends UnitTestBase
      * @param expected the expected log messages
      * @param useStringForNull replace a null String reference with "null"
      */
-    protected void validateLogMessage(List<Object> logs, String tag, boolean useStringForNull, String[] expected)
+    protected void validateLogMessage(final List<Object> logs,
+                                      final String tag,
+                                      final boolean useStringForNull,
+                                      final String[] expected)
     {
         validateLogMessage(logs, tag, _logSubject, useStringForNull, expected);
     }
 
-    protected void validateLogMessage(List<Object> logs, String tag, LogSubject subject, boolean useStringForNull, String[] expected)
+    protected void validateLogMessage(
+            final List<Object> logs,
+            final String tag,
+            final LogSubject subject,
+            final boolean useStringForNull,
+            final String[] expected)
     {
-        assertEquals("Log has incorrect message count", 1, logs.size());
+        assertEquals(1, logs.size(), "Log has incorrect message count");
 
-        //We trim() here as we don't care about extra white space at the end of the log message
+        // We trim() here as we don't care about extra white space at the end of the log message
         // but we do care about the ability to easily check we don't have unexpected text at
         // the end.
-        String log = String.valueOf(logs.get(0)).trim();
+        final String log = String.valueOf(logs.get(0)).trim();
 
         // Simple switch to print out all the logged messages 
-        //System.err.println(log);
+        // System.err.println(log);
 
         int msgIndex;
         String message;
-        if(subject != null)
+        if (subject != null)
         {
             final String subjectString = subject.toLogString();
             msgIndex = log.indexOf(subjectString)+ subjectString.length();
-
-            assertTrue("Unable to locate Subject:" + log, msgIndex != -1);
-
-            message = log.substring(msgIndex);
+            assertTrue(msgIndex != -1, "Unable to locate Subject:" + log);
         }
         else
         {
             msgIndex = log.indexOf(tag);
-            message = log.substring(msgIndex);
         }
+        message = log.substring(msgIndex);
 
-        assertTrue("Message does not start with tag:" + tag + ":" + message,
-                   message.startsWith(tag));
+        assertTrue(message.startsWith(tag), "Message does not start with tag:" + tag + ":" + message);
 
         // Test that the expected items occur in order.
         int index = 0;
         for (String text : expected)
         {
-            if(useStringForNull && text == null)
+            if (useStringForNull && text == null)
             {
                 text = "null";
             }
             index = message.indexOf(text, index);
-            assertTrue("Message does not contain expected (" + text + ") text :" + message, index != -1);
+            assertTrue(index != -1, "Message does not contain expected (" + text + ") text :" + message);
             index = index + text.length();
         }
 
-        //Check there is nothing left on the log message
-        assertEquals("Message has more text. '" + log.substring(msgIndex + index) + "'",
-                     log.length(), msgIndex +  index);
+        // Check there is nothing left on the log message
+        assertEquals(log.length(), msgIndex + index, "Message has more text. '" +
+                log.substring(msgIndex + index) + "'");
     }
-
 }

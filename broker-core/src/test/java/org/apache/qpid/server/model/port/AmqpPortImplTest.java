@@ -19,10 +19,10 @@
 
 package org.apache.qpid.server.model.port;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -34,15 +34,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.security.Principal;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -63,50 +62,52 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.security.SiteSpecificTrustStore;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class AmqpPortImplTest extends UnitTestBase
 {
     private static final String AUTHENTICATION_PROVIDER_NAME = "test";
     private static final String KEYSTORE_NAME = "keystore";
     private static final String TRUSTSTORE_NAME = "truststore";
+    
     private TaskExecutor _taskExecutor;
     private Broker _broker;
     private AmqpPortImpl _port;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        Model model = BrokerModel.getInstance();
-        SystemConfig systemConfig = mock(SystemConfig.class);
+        final Model model = BrokerModel.getInstance();
+        final SystemConfig systemConfig = mock(SystemConfig.class);
         _broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, mock(Principal.class));
         when(_broker.getParent()).thenReturn(systemConfig);
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(model);
-        when(_broker.getId()).thenReturn(UUID.randomUUID());
+        when(_broker.getId()).thenReturn(randomUUID());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
 
-        KeyStore<?> keyStore = mock(KeyStore.class);
+        final KeyStore<?> keyStore = mock(KeyStore.class);
         when(keyStore.getName()).thenReturn(KEYSTORE_NAME);
         when(keyStore.getParent()).thenReturn(_broker);
 
-        TrustStore<?> trustStore = mock(TrustStore.class);
+        final TrustStore<?> trustStore = mock(TrustStore.class);
         when(trustStore.getName()).thenReturn(TRUSTSTORE_NAME);
         when(trustStore.getParent()).thenReturn(_broker);
 
-        AuthenticationProvider<?> authProvider = mock(AuthenticationProvider.class);
+        final AuthenticationProvider<?> authProvider = mock(AuthenticationProvider.class);
         when(authProvider.getName()).thenReturn(AUTHENTICATION_PROVIDER_NAME);
         when(authProvider.getParent()).thenReturn(_broker);
-        when(authProvider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
+        when(authProvider.getMechanisms()).thenReturn(List.of("PLAIN"));
 
-        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.singleton(authProvider));
-        when(_broker.getChildren(KeyStore.class)).thenReturn(Collections.singleton(keyStore));
-        when(_broker.getChildren(TrustStore.class)).thenReturn(Collections.singleton(trustStore));
+        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Set.of(authProvider));
+        when(_broker.getChildren(KeyStore.class)).thenReturn(Set.of(keyStore));
+        when(_broker.getChildren(TrustStore.class)).thenReturn(Set.of(trustStore));
         when(_broker.getChildByName(AuthenticationProvider.class, AUTHENTICATION_PROVIDER_NAME)).thenReturn(authProvider);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -117,7 +118,7 @@ public class AmqpPortImplTest extends UnitTestBase
         {
             if (_port != null)
             {
-                while(_port.getConnectionCount() >0)
+                while (_port.getConnectionCount() >0)
                 {
                     _port.decrementConnectionCount();
                 }
@@ -129,40 +130,30 @@ public class AmqpPortImplTest extends UnitTestBase
     @Test
     public void testPortAlreadyBound() throws Exception
     {
-        try (ServerSocket socket = openSocket())
+        try (final ServerSocket socket = openSocket())
         {
-            try
-            {
-                createPort(getTestName(),
-                           Collections.singletonMap(AmqpPort.PORT, socket.getLocalPort()));
-                fail("Creation should fail due to validation check");
-            }
-            catch (IllegalConfigurationException e)
-            {
-                assertEquals("Unexpected exception message",
-                                    String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
-                                                  socket.getLocalPort(), "*"),
-                                    e.getMessage());
-            }
+            final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                    () -> createPort(getTestName(), Map.of(AmqpPort.PORT, socket.getLocalPort())),
+                    "Creation should fail due to validation check");
+            assertEquals(String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
+                    socket.getLocalPort(), "*"), thrown.getMessage(), "Unexpected exception message");
         }
     }
 
     @Test
     public void testCreateTls()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(AmqpPort.TRANSPORTS, Collections.singletonList(Transport.SSL));
-        attributes.put(AmqpPort.KEY_STORE, KEYSTORE_NAME);
+        final Map<String, Object> attributes = Map.of(AmqpPort.TRANSPORTS, List.of(Transport.SSL),
+                AmqpPort.KEY_STORE, KEYSTORE_NAME);
         _port = createPort(getTestName(), attributes);
     }
 
     @Test
     public void testCreateTlsClientAuth()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(AmqpPort.TRANSPORTS, Collections.singletonList(Transport.SSL));
-        attributes.put(AmqpPort.KEY_STORE, KEYSTORE_NAME);
-        attributes.put(AmqpPort.TRUST_STORES, Collections.singletonList(TRUSTSTORE_NAME));
+        final Map<String, Object> attributes = Map.of(AmqpPort.TRANSPORTS, List.of(Transport.SSL),
+                AmqpPort.KEY_STORE, KEYSTORE_NAME,
+                AmqpPort.TRUST_STORES, List.of(TRUSTSTORE_NAME));
         _port = createPort(getTestName(), attributes);
     }
 
@@ -173,167 +164,91 @@ public class AmqpPortImplTest extends UnitTestBase
         final SiteSpecificTrustStore<?> trustStore = mock(SiteSpecificTrustStore.class);
         when(trustStore.getName()).thenReturn(trustStoreName);
         when(trustStore.getParent()).thenReturn(_broker);
-        when(_broker.getChildren(TrustStore.class)).thenReturn(Collections.singleton(trustStore));
+        when(_broker.getChildren(TrustStore.class)).thenReturn(Set.of(trustStore));
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(AmqpPort.TRANSPORTS, Collections.singletonList(Transport.SSL));
-        attributes.put(AmqpPort.KEY_STORE, KEYSTORE_NAME);
-        attributes.put(AmqpPort.TRUST_STORES, Collections.singletonList(trustStoreName));
-        attributes.put(AmqpPort.NEED_CLIENT_AUTH, "true");
-
-        try
-        {
-            createPort(getTestName(), attributes);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        final Map<String, Object> attributes = Map.of(AmqpPort.TRANSPORTS, List.of(Transport.SSL),
+                AmqpPort.KEY_STORE, KEYSTORE_NAME,
+                AmqpPort.TRUST_STORES, List.of(trustStoreName),
+                AmqpPort.NEED_CLIENT_AUTH, "true");
+        assertThrows(IllegalConfigurationException.class,
+                () -> createPort(getTestName(), attributes),
+                "Exception not thrown");
     }
 
     @Test
     public void testTlsWithoutKeyStore()
     {
-        try
-        {
-            createPort(getTestName(), Collections.singletonMap(Port.TRANSPORTS, Collections.singletonList(Transport
-                                                                                                                  .SSL)));
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // PASS
-        }
-
-        try
-        {
-            createPort(getTestName(), Collections.singletonMap(Port.TRANSPORTS, Arrays.asList(Transport.SSL, Transport.TCP)));
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // PASS
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> createPort(getTestName(), Map.of(Port.TRANSPORTS, List.of(Transport.SSL))),
+                "Exception not thrown");
+        assertThrows(IllegalConfigurationException.class,
+                () -> createPort(getTestName(), Map.of(Port.TRANSPORTS, List.of(Transport.SSL, Transport.TCP))),
+                "Exception not thrown");
     }
 
     @Test
     public void testTlsWantNeedWithoutTrustStores()
     {
-        Map<String, Object> base = new HashMap<>();
-        base.put(AmqpPort.TRANSPORTS, Collections.singletonList(Transport.SSL));
-        base.put(AmqpPort.KEY_STORE, KEYSTORE_NAME);
+        final Map<String, Object> base = Map.of(AmqpPort.TRANSPORTS, List.of(Transport.SSL),
+                AmqpPort.KEY_STORE, KEYSTORE_NAME);
 
+        final Map<String, Object> needClientAuthAttributes = new HashMap<>(base);
+        needClientAuthAttributes.put(Port.NEED_CLIENT_AUTH, true);
+        assertThrows(IllegalConfigurationException.class,
+                () -> createPort(getTestName(), needClientAuthAttributes),
+                "Exception not thrown");
 
-        try
-        {
-            Map<String, Object> attributes = new HashMap<>(base);
-            attributes.put(Port.NEED_CLIENT_AUTH, true);
-            createPort(getTestName(), attributes);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // PASS
-        }
-
-        try
-        {
-            Map<String, Object> attributes = new HashMap<>(base);
-            attributes.put(Port.WANT_CLIENT_AUTH, true);
-            createPort(getTestName(), attributes);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // PASS
-        }
+        final Map<String, Object> wantClientAuthAttributes = new HashMap<>(base);
+        wantClientAuthAttributes.put(Port.WANT_CLIENT_AUTH, true);
+        assertThrows(IllegalConfigurationException.class,
+                () -> createPort(getTestName(), wantClientAuthAttributes),
+                "Exception not thrown");
     }
 
     @Test
     public void testOnCreateValidation()
     {
-        try
-        {
-            createPort(getTestName(), Collections.singletonMap(AmqpPort.NUMBER_OF_SELECTORS, "-1"));
-            fail("Exception not thrown for negative number of selectors");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
-        try
-        {
-            createPort(getTestName(), Collections.singletonMap(AmqpPort.THREAD_POOL_SIZE, "-1"));
-            fail("Exception not thrown for negative thread pool size");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
-        try
-        {
-            createPort(getTestName(),
-                       Collections.singletonMap(AmqpPort.NUMBER_OF_SELECTORS,
-                                                AmqpPort.DEFAULT_PORT_AMQP_THREAD_POOL_SIZE));
-            fail("Exception not thrown for number of selectors equal to thread pool size");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> createPort(getTestName(), Map.of(AmqpPort.NUMBER_OF_SELECTORS, "-1")),
+                "Exception not thrown for negative number of selectors");
+        assertThrows(IllegalConfigurationException.class,
+                () -> createPort(getTestName(), Map.of(AmqpPort.THREAD_POOL_SIZE, "-1")),
+                "Exception not thrown for negative thread pool size");
+        assertThrows(IllegalConfigurationException.class,
+                () -> createPort(getTestName(), Map.of(AmqpPort.NUMBER_OF_SELECTORS, AmqpPort.DEFAULT_PORT_AMQP_THREAD_POOL_SIZE)),
+                "Exception not thrown for number of selectors equal to thread pool size");
     }
 
     @Test
     public void testOnChangeThreadPoolValidation()
     {
         _port = createPort(getTestName());
-        try
-        {
-            _port.setAttributes(Collections.singletonMap(AmqpPort.NUMBER_OF_SELECTORS, "-1"));
-            fail("Exception not thrown for negative number of selectors");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
-        try
-        {
-            _port.setAttributes(Collections.singletonMap(AmqpPort.THREAD_POOL_SIZE, "-1"));
-            fail("Exception not thrown for negative thread pool size");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
-        try
-        {
-            _port.setAttributes(Collections.singletonMap(AmqpPort.NUMBER_OF_SELECTORS,
-                                                         AmqpPort.DEFAULT_PORT_AMQP_THREAD_POOL_SIZE));
-            fail("Exception not thrown for number of selectors equal to thread pool size");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> _port.setAttributes(Map.of(AmqpPort.NUMBER_OF_SELECTORS, "-1")),
+                "Exception not thrown for negative number of selectors");
+        assertThrows(IllegalConfigurationException.class,
+                () -> _port.setAttributes(Map.of(AmqpPort.THREAD_POOL_SIZE, "-1")),
+                "Exception not thrown for negative thread pool size");
+        assertThrows(IllegalConfigurationException.class,
+                () -> _port.setAttributes(Map.of(AmqpPort.NUMBER_OF_SELECTORS, AmqpPort.DEFAULT_PORT_AMQP_THREAD_POOL_SIZE)),
+                "Exception not thrown for number of selectors equal to thread pool size");
     }
 
     @Test
     public void testConnectionCounting()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(AmqpPort.PORT, 0);
-        attributes.put(AmqpPort.NAME, getTestName());
-        attributes.put(AmqpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
-        attributes.put(AmqpPort.MAX_OPEN_CONNECTIONS, 10);
-        attributes.put(AmqpPort.CONTEXT, Collections.singletonMap(AmqpPort.OPEN_CONNECTIONS_WARN_PERCENT, "80"));
+        final Map<String, Object> attributes = Map.of(AmqpPort.PORT, 0,
+                AmqpPort.NAME, getTestName(),
+                AmqpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME,
+                AmqpPort.MAX_OPEN_CONNECTIONS, 10,
+                AmqpPort.CONTEXT, Map.of(AmqpPort.OPEN_CONNECTIONS_WARN_PERCENT, "80"));
         _port = new AmqpPortImpl(attributes, _broker);
         _port.create();
         EventLogger mockLogger = mock(EventLogger.class);
 
         when(_broker.getEventLogger()).thenReturn(mockLogger);
 
-        for(int i = 0; i < 8; i++)
+        for (int i = 0; i < 8; i++)
         {
             assertTrue(_port.acceptNewConnectionAndIncrementCount(new InetSocketAddress("example.org", 0)));
             assertEquals(i + 1L, _port.getConnectionCount());
@@ -354,8 +269,7 @@ public class AmqpPortImplTest extends UnitTestBase
     @Test
     public void resetStatistics()
     {
-        final Map<String, Object> attributes = Map.of(
-                AmqpPort.PORT, 0,
+        final Map<String, Object> attributes = Map.of(AmqpPort.PORT, 0,
                 AmqpPort.NAME, getTestName(),
                 AmqpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME,
                 AmqpPort.MAX_OPEN_CONNECTIONS, 10,
@@ -376,12 +290,12 @@ public class AmqpPortImplTest extends UnitTestBase
 
     private AmqpPortImpl createPort(final String portName)
     {
-        return createPort(portName, Collections.emptyMap());
+        return createPort(portName, Map.of());
     }
 
     private AmqpPortImpl createPort(final String portName, final Map<String, Object> attributes)
     {
-        Map<String, Object> portAttributes = new HashMap<>();
+        final Map<String, Object> portAttributes = new HashMap<>();
         portAttributes.put(AmqpPort.PORT, 0);
         portAttributes.put(AmqpPort.NAME, portName);
         portAttributes.put(AmqpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
@@ -393,7 +307,7 @@ public class AmqpPortImplTest extends UnitTestBase
 
     private ServerSocket openSocket() throws IOException
     {
-        ServerSocket serverSocket = new ServerSocket();
+        final ServerSocket serverSocket = new ServerSocket();
         serverSocket.setReuseAddress(true);
         serverSocket.bind(new InetSocketAddress(0));
         return serverSocket;

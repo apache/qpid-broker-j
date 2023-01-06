@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.disttest.charting.writer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,8 +36,9 @@ import com.google.common.io.Resources;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.general.DefaultPieDataset;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.disttest.charting.definition.ChartingDefinition;
 import org.apache.qpid.test.utils.TestFileUtils;
@@ -51,8 +52,8 @@ public class ChartWriterTest extends UnitTestBase
     private File _chartDir;
     private ChartWriter _writer;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
         DefaultPieDataset dataset = new DefaultPieDataset();
         dataset.setValue("a", 1);
@@ -74,11 +75,11 @@ public class ChartWriterTest extends UnitTestBase
         when(chartDef1.getChartStemName()).thenReturn("chart1");
 
         File chart1File = new File(_chartDir, "chart1.png");
-        assertFalse("chart1 png should not exist yet", chart1File.exists());
+        assertFalse(chart1File.exists(), "chart1 png should not exist yet");
 
         _writer.writeChartToFileSystem(_chart1, chartDef1);
 
-        assertTrue("chart1 png does not exist", chart1File.exists());
+        assertTrue(chart1File.exists(), "chart1 png does not exist");
     }
 
     @Test
@@ -103,7 +104,7 @@ public class ChartWriterTest extends UnitTestBase
         List<String> expected = Resources.readLines(Resources.getResource(getClass(), "expected-chart-summary.html"),
                                                    StandardCharsets.UTF_8);
         List<String> actual = Files.readAllLines(summaryFile.toPath(), StandardCharsets.UTF_8);
-        assertEquals("HTML summary file has unexpected content", expected, actual);
+        assertEquals(expected, actual, "HTML summary file has unexpected content");
     }
 
     @Test
@@ -119,8 +120,7 @@ public class ChartWriterTest extends UnitTestBase
 
         _writer.writeHtmlSummaryToFileSystem("Performance Charts");
 
-        assertFalse("Only one chart generated so no summary file should have been written", summaryFile.exists());
-
+        assertFalse(summaryFile.exists(), "Only one chart generated so no summary file should have been written");
     }
 
     private void writeDummyContentToSummaryFileToEnsureItGetsOverwritten(File summaryFile) throws Exception

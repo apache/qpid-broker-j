@@ -33,8 +33,8 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.Transaction;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -44,7 +44,7 @@ public class DatabaseTemplateTest extends UnitTestBase
     private Environment _environment;
     private Database _sourceDatabase;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _environment = mock(Environment.class);
@@ -87,5 +87,4 @@ public class DatabaseTemplateTest extends UnitTestBase
         verify(databaseOperation).run(eq(_sourceDatabase), isNull(), isNull());
         verify(_sourceDatabase).close();
     }
-
 }

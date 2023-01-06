@@ -26,8 +26,6 @@ import java.io.ObjectOutputStream;
 
 public class TestBinaryReport extends QueueBinaryReport
 {
-
-
     private int _limit;
     private String _propertyName;
     private int _count;

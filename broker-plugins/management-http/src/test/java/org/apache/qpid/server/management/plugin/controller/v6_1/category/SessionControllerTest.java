@@ -32,8 +32,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.ManagementResponse;
@@ -48,7 +48,7 @@ public class SessionControllerTest extends UnitTestBase
     private LegacyManagementController _legacyManagementController;
     private SessionController _sessionController;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _legacyManagementController = mock(LegacyManagementController.class);

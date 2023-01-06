@@ -19,20 +19,19 @@
  */
 package org.apache.qpid.disttest.charting.chartbuilder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.ShortTextTitle;
 import org.jfree.data.general.Dataset;
-import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,22 +49,10 @@ import org.apache.qpid.test.utils.TestFileUtils;
  * verify the generated output, set the system property {@link #RETAIN_TEST_CHARTS}
  * to prevent the automatic deletion of the test chart directory.
  */
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ChartProductionTest extends UnitTestBase
 {
@@ -93,8 +80,8 @@ public class ChartProductionTest extends UnitTestBase
     private final ChartingDefinition _chartingDefinition = mock(ChartingDefinition.class);
     private final ChartWriter _writer = new ChartWriter();
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
 
         when(_seriesDefinition.getSeriesLegend()).thenReturn(TEST_SERIESLEGEND);
@@ -122,7 +109,7 @@ public class ChartProductionTest extends UnitTestBase
     }
 
     @Test
-    public void testBarChart() throws Exception
+    public void testBarChart()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.BAR,
                                                                       new SampleSeriesBuilder(SIMPLE_SERIES_ROWS));
@@ -130,35 +117,35 @@ public class ChartProductionTest extends UnitTestBase
     }
 
     @Test
-    public void testBar3DChart() throws Exception
+    public void testBar3DChart()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.BAR3D, new SampleSeriesBuilder());
         assertChartTitlesAndWriteToFile(builder);
     }
 
     @Test
-    public void testLineChart() throws Exception
+    public void testLineChart()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.LINE, new SampleSeriesBuilder());
         assertChartTitlesAndWriteToFile(builder);
     }
 
     @Test
-    public void testLine3DChart() throws Exception
+    public void testLine3DChart()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.LINE3D, new SampleSeriesBuilder());
         assertChartTitlesAndWriteToFile(builder);
     }
 
     @Test
-    public void testXYLineChart() throws Exception
+    public void testXYLineChart()
     {
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.XYLINE, new SampleSeriesBuilder());
         assertChartTitlesAndWriteToFile(builder);
     }
 
     @Test
-    public void testXYLineChartWithColourAndWidth() throws Exception
+    public void testXYLineChartWithColourAndWidth()
     {
         when(_seriesDefinition.getStrokeWidth()).thenReturn(3);
         when(_seriesDefinition.getSeriesColourName()).thenReturn("dark_orange");
@@ -168,7 +155,7 @@ public class ChartProductionTest extends UnitTestBase
     }
 
     @Test
-    public void testXYLineChartWithYAxisBounds() throws Exception
+    public void testXYLineChartWithYAxisBounds()
     {
         when(_chartingDefinition.getYAxisLowerBound()).thenReturn(-10);
         when(_chartingDefinition.getYAxisUpperBound()).thenReturn(20);
@@ -178,7 +165,7 @@ public class ChartProductionTest extends UnitTestBase
     }
 
     @Test
-    public void testTimeSeriesLineChart() throws Exception
+    public void testTimeSeriesLineChart()
     {
         when(_seriesDefinition.getShape()).thenReturn("cross");
 
@@ -200,7 +187,7 @@ public class ChartProductionTest extends UnitTestBase
     }
 
     @Test
-    public void testStatisticalBarChart() throws Exception
+    public void testStatisticalBarChart()
     {
         SeriesRow[] statisticalSeriesRows = new SeriesRow[]
         {
@@ -227,11 +214,11 @@ public class ChartProductionTest extends UnitTestBase
 
         if (chart.getPlot() instanceof XYPlot)
         {
-            assertEquals((long) 1, (long) chart.getXYPlot().getDatasetCount());
+            assertEquals(1, (long) chart.getXYPlot().getDatasetCount());
         }
         else
         {
-            assertEquals((long) 1, (long) chart.getCategoryPlot().getDatasetCount());
+            assertEquals(1, (long) chart.getCategoryPlot().getDatasetCount());
         }
 
         _writer.writeChartToFileSystem(chart, _chartingDefinition);
@@ -254,11 +241,10 @@ public class ChartProductionTest extends UnitTestBase
         @Override
         public Dataset build(List<SeriesDefinition> seriesDefinitions)
         {
-            for (Iterator<SeriesDefinition> iterator = seriesDefinitions.iterator(); iterator.hasNext();)
+            for (SeriesDefinition seriesDefinition : seriesDefinitions)
             {
-                SeriesDefinition seriesDefinition = iterator.next();
                 _datasetHolder.beginSeries(seriesDefinition);
-                for(SeriesRow seriesRow : _sampleSeriesRows)
+                for (SeriesRow seriesRow : _sampleSeriesRows)
                 {
                     _datasetHolder.addDataPointToSeries(seriesDefinition, seriesRow);
                 }

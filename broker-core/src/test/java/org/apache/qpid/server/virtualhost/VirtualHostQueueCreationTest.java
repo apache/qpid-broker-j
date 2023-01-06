@@ -20,20 +20,18 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -56,31 +54,29 @@ import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings("rawtypes")
 public class VirtualHostQueueCreationTest extends UnitTestBase
 {
     private VirtualHost<?> _virtualHost;
     private VirtualHostNode _virtualHostNode;
     private TaskExecutor _taskExecutor;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
+        final EventLogger eventLogger = mock(EventLogger.class);
+        final ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
 
-        EventLogger eventLogger = mock(EventLogger.class);
-        ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
+        _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
 
-        _taskExecutor = new CurrentThreadTaskExecutor();
-        _taskExecutor.start();
-
-        SystemConfig<?> context = mock(SystemConfig.class);
+        final SystemConfig<?> context = mock(SystemConfig.class);
         when(context.getEventLogger()).thenReturn(eventLogger);
         when(context.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
 
-        Principal systemPrincipal = mock(Principal.class);
-        AccessControl accessControl = BrokerTestHelper.createAccessControlMock();
+        final Principal systemPrincipal = mock(Principal.class);
+        final AccessControl accessControl = BrokerTestHelper.createAccessControlMock();
 
-        Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal, accessControl);
+        final Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal, accessControl);
         when(broker.getObjectFactory()).thenReturn(objectFactory);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getParent()).thenReturn(context);
@@ -96,116 +92,85 @@ public class VirtualHostQueueCreationTest extends UnitTestBase
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
-
         when(_virtualHostNode.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
         _virtualHost = createHost();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-            _taskExecutor.stopImmediately();
-            _virtualHost.close();
-        }
-        finally
-        {
-        }
+        _taskExecutor.stopImmediately();
     }
 
     private VirtualHost<?> createHost()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHost.NAME, getTestName());
-        attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-
-        attributes = new HashMap<>(attributes);
-        attributes.put(VirtualHost.ID, UUID.randomUUID());
-        TestMemoryVirtualHost host = new TestMemoryVirtualHost(attributes, _virtualHostNode);
+        final Map<String, Object> attributes = Map.of(VirtualHost.NAME, getTestName(),
+                VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
+                VirtualHost.ID, randomUUID());
+        final TestMemoryVirtualHost host = new TestMemoryVirtualHost(attributes, _virtualHostNode);
         host.create();
         host.start();
         return host;
     }
 
     @Test
-    public void testPriorityQueueRegistration() throws Exception
+    public void testPriorityQueueRegistration()
     {
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(Queue.ID, UUID.randomUUID());
-        attributes.put(Queue.NAME, "testPriorityQueue");
-
-        attributes.put(PriorityQueue.PRIORITIES, 5);
-
-
-        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
-
+        final Map<String,Object> attributes = Map.of(Queue.ID, randomUUID(),
+                Queue.NAME, "testPriorityQueue",
+                PriorityQueue.PRIORITIES, 5);
+        final Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
         final boolean condition = queue instanceof PriorityQueueImpl;
-        assertTrue("Queue not a priority queue", condition);
-        assertNotNull("Queue " + "testPriorityQueue" + " was not created", _virtualHost.getChildByName(Queue.class,
-                                                                                                              "testPriorityQueue"));
 
+        assertTrue(condition, "Queue not a priority queue");
+        assertNotNull(_virtualHost.getChildByName(Queue.class, "testPriorityQueue"),
+                "Queue " + "testPriorityQueue" + " was not created");
 
-        assertEquals("Queue was not registered in virtualhost",
-                            (long) 1,
-                            (long) _virtualHost.getChildren(Queue.class).size());
+        assertEquals(1, (long) _virtualHost.getChildren(Queue.class).size(),
+                "Queue was not registered in virtualhost");
     }
 
     @Test
-    public void testSimpleQueueCreation() throws Exception
+    public void testSimpleQueueCreation()
     {
-        String queueName = getTestName();
-
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(Queue.ID, UUID.randomUUID());
-        attributes.put(Queue.NAME, queueName);
-
-
-        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
+        final String queueName = getTestName();
+        final Map<String,Object> attributes = Map.of(Queue.ID, randomUUID(),
+                Queue.NAME, queueName);
+        final Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
         final boolean condition = queue instanceof StandardQueueImpl;
-        assertTrue("Queue not a simple queue", condition);
-        assertNotNull("Queue " + queueName + " was not created",
-                             _virtualHost.getChildByName(Queue.class, queueName));
 
-        assertEquals("Queue was not registered in virtualhost",
-                            (long) 1,
-                            (long) _virtualHost.getChildren(Queue.class).size());
+        assertTrue(condition, "Queue not a simple queue");
+        assertNotNull(_virtualHost.getChildByName(Queue.class, queueName), "Queue " + queueName + " was not created");
+
+        assertEquals(1, (long) _virtualHost.getChildren(Queue.class).size(),
+                "Queue was not registered in virtualhost");
     }
 
     @Test
-    public void testMaximumDeliveryCount() throws Exception
+    public void testMaximumDeliveryCount()
     {
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(Queue.ID, UUID.randomUUID());
-        attributes.put(Queue.NAME, "testMaximumDeliveryCount");
-
-        attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 5);
-
+        final Map<String,Object> attributes = Map.of(Queue.ID, randomUUID(),
+                Queue.NAME, "testMaximumDeliveryCount",
+                Queue.MAXIMUM_DELIVERY_ATTEMPTS, 5);
         final Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
-        assertNotNull("The queue was not registered as expected ", queue);
-        assertEquals("Maximum delivery count not as expected", (long) 5, (long) queue.getMaximumDeliveryAttempts
-                ());
+        assertNotNull(queue, "The queue was not registered as expected ");
+        assertEquals(5, (long) queue.getMaximumDeliveryAttempts(),
+                "Maximum delivery count not as expected");
 
-        assertEquals("Queue was not registered in virtualhost",
-                            (long) 1,
-                            (long) _virtualHost.getChildren(Queue.class).size());
+        assertEquals(1, (long) _virtualHost.getChildren(Queue.class).size(),
+                "Queue was not registered in virtualhost");
     }
 
     @Test
-    public void testMessageGroupQueue() throws Exception
+    public void testMessageGroupQueue()
     {
-
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(Queue.ID, UUID.randomUUID());
-        attributes.put(Queue.NAME, getTestName());
-        attributes.put(Queue.MESSAGE_GROUP_KEY_OVERRIDE, "mykey");
-        attributes.put(Queue.MESSAGE_GROUP_TYPE, MessageGroupType.SHARED_GROUPS);
-
-        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
+        final Map<String,Object> attributes = Map.of(Queue.ID, randomUUID(),
+                Queue.NAME, getTestName(),
+                Queue.MESSAGE_GROUP_KEY_OVERRIDE, "mykey",
+                Queue.MESSAGE_GROUP_TYPE, MessageGroupType.SHARED_GROUPS);
+        final Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
         assertEquals("mykey", queue.getAttribute(Queue.MESSAGE_GROUP_KEY_OVERRIDE));
         assertEquals(MessageGroupType.SHARED_GROUPS, queue.getAttribute(Queue.MESSAGE_GROUP_TYPE));
     }
-
-
 }

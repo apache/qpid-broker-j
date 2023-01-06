@@ -30,15 +30,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -67,7 +66,7 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "qpid.tests.mms.messagestore.persistence", value = "false", jvm = true)
 public class FilterTest extends BrokerAdminUsingTestBase
 {
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -87,7 +86,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class);
             Flow flow = interaction.getLatestResponse(Flow.class);
-            assumeThat("insufficient credit for the test", flow.getLinkCredit().intValue(), is(greaterThan(1)));
+            assumeTrue(is(greaterThan(1)).matches(flow.getLinkCredit().intValue()), "insufficient credit for the test");
 
             for (int i = 0; i < 2; i++)
             {

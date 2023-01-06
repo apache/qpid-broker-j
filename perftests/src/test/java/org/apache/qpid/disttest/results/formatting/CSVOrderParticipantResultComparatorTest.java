@@ -18,37 +18,24 @@
  */
 package org.apache.qpid.disttest.results.formatting;
 
-
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.ProducerParticipantResult;
 import org.apache.qpid.disttest.results.aggregation.TestResultAggregator;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class CSVOrderParticipantResultComparatorTest extends UnitTestBase
 {
     CSVOrderParticipantResultComparator _comparator = new CSVOrderParticipantResultComparator();
 
     @Test
-    public void testOrderedConsumerParticipants() throws Exception
+    public void testOrderedConsumerParticipants()
     {
         assertCompare(
                 new ConsumerParticipantResult("apple"),
@@ -56,7 +43,7 @@ public class CSVOrderParticipantResultComparatorTest extends UnitTestBase
 
     }
     @Test
-    public void testProducerPrecedesConsumerParticipants() throws Exception
+    public void testProducerPrecedesConsumerParticipants()
     {
         assertCompare(
                 new ProducerParticipantResult(),
@@ -97,16 +84,14 @@ public class CSVOrderParticipantResultComparatorTest extends UnitTestBase
 
     private void assertCompare(ParticipantResult smaller, ParticipantResult bigger)
     {
-        assertEquals("Expected " + smaller + " to 'equal' itself",
-                            (long) 0,
-                            (long) _comparator.compare(smaller, smaller));
+        assertEquals(0, (long) _comparator.compare(smaller, smaller),
+                "Expected " + smaller + " to 'equal' itself");
 
 
         String failureMsg = "Expected " + smaller + " to be smaller than " + bigger;
 
-        assertTrue(failureMsg, _comparator.compare(smaller, bigger) < 0);
-        assertTrue(failureMsg, _comparator.compare(bigger, smaller) > 0);
+        assertTrue(_comparator.compare(smaller, bigger) < 0, failureMsg);
+        assertTrue(_comparator.compare(bigger, smaller) > 0, failureMsg);
     }
-
 }
 // <ParticipantResult>

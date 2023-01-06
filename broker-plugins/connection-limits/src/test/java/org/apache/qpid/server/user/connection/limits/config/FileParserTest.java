@@ -18,6 +18,13 @@
  */
 package org.apache.qpid.server.user.connection.limits.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Reader;
@@ -30,18 +37,13 @@ import java.time.Duration;
 import java.util.Collections;
 
 import com.google.common.collect.Iterables;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+
 import org.mockito.Mockito;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.test.utils.UnitTestBase;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class FileParserTest extends UnitTestBase
 {

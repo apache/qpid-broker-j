@@ -21,11 +21,11 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -36,14 +36,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.security.Principal;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -67,18 +65,19 @@ public class PrincipalDatabaseAuthenticationManagerTest extends UnitTestBase
 
     private final SaslNegotiator _saslNegotiator = mock(SaslNegotiator.class);
 
-    private PrincipalDatabaseAuthenticationManager _manager = null; // Class under test
+    private PrincipalDatabaseAuthenticationManager<?> _manager = null; // Class under test
     private PrincipalDatabase _principalDatabase;
     private String _passwordFileLocation;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        _passwordFileLocation = TMP_FOLDER + File.separator + PrincipalDatabaseAuthenticationManagerTest.class.getSimpleName() + "-" + getTestName();
+        _passwordFileLocation = TMP_FOLDER + File.separator +
+                PrincipalDatabaseAuthenticationManagerTest.class.getSimpleName() + "-" + getTestName();
         deletePasswordFileIfExists();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -94,19 +93,16 @@ public class PrincipalDatabaseAuthenticationManagerTest extends UnitTestBase
         }
     }
 
-    private void setupMocks() throws Exception
+    private void setupMocks()
     {
         setUpPrincipalDatabase();
-
         setupManager(false);
-
         _manager.initialise();
     }
 
     private void setUpPrincipalDatabase()
     {
         _principalDatabase = mock(PrincipalDatabase.class);
-
         when(_principalDatabase.getMechanisms()).thenReturn(Collections.singletonList(MOCK_MECH_NAME));
         when(_principalDatabase.createSaslNegotiator(eq(MOCK_MECH_NAME), any(SaslSettings.class))).thenReturn(
                 _saslNegotiator);
@@ -114,12 +110,11 @@ public class PrincipalDatabaseAuthenticationManagerTest extends UnitTestBase
 
     private void setupManager(final boolean recovering)
     {
-        Map<String,Object> attrs = new HashMap<String, Object>();
-        attrs.put(ConfiguredObject.ID, UUID.randomUUID());
-        attrs.put(ConfiguredObject.NAME, getTestName());
-        attrs.put("path", _passwordFileLocation);
+        final Map<String,Object> attrs = Map.of(ConfiguredObject.ID, randomUUID(),
+                ConfiguredObject.NAME, getTestName(),
+                "path", _passwordFileLocation);
         _manager = getPrincipalDatabaseAuthenticationManager(attrs);
-        if(recovering)
+        if (recovering)
         {
             _manager.open();
         }
@@ -130,118 +125,99 @@ public class PrincipalDatabaseAuthenticationManagerTest extends UnitTestBase
     }
 
     @Test
-    public void testInitialiseWhenPasswordFileNotFound() throws Exception
+    public void testInitialiseWhenPasswordFileNotFound()
     {
-        PasswordCredentialManagingAuthenticationProvider mockAuthProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
+        final PasswordCredentialManagingAuthenticationProvider<?> mockAuthProvider =
+                mock(PasswordCredentialManagingAuthenticationProvider.class);
         when(mockAuthProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
         _principalDatabase = new PlainPasswordFilePrincipalDatabase(mockAuthProvider);
         setupManager(true);
-        try
-        {
 
-            _manager.initialise();
-            fail("Initialisiation should fail when users file does not exist");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            final boolean condition = e.getCause() instanceof FileNotFoundException;
-            assertTrue(condition);
-        }
+        final IllegalConfigurationException thrown = assertThrows(
+                IllegalConfigurationException.class,
+                () -> _manager.initialise(),
+                "Initialization should fail when users file does not exist");
+        assertTrue(thrown.getCause() instanceof FileNotFoundException);
     }
 
     @Test
     public void testInitialiseWhenPasswordFileExists() throws Exception
     {
-        PasswordCredentialManagingAuthenticationProvider mockAuthProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
+        final PasswordCredentialManagingAuthenticationProvider<?> mockAuthProvider =
+                mock(PasswordCredentialManagingAuthenticationProvider.class);
         when(mockAuthProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
         _principalDatabase = new PlainPasswordFilePrincipalDatabase(mockAuthProvider);
         setupManager(true);
 
-        File f = new File(_passwordFileLocation);
-        f.createNewFile();
-        FileOutputStream fos = null;
-        try
+        final File file = new File(_passwordFileLocation);
+        if (file.createNewFile())
         {
-            fos = new FileOutputStream(f);
-            fos.write("admin:admin".getBytes());
-        }
-        finally
-        {
-            if (fos != null)
+            try (final FileOutputStream fos = new FileOutputStream(file))
             {
-                fos.close();
+                fos.write("admin:admin".getBytes());
             }
         }
         _manager.initialise();
-        List<Principal> users = _principalDatabase.getUsers();
-        assertEquals("Unexpected uses size", (long) 1, (long) users.size());
-        Principal p = _principalDatabase.getUser("admin");
-        assertEquals("Unexpected principal name", "admin", p.getName());
+        final List<Principal> users = _principalDatabase.getUsers();
+        assertEquals(1, (long) users.size(), "Unexpected uses size");
+        final Principal p = _principalDatabase.getUser("admin");
+        assertEquals("admin", p.getName(), "Unexpected principal name");
     }
 
     @Test
-    public void testSaslMechanismCreation() throws Exception
+    public void testSaslMechanismCreation()
     {
         setupMocks();
 
-        SaslSettings saslSettings = mock(SaslSettings.class);
-        SaslNegotiator saslNegotiator = _manager.createSaslNegotiator(MOCK_MECH_NAME, saslSettings, null);
+        final SaslSettings saslSettings = mock(SaslSettings.class);
+        final SaslNegotiator saslNegotiator = _manager.createSaslNegotiator(MOCK_MECH_NAME, saslSettings, null);
         assertNotNull(saslNegotiator);
     }
 
     /**
      * Tests that the authenticate method correctly interprets an
      * authentication success.
-     *
      */
     @Test
-    public void testSaslAuthenticationSuccess() throws Exception
+    public void testSaslAuthenticationSuccess()
     {
         setupMocks();
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("guest", _manager);
+        final UsernamePrincipal expectedPrincipal = new UsernamePrincipal("guest", _manager);
 
         when(_saslNegotiator.handleResponse(any(byte[].class))).thenReturn(new AuthenticationResult(expectedPrincipal));
 
-        AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
-
+        final AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals(AuthenticationStatus.SUCCESS, result.getStatus());
     }
 
     /**
-     *
      * Tests that the authenticate method correctly interprets an
      * authentication not complete.
-     *
      */
     @Test
-    public void testSaslAuthenticationNotCompleted() throws Exception
+    public void testSaslAuthenticationNotCompleted()
     {
         setupMocks();
-
         when(_saslNegotiator.handleResponse(any(byte[].class))).thenReturn(new AuthenticationResult(AuthenticationStatus.CONTINUE));
 
-        AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
-        assertEquals("Principals was not expected size", (long) 0, (long) result.getPrincipals().size());
-
+        final AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
+        assertEquals(0, (long) result.getPrincipals().size(), "Principals was not expected size");
         assertEquals(AuthenticationStatus.CONTINUE, result.getStatus());
     }
 
     /**
-     *
      * Tests that the authenticate method correctly interprets an
      * authentication error.
-     *
      */
     @Test
-    public void testSaslAuthenticationError() throws Exception
+    public void testSaslAuthenticationError()
     {
         setupMocks();
-
         when(_saslNegotiator.handleResponse(any(byte[].class))).thenReturn(new AuthenticationResult(AuthenticationStatus.ERROR));
 
-        AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
-        assertEquals("Principals was not expected size", (long) 0, (long) result.getPrincipals().size());
+        final AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
+        assertEquals(0, (long) result.getPrincipals().size(), "Principals was not expected size");
         assertEquals(AuthenticationStatus.ERROR, result.getStatus());
     }
 
@@ -249,12 +225,10 @@ public class PrincipalDatabaseAuthenticationManagerTest extends UnitTestBase
     public void testNonSaslAuthenticationSuccess() throws Exception
     {
         setupMocks();
-
         when(_principalDatabase.verifyPassword("guest", "guest".toCharArray())).thenReturn(true);
 
-        AuthenticationResult result = _manager.authenticate("guest", "guest");
-
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("guest", _manager);
+        final AuthenticationResult result = _manager.authenticate("guest", "guest");
+        final UsernamePrincipal expectedPrincipal = new UsernamePrincipal("guest", _manager);
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals(AuthenticationStatus.SUCCESS, result.getStatus());
     }
@@ -263,75 +237,64 @@ public class PrincipalDatabaseAuthenticationManagerTest extends UnitTestBase
     public void testNonSaslAuthenticationErrored() throws Exception
     {
         setupMocks();
-
         when(_principalDatabase.verifyPassword("guest", "wrongpassword".toCharArray())).thenReturn(false);
 
-        AuthenticationResult result = _manager.authenticate("guest", "wrongpassword");
-        assertEquals("Principals was not expected size", (long) 0, (long) result.getPrincipals().size());
+        final AuthenticationResult result = _manager.authenticate("guest", "wrongpassword");
+        assertEquals(0, (long) result.getPrincipals().size(), "Principals was not expected size");
         assertEquals(AuthenticationStatus.ERROR, result.getStatus());
     }
 
     @Test
-    public void testOnCreate() throws Exception
+    public void testOnCreate()
     {
         setupMocks();
-
-        assertTrue("Password file was not created", new File(_passwordFileLocation).exists());
+        assertTrue(new File(_passwordFileLocation).exists(), "Password file was not created");
     }
 
     @Test
-    public void testOnDelete() throws Exception
+    public void testOnDelete()
     {
         setupMocks();
-
-        assertTrue("Password file was not created", new File(_passwordFileLocation).exists());
+        assertTrue(new File(_passwordFileLocation).exists(), "Password file was not created");
 
         _manager.delete();
-        assertFalse("Password file was not deleted", new File(_passwordFileLocation).exists());
+        assertFalse(new File(_passwordFileLocation).exists(), "Password file was not deleted");
     }
 
     @Test
-    public void testCreateForInvalidPath() throws Exception
+    public void testCreateForInvalidPath()
     {
         setUpPrincipalDatabase();
 
-        Map<String,Object> attrs = new HashMap<>();
-        attrs.put(ConfiguredObject.ID, UUID.randomUUID());
-        attrs.put(ConfiguredObject.NAME, getTestName());
-        String path = TMP_FOLDER + File.separator + getTestName() + System.nanoTime() + File.separator + "users";
-        attrs.put("path", path);
+        final String path = TMP_FOLDER + File.separator + getTestName() + System.nanoTime() + File.separator + "users";
+        final Map<String,Object> attrs = Map.of(ConfiguredObject.ID, randomUUID(),
+                ConfiguredObject.NAME, getTestName(),
+                "path", path);
 
         _manager = getPrincipalDatabaseAuthenticationManager(attrs);
-        try
-        {
-            _manager.create();
-            fail("Creation with invalid path should have failed");
-        }
-        catch(IllegalConfigurationException e)
-        {
-            assertEquals("Unexpected exception message:" + e.getMessage(),
-                                String.format("Cannot create password file at '%s'", path),
-                                e.getMessage());
 
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> _manager.create(), "Creation with invalid path should have failed");
+        assertEquals(String.format("Cannot create password file at '%s'", path), thrown.getMessage(),
+                "Unexpected exception message:" + thrown.getMessage());
     }
 
-    PrincipalDatabaseAuthenticationManager getPrincipalDatabaseAuthenticationManager(final Map<String, Object> attrs)
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    final PrincipalDatabaseAuthenticationManager<?> getPrincipalDatabaseAuthenticationManager(final Map<String, Object> attrs)
     {
-        return new PrincipalDatabaseAuthenticationManager(attrs, BrokerTestHelper.createBrokerMock())
+        return new PrincipalDatabaseAuthenticationManager(attrs, BrokerTestHelper.createNewBrokerMock())
         {
             @Override
             protected PrincipalDatabase createDatabase()
             {
                 return _principalDatabase;
             }
-
         };
     }
 
     private void deletePasswordFileIfExists()
     {
-        File passwordFile = new File(_passwordFileLocation);
+        final File passwordFile = new File(_passwordFileLocation);
         if (passwordFile.exists())
         {
             passwordFile.delete();

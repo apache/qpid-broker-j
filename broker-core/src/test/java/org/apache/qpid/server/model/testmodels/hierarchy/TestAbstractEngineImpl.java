@@ -74,7 +74,6 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
         _stateChangeFuture = listenableFuture;
     }
 
-
     @Override
     public Object getStateChangeException()
     {
@@ -100,9 +99,10 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
+    @SuppressWarnings({"unchecked", "unused"})
     private ListenableFuture<Void> onActivate()
     {
-        RuntimeException stateChangeException = _stateChangeException;
+        final RuntimeException stateChangeException = _stateChangeException;
         if (stateChangeException != null)
         {
             throw stateChangeException;

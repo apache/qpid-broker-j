@@ -21,8 +21,7 @@
 
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +30,8 @@ import com.sleepycat.bind.tuple.StringBinding;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class UpgradeFrom8To9Test extends AbstractUpgradeTestCase
 {
@@ -45,7 +45,7 @@ public class UpgradeFrom8To9Test extends AbstractUpgradeTestCase
     }
 
     @Test
-    public void testPerformUpgrade() throws Exception
+    public void testPerformUpgrade()
     {
         UpgradeFrom8To9 upgrade = new UpgradeFrom8To9();
         upgrade.performUpgrade(_environment, UpgradeInteractionHandler.DEFAULT_HANDLER, getVirtualHost());
@@ -54,8 +54,8 @@ public class UpgradeFrom8To9Test extends AbstractUpgradeTestCase
         assertDatabaseRecordCount(PREFERENCES_VERSION_DB_NAME, 1);
 
         List<String> versions = loadVersions();
-        assertEquals("Unexpected number of versions loaded", 1, versions.size());
-        assertEquals("Unexpected version", "6.1", versions.get(0));
+        assertEquals(1, versions.size(), "Unexpected number of versions loaded");
+        assertEquals("6.1", versions.get(0), "Unexpected version");
     }
 
     private List<String> loadVersions()

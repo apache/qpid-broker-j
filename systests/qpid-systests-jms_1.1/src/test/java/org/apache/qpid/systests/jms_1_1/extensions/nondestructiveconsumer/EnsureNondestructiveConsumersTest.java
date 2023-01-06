@@ -21,9 +21,9 @@
 package org.apache.qpid.systests.jms_1_1.extensions.nondestructiveconsumer;
 
 import static org.apache.qpid.systests.Utils.INDEX;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Collections;
 
@@ -34,14 +34,13 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
 
 public class EnsureNondestructiveConsumersTest extends JmsTestBase
 {
-
     @Test
     public void testEnsureNondestructiveConsumers() throws Exception
     {
@@ -63,31 +62,31 @@ public class EnsureNondestructiveConsumersTest extends JmsTestBase
             for (int i = 0; i < numberOfMessages; i++)
             {
                 Message receivedMsg = consumer1.receive(getReceiveTimeout());
-                assertNotNull("Message " + i + " not received", receivedMsg);
-                assertEquals("Unexpected message", i, receivedMsg.getIntProperty(INDEX));
+                assertNotNull(receivedMsg, "Message " + i + " not received");
+                assertEquals(i, receivedMsg.getIntProperty(INDEX), "Unexpected message");
             }
 
-            assertNull("Unexpected message arrived", consumer1.receive(getShortReceiveTimeout()));
+            assertNull(consumer1.receive(getShortReceiveTimeout()), "Unexpected message arrived");
 
             MessageConsumer consumer2 = session.createConsumer(queue);
 
             for (int i = 0; i < numberOfMessages; i++)
             {
                 Message receivedMsg = consumer2.receive(getReceiveTimeout());
-                assertNotNull("Message " + i + " not received", receivedMsg);
-                assertEquals("Unexpected message", i, receivedMsg.getIntProperty(INDEX));
+                assertNotNull(receivedMsg, "Message " + i + " not received");
+                assertEquals(i, receivedMsg.getIntProperty(INDEX), "Unexpected message");
             }
 
-            assertNull("Unexpected message arrived", consumer2.receive(getShortReceiveTimeout()));
+            assertNull(consumer2.receive(getShortReceiveTimeout()), "Unexpected message arrived");
 
             MessageProducer producer = session.createProducer(queue);
             producer.send(Utils.createNextMessage(session, 6));
 
-            assertNotNull("Message not received on first consumer", consumer1.receive(getReceiveTimeout()));
-            assertNotNull("Message not received on second consumer", consumer2.receive(getReceiveTimeout()));
+            assertNotNull(consumer1.receive(getReceiveTimeout()), "Message not received on first consumer");
+            assertNotNull(consumer2.receive(getReceiveTimeout()), "Message not received on second consumer");
 
-            assertNull("Unexpected message arrived", consumer1.receive(getShortReceiveTimeout()));
-            assertNull("Unexpected message arrived", consumer2.receive(getShortReceiveTimeout()));
+            assertNull(consumer1.receive(getShortReceiveTimeout()), "Unexpected message arrived");
+            assertNull(consumer2.receive(getShortReceiveTimeout()), "Unexpected message arrived");
         }
         finally
         {

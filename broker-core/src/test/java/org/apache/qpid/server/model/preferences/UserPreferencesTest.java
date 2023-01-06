@@ -29,24 +29,23 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Sets;
-import org.hamcrest.Description;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -56,158 +55,109 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class UserPreferencesTest extends UnitTestBase
 {
-
     private static final String MYGROUP = "mygroup";
     private static final String MYUSER = "myuser";
 
     private ConfiguredObject<?> _configuredObject;
     private UserPreferences _userPreferences;
     private Subject _subject;
-    private GroupPrincipal _groupPrincipal;
     private PreferenceStore _preferenceStore;
     private UUID _testId;
     private AuthenticatedPrincipal _owner;
     private TaskExecutor _preferenceTaskExecutor;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _configuredObject = mock(ConfiguredObject.class);
         _preferenceStore = mock(PreferenceStore.class);
         _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
         _preferenceTaskExecutor.start();
-        _userPreferences = new UserPreferencesImpl(_preferenceTaskExecutor,
-                                                   _configuredObject,
-                                                   _preferenceStore,
-                                                   Collections.<Preference>emptyList());
-        _groupPrincipal = new GroupPrincipal(MYGROUP, (GroupProvider) null);
+        _userPreferences = new UserPreferencesImpl(_preferenceTaskExecutor, _configuredObject, _preferenceStore, List.of());
+        final GroupPrincipal groupPrincipal = new GroupPrincipal(MYGROUP, null);
         _owner = new AuthenticatedPrincipal(new UsernamePrincipal(MYUSER, null));
-        _subject = new Subject(true,
-                               Sets.newHashSet(_owner, _groupPrincipal),
-                               Collections.emptySet(),
-                               Collections.emptySet());
-        _testId = UUID.randomUUID();
+        _subject = new Subject(true, Set.of(_owner, groupPrincipal), Set.of(), Set.of());
+        _testId = randomUUID();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         _preferenceTaskExecutor.stop();
     }
 
     @Test
-    public void testUpdateOrAppend() throws Exception
+    public void testUpdateOrAppend()
     {
-        final Preference preference = createPreference(_testId,
-                                                       "test",
-                                                       "X-query",
-                                                       Collections.<String, Object>singletonMap("select", "id,name"));
-
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        final Preference preference = createPreference(_testId, "test", "X-query", Map.of("select", "id,name"));
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
-                return null;
-            }
+            awaitPreferenceFuture(_userPreferences.updateOrAppend(Set.of(preference)));
+            return null;
         });
-
         verify(_preferenceStore).updateOrCreate(argThat(new PreferenceRecordMatcher(preference)));
     }
 
-
     @Test
-    public void testReplace() throws Exception
+    public void testReplace()
     {
-        final Preference preference = createPreference(_testId,
-                                                       "test",
-                                                       "X-query",
-                                                       Collections.<String, Object>singletonMap("select", "id,name"));
-
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        final Preference preference = createPreference(_testId, "test", "X-query", Map.of("select", "id,name"));
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_userPreferences.replace(Collections.singleton(preference)));
-                return null;
-            }
+            awaitPreferenceFuture(_userPreferences.replace(Set.of(preference)));
+            return null;
         });
 
-        verify(_preferenceStore).replace(argThat(new UUIDCollectionMatcher(Collections.<UUID>emptyList())),
+        verify(_preferenceStore).replace(argThat(new UUIDCollectionMatcher(List.of())),
                                          argThat(new PreferenceRecordMatcher(preference)));
     }
 
-
     @Test
-    public void testReplaceByType() throws Exception
+    public void testReplaceByType()
     {
-        final UUID queryUUID = UUID.randomUUID();
-        final Preference queryPreference =
-                createPreference(queryUUID, "test", "X-query", Collections.<String, Object>emptyMap());
-
-        final UUID dashboardUUID = UUID.randomUUID();
-        final Preference dashboardPreference =
-                createPreference(dashboardUUID, "test", "X-dashboard", Collections.<String, Object>emptyMap());
-
-        final Preference newQueryPreference =
-                createPreference(_testId, "newTest", "X-query", Collections.<String, Object>emptyMap());
-
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        final UUID queryUUID = randomUUID();
+        final Preference queryPreference = createPreference(queryUUID, "test", "X-query", Map.of());
+        final UUID dashboardUUID = randomUUID();
+        final Preference dashboardPreference = createPreference(dashboardUUID, "test", "X-dashboard", Map.of());
+        final Preference newQueryPreference = createPreference(_testId, "newTest", "X-query", Map.of());
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference, dashboardPreference)));
-                awaitPreferenceFuture(_userPreferences.replaceByType("X-query", Collections.singletonList(newQueryPreference)));
-                return null;
-            }
+            awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference, dashboardPreference)));
+            awaitPreferenceFuture(_userPreferences.replaceByType("X-query", Collections.singletonList(newQueryPreference)));
+            return null;
         });
-
-        verify(_preferenceStore).replace(argThat(new UUIDCollectionMatcher(Collections.singleton(queryUUID))),
+        verify(_preferenceStore).replace(argThat(new UUIDCollectionMatcher(Set.of(queryUUID))),
                                          argThat(new PreferenceRecordMatcher(newQueryPreference)));
     }
 
     @Test
-    public void testReplaceByTypeAndName() throws Exception
+    public void testReplaceByTypeAndName()
     {
-        final UUID query1UUID = UUID.randomUUID();
-        final Preference queryPreference1 =
-                createPreference(query1UUID, "test", "X-query", Collections.<String, Object>emptyMap());
-        final UUID query2UUID = UUID.randomUUID();
-        final Preference queryPreference2 =
-                createPreference(query2UUID, "test2", "X-query", Collections.<String, Object>emptyMap());
-
-        final UUID dashboardUUID = UUID.randomUUID();
-        final Preference dashboardPreference =
-                createPreference(dashboardUUID, "test", "X-dashboard", Collections.<String, Object>emptyMap());
-
-        final Preference newQueryPreference =
-                createPreference(_testId, "test", "X-query", Collections.<String, Object>emptyMap());
-
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        final UUID query1UUID = randomUUID();
+        final Preference queryPreference1 = createPreference(query1UUID, "test", "X-query", Map.of());
+        final UUID query2UUID = randomUUID();
+        final Preference queryPreference2 = createPreference(query2UUID, "test2", "X-query", Map.of());
+        final UUID dashboardUUID = randomUUID();
+        final Preference dashboardPreference = createPreference(dashboardUUID, "test", "X-dashboard", Map.of());
+        final Preference newQueryPreference = createPreference(_testId, "test", "X-query", Map.of());
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference1, queryPreference2, dashboardPreference)));
-                awaitPreferenceFuture(_userPreferences.replaceByTypeAndName("X-query", "test", newQueryPreference));
-                return null;
-            }
+            awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference1, queryPreference2, dashboardPreference)));
+            awaitPreferenceFuture(_userPreferences.replaceByTypeAndName("X-query", "test", newQueryPreference));
+            return null;
         });
-
-        verify(_preferenceStore).replace(argThat(new UUIDCollectionMatcher(Collections.singleton(query1UUID))),
+        verify(_preferenceStore).replace(argThat(new UUIDCollectionMatcher(Set.of(query1UUID))),
                                          argThat(new PreferenceRecordMatcher(newQueryPreference)));
     }
 
+    @SuppressWarnings("rawtypes")
     private Preference createPreference(final UUID queryUUID,
                                         final String name,
                                         final String type,
                                         final Map<String, Object> preferenceValueAttributes)
     {
         final Preference queryPreference = mock(Preference.class);
-        HashMap<String, Object> preferenceAttributes = new HashMap<>();
+        final Map<String, Object> preferenceAttributes = new HashMap<>();
         preferenceAttributes.put(Preference.ID_ATTRIBUTE, queryUUID);
         preferenceAttributes.put(Preference.NAME_ATTRIBUTE, name);
         preferenceAttributes.put(Preference.TYPE_ATTRIBUTE, type);
@@ -225,7 +175,6 @@ public class UserPreferencesTest extends UnitTestBase
     private static class UUIDCollectionMatcher implements ArgumentMatcher<Collection<UUID>>
     {
         private final Collection<UUID> _expected;
-        private String _failureDescription;
 
         private UUIDCollectionMatcher(final Collection<UUID> expected)
         {
@@ -235,11 +184,11 @@ public class UserPreferencesTest extends UnitTestBase
         @Override
         public boolean matches(final Collection<UUID> o)
         {
-            _failureDescription = "Items do not match: expected " + _expected + " actual: " + o;
             return new TreeSet<>(_expected).equals(new TreeSet<>(o));
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private static class PreferenceRecordMatcher implements ArgumentMatcher<Collection<PreferenceRecord>>
     {
         private final Preference _preference;
@@ -257,13 +206,13 @@ public class UserPreferencesTest extends UnitTestBase
                 return false;
             }
 
-            PreferenceRecord record = preferenceRecords.iterator().next();
+            final PreferenceRecord record = preferenceRecords.iterator().next();
             if (!record.getId().equals(_preference.getId()))
             {
                 return false;
             }
 
-            Map<String, Object> recordAttributes = record.getAttributes();
+            final Map<String, Object> recordAttributes = record.getAttributes();
             if (recordAttributes == null)
             {
                 return false;
@@ -276,9 +225,7 @@ public class UserPreferencesTest extends UnitTestBase
                     return false;
                 }
             }
-
             return true;
         }
-
     }
 }

@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -37,8 +37,9 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
@@ -54,7 +55,7 @@ public class UpgraderTest extends AbstractUpgradeTestCase
         return "bdbstore-v4";
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         super.setUp();
@@ -85,16 +86,16 @@ public class UpgraderTest extends AbstractUpgradeTestCase
     }
 
     @Test
-    public void testUpgrade() throws Exception
+    public void testUpgrade()
     {
-        assertEquals("Unexpected store version", -1, getStoreVersion(_environment));
+        assertEquals(-1, getStoreVersion(_environment), "Unexpected store version");
         _upgrader.upgradeIfNecessary();
-        assertEquals("Unexpected store version", BDBConfigurationStore.VERSION, getStoreVersion(_environment));
+        assertEquals(BDBConfigurationStore.VERSION, getStoreVersion(_environment), "Unexpected store version");
         assertContent();
     }
 
     @Test
-    public void testEmptyDatabaseUpgradeDoesNothing() throws Exception
+    public void testEmptyDatabaseUpgradeDoesNothing()
     {
         File nonExistentStoreLocation = new File(TMP_FOLDER, getTestName());
         deleteDirectoryIfExists(nonExistentStoreLocation);
@@ -109,8 +110,9 @@ public class UpgraderTest extends AbstractUpgradeTestCase
             List<String> databaseNames = emptyEnvironment.getDatabaseNames();
             List<String> expectedDatabases = new ArrayList<String>();
             expectedDatabases.add(Upgrader.VERSION_DB_NAME);
-            assertEquals("Expectedonly VERSION table in initially empty store after upgrade: ", expectedDatabases, databaseNames);
-            assertEquals("Unexpected store version", BDBConfigurationStore.VERSION, getStoreVersion(emptyEnvironment));
+            assertEquals(expectedDatabases, databaseNames,
+                         "Expectedonly VERSION table in initially empty store after upgrade: ");
+            assertEquals(BDBConfigurationStore.VERSION, getStoreVersion(emptyEnvironment), "Unexpected store version");
 
         }
         finally
@@ -131,10 +133,10 @@ public class UpgraderTest extends AbstractUpgradeTestCase
                     DatabaseEntry value)
             {
                 long id = LongBinding.entryToLong(key);
-                assertTrue("Unexpected id", id > 0);
+                assertTrue(id > 0, "Unexpected id");
                 QpidByteBuffer content = contentBinding.entryToObject(value);
-                assertNotNull("Unexpected content", content);
-                assertTrue("Expected content", content.hasRemaining());
+                assertNotNull(content, "Unexpected content");
+                assertTrue(content.hasRemaining(), "Expected content");
             }
         };
         new DatabaseTemplate(_environment, "MESSAGE_CONTENT", null).run(contentCursorOperation);

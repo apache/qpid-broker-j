@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.model.Exchange;
@@ -90,9 +90,9 @@ public class ExchangeMessagesTest extends AbstractTestMessages
         final String routingKey = "routingKey";
         clearLog();
         _logMessage = ExchangeMessages.DISCARDMSG(name, routingKey);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Discarded Message :","Name:", "\"" + name + "\"", "Routing Key:", "\"" + routingKey + "\""};
+        final String[] expected = {"Discarded Message :","Name:", "\"" + name + "\"", "Routing Key:", "\"" + routingKey + "\""};
 
         validateLogMessage(log, "EXH-1003", expected);
     }

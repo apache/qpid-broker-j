@@ -20,15 +20,13 @@
  */
 package org.apache.qpid.server.pool;
 
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -47,11 +45,9 @@ public class SuppressingInheritedAccessControlContextThreadFactoryTest extends U
     {
         final String principalName = getTestName();
         final CountDownLatch latch = new CountDownLatch(1);
-
         final AtomicReference<AccessControlContext> threadAccessControlContextCapturer = new AtomicReference<>();
-        final AtomicReference<AccessControlContext>  callerAccessControlContextCapturer = new AtomicReference<>();
-
-        final Set<Principal> principals = Collections.<Principal>singleton(new Principal()
+        final AtomicReference<AccessControlContext> callerAccessControlContextCapturer = new AtomicReference<>();
+        final Set<Principal> principals = Set.of(new Principal()
         {
             @Override
             public String getName()
@@ -66,38 +62,27 @@ public class SuppressingInheritedAccessControlContextThreadFactoryTest extends U
             }
         });
 
-        Subject subject = new Subject(false, principals, Collections.EMPTY_SET, Collections.EMPTY_SET);
+        final Subject subject = new Subject(false, principals, Set.of(), Set.of());
 
-        Subject.doAs(subject, new PrivilegedAction<Void>()
+        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
+            callerAccessControlContextCapturer.set(AccessController.getContext());
+            final SuppressingInheritedAccessControlContextThreadFactory factory =
+                    new SuppressingInheritedAccessControlContextThreadFactory(null, null);
+            factory.newThread(() ->
             {
-                callerAccessControlContextCapturer.set(AccessController.getContext());
-                SuppressingInheritedAccessControlContextThreadFactory factory = new SuppressingInheritedAccessControlContextThreadFactory(null,
-                                                                                                                                          null);
-                factory.newThread(new Runnable()
-                {
-
-                    @Override
-                    public void run()
-                    {
-                        threadAccessControlContextCapturer.set(AccessController.getContext());
-                        latch.countDown();
-                    }
-
-                }).start();
-                return null;
-            }
+                threadAccessControlContextCapturer.set(AccessController.getContext());
+                latch.countDown();
+            }).start();
+            return null;
         });
 
         latch.await(3, TimeUnit.SECONDS);
 
-        Subject callerSubject = Subject.getSubject(callerAccessControlContextCapturer.get());
-        Subject threadSubject = Subject.getSubject(threadAccessControlContextCapturer.get());
+        final Subject callerSubject = Subject.getSubject(callerAccessControlContextCapturer.get());
+        final Subject threadSubject = Subject.getSubject(threadAccessControlContextCapturer.get());
 
-        assertEquals("Unexpected subject in main thread", callerSubject, subject);
-        assertNull("Unexpected subject in executor thread", threadSubject);
+        assertEquals(callerSubject, subject, "Unexpected subject in main thread");
+        assertNull(threadSubject, "Unexpected subject in executor thread");
     }
-
 }

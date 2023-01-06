@@ -18,9 +18,9 @@
  */
 package org.apache.qpid.disttest.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.qpid.disttest.message.ParticipantResult;
 
@@ -29,51 +29,51 @@ public class ParticipantTestHelper
 
     public static void assertAtLeast(String message, final long minimumExpected, final long actual)
     {
-        assertTrue(message + " " + actual, actual >= minimumExpected);
+        assertTrue(actual >= minimumExpected, message + " " + actual);
     }
 
     public static void assertExpectedConsumerResults(ParticipantResult result, String participantName, String registeredClientName, long expectedTestStartTime, int expectedAcknowledgeMode, Integer expectedBatchSize, Integer expectedNumberOfMessages, Integer expectedPayloadSize, Long expectedTotalPayloadProcessed, Long expectedMinimumExpectedDuration)
     {
         assertExpectedResults(result, participantName, registeredClientName, expectedTestStartTime,
                 expectedAcknowledgeMode, expectedBatchSize, expectedNumberOfMessages, expectedPayloadSize, expectedTotalPayloadProcessed, expectedMinimumExpectedDuration);
-        assertEquals("Unexpected number of consumers", 1, result.getTotalNumberOfConsumers());
-        assertEquals("Unexpected number of producers", 0, result.getTotalNumberOfProducers());
+        assertEquals(1, result.getTotalNumberOfConsumers(), "Unexpected number of consumers");
+        assertEquals(0, result.getTotalNumberOfProducers(), "Unexpected number of producers");
     }
 
     public static void assertExpectedProducerResults(ParticipantResult result, String participantName, String registeredClientName, long expectedTestStartTime, int expectedAcknowledgeMode, Integer expectedBatchSize, Integer expectedNumberOfMessages, Integer expectedPayloadSize, Long expectedTotalPayloadProcessed, Long expectedMinimumExpectedDuration)
     {
         assertExpectedResults(result, participantName, registeredClientName, expectedTestStartTime, expectedAcknowledgeMode, expectedBatchSize, expectedNumberOfMessages, expectedPayloadSize, expectedTotalPayloadProcessed, expectedMinimumExpectedDuration);
-        assertEquals("Unexpected number of producers", 1, result.getTotalNumberOfProducers());
-        assertEquals("Unexpected number of consumers", 0, result.getTotalNumberOfConsumers());
+        assertEquals(1, result.getTotalNumberOfProducers(), "Unexpected number of producers");
+        assertEquals(0, result.getTotalNumberOfConsumers(), "Unexpected number of consumers");
     }
 
     private static void assertExpectedResults(ParticipantResult result, String participantName, String registeredClientName, long expectedTestStartTime, int expectedAcknowledgeMode, Integer expectedBatchSize, Integer expectedNumberOfMessages, Integer expectedPayloadSize, Long expectedTotalPayloadProcessed, Long expectedMinimumExpectedDuration)
     {
         assertFalse(result.hasError());
 
-        assertEquals("unexpected participant name", participantName, result.getParticipantName());
-        assertEquals("unexpected client name", registeredClientName, result.getRegisteredClientName());
+        assertEquals(participantName, result.getParticipantName(), "unexpected participant name");
+        assertEquals(registeredClientName, result.getRegisteredClientName(), "unexpected client name");
 
         assertAtLeast("start time of result is too low", expectedTestStartTime, result.getStartInMillis());
         assertAtLeast("end time of result should be after start time", result.getStartInMillis(), result.getEndInMillis());
 
-        assertEquals("unexpected acknowledge mode", expectedAcknowledgeMode, result.getAcknowledgeMode());
+        assertEquals(expectedAcknowledgeMode, result.getAcknowledgeMode(), "unexpected acknowledge mode");
 
         if(expectedNumberOfMessages != null)
         {
-            assertEquals("unexpected number of messages", expectedNumberOfMessages.intValue(), result.getNumberOfMessagesProcessed());
+            assertEquals(expectedNumberOfMessages.intValue(), result.getNumberOfMessagesProcessed(), "unexpected number of messages");
         }
         if(expectedBatchSize != null)
         {
-            assertEquals("unexpected batch size", expectedBatchSize.intValue(), result.getBatchSize());
+            assertEquals(expectedBatchSize.intValue(), result.getBatchSize(), "unexpected batch size");
         }
         if (expectedPayloadSize != null)
         {
-            assertEquals("unexpected payload size", expectedPayloadSize.intValue(), result.getPayloadSize());
+            assertEquals(expectedPayloadSize.intValue(), result.getPayloadSize(), "unexpected payload size");
         }
         if (expectedTotalPayloadProcessed != null)
         {
-            assertEquals("unexpected total payload processed", expectedTotalPayloadProcessed.longValue(), result.getTotalPayloadProcessed());
+            assertEquals(expectedTotalPayloadProcessed.longValue(), result.getTotalPayloadProcessed(), "unexpected total payload processed");
         }
         if(expectedMinimumExpectedDuration != null)
         {

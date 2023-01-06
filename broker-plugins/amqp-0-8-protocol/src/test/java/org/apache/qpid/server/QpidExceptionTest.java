@@ -20,10 +20,10 @@
  */
 package org.apache.qpid.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
@@ -52,7 +52,7 @@ public class QpidExceptionTest extends UnitTestBase
 
         QpidException e = reThrowException(test);
 
-        assertEquals("Exception not of correct class", QpidException.class, e.getClass());
+        assertEquals(QpidException.class, e.getClass(), "Exception not of correct class");
     }
 
     /**
@@ -66,7 +66,7 @@ public class QpidExceptionTest extends UnitTestBase
                                                                        new Exception());
         QpidException e = reThrowException(test);
 
-        assertEquals("Exception not of correct class", AMQFrameDecodingException.class, e.getClass());
+        assertEquals(AMQFrameDecodingException.class, e.getClass(), "Exception not of correct class");
     }
 
     /**
@@ -80,7 +80,7 @@ public class QpidExceptionTest extends UnitTestBase
 
         QpidException e = reThrowException(test);
 
-        assertEquals("Exception not of correct class", QpidException.class, e.getClass());
+        assertEquals(QpidException.class, e.getClass(), "Exception not of correct class");
     }
 
     /**
@@ -93,15 +93,13 @@ public class QpidExceptionTest extends UnitTestBase
         QpidException amqe = test.cloneForCurrentThread();
         if(test instanceof AMQException)
         {
-            assertEquals("Error code does not match.",
-                                (long) ((AMQException) test).getErrorCode(),
-                                (long) ((AMQException) amqe).getErrorCode());
+            assertEquals(((AMQException) test).getErrorCode(), (long) ((AMQException) amqe).getErrorCode(),
+                    "Error code does not match.");
 
         }
-        assertTrue("Exception message does not start as expected.",
-                          amqe.getMessage().startsWith(test.getMessage()));
-        assertEquals("Test Exception is not set as the cause", test, amqe.getCause());
-        assertEquals("Cause is not correct", test.getCause(), amqe.getCause().getCause());
+        assertTrue(amqe.getMessage().startsWith(test.getMessage()), "Exception message does not start as expected.");
+        assertEquals(test, amqe.getCause(), "Test Exception is not set as the cause");
+        assertEquals(test.getCause(), amqe.getCause().getCause(), "Cause is not correct");
 
         return amqe;
     }

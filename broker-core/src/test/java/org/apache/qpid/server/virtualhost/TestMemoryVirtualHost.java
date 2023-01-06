@@ -40,11 +40,9 @@ public class TestMemoryVirtualHost extends AbstractVirtualHost<TestMemoryVirtual
         super(attributes, virtualHostNode);
     }
 
-
     @Override
     protected MessageStore createMessageStore()
     {
         return new TestMemoryMessageStore();
     }
-
 }

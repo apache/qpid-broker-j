@@ -25,7 +25,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.util.Collections;
@@ -40,12 +40,12 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.virtualhost.ProvidedStoreVirtualHost;
 import org.apache.qpid.server.virtualhost.ProvidedStoreVirtualHostImpl;
 import org.apache.qpid.systests.Utils;
 import org.apache.qpid.tests.http.HttpRequestConfig;
@@ -56,10 +56,10 @@ public class SpiltStoreTest extends HttpTestBase
 {
     private static final String TEST_QUEUE = "testQueue";
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
     }
 
     @Test
@@ -72,9 +72,7 @@ public class SpiltStoreTest extends HttpTestBase
         attributes.put(VirtualHost.TYPE, System.getProperty("virtualhostnode.type"));
         getHelper().submitRequest(url, "PUT", attributes, SC_CREATED);
 
-        final Map<String, Object> virtualHost = getHelper().getJson(url,
-                                                                    new TypeReference<Map<String, Object>>() {},
-                                                                    SC_OK);
+        final Map<String, Object> virtualHost = getHelper().getJson(url, new TypeReference<>() {}, SC_OK);
         final String storePath = (String) virtualHost.get("storePath");
         assertThat(new File(storePath).exists(), is(equalTo(true)));
 
@@ -138,9 +136,8 @@ public class SpiltStoreTest extends HttpTestBase
 
     private void assertState(final String url, final String expectedActualState) throws Exception
     {
-        Map<String, Object> object = getHelper().getJson(url, new TypeReference<Map<String, Object>>() {}, SC_OK);
+        Map<String, Object> object = getHelper().getJson(url, new TypeReference<>() {}, SC_OK);
         final String actualState = (String) object.get(ConfiguredObject.STATE);
         assertThat(actualState, is(equalTo(expectedActualState)));
     }
-
 }

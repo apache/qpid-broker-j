@@ -25,14 +25,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class EventManagerTest extends UnitTestBase
 {
     private final EventManager _eventManager = new EventManager();
-    private final EventListener _mockListener = mock(EventListener.class);
+    private EventListener _mockListener;
+
+    @BeforeEach
+    public void setUp()
+    {
+        _mockListener = mock(EventListener.class);
+    }
 
     @Test
     public void testEventListenerFires()

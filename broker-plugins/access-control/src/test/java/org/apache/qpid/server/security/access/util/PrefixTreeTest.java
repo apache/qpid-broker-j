@@ -18,10 +18,18 @@
  */
 package org.apache.qpid.server.security.access.util;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.qpid.test.utils.UnitTestBase;
 
 import com.google.common.collect.Streams;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,13 +37,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class PrefixTreeTest extends UnitTestBase
 {
@@ -312,7 +313,8 @@ public class PrefixTreeTest extends UnitTestBase
         {
             array[i++] = str;
         }
-        assertArrayEquals(new String[]{"exchange.private", "exchange.public", "response", "response.private", "response.public"}, array);
+        assertArrayEquals(new String[]{"exchange.private", "exchange.public", "response", "response.private", "response.public"},
+                array);
         assertNotNull(tree.branches());
         assertEquals(2, tree.branches().size());
 

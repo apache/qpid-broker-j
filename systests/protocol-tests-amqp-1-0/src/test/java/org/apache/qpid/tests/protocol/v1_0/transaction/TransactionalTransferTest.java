@@ -26,14 +26,14 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
@@ -61,7 +61,7 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 {
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -407,7 +407,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
         }
     }
 
-    @Ignore("TODO disposition is currently not being sent by Broker")
+    @Disabled("TODO disposition is currently not being sent by Broker")
     @Test
     @SpecificationTest(section = "4.4.2", description = "Transactional Retirement[...] The transaction controller might"
                                                         + "wish to associate the outcome of a delivery with a transaction.")
@@ -516,8 +516,8 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
 
             Transfer transfer = transfers.get(0);
-            assumeThat(transfer.getState(), is(instanceOf(TransactionalState.class)));
-            assumeThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(interaction.getCurrentTransactionId())));
+            assumeTrue(is(instanceOf(TransactionalState.class)).matches(transfer.getState()));
+            assumeTrue(is(equalTo(interaction.getCurrentTransactionId())).matches(((TransactionalState) transfer.getState()).getTxnId()));
 
             final String content = getTestName() + "_2";
             Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, content);
@@ -580,13 +580,13 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
 
             Transfer transfer = transfers.get(0);
-            assumeThat(transfer.getState(), is(instanceOf(TransactionalState.class)));
-            assumeThat(((TransactionalState) transfer.getState()).getTxnId(), is(equalTo(interaction.getCurrentTransactionId())));
+            assumeTrue(is(instanceOf(TransactionalState.class)).matches(transfer.getState()));
+            assumeTrue(is(equalTo(interaction.getCurrentTransactionId())).matches(((TransactionalState) transfer.getState()).getTxnId()));
         }
     }
 
     @Test
-    @Ignore("QPID-7951")
+    @Disabled("QPID-7951")
     @SpecificationTest(section = "4.4.3", description = "Transactional Acquisition[...]"
                                                         + " the resource associates an additional piece of state with"
                                                         + " outgoing link endpoints, a txn-id that identifies"
@@ -644,12 +644,12 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
     private void assumeReceiverSettlesSecond(final Attach attach)
     {
-        assumeThat(attach.getRcvSettleMode(), is(equalTo(ReceiverSettleMode.SECOND)));
+        assumeTrue(is(equalTo(ReceiverSettleMode.SECOND)).matches(attach.getRcvSettleMode()));
     }
 
     private void coordinatorAttachExpected(final Response<?> response)
     {
         assertThat(response, is(notNullValue()));
-        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
+        assumeTrue(anyOf(instanceOf(Attach.class), instanceOf(Flow.class)).matches(response.getBody()));
     }
 }

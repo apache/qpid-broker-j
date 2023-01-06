@@ -21,10 +21,10 @@
 
 package org.apache.qpid.systests.jms_1_1.messagelistener;
 
-import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +38,7 @@ import javax.jms.MessageListener;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
@@ -65,7 +65,8 @@ public class MessageListenerTest extends JmsTestBase
 
             countingMessageListener.awaitMessages(getReceiveTimeout());
 
-            assertEquals("Unexpected number of outstanding messages", 0, countingMessageListener.getOutstandingCount());
+            assertEquals(0, countingMessageListener.getOutstandingCount(),
+                    "Unexpected number of outstanding messages");
         }
         finally
         {
@@ -85,14 +86,16 @@ public class MessageListenerTest extends JmsTestBase
 
             connection.start();
             final MessageConsumer consumer = session.createConsumer(queue);
-            assertNotNull("Could not receive first message synchronously", consumer.receive(getReceiveTimeout()));
+            assertNotNull(consumer.receive(getReceiveTimeout()),
+                    "Could not receive first message synchronously");
 
             CountingMessageListener countingMessageListener = new CountingMessageListener(MSG_COUNT - 1);
             consumer.setMessageListener(countingMessageListener);
 
             countingMessageListener.awaitMessages(getReceiveTimeout());
 
-            assertEquals("Unexpected number of outstanding messages", 0, countingMessageListener.getOutstandingCount());
+            assertEquals(0, countingMessageListener.getOutstandingCount(),
+                    "Unexpected number of outstanding messages");
         }
         finally
         {
@@ -121,13 +124,15 @@ public class MessageListenerTest extends JmsTestBase
             countingMessageListener.awaitMessages(getReceiveTimeout());
 
             connection.stop();
-            assertTrue("Too few messages received after Connection#stop()", countingMessageListener.getReceivedCount() >= messageToReceivedBeforeConnectionStop);
+            assertTrue(countingMessageListener.getReceivedCount() >= messageToReceivedBeforeConnectionStop,
+                    "Too few messages received after Connection#stop()");
 
             countingMessageListener.resetLatch();
             connection.start();
 
             countingMessageListener.awaitMessages(getReceiveTimeout());
-            assertEquals("Unexpected number of outstanding messages", 0, countingMessageListener.getOutstandingCount());
+            assertEquals(0, countingMessageListener.getOutstandingCount(),
+                    "Unexpected number of outstanding messages");
         }
         finally
         {
@@ -156,7 +161,8 @@ public class MessageListenerTest extends JmsTestBase
             countingMessageListener1.awaitMessages(getReceiveTimeout());
 
             connection.stop();
-            assertTrue("Too few messages received after Connection#stop()", countingMessageListener1.getReceivedCount() >= messageToReceivedBeforeConnectionStop);
+            assertTrue(countingMessageListener1.getReceivedCount() >= messageToReceivedBeforeConnectionStop,
+                    "Too few messages received after Connection#stop()");
 
             CountingMessageListener countingMessageListener2 =
                     new CountingMessageListener(countingMessageListener1.getOutstandingCount());
@@ -165,7 +171,8 @@ public class MessageListenerTest extends JmsTestBase
             connection.start();
 
             countingMessageListener2.awaitMessages(getReceiveTimeout());
-            assertEquals("Unexpected number of outstanding messages", 0, countingMessageListener2.getOutstandingCount());
+            assertEquals(0, countingMessageListener2.getOutstandingCount(),
+                    "Unexpected number of outstanding messages");
         }
         finally
         {
@@ -198,7 +205,8 @@ public class MessageListenerTest extends JmsTestBase
             countingMessageListener.resetLatch();
             countingMessageListener.awaitMessages(getReceiveTimeout());
 
-            assertEquals("Unexpected number of outstanding messages", outstandingCountAtStop, countingMessageListener.getOutstandingCount());
+            assertEquals(outstandingCountAtStop, countingMessageListener.getOutstandingCount(),
+                    "Unexpected number of outstanding messages");
         }
         finally
         {
@@ -232,7 +240,8 @@ public class MessageListenerTest extends JmsTestBase
             countingMessageListener.resetLatch();
             countingMessageListener.awaitMessages(getReceiveTimeout());
 
-            assertEquals("Unexpected number of outstanding messages", outstandingCountAtStop, countingMessageListener.getOutstandingCount());
+            assertEquals(outstandingCountAtStop, countingMessageListener.getOutstandingCount(),
+                    "Unexpected number of outstanding messages");
         }
         finally
         {
@@ -261,7 +270,8 @@ public class MessageListenerTest extends JmsTestBase
             connection1.start();
 
             countingMessageListener.awaitMessages(getReceiveTimeout());
-            assertEquals("Unexpected number of outstanding messages", 0, countingMessageListener.getOutstandingCount());
+            assertEquals(0, countingMessageListener.getOutstandingCount(),
+                    "Unexpected number of outstanding messages");
         }
         finally
         {

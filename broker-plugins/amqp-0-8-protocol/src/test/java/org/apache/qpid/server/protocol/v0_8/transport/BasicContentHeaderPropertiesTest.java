@@ -20,14 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v0_8.transport;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
@@ -49,7 +49,7 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
         _testProperties = new BasicContentHeaderProperties();
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         Map<String, Object> headers = new LinkedHashMap<>();
@@ -79,14 +79,14 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
 
         int size = _testProperties.getPropertyListSize();
 
-        assertEquals((long) expectedSize, (long) size);
+        assertEquals(expectedSize, (long) size);
     }
 
     @Test
     public void testGetSetPropertyFlags()
     {
         _testProperties.setPropertyFlags(99);
-        assertEquals((long) 99, (long) _testProperties.getPropertyFlags());
+        assertEquals(99, (long) _testProperties.getPropertyFlags());
     }
 
     @Test
@@ -125,7 +125,7 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
     {
         byte deliveryMode = 1;
         _testProperties.setDeliveryMode(deliveryMode);
-        assertEquals((long) deliveryMode, (long) _testProperties.getDeliveryMode());
+        assertEquals(deliveryMode, (long) _testProperties.getDeliveryMode());
     }
 
     @Test
@@ -133,7 +133,7 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
     {
         byte priority = 1;
         _testProperties.setPriority(priority);
-        assertEquals((long) priority, (long) _testProperties.getPriority());
+        assertEquals(priority, (long) _testProperties.getPriority());
     }
 
     @Test
@@ -242,15 +242,15 @@ public class BasicContentHeaderPropertiesTest extends UnitTestBase
 
                     BasicContentHeaderProperties testProperties = new BasicContentHeaderProperties(propertiesBuffer, flags, propertyListSize);
                     final Map<String, Object> headersBeforeReallocation = testProperties.getHeadersAsMap();
-                    assertEquals("Unexpected headers", headers, headersBeforeReallocation);
+                    assertEquals(headers, headersBeforeReallocation, "Unexpected headers");
 
                     buffer.dispose();
 
-                    assertTrue("Properties buffer should be sparse", propertiesBuffer.isSparse());
+                    assertTrue(propertiesBuffer.isSparse(), "Properties buffer should be sparse");
                     testProperties.reallocate();
 
                     final Map<String, Object> headersAfterReallocation = testProperties.getHeadersAsMap();
-                    assertEquals("Unexpected headers after re-allocation", headers, headersAfterReallocation);
+                    assertEquals(headers, headersAfterReallocation, "Unexpected headers after re-allocation");
                 }
             }
         }

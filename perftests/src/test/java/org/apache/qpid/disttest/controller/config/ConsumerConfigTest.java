@@ -19,26 +19,14 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ConsumerConfigTest extends UnitTestBase
 {
@@ -61,7 +49,7 @@ public class ConsumerConfigTest extends UnitTestBase
         String sessionName = "sessionName";
         String destinationName = "destinationName";
         String selector = "selector";
-        int batchSize = 10;;
+        int batchSize = 10;
         long maximumDuration = 50;
         boolean isSynchronousNonDefault = false;
 
@@ -84,7 +72,7 @@ public class ConsumerConfigTest extends UnitTestBase
         assertEquals(consumerName, createConsumerCommand.getParticipantName());
         assertEquals(destinationName, createConsumerCommand.getDestinationName());
         assertEquals(numberOfMessages, createConsumerCommand.getNumberOfMessages());
-        assertEquals((long) batchSize, (long) createConsumerCommand.getBatchSize());
+        assertEquals(batchSize, createConsumerCommand.getBatchSize());
         assertEquals(maximumDuration, createConsumerCommand.getMaximumDuration());
 
         assertEquals(isTopic, createConsumerCommand.isTopic());

@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.virtualhostnode;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -38,17 +38,16 @@ import static org.mockito.Mockito.when;
 
 import java.security.AccessControlException;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -80,34 +79,27 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
     private static final String TEST_VIRTUAL_HOST_NODE_NAME = "testNode";
     private static final String TEST_VIRTUAL_HOST_NAME = "testVirtualHost";
 
-    private final UUID _nodeId = UUID.randomUUID();
+    private final UUID _nodeId = randomUUID();
     private Broker<?> _broker;
     private TaskExecutor _taskExecutor;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _taskExecutor = new CurrentThreadTaskExecutor();
         _broker = BrokerTestHelper.createBrokerMock();
-        SystemConfig<?> systemConfig = (SystemConfig<?>) _broker.getParent();
+        final SystemConfig<?> systemConfig = (SystemConfig<?>) _broker.getParent();
         when(systemConfig.getObjectFactory()).thenReturn(new ConfiguredObjectFactoryImpl(mock(Model.class)));
 
         _taskExecutor.start();
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
-
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-            _taskExecutor.stopImmediately();
-        }
-        finally
-        {
-        }
+        _taskExecutor.stopImmediately();
     }
 
     /**
@@ -115,25 +107,24 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
      *  virtualhost.  Ensures that the virtualhost created.
      */
     @Test
-    public void testActivateVHN_StoreHasVH() throws Exception
+    public void testActivateVHN_StoreHasVH()
     {
-        UUID virtualHostId = UUID.randomUUID();
-        ConfiguredObjectRecord vhostRecord = createVirtualHostConfiguredObjectRecord(virtualHostId);
-        DurableConfigurationStore configStore = configStoreThatProduces(vhostRecord);
+        final UUID virtualHostId = randomUUID();
+        final ConfiguredObjectRecord vhostRecord = createVirtualHostConfiguredObjectRecord(virtualHostId);
+        final DurableConfigurationStore configStore = configStoreThatProduces(vhostRecord);
 
-        Map<String, Object> nodeAttributes = new HashMap<>();
-        nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        nodeAttributes.put(VirtualHostNode.ID, _nodeId);
+        final Map<String, Object> nodeAttributes = Map.of(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                VirtualHostNode.ID, _nodeId);
 
-        VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        final VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
         node.open();
         node.start();
 
-        VirtualHost<?> virtualHost = node.getVirtualHost();
-        assertNotNull("Virtual host was not recovered", virtualHost);
-        assertEquals("Unexpected virtual host name", TEST_VIRTUAL_HOST_NAME, virtualHost.getName());
-        assertEquals("Unexpected virtual host state", State.ACTIVE, virtualHost.getState());
-        assertEquals("Unexpected virtual host id", virtualHostId, virtualHost.getId());
+        final VirtualHost<?> virtualHost = node.getVirtualHost();
+        assertNotNull(virtualHost, "Virtual host was not recovered");
+        assertEquals(TEST_VIRTUAL_HOST_NAME, virtualHost.getName(), "Unexpected virtual host name");
+        assertEquals(State.ACTIVE, virtualHost.getState(), "Unexpected virtual host state");
+        assertEquals(virtualHostId, virtualHost.getId(), "Unexpected virtual host id");
         node.close();
     }
 
@@ -142,20 +133,19 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
      *  a virtualhost.  Checks no virtualhost is created.
      */
     @Test
-    public void testActivateVHN_StoreHasNoVH() throws Exception
+    public void testActivateVHN_StoreHasNoVH()
     {
-        DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
+        final DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
 
-        Map<String, Object> nodeAttributes = new HashMap<>();
-        nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        nodeAttributes.put(VirtualHostNode.ID, _nodeId);
+        final Map<String, Object> nodeAttributes = Map.of(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                VirtualHostNode.ID, _nodeId);
 
-        VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        final VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
         node.open();
         node.start();
 
-        VirtualHost<?> virtualHost = node.getVirtualHost();
-        assertNull("Virtual host should not be automatically created", virtualHost);
+        final VirtualHost<?> virtualHost = node.getVirtualHost();
+        assertNull(virtualHost, "Virtual host should not be automatically created");
         node.close();
     }
 
@@ -164,32 +154,31 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
      *  does not specify a virtualhost.  Checks virtualhost is created from the blueprint.
      */
     @Test
-    public void testActivateVHNWithVHBlueprint_StoreHasNoVH() throws Exception
+    public void testActivateVHNWithVHBlueprint_StoreHasNoVH()
     {
-        DurableConfigurationStore configStore = new NullMessageStore() {};
+        final DurableConfigurationStore configStore = new NullMessageStore() {};
 
-        String vhBlueprint = String.format("{ \"type\" : \"%s\", \"name\" : \"%s\"}",
-                                           TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
-                                           TEST_VIRTUAL_HOST_NAME);
-        Map<String, String> context = Collections.singletonMap(AbstractVirtualHostNode.VIRTUALHOST_BLUEPRINT_CONTEXT_VAR, vhBlueprint);
+        final String vhBlueprint = String.format("{ \"type\" : \"%s\", \"name\" : \"%s\"}",
+                TestMemoryVirtualHost.VIRTUAL_HOST_TYPE, TEST_VIRTUAL_HOST_NAME);
+        final Map<String, String> context = Map.of(AbstractVirtualHostNode.VIRTUALHOST_BLUEPRINT_CONTEXT_VAR, vhBlueprint);
 
-        Map<String, Object> nodeAttributes = new HashMap<>();
-        nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        nodeAttributes.put(VirtualHostNode.ID, _nodeId);
-        nodeAttributes.put(VirtualHostNode.CONTEXT, context);
+        final Map<String, Object> nodeAttributes = Map.of(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                VirtualHostNode.ID, _nodeId,
+                VirtualHostNode.CONTEXT, context);
 
-        VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        final VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
         node.open();
         node.start();
 
-        VirtualHost<?> virtualHost = node.getVirtualHost();
+        final VirtualHost<?> virtualHost = node.getVirtualHost();
 
-        assertNotNull("Virtual host should be created by blueprint", virtualHost);
-        assertEquals("Unexpected virtual host name", TEST_VIRTUAL_HOST_NAME, virtualHost.getName());
-        assertEquals("Unexpected virtual host state", State.ACTIVE, virtualHost.getState());
-        assertNotNull("Unexpected virtual host id", virtualHost.getId());
+        assertNotNull(virtualHost, "Virtual host should be created by blueprint");
+        assertEquals(TEST_VIRTUAL_HOST_NAME, virtualHost.getName(), "Unexpected virtual host name");
+        assertEquals(State.ACTIVE, virtualHost.getState(), "Unexpected virtual host state");
+        assertNotNull(virtualHost.getId(), "Unexpected virtual host id");
 
-        assertEquals("Initial configuration should be empty", "{}", node.getVirtualHostInitialConfiguration());
+        assertEquals("{}", node.getVirtualHostInitialConfiguration(),
+                "Initial configuration should be empty");
         node.close();
     }
 
@@ -199,29 +188,26 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
      *  Checks virtualhost is not recreated from the blueprint.
      */
     @Test
-    public void testActivateVHNWithVHBlueprintUsed_StoreHasNoVH() throws Exception
+    public void testActivateVHNWithVHBlueprintUsed_StoreHasNoVH()
     {
-        DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
+        final DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
 
-        String vhBlueprint = String.format("{ \"type\" : \"%s\", \"name\" : \"%s\"}",
-                                           TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
-                                           TEST_VIRTUAL_HOST_NAME);
-        Map<String, String> context = new HashMap<>();
-        context.put(AbstractVirtualHostNode.VIRTUALHOST_BLUEPRINT_CONTEXT_VAR, vhBlueprint);
+        final String vhBlueprint = String.format("{ \"type\" : \"%s\", \"name\" : \"%s\"}",
+                TestMemoryVirtualHost.VIRTUAL_HOST_TYPE, TEST_VIRTUAL_HOST_NAME);
+        final Map<String, String> context = Map.of(AbstractVirtualHostNode.VIRTUALHOST_BLUEPRINT_CONTEXT_VAR, vhBlueprint);
 
-        Map<String, Object> nodeAttributes = new HashMap<>();
-        nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        nodeAttributes.put(VirtualHostNode.ID, _nodeId);
-        nodeAttributes.put(VirtualHostNode.CONTEXT, context);
-        nodeAttributes.put(VirtualHostNode.VIRTUALHOST_INITIAL_CONFIGURATION, "{}");
+        final Map<String, Object> nodeAttributes = Map.of(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                VirtualHostNode.ID, _nodeId,
+                VirtualHostNode.CONTEXT, context,
+                VirtualHostNode.VIRTUALHOST_INITIAL_CONFIGURATION, "{}");
 
-        VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        final VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
         node.open();
         node.start();
 
-        VirtualHost<?> virtualHost = node.getVirtualHost();
+        final VirtualHost<?> virtualHost = node.getVirtualHost();
 
-        assertNull("Virtual host should not be created by blueprint", virtualHost);
+        assertNull(virtualHost, "Virtual host should not be created by blueprint");
         node.close();
     }
 
@@ -231,73 +217,60 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
      *  blueprint is ignored..
      */
     @Test
-    public void testActivateVHNWithVHBlueprint_StoreHasExistingVH() throws Exception
+    public void testActivateVHNWithVHBlueprint_StoreHasExistingVH()
     {
-        UUID virtualHostId = UUID.randomUUID();
-        ConfiguredObjectRecord record = createVirtualHostConfiguredObjectRecord(virtualHostId);
-
-        DurableConfigurationStore configStore = configStoreThatProduces(record);
-
-        String vhBlueprint = String.format("{ \"type\" : \"%s\", \"name\" : \"%s\"}",
-                                           TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
-                                           "vhFromBlueprint");
-        Map<String, String> context = Collections.singletonMap(AbstractVirtualHostNode.VIRTUALHOST_BLUEPRINT_CONTEXT_VAR, vhBlueprint);
-
-        Map<String, Object> nodeAttributes = new HashMap<>();
-        nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        nodeAttributes.put(VirtualHostNode.ID, _nodeId);
-        nodeAttributes.put(VirtualHostNode.CONTEXT, context);
-
-        VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        final UUID virtualHostId = randomUUID();
+        final ConfiguredObjectRecord record = createVirtualHostConfiguredObjectRecord(virtualHostId);
+        final DurableConfigurationStore configStore = configStoreThatProduces(record);
+        final String vhBlueprint = String.format("{ \"type\" : \"%s\", \"name\" : \"%s\"}",
+                TestMemoryVirtualHost.VIRTUAL_HOST_TYPE, "vhFromBlueprint");
+        final Map<String, String> context = Map.of(AbstractVirtualHostNode.VIRTUALHOST_BLUEPRINT_CONTEXT_VAR, vhBlueprint);
+        final Map<String, Object> nodeAttributes = Map.of(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                VirtualHostNode.ID, _nodeId,
+                VirtualHostNode.CONTEXT, context);
+        final VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
         node.open();
         node.start();
 
-        VirtualHost<?> virtualHost = node.getVirtualHost();
+        final VirtualHost<?> virtualHost = node.getVirtualHost();
 
-        assertNotNull("Virtual host should be recovered", virtualHost);
-        assertEquals("Unexpected virtual host name", TEST_VIRTUAL_HOST_NAME, virtualHost.getName());
-        assertEquals("Unexpected virtual host state", State.ACTIVE, virtualHost.getState());
-        assertEquals("Unexpected virtual host id", virtualHostId, virtualHost.getId());
+        assertNotNull(virtualHost, "Virtual host should be recovered");
+        assertEquals(TEST_VIRTUAL_HOST_NAME, virtualHost.getName(), "Unexpected virtual host name");
+        assertEquals(State.ACTIVE, virtualHost.getState(), "Unexpected virtual host state");
+        assertEquals(virtualHostId, virtualHost.getId(), "Unexpected virtual host id");
         node.close();
     }
 
     @Test
-    public void testStopStartVHN() throws Exception
+    public void testStopStartVHN()
     {
-        DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
-
-        Map<String, Object> nodeAttributes = new HashMap<>();
-        nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        nodeAttributes.put(VirtualHostNode.ID, _nodeId);
-
-        VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        final DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
+        final Map<String, Object> nodeAttributes = Map.of(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                VirtualHostNode.ID, _nodeId);
+        final VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
         node.open();
         node.start();
 
-        assertEquals("Unexpected virtual host node state", State.ACTIVE, node.getState());
+        assertEquals(State.ACTIVE, node.getState(), "Unexpected virtual host node state");
 
         node.stop();
-        assertEquals("Unexpected virtual host node state after stop", State.STOPPED, node.getState());
+        assertEquals(State.STOPPED, node.getState(), "Unexpected virtual host node state after stop");
 
         node.start();
-        assertEquals("Unexpected virtual host node state after start", State.ACTIVE, node.getState());
+        assertEquals(State.ACTIVE, node.getState(), "Unexpected virtual host node state after start");
         node.close();
     }
-
 
     // ***************  VHN Access Control Tests  ***************
 
     @Test
-    public void testUpdateVHNDeniedByACL() throws Exception
+    public void testUpdateVHNDeniedByACL()
     {
-        AccessControl mockAccessControl = mock(AccessControl.class);
-        DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
-
-        Map<String, Object> nodeAttributes = new HashMap<>();
-        nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        nodeAttributes.put(VirtualHostNode.ID, _nodeId);
-
-        TestVirtualHostNode node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        final AccessControl<?> mockAccessControl = mock(AccessControl.class);
+        final DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
+        final Map<String, Object> nodeAttributes = Map.of(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                VirtualHostNode.ID, _nodeId);
+        final TestVirtualHostNode node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
         node.setAccessControl(mockAccessControl);
         node.open();
         node.start();
@@ -305,63 +278,44 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         when(mockAccessControl.authorise(eq(null), eq(Operation.UPDATE), same(node), any())).thenReturn(Result.DENIED);
 
         assertNull(node.getDescription());
-        try
-        {
-            node.setAttributes(Collections.<String, Object>singletonMap(VirtualHostNode.DESCRIPTION, "My virtualhost node"));
-            fail("Exception not throws");
-        }
-        catch (AccessControlException ace)
-        {
-            // PASS
-        }
-        assertNull("Description unexpected updated", node.getDescription());
+
+        assertThrows(AccessControlException.class,
+                () -> node.setAttributes(Map.of(VirtualHostNode.DESCRIPTION, "My virtualhost node")),
+                "Exception not thrown");
+
+        assertNull(node.getDescription(), "Description unexpected updated");
         node.close();
     }
 
     @Test
-    public void testDeleteVHNDeniedByACL() throws Exception
+    public void testDeleteVHNDeniedByACL()
     {
-        AccessControl mockAccessControl = mock(AccessControl.class);
-
-        DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
-
-        Map<String, Object> nodeAttributes = new HashMap<>();
-        nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        nodeAttributes.put(VirtualHostNode.ID, _nodeId);
-
-        TestVirtualHostNode node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        final AccessControl<?> mockAccessControl = mock(AccessControl.class);
+        final DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
+        final Map<String, Object> nodeAttributes = Map.of(
+                VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                VirtualHostNode.ID, _nodeId);
+        final TestVirtualHostNode node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
         node.setAccessControl(mockAccessControl);
 
         node.open();
         node.start();
-        when(mockAccessControl.authorise(null, Operation.DELETE, node, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
+        when(mockAccessControl.authorise(null, Operation.DELETE, node, Map.of())).thenReturn(Result.DENIED);
 
-        try
-        {
-            node.delete();
-            fail("Exception not throws");
-        }
-        catch (AccessControlException ace)
-        {
-            // PASS
-        }
+        assertThrows(AccessControlException.class, node::delete, "Exception not thrown");
 
-        assertEquals("Virtual host node state changed unexpectedly", State.ACTIVE, node.getState());
+        assertEquals(State.ACTIVE, node.getState(), "Virtual host node state changed unexpectedly");
         node.close();
     }
 
     @Test
-    public void testStopVHNDeniedByACL() throws Exception
+    public void testStopVHNDeniedByACL()
     {
-        AccessControl mockAccessControl = mock(AccessControl.class);
-
-        DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
-
-        Map<String, Object> nodeAttributes = new HashMap<>();
-        nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        nodeAttributes.put(VirtualHostNode.ID, _nodeId);
-
-        TestVirtualHostNode node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        final AccessControl<?> mockAccessControl = mock(AccessControl.class);
+        final DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
+        final Map<String, Object> nodeAttributes = Map.of(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                VirtualHostNode.ID, _nodeId);
+        final TestVirtualHostNode node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
         node.setAccessControl(mockAccessControl);
 
         node.open();
@@ -369,79 +323,55 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
 
         when(mockAccessControl.authorise(eq(null), eq(Operation.UPDATE), same(node), any())).thenReturn(Result.DENIED);
 
-        try
-        {
-            node.stop();
-            fail("Exception not throws");
-        }
-        catch (AccessControlException ace)
-        {
-            // PASS
-        }
+        assertThrows(AccessControlException.class, node::stop, "Exception not thrown");
 
-        assertEquals("Virtual host node state changed unexpectedly", State.ACTIVE, node.getState());
+        assertEquals(State.ACTIVE, node.getState(), "Virtual host node state changed unexpectedly");
         node.close();
     }
 
     @Test
-    public void testValidateOnCreateFails_StoreFails() throws Exception
+    public void testValidateOnCreateFails_StoreFails()
     {
-        String nodeName = getTestName();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
-
+        final String nodeName = getTestName();
+        final Map<String, Object> attributes = Map.of(TestVirtualHostNode.NAME, nodeName);
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).init(any(ConfiguredObject.class));
-        AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
+        final AbstractStandardVirtualHostNode<?> node = createTestStandardVirtualHostNode(attributes, store);
 
-        try
-        {
-            node.create();
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            assertTrue("Unexpected exception " + e.getMessage(),
-                              e.getMessage().startsWith("Cannot open node configuration store"));
-
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                node::create,
+                "Exception not thrown");
+        assertTrue(thrown.getMessage().startsWith("Cannot open node configuration store"),
+                   "Unexpected exception " + thrown.getMessage());
     }
 
     @Test
-    public void testValidateOnCreateFails_ExistingDefaultVHN() throws Exception
+    public void testValidateOnCreateFails_ExistingDefaultVHN()
     {
-        String nodeName = getTestName();
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(TestVirtualHostNode.NAME, nodeName);
-        attributes.put(TestVirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE, Boolean.TRUE);
-
-        VirtualHostNode existingDefault = mock(VirtualHostNode.class);
+        final String nodeName = getTestName();
+        final Map<String, Object> attributes = Map.of(TestVirtualHostNode.NAME, nodeName,
+                TestVirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE, Boolean.TRUE);
+        final VirtualHostNode<?> existingDefault = mock(VirtualHostNode.class);
         when(existingDefault.getName()).thenReturn("existingDefault");
-
         when(_broker.findDefautVirtualHostNode()).thenReturn(existingDefault);
 
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
+        final AbstractStandardVirtualHostNode<?> node = createTestStandardVirtualHostNode(attributes, store);
 
-        try
-        {
-            node.create();
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            assertTrue("Unexpected exception " + e.getMessage(),
-                              e.getMessage().startsWith("The existing virtual host node 'existingDefault' is already the default for the Broker"));
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                node::create,
+                "Exception not thrown");
+        assertTrue(thrown.getMessage().startsWith("The existing virtual host node 'existingDefault' is already "
+                + "the default for the Broker"), "Unexpected exception " + thrown.getMessage());
     }
 
     @Test
-    public void testValidateOnCreateSucceeds() throws Exception
+    public void testValidateOnCreateSucceeds()
     {
-        String nodeName = getTestName();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
-
+        final String nodeName = getTestName();
+        final Map<String, Object> attributes = Map.of(TestVirtualHostNode.NAME, nodeName);
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
+        final AbstractStandardVirtualHostNode<?> node = createTestStandardVirtualHostNode(attributes, store);
 
         node.create();
         verify(store, times(2)).init(node); // once of validation, once for real
@@ -450,27 +380,25 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
     }
 
     @Test
-    public void testOpenFails() throws Exception
+    public void testOpenFails()
     {
-        String nodeName = getTestName();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
-
-        DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        AbstractVirtualHostNode node = new TestAbstractVirtualHostNode(_broker, attributes, store);
+        final String nodeName = getTestName();
+        final Map<String, Object> attributes = Map.of(TestVirtualHostNode.NAME, nodeName);
+        final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
+        final AbstractVirtualHostNode<?> node = new TestAbstractVirtualHostNode(_broker, attributes, store);
         node.open();
-        assertEquals("Unexpected node state", State.ERRORED, node.getState());
+        assertEquals(State.ERRORED, node.getState(), "Unexpected node state");
         node.close();
     }
 
     @Test
-    public void testOpenSucceeds() throws Exception
+    public void testOpenSucceeds()
     {
-        String nodeName = getTestName();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
-
+        final String nodeName = getTestName();
+        final Map<String, Object> attributes = Map.of(TestVirtualHostNode.NAME, nodeName);
         final AtomicBoolean onFailureFlag = new AtomicBoolean();
-        DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        AbstractVirtualHostNode node = new TestAbstractVirtualHostNode( _broker, attributes, store)
+        final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
+        final AbstractVirtualHostNode<?> node = new TestAbstractVirtualHostNode( _broker, attributes, store)
         {
             @Override
             public void onValidate()
@@ -493,72 +421,66 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         };
 
         node.open();
-        assertEquals("Unexpected node state", State.ACTIVE, node.getState());
-        assertFalse("onExceptionInOpen was called", onFailureFlag.get());
+        assertEquals(State.ACTIVE, node.getState(), "Unexpected node state");
+        assertFalse(onFailureFlag.get(), "onExceptionInOpen was called");
         node.close();
     }
-
 
     @Test
     public void testDeleteInErrorStateAfterOpen()
     {
-        String nodeName = getTestName();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
-
+        final String nodeName = getTestName();
+        final Map<String, Object> attributes = Map.of(TestVirtualHostNode.NAME, nodeName);
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).init(any(ConfiguredObject.class));
-        AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
+        final AbstractStandardVirtualHostNode<?> node = createTestStandardVirtualHostNode(attributes, store);
         node.open();
-        assertEquals("Unexpected node state", State.ERRORED, node.getState());
+        assertEquals(State.ERRORED, node.getState(), "Unexpected node state");
 
         node.delete();
-        assertEquals("Unexpected state", State.DELETED, node.getState());
+        assertEquals(State.DELETED, node.getState(), "Unexpected state");
     }
 
     @Test
-    public void testActivateInErrorStateAfterOpen() throws Exception
+    public void testActivateInErrorStateAfterOpen()
     {
-        String nodeName = getTestName();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
-
-        DurableConfigurationStore store = mock(DurableConfigurationStore.class);
+        final String nodeName = getTestName();
+        final Map<String, Object> attributes = Map.of(TestVirtualHostNode.NAME, nodeName);
+        final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).init(any(ConfiguredObject.class));
-        AbstractVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
+        final AbstractVirtualHostNode<?> node = createTestStandardVirtualHostNode(attributes, store);
         node.open();
-        assertEquals("Unexpected node state", State.ERRORED, node.getState());
+        assertEquals(State.ERRORED, node.getState(), "Unexpected node state");
         doNothing().when(store).init(any(ConfiguredObject.class));
 
-        node.setAttributes(Collections.<String, Object>singletonMap(VirtualHostNode.DESIRED_STATE, State.ACTIVE));
-        assertEquals("Unexpected state", State.ACTIVE, node.getState());
+        node.setAttributes(Map.of(VirtualHostNode.DESIRED_STATE, State.ACTIVE));
+        assertEquals(State.ACTIVE, node.getState(), "Unexpected state");
         node.close();
     }
 
     @Test
-    public void testStartInErrorStateAfterOpen() throws Exception
+    public void testStartInErrorStateAfterOpen()
     {
-        String nodeName = getTestName();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
-
-        DurableConfigurationStore store = mock(DurableConfigurationStore.class);
+        final String nodeName = getTestName();
+        final Map<String, Object> attributes = Map.of(TestVirtualHostNode.NAME, nodeName);
+        final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).init(any(ConfiguredObject.class));
-        AbstractVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
+        final AbstractVirtualHostNode<?> node = createTestStandardVirtualHostNode(attributes, store);
         node.open();
-        assertEquals("Unexpected node state", State.ERRORED, node.getState());
+        assertEquals(State.ERRORED, node.getState(), "Unexpected node state");
         doNothing().when(store).init(any(ConfiguredObject.class));
 
         node.start();
-        assertEquals("Unexpected state", State.ACTIVE, node.getState());
+        assertEquals(State.ACTIVE, node.getState(), "Unexpected state");
         node.close();
     }
 
     private ConfiguredObjectRecord createVirtualHostConfiguredObjectRecord(UUID virtualHostId)
     {
-        Map<String, Object> virtualHostAttributes = new HashMap<>();
-        virtualHostAttributes.put(VirtualHost.NAME, TEST_VIRTUAL_HOST_NAME);
-        virtualHostAttributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-        virtualHostAttributes.put(VirtualHost.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-
-        ConfiguredObjectRecord record = mock(ConfiguredObjectRecord.class);
+        final Map<String, Object> virtualHostAttributes = Map.of(VirtualHost.NAME, TEST_VIRTUAL_HOST_NAME,
+                VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
+                VirtualHost.MODEL_VERSION, BrokerModel.MODEL_VERSION);
+        final ConfiguredObjectRecord record = mock(ConfiguredObjectRecord.class);
         when(record.getId()).thenReturn(virtualHostId);
         when(record.getAttributes()).thenReturn(virtualHostAttributes);
         when(record.getType()).thenReturn(VirtualHost.class.getSimpleName());
@@ -570,7 +492,7 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         return new NullMessageStore(){
 
             @Override
-            public boolean openConfigurationStore(ConfiguredObjectRecordHandler handler,
+            public boolean openConfigurationStore(final ConfiguredObjectRecordHandler handler,
                                                   final ConfiguredObjectRecord... initialRecords) throws StoreException
             {
                 if (record != null)
@@ -587,11 +509,12 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         return configStoreThatProduces(null);
     }
 
-
-    private AbstractStandardVirtualHostNode createTestStandardVirtualHostNode(final Map<String, Object> attributes,
-                                                                              final DurableConfigurationStore store)
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private AbstractStandardVirtualHostNode<?> createTestStandardVirtualHostNode(final Map<String, Object> attributes,
+                                                                                 final DurableConfigurationStore store)
     {
-        return new AbstractStandardVirtualHostNode(attributes,  _broker){
+        return new AbstractStandardVirtualHostNode(attributes,  _broker)
+        {
 
             @Override
             protected void writeLocationEventLog()
@@ -607,11 +530,14 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         };
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private static class TestAbstractVirtualHostNode extends AbstractVirtualHostNode
     {
         private final DurableConfigurationStore _store;
 
-        public TestAbstractVirtualHostNode(Broker parent, Map attributes, DurableConfigurationStore store)
+        public TestAbstractVirtualHostNode(final Broker<?> parent,
+                                           final Map<String, Object> attributes,
+                                           final DurableConfigurationStore store)
         {
             super(parent, attributes);
             _store = store;
@@ -642,7 +568,7 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         }
 
         @Override
-        public Collection<? extends RemoteReplicationNode> getRemoteReplicationNodes()
+        public Collection<? extends RemoteReplicationNode<?>> getRemoteReplicationNodes()
         {
             return null;
         }

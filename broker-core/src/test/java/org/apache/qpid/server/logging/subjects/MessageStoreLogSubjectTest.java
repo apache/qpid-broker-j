@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.VirtualHost;
@@ -36,25 +36,16 @@ public class MessageStoreLogSubjectTest extends AbstractTestLogSubject
 {
     private VirtualHost<?> _testVhost;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeAll
+    public void beforeAll() throws Exception
     {
-        super.setUp();
-
         _testVhost = BrokerTestHelper.createVirtualHost("test", this);
-
-        _subject = new MessageStoreLogSubject(_testVhost.getName(),
-                                              _testVhost.getMessageStore().getClass().getSimpleName());
     }
 
-    @After
-    public void tearDown() throws Exception
+    @BeforeEach
+    public void setUp() throws Exception
     {
-        if (_testVhost != null)
-        {
-            _testVhost.close();
-        }
-        super.tearDown();
+        _subject = new MessageStoreLogSubject(_testVhost.getName(), _testVhost.getMessageStore().getClass().getSimpleName());
     }
 
     /**
@@ -63,18 +54,14 @@ public class MessageStoreLogSubjectTest extends AbstractTestLogSubject
      * @param message the message who's format needs validation
      */
     @Override
-    protected void validateLogStatement(String message)
+    protected void validateLogStatement(final String message)
     {
         verifyVirtualHost(message, _testVhost);
 
-        String msSlice = getSlice("ms", message);
+        final String msSlice = getSlice("ms", message);
 
-        assertNotNull("MessageStore not found:" + message, msSlice);
+        assertNotNull(msSlice, "MessageStore not found:" + message);
 
-        assertEquals("MessageStore not correct",
-                            _testVhost.getMessageStore().getClass().getSimpleName(),
-                            msSlice);
-
+        assertEquals(_testVhost.getMessageStore().getClass().getSimpleName(), msSlice, "MessageStore not correct");
     }
-
 }

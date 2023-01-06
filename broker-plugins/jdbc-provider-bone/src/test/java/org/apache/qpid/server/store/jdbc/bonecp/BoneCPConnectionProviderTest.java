@@ -22,13 +22,15 @@ package org.apache.qpid.server.store.jdbc.bonecp;
 
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProvider.DEFAULT_MAX_CONNECTIONS_PER_PARTITION;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProvider.DEFAULT_MIN_CONNECTIONS_PER_PARTITION;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import com.jolbox.bonecp.BoneCPConfig;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -53,16 +55,14 @@ public class BoneCPConnectionProviderTest extends UnitTestBase
         assertEquals(connectionUrl, config.getJdbcUrl());
         assertEquals(username, config.getUsername());
         assertEquals(password, config.getPassword());
-        assertEquals("Unexpected idleMaxAgeInMinutes", 123, config.getIdleMaxAgeInMinutes());
-        assertEquals("Unexpected connectionTimeout", 1234, config.getConnectionTimeoutInMs());
-        assertEquals("Unexpected connectionTestStatement", "select 1", config.getConnectionTestStatement());
-        assertEquals("Unexpected logStatementsEnabled", true, config.isLogStatementsEnabled());
-        assertEquals("Unexpected maxConnectionsPerPartition",
-                     DEFAULT_MAX_CONNECTIONS_PER_PARTITION,
-                     config.getMaxConnectionsPerPartition());
-        assertEquals("Unexpected minConnectionsPerPartition",
-                     DEFAULT_MIN_CONNECTIONS_PER_PARTITION,
-                     config.getMinConnectionsPerPartition());
-        assertEquals("Unexpected partitionCount", 12, config.getPartitionCount());
+        assertEquals(123, config.getIdleMaxAgeInMinutes(), "Unexpected idleMaxAgeInMinutes");
+        assertEquals(1234, config.getConnectionTimeoutInMs(), "Unexpected connectionTimeout");
+        assertEquals("select 1", config.getConnectionTestStatement(), "Unexpected connectionTestStatement");
+        assertTrue(config.isLogStatementsEnabled(), "Unexpected logStatementsEnabled");
+        assertEquals(DEFAULT_MAX_CONNECTIONS_PER_PARTITION, config.getMaxConnectionsPerPartition(),
+                "Unexpected maxConnectionsPerPartition");
+        assertEquals(DEFAULT_MIN_CONNECTIONS_PER_PARTITION, config.getMinConnectionsPerPartition(),
+                "Unexpected minConnectionsPerPartition");
+        assertEquals(12, config.getPartitionCount(), "Unexpected partitionCount");
     }
 }

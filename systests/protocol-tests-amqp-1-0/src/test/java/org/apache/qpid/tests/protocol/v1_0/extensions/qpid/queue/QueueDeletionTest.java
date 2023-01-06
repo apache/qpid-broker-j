@@ -28,10 +28,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -59,7 +59,7 @@ import org.apache.qpid.tests.utils.BrokerSpecific;
 public class QueueDeletionTest extends BrokerAdminUsingTestBase
 {
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -266,6 +266,6 @@ public class QueueDeletionTest extends BrokerAdminUsingTestBase
     private void coordinatorAttachExpected(final Response<?> response)
     {
         assertThat(response, is(notNullValue()));
-        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
+        assumeTrue(anyOf(instanceOf(Attach.class), instanceOf(Flow.class)).matches(response.getBody()));
     }
 }

@@ -21,34 +21,21 @@ package org.apache.qpid.disttest.controller.config;
 
 import static org.apache.qpid.disttest.controller.config.ConfigTestUtils.assertCommandEquals;
 import static org.apache.qpid.disttest.controller.config.ConfigTestUtils.getCommand;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.message.Command;
 import org.apache.qpid.disttest.message.CreateConnectionCommand;
 import org.apache.qpid.disttest.message.NoOpCommand;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ConnectionConfigTest extends UnitTestBase
 {
@@ -68,7 +55,7 @@ public class ConnectionConfigTest extends UnitTestBase
         ConnectionConfig connectionConfig = createConnectionConfigWithChildCommands();
 
         List<Command> commands = connectionConfig.createCommands();
-        assertEquals((long) 3, (long) commands.size());
+        assertEquals(3, (long) commands.size());
 
         assertCommandEquals(commands, 0, CreateConnectionCommand.class);
         assertCommandEquals(commands, 1, NoOpCommand.class);
@@ -83,7 +70,7 @@ public class ConnectionConfigTest extends UnitTestBase
     public void testGetTotalNumberOfParticipants()
     {
         ConnectionConfig connectionConfig = createConnectionConfigWithTwoParticipants();
-        assertEquals((long) 2, (long) connectionConfig.getTotalNumberOfParticipants());
+        assertEquals(2, (long) connectionConfig.getTotalNumberOfParticipants());
     }
 
     private ConnectionConfig createConnectionConfigWithTwoParticipants()
@@ -105,7 +92,7 @@ public class ConnectionConfigTest extends UnitTestBase
 
         NoOpCommand cmd1 = mock(NoOpCommand.class);
         NoOpCommand cmd2 = mock(NoOpCommand.class);
-        List<Command> commands = Arrays.asList((Command)cmd1, (Command)cmd2);
+        List<Command> commands = Arrays.asList(cmd1, cmd2);
         when(sessionConfig.createCommands(CONNECTION_NAME)).thenReturn(commands);
 
         return new ConnectionConfig(CONNECTION_NAME, CONNECTION_FACTORY_NAME, sessionConfig);

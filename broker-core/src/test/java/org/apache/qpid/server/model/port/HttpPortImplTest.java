@@ -20,18 +20,17 @@
 
 package org.apache.qpid.server.model.port;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -44,31 +43,31 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class HttpPortImplTest extends UnitTestBase
 {
     private static final String AUTHENTICATION_PROVIDER_NAME = "test";
 
-    private TaskExecutor _taskExecutor;
     private Broker _broker;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        Model model = BrokerModel.getInstance();
-        SystemConfig systemConfig = mock(SystemConfig.class);
+        final TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
+        final Model model = BrokerModel.getInstance();
+        final SystemConfig systemConfig = mock(SystemConfig.class);
         _broker = mock(Broker.class);
         when(_broker.getParent()).thenReturn(systemConfig);
-        when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
+        when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
+        when(_broker.getChildExecutor()).thenReturn(taskExecutor);
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
 
-        AuthenticationProvider<?> provider = mock(AuthenticationProvider.class);
+        final AuthenticationProvider<?> provider = mock(AuthenticationProvider.class);
         when(provider.getName()).thenReturn(AUTHENTICATION_PROVIDER_NAME);
         when(provider.getParent()).thenReturn(_broker);
-        when(provider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
+        when(provider.getMechanisms()).thenReturn(List.of("PLAIN"));
         when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.<AuthenticationProvider>singleton(
                 provider));
         when(_broker.getChildByName(AuthenticationProvider.class, AUTHENTICATION_PROVIDER_NAME)).thenReturn(provider);
@@ -76,111 +75,71 @@ public class HttpPortImplTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateWithIllegalThreadPoolValues() throws Exception
+    public void testCreateWithIllegalThreadPoolValues()
     {
-        int threadPoolMinimumSize = 37;
-        int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(HttpPort.PORT, 0);
-        attributes.put(HttpPort.NAME, getTestName());
-        attributes.put(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize);
-        attributes.put(HttpPort.THREAD_POOL_MAXIMUM, invalidThreadPoolMaximumSize);
-        attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
-
-        HttpPortImpl port = new HttpPortImpl(attributes, _broker);
-        try
-        {
-            port.create();
-            fail("Creation should fail due to validation check");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // PASS
-        }
+        final int threadPoolMinimumSize = 37;
+        final int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
+        final Map<String, Object> attributes = Map.of(HttpPort.PORT, 0,
+                HttpPort.NAME, getTestName(),
+                HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize,
+                HttpPort.THREAD_POOL_MAXIMUM, invalidThreadPoolMaximumSize,
+                HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
+        final HttpPortImpl port = new HttpPortImpl(attributes, _broker);
+        assertThrows(IllegalConfigurationException.class, port::create, "Creation should fail due to validation check");
     }
 
     @Test
-    public void testIllegalChangeWithMaxThreadPoolSizeSmallerThanMinThreadPoolSize() throws Exception
+    public void testIllegalChangeWithMaxThreadPoolSizeSmallerThanMinThreadPoolSize()
     {
-        int threadPoolMinimumSize = 37;
-        int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(HttpPort.PORT, 0);
-        attributes.put(HttpPort.NAME, getTestName());
-        attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
-
-        HttpPortImpl port = new HttpPortImpl(attributes, _broker);
+        final int threadPoolMinimumSize = 37;
+        final int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
+        final Map<String, Object> attributes = Map.of(HttpPort.PORT, 0,
+                HttpPort.NAME, getTestName(),
+                HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
+        final HttpPortImpl port = new HttpPortImpl(attributes, _broker);
         port.create();
 
-        final Map<String, Object> updates = new HashMap<>();
-        updates.put(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize);
-        updates.put(HttpPort.THREAD_POOL_MAXIMUM, invalidThreadPoolMaximumSize);
-        try
-        {
-            port.setAttributes(updates);
-            fail("Change should fail due to validation check");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // PASS
-        }
+        final Map<String, Object> updates = Map.of(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize,
+                HttpPort.THREAD_POOL_MAXIMUM, invalidThreadPoolMaximumSize);
+        assertThrows(IllegalConfigurationException.class, () -> port.setAttributes(updates),
+                "Change should fail due to validation check");
     }
 
     @Test
-    public void testIllegalChangeWithNegativeThreadPoolSize() throws Exception
+    public void testIllegalChangeWithNegativeThreadPoolSize()
     {
-        int illegalThreadPoolMinimumSize = -1;
-        int threadPoolMaximumSize = 1;
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(HttpPort.PORT, 0);
-        attributes.put(HttpPort.NAME, getTestName());
-        attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
-
-        HttpPortImpl port = new HttpPortImpl(attributes, _broker);
+        final int illegalThreadPoolMinimumSize = -1;
+        final int threadPoolMaximumSize = 1;
+        final Map<String, Object> attributes = Map.of(HttpPort.PORT, 0,
+                HttpPort.NAME, getTestName(),
+                HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
+        final HttpPortImpl port = new HttpPortImpl(attributes, _broker);
         port.create();
 
-        final Map<String, Object> updates = new HashMap<>();
-        updates.put(HttpPort.THREAD_POOL_MINIMUM, illegalThreadPoolMinimumSize);
-        updates.put(HttpPort.THREAD_POOL_MAXIMUM, threadPoolMaximumSize);
-        try
-        {
-            port.setAttributes(updates);
-            fail("Change should fail due to validation check");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // PASS
-        }
+        final Map<String, Object> updates = Map.of(HttpPort.THREAD_POOL_MINIMUM, illegalThreadPoolMinimumSize,
+                HttpPort.THREAD_POOL_MAXIMUM, threadPoolMaximumSize);
+        assertThrows(IllegalConfigurationException.class, () -> port.setAttributes(updates),
+                "Change should fail due to validation check");
     }
 
     @Test
-    public void testChangeWithLegalThreadPoolValues() throws Exception
+    public void testChangeWithLegalThreadPoolValues()
     {
-        int threadPoolMinimumSize = 37;
-        int threadPoolMaximumSize = threadPoolMinimumSize + 1;
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(HttpPort.PORT, 0);
-        attributes.put(HttpPort.NAME, getTestName());
-        attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
-
-        HttpPortImpl port = new HttpPortImpl(attributes, _broker);
+        final int threadPoolMinimumSize = 37;
+        final int threadPoolMaximumSize = threadPoolMinimumSize + 1;
+        final Map<String, Object> attributes = Map.of(HttpPort.PORT, 0,
+                HttpPort.NAME, getTestName(),
+                HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
+        final HttpPortImpl port = new HttpPortImpl(attributes, _broker);
         port.create();
 
-        final Map<String, Object> updates = new HashMap<>();
-        updates.put(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize);
-        updates.put(HttpPort.THREAD_POOL_MAXIMUM, threadPoolMaximumSize);
+        final Map<String, Object> updates = Map.of(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize,
+                HttpPort.THREAD_POOL_MAXIMUM, threadPoolMaximumSize);
         port.setAttributes(updates);
-        assertEquals("Port did not pickup changes to minimum thread pool size",
-                            (long) port.getThreadPoolMinimum(),
-                            (long) threadPoolMinimumSize);
+        assertEquals(port.getThreadPoolMinimum(), (long) threadPoolMinimumSize,
+                "Port did not pickup changes to minimum thread pool size");
 
-        assertEquals("Port did not pickup changes to maximum thread pool size",
-                            (long) port.getThreadPoolMaximum(),
-                            (long) threadPoolMaximumSize);
+        assertEquals(port.getThreadPoolMaximum(), (long) threadPoolMaximumSize,
+                "Port did not pickup changes to maximum thread pool size");
     }
-
 }

@@ -19,7 +19,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_8.extension.protocoltimeout;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.tests.protocol.v0_8.FrameTransport;

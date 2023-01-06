@@ -30,8 +30,9 @@ import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 import com.google.common.collect.Iterables;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.util.collections.Sets;
 
@@ -42,12 +43,12 @@ import static org.apache.qpid.server.security.access.config.Property.FROM_HOSTNA
 import static org.apache.qpid.server.security.access.config.Property.FROM_NETWORK;
 import static org.apache.qpid.server.security.access.config.Property.NAME;
 import static org.apache.qpid.server.security.access.config.Property.QUEUE_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -55,13 +56,15 @@ import static org.mockito.Mockito.when;
 
 public class AclRulePredicatesTest extends UnitTestBase
 {
-    private final FirewallRuleFactory _firewallRuleFactory = mock(FirewallRuleFactory.class);
-    private final AclRulePredicatesBuilder _builder = new AclRulePredicatesBuilder();
+    private AclRulePredicatesBuilder _builder;
+    private FirewallRuleFactory _firewallRuleFactory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
+        _builder = new AclRulePredicatesBuilder();
         final FirewallRule firewallRule = new TestFirewallRule();
+        _firewallRuleFactory = mock(FirewallRuleFactory.class);
         when(_firewallRuleFactory.createForHostname(any())).thenReturn(firewallRule);
         when(_firewallRuleFactory.createForNetwork(any())).thenReturn(firewallRule);
     }
@@ -124,9 +127,7 @@ public class AclRulePredicatesTest extends UnitTestBase
         final AclRulePredicates predicates = _builder.parse(ATTRIBUTES.name(), attributes).build(_firewallRuleFactory);
 
         final Set<String> attributesSet = Sets.newSet(attributes.split(","));
-        assertEquals("Unexpected attributes",
-                attributesSet,
-                predicates.get(ATTRIBUTES));
+        assertEquals(attributesSet, predicates.get(ATTRIBUTES), "Unexpected attributes");
     }
 
     @Test
@@ -136,9 +137,7 @@ public class AclRulePredicatesTest extends UnitTestBase
         final AclRulePredicates predicates = _builder.parse("attribute_names", attributes).build(_firewallRuleFactory);
 
         final Set<String> attributesSet = Sets.newSet(attributes.split(","));
-        assertEquals("Unexpected attributes",
-                attributesSet,
-                predicates.get(ATTRIBUTES));
+        assertEquals(attributesSet, predicates.get(ATTRIBUTES), "Unexpected attributes");
     }
 
     @Test
@@ -186,30 +185,30 @@ public class AclRulePredicatesTest extends UnitTestBase
     public void testPut_emptyString()
     {
         AclRulePredicates predicates = _builder.build(_firewallRuleFactory);
-        assertTrue(predicates.get(Property.QUEUE_NAME).isEmpty());
+        assertTrue(predicates.get(QUEUE_NAME).isEmpty());
 
-        predicates = _builder.put(Property.QUEUE_NAME, " ").build(_firewallRuleFactory);
-        assertEquals(1, predicates.get(Property.QUEUE_NAME).size());
-        assertEquals("*", Iterables.getOnlyElement(predicates.get(Property.QUEUE_NAME)));
+        predicates = _builder.put(QUEUE_NAME, " ").build(_firewallRuleFactory);
+        assertEquals(1, predicates.get(QUEUE_NAME).size());
+        assertEquals("*", Iterables.getOnlyElement(predicates.get(QUEUE_NAME)));
     }
 
     @Test
     public void testPut_Boolean()
     {
         AclRulePredicates predicates = _builder.build(_firewallRuleFactory);
-        assertTrue(predicates.get(Property.DURABLE).isEmpty());
+        assertTrue(predicates.get(DURABLE).isEmpty());
 
         predicates = _builder
-                .put(Property.DURABLE, "TRUE")
+                .put(DURABLE, "TRUE")
                 .put(Property.TEMPORARY, "False")
                 .put(Property.EXCLUSIVE, "T*")
                 .put(Property.AUTO_DELETE, "fal*")
                 .build(_firewallRuleFactory);
-        assertEquals(1, predicates.get(Property.DURABLE).size());
+        assertEquals(1, predicates.get(DURABLE).size());
         assertEquals(1, predicates.get(Property.TEMPORARY).size());
         assertEquals(1, predicates.get(Property.EXCLUSIVE).size());
         assertEquals(1, predicates.get(Property.AUTO_DELETE).size());
-        assertEquals(Boolean.TRUE, Iterables.getOnlyElement(predicates.get(Property.DURABLE)));
+        assertEquals(Boolean.TRUE, Iterables.getOnlyElement(predicates.get(DURABLE)));
         assertEquals(Boolean.FALSE, Iterables.getOnlyElement(predicates.get(Property.TEMPORARY)));
         assertEquals(Boolean.TRUE, Iterables.getOnlyElement(predicates.get(Property.EXCLUSIVE)));
         assertEquals(Boolean.FALSE, Iterables.getOnlyElement(predicates.get(Property.AUTO_DELETE)));
@@ -219,17 +218,17 @@ public class AclRulePredicatesTest extends UnitTestBase
     public void testPut_Boolean_SpecialCharacters()
     {
         AclRulePredicates predicates = _builder.build(_firewallRuleFactory);
-        assertTrue(predicates.get(Property.DURABLE).isEmpty());
+        assertTrue(predicates.get(DURABLE).isEmpty());
 
         predicates = _builder
-                .put(Property.DURABLE, "*")
+                .put(DURABLE, "*")
                 .build(_firewallRuleFactory);
-        assertEquals(1, predicates.get(Property.DURABLE).size());
-        assertEquals("*", Iterables.getOnlyElement(predicates.get(Property.DURABLE)));
+        assertEquals(1, predicates.get(DURABLE).size());
+        assertEquals("*", Iterables.getOnlyElement(predicates.get(DURABLE)));
 
         try
         {
-            _builder.put(Property.DURABLE, "X*").build(_firewallRuleFactory);
+            _builder.put(DURABLE, "X*").build(_firewallRuleFactory);
         }
         catch (IllegalArgumentException e)
         {

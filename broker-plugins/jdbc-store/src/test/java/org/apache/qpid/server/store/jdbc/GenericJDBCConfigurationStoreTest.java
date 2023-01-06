@@ -20,11 +20,11 @@
 
 package org.apache.qpid.server.store.jdbc;
 
-
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.assertTablesExistence;
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.getTableNames;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,7 +41,7 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
@@ -98,7 +98,7 @@ public class GenericJDBCConfigurationStoreTest extends AbstractDurableConfigurat
 
         store.closeConfigurationStore();
         store.onDelete(getVirtualHostNode());
-        assertEquals("Delete action was not invoked", true, deleted.get());
+        assertTrue(deleted.get(), "Delete action was not invoked");
     }
 
     @Test
@@ -248,7 +248,7 @@ public class GenericJDBCConfigurationStoreTest extends AbstractDurableConfigurat
     }
 
     @Override
-    protected DurableConfigurationStore createConfigStore() throws Exception
+    protected DurableConfigurationStore createConfigStore()
     {
         return new GenericJDBCConfigurationStore(VirtualHost.class);
     }

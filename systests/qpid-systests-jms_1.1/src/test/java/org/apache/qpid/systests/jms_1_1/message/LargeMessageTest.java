@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.stream.IntStream;
 
@@ -33,13 +33,12 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
 public class LargeMessageTest extends JmsTestBase
 {
-
     @Test
     public void message256k() throws Exception
     {
@@ -78,10 +77,10 @@ public class LargeMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("TextMessage should be received", receivedMessage instanceof TextMessage);
+            assertTrue(receivedMessage instanceof TextMessage, "TextMessage should be received");
             String receivedMessageText = ((TextMessage) receivedMessage).getText();
-            assertEquals(String.format("Unexpected large message content for size : %d", messageSize),
-                         receivedMessageText, messageText);
+            assertEquals(receivedMessageText, messageText,
+                    String.format("Unexpected large message content for size : %d", messageSize));
         }
         finally
         {

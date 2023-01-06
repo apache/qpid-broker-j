@@ -27,13 +27,11 @@ import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAU
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT;
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD;
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -44,14 +42,16 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Transaction;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -62,15 +62,16 @@ public class StandardEnvironmentFacadeTest extends UnitTestBase
     protected File _storePath;
     protected EnvironmentFacade _environmentFacade;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
 
         _storePath = new File(TMP_FOLDER + File.separator + "bdb" + File.separator + getTestName());
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -90,10 +91,10 @@ public class StandardEnvironmentFacadeTest extends UnitTestBase
     }
 
     @Test
-    public void testSecondEnvironmentFacadeUsingSamePathRejected() throws Exception
+    public void testSecondEnvironmentFacadeUsingSamePathRejected()
     {
         EnvironmentFacade ef = createEnvironmentFacade();
-        assertNotNull("Environment should not be null", ef);
+        assertNotNull(ef, "Environment should not be null");
         try
         {
             createEnvironmentFacade();
@@ -107,7 +108,7 @@ public class StandardEnvironmentFacadeTest extends UnitTestBase
         ef.close();
 
         EnvironmentFacade ef2 = createEnvironmentFacade();
-        assertNotNull("Environment should not be null", ef2);
+        assertNotNull(ef2, "Environment should not be null");
     }
 
     @Test
@@ -118,7 +119,7 @@ public class StandardEnvironmentFacadeTest extends UnitTestBase
     }
 
     @Test
-    public void testOverrideJeParameter() throws Exception
+    public void testOverrideJeParameter()
     {
         // verify that transactions can be created by default
         EnvironmentFacade ef = createEnvironmentFacade();
@@ -142,7 +143,7 @@ public class StandardEnvironmentFacadeTest extends UnitTestBase
 
 
     @Test
-    public void testOpenDatabaseReusesCachedHandle() throws Exception
+    public void testOpenDatabaseReusesCachedHandle()
     {
         DatabaseConfig createIfAbsentDbConfig = DatabaseConfig.DEFAULT.setAllowCreate(true);
 
@@ -151,17 +152,17 @@ public class StandardEnvironmentFacadeTest extends UnitTestBase
         assertNotNull(handle1);
 
         Database handle2 = ef.openDatabase("myDatabase", createIfAbsentDbConfig);
-        assertSame("Database handle should be cached", handle1, handle2);
+        assertSame(handle1, handle2, "Database handle should be cached");
 
         ef.closeDatabase("myDatabase");
 
         Database handle3 = ef.openDatabase("myDatabase", createIfAbsentDbConfig);
-        assertNotSame("Expecting a new handle after database closure", handle1, handle3);
+        assertNotSame(handle1, handle3, "Expecting a new handle after database closure");
     }
 
     EnvironmentFacade createEnvironmentFacade()
     {
-        _environmentFacade = createEnvironmentFacade(Collections.<String, String>emptyMap());
+        _environmentFacade = createEnvironmentFacade(Collections.emptyMap());
         return _environmentFacade;
 
     }

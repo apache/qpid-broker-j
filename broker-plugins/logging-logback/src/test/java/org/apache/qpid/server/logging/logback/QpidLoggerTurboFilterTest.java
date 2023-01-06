@@ -20,16 +20,17 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -38,14 +39,14 @@ public class QpidLoggerTurboFilterTest extends UnitTestBase
     private LoggerContext _loggerContext;
     private QpidLoggerTurboFilter _turboFilter;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _loggerContext = new LoggerContext();
         _turboFilter = QpidLoggerTurboFilter.installIfNecessary(_loggerContext);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         QpidLoggerTurboFilter.uninstall(_loggerContext);
@@ -54,23 +55,22 @@ public class QpidLoggerTurboFilterTest extends UnitTestBase
     @Test
     public void testDebugOffByDefault()
     {
-        Logger fooLogger = _loggerContext.getLogger("foo");
-        if(fooLogger.isDebugEnabled())
+        final Logger fooLogger = _loggerContext.getLogger("foo");
+        if (fooLogger.isDebugEnabled())
         {
             fail("debug should not be enabled by default");
         }
     }
 
-
     @Test
     public void testInstallFilterWorksCorrectly()
     {
-        Logger fooBarLogger = _loggerContext.getLogger("foo.bar");
-        if(fooBarLogger.isDebugEnabled())
+        final Logger fooBarLogger = _loggerContext.getLogger("foo.bar");
+        if (fooBarLogger.isDebugEnabled())
         {
             fail("debug should not be enabled by default");
         }
-        if(fooBarLogger.isInfoEnabled())
+        if (fooBarLogger.isInfoEnabled())
         {
             fail("info should not be enabled by default");
         }
@@ -78,34 +78,34 @@ public class QpidLoggerTurboFilterTest extends UnitTestBase
         final LoggerNameAndLevelFilter allFooInfo = new LoggerNameAndLevelFilter("foo.*", Level.INFO);
         _turboFilter.filterAdded(allFooInfo);
 
-        if(!fooBarLogger.isInfoEnabled())
+        if (!fooBarLogger.isInfoEnabled())
         {
             fail("info should be enabled after filter added");
         }
-        if(fooBarLogger.isDebugEnabled())
+        if (fooBarLogger.isDebugEnabled())
         {
             fail("debug should not be enabled after info enabled");
         }
 
         final LoggerNameAndLevelFilter fooBarDebugFilter = new LoggerNameAndLevelFilter("foo.bar", Level.DEBUG);
         _turboFilter.filterAdded(fooBarDebugFilter);
-        if(!fooBarLogger.isDebugEnabled())
+        if (!fooBarLogger.isDebugEnabled())
         {
             fail("debug should now be enabled");
         }
         final Logger fooBazLogger = _loggerContext.getLogger("foo.baz");
-        if(fooBazLogger.isDebugEnabled())
+        if (fooBazLogger.isDebugEnabled())
         {
             fail("debug should not be enabled after for foo.baz");
         }
 
         _turboFilter.filterRemoved(allFooInfo);
-        if(!fooBarLogger.isInfoEnabled())
+        if (!fooBarLogger.isInfoEnabled())
         {
             fail("info should be still be enabled fo foo.bar");
         }
 
-        if(fooBazLogger.isInfoEnabled())
+        if (fooBazLogger.isInfoEnabled())
         {
             fail("info should not still be enabled fo foo.baz");
         }
@@ -114,12 +114,11 @@ public class QpidLoggerTurboFilterTest extends UnitTestBase
     @Test
     public void testUninstall()
     {
-        Logger fooBarLogger = _loggerContext.getLogger("foo.bar");
-        assertFalse(
-                "Debug should not be enabled when QpidLoggerTurboFilter is installed but no regular filter is set",
-                fooBarLogger.isDebugEnabled());
+        final Logger fooBarLogger = _loggerContext.getLogger("foo.bar");
+        assertFalse(fooBarLogger.isDebugEnabled(),
+                "Debug should not be enabled when QpidLoggerTurboFilter is installed but no regular filter is set");
 
         QpidLoggerTurboFilter.uninstall(_loggerContext);
-        assertTrue("Debug should be enabled as per test logback configuration", fooBarLogger.isDebugEnabled());
+        assertTrue(fooBarLogger.isDebugEnabled(), "Debug should be enabled as per test logback configuration");
     }
 }

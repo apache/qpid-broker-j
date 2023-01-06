@@ -20,10 +20,9 @@
 
 package org.apache.qpid.server.security.auth.sasl.external;
 
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,7 +30,7 @@ import java.security.Principal;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManager;
@@ -44,119 +43,109 @@ public class ExternalNegotiatorTest extends UnitTestBase
     private static final String USERNAME_NO_CN_DC = "ou=test,o=example,o=com";
 
     @Test
-    public void testHandleResponseUseFullDNValidExternalPrincipal() throws Exception
+    public void testHandleResponseUseFullDNValidExternalPrincipal()
     {
-        ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
+        final ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
         when(externalAuthenticationManager.getUseFullDN()).thenReturn(true);
-        X500Principal externalPrincipal = new X500Principal(VALID_USER_DN);
-        ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, externalPrincipal);
+        final X500Principal externalPrincipal = new X500Principal(VALID_USER_DN);
+        final ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, externalPrincipal);
 
-        AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            firstResult.getStatus());
+        final AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, firstResult.getStatus(),
+                "Unexpected first result status");
 
-        String principalName = firstResult.getMainPrincipal().getName();
-        assertTrue(String.format("Unexpected first result principal '%s'", principalName),
-                          VALID_USER_DN.equalsIgnoreCase(principalName));
+        final String principalName = firstResult.getMainPrincipal().getName();
+        assertTrue(VALID_USER_DN.equalsIgnoreCase(principalName), String.format("Unexpected first result principal '%s'",
+                principalName));
 
 
-        AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            secondResult.getStatus());
+        final AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus(),
+                "Unexpected second result status");
     }
 
     @Test
-    public void testHandleResponseNotUseFullDNValidExternalPrincipal() throws Exception
+    public void testHandleResponseNotUseFullDNValidExternalPrincipal()
     {
-        ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
+        final ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
         when(externalAuthenticationManager.getUseFullDN()).thenReturn(false);
-        X500Principal externalPrincipal = new X500Principal(VALID_USER_DN);
-        ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, externalPrincipal);
+        final X500Principal externalPrincipal = new X500Principal(VALID_USER_DN);
+        final ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, externalPrincipal);
 
-        AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            firstResult.getStatus());
-        String principalName = firstResult.getMainPrincipal().getName();
-        assertEquals("Unexpected first result principal", VALID_USER_NAME, principalName);
+        final AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, firstResult.getStatus(),
+                "Unexpected first result status");
+        final String principalName = firstResult.getMainPrincipal().getName();
+        assertEquals(VALID_USER_NAME, principalName, "Unexpected first result principal");
 
-        AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            secondResult.getStatus());
+        final AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus(),
+                "Unexpected second result status");
     }
 
     @Test
-    public void testHandleResponseNotUseFullDN_No_CN_DC_In_ExternalPrincipal() throws Exception
+    public void testHandleResponseNotUseFullDN_No_CN_DC_In_ExternalPrincipal()
     {
-        ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
+        final ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
         when(externalAuthenticationManager.getUseFullDN()).thenReturn(false);
-        X500Principal externalPrincipal = new X500Principal(USERNAME_NO_CN_DC);
-        ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, externalPrincipal);
+        final X500Principal externalPrincipal = new X500Principal(USERNAME_NO_CN_DC);
+        final ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, externalPrincipal);
 
-        AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            firstResult.getStatus());
-        assertNull("Unexpected first result principal", firstResult.getMainPrincipal());
+        final AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, firstResult.getStatus(),
+                "Unexpected first result status");
+        assertNull(firstResult.getMainPrincipal(), "Unexpected first result principal");
     }
 
     @Test
-    public void testHandleResponseUseFullDN_No_CN_DC_In_ExternalPrincipal() throws Exception
+    public void testHandleResponseUseFullDN_No_CN_DC_In_ExternalPrincipal()
     {
-        ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
+        final ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
         when(externalAuthenticationManager.getUseFullDN()).thenReturn(true);
-        X500Principal externalPrincipal = new X500Principal(USERNAME_NO_CN_DC);
-        ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, externalPrincipal);
+        final X500Principal externalPrincipal = new X500Principal(USERNAME_NO_CN_DC);
+        final ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, externalPrincipal);
 
-        AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            firstResult.getStatus());
-        String principalName = firstResult.getMainPrincipal().getName();
-        assertTrue(String.format("Unexpected first result principal '%s'", principalName),
-                          USERNAME_NO_CN_DC.equalsIgnoreCase(principalName));
+        final AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, firstResult.getStatus(),
+                "Unexpected first result status");
+        final String principalName = firstResult.getMainPrincipal().getName();
+        assertTrue(USERNAME_NO_CN_DC.equalsIgnoreCase(principalName),
+                String.format("Unexpected first result principal '%s'", principalName));
 
-        AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            secondResult.getStatus());
+        final AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus(),
+                "Unexpected second result status");
     }
 
     @Test
-    public void testHandleResponseFailsWithoutExternalPrincipal() throws Exception
+    public void testHandleResponseFailsWithoutExternalPrincipal()
     {
-        ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
+        final ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
         when(externalAuthenticationManager.getUseFullDN()).thenReturn(true);
-        ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, null);
+        final ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, null);
 
-        AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            firstResult.getStatus());
-        assertNull("Unexpected first result principal", firstResult.getMainPrincipal());
+        final AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, firstResult.getStatus(),
+                "Unexpected first result status");
+        assertNull(firstResult.getMainPrincipal(), "Unexpected first result principal");
     }
 
 
     @Test
-    public void testHandleResponseSucceedsForNonX500Principal() throws Exception
+    public void testHandleResponseSucceedsForNonX500Principal()
     {
-        ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
+        final ExternalAuthenticationManager<?> externalAuthenticationManager = mock(ExternalAuthenticationManager.class);
         when(externalAuthenticationManager.getUseFullDN()).thenReturn(true);
-        Principal principal = mock(Principal.class);
-        ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, principal);
+        final Principal principal = mock(Principal.class);
+        final ExternalNegotiator negotiator = new ExternalNegotiator(externalAuthenticationManager, principal);
 
-        AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            firstResult.getStatus());
-        assertEquals("Unexpected first result principal", principal, firstResult.getMainPrincipal());
+        final AuthenticationResult firstResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, firstResult.getStatus(),
+                "Unexpected first result status");
+        assertEquals(principal, firstResult.getMainPrincipal(), "Unexpected first result principal");
 
-        AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            secondResult.getStatus());
+        final AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus(),
+                "Unexpected second result status");
     }
 }

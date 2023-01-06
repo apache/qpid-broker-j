@@ -22,14 +22,19 @@ package org.apache.qpid.test.utils;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
-public class SystemPropertySetter extends ExternalResource
+public class SystemPropertySetter implements AfterAllCallback
 {
     private final Map<String, String> _storedProperties = new HashMap<>();
 
-    @Override
-    public synchronized void after()
+    public synchronized void afterEach()
+    {
+        afterAll(null);
+    }
+
+    public synchronized void afterAll(ExtensionContext ctx)
     {
         _storedProperties.forEach(this::setProperty);
     }

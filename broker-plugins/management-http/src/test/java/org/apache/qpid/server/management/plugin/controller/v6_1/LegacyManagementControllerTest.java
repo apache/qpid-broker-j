@@ -33,30 +33,24 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
-import org.apache.qpid.server.management.plugin.controller.CategoryController;
-import org.apache.qpid.server.management.plugin.controller.CategoryControllerFactory;
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
-import org.apache.qpid.server.management.plugin.controller.TypeController;
-import org.apache.qpid.server.management.plugin.controller.TypeControllerFactory;
 import org.apache.qpid.server.management.plugin.controller.v6_1.category.BrokerController;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class LegacyManagementControllerTest extends UnitTestBase
 {
-
     private LegacyManagementController _controller;
     private ManagementController _nextVersionManagementController;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _nextVersionManagementController = mock(ManagementController.class);

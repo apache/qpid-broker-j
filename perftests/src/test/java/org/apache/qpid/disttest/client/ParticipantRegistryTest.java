@@ -19,33 +19,28 @@
  */
 package org.apache.qpid.disttest.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import org.junit.Assert;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ParticipantRegistryTest extends UnitTestBase
 {
-    private final ParticipantExecutorRegistry _participantRegistry = new ParticipantExecutorRegistry();
+    private ParticipantExecutorRegistry _participantRegistry;
+    private ParticipantExecutor _testParticipant1;
+    private ParticipantExecutor _testParticipant2;
 
-    private final ParticipantExecutor _testParticipant1 = mock(ParticipantExecutor.class);
-    private final ParticipantExecutor _testParticipant2 = mock(ParticipantExecutor.class);
+    @BeforeEach
+    public void setUp()
+    {
+        _participantRegistry = new ParticipantExecutorRegistry();
+        _testParticipant1 = mock(ParticipantExecutor.class);
+        _testParticipant2 = mock(ParticipantExecutor.class);
+    }
 
     @Test
     public void testAdd()
@@ -66,7 +61,7 @@ public class ParticipantRegistryTest extends UnitTestBase
     {
         _participantRegistry.add(_testParticipant1);
 
-        assertEquals((long) 1, (long) _participantRegistry.executors().size());
+        assertEquals(1, (long) _participantRegistry.executors().size());
 
         _participantRegistry.clear();
 

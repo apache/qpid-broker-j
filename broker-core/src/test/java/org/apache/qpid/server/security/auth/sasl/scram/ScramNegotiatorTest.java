@@ -20,31 +20,27 @@
 
 package org.apache.qpid.server.security.auth.sasl.scram;
 
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.security.sasl.SaslException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -67,7 +63,7 @@ public class ScramNegotiatorTest extends UnitTestBase
     private static final String INVALID_USER_PASSWORD = VALID_USER_PASSWORD + "1";
     private static final String INVALID_USER_NAME = VALID_USER_NAME + "1";
     private static final String GS2_HEADER = "n,,";
-    private static final Charset ASCII = Charset.forName("ASCII");
+    private static final Charset ASCII = StandardCharsets.US_ASCII;
     private static final int ITERATION_COUNT = 4096;
 
     private String _clientFirstMessageBare;
@@ -77,26 +73,20 @@ public class ScramNegotiatorTest extends UnitTestBase
     private AuthenticationProvider<?> _authenticationProvider;
     private Broker<?> _broker;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        _clientNonce = UUID.randomUUID().toString();
+        _clientNonce = randomUUID().toString();
         _passwordSource = mock(PasswordSource.class);
         when(_passwordSource.getPassword(eq(VALID_USER_NAME))).thenReturn(VALID_USER_PASSWORD.toCharArray());
         _authenticationProvider = mock(AuthenticationProvider.class);
         _broker = BrokerTestHelper.createBrokerMock();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-        }
-        finally
-        {
-            _authenticationProvider.close();
-        }
+        _authenticationProvider.close();
     }
 
     @Test
@@ -250,49 +240,44 @@ public class ScramNegotiatorTest extends UnitTestBase
                                                        final ScramSaslServerSource scramSaslServerSource)
             throws Exception
     {
-        ScramNegotiator scramNegotiator = new ScramNegotiator(authenticationProvider,
+        final ScramNegotiator scramNegotiator = new ScramNegotiator(authenticationProvider,
                                                               scramSaslServerSource,
                                                               mechanism);
 
-        byte[] initialResponse = createInitialResponse(VALID_USER_NAME);
+        final byte[] initialResponse = createInitialResponse(VALID_USER_NAME);
 
-        AuthenticationResult firstResult = scramNegotiator.handleResponse(initialResponse);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.CONTINUE,
-                            firstResult.getStatus());
+        final AuthenticationResult firstResult = scramNegotiator.handleResponse(initialResponse);
+        assertEquals(AuthenticationResult.AuthenticationStatus.CONTINUE, firstResult.getStatus(),
+                "Unexpected first result status");
 
-        assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
+        assertNotNull(firstResult.getChallenge(), "Unexpected first result challenge");
 
-        byte[] response = calculateClientProof(firstResult.getChallenge(),
+        final byte[] response = calculateClientProof(firstResult.getChallenge(),
                                                scramSaslServerSource.getHmacName(),
                                                scramSaslServerSource.getDigestName(),
                                                VALID_USER_PASSWORD);
-        AuthenticationResult secondResult = scramNegotiator.handleResponse(response);
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            secondResult.getStatus());
-        assertNotNull("Unexpected second result challenge", secondResult.getChallenge());
-        assertEquals("Unexpected second result principal",
-                            VALID_USER_NAME,
-                            secondResult.getMainPrincipal().getName());
+        final AuthenticationResult secondResult = scramNegotiator.handleResponse(response);
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, secondResult.getStatus(),
+                "Unexpected second result status");
+        assertNotNull(secondResult.getChallenge(), "Unexpected second result challenge");
+        assertEquals(VALID_USER_NAME, secondResult.getMainPrincipal().getName(), "Unexpected second result principal");
 
-        String serverFinalMessage = new String(secondResult.getChallenge(), ASCII);
-        String[] parts = serverFinalMessage.split(",");
+        final String serverFinalMessage = new String(secondResult.getChallenge(), ASCII);
+        final String[] parts = serverFinalMessage.split(",");
         if (!parts[0].startsWith("v="))
         {
             fail("Server final message did not contain verifier");
         }
-        byte[] serverSignature = Strings.decodeBase64(parts[0].substring(2));
+        final byte[] serverSignature = Strings.decodeBase64(parts[0].substring(2));
         if (!Arrays.equals(_serverSignature, serverSignature))
         {
             fail("Server signature did not match");
         }
 
-        AuthenticationResult thirdResult = scramNegotiator.handleResponse(initialResponse);
-        assertEquals("Unexpected result status after completion of negotiation",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            thirdResult.getStatus());
-        assertNull("Unexpected principal after completion of negotiation", thirdResult.getMainPrincipal());
+        final AuthenticationResult thirdResult = scramNegotiator.handleResponse(initialResponse);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, thirdResult.getStatus(),
+                "Unexpected result status after completion of negotiation");
+        assertNull(thirdResult.getMainPrincipal(), "Unexpected principal after completion of negotiation");
     }
 
     private void doSaslNegotiationTestInvalidCredentials(final String userName,
@@ -302,38 +287,33 @@ public class ScramNegotiatorTest extends UnitTestBase
                                                          final ScramSaslServerSource scramSaslServerSource)
             throws Exception
     {
-        ScramNegotiator scramNegotiator = new ScramNegotiator(authenticationProvider,
-                                                              scramSaslServerSource,
-                                                              mechanism);
+        final ScramNegotiator scramNegotiator = new ScramNegotiator(authenticationProvider, scramSaslServerSource,
+                mechanism);
 
-        byte[] initialResponse = createInitialResponse(userName);
-        AuthenticationResult firstResult = scramNegotiator.handleResponse(initialResponse);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.CONTINUE,
-                            firstResult.getStatus());
-        assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
+        final byte[] initialResponse = createInitialResponse(userName);
+        final AuthenticationResult firstResult = scramNegotiator.handleResponse(initialResponse);
+        assertEquals(AuthenticationResult.AuthenticationStatus.CONTINUE, firstResult.getStatus(),
+                "Unexpected first result status");
+        assertNotNull(firstResult.getChallenge(), "Unexpected first result challenge");
 
-        byte[] response = calculateClientProof(firstResult.getChallenge(),
-                                               scramSaslServerSource.getHmacName(),
-                                               scramSaslServerSource.getDigestName(),
-                                               userPassword);
-        AuthenticationResult secondResult = scramNegotiator.handleResponse(response);
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            secondResult.getStatus());
-        assertNull("Unexpected second result challenge", secondResult.getChallenge());
-        assertNull("Unexpected second result principal", secondResult.getMainPrincipal());
+        final byte[] response = calculateClientProof(firstResult.getChallenge(), scramSaslServerSource.getHmacName(),
+                scramSaslServerSource.getDigestName(), userPassword);
+        final AuthenticationResult secondResult = scramNegotiator.handleResponse(response);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus(),
+                "Unexpected second result status");
+        assertNull(secondResult.getChallenge(), "Unexpected second result challenge");
+        assertNull(secondResult.getMainPrincipal(), "Unexpected second result principal");
     }
 
 
     private byte[] calculateClientProof(final byte[] challenge,
-                                        String hmacName,
-                                        String digestName,
-                                        String userPassword) throws Exception
+                                        final String hmacName,
+                                        final String digestName,
+                                        final String userPassword) throws Exception
     {
 
-        String serverFirstMessage = new String(challenge, ASCII);
-        String[] parts = serverFirstMessage.split(",");
+        final String serverFirstMessage = new String(challenge, ASCII);
+        final String[] parts = serverFirstMessage.split(",");
         if (parts.length < 3)
         {
             fail("Server challenge '" + serverFirstMessage + "' cannot be parsed");
@@ -346,7 +326,7 @@ public class ScramNegotiatorTest extends UnitTestBase
         {
             fail("Server challenge '" + serverFirstMessage + "' cannot be parsed, cannot find nonce");
         }
-        String nonce = parts[0].substring(2);
+        final String nonce = parts[0].substring(2);
         if (!nonce.startsWith(_clientNonce))
         {
             fail("Server challenge did not use correct client nonce");
@@ -355,56 +335,55 @@ public class ScramNegotiatorTest extends UnitTestBase
         {
             fail("Server challenge '" + serverFirstMessage + "' cannot be parsed, cannot find salt");
         }
-        byte[] salt = Strings.decodeBase64(parts[1].substring(2));
+        final byte[] salt = Strings.decodeBase64(parts[1].substring(2));
         if (!parts[2].startsWith("i="))
         {
             fail("Server challenge '" + serverFirstMessage + "' cannot be parsed, cannot find iteration count");
         }
-        int _iterationCount = Integer.parseInt(parts[2].substring(2));
+        final int _iterationCount = Integer.parseInt(parts[2].substring(2));
         if (_iterationCount <= 0)
         {
             fail("Iteration count " + _iterationCount + " is not a positive integer");
         }
-        byte[] passwordBytes = saslPrep(userPassword).getBytes("UTF-8");
-        byte[] saltedPassword = generateSaltedPassword(passwordBytes, hmacName, _iterationCount, salt);
+        final byte[] passwordBytes = saslPrep(userPassword).getBytes(StandardCharsets.UTF_8);
+        final byte[] saltedPassword = generateSaltedPassword(passwordBytes, hmacName, _iterationCount, salt);
 
-        String clientFinalMessageWithoutProof =
-                "c=" + Base64.getEncoder().encodeToString(GS2_HEADER.getBytes(ASCII))
-                + ",r=" + nonce;
+        final String clientFinalMessageWithoutProof =
+                "c=" + Base64.getEncoder().encodeToString(GS2_HEADER.getBytes(ASCII)) + ",r=" + nonce;
 
-        String authMessage = _clientFirstMessageBare + "," + serverFirstMessage + "," + clientFinalMessageWithoutProof;
-        byte[] clientKey = computeHmac(saltedPassword, "Client Key", hmacName);
-        byte[] storedKey = MessageDigest.getInstance(digestName).digest(clientKey);
-        byte[] clientSignature = computeHmac(storedKey, authMessage, hmacName);
-        byte[] clientProof = clientKey.clone();
+        final String authMessage = _clientFirstMessageBare + "," + serverFirstMessage + "," + clientFinalMessageWithoutProof;
+        final byte[] clientKey = computeHmac(saltedPassword, "Client Key", hmacName);
+        final byte[] storedKey = MessageDigest.getInstance(digestName).digest(clientKey);
+        final byte[] clientSignature = computeHmac(storedKey, authMessage, hmacName);
+        final byte[] clientProof = clientKey.clone();
         for (int i = 0; i < clientProof.length; i++)
         {
             clientProof[i] ^= clientSignature[i];
         }
-        byte[] serverKey = computeHmac(saltedPassword, "Server Key", hmacName);
+        final byte[] serverKey = computeHmac(saltedPassword, "Server Key", hmacName);
         _serverSignature = computeHmac(serverKey, authMessage, hmacName);
-        String finalMessageWithProof = clientFinalMessageWithoutProof
-                                       + ",p=" + Base64.getEncoder().encodeToString(clientProof);
+        final String finalMessageWithProof =
+                clientFinalMessageWithoutProof + ",p=" + Base64.getEncoder().encodeToString(clientProof);
         return finalMessageWithProof.getBytes();
     }
 
     private byte[] computeHmac(final byte[] key, final String string, String hmacName)
             throws Exception
     {
-        Mac mac = createHmac(key, hmacName);
+        final Mac mac = createHmac(key, hmacName);
         mac.update(string.getBytes(ASCII));
         return mac.doFinal();
     }
 
     private byte[] generateSaltedPassword(final byte[] passwordBytes,
-                                          String hmacName,
+                                          final String hmacName,
                                           final int iterationCount,
                                           final byte[] salt) throws Exception
     {
-        Mac mac = createHmac(passwordBytes, hmacName);
+        final Mac mac = createHmac(passwordBytes, hmacName);
         mac.update(salt);
         mac.update(new byte[]{0, 0, 0, 1});
-        byte[] result = mac.doFinal();
+        final byte[] result = mac.doFinal();
 
         byte[] previous = null;
         for (int i = 1; i < iterationCount; i++)
@@ -420,44 +399,41 @@ public class ScramNegotiatorTest extends UnitTestBase
         return result;
     }
 
-    private Mac createHmac(final byte[] keyBytes, String hmacName) throws Exception
+    private Mac createHmac(final byte[] keyBytes, final String hmacName) throws Exception
     {
-        SecretKeySpec key = new SecretKeySpec(keyBytes, hmacName);
+        final SecretKeySpec key = new SecretKeySpec(keyBytes, hmacName);
         Mac mac = Mac.getInstance(hmacName);
         mac.init(key);
         return mac;
     }
 
-    private String saslPrep(String name) throws SaslException
+    private String saslPrep(String name)
     {
         name = name.replace("=", "=3D");
         name = name.replace(",", "=2C");
         return name;
     }
 
-    private byte[] createInitialResponse(final String userName) throws SaslException
+    private byte[] createInitialResponse(final String userName)
     {
         _clientFirstMessageBare = "n=" + saslPrep(userName) + ",r=" + _clientNonce;
         return (GS2_HEADER + _clientFirstMessageBare).getBytes(ASCII);
     }
 
-    private AuthenticationProvider createTestAuthenticationManager(String type)
+    private AuthenticationProvider<?> createTestAuthenticationManager(final String type)
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(ConfiguredObject.NAME, getTestName());
-        attributes.put(ConfiguredObject.ID, UUID.randomUUID());
-        attributes.put(ConfiguredObject.TYPE, type);
-        ConfiguredObjectFactory objectFactory = _broker.getObjectFactory();
+        final Map<String, Object> attributes = Map.of(ConfiguredObject.NAME, getTestName(),
+                ConfiguredObject.ID, randomUUID(),
+                ConfiguredObject.TYPE, type);
+        final ConfiguredObjectFactory objectFactory = _broker.getObjectFactory();
         @SuppressWarnings("unchecked")
-        AuthenticationProvider<?> configuredObject =
+        final AuthenticationProvider<?> configuredObject =
                 objectFactory.create(AuthenticationProvider.class, attributes, _broker);
-        assertEquals("Unexpected state", State.ACTIVE, configuredObject.getState());
+        assertEquals(State.ACTIVE, configuredObject.getState(), "Unexpected state");
 
-        PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider =
+        final PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider =
                 (PasswordCredentialManagingAuthenticationProvider<?>) configuredObject;
-        authenticationProvider.createUser(VALID_USER_NAME,
-                                          VALID_USER_PASSWORD,
-                                          Collections.<String, String>emptyMap());
+        authenticationProvider.createUser(VALID_USER_NAME, VALID_USER_PASSWORD, Map.of());
         return configuredObject;
     }
 }

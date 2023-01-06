@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +38,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.StreamMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -76,7 +76,7 @@ public class StreamMessageTest extends JmsTestBase
                 }
                 catch (Exception e)
                 {
-                    assertTrue("Expected MessageEOFException: " + e, e instanceof MessageEOFException);
+                    assertTrue(e instanceof MessageEOFException, "Expected MessageEOFException: " + e);
                 }
 
                 try
@@ -144,10 +144,10 @@ public class StreamMessageTest extends JmsTestBase
                 producer.send(message);
 
                 consumerConnection.start();
-                assertTrue("Message did not arrive with consumer within a reasonable time",
-                           awaitMessages.await(getReceiveTimeout(), TimeUnit.SECONDS));
-                assertNull("No exception should be caught by listener : " + listenerCaughtException.get(),
-                           listenerCaughtException.get());
+                assertTrue(awaitMessages.await(getReceiveTimeout(), TimeUnit.SECONDS),
+                        "Message did not arrive with consumer within a reasonable time");
+                assertNull(listenerCaughtException.get(),
+                        "No exception should be caught by listener : " + listenerCaughtException.get());
             }
             finally
             {

@@ -30,14 +30,14 @@ import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.qpid.server.security.access.config.Property.ATTRIBUTES;
 import static org.apache.qpid.server.security.access.config.Property.FROM_HOSTNAME;
 import static org.apache.qpid.server.security.access.config.Property.NAME;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -51,7 +51,7 @@ public class RulePredicateTest extends UnitTestBase
 
     private TestFirewallRule _firewallRule;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _builder = new Rule.Builder();

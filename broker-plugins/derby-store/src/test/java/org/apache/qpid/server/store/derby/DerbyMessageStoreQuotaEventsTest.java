@@ -20,16 +20,15 @@
  */
 package org.apache.qpid.server.store.derby;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
@@ -49,11 +48,11 @@ public class DerbyMessageStoreQuotaEventsTest extends MessageStoreQuotaEventsTes
 
     private static final long UNDERFULL_SIZE = (long) (OVERFULL_SIZE * 0.8);
 
-    @Before
+    @BeforeEach
     @Override
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB));
         super.setUp();
     }
 
@@ -68,7 +67,7 @@ public class DerbyMessageStoreQuotaEventsTest extends MessageStoreQuotaEventsTes
     {
         final DerbyVirtualHost parent = mock(DerbyVirtualHost.class);
         when(parent.getContext()).thenReturn(createContextSettings());
-        when(parent.getContextKeys(false)).thenReturn(Collections.<String>emptySet());
+        when(parent.getContextKeys(false)).thenReturn(Collections.emptySet());
         when(parent.getStorePath()).thenReturn(storeLocation);
         when(parent.getStoreOverfullSize()).thenReturn(OVERFULL_SIZE);
         when(parent.getStoreUnderfullSize()).thenReturn(UNDERFULL_SIZE);
@@ -85,6 +84,4 @@ public class DerbyMessageStoreQuotaEventsTest extends MessageStoreQuotaEventsTes
     {
         return Collections.emptyMap();
     }
-
-
 }

@@ -17,69 +17,177 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.test.utils;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 
-import com.google.common.base.StandardSystemProperty;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-@RunWith(QpidUnitTestRunner.class)
+/**
+ * Base class for unit tests.
+ */
+@ExtendWith(QpidUnitTestExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class UnitTestBase
 {
+    /** Temporary folder location */
     public static final String TMP_FOLDER = System.getProperty("java.io.tmpdir");
+
+    /** Type of the virtual host node */
     private static final String PROFILE_VIRTUALHOSTNODE_TYPE = "virtualhostnode.type";
 
-    @Rule
-    public final TestName _testName = new TestName();
+    /** Port helper */
+    private static final PortHelper PORT_HELPER = new PortHelper();
 
-    @Rule
+    /** Helper class for setting system properties during test execution */
     public final SystemPropertySetter _systemPropertySetter = new SystemPropertySetter();
 
-    private final Set<Runnable> _tearDownRegistry = new LinkedHashSet<>();
+    /** Set of callbacks executed after all tests */
+    private final Set<Runnable> _afterAllTearDownRegistry = new LinkedHashSet<>();
 
-    @After
-    public void cleanupPostTest()
+    /** Test class name */
+    private String _testClassName;
+
+    /** Test name */
+    private String _testName;
+
+    /**
+     * Resolves test class name from TestInfo
+     *
+     * @param testInfo TestInfo
+     */
+    @BeforeAll
+    public void beforeAll(final TestInfo testInfo)
     {
-        _tearDownRegistry.forEach(Runnable::run);
+        _testClassName = testInfo.getTestClass()
+                .orElseThrow(() -> new RuntimeException("Failed to resolve test method"))
+                .getSimpleName();
     }
 
+    /**
+     * Resolves test method name from TestInfo
+     *
+     * @param testInfo TestInfo
+     */
+    @BeforeEach
+    public void beforeEach(final TestInfo testInfo)
+    {
+        _testName = testInfo.getTestMethod()
+                .orElseThrow(() -> new RuntimeException("Failed to resolve test method"))
+                .getName();
+    }
+
+    /** Executes callbacks and cleans system variables */
+    @AfterEach
+    public void cleanupAfterEach()
+    {
+        _systemPropertySetter.afterEach();
+    }
+
+    /** Executes callbacks and cleans system variables */
+    @AfterAll
+    public void cleanupAfterAll()
+    {
+        _afterAllTearDownRegistry.forEach(Runnable::run);
+        _afterAllTearDownRegistry.clear();
+    }
+
+    /**
+     * Retrieves test class name
+     *
+     * @return Test class name
+     */
+    public String getTestClassName()
+    {
+        return _testClassName;
+    }
+
+    /**
+     * Retrieves test name (name of the test method)
+     *
+     * @return Test name
+     */
     public String getTestName()
     {
-        return _testName.getMethodName();
+        return _testName;
     }
 
+    /**
+     * Sets system property
+     *
+     * @param property Property name
+     * @param value Property value
+     */
     public void setTestSystemProperty(final String property, final String value)
     {
         _systemPropertySetter.setSystemProperty(property, value);
     }
 
+    /**
+     * Retrieves free port number
+     *
+     * @return Free port number
+     */
     public int findFreePort()
     {
-        return new PortHelper().getNextAvailable();
+        return PORT_HELPER.getNextAvailable();
     }
 
+    /**
+     * Retrieves free port number greater than one supplied
+     *
+     * @param fromPort Port number to start from
+     *
+     * @return Free port number
+     */
     public int getNextAvailable(int fromPort)
     {
-        return new PortHelper().getNextAvailable(fromPort);
+        return PORT_HELPER.getNextAvailable(fromPort);
     }
 
-
-    public void registerTearDown(Runnable runnable)
+    /**
+     * Returns random UUID
+     *
+     * @return UUID
+     */
+    public static UUID randomUUID()
     {
-        _tearDownRegistry.add(runnable);
+        return UUID.randomUUID();
     }
 
+    /**
+     * Adds callback to execute after all tests
+     *
+     * @param runnable Runnable instance
+     */
+    public void registerAfterAllTearDown(Runnable runnable)
+    {
+        _afterAllTearDownRegistry.add(runnable);
+    }
+
+    /**
+     * Retrieves JVM vendor
+     *
+     * @return JvmVendor
+     */
     public static JvmVendor getJvmVendor()
     {
         return JvmVendor.getJvmVendor();
     }
 
+    /**
+     * Retrieves virtual host node store type
+     *
+     * @return VirtualHostNodeStoreType
+     */
     public VirtualHostNodeStoreType getVirtualHostNodeStoreType()
     {
         final String type = System.getProperty(PROFILE_VIRTUALHOSTNODE_TYPE, VirtualHostNodeStoreType.MEMORY.name()).toUpperCase();

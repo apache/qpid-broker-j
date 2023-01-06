@@ -26,7 +26,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.io.InputStreamReader;
@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.io.CharStreams;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
 import org.apache.qpid.server.logging.logback.VirtualHostNameAndLevelLogInclusionRule;
@@ -148,7 +148,7 @@ public class VirtualHostLoggerTest extends HttpTestBase
     @Test
     public void recoverAfterDeletedVirtualHostLoggerAndRules_QPID_8066() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         final String hostUrl = "virtualhost";
         final String loggerUrl = String.format("virtualhostlogger/%s", LOGGER_NAME);

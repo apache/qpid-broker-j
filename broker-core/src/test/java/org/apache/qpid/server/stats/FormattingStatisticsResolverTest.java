@@ -21,7 +21,7 @@
 
 package org.apache.qpid.server.stats;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,9 +29,8 @@ import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Map;
 
-import com.google.common.collect.Maps;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -49,27 +48,25 @@ public class FormattingStatisticsResolverTest extends UnitTestBase
 
     private FormattingStatisticsResolver _resolver;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         final ConfiguredObject<?> object = mock(ConfiguredObject.class);
-
-        final Map<String, Object> statisticsMap = Maps.newHashMap();
-        statisticsMap.put(LARGEST_POSITIVE_VALUE_STAT_NAME, (1024L * 1024L) + 1L );
-        statisticsMap.put(LARGER_POSITIVE_VALUE_STAT_NAME, 1025L);
-        statisticsMap.put(POSITIVE_VALUE_STAT_NAME, 10L);
-        statisticsMap.put(NEGATIVE_VALUE_STAT_NAME, -1L);
-        statisticsMap.put(SMALLER_NEGATIVE_VALUE_STAT_NAME, -1025L);
-        statisticsMap.put(SMALLEST_NEGATIVE_VALUE_STAT_NAME, (-1024L * 1024L) - 1L );
-        statisticsMap.put(ZERO_VALUE_STAT_NAME, 0L);
-        statisticsMap.put(EPOCH_DATE_STAT_NAME, new Date(0L));
+        final Map<String, Object> statisticsMap = Map.of(LARGEST_POSITIVE_VALUE_STAT_NAME, (1024L * 1024L) + 1L,
+                LARGER_POSITIVE_VALUE_STAT_NAME, 1025L,
+                POSITIVE_VALUE_STAT_NAME, 10L,
+                NEGATIVE_VALUE_STAT_NAME, -1L,
+                SMALLER_NEGATIVE_VALUE_STAT_NAME, -1025L,
+                SMALLEST_NEGATIVE_VALUE_STAT_NAME, (-1024L * 1024L) - 1L,
+                ZERO_VALUE_STAT_NAME, 0L,
+                EPOCH_DATE_STAT_NAME, new Date(0L));
 
         when(object.getStatistics()).thenReturn(statisticsMap);
         _resolver = new FormattingStatisticsResolver(object);
     }
 
     @Test
-    public void testNoFormatting() throws Exception
+    public void testNoFormatting()
     {
         assertEquals("10", _resolver.resolve(POSITIVE_VALUE_STAT_NAME, null));
         assertEquals("0", _resolver.resolve(ZERO_VALUE_STAT_NAME, null));
@@ -77,50 +74,47 @@ public class FormattingStatisticsResolverTest extends UnitTestBase
     }
 
     @Test
-    public void testDuration() throws Exception
+    public void testDuration()
     {
-        assertEquals("PT17M28.577S",
-                            _resolver.resolve(LARGEST_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.DURATION, null));
-        assertEquals("PT0S",
-                            _resolver.resolve(ZERO_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.DURATION, null));
-        assertEquals("-",
-                            _resolver.resolve(NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.DURATION, null));
+        assertEquals("PT17M28.577S", _resolver.resolve(LARGEST_POSITIVE_VALUE_STAT_NAME +
+                ":" + FormattingStatisticsResolver.DURATION, null));
+        assertEquals("PT0S", _resolver.resolve(ZERO_VALUE_STAT_NAME + ":" +
+                FormattingStatisticsResolver.DURATION, null));
+        assertEquals("-", _resolver.resolve(NEGATIVE_VALUE_STAT_NAME + ":" +
+                FormattingStatisticsResolver.DURATION, null));
     }
 
     @Test
-    public void testDateTime() throws Exception
+    public void testDateTime()
     {
-        assertEquals("1970-01-01T00:00:00Z",
-                            _resolver.resolve(ZERO_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.DATETIME,
-                                              null));
-        assertEquals("1970-01-01T00:00:00Z",
-                            _resolver.resolve(EPOCH_DATE_STAT_NAME + ":" + FormattingStatisticsResolver.DATETIME, null));
-        assertEquals("-",
-                            _resolver.resolve(NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.DATETIME,
-                                              null));
+        assertEquals("1970-01-01T00:00:00Z", _resolver.resolve(ZERO_VALUE_STAT_NAME + ":" +
+                FormattingStatisticsResolver.DATETIME, null));
+        assertEquals("1970-01-01T00:00:00Z", _resolver.resolve(EPOCH_DATE_STAT_NAME + ":" +
+                FormattingStatisticsResolver.DATETIME, null));
+        assertEquals("-", _resolver.resolve(NEGATIVE_VALUE_STAT_NAME + ":" +
+                FormattingStatisticsResolver.DATETIME, null));
     }
 
     @Test
-    public void testIEC80000BinaryPrefixed() throws Exception
+    public void testIEC80000BinaryPrefixed()
     {
-        NumberFormat formatter = NumberFormat.getInstance();
+        final NumberFormat formatter = NumberFormat.getInstance();
         formatter.setMinimumFractionDigits(1);
-        String ONE_POINT_ZERO = formatter.format(1L);
+        final String ONE_POINT_ZERO = formatter.format(1L);
 
         assertEquals(ONE_POINT_ZERO + " MiB",
-                            _resolver.resolve(LARGEST_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+                _resolver.resolve(LARGEST_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals(ONE_POINT_ZERO + " KiB",
-                            _resolver.resolve(LARGER_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+                _resolver.resolve(LARGER_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals("10 B",
-                            _resolver.resolve(POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+                _resolver.resolve(POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals("0 B",
-                            _resolver.resolve(ZERO_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+                _resolver.resolve(ZERO_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals("-1 B",
-                            _resolver.resolve(NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
-        assertEquals("-"+ ONE_POINT_ZERO + " KiB",
-                            _resolver.resolve(SMALLER_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+                _resolver.resolve(NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+        assertEquals("-" + ONE_POINT_ZERO + " KiB",
+                _resolver.resolve(SMALLER_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals("-" + ONE_POINT_ZERO + " MiB",
-                            _resolver.resolve(SMALLEST_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+                _resolver.resolve(SMALLEST_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
     }
-
 }

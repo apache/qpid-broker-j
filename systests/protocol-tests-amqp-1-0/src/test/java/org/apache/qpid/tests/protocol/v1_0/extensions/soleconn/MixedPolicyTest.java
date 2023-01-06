@@ -30,7 +30,7 @@ import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnec
 
 import java.util.Collections;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;

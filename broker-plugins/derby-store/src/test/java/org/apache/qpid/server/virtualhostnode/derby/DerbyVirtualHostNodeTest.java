@@ -20,11 +20,9 @@
  */
 package org.apache.qpid.server.virtualhostnode.derby;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,10 +33,11 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -61,10 +60,10 @@ public class DerbyVirtualHostNodeTest extends UnitTestBase
     private File _workDir;
     private Broker<BrokerImpl> _broker;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setup() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.DERBY)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.DERBY));
 
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
@@ -73,8 +72,8 @@ public class DerbyVirtualHostNodeTest extends UnitTestBase
         _broker = createBroker();
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    public void tearDown()
     {
         try
         {
@@ -97,7 +96,7 @@ public class DerbyVirtualHostNodeTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateAndCloseVirtualHostNode() throws Exception
+    public void testCreateAndCloseVirtualHostNode()
     {
         String nodeName = getTestName();
         Map<String, Object> nodeData = new HashMap<>();
@@ -109,11 +108,9 @@ public class DerbyVirtualHostNodeTest extends UnitTestBase
         virtualHostNode.close();
     }
 
-
     @Test
-    public void testCreateDuplicateVirtualHostNodeAndClose() throws Exception
+    public void testCreateDuplicateVirtualHostNodeAndClose()
     {
-
         String nodeName = getTestName();
         Map<String, Object> nodeData = new HashMap<>();
         nodeData.put(VirtualHostNode.NAME, nodeName);
@@ -128,9 +125,8 @@ public class DerbyVirtualHostNodeTest extends UnitTestBase
         }
         catch(Exception e)
         {
-            assertEquals("Unexpected message",
-                                "Child of type " + virtualHostNode.getClass().getSimpleName() + " already exists with name of " + getTestName(),
-                                e.getMessage());
+            assertEquals("Child of type " + virtualHostNode.getClass().getSimpleName() + " already exists with name of " + getTestName(),
+                    e.getMessage(), "Unexpected message");
 
         }
         virtualHostNode.close();
@@ -159,9 +155,8 @@ public class DerbyVirtualHostNodeTest extends UnitTestBase
 
     }
 
-
     @Test
-    public void testOnCreateValidationForNonWritableStorePath() throws Exception
+    public void testOnCreateValidationForNonWritableStorePath()
     {
         if (Files.getFileAttributeView(_workDir.toPath(), PosixFileAttributeView.class) != null)
         {
@@ -189,7 +184,7 @@ public class DerbyVirtualHostNodeTest extends UnitTestBase
 
     private BrokerImpl createBroker()
     {
-        Map<String, Object> brokerAttributes = Collections.<String, Object>singletonMap(Broker.NAME, "Broker");
+        Map<String, Object> brokerAttributes = Collections.singletonMap(Broker.NAME, "Broker");
         SystemConfig parent = BrokerTestHelper.mockWithSystemPrincipal(SystemConfig.class, mock(Principal.class));
         when(parent.getEventLogger()).thenReturn(new EventLogger());
         when(parent.getCategoryClass()).thenReturn(SystemConfig.class);

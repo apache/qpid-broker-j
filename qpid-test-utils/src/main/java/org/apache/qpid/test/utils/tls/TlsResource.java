@@ -36,13 +36,18 @@ import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.stream.Stream;
 
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.Extension;
+import org.junit.jupiter.api.extension.ExtensionContext;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-public class TlsResource extends ExternalResource
+public class TlsResource implements Extension, AfterEachCallback, BeforeEachCallback, BeforeAllCallback, ExtensionContext.Store.CloseableResource
 {
     private static final String PRIVATE_KEY_ALIAS = "private-key-alias";
     private static final String CERTIFICATE_ALIAS = "certificate-alias";
@@ -74,7 +79,25 @@ public class TlsResource extends ExternalResource
     }
 
     @Override
-    public void before() throws Exception
+    public void beforeAll(ExtensionContext context) throws IOException
+    {
+        if (_keystoreDirectory != null)
+        {
+            return;
+        }
+        final Path targetDir = FileSystems.getDefault().getPath("target");
+        _keystoreDirectory = Files.createTempDirectory(targetDir, "test-tls-resources-");
+        LOGGER.debug("Test keystore directory is created : '{}'", _keystoreDirectory);
+    }
+
+    @Override
+    public void close()
+    {
+        deleteFiles();
+    }
+
+    @Override
+    public void beforeEach(final ExtensionContext extensionContext) throws IOException
     {
         final Path targetDir = FileSystems.getDefault().getPath("target");
         _keystoreDirectory = Files.createTempDirectory(targetDir, "test-tls-resources-");
@@ -82,23 +105,9 @@ public class TlsResource extends ExternalResource
     }
 
     @Override
-    public void after()
+    public void afterEach(final ExtensionContext extensionContext)
     {
-        try
-        {
-            Files.walk(_keystoreDirectory).sorted(Comparator.reverseOrder())
-                 .map(Path::toFile)
-                 .forEach(f -> {
-                     if (!f.delete())
-                     {
-                         LOGGER.warn("Could not delete file at {}", f.getAbsolutePath());
-                     }
-                 });
-        }
-        catch (Exception e)
-        {
-            LOGGER.warn("Failure to clean up test resources", e);
-        }
+        deleteFiles();
     }
 
     public String getSecret()
@@ -121,12 +130,10 @@ public class TlsResource extends ExternalResource
         return _certificateAlias;
     }
 
-
     public String getKeyStoreType()
     {
         return _keyStoreType;
     }
-
 
     public Path createKeyStore(KeyStoreEntry... entries) throws Exception
     {
@@ -280,5 +287,25 @@ public class TlsResource extends ExternalResource
         final Path storeFile = createFile("." + keyStoreType);
         TlsResourceHelper.saveKeyStoreIntoFile(ks, getSecretAsCharacters(), storeFile.toFile());
         return storeFile;
+    }
+
+    private void deleteFiles()
+    {
+        try (final Stream<Path> stream = Files.walk(_keystoreDirectory))
+        {
+            stream.sorted(Comparator.reverseOrder())
+                 .map(Path::toFile)
+                 .forEach(file ->
+                 {
+                     if (!file.delete())
+                     {
+                         LOGGER.warn("Could not delete file at {}", file.getAbsolutePath());
+                     }
+                 });
+        }
+        catch (Exception e)
+        {
+            LOGGER.warn("Failure to clean up test resources", e);
+        }
     }
 }

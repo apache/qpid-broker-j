@@ -27,7 +27,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,8 +49,8 @@ import java.util.stream.Stream;
 
 import javax.security.auth.Subject;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.ManagementException;
@@ -77,7 +77,7 @@ public class LatestManagementControllerTest extends UnitTestBase
 {
     private LatestManagementController _controller;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final HttpManagementConfiguration<?> httpManagement = mock(HttpManagementConfiguration.class);

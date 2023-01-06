@@ -22,7 +22,7 @@ package org.apache.qpid.tests.http.metrics;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.tests.http.HttpRequestConfig;
@@ -48,5 +48,4 @@ public class BrokerMetricsAuthenticationTest extends HttpTestBase
         helper.setPassword(null);
         helper.submitRequest("/metrics", "GET", HttpServletResponse.SC_UNAUTHORIZED);
     }
-
 }

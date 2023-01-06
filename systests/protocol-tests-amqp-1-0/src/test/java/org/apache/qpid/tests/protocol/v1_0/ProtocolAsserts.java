@@ -27,7 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.oneOf;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
@@ -84,7 +84,7 @@ public class ProtocolAsserts
         Error error = ((ErrorCarryingFrameBody) responseBody).getError();
         if (error != null)
         {
-            assumeThat(error.getCondition(), is(not(NOT_IMPLEMENTED)));
+            assumeTrue(is(not(NOT_IMPLEMENTED)).matches(error.getCondition()));
             assertThat(error.getCondition(), oneOf(expected));
         }
         else
@@ -98,7 +98,7 @@ public class ProtocolAsserts
             error = ((ErrorCarryingFrameBody) nextBody).getError();
             if (error != null)
             {
-                assumeThat(error.getCondition(), is(not(NOT_IMPLEMENTED)));
+                assumeTrue(is(not(NOT_IMPLEMENTED)).matches(error.getCondition()));
                 assertThat(error.getCondition(), oneOf(expected));
             }
             else
@@ -111,7 +111,7 @@ public class ProtocolAsserts
                 assertThat(body, instanceOf(Close.class));
                 error = ((ErrorCarryingFrameBody) body).getError();
                 assertThat(error.getCondition(), is(notNullValue()));
-                assumeThat(error.getCondition(), is(not(NOT_IMPLEMENTED)));
+                assumeTrue(is(not(NOT_IMPLEMENTED)).matches(error.getCondition()));
                 assertThat(error.getCondition(), oneOf(expected));
             }
         }

@@ -25,24 +25,22 @@ import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPrepare
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.PRIORITY_QUEUE_NAME;
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.QUEUE_NAME;
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.QUEUE_WITH_DLQ_NAME;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.UUID;
 
-import com.sleepycat.je.Database;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
-import com.sleepycat.je.Transaction;
-import org.junit.After;
-import org.junit.Before;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.subjects.TestBlankSubject;
@@ -83,10 +81,11 @@ public abstract class AbstractUpgradeTestCase extends UnitTestBase
     private File _storeLocation;
     protected Environment _environment;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                   "VirtualHostNodeStoreType should be BDB");
 
         _storeLocation = copyStore(getStoreDirectoryName());
 
@@ -108,7 +107,7 @@ public abstract class AbstractUpgradeTestCase extends UnitTestBase
         return new Environment(storeLocation, envConfig);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -155,32 +154,24 @@ public abstract class AbstractUpgradeTestCase extends UnitTestBase
     {
         if (dir.exists())
         {
-            assertTrue("The provided file " + dir + " is not a directory", dir.isDirectory());
+            assertTrue(dir.isDirectory(), "The provided file " + dir + " is not a directory");
 
             boolean deletedSuccessfully = FileUtils.delete(dir, true);
 
-            assertTrue("Files at '" + dir + "' should have been deleted", deletedSuccessfully);
+            assertTrue(deletedSuccessfully, "Files at '" + dir + "' should have been deleted");
         }
     }
 
     protected void assertDatabaseRecordCount(String databaseName, final long expectedCountNumber)
     {
         long count = getDatabaseCount(databaseName);
-        assertEquals("Unexpected database '" + databaseName + "' entry number", expectedCountNumber, count);
+        assertEquals(expectedCountNumber, count, "Unexpected database '" + databaseName + "' entry number");
     }
 
     protected long getDatabaseCount(String databaseName)
     {
-        DatabaseCallable<Long> operation = new DatabaseCallable<Long>()
-        {
-
-            @Override
-            public Long call(Database sourceDatabase, Database targetDatabase, Transaction transaction)
-            {
-                return Long.valueOf(sourceDatabase.count());
-
-            }
-        };
+        DatabaseCallable<Long> operation =
+                (sourceDatabase, targetDatabase, transaction) -> Long.valueOf(sourceDatabase.count());
         Long count = new DatabaseTemplate(_environment, databaseName, null).call(operation);
         return count.longValue();
     }

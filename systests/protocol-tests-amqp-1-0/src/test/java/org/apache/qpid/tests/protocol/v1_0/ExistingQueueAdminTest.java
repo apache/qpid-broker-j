@@ -20,16 +20,16 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -43,20 +43,20 @@ public class ExistingQueueAdminTest extends UnitTestBase
     private ExistingQueueAdmin _queueAdmin;
     private String _testQueueName;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeSuite()
     {
         _brokerAdmin = new EmbeddedBrokerPerClassAdminImpl();
         _brokerAdmin.beforeTestClass(ExistingQueueAdminTest.class);
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterSuite()
     {
         _brokerAdmin.afterTestClass(ExistingQueueAdminTest.class);
     }
 
-    @Before
+    @BeforeEach
     public void before() throws NoSuchMethodException
     {
         _brokerAdmin.beforeTestMethod(getClass(), getClass().getMethod(getTestName()));
@@ -65,7 +65,7 @@ public class ExistingQueueAdminTest extends UnitTestBase
         _testQueueName = getTestName();
     }
 
-    @After
+    @AfterEach
     public void after() throws NoSuchMethodException
     {
         _brokerAdmin.afterTestMethod(getClass(), getClass().getMethod(getTestName()));

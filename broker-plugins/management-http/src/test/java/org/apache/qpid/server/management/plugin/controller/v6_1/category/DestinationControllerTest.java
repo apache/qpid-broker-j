@@ -36,8 +36,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
@@ -51,7 +51,7 @@ public class DestinationControllerTest extends UnitTestBase
     private LegacyManagementController _legacyVersionManagementController;
     private ManagementController _nextVersionManagementController;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _legacyVersionManagementController = mock(LegacyManagementController.class);

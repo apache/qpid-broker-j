@@ -28,8 +28,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
@@ -43,11 +43,11 @@ public class FlowToDiskTransactionObserverTest extends UnitTestBase
 {
     private static final int MAX_UNCOMMITTED_IN_MEMORY_SIZE = 100;
     private FlowToDiskTransactionObserver _flowToDiskMessageObserver;
-    private EventLogger _eventLogger    ;
+    private EventLogger _eventLogger;
     private LogSubject _logSubject;
     private ServerTransaction _transaction;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _eventLogger = mock(EventLogger.class);
@@ -59,21 +59,21 @@ public class FlowToDiskTransactionObserverTest extends UnitTestBase
     }
 
     @Test
-    public void testOnMessageEnqueue() throws Exception
+    public void testOnMessageEnqueue()
     {
-        EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE);
-        EnqueueableMessage<?> message2 = createMessage(1);
-        EnqueueableMessage<?> message3 = createMessage(1);
+        final EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        final EnqueueableMessage<?> message2 = createMessage(1);
+        final EnqueueableMessage<?> message3 = createMessage(1);
 
         _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message1);
 
-        StoredMessage handle1 = message1.getStoredMessage();
+        final StoredMessage<?> handle1 = message1.getStoredMessage();
         verify(handle1, never()).flowToDisk();
         verify(_eventLogger, never()).message(same(_logSubject), any(LogMessage.class));
 
         _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message2);
 
-        StoredMessage handle2 = message2.getStoredMessage();
+        final StoredMessage<?> handle2 = message2.getStoredMessage();
         verify(handle1).flowToDisk();
         verify(handle2).flowToDisk();
         verify(_eventLogger).message(same(_logSubject), any(LogMessage.class));
@@ -81,7 +81,7 @@ public class FlowToDiskTransactionObserverTest extends UnitTestBase
         final ServerTransaction transaction2 = mock(ServerTransaction.class);
         _flowToDiskMessageObserver.onMessageEnqueue(transaction2, message3);
 
-        StoredMessage handle3 = message2.getStoredMessage();
+        final StoredMessage<?> handle3 = message2.getStoredMessage();
         verify(handle1).flowToDisk();
         verify(handle2).flowToDisk();
         verify(handle3).flowToDisk();
@@ -89,11 +89,11 @@ public class FlowToDiskTransactionObserverTest extends UnitTestBase
     }
 
     @Test
-    public void testOnDischarge() throws Exception
+    public void testOnDischarge()
     {
-        EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE - 1);
-        EnqueueableMessage<?> message2 = createMessage(1);
-        EnqueueableMessage<?> message3 = createMessage(1);
+        final EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE - 1);
+        final EnqueueableMessage<?> message2 = createMessage(1);
+        final EnqueueableMessage<?> message3 = createMessage(1);
 
         _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message1);
         final ServerTransaction transaction2 = mock(ServerTransaction.class);
@@ -101,9 +101,9 @@ public class FlowToDiskTransactionObserverTest extends UnitTestBase
         _flowToDiskMessageObserver.onDischarge(_transaction);
         _flowToDiskMessageObserver.onMessageEnqueue(transaction2, message3);
 
-        StoredMessage handle1 = message1.getStoredMessage();
-        StoredMessage handle2 = message2.getStoredMessage();
-        StoredMessage handle3 = message2.getStoredMessage();
+        final StoredMessage<?> handle1 = message1.getStoredMessage();
+        final StoredMessage<?> handle2 = message2.getStoredMessage();
+        final StoredMessage<?> handle3 = message2.getStoredMessage();
         verify(handle1, never()).flowToDisk();
         verify(handle2, never()).flowToDisk();
         verify(handle3, never()).flowToDisk();
@@ -111,39 +111,40 @@ public class FlowToDiskTransactionObserverTest extends UnitTestBase
     }
 
     @Test
-    public void testBreachLimitTwice() throws Exception
+    public void testBreachLimitTwice()
     {
-        EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE + 1);
+        final EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE + 1);
 
         _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message1);
 
-        StoredMessage handle1 = message1.getStoredMessage();
+        final StoredMessage<?> handle1 = message1.getStoredMessage();
         verify(handle1).flowToDisk();
         verify(_eventLogger, times(1)).message(same(_logSubject), any(LogMessage.class));
 
         _flowToDiskMessageObserver.onDischarge(_transaction);
 
-        EnqueueableMessage<?> message2 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE / 2);
-        EnqueueableMessage<?> message3 = createMessage((MAX_UNCOMMITTED_IN_MEMORY_SIZE / 2) + 1);
+        final EnqueueableMessage<?> message2 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE / 2);
+        final EnqueueableMessage<?> message3 = createMessage((MAX_UNCOMMITTED_IN_MEMORY_SIZE / 2) + 1);
 
         _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message2);
 
-        StoredMessage handle2 = message2.getStoredMessage();
+        final StoredMessage<?> handle2 = message2.getStoredMessage();
         verify(handle2, never()).flowToDisk();
 
         _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message3);
 
-        StoredMessage handle3 = message3.getStoredMessage();
+        final StoredMessage<?> handle3 = message3.getStoredMessage();
         verify(handle2).flowToDisk();
         verify(handle3).flowToDisk();
 
         verify(_eventLogger, times(2)).message(same(_logSubject), any(LogMessage.class));
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private EnqueueableMessage<?> createMessage(int size)
     {
-        EnqueueableMessage message = mock(EnqueueableMessage.class);
-        StoredMessage handle = mock(StoredMessage.class);
+        final EnqueueableMessage<?> message = mock(EnqueueableMessage.class);
+        final StoredMessage handle = mock(StoredMessage.class);
         when(message.getStoredMessage()).thenReturn(handle);
         when(handle.getContentSize()).thenReturn(size);
         final StorableMessageMetaData metadata = mock(StorableMessageMetaData.class);

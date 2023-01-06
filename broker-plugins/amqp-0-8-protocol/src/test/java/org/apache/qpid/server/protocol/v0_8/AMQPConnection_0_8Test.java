@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -36,9 +36,9 @@ import java.util.Map;
 
 import javax.security.auth.Subject;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
@@ -89,9 +89,8 @@ public class AMQPConnection_0_8Test extends UnitTestBase
     private Transport _transport;
     private Protocol _protocol;
     private AggregateTicker _ticker;
-    private ByteBufferSender _sender;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
 
@@ -159,10 +158,10 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(Connection.DEFAULT_MAX_MESSAGE_SIZE);
         when(_port.getSubjectCreator(eq(false), anyString())).thenReturn(subjectCreator);
 
-        _sender = mock(ByteBufferSender.class);
+        ByteBufferSender sender = mock(ByteBufferSender.class);
 
         _network = mock(ServerNetworkConnection.class);
-        when(_network.getSender()).thenReturn(_sender);
+        when(_network.getSender()).thenReturn(sender);
         when(_network.getLocalAddress()).thenReturn(new InetSocketAddress("localhost", 12345));
         when(_network.getSelectedHost()).thenReturn("localhost");
 
@@ -171,16 +170,10 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         _ticker = new AggregateTicker();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-            _taskExecutor.stopImmediately();
-        }
-        finally
-        {
-        }
+        _taskExecutor.stopImmediately();
     }
 
     @Test
@@ -192,12 +185,12 @@ public class AMQPConnection_0_8Test extends UnitTestBase
             conn.create();
             conn.receiveProtocolHeader(new ProtocolInitiation(ProtocolVersion.v0_8));
 
-            FieldTable startFieldTable = FieldTable.convertToFieldTable(Collections.<String, Object>singletonMap(
+            FieldTable startFieldTable = FieldTable.convertToFieldTable(Collections.singletonMap(
                     ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE,
                     Boolean.TRUE));
             conn.receiveConnectionStartOk(startFieldTable, SASL_MECH, SASL_RESPONSE, LOCALE);
 
-            assertTrue("Unexpected closeWhenNoRoute value", conn.isCloseWhenNoRoute());
+            assertTrue(conn.isCloseWhenNoRoute(), "Unexpected closeWhenNoRoute value");
         }
 
         {
@@ -206,16 +199,16 @@ public class AMQPConnection_0_8Test extends UnitTestBase
             conn.create();
             conn.receiveProtocolHeader(new ProtocolInitiation(ProtocolVersion.v0_8));
 
-            FieldTable startFieldTable = FieldTable.convertToFieldTable(Collections.<String, Object>singletonMap(
+            FieldTable startFieldTable = FieldTable.convertToFieldTable(Collections.singletonMap(
                     ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE,
                     Boolean.FALSE));
             conn.receiveConnectionStartOk(startFieldTable, SASL_MECH, SASL_RESPONSE, LOCALE);
-            assertFalse("Unexpected closeWhenNoRoute value", conn.isCloseWhenNoRoute());
+            assertFalse(conn.isCloseWhenNoRoute(), "Unexpected closeWhenNoRoute value");
         }
     }
 
     @Test
-    public void testConnectionEnforcesMaxSessions() throws Exception
+    public void testConnectionEnforcesMaxSessions()
     {
         AMQPConnection_0_8Impl
                 conn = new AMQPConnection_0_8Impl(_broker, _network, _port, _transport, _protocol, 0, _ticker);
@@ -229,28 +222,21 @@ public class AMQPConnection_0_8Test extends UnitTestBase
 
         // check the channel count is correct
         int channelCount = conn.getSessionModels().size();
-        assertEquals("Initial channel count wrong", (long) 0, (long) channelCount);
+        assertEquals(0, (long) channelCount, "Initial channel count wrong");
 
-        assertEquals("Number of channels not correctly set.",
-                            (long) maxChannels,
-                            (long) conn.getSessionCountLimit());
+        assertEquals(maxChannels, (long) conn.getSessionCountLimit(), "Number of channels not correctly set.");
 
 
-        assertFalse("Connection should not be closed after opening " + maxChannels + " channels",
-                           conn.isClosing());
+        assertFalse(conn.isClosing(), "Connection should not be closed after opening " + maxChannels + " channels");
         for (long currentChannel = 1L; currentChannel <= maxChannels; currentChannel++)
         {
             conn.receiveChannelOpen((int) currentChannel);
         }
 
-        assertFalse("Connection should not be closed after opening " + maxChannels + " channels",
-                           conn.isClosing());
-        assertEquals("Maximum number of channels not set.",
-                            (long) maxChannels,
-                            (long) conn.getSessionModels().size());
+        assertFalse(conn.isClosing(), "Connection should not be closed after opening " + maxChannels + " channels");
+        assertEquals(maxChannels, (long) conn.getSessionModels().size(), "Maximum number of channels not set.");
         conn.receiveChannelOpen(maxChannels + 1);
-        assertTrue("Connection should be closed after opening " + (maxChannels + 1) + " channels",
-                          conn.isClosing());
+        assertTrue(conn.isClosing(), "Connection should be closed after opening " + (maxChannels + 1) + " channels");
     }
 
     @Test

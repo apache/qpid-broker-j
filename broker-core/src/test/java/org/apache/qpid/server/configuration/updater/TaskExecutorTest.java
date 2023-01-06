@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.configuration.updater;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -40,9 +40,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -51,35 +51,29 @@ public class TaskExecutorTest extends UnitTestBase
 {
     private TaskExecutorImpl _executor;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _executor = new TaskExecutorImpl();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-            _executor.stopImmediately();
-        }
-        finally
-        {
-        }
+        _executor.stopImmediately();
     }
 
     @Test
     public void testGetState()
     {
-        assertFalse("Unexpected initial state", _executor.isRunning());
+        assertFalse(_executor.isRunning(), "Unexpected initial state");
     }
 
     @Test
     public void testStart()
     {
         _executor.start();
-        assertTrue("Unexpected started state", _executor.isRunning());
+        assertTrue(_executor.isRunning(), "Unexpected started state");
     }
 
     @Test
@@ -88,63 +82,57 @@ public class TaskExecutorTest extends UnitTestBase
         _executor.start();
         final CountDownLatch submitLatch = new CountDownLatch(2);
         final CountDownLatch waitForCallLatch = new CountDownLatch(1);
-        final BlockingQueue<Exception> submitExceptions = new LinkedBlockingQueue<Exception>();
+        final BlockingQueue<Exception> submitExceptions = new LinkedBlockingQueue<>();
 
-        Runnable runnable = new Runnable()
+        final Runnable runnable = () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
+                final Future<Void> f = _executor.submit(new NeverEndingCallable(waitForCallLatch));
+                submitLatch.countDown();
+                f.get();
+            }
+            catch (Exception e)
+            {
+                Exception exception = e;
+                if (exception instanceof ExecutionException)
                 {
-                    Future<Void> f = _executor.submit(new NeverEndingCallable(waitForCallLatch));
-                    submitLatch.countDown();
-                    f.get();
+                    exception = (Exception) exception.getCause();
                 }
-                catch (Exception e)
+                if (exception instanceof RuntimeException && exception.getCause() instanceof Exception)
                 {
-                    if (e instanceof ExecutionException)
-                    {
-                        e = (Exception) e.getCause();
-                    }
-                    if(e instanceof RuntimeException && e.getCause() instanceof Exception)
-                    {
-                        submitExceptions.add((Exception)e.getCause());
-                    }
-                    else
-                    {
-                        submitExceptions.add(e);
-                    }
+                    submitExceptions.add((Exception) exception.getCause());
+                }
+                else
+                {
+                    submitExceptions.add(exception);
                 }
             }
         };
-        Thread t1 = new Thread(runnable);
+        final Thread t1 = new Thread(runnable);
         t1.start();
-        Thread t2 = new Thread(runnable);
+        final Thread t2 = new Thread(runnable);
         t2.start();
 
         final long timeout = 2000L;
-        boolean awaitSubmissions = submitLatch.await(timeout, TimeUnit.MILLISECONDS);
-        assertTrue(submitLatch.getCount() + " task(s) have not been submitted within expected time",
-                          awaitSubmissions);
+        final boolean awaitSubmissions = submitLatch.await(timeout, TimeUnit.MILLISECONDS);
+        assertTrue(awaitSubmissions, submitLatch.getCount() +
+                " task(s) have not been submitted within expected time");
 
-        assertTrue("The first task has not been triggered",
-                          waitForCallLatch.await(timeout, TimeUnit.MILLISECONDS));
+        assertTrue(waitForCallLatch.await(timeout, TimeUnit.MILLISECONDS), "The first task has not been triggered");
 
         _executor.stopImmediately();
-        assertFalse("Unexpected stopped state", _executor.isRunning());
+        assertFalse(_executor.isRunning(), "Unexpected stopped state");
 
-        Exception e = submitExceptions.poll(timeout, TimeUnit.MILLISECONDS);
-        assertNotNull("The task execution was not interrupted or cancelled", e);
-        Exception e2 = submitExceptions.poll(timeout, TimeUnit.MILLISECONDS);
-        assertNotNull("The task execution was not interrupted or cancelled", e2);
+        final Exception e = submitExceptions.poll(timeout, TimeUnit.MILLISECONDS);
+        assertNotNull(e, "The task execution was not interrupted or cancelled");
+        final Exception e2 = submitExceptions.poll(timeout, TimeUnit.MILLISECONDS);
+        assertNotNull(e2, "The task execution was not interrupted or cancelled");
 
-        final boolean condition1 = e2 instanceof CancellationException
-                || e instanceof CancellationException;
-        assertTrue("One of the exceptions should be CancellationException:", condition1);
-        final boolean condition = e2 instanceof InterruptedException
-                || e instanceof InterruptedException;
-        assertTrue("One of the exceptions should be InterruptedException:", condition);
+        final boolean condition1 = e2 instanceof CancellationException || e instanceof CancellationException;
+        assertTrue(condition1, "One of the exceptions should be CancellationException:");
+        final boolean condition = e2 instanceof InterruptedException || e instanceof InterruptedException;
+        assertTrue(condition, "One of the exceptions should be InterruptedException:");
 
         t1.join(timeout);
         t2.join(timeout);
@@ -155,14 +143,14 @@ public class TaskExecutorTest extends UnitTestBase
     {
         _executor.start();
         _executor.stop();
-        assertFalse("Unexpected stopped state", _executor.isRunning());
+        assertFalse(_executor.isRunning(), "Unexpected stopped state");
     }
 
     @Test
-    public void testSubmitAndWait() throws Exception
+    public void testSubmitAndWait()
     {
         _executor.start();
-        Object result = _executor.run(new Task<String, RuntimeException>()
+        final Object result = _executor.run(new Task<String, RuntimeException>()
         {
             @Override
             public String execute()
@@ -188,46 +176,34 @@ public class TaskExecutorTest extends UnitTestBase
                 return null;
             }
         });
-        assertEquals("Unexpected task execution result", "DONE", result);
+        assertEquals("DONE", result, "Unexpected task execution result");
     }
 
     @Test
     public void testSubmitAndWaitInNotAuthorizedContext()
     {
         _executor.start();
-        Object subject = _executor.run(new SubjectRetriever());
-        assertNull("Subject must be null", subject);
+        final Object subject = _executor.run(new SubjectRetriever());
+        assertNull(subject, "Subject must be null");
     }
 
     @Test
     public void testSubmitAndWaitInAuthorizedContext()
     {
         _executor.start();
-        Subject subject = new Subject();
-        Object result = Subject.doAs(subject, new PrivilegedAction<Object>()
-        {
-            @Override
-            public Object run()
-            {
-                return _executor.run(new SubjectRetriever());
-            }
-        });
-        assertEquals("Unexpected subject", subject, result);
+        final Subject subject = new Subject();
+        final Object result = Subject.doAs(subject, (PrivilegedAction<Object>) () ->
+                _executor.run(new SubjectRetriever()));
+        assertEquals(subject, result, "Unexpected subject");
     }
 
     @Test
     public void testSubmitAndWaitInAuthorizedContextWithNullSubject()
     {
         _executor.start();
-        Object result = Subject.doAs(null, new PrivilegedAction<Object>()
-        {
-            @Override
-            public Object run()
-            {
-                return _executor.run(new SubjectRetriever());
-            }
-        });
-        assertEquals("Unexpected subject", null, result);
+        final Object result = Subject.doAs(null, (PrivilegedAction<Object>) () ->
+                _executor.run(new SubjectRetriever()));
+        assertNull(result, "Unexpected subject");
     }
 
     @Test
@@ -235,15 +211,53 @@ public class TaskExecutorTest extends UnitTestBase
     {
         final RuntimeException exception = new RuntimeException();
         _executor.start();
-        try
+        final Exception thrown = assertThrows(Exception.class,
+                () -> _executor.run(new Task<Void, RuntimeException>()
+                {
+
+                    @Override
+                    public Void execute()
+                    {
+                        throw exception;
+                    }
+
+                    @Override
+                    public String getObject()
+                    {
+                        return getTestName();
+                    }
+
+                    @Override
+                    public String getAction()
+                    {
+                        return "test";
+                    }
+
+                    @Override
+                    public String getArguments()
+                    {
+                        return null;
+                    }
+                }),
+                "Exception is expected");
+        assertEquals(exception, thrown, "Unexpected exception");
+    }
+
+    @Test
+    public void testSubmitAndWaitCurrentActorAndSecurityManagerSubjectAreRespected()
+    {
+        _executor.start();
+        final Subject subject = new Subject();
+        final AtomicReference<Subject> taskSubject = new AtomicReference<>();
+        Subject.doAs(subject, (PrivilegedAction<Object>) () ->
         {
             _executor.run(new Task<Void, RuntimeException>()
             {
-
                 @Override
                 public Void execute()
                 {
-                    throw exception;
+                    taskSubject.set(Subject.getSubject(AccessController.getContext()));
+                    return null;
                 }
 
                 @Override
@@ -264,57 +278,10 @@ public class TaskExecutorTest extends UnitTestBase
                     return null;
                 }
             });
-            fail("Exception is expected");
-        }
-        catch (Exception e)
-        {
-            assertEquals("Unexpected exception", exception, e);
-        }
-    }
-
-    @Test
-    public void testSubmitAndWaitCurrentActorAndSecurityManagerSubjectAreRespected() throws Exception
-    {
-        _executor.start();
-        Subject subject = new Subject();
-        final AtomicReference<Subject> taskSubject = new AtomicReference<Subject>();
-        Subject.doAs(subject, new PrivilegedAction<Object>()
-        {
-            @Override
-            public Object run()
-            {
-                _executor.run(new Task<Void, RuntimeException>()
-                {
-                    @Override
-                    public Void execute()
-                    {
-                        taskSubject.set(Subject.getSubject(AccessController.getContext()));
-                        return null;
-                    }
-
-                    @Override
-                    public String getObject()
-                    {
-                        return getTestName();
-                    }
-
-                    @Override
-                    public String getAction()
-                    {
-                        return "test";
-                    }
-
-                    @Override
-                    public String getArguments()
-                    {
-                        return null;
-                    }
-                });
-                return null;
-            }
+            return null;
         });
 
-        assertEquals("Unexpected security manager subject", subject, taskSubject.get());
+        assertEquals(subject, taskSubject.get(), "Unexpected security manager subject");
     }
 
     private class SubjectRetriever implements Task<Subject, RuntimeException>

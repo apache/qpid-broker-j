@@ -19,6 +19,7 @@
  */
 package org.apache.qpid.disttest.charting.chartbuilder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,24 +33,11 @@ import org.apache.qpid.disttest.charting.seriesbuilder.SeriesRow;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.time.TimeSeriesDataItem;
-import org.junit.Assert;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class TimeSeriesBuilderCallbackTest extends UnitTestBase
 {
@@ -60,8 +48,8 @@ public class TimeSeriesBuilderCallbackTest extends UnitTestBase
     private Date[] _dates;
     private double[] _values;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT+00:00"));
 
@@ -77,7 +65,6 @@ public class TimeSeriesBuilderCallbackTest extends UnitTestBase
         _dates =  new Date[] {jan1, jan2, jan3};
         _values = new double[] {2.0, 4.0, 8.0};
     }
-
 
     @Test
     public void testAddPointToSeries()
@@ -105,5 +92,4 @@ public class TimeSeriesBuilderCallbackTest extends UnitTestBase
             assertEquals(_values[i], dataItem0.getValue());
         }
     }
-
 }

@@ -24,7 +24,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,8 +37,9 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.systests.Utils;
@@ -49,15 +50,15 @@ public class VirtualHostRecoveryTest extends HttpTestBase
 {
     private static final String TEST_QUEUE = "testQueue";
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
+        assumeTrue(getBrokerAdmin().supportsRestart());
         getBrokerAdmin().createQueue(TEST_QUEUE);
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
     }
 
     @Test
-    @HttpRequestConfig(useVirtualHostAsHost = true)
+    @HttpRequestConfig()
     public void virtualHostRestart() throws Exception
     {
         final TextMessage sentMessage = putMessageOnQueue();
@@ -131,9 +132,8 @@ public class VirtualHostRecoveryTest extends HttpTestBase
 
     private void assertState(final String url, final String expectedActualState) throws Exception
     {
-        Map<String, Object> object = getHelper().getJson(url, new TypeReference<Map<String, Object>>() {}, SC_OK);
+        Map<String, Object> object = getHelper().getJson(url, new TypeReference<>() {}, SC_OK);
         final String actualState = (String) object.get(ConfiguredObject.STATE);
         assertThat(actualState, is(equalTo(expectedActualState)));
     }
-
 }

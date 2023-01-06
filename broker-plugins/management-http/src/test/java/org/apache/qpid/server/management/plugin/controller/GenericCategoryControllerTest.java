@@ -34,8 +34,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementResponse;
 import org.apache.qpid.server.management.plugin.ResponseType;
@@ -53,7 +53,7 @@ public class GenericCategoryControllerTest extends UnitTestBase
     private TypeController _typeController;
     private LegacyConfiguredObject _converted;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _managementController = mock(LegacyManagementController.class);

@@ -19,10 +19,10 @@
 
 package org.apache.qpid.systests.jms_1_1.extensions.message;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -38,7 +38,7 @@ import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -60,15 +60,15 @@ public class ObjectMessageClassAllowlistingTest extends JmsTestBase
 
             sendTestObjectMessage(s, _producer);
             Message receivedMessage = _consumer.receive(getReceiveTimeout());
-            assertNotNull("did not receive message within receive timeout", receivedMessage);
-            assertTrue("message is of wrong type", receivedMessage instanceof ObjectMessage);
+            assertNotNull(receivedMessage, "did not receive message within receive timeout");
+            assertTrue(receivedMessage instanceof ObjectMessage, "message is of wrong type");
             ObjectMessage receivedObjectMessage = (ObjectMessage) receivedMessage;
             Object payloadObject = receivedObjectMessage.getObject();
-            assertTrue("payload is of wrong type", payloadObject instanceof HashMap);
+            assertTrue(payloadObject instanceof HashMap, "payload is of wrong type");
 
             @SuppressWarnings("unchecked")
             HashMap<String, Integer> payload = (HashMap<String, Integer>) payloadObject;
-            assertEquals("payload has wrong value", (Integer) TEST_VALUE, payload.get("value"));
+            assertEquals((Integer) TEST_VALUE, payload.get("value"), "payload has wrong value");
         }
         finally
         {
@@ -90,8 +90,8 @@ public class ObjectMessageClassAllowlistingTest extends JmsTestBase
 
             sendTestObjectMessage(s, producer);
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("did not receive message within receive timeout", receivedMessage);
-            assertTrue("message is of wrong type", receivedMessage instanceof ObjectMessage);
+            assertNotNull(receivedMessage, "did not receive message within receive timeout");
+            assertTrue(receivedMessage instanceof ObjectMessage, "message is of wrong type");
             ObjectMessage receivedObjectMessage = (ObjectMessage) receivedMessage;
             try
             {
@@ -124,13 +124,13 @@ public class ObjectMessageClassAllowlistingTest extends JmsTestBase
 
             sendTestObjectMessage(s, producer);
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("did not receive message within receive timeout", receivedMessage);
-            assertTrue("message is of wrong type", receivedMessage instanceof ObjectMessage);
+            assertNotNull(receivedMessage, "did not receive message within receive timeout");
+            assertTrue(receivedMessage instanceof ObjectMessage, "message is of wrong type");
             ObjectMessage receivedObjectMessage = (ObjectMessage) receivedMessage;
 
             @SuppressWarnings("unchecked")
             HashMap<String, Integer> object = (HashMap<String, Integer>) receivedObjectMessage.getObject();
-            assertEquals("Unexpected value", (Integer) TEST_VALUE, object.get("value"));
+            assertEquals((Integer) TEST_VALUE, object.get("value"), "Unexpected value");
         }
         finally
         {
@@ -154,8 +154,8 @@ public class ObjectMessageClassAllowlistingTest extends JmsTestBase
 
             sendTestObjectMessage(s, producer);
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("did not receive message within receive timeout", receivedMessage);
-            assertTrue("message is of wrong type", receivedMessage instanceof ObjectMessage);
+            assertNotNull(receivedMessage, "did not receive message within receive timeout");
+            assertTrue(receivedMessage instanceof ObjectMessage, "message is of wrong type");
             ObjectMessage receivedObjectMessage = (ObjectMessage) receivedMessage;
 
             try
@@ -253,11 +253,11 @@ public class ObjectMessageClassAllowlistingTest extends JmsTestBase
         producer.send(sendMessage);
 
         Message receivedMessage = consumer.receive(getReceiveTimeout());
-        assertNotNull("did not receive message within receive timeout", receivedMessage);
-        assertTrue("message is of wrong type", receivedMessage instanceof ObjectMessage);
+        assertNotNull(receivedMessage, "did not receive message within receive timeout");
+        assertTrue(receivedMessage instanceof ObjectMessage, "message is of wrong type");
         Object receivedObject = ((ObjectMessage) receivedMessage).getObject();
-        assertEquals("Received object has unexpected class", content.getClass(), receivedObject.getClass());
-        assertEquals("Received object has unexpected content", content, receivedObject);
+        assertEquals(content.getClass(), receivedObject.getClass(), "Received object has unexpected class");
+        assertEquals(content, receivedObject, "Received object has unexpected content");
     }
 
     private void doTestDenyListedEnclosedClassTest(final Connection c, final Serializable content) throws Exception
@@ -273,8 +273,8 @@ public class ObjectMessageClassAllowlistingTest extends JmsTestBase
         producer.send(sendMessage);
 
         Message receivedMessage = consumer.receive(getReceiveTimeout());
-        assertNotNull("did not receive message within receive timeout", receivedMessage);
-        assertTrue("message is of wrong type", receivedMessage instanceof ObjectMessage);
+        assertNotNull(receivedMessage, "did not receive message within receive timeout");
+        assertTrue(receivedMessage instanceof ObjectMessage, "message is of wrong type");
         try
         {
             ((ObjectMessage) receivedMessage).getObject();

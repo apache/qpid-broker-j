@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.security.auth.sasl;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -33,15 +33,13 @@ import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
 
 public class SaslUtil
 {
-
-    private static final byte SEPARATOR = 0;
-
-    public static byte[] generatePlainClientResponse(String userName, String userPassword) throws Exception
+    public static byte[] generatePlainClientResponse(final String userName, final String userPassword)
     {
-        byte[] password = userPassword.getBytes("UTF8");
-        byte user[] = userName.getBytes("UTF8");
-        byte response[] = new byte[password.length + user.length + 2];
+        final byte[] password = userPassword.getBytes(StandardCharsets.UTF_8);
+        final byte[] user = userName.getBytes(StandardCharsets.UTF_8);
+        final byte[] response = new byte[password.length + user.length + 2];
         int size = 0;
+        final byte SEPARATOR = 0;
         response[size++] = SEPARATOR;
         System.arraycopy(user, 0, response, size, user.length);
         size += user.length;
@@ -50,33 +48,35 @@ public class SaslUtil
         return response;
     }
 
-    public static byte[] generateCramMD5HexClientResponse(String userName, String userPassword, byte[] challengeBytes)
-            throws Exception
+    public static byte[] generateCramMD5HexClientResponse(final String userName,
+                                                          final String userPassword,
+                                                          final byte[] challengeBytes) throws Exception
     {
-        String macAlgorithm = "HmacMD5";
-        byte[] digestedPasswordBytes = MessageDigest.getInstance("MD5").digest(userPassword.getBytes("UTF-8"));
-        byte[] hexEncodedDigestedPasswordBytes = toHex(digestedPasswordBytes).getBytes("UTF-8");
-        Mac mac = Mac.getInstance(macAlgorithm);
+        final String macAlgorithm = "HmacMD5";
+        final byte[] digestedPasswordBytes = MessageDigest.getInstance("MD5")
+                .digest(userPassword.getBytes(StandardCharsets.UTF_8));
+        final byte[] hexEncodedDigestedPasswordBytes = toHex(digestedPasswordBytes).getBytes(StandardCharsets.UTF_8);
+        final Mac mac = Mac.getInstance(macAlgorithm);
         mac.init(new SecretKeySpec(hexEncodedDigestedPasswordBytes, macAlgorithm));
         final byte[] messageAuthenticationCode = mac.doFinal(challengeBytes);
-        String responseAsString = userName + " " + toHex(messageAuthenticationCode);
+        final String responseAsString = userName + " " + toHex(messageAuthenticationCode);
         return responseAsString.getBytes();
     }
 
-    public static byte[] generateCramMD5HashedClientResponse(String userName, String userPassword, byte[] challengeBytes)
-            throws Exception
+    public static byte[] generateCramMD5HashedClientResponse(final String userName,
+                                                             final String userPassword,
+                                                             final byte[] challengeBytes) throws Exception
     {
-        char[] hash = toMD5Hashed(userPassword);
-
+        final char[] hash = toMD5Hashed(userPassword);
         return generateCramMD5ClientResponse(userName, new String(hash), challengeBytes);
     }
 
     public static char[] toMD5Hashed(final String userPassword)
-            throws NoSuchAlgorithmException, UnsupportedEncodingException
+            throws NoSuchAlgorithmException
     {
-        byte[] digestedPasswordBytes = MessageDigest.getInstance("MD5").digest(userPassword.getBytes("UTF-8"));
-
-        char[] hash = new char[digestedPasswordBytes.length];
+        final byte[] digestedPasswordBytes = MessageDigest.getInstance("MD5")
+                .digest(userPassword.getBytes(StandardCharsets.UTF_8));
+        final char[] hash = new char[digestedPasswordBytes.length];
         int index = 0;
         for (byte b : digestedPasswordBytes)
         {
@@ -85,19 +85,22 @@ public class SaslUtil
         return hash;
     }
 
-    public static byte[] generateCramMD5ClientResponse(String userName, String userPassword, byte[] challengeBytes)
-            throws Exception
+    public static byte[] generateCramMD5ClientResponse(final String userName,
+                                                       final String userPassword,
+                                                       final byte[] challengeBytes) throws Exception
     {
-        String macAlgorithm = "HmacMD5";
-        Mac mac = Mac.getInstance(macAlgorithm);
-        mac.init(new SecretKeySpec(userPassword.getBytes("UTF-8"), macAlgorithm));
+        final String macAlgorithm = "HmacMD5";
+        final Mac mac = Mac.getInstance(macAlgorithm);
+        mac.init(new SecretKeySpec(userPassword.getBytes(StandardCharsets.UTF_8), macAlgorithm));
         final byte[] messageAuthenticationCode = mac.doFinal(challengeBytes);
-        String responseAsString = userName + " " + toHex(messageAuthenticationCode);
+        final String responseAsString = userName + " " + toHex(messageAuthenticationCode);
         return responseAsString.getBytes();
     }
 
-    public static byte[] generateCramMD5ClientResponse(String mechanism, String userName, String userPassword, byte[] challengeBytes)
-            throws Exception
+    public static byte[] generateCramMD5ClientResponse(final String mechanism,
+                                                       final String userName,
+                                                       final String userPassword,
+                                                       final byte[] challengeBytes) throws Exception
     {
         if (CramMd5Negotiator.MECHANISM.equals(mechanism))
         {
@@ -114,12 +117,12 @@ public class SaslUtil
         throw new IllegalArgumentException(String.format("Unsupported mechanism '%s'", mechanism));
     }
 
-    public static String toHex(byte[] data)
+    public static String toHex(final byte[] data)
     {
-        StringBuffer hash = new StringBuffer();
-        for (int i = 0; i < data.length; i++)
+        final StringBuilder hash = new StringBuilder();
+        for (final byte datum : data)
         {
-            String hex = Integer.toHexString(0xFF & data[i]);
+            final String hex = Integer.toHexString(0xFF & datum);
             if (hex.length() == 1)
             {
                 hash.append('0');

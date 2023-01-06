@@ -20,9 +20,9 @@
 
 package org.apache.qpid.systests.jms_2_0.deliverydelay;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,9 +37,9 @@ import javax.jms.JMSProducer;
 import javax.jms.JMSRuntimeException;
 import javax.jms.Message;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -48,13 +48,13 @@ public class DeliveryDelayTest extends JmsTestBase
 {
     private static final int DELIVERY_DELAY = 3000;
 
-    @BeforeClass
-    public static void setUpClass() throws Exception
+    @BeforeAll
+    public static void setUpClass()
     {
         System.setProperty("virtualhost.housekeepingCheckPeriod", "100");
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownClass()
     {
         System.clearProperty("virtualhost.housekeepingCheckPeriod");
@@ -80,11 +80,11 @@ public class DeliveryDelayTest extends JmsTestBase
             producer.send(queue, "delayed message");
 
             final boolean messageArrived = receivedLatch.await(DELIVERY_DELAY * 3, TimeUnit.MILLISECONDS);
-            assertTrue("Delayed message did not arrive within expected period", messageArrived);
+            assertTrue(messageArrived, "Delayed message did not arrive within expected period");
             final long actualDelay = messageReceiptTime.get() - messageSentTime;
-            assertTrue(String.format("Message was not delayed by sufficient time (%d). Actual delay (%d)",
-                                     DELIVERY_DELAY, actualDelay),
-                       actualDelay >= DELIVERY_DELAY);
+            assertTrue(actualDelay >= DELIVERY_DELAY,
+                    String.format("Message was not delayed by sufficient time (%d). Actual delay (%d)",
+                    DELIVERY_DELAY, actualDelay));
         }
     }
 
@@ -107,8 +107,8 @@ public class DeliveryDelayTest extends JmsTestBase
             }
             catch (JMSRuntimeException e)
             {
-                assertTrue("Unexpected exception message: " + e.getMessage(),
-                           e.getMessage().contains("amqp:precondition-failed"));
+                assertTrue(e.getMessage().contains("amqp:precondition-failed"),
+                        "Unexpected exception message: " + e.getMessage());
             }
         }
     }
@@ -136,7 +136,7 @@ public class DeliveryDelayTest extends JmsTestBase
             producer.send(publishDest, "message without delivery delay");
 
             Message message = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message published without delivery delay not received", message);
+            assertNotNull(message, "Message published without delivery delay not received");
 
             producer.setDeliveryDelay(DELIVERY_DELAY);
 
@@ -147,8 +147,8 @@ public class DeliveryDelayTest extends JmsTestBase
             }
             catch (JMSRuntimeException e)
             {
-                assertTrue("Unexpected exception message: " + e.getMessage(),
-                           e.getMessage().contains("amqp:precondition-failed"));
+                assertTrue(e.getMessage().contains("amqp:precondition-failed"),
+                        "Unexpected exception message: " + e.getMessage());
             }
         }
     }
@@ -168,9 +168,7 @@ public class DeliveryDelayTest extends JmsTestBase
     {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(org.apache.qpid.server.model.Exchange.UNROUTABLE_MESSAGE_BEHAVIOUR, "REJECT");
-        createEntityUsingAmqpManagement(exchangeName,
-                                        "org.apache.qpid.FanoutExchange",
-                                        attributes);
+        createEntityUsingAmqpManagement(exchangeName, "org.apache.qpid.FanoutExchange", attributes);
         return context.createQueue(exchangeName);
     }
 
@@ -180,10 +178,8 @@ public class DeliveryDelayTest extends JmsTestBase
         final Map<String, Object> arguments = new HashMap<>();
         arguments.put("destination", queueName);
         arguments.put("bindingKey", queueName);
-        performOperationUsingAmqpManagement(exchangeName,
-                                            "bind",
-                                            "org.apache.qpid.FanoutExchange",
-                                            arguments);
+        performOperationUsingAmqpManagement(exchangeName, "bind", "org.apache.qpid.FanoutExchange",
+                arguments);
     }
 
 }

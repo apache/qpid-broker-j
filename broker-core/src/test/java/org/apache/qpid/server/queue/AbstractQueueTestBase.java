@@ -21,12 +21,13 @@
 
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -40,20 +41,20 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import com.google.common.collect.ImmutableMap;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,12 +86,12 @@ import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.UnknownAlternateBindingException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 abstract class AbstractQueueTestBase extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQueueTestBase.class);
@@ -102,96 +103,84 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     private Queue<?> _queue;
     private QueueManagingVirtualHost<?> _virtualHost;
     private DirectExchangeImpl _exchange;
-    private TestConsumerTarget _consumerTarget = new TestConsumerTarget();  // TODO replace with minimally configured mockito mock
+    private TestConsumerTarget _consumerTarget;  // TODO replace with minimally configured mockito mock
     private QueueConsumer<?,?> _consumer;
-    private Map<String,Object> _arguments = Collections.emptyMap();
+    private Map<String,Object> _arguments = Map.of();
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeAll
+    public void beforeAll() throws Exception
     {
-        BrokerTestHelper.setUp();
-
-        _virtualHost = BrokerTestHelper.createVirtualHost(getClass().getName(), this);
-
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME, _qname);
-        attributes.put(Queue.OWNER, _owner);
-
-        _queue = (AbstractQueue<?>) _virtualHost.createChild(Queue.class, attributes);
-
-        _exchange = (DirectExchangeImpl) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
+        _virtualHost = BrokerTestHelper.createVirtualHost(getTestClassName(), this);
     }
 
-    @After
+    @BeforeEach
+    public void setUp() throws Exception
+    {
+        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, _qname)
+                .put(Queue.OWNER, _owner).build();
+        _queue = (AbstractQueue<?>) _virtualHost.createChild(Queue.class, attributes);
+        _exchange = (DirectExchangeImpl) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
+        _consumerTarget = new TestConsumerTarget();
+    }
+
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
+        if (_queue != null)
         {
             _queue.close();
-            _virtualHost.close();
-        }
-        finally
-        {
-            BrokerTestHelper.tearDown();
         }
     }
 
     @Test
-    public void testCreateQueue() throws Exception
+    public void testCreateQueue()
     {
         _queue.close();
-        try
-        {
-            Map<String,Object> attributes = new HashMap<>(_arguments);
 
-            _queue =  _virtualHost.createChild(Queue.class, attributes);
-            assertNull("Queue was created", _queue);
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertTrue("Exception was not about missing name", e.getMessage().contains("name"));
-        }
+        final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> _queue =  _virtualHost.createChild(Queue.class, Map.copyOf(_arguments)),
+                "Expected exception not thrown");
+        assertTrue(thrown.getMessage().contains("name"), "Exception was not about missing name");
 
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME, "differentName");
-        _queue =  _virtualHost.createChild(Queue.class, attributes);
-        assertNotNull("Queue was not created", _queue);
+        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, "differentName").build();
+        _queue = _virtualHost.createChild(Queue.class, attributes);
+        assertNotNull(_queue, "Queue was not created");
     }
-
-
 
     @Test
     public void testGetVirtualHost()
     {
-        assertEquals("Virtual host was wrong", _virtualHost, _queue.getVirtualHost());
+        assertEquals(_virtualHost, _queue.getVirtualHost(), "Virtual host was wrong");
     }
 
     @Test
     public void testBinding() throws Exception
     {
-        _exchange.addBinding(_routingKey, _queue, Collections.EMPTY_MAP);
+        _exchange.addBinding(_routingKey, _queue, Map.of());
 
-        assertTrue("Routing key was not bound", _exchange.isBound(_routingKey));
-        assertTrue("Queue was not bound to key", _exchange.isBound(_routingKey, _queue));
-        assertEquals("Exchange binding count", (long) 1, (long) _queue.getPublishingLinks().size());
+        assertTrue(_exchange.isBound(_routingKey), "Routing key was not bound");
+        assertTrue(_exchange.isBound(_routingKey, _queue), "Queue was not bound to key");
+        assertEquals(1, (long) _queue.getPublishingLinks().size(), "Exchange binding count");
         final Binding firstBinding = (Binding) _queue.getPublishingLinks().iterator().next();
-        assertEquals("Wrong binding key", _routingKey, firstBinding.getBindingKey());
+        assertEquals(_routingKey, firstBinding.getBindingKey(), "Wrong binding key");
 
         _exchange.deleteBinding(_routingKey, _queue);
-        assertFalse("Routing key was still bound", _exchange.isBound(_routingKey));
+        assertFalse(_exchange.isBound(_routingKey), "Routing key was still bound");
     }
 
     @Test
     public void testRegisterConsumerThenEnqueueMessage() throws Exception
     {
-        ServerMessage messageA = createMessage(Long.valueOf(24));
+        final ServerMessage<?> messageA = createMessage(24L);
 
         // Check adding a consumer adds it to the queue
-        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
-        assertEquals("Queue does not have consumer", (long) 1, (long) _queue.getConsumerCount());
-        assertEquals("Queue does not have active consumer", (long) 1, (long) _queue.getConsumerCountWithCredit());
+        _consumer = (QueueConsumer<?,?>) _queue
+                .addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
+        assertEquals(1, (long) _queue.getConsumerCount(), "Queue does not have consumer");
+        assertEquals(1, (long) _queue.getConsumerCountWithCredit(), "Queue does not have active consumer");
 
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
@@ -202,27 +191,26 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         // Check removing the consumer removes it's information from the queue
         _consumer.close();
-        assertTrue("Consumer still had queue", _consumerTarget.isClosed());
-        assertFalse("Queue still has consumer", 1 == _queue.getConsumerCount());
-        assertFalse("Queue still has active consumer", 1 == _queue.getConsumerCountWithCredit());
+        assertTrue(_consumerTarget.isClosed(), "Consumer still had queue");
+        assertNotEquals(1, _queue.getConsumerCount(), "Queue still has consumer");
+        assertNotEquals(1, _queue.getConsumerCountWithCredit(), "Queue still has active consumer");
 
-        ServerMessage messageB = createMessage(Long.valueOf(25));
+        final ServerMessage<?> messageB = createMessage(25L);
         _queue.enqueue(messageB, null, null);
         assertNull(_consumer.getQueueContext());
     }
 
     @Test
-    public void testEnqueueMessageThenRegisterConsumer() throws Exception, InterruptedException
+    public void testEnqueueMessageThenRegisterConsumer() throws Exception
     {
-        ServerMessage messageA = createMessage(Long.valueOf(24));
+        final ServerMessage<?> messageA = createMessage(24L);
         _queue.enqueue(messageA, null, null);
-        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
+        _consumer = (QueueConsumer<?,?>) _queue
+                .addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
         while(_consumerTarget.processPending());
         assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
-        assertNull("There should be no releasedEntry after an enqueue",
-                          _consumer.getQueueContext().getReleasedEntry());
+        assertNull(_consumer.getQueueContext().getReleasedEntry(), "There should be no releasedEntry after an enqueue");
     }
 
     /**
@@ -231,113 +219,107 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testEnqueueTwoMessagesThenRegisterConsumer() throws Exception
     {
-        ServerMessage messageA = createMessage(Long.valueOf(24));
-        ServerMessage messageB = createMessage(Long.valueOf(25));
+        final ServerMessage<?> messageA = createMessage(24L);
+        final ServerMessage<?> messageB = createMessage(25L);
         _queue.enqueue(messageA, null, null);
         _queue.enqueue(messageB, null, null);
-        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
+        _consumer = (QueueConsumer<?,?>) _queue
+                .addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
         while(_consumerTarget.processPending());
         assertEquals(messageB, _consumer.getQueueContext().getLastSeenEntry().getMessage());
-        assertNull("There should be no releasedEntry after enqueues",
-                          _consumer.getQueueContext().getReleasedEntry());
+        assertNull(_consumer.getQueueContext().getReleasedEntry(),
+                "There should be no releasedEntry after enqueues");
     }
 
     @Test
     public void testMessageHeldIfNotYetValidWhenConsumerAdded() throws Exception
     {
         _queue.close();
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME, _qname);
-        attributes.put(Queue.OWNER, _owner);
-        attributes.put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE);
+        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, _qname)
+                .put(Queue.OWNER, _owner)
+                .put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE).build();
 
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
-        ServerMessage messageA = createMessage(Long.valueOf(24));
-        AMQMessageHeader messageHeader = messageA.getMessageHeader();
+        final ServerMessage<?> messageA = createMessage(24L);
+        final AMQMessageHeader messageHeader = messageA.getMessageHeader();
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()+20000L);
         _queue.enqueue(messageA, null, null);
-        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
+        _consumer = (QueueConsumer<?,?>) _queue
+                .addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
         while(_consumerTarget.processPending());
 
-        assertEquals("Message which was not yet valid was received",
-                            (long) 0,
-                            (long) _consumerTarget.getMessages().size());
+        assertEquals(0, (long) _consumerTarget.getMessages().size(),
+                "Message which was not yet valid was received");
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
         while(_consumerTarget.processPending());
-        assertEquals("Message which was valid was not received",
-                            (long) 1,
-                            (long) _consumerTarget.getMessages().size());
+        assertEquals(1, (long) _consumerTarget.getMessages().size(),
+                "Message which was valid was not received");
     }
 
     @Test
     public void testMessageHoldingDependentOnQueueProperty() throws Exception
     {
         _queue.close();
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME, _qname);
-        attributes.put(Queue.OWNER, _owner);
-        attributes.put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.FALSE);
+        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, _qname)
+                .put(Queue.OWNER, _owner)
+                .put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.FALSE).build();
 
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
-        ServerMessage messageA = createMessage(Long.valueOf(24));
-        AMQMessageHeader messageHeader = messageA.getMessageHeader();
+        final ServerMessage<?> messageA = createMessage(24L);
+        final AMQMessageHeader messageHeader = messageA.getMessageHeader();
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()+20000L);
         _queue.enqueue(messageA, null, null);
-        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
+        _consumer = (QueueConsumer<?,?>) _queue
+                .addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
         while(_consumerTarget.processPending());
 
-        assertEquals("Message was held despite queue not having holding enabled",
-                            (long) 1,
-                            (long) _consumerTarget.getMessages().size());
+        assertEquals(1, (long) _consumerTarget.getMessages().size(),
+                "Message was held despite queue not having holding enabled");
     }
 
     @Test
     public void testUnheldMessageOvertakesHeld() throws Exception
     {
         _queue.close();
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME, _qname);
-        attributes.put(Queue.OWNER, _owner);
-        attributes.put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE);
+        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, _qname)
+                .put(Queue.OWNER, _owner)
+                .put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE).build();
 
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
-        ServerMessage messageA = createMessage(Long.valueOf(24));
-        AMQMessageHeader messageHeader = messageA.getMessageHeader();
+        final ServerMessage<?> messageA = createMessage(24L);
+        final AMQMessageHeader messageHeader = messageA.getMessageHeader();
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()+20000L);
         _queue.enqueue(messageA, null, null);
-        ServerMessage messageB = createMessage(Long.valueOf(25));
+        final ServerMessage<?> messageB = createMessage(25L);
         _queue.enqueue(messageB, null, null);
 
-        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
+        _consumer = (QueueConsumer<?,?>) _queue
+                .addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
         while(_consumerTarget.processPending());
 
-        assertEquals("Expect one message (message B)", (long) 1, (long) _consumerTarget.getMessages().size());
-        assertEquals("Wrong message received",
-                            messageB.getMessageHeader().getMessageId(),
-                            _consumerTarget.getMessages().get(0).getMessage().getMessageHeader().getMessageId());
-
+        assertEquals(1, (long) _consumerTarget.getMessages().size(),
+                "Expect one message (message B)");
+        assertEquals(messageB.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(0).getMessage()
+                .getMessageHeader().getMessageId(), "Wrong message received");
 
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
         while(_consumerTarget.processPending());
-        assertEquals("Message which was valid was not received",
-                            (long) 2,
-                            (long) _consumerTarget.getMessages().size());
-        assertEquals("Wrong message received",
-                            messageA.getMessageHeader().getMessageId(),
-                            _consumerTarget.getMessages().get(1).getMessage().getMessageHeader().getMessageId());
+        assertEquals(2, (long) _consumerTarget.getMessages().size(),
+                "Message which was valid was not received");
+        assertEquals(messageA.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(1).getMessage()
+                .getMessageHeader().getMessageId(), "Wrong message received");
     }
 
     /**
@@ -347,18 +329,16 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testReleasedMessageIsResentToSubscriber() throws Exception
     {
+        final ServerMessage<?> messageA = createMessage(24L);
+        final ServerMessage<?> messageB = createMessage(25L);
+        final ServerMessage<?> messageC = createMessage(26L);
 
-        ServerMessage messageA = createMessage(Long.valueOf(24));
-        ServerMessage messageB = createMessage(Long.valueOf(25));
-        ServerMessage messageC = createMessage(Long.valueOf(26));
+        _consumer = (QueueConsumer<?,?>) _queue
+                .addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
 
-
-        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
-
-        final ArrayList<QueueEntry> queueEntries = new ArrayList<QueueEntry>();
-        EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
+        final ArrayList<QueueEntry> queueEntries = new ArrayList<>();
+        final EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
 
         /* Enqueue three messages */
 
@@ -368,12 +348,11 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         while(_consumerTarget.processPending());
 
-        assertEquals("Unexpected total number of messages sent to consumer",
-                            (long) 3,
-                            (long) _consumerTarget.getMessages().size());
-        assertFalse("Redelivery flag should not be set", queueEntries.get(0).isRedelivered());
-        assertFalse("Redelivery flag should not be set", queueEntries.get(1).isRedelivered());
-        assertFalse("Redelivery flag should not be set", queueEntries.get(2).isRedelivered());
+        assertEquals(3, (long) _consumerTarget.getMessages().size(),
+                "Unexpected total number of messages sent to consumer");
+        assertFalse(queueEntries.get(0).isRedelivered(), "Redelivery flag should not be set");
+        assertFalse(queueEntries.get(1).isRedelivered(), "Redelivery flag should not be set");
+        assertFalse(queueEntries.get(2).isRedelivered(), "Redelivery flag should not be set");
 
         /* Now release the first message only, causing it to be requeued */
 
@@ -381,14 +360,13 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         while(_consumerTarget.processPending());
 
-        assertEquals("Unexpected total number of messages sent to consumer",
-                            (long) 4,
-                            (long) _consumerTarget.getMessages().size());
-        assertTrue("Redelivery flag should now be set", queueEntries.get(0).isRedelivered());
-        assertFalse("Redelivery flag should remain be unset", queueEntries.get(1).isRedelivered());
-        assertFalse("Redelivery flag should remain be unset", queueEntries.get(2).isRedelivered());
-        assertNull("releasedEntry should be cleared after requeue processed",
-                          _consumer.getQueueContext().getReleasedEntry());
+        assertEquals(4, (long) _consumerTarget.getMessages().size(),
+                "Unexpected total number of messages sent to consumer");
+        assertTrue(queueEntries.get(0).isRedelivered(), "Redelivery flag should now be set");
+        assertFalse(queueEntries.get(1).isRedelivered(), "Redelivery flag should remain be unset");
+        assertFalse(queueEntries.get(2).isRedelivered(), "Redelivery flag should remain be unset");
+        assertNull(_consumer.getQueueContext().getReleasedEntry(),
+                "releasedEntry should be cleared after requeue processed");
     }
 
     /**
@@ -399,7 +377,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testReleaseMessageThatBecomesExpiredIsNotRedelivered() throws Exception
     {
-        ServerMessage messageA = createMessage(Long.valueOf(24));
+        final ServerMessage<?> messageA = createMessage(24L);
         final CountDownLatch sendIndicator = new CountDownLatch(1);
         _consumerTarget = new TestConsumerTarget()
         {
@@ -411,7 +389,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
             }
 
             @Override
-            public void send(MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
+            public void send(final MessageInstanceConsumer consumer, final MessageInstance entry, final boolean batch)
             {
                 try
                 {
@@ -425,11 +403,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         };
 
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.SEES_REQUEUES,
-                                                                     ConsumerOption.ACQUIRES), 0);
+                EnumSet.of(ConsumerOption.SEES_REQUEUES, ConsumerOption.ACQUIRES), 0);
 
-        final ArrayList<QueueEntry> queueEntries = new ArrayList<QueueEntry>();
-        EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
+        final ArrayList<QueueEntry> queueEntries = new ArrayList<>();
+        final EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
 
         /* Enqueue one message with expiration set for a short time in the future */
 
@@ -438,27 +415,22 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         _queue.enqueue(messageA, postEnqueueAction, null);
 
-        assertTrue("Message was not sent during expected time interval",
-                          sendIndicator.await(5000, TimeUnit.MILLISECONDS));
+        assertTrue(sendIndicator.await(5000, TimeUnit.MILLISECONDS),
+                "Message was not sent during expected time interval");
 
-        assertEquals("Unexpected total number of messages sent to consumer",
-                            (long) 1,
-                            (long) _consumerTarget.getMessages().size());
-        QueueEntry queueEntry = queueEntries.get(0);
+        assertEquals(1, (long) _consumerTarget.getMessages().size(),
+                "Unexpected total number of messages sent to consumer");
+        final QueueEntry queueEntry = queueEntries.get(0);
 
         final CountDownLatch dequeueIndicator = new CountDownLatch(1);
-        queueEntry.addStateChangeListener(new StateChangeListener<MessageInstance, MessageInstance.EntryState>()
+        queueEntry.addStateChangeListener((object, oldState, newState) ->
         {
-            @Override
-            public void stateChanged(MessageInstance object, MessageInstance.EntryState oldState, MessageInstance.EntryState newState)
+            if (newState.equals(MessageInstance.DEQUEUED_STATE))
             {
-                if (newState.equals(MessageInstance.DEQUEUED_STATE))
-                {
-                    dequeueIndicator.countDown();
-                }
+                dequeueIndicator.countDown();
             }
         });
-        assertFalse("Redelivery flag should not be set", queueEntry.isRedelivered());
+        assertFalse(queueEntry.isRedelivered(), "Redelivery flag should not be set");
 
         /* Wait a little more to be sure that message will have expired, then release the first message only, causing it to be requeued */
         while(!queueEntry.expired() && System.currentTimeMillis() <= expiration )
@@ -466,25 +438,25 @@ abstract class AbstractQueueTestBase extends UnitTestBase
             Thread.sleep(10);
         }
 
-        assertTrue("Expecting the queue entry to be now expired", queueEntry.expired());
+        assertTrue(queueEntry.expired(), "Expecting the queue entry to be now expired");
         queueEntry.release();
 
-        assertTrue("Message was not de-queued due to expiration",
-                          dequeueIndicator.await(5000, TimeUnit.MILLISECONDS));
+        assertTrue(dequeueIndicator.await(5000, TimeUnit.MILLISECONDS),
+                "Message was not de-queued due to expiration");
 
-        assertEquals("Total number of messages sent should not have changed",
-                            (long) 1,
-                            (long) _consumerTarget.getMessages().size());
-        assertFalse("Redelivery flag should not be set", queueEntry.isRedelivered());
+        assertEquals(1, (long) _consumerTarget.getMessages().size(),
+                "Total number of messages sent should not have changed");
+        assertFalse(queueEntry.isRedelivered(), "Redelivery flag should not be set");
 
         // QueueContext#_releasedEntry is updated after notification, thus, we need to make sure that it is updated
         long waitLoopLimit = 10;
-        while(_consumer.getQueueContext().getReleasedEntry() != null && waitLoopLimit-- > 0 )
+        while (_consumer.getQueueContext().getReleasedEntry() != null && waitLoopLimit-- > 0 )
         {
             Thread.sleep(10);
         }
-        assertNull("releasedEntry should be cleared after requeue processed:" + _consumer.getQueueContext().getReleasedEntry(),
-                          _consumer.getQueueContext().getReleasedEntry());
+        assertNull(_consumer.getQueueContext().getReleasedEntry(),
+                "releasedEntry should be cleared after requeue processed:" +
+                _consumer.getQueueContext().getReleasedEntry());
     }
 
     /**
@@ -496,17 +468,16 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testReleasedOutOfComparableOrderAreRedelivered() throws Exception
     {
+        final ServerMessage<?> messageA = createMessage(24L);
+        final ServerMessage<?> messageB = createMessage(25L);
+        final ServerMessage<?> messageC = createMessage(26L);
 
-        ServerMessage messageA = createMessage(Long.valueOf(24));
-        ServerMessage messageB = createMessage(Long.valueOf(25));
-        ServerMessage messageC = createMessage(Long.valueOf(26));
+        _consumer = (QueueConsumer<?,?>) _queue
+                .addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
 
-        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
-
-        final ArrayList<QueueEntry> queueEntries = new ArrayList<QueueEntry>();
-        EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
+        final ArrayList<QueueEntry> queueEntries = new ArrayList<>();
+        final EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
 
         /* Enqueue three messages */
 
@@ -516,12 +487,11 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         while(_consumerTarget.processPending());
 
-        assertEquals("Unexpected total number of messages sent to consumer",
-                            (long) 3,
-                            (long) _consumerTarget.getMessages().size());
-        assertFalse("Redelivery flag should not be set", queueEntries.get(0).isRedelivered());
-        assertFalse("Redelivery flag should not be set", queueEntries.get(1).isRedelivered());
-        assertFalse("Redelivery flag should not be set", queueEntries.get(2).isRedelivered());
+        assertEquals(3, (long) _consumerTarget.getMessages().size(),
+                "Unexpected total number of messages sent to consumer");
+        assertFalse(queueEntries.get(0).isRedelivered(), "Redelivery flag should not be set");
+        assertFalse(queueEntries.get(1).isRedelivered(), "Redelivery flag should not be set");
+        assertFalse(queueEntries.get(2).isRedelivered(), "Redelivery flag should not be set");
 
         /* Now release the third and first message only, causing it to be requeued */
 
@@ -530,16 +500,14 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         while(_consumerTarget.processPending());
 
-        assertEquals("Unexpected total number of messages sent to consumer",
-                            (long) 5,
-                            (long) _consumerTarget.getMessages().size());
-        assertTrue("Redelivery flag should now be set", queueEntries.get(0).isRedelivered());
-        assertFalse("Redelivery flag should remain be unset", queueEntries.get(1).isRedelivered());
-        assertTrue("Redelivery flag should now be set", queueEntries.get(2).isRedelivered());
-        assertNull("releasedEntry should be cleared after requeue processed",
-                          _consumer.getQueueContext().getReleasedEntry());
+        assertEquals(5, (long) _consumerTarget.getMessages().size(),
+                "Unexpected total number of messages sent to consumer");
+        assertTrue(queueEntries.get(0).isRedelivered(), "Redelivery flag should now be set");
+        assertFalse(queueEntries.get(1).isRedelivered(), "Redelivery flag should remain be unset");
+        assertTrue(queueEntries.get(2).isRedelivered(), "Redelivery flag should now be set");
+        assertNull(_consumer.getQueueContext().getReleasedEntry(),
+                "releasedEntry should be cleared after requeue processed");
     }
-
 
     /**
      * Tests that a release requeues an entry for a queue with multiple consumers.  Verifies that a
@@ -548,24 +516,21 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testReleaseForQueueWithMultipleConsumers() throws Exception
     {
-        ServerMessage messageA = createMessage(Long.valueOf(24));
-        ServerMessage messageB = createMessage(Long.valueOf(25));
+        final ServerMessage<?> messageA = createMessage(24L);
+        final ServerMessage<?> messageB = createMessage(25L);
 
-        TestConsumerTarget target1 = new TestConsumerTarget();
-        TestConsumerTarget target2 = new TestConsumerTarget();
+        final TestConsumerTarget target1 = new TestConsumerTarget();
+        final TestConsumerTarget target2 = new TestConsumerTarget();
 
+        final QueueConsumer<?, ?> consumer1 = (QueueConsumer<?, ?>) _queue
+                .addConsumer(target1, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
 
-        QueueConsumer consumer1 = (QueueConsumer) _queue.addConsumer(target1, null, messageA.getClass(), "test",
-                                                                     EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                                ConsumerOption.SEES_REQUEUES), 0);
-
-        QueueConsumer consumer2 = (QueueConsumer) _queue.addConsumer(target2, null, messageA.getClass(), "test",
-                                                                     EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                                ConsumerOption.SEES_REQUEUES), 0);
-
-
-        final ArrayList<QueueEntry> queueEntries = new ArrayList<QueueEntry>();
-        EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
+        final QueueConsumer<?, ?> consumer2 = (QueueConsumer<?, ?>) _queue
+                .addConsumer(target2, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
+        final ArrayList<QueueEntry> queueEntries = new ArrayList<>();
+        final EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
 
         /* Enqueue two messages */
 
@@ -575,9 +540,8 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         while(target1.processPending());
         while(target2.processPending());
 
-        assertEquals("Unexpected total number of messages sent to both after enqueue",
-                            (long) 2,
-                            (long) (target1.getMessages().size() + target2.getMessages().size()));
+        assertEquals(2, (long) (target1.getMessages().size() + target2.getMessages().size()),
+                "Unexpected total number of messages sent to both after enqueue");
 
         /* Now release the first message only, causing it to be requeued */
         queueEntries.get(0).release();
@@ -585,73 +549,52 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         while(target1.processPending());
         while(target2.processPending());
 
-        assertEquals("Unexpected total number of messages sent to both consumers after release",
-                            (long) 3,
-                            (long) (target1.getMessages().size() + target2.getMessages().size()));
-        assertNull("releasedEntry should be cleared after requeue processed",
-                          consumer1.getQueueContext().getReleasedEntry());
-        assertNull("releasedEntry should be cleared after requeue processed",
-                          consumer2.getQueueContext().getReleasedEntry());
+        assertEquals(3, (long) (target1.getMessages().size() + target2.getMessages().size()),
+                "Unexpected total number of messages sent to both consumers after release");
+        assertNull(consumer1.getQueueContext().getReleasedEntry(),
+                "releasedEntry should be cleared after requeue processed");
+        assertNull(consumer2.getQueueContext().getReleasedEntry(),
+                "releasedEntry should be cleared after requeue processed");
     }
 
     @Test
     public void testExclusiveConsumer() throws Exception
     {
-        ServerMessage messageA = createMessage(Long.valueOf(24));
+        final ServerMessage<?> messageA = createMessage(24L);
         // Check adding an exclusive consumer adds it to the queue
 
-        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.EXCLUSIVE, ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
+        _consumer = (QueueConsumer<?,?>) _queue
+                .addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.EXCLUSIVE, ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
 
-        assertEquals("Queue does not have consumer", (long) 1, (long) _queue.getConsumerCount());
-        assertEquals("Queue does not have active consumer", (long) 1, (long) _queue.getConsumerCountWithCredit());
+        assertEquals(1, (long) _queue.getConsumerCount(), "Queue does not have consumer");
+        assertEquals(1, (long) _queue.getConsumerCountWithCredit(), "Queue does not have active consumer");
 
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
 
         while(_consumerTarget.processPending());
 
-        assertEquals("Queue context did not see expected message",
-                            messageA,
-                            _consumer.getQueueContext().getLastSeenEntry().getMessage());
+        assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage(),
+                "Queue context did not see expected message");
 
         // Check we cannot add a second subscriber to the queue
-        TestConsumerTarget subB = new TestConsumerTarget();
-        Exception ex = null;
-        try
-        {
-
-            _queue.addConsumer(subB, null, messageA.getClass(), "test",
-                               EnumSet.of(ConsumerOption.ACQUIRES,
-                                          ConsumerOption.SEES_REQUEUES), 0);
-
-        }
-        catch (MessageSource.ExistingExclusiveConsumer e)
-        {
-           ex = e;
-        }
-        assertNotNull(ex);
+        final TestConsumerTarget subB = new TestConsumerTarget();
+        assertThrows(MessageSource.ExistingExclusiveConsumer.class,
+                () -> _queue.addConsumer(subB, null, messageA.getClass(), "test",
+                        EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0),
+                "Exception not thrown");
 
         // Check we cannot add an exclusive subscriber to a queue with an
         // existing consumer
         _consumer.close();
         _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                     ConsumerOption.SEES_REQUEUES), 0);
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
 
-        try
-        {
-
-            _consumer = (QueueConsumer<?,?>) _queue.addConsumer(subB, null, messageA.getClass(), "test",
-                                                              EnumSet.of(ConsumerOption.EXCLUSIVE), 0);
-
-        }
-        catch (MessageSource.ExistingConsumerPreventsExclusive e)
-        {
-           ex = e;
-        }
-        assertNotNull(ex);
+        assertThrows(MessageSource.ExistingConsumerPreventsExclusive.class,
+                () -> _consumer = (QueueConsumer<?,?>) _queue.addConsumer(subB, null, messageA.getClass(), "test",
+                        EnumSet.of(ConsumerOption.EXCLUSIVE), 0),
+                "Exception not thrown");
     }
 
     /**
@@ -661,8 +604,8 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testGetMessagesOnTheQueueWithDequeuedEntry()
     {
-        int messageNumber = 4;
-        int dequeueMessageIndex = 1;
+        final int messageNumber = 4;
+        final int dequeueMessageIndex = 1;
 
         // send test messages into a test queue
         enqueueGivenNumberOfMessages(_queue, messageNumber);
@@ -671,24 +614,22 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         dequeueMessage(_queue, dequeueMessageIndex);
 
         // get messages on the queue
-        List<? extends QueueEntry> entries = _queue.getMessagesOnTheQueue();
+        final List<? extends QueueEntry> entries = _queue.getMessagesOnTheQueue();
 
         // assert queue entries
-        assertEquals((long) (messageNumber - 1), (long) entries.size());
+        assertEquals(messageNumber - 1, (long) entries.size());
         int expectedId = 0;
         for (int i = 0; i < messageNumber - 1; i++)
         {
-            Long id = ( entries.get(i).getMessage()).getMessageNumber();
+            final Long id = (entries.get(i).getMessage()).getMessageNumber();
             if (i == dequeueMessageIndex)
             {
-                assertFalse("Message with id " + dequeueMessageIndex
-                                   + " was dequeued and should not be returned by method getMessagesOnTheQueue!",
-                                   Long.valueOf(expectedId).equals(id));
+                assertNotEquals(Long.valueOf(expectedId), id, "Message with id " + dequeueMessageIndex +
+                        " was dequeued and should not be returned by method getMessagesOnTheQueue!");
                 expectedId++;
             }
-            assertEquals("Expected message with id " + expectedId + " but got message with id " + id,
-                                Long.valueOf(expectedId),
-                                id);
+            assertEquals(Long.valueOf(expectedId), id, "Expected message with id " + expectedId +
+                    " but got message with id " + id);
             expectedId++;
         }
     }
@@ -700,8 +641,8 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testGetMessagesOnTheQueueByQueueEntryFilterWithDequeuedEntry()
     {
-        int messageNumber = 4;
-        int dequeueMessageIndex = 1;
+        final int messageNumber = 4;
+        final int dequeueMessageIndex = 1;
 
         // send test messages into a test queue
         enqueueGivenNumberOfMessages(_queue, messageNumber);
@@ -710,7 +651,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         dequeueMessage(_queue, dequeueMessageIndex);
 
         // get messages on the queue with filter accepting all available messages
-        List<? extends QueueEntry> entries = ((AbstractQueue)_queue).getMessagesOnTheQueue(new QueueEntryFilter()
+        final List<? extends QueueEntry> entries = ((AbstractQueue<?>)_queue).getMessagesOnTheQueue(new QueueEntryFilter()
         {
             @Override
             public boolean accept(QueueEntry entry)
@@ -726,21 +667,19 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         });
 
         // assert entries on the queue
-        assertEquals((long) (messageNumber - 1), (long) entries.size());
+        assertEquals(messageNumber - 1, (long) entries.size());
         int expectedId = 0;
         for (int i = 0; i < messageNumber - 1; i++)
         {
-            Long id = (entries.get(i).getMessage()).getMessageNumber();
+            final Long id = (entries.get(i).getMessage()).getMessageNumber();
             if (i == dequeueMessageIndex)
             {
-                assertFalse("Message with id " + dequeueMessageIndex
-                                   + " was dequeued and should not be returned by method getMessagesOnTheQueue!",
-                                   Long.valueOf(expectedId).equals(id));
+                assertNotEquals(Long.valueOf(expectedId), id, "Message with id " + dequeueMessageIndex +
+                        " was dequeued and should not be returned by method getMessagesOnTheQueue!");
                 expectedId++;
             }
-            assertEquals("Expected message with id " + expectedId + " but got message with id " + id,
-                                Long.valueOf(expectedId),
-                                id);
+            assertEquals(Long.valueOf(expectedId), id, "Expected message with id " + expectedId +
+                    " but got message with id " + id);
             expectedId++;
         }
     }
@@ -750,10 +689,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
      * on invocation of {@link AbstractQueue#clearQueue()}
      */
     @Test
-    public void testClearQueueWithDequeuedEntry() throws Exception
+    public void testClearQueueWithDequeuedEntry()
     {
-        int messageNumber = 4;
-        int dequeueMessageIndex = 1;
+        final int messageNumber = 4;
+        final int dequeueMessageIndex = 1;
 
         // put messages into a test queue
         enqueueGivenNumberOfMessages(_queue, messageNumber);
@@ -765,129 +704,130 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         _queue.clearQueue();
 
         // get queue entries
-        List<? extends QueueEntry> entries = _queue.getMessagesOnTheQueue();
+        final List<? extends QueueEntry> entries = _queue.getMessagesOnTheQueue();
 
         // assert queue entries
         assertNotNull(entries);
-        assertEquals((long) 0, (long) entries.size());
+        assertEquals(0, (long) entries.size());
     }
 
     @Test
-    public void testNotificationFiredOnEnqueue() throws Exception
+    public void testNotificationFiredOnEnqueue()
     {
-        QueueNotificationListener listener = mock(QueueNotificationListener .class);
+        final QueueNotificationListener listener = mock(QueueNotificationListener .class);
 
         _queue.setNotificationListener(listener);
-        _queue.setAttributes(Collections.<String, Object>singletonMap(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,
-                                                                      Integer.valueOf(2)));
+        _queue.setAttributes(Map.of(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,2));
 
-        _queue.enqueue(createMessage(Long.valueOf(24)), null, null);
+        _queue.enqueue(createMessage(24L), null, null);
         verifyNoInteractions(listener);
 
-        _queue.enqueue(createMessage(Long.valueOf(25)), null, null);
+        _queue.enqueue(createMessage(25L), null, null);
 
         verify(listener, atLeastOnce()).notifyClients(eq(NotificationCheck.MESSAGE_COUNT_ALERT), eq(_queue), contains("Maximum count on queue threshold"));
     }
 
     @Test
-    public void testNotificationFiredAsync() throws Exception
+    public void testNotificationFiredAsync()
     {
-        QueueNotificationListener  listener = mock(QueueNotificationListener .class);
+        final QueueNotificationListener  listener = mock(QueueNotificationListener .class);
 
-        _queue.enqueue(createMessage(Long.valueOf(24)), null, null);
-        _queue.enqueue(createMessage(Long.valueOf(25)), null, null);
-        _queue.enqueue(createMessage(Long.valueOf(26)), null, null);
+        _queue.enqueue(createMessage(24L), null, null);
+        _queue.enqueue(createMessage(25L), null, null);
+        _queue.enqueue(createMessage(26L), null, null);
 
         _queue.setNotificationListener(listener);
-        _queue.setAttributes(Collections.<String, Object>singletonMap(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,
-                                                                      Integer.valueOf(2)));
+        _queue.setAttributes(Map.of(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES, 2));
 
         verifyNoInteractions(listener);
 
         _queue.checkMessageStatus();
 
         verify(listener, atLeastOnce()).notifyClients(eq(NotificationCheck.MESSAGE_COUNT_ALERT), eq(_queue), contains("Maximum count on queue threshold"));
-
     }
 
-
     @Test
-    public void testMaximumMessageTtl() throws Exception
+    public void testMaximumMessageTtl()
     {
-
         // Test scenarios where only the maximum TTL has been set
-
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME,"testTtlOverrideMaximumTTl");
-        attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 10000L);
+        Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME,"testTtlOverrideMaximumTTl")
+                .put(Queue.MAXIMUM_MESSAGE_TTL, 10000L).build();
 
         Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
-        assertEquals("TTL has not been overridden", 60000L, getExpirationOnQueue(queue, 50000L, 0L));
+        assertEquals(60000L, getExpirationOnQueue(queue, 50000L, 0L),
+                "TTL has not been overridden");
 
-        assertEquals("TTL has not been overridden", 60000L, getExpirationOnQueue(queue, 50000L, 65000L));
+        assertEquals(60000L, getExpirationOnQueue(queue, 50000L, 65000L),
+                "TTL has not been overridden");
 
-        assertEquals("TTL has been incorrectly overridden", 55000L, getExpirationOnQueue(queue, 50000L, 55000L));
+        assertEquals(55000L, getExpirationOnQueue(queue, 50000L, 55000L),
+                "TTL has been incorrectly overridden");
 
-        long tooLateExpiration = System.currentTimeMillis() + 20000L;
+        final long tooLateExpiration = System.currentTimeMillis() + 20000L;
 
-        assertTrue("TTL has not been overridden",
-                          tooLateExpiration != getExpirationOnQueue(queue, 0L, tooLateExpiration));
+        assertTrue(tooLateExpiration != getExpirationOnQueue(queue, 0L, tooLateExpiration),
+                "TTL has not been overridden");
 
         long acceptableExpiration = System.currentTimeMillis() + 5000L;
 
-        assertEquals("TTL has been incorrectly overriden",
-                            acceptableExpiration,
-                            getExpirationOnQueue(queue, 0L, acceptableExpiration));
+        assertEquals(acceptableExpiration, getExpirationOnQueue(queue, 0L, acceptableExpiration),
+                "TTL has been incorrectly overriden");
 
         // Test the scenarios where only the minimum TTL has been set
 
-        attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME,"testTtlOverrideMinimumTTl");
-        attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000L);
+        attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME,"testTtlOverrideMinimumTTl")
+                .put(Queue.MINIMUM_MESSAGE_TTL, 10000L).build();
 
         queue = _virtualHost.createChild(Queue.class, attributes);
 
-        assertEquals("TTL has been overridden incorrectly", 0L, getExpirationOnQueue(queue, 50000L, 0L));
+        assertEquals(0L, getExpirationOnQueue(queue, 50000L, 0L),
+                "TTL has been overridden incorrectly");
 
-        assertEquals("TTL has been overridden incorrectly", 65000L, getExpirationOnQueue(queue, 50000L, 65000L));
+        assertEquals(65000L, getExpirationOnQueue(queue, 50000L, 65000L),
+                "TTL has been overridden incorrectly");
 
-        assertEquals("TTL has not been overriden", 60000L, getExpirationOnQueue(queue, 50000L, 55000L));
+        assertEquals(60000L, getExpirationOnQueue(queue, 50000L, 55000L),
+                "TTL has not been overriden");
 
-        long unacceptableExpiration = System.currentTimeMillis() + 5000L;
+        final long unacceptableExpiration = System.currentTimeMillis() + 5000L;
 
-        assertTrue("TTL has not been overridden",
-                          unacceptableExpiration != getExpirationOnQueue(queue, 0L, tooLateExpiration));
+        assertTrue(unacceptableExpiration != getExpirationOnQueue(queue, 0L, tooLateExpiration),
+                "TTL has not been overridden");
 
         acceptableExpiration = System.currentTimeMillis() + 20000L;
 
-        assertEquals("TTL has been incorrectly overridden",
-                            acceptableExpiration,
-                            getExpirationOnQueue(queue, 0L, acceptableExpiration));
+        assertEquals(acceptableExpiration, getExpirationOnQueue(queue, 0L, acceptableExpiration),
+                "TTL has been incorrectly overridden");
 
         // Test the scenarios where both the minimum and maximum TTL have been set
 
-        attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME,"testTtlOverrideBothTTl");
-        attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000L);
-        attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 20000L);
+        attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME,"testTtlOverrideBothTTl")
+                .put(Queue.MINIMUM_MESSAGE_TTL, 10000L)
+                .put(Queue.MAXIMUM_MESSAGE_TTL, 20000L).build();
 
         queue = _virtualHost.createChild(Queue.class, attributes);
 
-        assertEquals("TTL has not been overridden", 70000L, getExpirationOnQueue(queue, 50000L, 0L));
+        assertEquals(70000L, getExpirationOnQueue(queue, 50000L, 0L),
+                "TTL has not been overridden");
 
-        assertEquals("TTL has been overridden incorrectly", 65000L, getExpirationOnQueue(queue, 50000L, 65000L));
+        assertEquals(65000L, getExpirationOnQueue(queue, 50000L, 65000L),
+                "TTL has been overridden incorrectly");
 
-        assertEquals("TTL has not been overridden", 60000L, getExpirationOnQueue(queue, 50000L, 55000L));
+        assertEquals(60000L, getExpirationOnQueue(queue, 50000L, 55000L),
+                "TTL has not been overridden");
     }
 
     @Test
     public void testOldestMessage()
     {
-        Queue<?> queue = getQueue();
-        queue.enqueue(createMessage(1L, (byte)1, Collections.singletonMap("sortKey", (Object) "Z"), 10L), null, null);
-        queue.enqueue(createMessage(2L, (byte)4, Collections.singletonMap("sortKey", (Object) "M"), 100L), null, null);
-        queue.enqueue(createMessage(3L, (byte)9, Collections.singletonMap("sortKey", (Object) "A"), 1000L), null, null);
+        final Queue<?> queue = getQueue();
+        queue.enqueue(createMessage(1L, (byte)1, Map.of("sortKey", "Z"), 10L), null, null);
+        queue.enqueue(createMessage(2L, (byte)4, Map.of("sortKey", "M"), 100L), null, null);
+        queue.enqueue(createMessage(3L, (byte)9, Map.of("sortKey", "A"), 1000L), null, null);
 
         assertEquals(10L, queue.getOldestMessageArrivalTime());
     }
@@ -895,233 +835,206 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testNoneOverflowPolicy()
     {
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2);
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100);
+        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2)
+                .put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100).build();
 
-        Queue<?> queue = getQueue();
+        final Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
 
-        ServerMessage message = createMessage(Long.valueOf(24), 50, 50);
+        ServerMessage<?> message = createMessage(24L, 50, 50);
         when(message.getArrivalTime()).thenReturn(10L);
         queue.enqueue(message, null, null);
-        message = createMessage(Long.valueOf(25), 50, 50);
+        message = createMessage(25L, 50, 50);
         when(message.getArrivalTime()).thenReturn(50L);
         queue.enqueue(message, null, null);
-        message = createMessage(Long.valueOf(26), 50, 50);
+        message = createMessage(26L, 50, 50);
         when(message.getArrivalTime()).thenReturn(200L);
         queue.enqueue(message, null, null);
 
-        assertEquals("Wrong number of messages in queue", (long) 3, (long) queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue", (long) 300, queue.getQueueDepthBytes());
-        assertEquals("Wrong oldest message",
-                     10L,
-                            ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
+        assertEquals(3, (long) queue.getQueueDepthMessages(), "Wrong number of messages in queue");
+        assertEquals(300, queue.getQueueDepthBytes(), "Wrong size of messages in queue");
+        assertEquals(10L, ((AbstractQueue<?>) queue).getEntries().getOldestEntry().getMessage().getArrivalTime(),
+                "Wrong oldest message");
     }
 
     @Test
     public void testRingOverflowPolicyMaxCount()
     {
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4);
+        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING)
+                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4).build();
 
-        Queue<?> queue = getQueue();
+        final Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
 
-        ServerMessage message = createMessage(Long.valueOf(24), 10, 10);
+        ServerMessage<?> message = createMessage(24L, 10, 10);
         when(message.getArrivalTime()).thenReturn(10L);
         queue.enqueue(message, null, null);
-        message = createMessage(Long.valueOf(25), 10, 10);
+        message = createMessage(25L, 10, 10);
         when(message.getArrivalTime()).thenReturn(50L);
         queue.enqueue(message, null, null);
-        message = createMessage(Long.valueOf(26), 10, 10);
+        message = createMessage(26L, 10, 10);
         when(message.getArrivalTime()).thenReturn(200L);
         queue.enqueue(message, null, null);
-        message = createMessage(Long.valueOf(27), 10, 10);
+        message = createMessage(27L, 10, 10);
         when(message.getArrivalTime()).thenReturn(500L);
         queue.enqueue(message, null, null);
-        message = createMessage(Long.valueOf(28), 10, 10);
+        message = createMessage(28L, 10, 10);
         when(message.getArrivalTime()).thenReturn(1000L);
         queue.enqueue(message, null, null);
 
-        assertEquals("Wrong number of messages in queue", (long) 4, (long) queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue", (long) 80, queue.getQueueDepthBytes());
-        assertEquals("Wrong oldest message",
-                     50L,
-                            ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
+        assertEquals(4, (long) queue.getQueueDepthMessages(), "Wrong number of messages in queue");
+        assertEquals(80, queue.getQueueDepthBytes(), "Wrong size of messages in queue");
+        assertEquals(50L, ((AbstractQueue<?>) queue).getEntries().getOldestEntry().getMessage().getArrivalTime(),
+                "Wrong oldest message");
     }
 
     @Test
     public void testRingOverflowPolicyMaxSize()
     {
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4);
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100);
+        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING)
+                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4)
+                .put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100).build();
 
-        Queue<?> queue = getQueue();
+        final Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
 
-        ServerMessage message = createMessage(Long.valueOf(24), 10, 10);
+        ServerMessage<?> message = createMessage(24L, 10, 10);
         when(message.getArrivalTime()).thenReturn(10L);
         queue.enqueue(message, null, null);
-        message = createMessage(Long.valueOf(25), 10, 10);
+        message = createMessage(25L, 10, 10);
         when(message.getArrivalTime()).thenReturn(50L);
         queue.enqueue(message, null, null);
-        message = createMessage(Long.valueOf(26), 20, 10);
+        message = createMessage(26L, 20, 10);
         when(message.getArrivalTime()).thenReturn(200L);
         queue.enqueue(message, null, null);
-        message = createMessage(Long.valueOf(27), 20, 10);
+        message = createMessage(27L, 20, 10);
         when(message.getArrivalTime()).thenReturn(200L);
         queue.enqueue(message, null, null);
 
-        assertEquals("Wrong number of messages in queue", (long) 4, (long) queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue", (long) 100, queue.getQueueDepthBytes());
+        assertEquals(4, (long) queue.getQueueDepthMessages(), "Wrong number of messages in queue");
+        assertEquals(100, queue.getQueueDepthBytes(), "Wrong size of messages in queue");
 
-        message = createMessage(Long.valueOf(27), 20, 10);
+        message = createMessage(27L, 20, 10);
         when(message.getArrivalTime()).thenReturn(500L);
         queue.enqueue(message, null, null);
 
-        assertEquals("Wrong number of messages in queue", (long) 3, (long) queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue", (long) 90, queue.getQueueDepthBytes());
-        assertEquals("Wrong oldest message",
-                     200L,
-                            ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
+        assertEquals(3, (long) queue.getQueueDepthMessages(), "Wrong number of messages in queue");
+        assertEquals(90, queue.getQueueDepthBytes(), "Wrong size of messages in queue");
+        assertEquals(200L, ((AbstractQueue<?>) queue).getEntries().getOldestEntry().getMessage().getArrivalTime(),
+                "Wrong oldest message");
     }
 
     @Test
     public void testRingOverflowPolicyMessagesRejected()
     {
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 0);
+        Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING)
+                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 0).build();
 
-        Queue<?> queue = getQueue();
+        final Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
 
-        ServerMessage message;
-        RoutingResult result;
+        ServerMessage<?> message;
+        RoutingResult<?> result;
 
-        message = createMessage(Long.valueOf(27), 20, 10);
+        message = createMessage(27L, 20, 10);
         result = queue.route(message, message.getInitialRoutingAddress(), null);
-        assertTrue("Result should include not accepting route", result.isRejected());
+        assertTrue(result.isRejected(), "Result should include not accepting route");
 
-        int headerSize = 20;
-        int payloadSize = 10;
-        int id = 28;
+        final int headerSize = 20;
+        final int payloadSize = 10;
+        final int id = 28;
 
-        attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10);
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10);
+        attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10)
+                .put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10).build();
         queue.setAttributes(attributes);
 
-        message = createMessage(Long.valueOf(id), headerSize, payloadSize);
+        message = createMessage((long) id, headerSize, payloadSize);
         result = queue.route(message, message.getInitialRoutingAddress(), null);
-        assertTrue("Result should include not accepting route", result.isRejected());
+        assertTrue(result.isRejected(), "Result should include not accepting route");
     }
 
     @Test
     public void testAlternateBindingValidationRejectsNonExistingDestination()
     {
-        Map<String, Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME, getTestName());
-        String alternateBinding = "nonExisting";
-        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, alternateBinding));
-
-        try
-        {
-            _virtualHost.createChild(Queue.class, attributes);
-            fail("Expected exception is not thrown");
-        }
-        catch (UnknownAlternateBindingException e)
-        {
-            assertEquals("Unexpected exception alternate binding", alternateBinding, e.getAlternateBindingName());
-        }
+        final String alternateBinding = "nonExisting";
+        final Map<String, Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, getTestName())
+                .put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, alternateBinding)).build();
+        final UnknownAlternateBindingException thrown = assertThrows(UnknownAlternateBindingException.class,
+                () -> _virtualHost.createChild(Queue.class, attributes),
+                "Expected exception is not thrown");
+        assertEquals(alternateBinding, thrown.getAlternateBindingName(),
+                "Unexpected exception alternate binding");
     }
 
     @Test
     public void testAlternateBindingValidationRejectsSelf()
     {
-        Map<String, String> alternateBinding = Collections.singletonMap(AlternateBinding.DESTINATION, _qname);
-        Map<String, Object> newAttributes = Collections.singletonMap(Queue.ALTERNATE_BINDING, alternateBinding);
-        try
-        {
-            _queue.setAttributes(newAttributes);
-            fail("Expected exception is not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        final Map<String, String> alternateBinding = Map.of(AlternateBinding.DESTINATION, _qname);
+        final Map<String, Object> newAttributes = Map.of(Queue.ALTERNATE_BINDING, alternateBinding);
+        assertThrows(IllegalConfigurationException.class,
+                () -> _queue.setAttributes(newAttributes),
+                "Expected exception is not thrown");
     }
 
     @Test
     public void testDurableQueueRejectsNonDurableAlternateBinding()
     {
-        Map<String, Object> dlqAttributes = new HashMap<>(_arguments);
-        String dlqName = getTestName() + "_DLQ";
-        dlqAttributes.put(Queue.NAME, dlqName);
-        dlqAttributes.put(Queue.DURABLE, false);
+        final String dlqName = getTestName() + "_DLQ";
+        final Map<String, Object> dlqAttributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, dlqName)
+                .put(Queue.DURABLE, false).build();
+
         _virtualHost.createChild(Queue.class, dlqAttributes);
 
-        Map<String, Object> queueAttributes = new HashMap<>(_arguments);
-        queueAttributes.put(Queue.NAME, getTestName());
-        queueAttributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, dlqName));
-        queueAttributes.put(Queue.DURABLE, true);
+        final Map<String, Object> queueAttributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, getTestName())
+                .put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, dlqName))
+                .put(Queue.DURABLE, true).build();
 
-        try
-        {
-            _virtualHost.createChild(Queue.class, queueAttributes);
-            fail("Expected exception is not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> _virtualHost.createChild(Queue.class, queueAttributes),
+                "Expected exception is not thrown");
     }
 
     @Test
     public void testAlternateBinding()
     {
-        Map<String, Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME, getTestName());
-        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, _qname));
+        final Map<String, Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, getTestName())
+                .put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, _qname)).build();
+        final Queue<?> newQueue = _virtualHost.createChild(Queue.class, attributes);
 
-        Queue newQueue = _virtualHost.createChild(Queue.class, attributes);
-
-        assertEquals("Unexpected alternate binding", _qname, newQueue.getAlternateBinding().getDestination());
+        assertEquals(_qname, newQueue.getAlternateBinding().getDestination(), "Unexpected alternate binding");
     }
 
     @Test
     public void testDeleteOfQueueSetAsAlternate()
     {
-        Map<String, Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME, getTestName());
-        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, _qname));
+        final Map<String, Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, getTestName())
+                .put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, _qname)).build();
+        final Queue<?> newQueue = _virtualHost.createChild(Queue.class, attributes);
 
-        Queue newQueue = _virtualHost.createChild(Queue.class, attributes);
-        assertEquals("Unexpected alternate binding", _qname, newQueue.getAlternateBinding().getDestination());
-        try
-        {
-            _queue.delete();
-            fail("Expected exception is not thrown");
-        }
-        catch (MessageDestinationIsAlternateException e)
-        {
-            //pass
-        }
+        assertEquals(_qname, newQueue.getAlternateBinding().getDestination(), "Unexpected alternate binding");
+        assertThrows(MessageDestinationIsAlternateException.class, () -> _queue.delete(),
+                "Expected exception is not thrown");
         assertFalse(_queue.isDeleted());
     }
 
     @Test
-    public void testMoveMessages() throws Exception
+    public void testMoveMessages()
     {
         doMoveOrCopyMessageTest(true);
     }
 
     @Test
-    public void testCopyMessages() throws Exception
+    public void testCopyMessages()
     {
         doMoveOrCopyMessageTest(false);
     }
@@ -1129,47 +1042,46 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testExpiryPolicyRouteToAlternate()
     {
-        Map<String, Object> dlqAttributes = new HashMap<>();
-        dlqAttributes.put(Queue.NAME, getTestName() + "_dlq");
-        dlqAttributes.put(Queue.MINIMUM_MESSAGE_TTL, Long.MAX_VALUE);
-        Queue<?> dlq = _virtualHost.createChild(Queue.class, dlqAttributes);
+        final Map<String, Object> dlqAttributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, getTestName() + "_dlq")
+                .put(Queue.MINIMUM_MESSAGE_TTL, Long.MAX_VALUE).build();
+        final Queue<?> dlq = _virtualHost.createChild(Queue.class, dlqAttributes);
 
-        Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.NAME, getTestName());
-        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap("destination", dlq.getName()));
-        attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
+        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, getTestName())
+                .put(Queue.ALTERNATE_BINDING, Map.of("destination", dlq.getName()))
+                .put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE).build();
 
-        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
+        final Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
-        ServerMessage message = createMessage(1L);
-        long arrivalTime = 50000L;
+        final ServerMessage<?> message = createMessage(1L);
+        final long arrivalTime = 50000L;
         when(message.getArrivalTime()).thenReturn(arrivalTime);
         when(message.getExpiration()).thenReturn(arrivalTime + 5000L);
         when(message.isResourceAcceptable(any())).thenReturn(true);
         queue.enqueue(message,null, null);
 
-        assertEquals("Unexpected queue depth", 1, queue.getQueueDepthMessages());
+        assertEquals(1, queue.getQueueDepthMessages(), "Unexpected queue depth");
 
         queue.checkMessageStatus();
 
-        assertEquals("Unexpected queue depth after checking message status", 0, queue.getQueueDepthMessages());
-        assertEquals("Unexpected DLQ depth", 1, dlq.getQueueDepthMessages());
+        assertEquals(0, queue.getQueueDepthMessages(),
+                "Unexpected queue depth after checking message status");
+        assertEquals(1, dlq.getQueueDepthMessages(), "Unexpected DLQ depth");
     }
 
     private void doMoveOrCopyMessageTest(final boolean move)
     {
-        Queue target = _virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_target"));
+        final Queue<?> target = _virtualHost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_target"));
 
         _queue.enqueue(createMessage(1L), null, null);
         _queue.enqueue(createMessage(2L), null, null);
         _queue.enqueue(createMessage(3L), null, null);
 
-        assertEquals("Unexpected number of messages on source queue",
-                            (long) 3,
-                            (long) _queue.getQueueDepthMessages());
-        assertEquals("Unexpected number of messages on target queue before test",
-                            (long) 0,
-                            (long) target.getQueueDepthMessages());
+        assertEquals(3, (long) _queue.getQueueDepthMessages(),
+                "Unexpected number of messages on source queue");
+        assertEquals(0, (long) target.getQueueDepthMessages(),
+                "Unexpected number of messages on target queue before test");
 
         if (move)
         {
@@ -1182,52 +1094,47 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         }
 
         final long expected = move ? 0 : 3;
-        assertEquals("Unexpected number of messages on source queue after test", expected,
-                            (long) _queue.getQueueDepthMessages());
-        assertEquals("Unexpected number of messages on target queue after test",
-                            (long) 3,
-                            (long) target.getQueueDepthMessages());
+        assertEquals(expected, _queue.getQueueDepthMessages(),
+                "Unexpected number of messages on source queue after test");
+        assertEquals(3, (long) target.getQueueDepthMessages(),
+                "Unexpected number of messages on target queue after test");
     }
 
     @Test
-    public void testCopyMessageRespectsQueueSizeLimits() throws Exception
+    public void testCopyMessageRespectsQueueSizeLimits()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Queue.NAME, getTestName() + "_target");
-        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2);
+        final Map<String, Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
+                .put(Queue.NAME, getTestName() + "_target")
+                .put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING)
+                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2).build();
 
-        Queue target = _virtualHost.createChild(Queue.class, attributes);
+        final Queue<?> target = _virtualHost.createChild(Queue.class, attributes);
 
         _queue.enqueue(createMessage(1L), null, null);
         _queue.enqueue(createMessage(2L), null, null);
         _queue.enqueue(createMessage(3L), null, null);
 
-        assertEquals("Unexpected number of messages on source queue",
-                            (long) 3,
-                            (long) _queue.getQueueDepthMessages());
-        assertEquals("Unexpected number of messages on target queue before test",
-                            (long) 0,
-                            (long) target.getQueueDepthMessages());
+        assertEquals(3, (long) _queue.getQueueDepthMessages(),
+                "Unexpected number of messages on source queue");
+        assertEquals(0, (long) target.getQueueDepthMessages(),
+                "Unexpected number of messages on target queue before test");
 
         _queue.copyMessages(target, null, "true = true", -1);
 
-        assertEquals("Unexpected number of messages on source queue after test",
-                            (long) 3,
-                            (long) _queue.getQueueDepthMessages());
-        assertEquals("Unexpected number of messages on target queue after test",
-                            (long) 2,
-                            (long) target.getQueueDepthMessages());
+        assertEquals(3, (long) _queue.getQueueDepthMessages(),
+                "Unexpected number of messages on source queue after test");
+        assertEquals(2, (long) target.getQueueDepthMessages(),
+                "Unexpected number of messages on target queue after test");
     }
 
     @Test
-    public void testEnqueuedMessageFlowedToDisk() throws Exception
+    public void testEnqueuedMessageFlowedToDisk()
     {
         makeVirtualHostTargetSizeExceeded();
 
-        final ServerMessage message2 = createMessage(1L, 2, 3);
+        final ServerMessage<?> message2 = createMessage(1L, 2, 3);
         final long sizeIncludingHeader = message2.getSizeIncludingHeader();
-        final StoredMessage storedMessage = message2.getStoredMessage();
+        final StoredMessage<?> storedMessage = message2.getStoredMessage();
         when(storedMessage.getInMemorySize()).thenReturn(sizeIncludingHeader);
 
         _queue.enqueue(message2, null, null);
@@ -1235,19 +1142,17 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         verify(storedMessage).getInMemorySize();
         verify(storedMessage).flowToDisk();
 
-        assertEquals("Unexpected number of messages on the queue",
-                     2,
-                     _queue.getQueueDepthMessages());
+        assertEquals(2, _queue.getQueueDepthMessages(), "Unexpected number of messages on the queue");
     }
 
     @Test
-    public void testEnqueuedMalformedMessageDeleted() throws Exception
+    public void testEnqueuedMalformedMessageDeleted()
     {
         makeVirtualHostTargetSizeExceeded();
 
-        final ServerMessage message2 = createMessage(1L, 2, 3);
+        final ServerMessage<?> message2 = createMessage(1L, 2, 3);
         final long sizeIncludingHeader = message2.getSizeIncludingHeader();
-        final StoredMessage storedMessage = message2.getStoredMessage();
+        final StoredMessage<?> storedMessage = message2.getStoredMessage();
         when(storedMessage.getInMemorySize()).thenReturn(sizeIncludingHeader);
         when(message2.checkValid()).thenReturn(false);
 
@@ -1256,15 +1161,13 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         verify(storedMessage).getInMemorySize();
         verify(storedMessage, never()).flowToDisk();
 
-        assertEquals("Unexpected number of messages on the queue",
-                     1,
-                     _queue.getQueueDepthMessages());
+        assertEquals(1, _queue.getQueueDepthMessages(), "Unexpected number of messages on the queue");
     }
 
     @Test
     public void testVisit()
     {
-        final ServerMessage message = createMessage(1L, 2, 3);
+        final ServerMessage<?> message = createMessage(1L, 2, 3);
         _queue.enqueue(message, null, null);
 
         final QueueEntryVisitor visitor = mock(QueueEntryVisitor.class);
@@ -1283,22 +1186,20 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     {
         final QueueEntryList list = mock(QueueEntryList.class);
 
-        final Map<String,Object> attributes = new HashMap<>();
-        attributes.put(Queue.NAME, _qname);
-        attributes.put(Queue.OWNER, _owner);
+        final Map<String,Object> attributes = Map.of(
+                Queue.NAME, _qname,
+                Queue.OWNER, _owner);
 
-        @SuppressWarnings("unchecked")
-        final Queue queue = new AbstractQueue(attributes, _virtualHost)
+        final Queue<?> queue = new AbstractQueue(attributes, _virtualHost)
         {
             @Override
             QueueEntryList getEntries()
             {
                 return list;
             }
-
         };
 
-        final MessageReference reference = mock(MessageReference.class);
+        final MessageReference<?> reference = mock(MessageReference.class);
         final QueueEntry entry = mock(QueueEntry.class);
         when(entry.isDeleted()).thenReturn(true);
         when(entry.newMessageReference()).thenReturn(reference);
@@ -1332,22 +1233,24 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     private void deleteEntry(final long messageNumber, final MessageEnqueueRecord record) throws InterruptedException
     {
         final CountDownLatch messageDeleteDetector = new CountDownLatch(1);
-        final ServerMessage message = createMessage(messageNumber, 2, 3);
-        final MessageReference reference = message.newReference();
-        doAnswer((Answer<Void>) invocationOnMock -> {
+        final ServerMessage<?> message = createMessage(messageNumber, 2, 3);
+        final MessageReference<?> reference = message.newReference();
+        doAnswer((Answer<Void>) invocationOnMock ->
+        {
             messageDeleteDetector.countDown();
             return null;
         }).when(reference).release();
 
         _queue.enqueue(message, null, record);
 
-        _queue.visit(entry -> {
+        _queue.visit(entry ->
+        {
             _queue.deleteEntry(entry);
             return false;
         });
 
-        assertTrue("Message reference is not released withing given timeout interval",
-                   messageDeleteDetector.await(2000L, TimeUnit.MILLISECONDS));
+        assertTrue(messageDeleteDetector.await(2000L, TimeUnit.MILLISECONDS),
+                "Message reference is not released withing given timeout interval");
     }
 
 
@@ -1359,9 +1262,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
                                                                        true,
                                                                        _qname);
         _queue.enqueue(message, null, null);
-        assertEquals("Unexpected number of messages on the queue",
-                     1,
-                     _queue.getQueueDepthMessages());
+        assertEquals(1, _queue.getQueueDepthMessages(), "Unexpected number of messages on the queue");
         _virtualHost.setTargetSize(1L);
         assertTrue(_virtualHost.isOverTargetSize());
     }
@@ -1370,22 +1271,18 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     {
         final List<QueueEntry> entries = new ArrayList<>();
 
-        ServerMessage message = createMessage(1L);
+        final ServerMessage<?> message = createMessage(1L);
         when(message.getArrivalTime()).thenReturn(arrivalTime);
         when(message.getExpiration()).thenReturn(expiration);
         queue.enqueue(message,null, null);
-        queue.visit(new QueueEntryVisitor()
+        queue.visit(entry ->
         {
-            @Override
-            public boolean visit(final QueueEntry entry)
-            {
-                entries.add(entry);
-                return true;
-            }
+            entries.add(entry);
+            return true;
         });
-        assertEquals("Expected only one entry in the queue", (long) 1, (long) entries.size());
+        assertEquals(1, (long) entries.size(), "Expected only one entry in the queue");
 
-        Long entryExpiration =
+        final Long entryExpiration =
                 (Long) entries.get(0).getInstanceProperties().getProperty(InstanceProperties.Property.EXPIRATION);
 
         queue.clearQueue();
@@ -1409,10 +1306,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         // make sure that all enqueued messages are on the queue
         List<? extends QueueEntry> entries = queue.getMessagesOnTheQueue();
-        assertEquals((long) messageNumber, (long) entries.size());
+        assertEquals(messageNumber, (long) entries.size());
         for (int i = 0; i < messageNumber; i++)
         {
-            assertEquals((long)i, (entries.get(i).getMessage()).getMessageNumber());
+            assertEquals(i, (entries.get(i).getMessage()).getMessageNumber());
         }
         return entries;
     }
@@ -1426,22 +1323,17 @@ abstract class AbstractQueueTestBase extends UnitTestBase
      *            queue to put messages into
      * @param messageNumber
      *            number of messages to put into queue
-     * @param queue
-     * @param messageNumber
      */
-    protected void putGivenNumberOfMessages(Queue<?> queue, int messageNumber)
+    protected void putGivenNumberOfMessages(final Queue<?> queue, final int messageNumber)
     {
         for (int i = 0; i < messageNumber; i++)
         {
             // Create message
-            ServerMessage message = null;
-            message = createMessage((long)i);
+            final ServerMessage<?> message = createMessage((long)i);
 
             // Put message on queue
             queue.enqueue(message,null, null);
-
         }
-
     }
 
     /**
@@ -1452,27 +1344,26 @@ abstract class AbstractQueueTestBase extends UnitTestBase
      * @param dequeueMessageIndex
      *            entry index to dequeue.
      */
-    protected QueueEntry dequeueMessage(Queue<?> queue, int dequeueMessageIndex)
+    protected QueueEntry dequeueMessage(final Queue<?> queue, final int dequeueMessageIndex)
     {
-        List<? extends QueueEntry> entries = queue.getMessagesOnTheQueue();
-        QueueEntry entry = entries.get(dequeueMessageIndex);
+        final List<? extends QueueEntry> entries = queue.getMessagesOnTheQueue();
+        final QueueEntry entry = entries.get(dequeueMessageIndex);
         entry.acquire();
         entry.delete();
         assertTrue(entry.isDeleted());
         return entry;
     }
 
-    protected void verifyReceivedMessages(List<MessageInstance> expected,
-                                        List<MessageInstance> delivered)
+    protected void verifyReceivedMessages(final List<MessageInstance> expected,
+                                          final List<MessageInstance> delivered)
     {
-        assertEquals("Consumer did not receive the expected number of messages",
-                            (long) expected.size(),
-                            (long) delivered.size());
+        assertEquals(expected.size(), (long) delivered.size(),
+                "Consumer did not receive the expected number of messages");
 
-        for (MessageInstance msg : expected)
+        for (final MessageInstance msg : expected)
         {
-            assertTrue("Consumer did not receive msg: "
-                              + msg.getMessage().getMessageNumber(), delivered.contains(msg));
+            assertTrue(delivered.contains(msg), "Consumer did not receive msg: " +
+                    msg.getMessage().getMessageNumber());
         }
     }
 
@@ -1481,7 +1372,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         return _queue;
     }
 
-    protected void setQueue(Queue<?> queue)
+    protected void setQueue(final Queue<?> queue)
     {
         _queue = queue;
     }
@@ -1496,74 +1387,56 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         return _arguments;
     }
 
-    public void setArguments(Map<String,Object> arguments)
+    public void setArguments(final Map<String,Object> arguments)
     {
         _arguments = arguments;
     }
 
-    protected ServerMessage createMessage(Long id, byte priority, final Map<String,Object> arguments, long arrivalTime)
+    protected ServerMessage<?> createMessage(final Long id,
+                                             final byte priority,
+                                             final Map<String,Object> arguments,
+                                             final long arrivalTime)
     {
-        ServerMessage message = createMessage(id);
-
-        AMQMessageHeader hdr = message.getMessageHeader();
+        final ServerMessage<?> message = createMessage(id);
+        final AMQMessageHeader hdr = message.getMessageHeader();
         when(hdr.getPriority()).thenReturn(priority);
         when(message.getArrivalTime()).thenReturn(arrivalTime);
         when(hdr.getHeaderNames()).thenReturn(arguments.keySet());
         final ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String.class);
-        when(hdr.containsHeader(nameCaptor.capture())).thenAnswer(new Answer<Boolean>()
-        {
-            @Override
-            public Boolean answer(final InvocationOnMock invocationOnMock) throws Throwable
-            {
-                return arguments.containsKey(nameCaptor.getValue());
-            }
-        });
+        when(hdr.containsHeader(nameCaptor.capture())).thenAnswer((Answer<Boolean>) invocationOnMock ->
+                arguments.containsKey(nameCaptor.getValue()));
 
-        final ArgumentCaptor<Set> namesCaptor = ArgumentCaptor.forClass(Set.class);
-        when(hdr.containsHeaders(namesCaptor.capture())).thenAnswer(new Answer<Boolean>()
-        {
-            @Override
-            public Boolean answer(final InvocationOnMock invocationOnMock) throws Throwable
-            {
-                return arguments.keySet().containsAll(namesCaptor.getValue());
-            }
-        });
+        final ArgumentCaptor<Set<String>> namesCaptor = ArgumentCaptor.forClass(Set.class);
+        when(hdr.containsHeaders(namesCaptor.capture())).thenAnswer((Answer<Boolean>) invocationOnMock ->
+                arguments.keySet().containsAll(namesCaptor.getValue()));
 
         final ArgumentCaptor<String> nameCaptor2 = ArgumentCaptor.forClass(String.class);
-        when(hdr.getHeader(nameCaptor2.capture())).thenAnswer(new Answer<Object>()
-        {
-            @Override
-            public Object answer(final InvocationOnMock invocationOnMock) throws Throwable
-            {
-                return arguments.get(nameCaptor2.getValue());
-            }
-        });
-
+        when(hdr.getHeader(nameCaptor2.capture())).thenAnswer(invocationOnMock ->
+                arguments.get(nameCaptor2.getValue()));
 
         return message;
-
     }
 
-    protected ServerMessage createMessage(Long id, final int headerSize, final int payloadSize)
+    protected ServerMessage<?> createMessage(final Long id, final int headerSize, final int payloadSize)
     {
-        ServerMessage message = createMessage(id);
+        final ServerMessage<?> message = createMessage(id);
         when(message.getSizeIncludingHeader()).thenReturn(Long.valueOf(headerSize + payloadSize));
         return message;
     }
 
-    protected ServerMessage createMessage(Long id)
+    protected ServerMessage<?> createMessage(final Long id)
     {
-        AMQMessageHeader header = mock(AMQMessageHeader.class);
+        final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getMessageId()).thenReturn(String.valueOf(id));
-        ServerMessage message = mock(ServerMessage.class);
+        final ServerMessage<?> message = mock(ServerMessage.class);
         when(message.getMessageNumber()).thenReturn(id);
         when(message.getMessageHeader()).thenReturn(header);
         when(message.checkValid()).thenReturn(true);
 
-        StoredMessage storedMessage = mock(StoredMessage.class);
+        final StoredMessage storedMessage = mock(StoredMessage.class);
         when(message.getStoredMessage()).thenReturn(storedMessage);
 
-        MessageReference ref = mock(MessageReference.class);
+        final MessageReference ref = mock(MessageReference.class);
         when(ref.getMessage()).thenReturn(message);
 
         when(message.newReference()).thenReturn(ref);
@@ -1582,12 +1455,11 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         }
 
         @Override
-        public void performAction(MessageInstance entry)
+        public void performAction(final MessageInstance entry)
         {
             _queueEntries.add((QueueEntry) entry);
         }
     }
-
 
     public QueueManagingVirtualHost<?> getVirtualHost()
     {
@@ -1609,7 +1481,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         return _routingKey;
     }
 
-    public DirectExchange getExchange()
+    public DirectExchange<?> getExchange()
     {
         return _exchange;
     }
@@ -1618,5 +1490,4 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     {
         return _consumerTarget;
     }
-
 }

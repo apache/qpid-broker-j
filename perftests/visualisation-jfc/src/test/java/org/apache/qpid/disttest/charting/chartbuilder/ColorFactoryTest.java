@@ -19,26 +19,13 @@
  */
 package org.apache.qpid.disttest.charting.chartbuilder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.awt.Color;
 
-import org.junit.Assert;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ColorFactoryTest extends UnitTestBase
 {
@@ -57,5 +44,4 @@ public class ColorFactoryTest extends UnitTestBase
         assertEquals(Color.blue.darker(), ColorFactory.toColour("DARK_BLUE"));
         assertEquals(Color.blue.darker(), ColorFactory.toColour("Dark_Blue"));
     }
-
 }

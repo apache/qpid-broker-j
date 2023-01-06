@@ -23,10 +23,10 @@ package org.apache.qpid.systests.jms_1_1.extensions.filters;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,8 +40,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
@@ -69,9 +68,9 @@ public class ArrivalTimeFilterTest extends JmsTestBase
             producer.send(session.createTextMessage("B"));
 
             final Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message should be received", receivedMessage);
-            assertTrue("Unexpected message type", receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message", "B", ((TextMessage) receivedMessage).getText());
+            assertNotNull(receivedMessage, "Message should be received");
+            assertTrue(receivedMessage instanceof TextMessage, "Unexpected message type");
+            assertEquals("B", ((TextMessage) receivedMessage).getText(), "Unexpected message");
         }
         finally
         {
@@ -99,16 +98,16 @@ public class ArrivalTimeFilterTest extends JmsTestBase
             final MessageConsumer consumer = session.createConsumer(queue);
 
             final Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message A should be received", receivedMessage);
-            assertTrue("Unexpected message type", receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message", "A", ((TextMessage) receivedMessage).getText());
+            assertNotNull(receivedMessage, "Message A should be received");
+            assertTrue(receivedMessage instanceof TextMessage, "Unexpected message type");
+            assertEquals("A", ((TextMessage) receivedMessage).getText(), "Unexpected message");
 
             producer.send(session.createTextMessage("B"));
 
             final Message secondMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message B should be received", secondMessage);
-            assertTrue("Unexpected message type", secondMessage instanceof TextMessage);
-            assertEquals("Unexpected message", "B", ((TextMessage) secondMessage).getText());
+            assertNotNull(secondMessage, "Message B should be received");
+            assertTrue(secondMessage instanceof TextMessage, "Unexpected message type");
+            assertEquals("B", ((TextMessage) secondMessage).getText(), "Unexpected message");
         }
         finally
         {
@@ -119,7 +118,7 @@ public class ArrivalTimeFilterTest extends JmsTestBase
     @Test
     public void testConsumerFilterArrivalTime0() throws Exception
     {
-        assumeThat("Only legacy client implements this feature", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Only legacy client implements this feature");
 
         final String queueName = getTestName();
         createQueue(queueName);
@@ -137,9 +136,9 @@ public class ArrivalTimeFilterTest extends JmsTestBase
             producer.send(session.createTextMessage("B"));
 
             final Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message should be received", receivedMessage);
-            assertTrue("Unexpected message type", receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message", "B", ((TextMessage) receivedMessage).getText());
+            assertNotNull(receivedMessage, "Message should be received");
+            assertTrue(receivedMessage instanceof TextMessage, "Unexpected message type");
+            assertEquals("B", ((TextMessage) receivedMessage).getText(), "Unexpected message");
         }
         finally
         {
@@ -150,7 +149,7 @@ public class ArrivalTimeFilterTest extends JmsTestBase
     @Test
     public void testConsumerFilterArrivalTime1000() throws Exception
     {
-        assumeThat("Only legacy client implements this feature", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Only legacy client implements this feature");
 
         final String queueName = getTestName();
         createQueue(queueName);
@@ -169,16 +168,16 @@ public class ArrivalTimeFilterTest extends JmsTestBase
             final MessageConsumer consumer = session.createConsumer(queue);
 
             final Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message A should be received", receivedMessage);
-            assertTrue("Unexpected message type", receivedMessage instanceof TextMessage);
-            assertEquals("Unexpected message", "A", ((TextMessage) receivedMessage).getText());
+            assertNotNull(receivedMessage, "Message A should be received");
+            assertTrue(receivedMessage instanceof TextMessage, "Unexpected message type");
+            assertEquals("A", ((TextMessage) receivedMessage).getText(), "Unexpected message");
 
             producer.send(session.createTextMessage("B"));
 
             final Message secondMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message B should be received", secondMessage);
-            assertTrue("Unexpected message type", secondMessage instanceof TextMessage);
-            assertEquals("Unexpected message", "B", ((TextMessage) secondMessage).getText());
+            assertNotNull(secondMessage, "Message B should be received");
+            assertTrue(secondMessage instanceof TextMessage, "Unexpected message type");
+            assertEquals("B", ((TextMessage) secondMessage).getText(), "Unexpected message");
         }
         finally
         {

@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.filters;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Collections;
 
@@ -33,7 +33,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -60,15 +60,15 @@ public class DefaultFiltersTest extends JmsTestBase
 
             MessageConsumer cons = session.createConsumer(queue);
 
-            assertNull("Message with foo=0 should not be received", cons.receive(getReceiveTimeout()));
+            assertNull(cons.receive(getReceiveTimeout()), "Message with foo=0 should not be received");
 
             message = session.createMessage();
             message.setIntProperty("foo", 1);
             prod.send(message);
 
             Message receivedMsg = cons.receive(getReceiveTimeout());
-            assertNotNull("Message with foo=1 should be received", receivedMsg);
-            assertEquals("Property foo not as expected", 1, receivedMsg.getIntProperty("foo"));
+            assertNotNull(receivedMsg, "Message with foo=1 should be received");
+            assertEquals(1, receivedMsg.getIntProperty("foo"), "Property foo not as expected");
         }
         finally
         {
@@ -98,14 +98,14 @@ public class DefaultFiltersTest extends JmsTestBase
             MessageConsumer cons = session.createConsumer(queue, "foo = 0");
 
             Message receivedMsg = cons.receive(getReceiveTimeout());
-            assertNotNull("Message with foo=0 should be received", receivedMsg);
-            assertEquals("Property foo not as expected", 0, receivedMsg.getIntProperty("foo"));
+            assertNotNull(receivedMsg, "Message with foo=0 should be received");
+            assertEquals(0, receivedMsg.getIntProperty("foo"), "Property foo not as expected");
 
             message = session.createMessage();
             message.setIntProperty("foo", 1);
             prod.send( message);
 
-            assertNull("Message with foo=1 should not be received", cons.receive(getReceiveTimeout()));
+            assertNull(cons.receive(getReceiveTimeout()), "Message with foo=1 should not be received");
         }
         finally
         {

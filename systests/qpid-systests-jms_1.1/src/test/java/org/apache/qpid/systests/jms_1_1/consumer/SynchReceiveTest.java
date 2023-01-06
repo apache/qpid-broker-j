@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.systests.jms_1_1.consumer;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.Instant;
 
@@ -31,14 +31,13 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
 
 public class SynchReceiveTest extends JmsTestBase
 {
-
     @Test
     public void receiveWithTimeout() throws Exception
     {
@@ -56,10 +55,11 @@ public class SynchReceiveTest extends JmsTestBase
 
             for (int num = 0; num < numberOfMessages; num++)
             {
-                assertNotNull(String.format("Expected message (%d) not received", num), consumer.receive(getReceiveTimeout()));
+                assertNotNull(consumer.receive(getReceiveTimeout()),
+                        String.format("Expected message (%d) not received", num));
             }
 
-            assertNull("Received too many messages", consumer.receive(getReceiveTimeout()));
+            assertNull(consumer.receive(getReceiveTimeout()), "Received too many messages");
 
         }
         finally
@@ -90,8 +90,8 @@ public class SynchReceiveTest extends JmsTestBase
             }
             while(msg == null && Instant.now().isBefore(timeout));
 
-            assertNotNull("Expected message not received within timeout", msg);
-            assertNull("Received too many messages", consumer.receiveNoWait());
+            assertNotNull(msg, "Expected message not received within timeout");
+            assertNull(consumer.receiveNoWait(), "Received too many messages");
         }
         finally
         {
@@ -122,10 +122,10 @@ public class SynchReceiveTest extends JmsTestBase
             for(int i = 0; i < numberOfReceiveLoops; i++)
             {
                 final Message receive1 = consumer1.receive(getReceiveTimeout());
-                assertNotNull("Expected message not received from consumer1 within timeout", receive1);
+                assertNotNull(receive1, "Expected message not received from consumer1 within timeout");
 
                 final Message receive2 = consumer2.receive(getReceiveTimeout());
-                assertNotNull("Expected message not received from consumer1 within timeout", receive2);
+                assertNotNull(receive2, "Expected message not received from consumer1 within timeout");
             }
         }
         finally

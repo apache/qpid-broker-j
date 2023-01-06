@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
@@ -69,7 +69,6 @@ public class BDBHAVirtualHostNodeTestHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BDBHAVirtualHostNodeTestHelper.class);
 
-    private final String _testName;
     private final Broker<?> _broker;
     private final File _bdbStorePath;
     private final TaskExecutor _taskExecutor;
@@ -79,9 +78,8 @@ public class BDBHAVirtualHostNodeTestHelper
     private final int _sleepInterval;
     private final int _waitForVirtualhostInterval;
 
-    public BDBHAVirtualHostNodeTestHelper(String testName) throws Exception
+    public BDBHAVirtualHostNodeTestHelper(String testName)
     {
-        _testName = testName;
         _broker = BrokerTestHelper.createBrokerMock();
 
         _taskExecutor = new TaskExecutorImpl();
@@ -90,7 +88,7 @@ public class BDBHAVirtualHostNodeTestHelper
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getContextValue(Long.class, BDBVirtualHost.QPID_BROKER_BDB_TOTAL_CACHE_SIZE)).thenReturn(BDBVirtualHost.BDB_MIN_CACHE_SIZE);
 
-        _bdbStorePath = new File(UnitTestBase.TMP_FOLDER, _testName + "." + System.currentTimeMillis());
+        _bdbStorePath = new File(UnitTestBase.TMP_FOLDER, testName + "." + System.currentTimeMillis());
         _bdbStorePath.deleteOnExit();
         _numberOfSleeps = Integer.getInteger("BDBHAVirtualHostNodeTestHelper.numberOfSleepsOnChangeWaiting", 50);
         _sleepInterval = Integer.getInteger("BDBHAVirtualHostNodeTestHelper.sleepIntervalOnChangeWaiting", 100);
@@ -152,7 +150,7 @@ public class BDBHAVirtualHostNodeTestHelper
         int counter = 0;
 
         @SuppressWarnings("rawtypes")
-        Collection<? extends RemoteReplicationNode> remoteNodes = null;
+        Collection<? extends RemoteReplicationNode> remoteNodes;
         do
         {
             remoteNodes = node.getRemoteReplicationNodes();
@@ -164,7 +162,7 @@ public class BDBHAVirtualHostNodeTestHelper
         }
         // TODO: 30 seconds is quite a lot to wait, we need to reduce this limit
         while(remoteNodes.size() != expectedNodeNumber && counter<100);
-        assertEquals("Unexpected node number", expectedNodeNumber, node.getRemoteReplicationNodes().size());
+        assertEquals(expectedNodeNumber, node.getRemoteReplicationNodes().size(), "Unexpected node number");
     }
 
     public void awaitForAttributeChange(ConfiguredObject<?> object, String name, Object expectedValue) throws InterruptedException
@@ -175,7 +173,7 @@ public class BDBHAVirtualHostNodeTestHelper
             Thread.sleep(100);
             awaitCounter++;
         }
-        assertEquals("Unexpected attribute " + name + " on " + object, expectedValue, object.getAttribute(name) );
+        assertEquals(expectedValue, object.getAttribute(name), "Unexpected attribute " + name + " on " + object);
     }
 
     public BDBHAVirtualHostNode<?> awaitAndFindNodeInRole(NodeRole desiredRole) throws InterruptedException
@@ -253,8 +251,8 @@ public class BDBHAVirtualHostNodeTestHelper
             iterationCounter++;
         }
         while(!inRole && iterationCounter < _numberOfSleeps);
-        assertTrue("Node " + node.getName() + " did not transit into role " + Arrays.toString(roleName)
-                + " Node role is " + node.getRole(), inRole);
+        assertTrue(inRole, "Node " + node.getName() + " did not transit into role " + Arrays.toString(roleName) +
+                " Node role is " + node.getRole());
     }
 
     public BDBHAVirtualHostNode<?> createAndStartHaVHN(Map<String, Object> attributes)  throws InterruptedException
@@ -267,7 +265,7 @@ public class BDBHAVirtualHostNodeTestHelper
     {
         node.start();
         assertNodeRole(node, NodeRole.MASTER, NodeRole.REPLICA);
-        assertEquals("Unexpected node state", State.ACTIVE, node.getState());
+        assertEquals(State.ACTIVE, node.getState(), "Unexpected node state");
         return node;
     }
 

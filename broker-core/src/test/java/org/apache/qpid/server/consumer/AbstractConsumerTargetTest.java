@@ -20,9 +20,9 @@
 
 package org.apache.qpid.server.consumer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -33,8 +33,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.InOrder;
 
 import org.apache.qpid.server.message.MessageContainer;
@@ -56,58 +57,53 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class AbstractConsumerTargetTest extends UnitTestBase
 {
     private final AMQPConnection<?> _connection = mock(AMQPConnection.class);
+    @SuppressWarnings("unchecked")
     private final AMQPSession<?,TestAbstractConsumerTarget> _session = mock(AMQPSession.class);
 
     private TestAbstractConsumerTarget _consumerTarget;
-    private Consumer _consumer;
+    private Consumer<?, ?> _consumer;
     private MessageSource _messageSource;
     private MessageInstance _messageInstance;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        when(_connection.getContextValue(eq(Long.class),
-                                         eq(Consumer.SUSPEND_NOTIFICATION_PERIOD))).thenReturn(1000000L);
+        when(_connection.getContextValue(eq(Long.class), eq(Consumer.SUSPEND_NOTIFICATION_PERIOD))).thenReturn(1000000L);
 
         _consumer = mock(Consumer.class);
         _messageSource = mock(MessageSource.class);
-        when(_messageSource.getMessageConversionExceptionHandlingPolicy()).thenReturn(MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
+        when(_messageSource.getMessageConversionExceptionHandlingPolicy())
+                .thenReturn(MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
         _messageInstance = mock(MessageInstance.class);
         when(_messageInstance.getOwningResource()).thenReturn(_messageSource);
-        final MessageContainer messageContainer =
-                new MessageContainer(_messageInstance, mock(MessageReference.class));
+        final MessageContainer messageContainer = new MessageContainer(_messageInstance, mock(MessageReference.class));
         when(_consumer.pullMessage()).thenReturn(messageContainer);
         _consumerTarget = new TestAbstractConsumerTarget();
         _consumerTarget.consumerAdded(_consumer);
     }
 
     @Test
-    public void testClose() throws Exception
+    public void testClose()
     {
         _consumerTarget = new TestAbstractConsumerTarget();
-        assertEquals("Unexpected number of consumers", (long) 0, (long) _consumerTarget.getConsumers().size());
+        assertEquals(0, (long) _consumerTarget.getConsumers().size(), "Unexpected number of consumers");
 
         _consumerTarget.consumerAdded(_consumer);
-        assertEquals("Unexpected number of consumers after add",
-                            (long) 1,
-                            (long) _consumerTarget.getConsumers().size());
-
+        assertEquals(1, (long) _consumerTarget.getConsumers().size(), "Unexpected number of consumers after add");
 
         _consumerTarget.close();
-        assertEquals("Unexpected number of consumers after close",
-                            (long) 0,
-                            (long) _consumerTarget.getConsumers().size());
+        assertEquals(0, (long) _consumerTarget.getConsumers().size(), "Unexpected number of consumers after close");
 
         verify(_consumer, times(1)).close();
     }
 
     @Test
-    public void testNotifyWork() throws Exception
+    public void testNotifyWork()
     {
-        InOrder order = inOrder(_consumer);
+        final InOrder order = inOrder(_consumer);
 
         _consumerTarget = new TestAbstractConsumerTarget();
-        assertEquals("Unexpected number of consumers", (long) 0, (long) _consumerTarget.getConsumers().size());
+        assertEquals(0, (long) _consumerTarget.getConsumers().size(), "Unexpected number of consumers");
 
         _consumerTarget.consumerAdded(_consumer);
 
@@ -131,106 +127,93 @@ public class AbstractConsumerTargetTest extends UnitTestBase
     }
 
     @Test
-    public void testConversionExceptionPolicyClose() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testConversionExceptionPolicyClose()
     {
         configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
 
-        try
-        {
-            _consumerTarget.sendNextMessage();
-            fail("exception not thrown");
-        }
-        catch (ConnectionScopedRuntimeException e)
-        {
-            final boolean condition = e.getCause() instanceof MessageConversionException;
-            assertTrue(String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
-                                            e.getCause().getClass().getSimpleName()), condition);
-        }
-        assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
+        final ConnectionScopedRuntimeException thrown = assertThrows(ConnectionScopedRuntimeException.class,
+                () -> _consumerTarget.sendNextMessage(), "Exception not thrown");
+        final boolean condition = thrown.getCause() instanceof MessageConversionException;
+        assertTrue(condition, String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
+                                            thrown.getCause().getClass().getSimpleName()));
+
+        assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
     @Test
-    public void testConversionExceptionPolicyCloseForNonAcquiringConsumer() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testConversionExceptionPolicyCloseForNonAcquiringConsumer()
     {
         configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
 
-        try
-        {
-            _consumerTarget.sendNextMessage();
-            fail("exception not thrown");
-        }
-        catch (ConnectionScopedRuntimeException e)
-        {
-            final boolean condition = e.getCause() instanceof MessageConversionException;
-            assertTrue(String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
-                                            e.getCause().getClass().getSimpleName()), condition);
-        }
-        assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
+        final ConnectionScopedRuntimeException thrown = assertThrows(ConnectionScopedRuntimeException.class,
+                () -> _consumerTarget.sendNextMessage(), "Exception not thrown");
+        final boolean condition = thrown.getCause() instanceof MessageConversionException;
+        assertTrue(condition, String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
+                                            thrown.getCause().getClass().getSimpleName()));
+        assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
     @Test
-    public void testConversionExceptionPolicyReroute() throws Exception
+    public void testConversionExceptionPolicyReroute()
     {
         configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
 
         _consumerTarget.sendNextMessage();
-        assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
+        assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
         verify(_messageInstance).routeToAlternate(null, null, null);
     }
 
     @Test
-    public void testConversionExceptionPolicyRerouteForNonAcquiringConsumer() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testConversionExceptionPolicyRerouteForNonAcquiringConsumer()
     {
         configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
 
         _consumerTarget.sendNextMessage();
-        assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
+        assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
     @Test
-    public void testConversionExceptionPolicyReject() throws Exception
+    public void testConversionExceptionPolicyReject()
     {
         configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT);
 
         _consumerTarget.sendNextMessage();
 
-        assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
+        assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
         verify(_messageInstance).reject(_consumer);
         verify(_messageInstance).release(_consumer);
     }
 
     @Test
-    public void testConversionExceptionPolicyRejectForNonAcquiringConsumer() throws Exception
+    public void testConversionExceptionPolicyRejectForNonAcquiringConsumer()
     {
         configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT);
 
         _consumerTarget.sendNextMessage();
-        assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
+        assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
         verify(_messageInstance).reject(_consumer);
         verify(_messageInstance).release(_consumer);
     }
 
     @Test
-    public void testConversionExceptionPolicyWhenOwningResourceIsNotMessageSource() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testConversionExceptionPolicyWhenOwningResourceIsNotMessageSource()
     {
         final TransactionLogResource owningResource = mock(TransactionLogResource.class);
         when(_messageInstance.getOwningResource()).thenReturn(owningResource);
 
-        try
-        {
-            _consumerTarget.sendNextMessage();
-            fail("exception not thrown");
-        }
-        catch (ConnectionScopedRuntimeException e)
-        {
-            final boolean condition = e.getCause() instanceof MessageConversionException;
-            assertTrue(String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
-                                            e.getCause().getClass().getSimpleName()), condition);
-        }
-        assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
+        final ConnectionScopedRuntimeException thrown = assertThrows(ConnectionScopedRuntimeException.class,
+                () -> _consumerTarget.sendNextMessage(), "Exception not thrown");
+        final boolean condition = thrown.getCause() instanceof MessageConversionException;
+        assertTrue(condition, String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
+                                            thrown.getCause().getClass().getSimpleName()));
+        assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
@@ -241,6 +224,7 @@ public class AbstractConsumerTargetTest extends UnitTestBase
         when(_messageSource.getMessageConversionExceptionHandlingPolicy()).thenReturn(exceptionHandlingPolicy);
     }
 
+    @SuppressWarnings("rawtypes")
     private class TestAbstractConsumerTarget extends AbstractConsumerTarget<TestAbstractConsumerTarget>
     {
         private boolean _creditRestored;

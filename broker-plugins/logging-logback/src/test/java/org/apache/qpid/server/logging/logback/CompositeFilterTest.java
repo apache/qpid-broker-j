@@ -20,10 +20,9 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,7 +31,8 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -41,53 +41,53 @@ public class CompositeFilterTest extends UnitTestBase
     @Test
     public void testDecideWithNoRule()
     {
-        CompositeFilter compositeFilter = new CompositeFilter();
-        FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
-        assertEquals("Unexpected reply with no rule added", FilterReply.DENY, reply);
+        final CompositeFilter compositeFilter = new CompositeFilter();
+        final FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
+        assertEquals(FilterReply.DENY, reply, "Unexpected reply with no rule added");
     }
 
     @Test
     public void testDecideWithAcceptRule()
     {
-        CompositeFilter compositeFilter = new CompositeFilter();
+        final CompositeFilter compositeFilter = new CompositeFilter();
 
         compositeFilter.addLogInclusionRule(createRule(FilterReply.ACCEPT));
 
         final ILoggingEvent loggingEvent = mock(ILoggingEvent.class);
         when(loggingEvent.getLevel()).thenReturn(Level.ERROR);
-        FilterReply reply = compositeFilter.decide(loggingEvent);
-        assertEquals("Unexpected reply with ACCEPT rule added", FilterReply.ACCEPT, reply);
+        final FilterReply reply = compositeFilter.decide(loggingEvent);
+        assertEquals(FilterReply.ACCEPT, reply, "Unexpected reply with ACCEPT rule added");
     }
 
     @Test
     public void testDecideWithNeutralRule()
     {
-        CompositeFilter compositeFilter = new CompositeFilter();
+        final CompositeFilter compositeFilter = new CompositeFilter();
 
         compositeFilter.addLogInclusionRule(createRule(FilterReply.NEUTRAL));
 
         final ILoggingEvent loggingEvent = mock(ILoggingEvent.class);
         when(loggingEvent.getLevel()).thenReturn(Level.ERROR);
-        FilterReply reply = compositeFilter.decide(loggingEvent);
-        assertEquals("Unexpected reply with NEUTRAL rule added", FilterReply.DENY, reply);
+        final FilterReply reply = compositeFilter.decide(loggingEvent);
+        assertEquals(FilterReply.DENY, reply, "Unexpected reply with NEUTRAL rule added");
     }
 
     @Test
     public void testDecideWithMultipleRules()
     {
-        CompositeFilter compositeFilter = new CompositeFilter();
+        final CompositeFilter compositeFilter = new CompositeFilter();
 
-        LogBackLogInclusionRule neutral = createRule(FilterReply.NEUTRAL);
+        final LogBackLogInclusionRule neutral = createRule(FilterReply.NEUTRAL);
         compositeFilter.addLogInclusionRule(neutral);
 
-        LogBackLogInclusionRule accept = createRule(FilterReply.ACCEPT);
+        final LogBackLogInclusionRule accept = createRule(FilterReply.ACCEPT);
         compositeFilter.addLogInclusionRule(accept);
 
-        LogBackLogInclusionRule deny = createRule(FilterReply.DENY);
+        final LogBackLogInclusionRule deny = createRule(FilterReply.DENY);
         compositeFilter.addLogInclusionRule(deny);
 
-        FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
-        assertEquals("Unexpected reply", FilterReply.DENY, reply);
+        final FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
+        assertEquals(FilterReply.DENY, reply, "Unexpected reply");
 
         verify(neutral.asFilter()).decide(any(ILoggingEvent.class));
         verify(deny.asFilter()).decide(any(ILoggingEvent.class));
@@ -97,26 +97,26 @@ public class CompositeFilterTest extends UnitTestBase
     @Test
     public void testRemoveLogInclusionRule()
     {
-        CompositeFilter compositeFilter = new CompositeFilter();
+        final CompositeFilter compositeFilter = new CompositeFilter();
 
-        LogBackLogInclusionRule neutral = createRule(FilterReply.NEUTRAL, "neutral");
+        final LogBackLogInclusionRule neutral = createRule(FilterReply.NEUTRAL, "neutral");
         compositeFilter.addLogInclusionRule(neutral);
 
-        LogBackLogInclusionRule deny = createRule(FilterReply.DENY, "deny");
+        final LogBackLogInclusionRule deny = createRule(FilterReply.DENY, "deny");
         compositeFilter.addLogInclusionRule(deny);
 
-        LogBackLogInclusionRule accept = createRule(FilterReply.ACCEPT, "accept");
+        final LogBackLogInclusionRule accept = createRule(FilterReply.ACCEPT, "accept");
         compositeFilter.addLogInclusionRule(accept);
 
-        FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
-        assertEquals("Unexpected reply", FilterReply.DENY, reply);
+        final FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
+        assertEquals(FilterReply.DENY, reply, "Unexpected reply");
 
         compositeFilter.removeLogInclusionRule(deny);
 
         final ILoggingEvent loggingEvent = mock(ILoggingEvent.class);
         when(loggingEvent.getLevel()).thenReturn(Level.ERROR);
-        FilterReply reply2 = compositeFilter.decide(loggingEvent);
-        assertEquals("Unexpected reply", FilterReply.ACCEPT, reply2);
+        final FilterReply reply2 = compositeFilter.decide(loggingEvent);
+        assertEquals(FilterReply.ACCEPT, reply2, "Unexpected reply");
 
         verify(neutral.asFilter(), times(2)).decide(any(ILoggingEvent.class));
         verify(deny.asFilter()).decide(any(ILoggingEvent.class));
@@ -126,24 +126,25 @@ public class CompositeFilterTest extends UnitTestBase
     @Test
     public void testAddLogInclusionRule()
     {
-        CompositeFilter compositeFilter = new CompositeFilter();
+        final CompositeFilter compositeFilter = new CompositeFilter();
 
-        LogBackLogInclusionRule rule = createRule(FilterReply.ACCEPT, "accept");
+        final LogBackLogInclusionRule rule = createRule(FilterReply.ACCEPT, "accept");
         compositeFilter.addLogInclusionRule(rule);
 
         verify(rule.asFilter()).setName("accept");
     }
 
-    private LogBackLogInclusionRule createRule(FilterReply decision)
+    private LogBackLogInclusionRule createRule(final FilterReply decision)
     {
         return createRule(decision, "UNNAMED");
     }
 
-    private LogBackLogInclusionRule createRule(final FilterReply decision, String name)
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private LogBackLogInclusionRule createRule(final FilterReply decision, final String name)
     {
-        LogBackLogInclusionRule rule = mock(LogBackLogInclusionRule.class);
+        final LogBackLogInclusionRule rule = mock(LogBackLogInclusionRule.class);
         when(rule.getName()).thenReturn(name);
-        Filter filter = mock(Filter.class);
+        final Filter filter = mock(Filter.class);
         when(filter.getName()).thenReturn(name);
         when(filter.decide(any(ILoggingEvent.class))).thenReturn(decision);
         when(rule.asFilter()).thenReturn(filter);

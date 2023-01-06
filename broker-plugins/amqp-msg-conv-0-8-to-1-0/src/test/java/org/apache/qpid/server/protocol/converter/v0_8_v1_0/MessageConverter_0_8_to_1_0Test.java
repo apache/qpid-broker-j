@@ -22,9 +22,10 @@ package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getContentType;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,8 +39,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.collect.Lists;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -84,7 +86,7 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
     private final ContentHeaderBody _contentHeaderBody = mock(ContentHeaderBody.class);
     private final BasicContentHeaderProperties _basicContentHeaderProperties = mock(BasicContentHeaderProperties.class);
 
-    @Before
+    @BeforeAll
     public void setUp() throws Exception
     {
         when(_handle.getMetaData()).thenReturn(_metaData);
@@ -376,7 +378,7 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
     {
         SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
         final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(content);
-        assertEquals("Unexpected number of sections", (long) expectedNumberOfSections, (long) sections.size());
+        assertEquals(expectedNumberOfSections, (long) sections.size(), "Unexpected number of sections");
         return sections;
     }
 
@@ -493,39 +495,36 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
 
         List<EncodingRetainingSection<?>> sections = getEncodingRetainingSections(content, 1);
         EncodingRetainingSection<?> encodingRetainingSection = sections.get(0);
-        assertEquals("Unexpected section type", expectedBodySection, encodingRetainingSection.getClass());
+        assertEquals(expectedBodySection, encodingRetainingSection.getClass(), "Unexpected section type");
 
         if (expectedContent instanceof byte[])
         {
-            assertArrayEquals("Unexpected content",
-                              ((byte[]) expectedContent),
-                              ((Binary) encodingRetainingSection.getValue()).getArray());
+            assertArrayEquals(((byte[]) expectedContent), ((Binary) encodingRetainingSection.getValue()).getArray(),
+                    "Unexpected content");
         }
         else
         {
-            assertEquals("Unexpected content", expectedContent, encodingRetainingSection.getValue());
+            assertEquals(expectedContent, encodingRetainingSection.getValue(), "Unexpected content");
         }
 
         Symbol contentType = getContentType(convertedMessage);
         if (expectedContentType == null)
         {
-            assertNull("Content type should be null", contentType);
+            assertNull(contentType, "Content type should be null");
         }
         else
         {
-            assertEquals("Unexpected content type", expectedContentType, contentType);
+            assertEquals(expectedContentType, contentType, "Unexpected content type");
         }
 
         Byte jmsMessageTypeAnnotation = getJmsMessageTypeAnnotation(convertedMessage);
         if (expectedJmsTypeAnnotation == null)
         {
-            assertNull("Unexpected annotation 'x-opt-jms-msg-type'", jmsMessageTypeAnnotation);
+            assertNull(jmsMessageTypeAnnotation, "Unexpected annotation 'x-opt-jms-msg-type'");
         }
         else
         {
-            assertEquals("Unexpected annotation 'x-opt-jms-msg-type'",
-                                expectedJmsTypeAnnotation,
-                                jmsMessageTypeAnnotation);
+            assertEquals(expectedJmsTypeAnnotation, jmsMessageTypeAnnotation,"Unexpected annotation 'x-opt-jms-msg-type'");
         }
     }
 }

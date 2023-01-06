@@ -25,19 +25,17 @@ import static javax.jms.DeliveryMode.NON_PERSISTENT;
 import static javax.jms.DeliveryMode.PERSISTENT;
 import static javax.jms.Session.CLIENT_ACKNOWLEDGE;
 import static javax.jms.Session.SESSION_TRANSACTED;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import javax.jms.Connection;
-import javax.jms.DeliveryMode;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
@@ -45,8 +43,8 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -56,10 +54,10 @@ public class PersistentMessagingTest extends JmsTestBase
     private static final String INT_PROPERTY = "index";
     private static final String STRING_PROPERTY = "string";
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
-        assumeThat("Tests requires persistent store", getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart(), "Tests requires persistent store");
     }
 
     @Test
@@ -114,7 +112,8 @@ public class PersistentMessagingTest extends JmsTestBase
             MessageConsumer consumer = session.createConsumer(queue);
 
             final Message unexpectedMessage = consumer.receiveNoWait();
-            assertNull(String.format("Unexpected message [%s] received", unexpectedMessage), unexpectedMessage);
+            assertNull(unexpectedMessage,
+                    String.format("Unexpected message [%s] received", unexpectedMessage));
         }
         finally
         {
@@ -220,7 +219,8 @@ public class PersistentMessagingTest extends JmsTestBase
             receiveAndVerifyMessages(session, consumer, expectedMessages);
 
             final Message unexpectedMessage = consumer.receiveNoWait();
-            assertNull(String.format("Unexpected additional message [%s] received", unexpectedMessage), unexpectedMessage);
+            assertNull(unexpectedMessage,
+                    String.format("Unexpected additional message [%s] received", unexpectedMessage));
         }
         finally
         {
@@ -236,18 +236,16 @@ public class PersistentMessagingTest extends JmsTestBase
         for (Message expected : expectedMessages)
         {
             final Message received = consumer.receive(getReceiveTimeout());
-            assertNotNull(String.format("Message not received when expecting message %d", expected.getIntProperty(INT_PROPERTY)), received);
+            assertNotNull(received,
+                    String.format("Message not received when expecting message %d", expected.getIntProperty(INT_PROPERTY)));
 
-            assertTrue("Unexpected type", expected instanceof TextMessage);
-            assertEquals("Unexpected index",
-                         expected.getIntProperty(INT_PROPERTY),
-                         received.getIntProperty(INT_PROPERTY));
-            assertEquals("Unexpected string property",
-                         expected.getStringProperty(STRING_PROPERTY),
-                         received.getStringProperty(STRING_PROPERTY));
-            assertEquals("Unexpected message content",
-                         ((TextMessage) expected).getText(),
-                         ((TextMessage) received).getText());
+            assertTrue(expected instanceof TextMessage, "Unexpected type");
+            assertEquals(expected.getIntProperty(INT_PROPERTY), received.getIntProperty(INT_PROPERTY),
+                    "Unexpected index");
+            assertEquals(expected.getStringProperty(STRING_PROPERTY), received.getStringProperty(STRING_PROPERTY),
+                    "Unexpected string property");
+            assertEquals(((TextMessage) expected).getText(), ((TextMessage) received).getText(),
+                    "Unexpected message content");
 
             final int acknowledgeMode = session.getAcknowledgeMode();
             if (acknowledgeMode == SESSION_TRANSACTED)

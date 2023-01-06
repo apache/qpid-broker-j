@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -37,7 +37,8 @@ import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -83,7 +84,7 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
     private void assertConfiguredObjectHierarchy()
     {
         Map<UpgradeHierarchyKey, UUID> hierarchy = loadConfiguredObjectHierarchy();
-        assertEquals("Unexpected number of configured objects", 13, hierarchy.size());
+        assertEquals(13, hierarchy.size(), "Unexpected number of configured objects");
 
         UUID vhUuid = UUIDGenerator.generateVhostUUID(getVirtualHost().getName());
         UUID myExchUuid = UUIDGenerator.generateExchangeUUID("myexch", getVirtualHost().getName());
@@ -120,17 +121,17 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
             Map<UpgradeHierarchyKey, UUID> hierarchy,
             UpgradeHierarchyKey childHierarchyKey, UUID parentUUID)
     {
-        assertTrue("Expected hierarchy entry does not exist", hierarchy.containsKey(childHierarchyKey));
-        assertEquals("Expected hierarchy entry does not exist", parentUUID, hierarchy.get(childHierarchyKey));
+        assertTrue(hierarchy.containsKey(childHierarchyKey), "Expected hierarchy entry does not exist");
+        assertEquals(parentUUID, hierarchy.get(childHierarchyKey), "Expected hierarchy entry does not exist");
     }
 
 
     private void assertConfiguredObjects() throws Exception
     {
         Map<UUID, UpgradeConfiguredObjectRecord> configuredObjects = loadConfiguredObjects();
-        assertEquals("Unexpected number of configured objects", 11, configuredObjects.size());
+        assertEquals(11, configuredObjects.size(), "Unexpected number of configured objects");
 
-        Map<UUID, Map<String, Object>> expected = new HashMap<UUID, Map<String, Object>>();
+        Map<UUID, Map<String, Object>> expected = new HashMap<>();
 
         String configVersion = "0.3";
         expected.putAll(createExpectedVirtualHost(configVersion));
@@ -159,28 +160,30 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
             String actualJson = object.getAttributes();
             Map<String, Object> actualDeserializedAttributes = jsonSerializer.deserialize(actualJson);
 
-            assertTrue("Entry UUID " + actualKey + " of type " +  actualType + " is unexpected", expected.containsKey(actualKey));
+            assertTrue(expected.containsKey(actualKey), "Entry UUID " + actualKey + " of type " + actualType +
+                    " is unexpected");
 
             Map<String, Object> expectedDeserializedAttributes = expected.get(actualKey);
 
-            assertEquals("Entry UUID " + actualKey + " of type " +  actualType + " has uenxpected deserialised value, json was: " + actualJson,
-                         expectedDeserializedAttributes, actualDeserializedAttributes);
+            assertEquals(expectedDeserializedAttributes, actualDeserializedAttributes,
+                         "Entry UUID " + actualKey + " of type " + actualType +
+                         " has unexpected deserialised value, json was: " + actualJson);
         }
     }
 
     private Map<UUID, Map<String, Object>> createExpectedVirtualHost(String modelVersion)
     {
-        Map<String, Object> expectedVirtualHostEntry = new HashMap<String, Object>();
+        final Map<String, Object> expectedVirtualHostEntry = new HashMap<>();
         expectedVirtualHostEntry.put("modelVersion", modelVersion);
         expectedVirtualHostEntry.put(VirtualHost.NAME, getVirtualHost().getName());
 
-        UUID expectedUUID = UUIDGenerator.generateVhostUUID(getVirtualHost().getName());
+        final UUID expectedUUID = UUIDGenerator.generateVhostUUID(getVirtualHost().getName());
         return Collections.singletonMap(expectedUUID, expectedVirtualHostEntry);
     }
 
     private Map<UUID, Map<String, Object>> createExpectedQueue(String queueName, boolean exclusiveFlag, String owner, Map<String, Object> argumentMap)
     {
-        Map<String, Object> expectedQueueEntry = new HashMap<String, Object>();
+        final Map<String, Object> expectedQueueEntry = new HashMap<>();
         expectedQueueEntry.put(Queue.NAME, queueName);
         expectedQueueEntry.put(Queue.EXCLUSIVE, exclusiveFlag);
         expectedQueueEntry.put(Queue.OWNER, owner);
@@ -190,33 +193,33 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
         {
             expectedQueueEntry.put(ARGUMENTS, argumentMap);
         }
-        UUID expectedUUID = UUIDGenerator.generateQueueUUID(queueName, getVirtualHost().getName());
+        final UUID expectedUUID = UUIDGenerator.generateQueueUUID(queueName, getVirtualHost().getName());
         return Collections.singletonMap(expectedUUID, expectedQueueEntry);
     }
 
     private Map<UUID, Map<String, Object>> createExpectedExchangeMap(String exchangeName, String type)
     {
-        Map<String, Object> expectedExchangeMap = new HashMap<String, Object>();
+        final Map<String, Object> expectedExchangeMap = new HashMap<>();
         expectedExchangeMap.put(Exchange.NAME, exchangeName);
         expectedExchangeMap.put(Exchange.TYPE, type);
         expectedExchangeMap.put(Exchange.LIFETIME_POLICY, LifetimePolicy.PERMANENT.name());
-        UUID expectedUUID = UUIDGenerator.generateExchangeUUID(exchangeName, getVirtualHost().getName());
+        final UUID expectedUUID = UUIDGenerator.generateExchangeUUID(exchangeName, getVirtualHost().getName());
         return Collections.singletonMap(expectedUUID, expectedExchangeMap);
     }
 
     private Map<UUID, Map<String, Object>> createExpectedBindingMap(String queueName, String bindingName, String exchangeName, Map<String, String> argumentMap)
     {
-        Map<String, Object> expectedBinding = new HashMap<String, Object>();
+        final Map<String, Object> expectedBinding = new HashMap<>();
         expectedBinding.put("name", bindingName);
         expectedBinding.put("arguments", argumentMap == null ? Collections.emptyMap() : argumentMap);
 
-        UUID expectedUUID = UUIDGenerator.generateBindingUUID(exchangeName, queueName, bindingName, getVirtualHost().getName());
+        final UUID expectedUUID = UUIDGenerator.generateBindingUUID(exchangeName, queueName, bindingName, getVirtualHost().getName());
         return Collections.singletonMap(expectedUUID, expectedBinding);
     }
 
     private Map<UUID, UpgradeConfiguredObjectRecord> loadConfiguredObjects()
     {
-        final Map<UUID, UpgradeConfiguredObjectRecord> configuredObjectsRecords = new HashMap<UUID, UpgradeConfiguredObjectRecord>();
+        final Map<UUID, UpgradeConfiguredObjectRecord> configuredObjectsRecords = new HashMap<>();
         final UpgradeConfiguredObjectBinding binding = new UpgradeConfiguredObjectBinding();
         final UpgradeUUIDBinding uuidBinding = new UpgradeUUIDBinding();
         CursorOperation configuredObjectsCursor = new CursorOperation()
@@ -237,7 +240,7 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
 
     private Map<UpgradeHierarchyKey, UUID> loadConfiguredObjectHierarchy()
     {
-        final Map<UpgradeHierarchyKey, UUID> hierarchyRecords = new HashMap<UpgradeHierarchyKey, UUID>();
+        final Map<UpgradeHierarchyKey, UUID> hierarchyRecords = new HashMap<>();
         final UpgradeHierarchyKeyBinding hierarchyKeyBinding = new UpgradeHierarchyKeyBinding();
         final UpgradeUUIDBinding uuidParentBinding = new UpgradeUUIDBinding();
         CursorOperation hierarchyCursor = new CursorOperation()
@@ -262,8 +265,7 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
         {
             String type = tupleInput.readString();
             String json = tupleInput.readString();
-            UpgradeConfiguredObjectRecord configuredObject = new UpgradeConfiguredObjectRecord(type, json);
-            return configuredObject;
+            return new UpgradeConfiguredObjectRecord(type, json);
         }
 
         @Override
@@ -359,12 +361,7 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
             {
                 return false;
             }
-            if (!_parentType.equals(that._parentType))
-            {
-                return false;
-            }
-
-            return true;
+            return _parentType.equals(that._parentType);
         }
 
         @Override

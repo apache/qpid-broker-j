@@ -32,8 +32,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Queue;
@@ -46,7 +46,7 @@ public class UpdateTest extends HttpTestBase
     private static final String QUEUE_NAME = "myqueue";
     private static final String QUEUE_URL = String.format("queue/%s", QUEUE_NAME);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(QUEUE_NAME);

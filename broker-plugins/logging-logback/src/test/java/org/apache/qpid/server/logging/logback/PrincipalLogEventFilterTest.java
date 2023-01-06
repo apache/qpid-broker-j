@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import java.security.Principal;
@@ -30,20 +30,20 @@ import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.spi.FilterReply;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class PrincipalLogEventFilterTest extends UnitTestBase
 {
     private final ILoggingEvent _event = mock(ILoggingEvent.class);
-
     private PrincipalLogEventFilter _principalLogEventFilter;
     private Subject _subject;
     private Principal _principal;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _subject = new Subject();
@@ -56,7 +56,7 @@ public class PrincipalLogEventFilterTest extends UnitTestBase
     {
         _subject.getPrincipals().add(_principal);
 
-        FilterReply reply = doFilter();
+        final FilterReply reply = doFilter();
 
         assertEquals(FilterReply.NEUTRAL, reply);
     }
@@ -64,7 +64,7 @@ public class PrincipalLogEventFilterTest extends UnitTestBase
     @Test
     public void testNoPrincipal()
     {
-        FilterReply reply = doFilter();
+        final FilterReply reply = doFilter();
 
         assertEquals(FilterReply.DENY, reply);
     }
@@ -74,7 +74,7 @@ public class PrincipalLogEventFilterTest extends UnitTestBase
     {
         _subject.getPrincipals().add(mock(Principal.class));
 
-        FilterReply reply = doFilter();
+        final FilterReply reply = doFilter();
 
         assertEquals(FilterReply.DENY, reply);
     }
@@ -89,13 +89,6 @@ public class PrincipalLogEventFilterTest extends UnitTestBase
 
     private FilterReply doFilter()
     {
-        return Subject.doAs(_subject, new PrivilegedAction<FilterReply>()
-        {
-            @Override
-            public FilterReply run()
-            {
-                return _principalLogEventFilter.decide(_event);
-            }
-        });
+        return Subject.doAs(_subject, (PrivilegedAction<FilterReply>) () -> _principalLogEventFilter.decide(_event));
     }
 }

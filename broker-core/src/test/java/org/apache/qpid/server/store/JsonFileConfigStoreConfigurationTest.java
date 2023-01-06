@@ -20,15 +20,14 @@
  */
 package org.apache.qpid.server.store;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
+import java.util.Objects;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
@@ -39,28 +38,27 @@ import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
 public class JsonFileConfigStoreConfigurationTest extends AbstractDurableConfigurationStoreTestCase
 {
-    @Before
+    @BeforeEach
     @Override
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.JSON)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.JSON));
         super.setUp();
     }
 
     @Override
-    protected VirtualHostNode createVirtualHostNode(String storeLocation, ConfiguredObjectFactory factory)
+    protected VirtualHostNode<?> createVirtualHostNode(String storeLocation, ConfiguredObjectFactory factory)
     {
-        final JsonVirtualHostNode parent = BrokerTestHelper.mockWithSystemPrincipal(JsonVirtualHostNode.class, mock(Principal.class));
+        final JsonVirtualHostNode<?> parent = BrokerTestHelper.mockWithSystemPrincipal(JsonVirtualHostNode.class, mock(Principal.class));
         when(parent.getStorePath()).thenReturn(storeLocation);
         when(parent.getName()).thenReturn("testName");
         when(parent.getObjectFactory()).thenReturn(factory);
         when(parent.getModel()).thenReturn(factory.getModel());
-
         return parent;
     }
 
     @Override
-    protected DurableConfigurationStore createConfigStore() throws Exception
+    protected DurableConfigurationStore createConfigStore()
     {
         return new JsonFileConfigStore(VirtualHost.class);
     }

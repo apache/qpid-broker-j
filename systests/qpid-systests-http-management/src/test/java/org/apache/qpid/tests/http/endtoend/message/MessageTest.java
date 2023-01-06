@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.typeCompatibleWith;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,9 +55,9 @@ import javax.jms.StreamMessage;
 import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Strings;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.tests.http.HttpRequestConfig;
@@ -80,7 +80,7 @@ public class MessageTest extends HttpTestBase
             {
             };
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(QUEUE_NAME);
@@ -303,8 +303,7 @@ public class MessageTest extends HttpTestBase
         byte[] receivedContent = getHelper().getBytes(String.format(
                 "queue/myqueue/getMessageContent?messageId=%d", messageId));
 
-        assumeThat("AMQP1.0 messages return the AMQP type",
-                   getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "AMQP1.0 messages return the AMQP type");
 
         assertThat(receivedContent, is(equalTo(content)));
     }
@@ -340,7 +339,7 @@ public class MessageTest extends HttpTestBase
     public void publishMessageApplicationHeaders() throws Exception
     {
         final String stringPropValue = "mystring";
-        final String longStringPropValue = Strings.repeat("*", 256);
+        final String longStringPropValue = "*".repeat(256);
         final Map<String, Object> headers = new HashMap<>();
         headers.put("stringprop", stringPropValue);
         headers.put("longstringprop", longStringPropValue);
@@ -380,7 +379,7 @@ public class MessageTest extends HttpTestBase
     @Test
     public void publishMessageHeaders() throws Exception
     {
-        final String messageId = "ID:" + UUID.randomUUID().toString();
+        final String messageId = "ID:" + UUID.randomUUID();
         final long expiration = TimeUnit.DAYS.toMillis(1) + System.currentTimeMillis();
 
         Map<String, Object> messageBody = new HashMap<>();

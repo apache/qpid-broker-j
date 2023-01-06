@@ -23,7 +23,7 @@ package org.apache.qpid.server.security.access.config;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
 import static org.apache.qpid.server.security.access.config.ObjectType.BROKER;
 import static org.apache.qpid.server.security.access.config.ObjectType.VIRTUALHOST;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -37,8 +37,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.queue.QueueConsumer;
@@ -61,7 +61,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
     private LegacyAccessControlAdapter _adapter;
     private Model _model;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _accessControl = mock(LegacyAccessControl.class);
@@ -781,7 +781,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
                                       any(ObjectProperties.class))).thenReturn(Result.ALLOWED);
 
         Result result = _adapter.authoriseMethod(queue, methodName, Collections.emptyMap());
-        assertEquals("Unexpected authorise result", Result.ALLOWED, result);
+        assertEquals(Result.ALLOWED, result, "Unexpected authorise result");
 
         verify(_accessControl).authorise(eq(LegacyOperation.INVOKE), eq(ObjectType.QUEUE), eq(expectedProperties));
         verify(_accessControl, never()).authorise(eq(LegacyOperation.PURGE), eq(ObjectType.QUEUE), any(ObjectProperties.class));
@@ -803,7 +803,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
                                       any(ObjectProperties.class))).thenReturn(Result.ALLOWED);
 
         Result result = _adapter.authoriseMethod(virtualHostNode, methodName, Collections.emptyMap());
-        assertEquals("Unexpected authorise result", Result.ALLOWED, result);
+        assertEquals(Result.ALLOWED, result, "Unexpected authorise result");
 
         verify(_accessControl).authorise(eq(LegacyOperation.INVOKE), eq(ObjectType.VIRTUALHOSTNODE), eq(expectedProperties));
     }
@@ -831,7 +831,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
                                       any(ObjectProperties.class))).thenReturn(Result.ALLOWED);
 
         Result result = _adapter.authoriseMethod(queue, "clearQueue", Collections.emptyMap());
-        assertEquals("Unexpected authorise result", Result.ALLOWED, result);
+        assertEquals(Result.ALLOWED, result, "Unexpected authorise result");
 
         verify(_accessControl).authorise(eq(LegacyOperation.PURGE), eq(ObjectType.QUEUE), eq(properties));
 
@@ -853,7 +853,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         when(logger.getParent()).thenReturn(_broker);
 
         Result result = _adapter.authoriseMethod(logger, "getFile", Collections.singletonMap("fileName", "qpid.log"));
-        assertEquals("Unexpected authorise result", Result.ALLOWED, result);
+        assertEquals(Result.ALLOWED, result, "Unexpected authorise result");
 
         verify(_accessControl).authorise(ACCESS_LOGS, BROKER, new ObjectProperties());
     }
@@ -874,7 +874,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         when(logger.getModel()).thenReturn(_model);
 
         Result result = _adapter.authoriseMethod(logger, "getFile", Collections.singletonMap("fileName", "qpid.log"));
-        assertEquals("Unexpected authorise result", Result.ALLOWED, result);
+        assertEquals(Result.ALLOWED, result, "Unexpected authorise result");
 
         ObjectProperties expectedObjectProperties = new ObjectProperties(_virtualHost.getName());
         verify(_accessControl).authorise(ACCESS_LOGS, VIRTUALHOST, expectedObjectProperties);
@@ -905,7 +905,7 @@ public class LegacyAccessControlAdapterTest extends UnitTestBase
         when(queue.getCategoryClass()).thenReturn(Queue.class);
 
         Result result = _adapter.authoriseMethod(queue, "deleteMessages", Collections.emptyMap());
-        assertEquals("Unexpected authorise result", Result.ALLOWED, result);
+        assertEquals(Result.ALLOWED, result, "Unexpected authorise result");
 
         verify(_accessControl).authorise(eq(LegacyOperation.UPDATE), eq(ObjectType.METHOD), eq(properties));
     }

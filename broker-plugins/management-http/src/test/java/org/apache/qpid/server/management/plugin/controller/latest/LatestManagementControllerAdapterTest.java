@@ -40,8 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.ManagementController;
@@ -62,7 +62,7 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
 {
     private LatestManagementControllerAdapter _adapter;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final HttpManagementConfiguration<?> httpManagement = mock(HttpManagementConfiguration.class);

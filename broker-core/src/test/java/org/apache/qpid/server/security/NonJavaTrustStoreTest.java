@@ -19,10 +19,10 @@
 
 package org.apache.qpid.server.security;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -31,15 +31,14 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
@@ -54,10 +53,10 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class NonJavaTrustStoreTest extends UnitTestBase
 {
-    @ClassRule
+    @RegisterExtension
     public static final TlsResource TLS_RESOURCE = new TlsResource();
 
-    private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
+    private static final Broker<?> BROKER = BrokerTestHelper.createBrokerMock();
     private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
     private static final String NAME = "myTestTrustStore";
     private static final String NON_JAVA_TRUST_STORE = "NonJavaTrustStore";
@@ -71,81 +70,60 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     {
         final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned(DN_FOO);
         final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(keyCertPair.getCertificate());
+        final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
+                NonJavaTrustStore.CERTIFICATES_URL, certificateFile.toFile().getAbsolutePath(),
+                NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE,
+                NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, false);
+        final TrustStore<?> trustStore = createTestTrustStore(attributes);
+        final TrustManager[] trustManagers = trustStore.getTrustManagers();
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(NonJavaTrustStore.NAME, NAME);
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, certificateFile.toFile().getAbsolutePath());
-        attributes.put(NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE);
-        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, false);
-
-        TrustStore<?> trustStore = createTestTrustStore(attributes);
-
-        TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
-        assertNotNull("Trust manager unexpected null", trustManagers[0]);
+        assertEquals(1, trustManagers.length, "Unexpected number of trust managers");
+        assertNotNull(trustManagers[0], "Trust manager unexpected null");
     }
-
 
     @Test
     public void testCreationOfTrustStoreFromValidCertificate() throws Exception
     {
         final CertificateAndCrl<File> data = generateCertificateAndCrl();
+        final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
+                NonJavaTrustStore.CERTIFICATES_URL, data.getCertificate().getAbsolutePath(),
+                NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE,
+                NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true,
+                NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().getAbsolutePath());
+        final TrustStore<?> trustStore = createTestTrustStore(attributes);
+        final TrustManager[] trustManagers = trustStore.getTrustManagers();
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(NonJavaTrustStore.NAME, NAME);
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, data.getCertificate().getAbsolutePath());
-        attributes.put(NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE);
-        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
-        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().getAbsolutePath());
-
-        TrustStore<?> trustStore = createTestTrustStore(attributes);
-
-        TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
-        assertNotNull("Trust manager unexpected null", trustManagers[0]);
+        assertEquals(1, trustManagers.length, "Unexpected number of trust managers");
+        assertNotNull(trustManagers[0], "Trust manager unexpected null");
     }
 
     @Test
     public void testChangeOfCrlInTrustStoreFromValidCertificate() throws Exception
     {
         final CertificateAndCrl<File> data = generateCertificateAndCrl();
+        final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
+                NonJavaTrustStore.CERTIFICATES_URL, data.getCertificate().getAbsolutePath(),
+                NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE,
+                NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true,
+                NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().getAbsolutePath());
+        final TrustStore<?> trustStore = createTestTrustStore(attributes);
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> trustStore.setAttributes(Map.of(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL)),
+                "Exception not thrown");
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(NonJavaTrustStore.NAME, NAME);
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, data.getCertificate().getAbsolutePath());
-        attributes.put(NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE);
-        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
-        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().getAbsolutePath());
-
-        TrustStore<?> trustStore = createTestTrustStore(attributes);
-
-        try
-        {
-            trustStore.setAttributes(Collections.singletonMap(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL,
-                                                              NOT_A_CRL));
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            String message = e.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                       message.contains(String.format(
-                               "Unable to load certificate revocation list '%s' for truststore '%s'",
-                               NOT_A_CRL,
-                               NAME)));
-        }
-
-        assertEquals("Unexpected CRL path value after failed change",
-                     data.getCrl().getAbsolutePath(), trustStore.getCertificateRevocationListUrl());
+        assertTrue(thrown.getMessage().contains(String.format(
+                "Unable to load certificate revocation list '%s' for truststore '%s'",
+                NOT_A_CRL, NAME)), "Exception text not as unexpected:" + thrown.getMessage());
+        assertEquals(data.getCrl().getAbsolutePath(), trustStore.getCertificateRevocationListUrl(),
+                "Unexpected CRL path value after failed change");
 
         final Path emptyCrl = TLS_RESOURCE.createCrl(data.getCa());
-        trustStore.setAttributes(Collections.singletonMap(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL,
-                                                          emptyCrl.toFile().getAbsolutePath()));
+        trustStore.setAttributes(Map.of(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, emptyCrl.toFile().getAbsolutePath()));
 
-        assertEquals("Unexpected CRL path value after change that is expected to be successful",
-                     emptyCrl.toFile().getAbsolutePath(), trustStore.getCertificateRevocationListUrl());
+        assertEquals(emptyCrl.toFile().getAbsolutePath(), trustStore.getCertificateRevocationListUrl(),
+                "Unexpected CRL path value after change that is expected to be successful");
     }
 
     @Test
@@ -153,50 +131,36 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     {
         final KeyCertificatePair keyCertPair = createExpiredCertificate();
         final Path certificatePath = TLS_RESOURCE.saveCertificateAsPem(keyCertPair.getCertificate());
+        final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
+                NonJavaTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true,
+                NonJavaTrustStore.CERTIFICATES_URL, certificatePath.toFile().getAbsolutePath(),
+                NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE);
+        final TrustStore<?> trustStore = createTestTrustStore(attributes);
+        final TrustManager[] trustManagers = trustStore.getTrustManagers();
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(NonJavaTrustStore.NAME, NAME);
-        attributes.put(NonJavaTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, certificatePath.toFile().getAbsolutePath());
-        attributes.put(NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE);
-
-        TrustStore<?> trustStore = createTestTrustStore(attributes);
-
-        TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
+        assertEquals(1, trustManagers.length, "Unexpected number of trust managers");
         final boolean condition = trustManagers[0] instanceof X509TrustManager;
-        assertTrue("Unexpected trust manager type", condition);
-        X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
+        assertTrue(condition, "Unexpected trust manager type");
 
-        try
-        {
-            trustManager.checkClientTrusted(new X509Certificate[]{keyCertPair.getCertificate()}, "NULL");
-            fail("Exception not thrown");
-        }
-        catch (CertificateException e)
-        {
-            if (e instanceof CertificateExpiredException || "Certificate expired".equals(e.getMessage()))
-            {
-                // IBMJSSE2 does not throw CertificateExpiredException, it throws a CertificateException
-                // PASS
-            }
-            else
-            {
-                throw e;
-            }
-        }
+        final X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
+
+        final CertificateException thrown = assertThrows(CertificateException.class,
+                () -> trustManager.checkClientTrusted(new X509Certificate[]{keyCertPair.getCertificate()}, "NULL"),
+                "Exception not thrown");
+
+        // IBMJSSE2 does not throw CertificateExpiredException, it throws a CertificateException
+        assertTrue(thrown instanceof CertificateExpiredException || "Certificate expired".equals(thrown.getMessage()));
     }
 
     @Test
     public void testCreationOfTrustStoreWithoutCertificate() throws Exception
     {
         final CertificateAndCrl<File> data = generateCertificateAndCrl();
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(NonJavaTrustStore.NAME, NAME);
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, data.getCrl().getAbsolutePath());
-        attributes.put(NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE);
+        final Map<String, Object> attributes = Map.of(
+                NonJavaTrustStore.NAME, NAME,
+                NonJavaTrustStore.CERTIFICATES_URL, data.getCrl().getAbsolutePath(),
+                NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
                                                                       "Cannot load certificate(s)");
@@ -207,19 +171,14 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     {
         final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned(DN_FOO);
         final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(keyCertPair.getCertificate());
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(NonJavaTrustStore.NAME, NAME);
-        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, certificateFile.toFile().getAbsolutePath());
-        attributes.put(NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE);
-        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
-        attributes.put(NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL);
+        final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
+                NonJavaTrustStore.CERTIFICATES_URL, certificateFile.toFile().getAbsolutePath(),
+                NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE,
+                NonJavaTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true,
+                NonJavaTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
-                                                                      String.format(
-                                                                              "Unable to load certificate revocation list '%s' for truststore '%s'",
-                                                                              NOT_A_CRL,
-                                                                              NAME));
+                String.format("Unable to load certificate revocation list '%s' for truststore '%s'", NOT_A_CRL, NAME));
     }
 
     private KeyCertificatePair createExpiredCertificate() throws Exception
@@ -252,7 +211,7 @@ public class NonJavaTrustStoreTest extends UnitTestBase
         private final T _crl;
         private final KeyCertificatePair _ca;
 
-        private CertificateAndCrl(final T certificate, final T crl, KeyCertificatePair ca)
+        private CertificateAndCrl(final T certificate, final T crl, final KeyCertificatePair ca)
         {
             _certificate = certificate;
             _crl = crl;

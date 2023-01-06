@@ -26,15 +26,15 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
@@ -70,7 +70,7 @@ public class MalformedMessageTest extends BrokerAdminUsingTestBase
 {
     private static final String CONTENT_TEXT = "Test";
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -131,9 +131,7 @@ public class MalformedMessageTest extends BrokerAdminUsingTestBase
     @Test
     public void publishMalformedMessageInTransactionExceedingMaxUncommittedLimit() throws Exception
     {
-        assumeThat("Persistent store is required for the test",
-                   getBrokerAdmin().supportsRestart(),
-                   is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().supportsRestart(), "Persistent store is required for the test");
 
         final FieldTable malformedHeader = createMalformedHeadersWithMissingValue("prop");
         final BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();

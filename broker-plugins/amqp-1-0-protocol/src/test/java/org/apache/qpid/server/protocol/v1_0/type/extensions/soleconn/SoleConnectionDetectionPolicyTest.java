@@ -18,14 +18,14 @@
  */
 package org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
 
 public class SoleConnectionDetectionPolicyTest extends UnitTestBase
 {
@@ -39,8 +39,10 @@ public class SoleConnectionDetectionPolicyTest extends UnitTestBase
     @Test
     public void testValueOf()
     {
-        assertEquals(SoleConnectionDetectionPolicy.STRONG, SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(0)));
-        assertEquals(SoleConnectionDetectionPolicy.WEAK, SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(1)));
+        assertEquals(SoleConnectionDetectionPolicy.STRONG,
+                SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(0)));
+        assertEquals(SoleConnectionDetectionPolicy.WEAK,
+                SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(1)));
 
         try
         {

@@ -20,17 +20,18 @@
  */
 package org.apache.qpid.server.logging.logback.validator;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.logback.graylog.GelfAppenderConfiguration;
 import org.apache.qpid.test.utils.UnitTestBase;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class GelfConfigurationValidatorTest extends UnitTestBase
 {
@@ -242,7 +243,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'port' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '456789' as it has to be in range [1, 65535]", e.getMessage());
+            assertEquals("Attribute 'port' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '456789' as it has to be in range [1, 65535]",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -256,7 +258,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'port' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '456789' as it has to be in range [1, 65535]", e.getMessage());
+            assertEquals("Attribute 'port' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '456789' as it has to be in range [1, 65535]",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -318,7 +321,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'reconnectionInterval' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-1' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'reconnectionInterval' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-1' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -332,7 +336,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'reconnectionInterval' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-1' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'reconnectionInterval' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-1' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -394,7 +399,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'connectionTimeout' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-1' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'connectionTimeout' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-1' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -408,7 +414,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'connectionTimeout' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-1' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'connectionTimeout' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-1' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -471,7 +478,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'maximumReconnectionAttempts' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'maximumReconnectionAttempts' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -485,7 +493,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'maximumReconnectionAttempts' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'maximumReconnectionAttempts' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -547,7 +556,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'retryDelay' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'retryDelay' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -561,7 +571,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'retryDelay' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'retryDelay' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -623,7 +634,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'messagesFlushTimeOut' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'messagesFlushTimeOut' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -637,7 +649,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'messagesFlushTimeOut' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0", e.getMessage());
+            assertEquals("Attribute 'messagesFlushTimeOut' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '-5' as it has to be at least 0",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -699,7 +712,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'messageBufferCapacity' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '0' as it has to be at least 1", e.getMessage());
+            assertEquals("Attribute 'messageBufferCapacity' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '0' as it has to be at least 1",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -713,7 +727,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'messageBufferCapacity' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '0' as it has to be at least 1", e.getMessage());
+            assertEquals("Attribute 'messageBufferCapacity' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '0' as it has to be at least 1",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -775,7 +790,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Value of 'staticFields attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'true', as it has to be a string or number", e.getMessage());
+            assertEquals("Value of 'staticFields attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'true', as it has to be a string or number",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -789,7 +805,8 @@ public class GelfConfigurationValidatorTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Value of 'staticFields attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'true', as it has to be a string or number", e.getMessage());
+            assertEquals("Value of 'staticFields attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'true', as it has to be a string or number",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {

@@ -22,14 +22,15 @@ package org.apache.qpid.server.protocol.v0_10.transport;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertSame;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.nio.ByteBuffer;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 

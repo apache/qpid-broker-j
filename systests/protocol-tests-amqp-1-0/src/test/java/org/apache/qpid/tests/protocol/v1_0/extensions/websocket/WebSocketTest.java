@@ -18,7 +18,6 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.tests.protocol.v1_0.extensions.websocket;
 
 import static org.hamcrest.CoreMatchers.both;
@@ -27,11 +26,11 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
@@ -43,12 +42,11 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class WebSocketTest extends BrokerAdminUsingTestBase
 {
-
-    @Before
+    @BeforeEach
     public void setUp()
     {
-        assumeThat("Broker support for AMQP over websockets is required", getBrokerAdmin().isWebSocketSupported(), is(true));
-        assumeThat("Broker support for Anonymous open is required", getBrokerAdmin().isAnonymousSupported(), is(true));
+        assumeTrue(getBrokerAdmin().isWebSocketSupported(), "Broker support for AMQP over websockets is required");
+        assumeTrue(getBrokerAdmin().isAnonymousSupported(), "Broker support for Anonymous open is required");
     }
 
     @Test
@@ -58,7 +56,7 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin()).connect())
         {
             final byte[] response = transport.newInteraction().negotiateProtocol().consumeResponse().getLatestResponse(byte[].class);
-            assertArrayEquals("Unexpected protocol header response", transport.getProtocolHeader(), response);
+            assertArrayEquals(transport.getProtocolHeader(), response, "Unexpected protocol header response");
         }
     }
 
@@ -69,9 +67,7 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin()).splitAmqpFrames().connect())
         {
             Interaction interaction = transport.newInteraction();
-            final Open responseOpen = interaction
-                                               .negotiateOpen()
-                                               .getLatestResponse(Open.class);
+            final Open responseOpen = interaction.negotiateOpen().getLatestResponse(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));
             assertThat(responseOpen.getMaxFrameSize().longValue(),
@@ -87,14 +83,12 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.1", description = "Opening a WebSocket Connection")
     public void successfulOpen() throws Exception
     {
-        assumeThat(getBrokerAdmin().isWebSocketSupported(), is(true));
+        assumeTrue(getBrokerAdmin().isWebSocketSupported());
 
         try (FrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin()).connect())
         {
             Interaction interaction = transport.newInteraction();
-            final Open responseOpen = interaction
-                                               .negotiateOpen()
-                                               .getLatestResponse(Open.class);
+            final Open responseOpen = interaction.negotiateOpen().getLatestResponse(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));
             assertThat(responseOpen.getMaxFrameSize().longValue(),

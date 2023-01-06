@@ -95,7 +95,7 @@ public class ResultsTestFixture
 
     private Map<ParticipantAttribute, Object> getParticipantAttributes()
     {
-        Map<ParticipantAttribute, Object> participantAttributes = new HashMap<ParticipantAttribute, Object>();
+        Map<ParticipantAttribute, Object> participantAttributes = new HashMap<>();
 
         participantAttributes.put(TEST_NAME, TEST1);
         participantAttributes.put(ITERATION_NUMBER, 0);

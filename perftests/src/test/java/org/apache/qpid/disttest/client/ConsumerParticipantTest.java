@@ -31,23 +31,10 @@ import org.apache.qpid.disttest.jms.ClientJmsDelegate;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
 
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ConsumerParticipantTest extends UnitTestBase
 {
@@ -66,7 +53,7 @@ public class ConsumerParticipantTest extends UnitTestBase
     /** used to check start/end time of results */
     private long _testStartTime;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _delegate = mock(ClientJmsDelegate.class);
@@ -92,14 +79,10 @@ public class ConsumerParticipantTest extends UnitTestBase
 
         _consumerParticipant.startDataCollection();
         final ParticipantResult[] result = new ParticipantResult[1];
-        _consumerParticipant.startTest(CLIENT_NAME, new ResultReporter()
+        _consumerParticipant.startTest(CLIENT_NAME, theResult ->
         {
-            @Override
-            public void reportResult(final ParticipantResult theResult)
-            {
-                result[0] = theResult;
-                _consumerParticipant.stopTest();
-            }
+            result[0] = theResult;
+            _consumerParticipant.stopTest();
         });
 
         assertExpectedConsumerResults(result[0], PARTICIPANT_NAME1, CLIENT_NAME, _testStartTime,

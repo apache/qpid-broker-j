@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,14 +37,13 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
 
 public class JMSDestinationTest extends JmsTestBase
 {
-
     @Test
     public void messageSentToQueueComesBackWithTheSameJMSDestination() throws Exception
     {
@@ -60,15 +59,14 @@ public class JMSDestinationTest extends JmsTestBase
             connection.start();
 
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message should not be null", receivedMessage);
+            assertNotNull(receivedMessage, "Message should not be null");
 
             Destination receivedDestination = receivedMessage.getJMSDestination();
 
-            assertNotNull("JMSDestination should not be null", receivedDestination);
-            assertTrue("Unexpected destination type", receivedDestination instanceof Queue);
-            assertEquals("Unexpected destination name",
-                         queue.getQueueName(),
-                         ((Queue) receivedDestination).getQueueName());
+            assertNotNull(receivedDestination, "JMSDestination should not be null");
+            assertTrue(receivedDestination instanceof Queue, "Unexpected destination type");
+            assertEquals(queue.getQueueName(), ((Queue) receivedDestination).getQueueName(),
+                    "Unexpected destination name");
         }
         finally
         {
@@ -91,15 +89,14 @@ public class JMSDestinationTest extends JmsTestBase
             connection.start();
 
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message should not be null", receivedMessage);
+            assertNotNull(receivedMessage, "Message should not be null");
 
             Destination receivedDestination = receivedMessage.getJMSDestination();
 
-            assertNotNull("JMSDestination should not be null", receivedDestination);
-            assertTrue("Unexpected destination type", receivedDestination instanceof Topic);
-            assertEquals("Unexpected destination name",
-                         topic.getTopicName(),
-                         ((Topic) receivedDestination).getTopicName());
+            assertNotNull(receivedDestination, "JMSDestination should not be null");
+            assertTrue(receivedDestination instanceof Topic, "Unexpected destination type");
+            assertEquals(topic.getTopicName(), ((Topic) receivedDestination).getTopicName(),
+                    "Unexpected destination name");
         }
         finally
         {
@@ -127,17 +124,16 @@ public class JMSDestinationTest extends JmsTestBase
                 messageHolder.set(message);
                 receiveLatch.countDown();
             });
-            assertTrue("Timed out waiting for message to be received ",
-                       receiveLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS));
-            assertNotNull("Message should not be null", messageHolder.get());
+            assertTrue(receiveLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS),
+                    "Timed out waiting for message to be received ");
+            assertNotNull(messageHolder.get(), "Message should not be null");
 
             Destination receivedDestination = messageHolder.get().getJMSDestination();
 
-            assertNotNull("JMSDestination should not be null", receivedDestination);
-            assertTrue("Unexpected destination type", receivedDestination instanceof Queue);
-            assertEquals("Unexpected destination name",
-                         queue.getQueueName(),
-                         ((Queue) receivedDestination).getQueueName());
+            assertNotNull(receivedDestination, "JMSDestination should not be null");
+            assertTrue(receivedDestination instanceof Queue, "Unexpected destination type");
+            assertEquals(queue.getQueueName(), ((Queue) receivedDestination).getQueueName(),
+                    "Unexpected destination name");
         }
         finally
         {
@@ -160,29 +156,27 @@ public class JMSDestinationTest extends JmsTestBase
             connection.start();
 
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message should not be null", receivedMessage);
+            assertNotNull(receivedMessage, "Message should not be null");
 
             Destination receivedDestination = receivedMessage.getJMSDestination();
 
-            assertNotNull("JMSDestination should not be null", receivedDestination);
-            assertTrue("Unexpected destination type", receivedDestination instanceof Queue);
-            assertEquals("Unexpected destination name",
-                         queue.getQueueName(),
-                         ((Queue) receivedDestination).getQueueName());
+            assertNotNull(receivedDestination, "JMSDestination should not be null");
+            assertTrue(receivedDestination instanceof Queue, "Unexpected destination type");
+            assertEquals(queue.getQueueName(), ((Queue) receivedDestination).getQueueName(),
+                    "Unexpected destination name");
 
             MessageProducer producer = session.createProducer(queue);
             producer.send(receivedMessage);
 
             Message message = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message should not be null", message);
+            assertNotNull(message, "Message should not be null");
 
             Destination destination = message.getJMSDestination();
 
-            assertNotNull("JMSDestination should not be null", destination);
-            assertTrue("Unexpected destination type", destination instanceof Queue);
-            assertEquals("Unexpected destination name",
-                         queue.getQueueName(),
-                         ((Queue) destination).getQueueName());
+            assertNotNull(destination, "JMSDestination should not be null");
+            assertTrue(destination instanceof Queue, "Unexpected destination type");
+            assertEquals(queue.getQueueName(), ((Queue) destination).getQueueName(),
+                    "Unexpected destination name");
         }
         finally
         {

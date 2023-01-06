@@ -19,8 +19,8 @@
 
 package org.apache.qpid.server.security;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 
@@ -28,25 +28,19 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class KeyStoreTestHelper
 {
-    public static void checkExceptionThrownDuringKeyStoreCreation(ConfiguredObjectFactory factory,
-                                                                  Broker broker,
-                                                                  Class keystoreClass,
-                                                                  Map<String, Object> attributes,
-                                                                  String expectedExceptionMessage)
+    public static void checkExceptionThrownDuringKeyStoreCreation(final ConfiguredObjectFactory factory,
+                                                                  final Broker<?> broker,
+                                                                  final Class keystoreClass,
+                                                                  final Map<String, Object> attributes,
+                                                                  final String expectedExceptionMessage)
     {
-        try
-        {
-            factory.create(keystoreClass, attributes, broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            final String message = e.getMessage();
-            assertTrue("Exception text not as expected:" + message,
-                       message.contains(expectedExceptionMessage));
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> factory.create(keystoreClass, attributes, broker),
+                "Exception not thrown");
+        final String message = thrown.getMessage();
+        assertTrue(message.contains(expectedExceptionMessage), "Exception text not as expected:" + message);
     }
-
 }

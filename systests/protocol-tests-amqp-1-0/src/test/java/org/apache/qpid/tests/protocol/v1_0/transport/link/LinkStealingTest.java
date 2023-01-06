@@ -27,8 +27,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
@@ -57,7 +57,7 @@ public class LinkStealingTest extends BrokerAdminUsingTestBase
                                      + " attach MUST then be closed with a link error of stolen. This behavior ensures"
                                      + " that in the event of a connection failure occurring and being noticed"
                                      + " by one party, that re-establishment has the desired effect.")
-    @Ignore("QPID-8328: Broker erroneously ends the session with internal error")
+    @Disabled("QPID-8328: Broker erroneously ends the session with internal error")
     public void subsequentAttachOnTheSameSession() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())

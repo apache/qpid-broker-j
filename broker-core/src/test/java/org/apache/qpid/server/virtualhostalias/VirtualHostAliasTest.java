@@ -20,23 +20,22 @@
  */
 package org.apache.qpid.server.virtualhostalias;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -53,53 +52,45 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class VirtualHostAliasTest extends UnitTestBase
 {
-
     private final Map<String, VirtualHost<?>> _vhosts = new HashMap<>();
-    private Broker<?> _broker;
-    private AmqpPort _port;
+    private AmqpPort<?> _port;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUp() throws Exception
     {
-        _broker = BrokerTestHelper.createBrokerMock();
-
-        AuthenticationProvider dummyAuthProvider = mock(AuthenticationProvider.class);
+        final Broker<?> broker = BrokerTestHelper.createNewBrokerMock();
+        final AuthenticationProvider<?> dummyAuthProvider = mock(AuthenticationProvider.class);
         when(dummyAuthProvider.getName()).thenReturn("dummy");
-        when(dummyAuthProvider.getId()).thenReturn(UUID.randomUUID());
-        when(dummyAuthProvider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
-        when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(dummyAuthProvider));
-        for(String name : new String[] { "red", "blue", "purple", "black" })
+        when(dummyAuthProvider.getId()).thenReturn(randomUUID());
+        when(dummyAuthProvider.getMechanisms()).thenReturn(Collections.singletonList("PLAIN"));
+        when(broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Set.of(dummyAuthProvider));
+        for (final String name : new String[] { "red", "blue", "purple", "black" })
         {
-            boolean defaultVHN = "black".equals(name);
-            VirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(name, _broker, defaultVHN, this);
-            VirtualHostNode vhn = (VirtualHostNode) virtualHost.getParent();
+            final boolean defaultVHN = "black".equals(name);
+            final VirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(name, broker, defaultVHN, this);
+            final VirtualHostNode<?> vhn = (VirtualHostNode<?>) virtualHost.getParent();
             assertNotSame(vhn.getName(), virtualHost.getName());
             _vhosts.put(name, virtualHost);
 
             if (defaultVHN)
             {
-                when(_broker.findDefautVirtualHostNode()).thenReturn(vhn);
+                when(broker.findDefautVirtualHostNode()).thenReturn(vhn);
             }
         }
-        ConfiguredObjectFactory objectFactory = _broker.getObjectFactory();
+        final ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
 
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Port.NAME, getTestName());
-        attributes.put(Port.PORT, 0);
-        attributes.put(Port.AUTHENTICATION_PROVIDER, "dummy");
-        attributes.put(Port.TYPE, "AMQP");
-        _port = (AmqpPort) objectFactory.create(Port.class, attributes, _broker );
-
+        final Map<String, Object> attributes = Map.of(Port.NAME, getTestName(),
+                Port.PORT, 0,
+                Port.AUTHENTICATION_PROVIDER, "dummy",
+                Port.TYPE, "AMQP");
+        _port = (AmqpPort<?>) objectFactory.create(Port.class, attributes, broker);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         _port.close();
-        for (VirtualHost vhost : _vhosts.values())
-        {
-            vhost.close();
-        }
     }
 
     @Test
@@ -123,9 +114,8 @@ public class VirtualHostAliasTest extends UnitTestBase
     @Test
     public void testDefaultAliases_DefaultVirtualHostAlias()
     {
-
         // test the default vhost resolution
-        NamedAddressSpace addressSpace = _port.getAddressSpace("");
+        final NamedAddressSpace addressSpace = _port.getAddressSpace("");
 
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("black"), addressSpace);
@@ -135,7 +125,7 @@ public class VirtualHostAliasTest extends UnitTestBase
     public void testDefaultAliases_HostNameAlias()
     {
         // 127.0.0.1 should always resolve and thus return the default vhost
-        NamedAddressSpace addressSpace = _port.getAddressSpace("127.0.0.1");
+        final NamedAddressSpace addressSpace = _port.getAddressSpace("127.0.0.1");
 
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("black"), addressSpace);
@@ -144,11 +134,10 @@ public class VirtualHostAliasTest extends UnitTestBase
     @Test
     public void testPatternMatching()
     {
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHostAlias.NAME, "matcher");
-        attributes.put(VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME);
-        attributes.put(PatternMatchingAlias.PATTERN, "orange|pink.*");
-        attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent());
+        final Map<String, Object> attributes = Map.of(VirtualHostAlias.NAME, "matcher",
+                VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME,
+                PatternMatchingAlias.PATTERN, "orange|pink.*",
+                PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent());
         _port.createChild(VirtualHostAlias.class, attributes);
 
         NamedAddressSpace addressSpace = _port.getAddressSpace("orange");
@@ -174,7 +163,6 @@ public class VirtualHostAliasTest extends UnitTestBase
     @Test
     public void testPriority()
     {
-
         NamedAddressSpace addressSpace = _port.getAddressSpace("blue");
 
         assertNotNull(addressSpace);
@@ -185,12 +173,11 @@ public class VirtualHostAliasTest extends UnitTestBase
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("black"), addressSpace);
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHostAlias.NAME, "matcher10");
-        attributes.put(VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME);
-        attributes.put(VirtualHostAlias.PRIORITY, 10);
-        attributes.put(PatternMatchingAlias.PATTERN, "bl.*");
-        attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent());
+        Map<String, Object> attributes = Map.of(VirtualHostAlias.NAME, "matcher10",
+                VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME,
+                VirtualHostAlias.PRIORITY, 10,
+                PatternMatchingAlias.PATTERN, "bl.*",
+                PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent());
         _port.createChild(VirtualHostAlias.class, attributes);
 
         addressSpace = _port.getAddressSpace("blue");
@@ -203,15 +190,12 @@ public class VirtualHostAliasTest extends UnitTestBase
         assertNotNull(addressSpace);
         assertEquals(_vhosts.get("purple"), addressSpace);
 
-        attributes = new HashMap<>();
-        attributes.put(VirtualHostAlias.NAME, "matcher5");
-        attributes.put(VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME);
-        attributes.put(VirtualHostAlias.PRIORITY, 5);
-        attributes.put(PatternMatchingAlias.PATTERN, ".*u.*");
-        attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("red").getParent());
+        attributes = Map.of(VirtualHostAlias.NAME, "matcher5",
+                VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME,
+                VirtualHostAlias.PRIORITY, 5,
+                PatternMatchingAlias.PATTERN, ".*u.*",
+                PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("red").getParent());
         _port.createChild(VirtualHostAlias.class, attributes);
-
-
 
         addressSpace = _port.getAddressSpace("blue");
 

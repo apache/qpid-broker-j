@@ -20,12 +20,10 @@
  */
 package org.apache.qpid.server.store;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.inOrder;
@@ -35,14 +33,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 
@@ -61,73 +59,53 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class JsonFileConfigStoreTest extends UnitTestBase
 {
+    private static final UUID ANY_UUID = randomUUID();
+    private static final Map<String, Object> ANY_MAP = new HashMap<>();
+    private static final String VIRTUAL_HOST_TYPE = "VirtualHost";
+
     private JsonFileConfigStore _store;
     private JsonVirtualHostNode<?> _parent;
     private File _storeLocation;
     private ConfiguredObjectRecordHandler _handler;
-
-
-    private static final UUID ANY_UUID = UUID.randomUUID();
-    private static final Map<String, Object> ANY_MAP = new HashMap<String, Object>();
-    private static final String VIRTUAL_HOST_TYPE = "VirtualHost";
     private ConfiguredObjectRecord _rootRecord;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
-        ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
-
+        final ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         _parent = mock(JsonVirtualHostNode.class);
+        _storeLocation = TestFileUtils.createTestDirectory("json", true);
         when(_parent.getName()).thenReturn(getTestName());
         when(_parent.getObjectFactory()).thenReturn(factory);
         when(_parent.getModel()).thenReturn(factory.getModel());
-        _storeLocation = TestFileUtils.createTestDirectory("json", true);
         when(_parent.getStorePath()).thenReturn(_storeLocation.getAbsolutePath());
-
         _store = new JsonFileConfigStore(VirtualHost.class);
-
         _handler = mock(ConfiguredObjectRecordHandler.class);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         FileUtils.delete(_storeLocation, true);
     }
 
     @Test
-    public void testNoStorePath() throws Exception
+    public void testNoStorePath()
     {
         when(_parent.getStorePath()).thenReturn(null);
-
-        try
-        {
-            _store.init(_parent);
-            fail("Store should not successfully configure if there is no path set");
-        }
-        catch (ServerScopedRuntimeException e)
-        {
-            // pass
-        }
+        assertThrows(ServerScopedRuntimeException.class, () -> _store.init(_parent),
+                "Store should not successfully configure if there is no path set");
     }
 
 
     @Test
-    public void testInvalidStorePath() throws Exception
+    public void testInvalidStorePath()
     {
-        String unwritablePath = System.getProperty("file.separator");
-        assumeThat(new File(unwritablePath).canWrite(), is(equalTo(false)));
+        final String unwritablePath = System.getProperty("file.separator");
+        assumeFalse(new File(unwritablePath).canWrite());
         when(_parent.getStorePath()).thenReturn(unwritablePath);
-        try
-        {
-            _store.init(_parent);
-            fail("Store should not successfully configure if there is an invalid path set");
-        }
-        catch (ServerScopedRuntimeException e)
-        {
-            // pass
-        }
+        assertThrows(ServerScopedRuntimeException.class, () -> _store.init(_parent),
+                "Store should not successfully configure if there is an invalid path set");
     }
 
     @Test
@@ -136,14 +114,14 @@ public class JsonFileConfigStoreTest extends UnitTestBase
         _store.init(_parent);
         _store.openConfigurationStore(_handler);
 
-        InOrder inorder = inOrder(_handler);
+        final InOrder inorder = inOrder(_handler);
         inorder.verify(_handler,times(0)).handle(any(ConfiguredObjectRecord.class));
 
         _store.closeConfigurationStore();
     }
 
     @Test
-    public void testInsertAndUpdateTopLevelObject() throws Exception
+    public void testInsertAndUpdateTopLevelObject()
     {
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
@@ -151,16 +129,8 @@ public class JsonFileConfigStoreTest extends UnitTestBase
         _store.closeConfigurationStore();
 
         _store.init(_parent);
-        _store.openConfigurationStore(new ConfiguredObjectRecordHandler()
-        {
-
-            @Override
-            public void handle(final ConfiguredObjectRecord record)
-            {
-            }
-
-        });
-        Map<String, Object> newAttributes = new HashMap<String, Object>(_rootRecord.getAttributes());
+        _store.openConfigurationStore(record -> { });
+        final Map<String, Object> newAttributes = new HashMap<>(_rootRecord.getAttributes());
         newAttributes.put("attributeName", "attributeValue");
         _store.update(false, new ConfiguredObjectRecordImpl(_rootRecord.getId(), _rootRecord.getType(), newAttributes));
         _store.closeConfigurationStore();
@@ -169,13 +139,13 @@ public class JsonFileConfigStoreTest extends UnitTestBase
 
         _store.openConfigurationStore(_handler);
 
-        Map<String, Object> expectedAttributes = new HashMap<String, Object>(newAttributes);
+        final Map<String, Object> expectedAttributes = Map.copyOf(newAttributes);
         verify(_handler, times(1)).handle(matchesRecord(_rootRecord.getId(), _rootRecord.getType(), expectedAttributes));
         _store.closeConfigurationStore();
     }
 
     @Test
-    public void testCreateObject() throws Exception
+    public void testCreateObject()
     {
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
@@ -183,7 +153,7 @@ public class JsonFileConfigStoreTest extends UnitTestBase
 
         final UUID queueId = new UUID(0, 1);
         final String queueType = Queue.class.getSimpleName();
-        final Map<String,Object> queueAttr = Collections.singletonMap("name", (Object) "q1");
+        final Map<String,Object> queueAttr = Map.of("name", "q1");
 
         _store.create(new ConfiguredObjectRecordImpl(queueId, queueType, queueAttr, getRootAsParentMap()));
         _store.closeConfigurationStore();
@@ -197,7 +167,7 @@ public class JsonFileConfigStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateAndUpdateObject() throws Exception
+    public void testCreateAndUpdateObject()
     {
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
@@ -205,11 +175,11 @@ public class JsonFileConfigStoreTest extends UnitTestBase
 
         final UUID queueId = new UUID(0, 1);
         final String queueType = Queue.class.getSimpleName();
-        Map<String,Object> queueAttr = Collections.singletonMap("name", (Object) "q1");
+        Map<String,Object> queueAttr = Map.of("name", "q1");
 
         _store.create(new ConfiguredObjectRecordImpl(queueId, queueType, queueAttr, getRootAsParentMap()));
 
-        queueAttr = new HashMap<String,Object>(queueAttr);
+        queueAttr = new HashMap<>(queueAttr);
         queueAttr.put("owner", "theowner");
         _store.update(false, new ConfiguredObjectRecordImpl(queueId, queueType, queueAttr, getRootAsParentMap()));
 
@@ -221,9 +191,8 @@ public class JsonFileConfigStoreTest extends UnitTestBase
         _store.closeConfigurationStore();
     }
 
-
     @Test
-    public void testCreateAndRemoveObject() throws Exception
+    public void testCreateAndRemoveObject()
     {
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
@@ -231,11 +200,10 @@ public class JsonFileConfigStoreTest extends UnitTestBase
 
         final UUID queueId = new UUID(0, 1);
         final String queueType = Queue.class.getSimpleName();
-        Map<String,Object> queueAttr = Collections.singletonMap("name", (Object) "q1");
+        final Map<String,Object> queueAttr = Map.of("name", "q1");
 
         final ConfiguredObjectRecordImpl record = new ConfiguredObjectRecordImpl(queueId, queueType, queueAttr, getRootAsParentMap());
         _store.create(record);
-
 
         _store.remove(record);
 
@@ -248,134 +216,92 @@ public class JsonFileConfigStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateUnknownObjectType() throws Exception
+    public void testCreateUnknownObjectType()
     {
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
-        try
-        {
-            _store.create(new ConfiguredObjectRecordImpl(UUID.randomUUID(), "wibble", Collections.<String, Object>emptyMap(), getRootAsParentMap()));
-            fail("Should not be able to create instance of type wibble");
-        }
-        catch (StoreException e)
-        {
-            // pass
-        }
+        assertThrows(StoreException.class,
+                () -> _store.create(new ConfiguredObjectRecordImpl(randomUUID(), "wibble", Map.of(), getRootAsParentMap())),
+                "Should not be able to create instance of type wibble");
     }
 
     @Test
-    public void testTwoObjectsWithSameId() throws Exception
+    public void testTwoObjectsWithSameId()
     {
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
-        final UUID id = UUID.randomUUID();
-        _store.create(new ConfiguredObjectRecordImpl(id, "Queue",
-                                                     Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "queue"),
-                                                     getRootAsParentMap()));
-        try
-        {
-            _store.create(new ConfiguredObjectRecordImpl(id, "Exchange",
-                                                         Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "exchange"),
-                                                         getRootAsParentMap()));
-            fail("Should not be able to create two objects with same id");
-        }
-        catch (StoreException e)
-        {
-            // pass
-        }
-    }
-
-
-    @Test
-    public void testObjectWithoutName() throws Exception
-    {
-        _store.init(_parent);
-        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
-        createRootRecord();
-
-        final UUID id = UUID.randomUUID();
-        try
-        {
-            _store.create(new ConfiguredObjectRecordImpl(id, "Exchange",
-                                                         Collections.<String, Object>emptyMap(),
-                                                         getRootAsParentMap()));
-            fail("Should not be able to create an object without a name");
-        }
-        catch (StoreException e)
-        {
-            // pass
-        }
+        final UUID id = randomUUID();
+        _store.create(new ConfiguredObjectRecordImpl(id, "Queue", Map.of(ConfiguredObject.NAME, "queue"),
+                getRootAsParentMap()));
+        assertThrows(StoreException.class,
+                () -> _store.create(new ConfiguredObjectRecordImpl(id, "Exchange",
+                        Map.of(ConfiguredObject.NAME, "exchange"), getRootAsParentMap())),
+                "Should not be able to create two objects with same id");
     }
 
     @Test
-    public void testObjectWithNonStringName() throws Exception
+    public void testObjectWithoutName()
     {
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
-        final UUID id = UUID.randomUUID();
-        try
-        {
-            _store.update(true, new ConfiguredObjectRecordImpl(id, "Exchange",
-                                                         Collections.<String, Object>singletonMap(ConfiguredObject.NAME, 3),
-                                                         getRootAsParentMap()));
-            fail("Should not be able to create an object without a name");
-        }
-        catch (StoreException e)
-        {
-            // pass
-        }
+        final UUID id = randomUUID();
+
+        assertThrows(StoreException.class,
+                () -> _store.create(new ConfiguredObjectRecordImpl(id, "Exchange", Map.of(), getRootAsParentMap())),
+                "Should not be able to create an object without a name");
     }
 
     @Test
-    public void testChangeTypeOfObject() throws Exception
+    public void testObjectWithNonStringName()
     {
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
-        final UUID id = UUID.randomUUID();
-        _store.create(new ConfiguredObjectRecordImpl(id, "Queue",
-                                                     Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "queue"),
-                                                     getRootAsParentMap()));
+        final UUID id = randomUUID();
+        assertThrows(StoreException.class,
+                () -> _store.update(true, new ConfiguredObjectRecordImpl(id, "Exchange",
+                        Map.of(ConfiguredObject.NAME, 3), getRootAsParentMap())),
+                "Should not be able to create an object without a name");
+    }
+
+    @Test
+    public void testChangeTypeOfObject()
+    {
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
+        createRootRecord();
+
+        final UUID id = randomUUID();
+        _store.create(new ConfiguredObjectRecordImpl(id, "Queue", Map.of(ConfiguredObject.NAME, "queue"),
+                getRootAsParentMap()));
         _store.closeConfigurationStore();
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
 
-        try
-        {
-            _store.update(false, new ConfiguredObjectRecordImpl(id, "Exchange",
-                                                                Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "exchange"),
-                                                                getRootAsParentMap()));
-            fail("Should not be able to update object to different type");
-        }
-        catch (StoreException e)
-        {
-            // pass
-        }
+        assertThrows(StoreException.class,
+                () -> _store.update(false, new ConfiguredObjectRecordImpl(id, "Exchange",
+                        Map.of(ConfiguredObject.NAME, "exchange"), getRootAsParentMap())),
+                "Should not be able to update object to different type");
     }
 
     @Test
-    public void testLockFileGuaranteesExclusiveAccess() throws Exception
+    public void testLockFileGuaranteesExclusiveAccess()
     {
         _store.init(_parent);
 
-        JsonFileConfigStore secondStore = new JsonFileConfigStore(VirtualHost.class);
+        final JsonFileConfigStore secondStore = new JsonFileConfigStore(VirtualHost.class);
 
-        try
-        {
-            secondStore.init(_parent);
-            fail("Should not be able to open a second store with the same path");
-        }
-        catch(ServerScopedRuntimeException e)
-        {
-            // pass
-        }
+        assertThrows(ServerScopedRuntimeException.class,
+                () -> secondStore.init(_parent),
+                "Should not be able to open a second store with the same path");
+
         _store.closeConfigurationStore();
         secondStore.init(_parent);
     }
@@ -383,30 +309,30 @@ public class JsonFileConfigStoreTest extends UnitTestBase
     @Test
     public void testStoreFileLifecycle()
     {
-        File expectedJsonFile = new File(_storeLocation, _parent.getName() + ".json");
-        File expectedJsonFileBak = new File(_storeLocation, _parent.getName() + ".bak");
-        File expectedJsonFileLck = new File(_storeLocation, _parent.getName() + ".lck");
+        final File expectedJsonFile = new File(_storeLocation, _parent.getName() + ".json");
+        final File expectedJsonFileBak = new File(_storeLocation, _parent.getName() + ".bak");
+        final File expectedJsonFileLck = new File(_storeLocation, _parent.getName() + ".lck");
 
-        assertFalse("JSON store should not exist", expectedJsonFile.exists());
-        assertFalse("JSON backup should not exist", expectedJsonFileBak.exists());
-        assertFalse("JSON lock should not exist", expectedJsonFileLck.exists());
+        assertFalse(expectedJsonFile.exists(), "JSON store should not exist");
+        assertFalse(expectedJsonFileBak.exists(), "JSON backup should not exist");
+        assertFalse(expectedJsonFileLck.exists(), "JSON lock should not exist");
 
         _store.init(_parent);
-        assertTrue("JSON store should exist after open", expectedJsonFile.exists());
-        assertFalse("JSON backup should not exist after open", expectedJsonFileBak.exists());
-        assertTrue("JSON lock should exist", expectedJsonFileLck.exists());
+        assertTrue(expectedJsonFile.exists(), "JSON store should exist after open");
+        assertFalse(expectedJsonFileBak.exists(), "JSON backup should not exist after open");
+        assertTrue(expectedJsonFileLck.exists(), "JSON lock should exist");
 
         _store.closeConfigurationStore();
-        assertTrue("JSON store should exist after close", expectedJsonFile.exists());
+        assertTrue(expectedJsonFile.exists(), "JSON store should exist after close");
 
         _store.onDelete(_parent);
-        assertFalse("JSON store should not exist after delete", expectedJsonFile.exists());
-        assertFalse("JSON backup should not exist after delete", expectedJsonFileBak.exists());
-        assertFalse("JSON lock should not exist after delete", expectedJsonFileLck.exists());
+        assertFalse(expectedJsonFile.exists(), "JSON store should not exist after delete");
+        assertFalse(expectedJsonFileBak.exists(), "JSON backup should not exist after delete");
+        assertFalse(expectedJsonFileLck.exists(), "JSON lock should not exist after delete");
     }
 
     @Test
-    public void testCreatedNestedObjects() throws Exception
+    public void testCreatedNestedObjects()
     {
         _store.init(_parent);
         _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
@@ -414,27 +340,20 @@ public class JsonFileConfigStoreTest extends UnitTestBase
 
         final UUID queueId = new UUID(0, 1);
         final UUID queue2Id = new UUID(1, 1);
-
         final UUID exchangeId = new UUID(0, 2);
 
-        Map<String, UUID> parents = getRootAsParentMap();
-        Map<String, Object> queueAttr = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "queue");
+        final Map<String, UUID> parents = getRootAsParentMap();
+        final Map<String, Object> queueAttr = Map.of(ConfiguredObject.NAME, "queue");
         final ConfiguredObjectRecordImpl queueRecord =
-                new ConfiguredObjectRecordImpl(queueId, "Queue",
-                                               queueAttr,
-                                               parents);
+                new ConfiguredObjectRecordImpl(queueId, "Queue", queueAttr, parents);
         _store.create(queueRecord);
-        Map<String, Object> queue2Attr = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "queue2");
+        final Map<String, Object> queue2Attr = Map.of(ConfiguredObject.NAME, "queue2");
         final ConfiguredObjectRecordImpl queue2Record =
-                new ConfiguredObjectRecordImpl(queue2Id, "Queue",
-                                               queue2Attr,
-                                               parents);
+                new ConfiguredObjectRecordImpl(queue2Id, "Queue", queue2Attr, parents);
         _store.create(queue2Record);
-        Map<String, Object> exchangeAttr = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "exchange");
+        final Map<String, Object> exchangeAttr = Map.of(ConfiguredObject.NAME, "exchange");
         final ConfiguredObjectRecordImpl exchangeRecord =
-                new ConfiguredObjectRecordImpl(exchangeId, "Exchange",
-                                               exchangeAttr,
-                                               parents);
+                new ConfiguredObjectRecordImpl(exchangeId, "Exchange", exchangeAttr, parents);
         _store.create(exchangeRecord);
         _store.closeConfigurationStore();
         _store.init(_parent);
@@ -443,30 +362,25 @@ public class JsonFileConfigStoreTest extends UnitTestBase
         verify(_handler).handle(matchesRecord(queue2Id, "Queue", queue2Attr));
         verify(_handler).handle(matchesRecord(exchangeId, "Exchange", exchangeAttr));
         _store.closeConfigurationStore();
-
     }
-
 
     private void createRootRecord()
     {
-        UUID rootRecordId = UUID.randomUUID();
+        final UUID rootRecordId = randomUUID();
         _rootRecord =
-                new ConfiguredObjectRecordImpl(rootRecordId,
-                                               VIRTUAL_HOST_TYPE,
-                                               Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "root"));
+                new ConfiguredObjectRecordImpl(rootRecordId, VIRTUAL_HOST_TYPE, Map.of(ConfiguredObject.NAME, "root"));
         _store.create(_rootRecord);
     }
 
     private Map<String, UUID> getRootAsParentMap()
     {
-        return Collections.singletonMap(VIRTUAL_HOST_TYPE, _rootRecord.getId());
+        return Map.of(VIRTUAL_HOST_TYPE, _rootRecord.getId());
     }
 
-    private ConfiguredObjectRecord matchesRecord(UUID id, String type, Map<String, Object> attributes)
+    private ConfiguredObjectRecord matchesRecord(final UUID id, final String type, final Map<String, Object> attributes)
     {
         return argThat(new ConfiguredObjectMatcher(id, type, attributes));
     }
-
 
     private static class ConfiguredObjectMatcher implements ArgumentMatcher<ConfiguredObjectRecord>
     {
@@ -484,13 +398,12 @@ public class JsonFileConfigStoreTest extends UnitTestBase
         @Override
         public boolean matches(final ConfiguredObjectRecord binding)
         {
-            Map<String,Object> arg = new HashMap<>(binding.getAttributes());
+            final Map<String,Object> arg = new HashMap<>(binding.getAttributes());
             arg.remove("createdBy");
             arg.remove("createdTime");
-            return (_expectedId == ANY_UUID || _expectedId.equals(binding.getId()))
-                   && _expectedType.equals(binding.getType())
-                   && (_expectedAttributes == ANY_MAP || arg.equals(_expectedAttributes));
+            return (_expectedId == ANY_UUID || _expectedId.equals(binding.getId())) &&
+                   _expectedType.equals(binding.getType()) &&
+                   (_expectedAttributes == ANY_MAP || arg.equals(_expectedAttributes));
         }
     }
-
 }

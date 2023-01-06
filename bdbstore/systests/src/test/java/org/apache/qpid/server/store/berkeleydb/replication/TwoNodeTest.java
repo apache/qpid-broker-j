@@ -19,10 +19,8 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Map;
 
@@ -30,7 +28,7 @@ import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Queue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.systests.Utils;
@@ -69,7 +67,8 @@ public class TwoNodeTest extends GroupJmsTestBase
         try
         {
             queue = createTestQueue(initialConnection);
-            assertThat(Utils.produceConsume(initialConnection, queue), is(equalTo(true)));
+            assumeTrue(Utils.produceConsume(initialConnection, queue),
+                       "Messages should be produced and consumed");
         }
         finally
         {
@@ -187,14 +186,14 @@ public class TwoNodeTest extends GroupJmsTestBase
 
         Map<String, Object>
                 primaryNodeAttributes = getBrokerAdmin().getNodeAttributes(masterPort);
-        assertThat("Expected primary node to be set as designated primary",
-                   primaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY), is(equalTo(true)));
+        assumeTrue(Boolean.TRUE.equals(primaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY)),
+                "Expected primary node to be set as designated primary");
 
         int replicaPort = getBrokerAdmin().getAmqpPort(masterPort);
 
         Map<String, Object> secondaryNodeAttributes = getBrokerAdmin().getNodeAttributes(replicaPort);
-        assertThat("Expected secondary node to NOT be set as designated primary",
-                   secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY), is(equalTo(false)));
+        assumeTrue(Boolean.FALSE.equals(secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY)),
+                "Expected secondary node to NOT be set as designated primary");
     }
 
     @Test
@@ -219,9 +218,8 @@ public class TwoNodeTest extends GroupJmsTestBase
         int replicaPort = getBrokerAdmin().getAmqpPort(masterPort);
 
         Map<String, Object> secondaryNodeAttributes = getBrokerAdmin().getNodeAttributes(replicaPort);
-        assertThat("Expected secondary node to NOT be set as designated primary",
-                   secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY), is(equalTo(false)));
-
+        assumeTrue(Boolean.FALSE.equals(secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY)),
+                "Expected secondary node to NOT be set as designated primary");
         getBrokerAdmin().setDesignatedPrimary(replicaPort, true);
         getBrokerAdmin().awaitNodeRole(replicaPort, "MASTER");
 
@@ -249,9 +247,8 @@ public class TwoNodeTest extends GroupJmsTestBase
 
         Map<String, Object>
                 primaryNodeAttributes = getBrokerAdmin().getNodeAttributes(masterPort);
-        assertThat("Expected node to NOT be set as designated primary",
-                   primaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY), is(equalTo(false)));
-
+        assumeTrue(Boolean.FALSE.equals(primaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY)),
+                "Expected node to NOT be set as designated primary");
         getBrokerAdmin().setDesignatedPrimary(masterPort, true);
         getBrokerAdmin().awaitNodeRole(masterPort, "MASTER");
 

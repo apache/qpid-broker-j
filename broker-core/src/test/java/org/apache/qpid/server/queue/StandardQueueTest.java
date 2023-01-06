@@ -20,19 +20,18 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.TestConsumerTarget;
@@ -47,78 +46,77 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class StandardQueueTest extends AbstractQueueTestBase
 {
-
     @Test
     public void testAutoDeleteQueue() throws Exception
     {
         getQueue().close();
         getQueue().delete();
-        Map<String,Object> queueAttributes = new HashMap<>();
-        queueAttributes.put(Queue.NAME, getQname());
-        queueAttributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
+        final Map<String,Object> queueAttributes = Map.of(Queue.NAME, getQname(),
+                Queue.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
         final StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, getVirtualHost());
         queue.open();
         setQueue(queue);
 
-        ServerMessage message = createMessage(25L);
-        QueueConsumer consumer =
-                (QueueConsumer) getQueue().addConsumer(getConsumerTarget(), null, message.getClass(), "test",
-                                                       EnumSet.of(ConsumerOption.ACQUIRES,
-                                                                  ConsumerOption.SEES_REQUEUES), 0);
+        final ServerMessage<?> message = createMessage(25L);
+        final QueueConsumer<?, ?> consumer = (QueueConsumer<?, ?>) getQueue()
+                .addConsumer(getConsumerTarget(), null, message.getClass(), "test",
+                EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
 
         getQueue().enqueue(message, null, null);
         consumer.close();
-        assertTrue("Queue was not deleted when consumer was removed", getQueue().isDeleted());
+        assertTrue(getQueue().isDeleted(), "Queue was not deleted when consumer was removed");
     }
-
 
     /**
      * Tests that entry in dequeued state are not enqueued and not delivered to consumer
      */
+    @Test
     public void testEnqueueDequeuedEntry() throws Exception
     {
         // create a queue where each even entry is considered a dequeued
-        AbstractQueue queue = new DequeuedQueue(getVirtualHost());
+        final AbstractQueue<?> queue = new DequeuedQueue(getVirtualHost());
         queue.create();
         // create a consumer
-        TestConsumerTarget consumer = new TestConsumerTarget();
+        final TestConsumerTarget consumer = new TestConsumerTarget();
 
         // register consumer
         queue.addConsumer(consumer,
                           null,
                           createMessage(-1L).getClass(),
                           "test",
-                          EnumSet.of(ConsumerOption.ACQUIRES,
-                                     ConsumerOption.SEES_REQUEUES), 0);
+                          EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
 
         // put test messages into a queue
         putGivenNumberOfMessages(queue, 4);
         while(consumer.processPending());
 
         // assert received messages
-        List<MessageInstance> messages = consumer.getMessages();
-        assertEquals("Only 2 messages should be returned", (long) 2, (long) messages.size());
-        assertEquals("ID of first message should be 1", 1L, (messages.get(0).getMessage()).getMessageNumber());
-        assertEquals("ID of second message should be 3", 3L, (messages.get(1).getMessage()).getMessageNumber());
+        final List<MessageInstance> messages = consumer.getMessages();
+        assertEquals(2, (long) messages.size(), "Only 2 messages should be returned");
+        assertEquals(1L, (messages.get(0).getMessage()).getMessageNumber(),
+                "ID of first message should be 1");
+        assertEquals(3L, (messages.get(1).getMessage()).getMessageNumber(),
+                "ID of second message should be 3");
     }
 
     /**
      * Tests whether dequeued entry is sent to subscriber
      */
+    @Test
+    @SuppressWarnings("unchecked")
     public void testProcessQueueWithDequeuedEntry() throws Exception
     {
         // total number of messages to send
-        int messageNumber = 4;
-        int dequeueMessageIndex = 1;
+        final int messageNumber = 4;
+        final int dequeueMessageIndex = 1;
 
-        Map<String,Object> queueAttributes = new HashMap<>();
-        queueAttributes.put(Queue.NAME, "test");
+        final Map<String,Object> queueAttributes = Map.of(Queue.NAME, "test");
         // create queue with overridden method deliverAsync
-        StandardQueueImpl testQueue = new StandardQueueImpl(queueAttributes, getVirtualHost());
+        final StandardQueueImpl testQueue = new StandardQueueImpl(queueAttributes, getVirtualHost());
         testQueue.create();
 
         // put messages
-        List<StandardQueueEntry> entries =
+        final List<StandardQueueEntry> entries =
                 (List<StandardQueueEntry>) enqueueGivenNumberOfMessages(testQueue, messageNumber);
 
         // dequeue message
@@ -128,7 +126,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         final CountDownLatch latch = new CountDownLatch(messageNumber -1);
 
         // create a consumer
-        TestConsumerTarget consumer = new TestConsumerTarget()
+        final TestConsumerTarget consumer = new TestConsumerTarget()
         {
 
             @Override
@@ -144,7 +142,8 @@ public class StandardQueueTest extends AbstractQueueTestBase
              * @param batch
              */
             @Override
-            public void send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
+            @SuppressWarnings("rawtypes")
+            public void send(final MessageInstanceConsumer consumer, final MessageInstance entry, final  boolean batch)
             {
                 super.send(consumer, entry, batch);
                 latch.countDown();
@@ -156,8 +155,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
                               null,
                               entries.get(0).getMessage().getClass(),
                               "test",
-                              EnumSet.of(ConsumerOption.ACQUIRES,
-                                         ConsumerOption.SEES_REQUEUES), 0);
+                              EnumSet.of(ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
 
 
         // wait up to 1 minute for message receipt
@@ -169,36 +167,38 @@ public class StandardQueueTest extends AbstractQueueTestBase
         {
             Thread.currentThread().interrupt();
         }
-        List<MessageInstance> expected = Arrays.asList((MessageInstance) entries.get(0), entries.get(2), entries.get(3));
+        final List<MessageInstance> expected = Arrays.asList(entries.get(0), entries.get(2), entries.get(3));
         verifyReceivedMessages(expected, consumer.getMessages());
     }
 
     @Test
-    public void testNonDurableImpliesMessageDurabilityNever() throws Exception
+    @SuppressWarnings("rawtypes")
+    public void testNonDurableImpliesMessageDurabilityNever()
     {
         getQueue().close();
         getQueue().delete();
 
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(Queue.NAME, getQname());
-        attributes.put(Queue.DURABLE, Boolean.FALSE);
-        attributes.put(Queue.MESSAGE_DURABILITY, MessageDurability.ALWAYS);
+        final Map<String,Object> attributes = Map.of(Queue.NAME, getQname(),
+                Queue.DURABLE, Boolean.FALSE,
+                Queue.MESSAGE_DURABILITY, MessageDurability.ALWAYS);
 
-        Queue queue =  getVirtualHost().createChild(Queue.class, attributes);
-        assertNotNull("Queue was not created", queue);
+        final Queue queue =  getVirtualHost().createChild(Queue.class, attributes);
+        assertNotNull(queue, "Queue was not created");
         setQueue(queue);
 
         assertEquals(MessageDurability.NEVER, queue.getMessageDurability());
     }
 
-    private static class DequeuedQueue extends AbstractQueue
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private final class DequeuedQueue extends AbstractQueue
     {
-
         private final QueueEntryList _entries = new DequeuedQueueEntryList(this, getQueueStatistics());
 
-        public DequeuedQueue(QueueManagingVirtualHost<?> virtualHost)
+        public DequeuedQueue(final QueueManagingVirtualHost<?> virtualHost)
         {
-            super(attributes(), virtualHost);
+            super(Map.of(Queue.NAME, getTestName(),
+                    Queue.DURABLE, false,
+                    Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT), virtualHost);
         }
 
         @Override
@@ -206,29 +206,12 @@ public class StandardQueueTest extends AbstractQueueTestBase
         {
             return _entries;
         }
-
-        private static Map<String,Object> attributes()
-        {
-            Map<String,Object> attributes = new HashMap<>();
-            attributes.put(Queue.NAME, "test");
-            attributes.put(Queue.DURABLE, false);
-            attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);
-            return attributes;
-        }
     }
 
     private static class DequeuedQueueEntryList extends OrderedQueueEntryList
     {
-        private static final HeadCreator HEAD_CREATOR =
-                new HeadCreator()
-                {
-
-                    @Override
-                    public DequeuedQueueEntry createHead(final QueueEntryList list)
-                    {
-                        return new DequeuedQueueEntry((DequeuedQueueEntryList) list);
-                    }
-                };
+        private static final HeadCreator HEAD_CREATOR = list ->
+                new DequeuedQueueEntry((DequeuedQueueEntryList) list);
 
         public DequeuedQueueEntryList(final DequeuedQueue queue, final QueueStatistics queueStatistics)
         {
@@ -240,12 +223,11 @@ public class StandardQueueTest extends AbstractQueueTestBase
          * dequeued!
          */
         @Override
-        protected DequeuedQueueEntry createQueueEntry(final ServerMessage message,
+        protected DequeuedQueueEntry createQueueEntry(final ServerMessage<?> message,
                                                       final MessageEnqueueRecord enqueueRecord)
         {
             return new DequeuedQueueEntry(this, message);
         }
-
 
         @Override
         public QueueEntry getLeastSignificantOldestEntry()
@@ -256,8 +238,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
 
     private static class DequeuedQueueEntry extends OrderedQueueEntry
     {
-
-        private final ServerMessage _message;
+        private final ServerMessage<?> _message;
 
         private DequeuedQueueEntry(final DequeuedQueueEntryList queueEntryList)
         {
@@ -265,7 +246,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
             _message = null;
         }
 
-        public DequeuedQueueEntry(DequeuedQueueEntryList list, final ServerMessage message)
+        public DequeuedQueueEntry(final DequeuedQueueEntryList list, final ServerMessage<?> message)
         {
             super(list, message, null);
             _message = message;
@@ -284,7 +265,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         }
 
         @Override
-        public boolean acquire(MessageInstanceConsumer<?> consumer)
+        public boolean acquire(final MessageInstanceConsumer<?> consumer)
         {
             if(_message.getMessageNumber() % 2 == 0)
             {

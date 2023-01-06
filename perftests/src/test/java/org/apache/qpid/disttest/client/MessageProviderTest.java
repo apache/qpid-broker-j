@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.disttest.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -33,36 +35,22 @@ import javax.jms.Message;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.client.property.ListPropertyValue;
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.client.property.SimplePropertyValue;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class MessageProviderTest extends UnitTestBase
 {
     private Session _session;
     private TextMessage _message;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _session = mock(Session.class);
@@ -72,7 +60,7 @@ public class MessageProviderTest extends UnitTestBase
     }
 
     @Test
-    public void testGetMessagePayload() throws Exception
+    public void testGetMessagePayload()
     {
         MessageProvider messageProvider = new MessageProvider(null)
         {
@@ -85,8 +73,8 @@ public class MessageProviderTest extends UnitTestBase
         CreateProducerCommand command = new CreateProducerCommand();
         command.setMessageSize(100);
         String payloadValue = messageProvider.getMessagePayload(command);
-        assertNotNull("Mesage payload should not be null", payloadValue);
-        assertEquals("Unexpected payload size", (long) 100, (long) payloadValue.length());
+        assertNotNull(payloadValue, "Mesage payload should not be null");
+        assertEquals(100, (long) payloadValue.length(), "Unexpected payload size");
     }
 
     @Test
@@ -96,19 +84,19 @@ public class MessageProviderTest extends UnitTestBase
         CreateProducerCommand command = new CreateProducerCommand();
         command.setMessageSize(100);
         Message message = messageProvider.nextMessage(_session, command);
-        assertNotNull("Mesage should be returned", message);
+        assertNotNull(message, "Mesage should be returned");
         verify(_message, atLeastOnce()).setText(isA(String.class));
     }
 
     @Test
     public void testNextMessageWithProperties() throws Exception
     {
-        Map<String, PropertyValue> properties = new HashMap<String, PropertyValue>();
+        Map<String, PropertyValue> properties = new HashMap<>();
         properties.put("test1", new SimplePropertyValue("testValue1"));
-        properties.put("test2", new SimplePropertyValue(Integer.valueOf(1)));
-        properties.put("priority", new SimplePropertyValue(Integer.valueOf(2)));
-        List<PropertyValue> listItems = new ArrayList<PropertyValue>();
-        listItems.add(new SimplePropertyValue(Double.valueOf(2.0)));
+        properties.put("test2", new SimplePropertyValue(1));
+        properties.put("priority", new SimplePropertyValue(2));
+        List<PropertyValue> listItems = new ArrayList<>();
+        listItems.add(new SimplePropertyValue(2.0));
         ListPropertyValue list = new ListPropertyValue();
         list.setItems(listItems);
         properties.put("test3", list);
@@ -117,7 +105,7 @@ public class MessageProviderTest extends UnitTestBase
         CreateProducerCommand command = new CreateProducerCommand();
         command.setMessageSize(100);
         Message message = messageProvider.nextMessage(_session, command);
-        assertNotNull("Mesage should be returned", message);
+        assertNotNull(message, "Mesage should be returned");
         verify(_message, atLeastOnce()).setText(isA(String.class));
         verify(_message, atLeastOnce()).setJMSPriority(2);
         verify(_message, atLeastOnce()).setStringProperty("test1", "testValue1");

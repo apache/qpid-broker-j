@@ -23,11 +23,12 @@ package org.apache.qpid.systests.jms_1_1.extensions.compression;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.Map;
@@ -40,8 +41,8 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
@@ -51,10 +52,10 @@ public class MessageCompressionTest extends JmsTestBase
 {
     private static final int MIN_MESSAGE_PAYLOAD_SIZE = 2048 * 1024;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
-        assumeThat("AMQP 1.0 client does not support compression yet", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "AMQP 1.0 client does not support compression yet");
     }
 
     @Test
@@ -114,11 +115,11 @@ public class MessageCompressionTest extends JmsTestBase
 
             if (senderCompresses && brokerCompressionEnabled)
             {
-                assertTrue("Message was not sent compressed", bytesIn < messageText.length());
+                assertTrue(bytesIn < messageText.length(), "Message was not sent compressed");
             }
             else
             {
-                assertFalse("Message was incorrectly sent compressed", bytesIn < messageText.length());
+                assertFalse(bytesIn < messageText.length(), "Message was incorrectly sent compressed");
             }
         }
         finally
@@ -135,20 +136,20 @@ public class MessageCompressionTest extends JmsTestBase
             consumerConnection.start();
 
             TextMessage message = (TextMessage) consumer.receive(getReceiveTimeout() * 2);
-            assertNotNull("Message was not received", message);
-            assertEquals("Message was corrupted", messageText, message.getText());
-            assertEquals("Header was corrupted", "foo", message.getStringProperty("bar"));
+            assertNotNull(message, "Message was not received");
+            assertEquals(messageText, message.getText(), "Message was corrupted");
+            assertEquals("foo", message.getStringProperty("bar"), "Header was corrupted");
 
             Map<String, Object> statistics = getVirtualHostStatistics("bytesOut");
             int bytesOut = ((Number) statistics.get("bytesOut")).intValue();
 
             if (receiverUncompresses && brokerCompressionEnabled)
             {
-                assertTrue("Message was not received compressed", bytesOut < messageText.length());
+                assertTrue(bytesOut < messageText.length(), "Message was not received compressed");
             }
             else
             {
-                assertFalse("Message was incorrectly received compressed", bytesOut < messageText.length());
+                assertFalse(bytesOut < messageText.length(), "Message was incorrectly received compressed");
             }
         }
         finally

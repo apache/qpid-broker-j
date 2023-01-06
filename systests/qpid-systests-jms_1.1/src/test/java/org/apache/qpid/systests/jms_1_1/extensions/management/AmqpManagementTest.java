@@ -22,13 +22,12 @@ package org.apache.qpid.systests.jms_1_1.extensions.management;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.model.Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,9 +51,10 @@ import javax.jms.Session;
 import javax.naming.NamingException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.Protocol;
@@ -69,7 +69,7 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class AmqpManagementTest extends JmsTestBase
 {
-    @ClassRule
+    @RegisterExtension
     public static final TlsResource TLS_RESOURCE = new TlsResource();
 
     private static TlsHelper _tlsHelper;
@@ -79,7 +79,7 @@ public class AmqpManagementTest extends JmsTestBase
     private MessageConsumer _consumer;
     private MessageProducer _producer;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception
     {
         _tlsHelper = new TlsHelper(TLS_RESOURCE);
@@ -113,7 +113,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testGetTypesOnBrokerManagement() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getBrokerManagementConnection();
         try
@@ -133,10 +133,10 @@ public class AmqpManagementTest extends JmsTestBase
             Message responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 200);
             checkResponseIsMapType(responseMessage);
-            assertNotNull("The response did not include the org.amqp.Management type",
-                          getValueFromMapResponse(responseMessage, "org.amqp.management"));
-            assertNotNull("The response did not include the org.apache.qpid.Port type",
-                          getValueFromMapResponse(responseMessage, "org.apache.qpid.Port"));
+            assertNotNull(getValueFromMapResponse(responseMessage, "org.amqp.management"),
+                    "The response did not include the org.amqp.Management type");
+            assertNotNull(getValueFromMapResponse(responseMessage, "org.apache.qpid.Port"),
+                    "The response did not include the org.apache.qpid.Port type");
         }
         finally
         {
@@ -148,7 +148,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testQueryBrokerManagement() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getBrokerManagementConnection();
         try
@@ -166,22 +166,23 @@ public class AmqpManagementTest extends JmsTestBase
 
             Message responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 200);
-            assertEquals("The correlation id does not match the sent message's messageId",
-                         message.getJMSMessageID(),
-                         responseMessage.getJMSCorrelationID());
+            assertEquals(message.getJMSMessageID(), responseMessage.getJMSCorrelationID(),
+                    "The correlation id does not match the sent message's messageId");
             checkResponseIsMapType(responseMessage);
             List<String> resultMessageKeys = new ArrayList<>(getMapResponseKeys(responseMessage));
-            assertEquals("The response map has two entries", 2, resultMessageKeys.size());
-            assertTrue("The response map does not contain attribute names",
-                       resultMessageKeys.contains("attributeNames"));
-            assertTrue("The response map does not contain results ", resultMessageKeys.contains("results"));
+            assertEquals(2, resultMessageKeys.size(), "The response map has two entries");
+            assertTrue(resultMessageKeys.contains("attributeNames"),
+                    "The response map does not contain attribute names");
+            assertTrue(resultMessageKeys.contains("results"), "The response map does not contain results ");
             Object attributeNames = getValueFromMapResponse(responseMessage, "attributeNames");
-            assertTrue("The attribute names are not a list", attributeNames instanceof Collection);
+            assertTrue(attributeNames instanceof Collection, "The attribute names are not a list");
             Collection attributeNamesCollection = (Collection) attributeNames;
-            assertTrue("The attribute names do not contain identity", attributeNamesCollection.contains("identity"));
-            assertTrue("The attribute names do not contain name", attributeNamesCollection.contains("name"));
+            assertTrue(attributeNamesCollection.contains("identity"),
+                    "The attribute names do not contain identity");
+            assertTrue(attributeNamesCollection.contains("name"), "The attribute names do not contain name");
 
-            assertTrue("The attribute names do not contain qpid-type", attributeNamesCollection.contains("qpid-type"));
+            assertTrue(attributeNamesCollection.contains("qpid-type"),
+                    "The attribute names do not contain qpid-type");
 
             // Now test filtering by type
             message.setStringProperty("identity", "self");
@@ -197,26 +198,24 @@ public class AmqpManagementTest extends JmsTestBase
             assertResponseCode(responseMessage, 200);
             checkResponseIsMapType(responseMessage);
 
-            assertEquals("The correlation id does not match the sent message's messageId",
-                         message.getJMSMessageID(),
-                         responseMessage.getJMSCorrelationID());
+            assertEquals(message.getJMSMessageID(), responseMessage.getJMSCorrelationID(),
+                    "The correlation id does not match the sent message's messageId");
             resultMessageKeys = new ArrayList<>(getMapResponseKeys(responseMessage));
-            assertEquals("The response map has two entries", 2, resultMessageKeys.size());
-            assertTrue("The response map does not contain attribute names",
-                       resultMessageKeys.contains("attributeNames"));
-            assertTrue("The response map does not contain results ", resultMessageKeys.contains("results"));
+            assertEquals(2, resultMessageKeys.size(), "The response map has two entries");
+            assertTrue(resultMessageKeys.contains("attributeNames"),
+                    "The response map does not contain attribute names");
+            assertTrue(resultMessageKeys.contains("results"), "The response map does not contain results ");
             attributeNames = getValueFromMapResponse(responseMessage, "attributeNames");
-            assertTrue("The attribute names are not a list", attributeNames instanceof Collection);
+            assertTrue(attributeNames instanceof Collection, "The attribute names are not a list");
             attributeNamesCollection = (Collection) attributeNames;
-            assertEquals("The attributeNames are no as expected",
-                         Arrays.asList("name", "identity", "type"),
-                         attributeNamesCollection);
+            assertEquals(Arrays.asList("name", "identity", "type"), attributeNamesCollection,
+                    "The attributeNames are no as expected");
             Object resultsObject = getValueFromMapResponse(responseMessage, "results");
-            assertTrue("results is not a collection", resultsObject instanceof Collection);
+            assertTrue(resultsObject instanceof Collection, "results is not a collection");
             Collection results = (Collection) resultsObject;
 
             final int numberOfExchanges = results.size();
-            assertTrue("results should have at least 4 elements", numberOfExchanges >= 4);
+            assertTrue(numberOfExchanges >= 4, "results should have at least 4 elements");
 
             message.setStringProperty("identity", "self");
             message.setStringProperty("type", "org.amqp.management");
@@ -229,11 +228,10 @@ public class AmqpManagementTest extends JmsTestBase
 
             responseMessage = _consumer.receive(getReceiveTimeout());
             final Collection directExchanges = (Collection) getValueFromMapResponse(responseMessage, "results");
-            assertTrue(
-                    "There are the same number of results when searching for direct exchanges as when searching for all exchanges",
-                    directExchanges.size() < numberOfExchanges);
-            assertTrue("The list of direct exchanges is not a proper subset of the list of all exchanges",
-                       results.containsAll(directExchanges));
+            assertTrue(directExchanges.size() < numberOfExchanges,
+                    "There are the same number of results when searching for direct exchanges as when searching for all exchanges");
+            assertTrue(results.containsAll(directExchanges),
+                    "The list of direct exchanges is not a proper subset of the list of all exchanges");
         }
         finally
         {
@@ -245,7 +243,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testGetTypesOnVirtualHostManagement() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -264,15 +262,15 @@ public class AmqpManagementTest extends JmsTestBase
             _producer.send(message);
 
             Message responseMessage = _consumer.receive(getReceiveTimeout());
-            assertNotNull("A response message was not sent", responseMessage);
-            assertEquals("The correlation id does not match the sent message's correlationId",
-                       correlationID, responseMessage.getJMSCorrelationID());
+            assertNotNull(responseMessage, "A response message was not sent");
+            assertEquals(correlationID, responseMessage.getJMSCorrelationID(),
+                    "The correlation id does not match the sent message's correlationId");
 
             assertResponseCode(responseMessage, 200);
-            assertNotNull("The response did not include the org.amqp.Management type",
-                          getValueFromMapResponse(responseMessage,"org.amqp.management"));
-            assertNull("The response included the org.apache.qpid.Port type",
-                       getValueFromMapResponse(responseMessage,"org.apache.qpid.Port"));
+            assertNotNull(getValueFromMapResponse(responseMessage, "org.amqp.management"),
+                    "The response did not include the org.amqp.Management type");
+            assertNull(getValueFromMapResponse(responseMessage, "org.apache.qpid.Port"),
+                    "The response included the org.apache.qpid.Port type");
         }
         finally
         {
@@ -285,7 +283,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testCreateQueueOnBrokerManagement() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getBrokerManagementConnection();
         try
@@ -306,15 +304,12 @@ public class AmqpManagementTest extends JmsTestBase
             Message responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 201);
             checkResponseIsMapType(responseMessage);
-            assertEquals("The created queue was not a standard queue",
-                         "org.apache.qpid.StandardQueue",
-                         getValueFromMapResponse(responseMessage, "type"));
-            assertEquals("The created queue was not a standard queue",
-                         "standard",
-                         getValueFromMapResponse(responseMessage, "qpid-type"));
-            assertEquals("the created queue did not have the correct alerting threshold",
-                         100L,
-                         getValueFromMapResponse(responseMessage, ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES));
+            assertEquals("org.apache.qpid.StandardQueue", getValueFromMapResponse(responseMessage, "type"),
+                    "The created queue was not a standard queue");
+            assertEquals("standard", getValueFromMapResponse(responseMessage, "qpid-type"),
+                    "The created queue was not a standard queue");
+            assertEquals(100L, getValueFromMapResponse(responseMessage, ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES),
+                    "the created queue did not have the correct alerting threshold");
             Object identity = getValueFromMapResponse(responseMessage, "identity");
 
             message = _session.createMapMessage();
@@ -330,9 +325,8 @@ public class AmqpManagementTest extends JmsTestBase
             responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 200);
             checkResponseIsMapType(responseMessage);
-            assertEquals("the created queue did not have the correct alerting threshold",
-                         250L,
-                         getValueFromMapResponse(responseMessage, ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES));
+            assertEquals(250L, getValueFromMapResponse(responseMessage, ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES),
+                    "the created queue did not have the correct alerting threshold");
 
             message = _session.createMapMessage();
 
@@ -369,7 +363,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testCreateQueueOnVirtualHostManagement() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -390,16 +384,13 @@ public class AmqpManagementTest extends JmsTestBase
             Message responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 201);
             checkResponseIsMapType(responseMessage);
-            assertEquals("The created queue was not a priority queue",
-                         "org.apache.qpid.PriorityQueue",
-                         getValueFromMapResponse(responseMessage, "type"));
-            assertEquals("The created queue was not a standard queue",
-                         "priority",
-                         getValueFromMapResponse(responseMessage, "qpid-type"));
-            assertEquals("the created queue did not have the correct number of priorities",
-                         13,
-                         Integer.valueOf(getValueFromMapResponse(responseMessage, PriorityQueue.PRIORITIES).toString())
-                                .intValue());
+            assertEquals("org.apache.qpid.PriorityQueue", getValueFromMapResponse(responseMessage, "type"),
+                    "The created queue was not a priority queue");
+            assertEquals("priority", getValueFromMapResponse(responseMessage, "qpid-type"),
+                    "The created queue was not a standard queue");
+            assertEquals(13, Integer.valueOf(getValueFromMapResponse(responseMessage, PriorityQueue.PRIORITIES).toString())
+                    .intValue(),
+                    "the created queue did not have the correct number of priorities");
             Object identity = getValueFromMapResponse(responseMessage, "identity");
 
             // Trying to create a second queue with the same name should cause a conflict
@@ -425,13 +416,11 @@ public class AmqpManagementTest extends JmsTestBase
 
             responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 200);
-            assertEquals("the queue did not have the correct number of priorities",
-                         13,
-                         Integer.valueOf(getValueFromMapResponse(responseMessage, PriorityQueue.PRIORITIES).toString())
-                                .intValue());
-            assertEquals("the queue did not have the expected path",
-                         getTestName(),
-                         getValueFromMapResponse(responseMessage, "object-path"));
+            assertEquals(13, Integer.valueOf(getValueFromMapResponse(responseMessage, PriorityQueue.PRIORITIES).toString())
+                    .intValue(),
+                    "the queue did not have the correct number of priorities");
+            assertEquals(getTestName(), getValueFromMapResponse(responseMessage, "object-path"),
+                    "the queue did not have the expected path");
 
             message = _session.createMapMessage();
 
@@ -446,11 +435,9 @@ public class AmqpManagementTest extends JmsTestBase
             responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 200);
             checkResponseIsMapType(responseMessage);
-            assertEquals("The updated queue did not have the correct alerting threshold",
-                         250L,
-                         Long.valueOf(getValueFromMapResponse(responseMessage,
-                                                              ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES).toString())
-                             .longValue());
+            assertEquals(250L, Long.valueOf(getValueFromMapResponse(responseMessage,
+                    ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES).toString()).longValue(),
+                    "The updated queue did not have the correct alerting threshold");
 
             message = _session.createMapMessage();
             message.setStringProperty("type", "org.apache.qpid.Queue");
@@ -486,7 +473,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testReadVirtualHost() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -505,17 +492,16 @@ public class AmqpManagementTest extends JmsTestBase
             Message responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 200);
             checkResponseIsMapType(responseMessage);
-            assertEquals("The name of the virtual host is not as expected",
-                         getVirtualHostName(),
-                         getValueFromMapResponse(responseMessage, "name"));
+            assertEquals(getVirtualHostName(), getValueFromMapResponse(responseMessage, "name"),
+                    "The name of the virtual host is not as expected");
 
             message.setBooleanProperty("actuals", false);
             _producer.send(message);
             responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 200);
             checkResponseIsMapType(responseMessage);
-            assertNotNull("Derived attribute (productVersion) should be available",
-                          getValueFromMapResponse(responseMessage, "productVersion"));
+            assertNotNull(getValueFromMapResponse(responseMessage, "productVersion"),
+                    "Derived attribute (productVersion) should be available");
         }
         finally
         {
@@ -526,7 +512,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testReadObject_ObjectNotFound() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -554,7 +540,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testInvokeOperation_ObjectNotFound() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -582,7 +568,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testInvokeOperationReturningMap() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getBrokerManagementConnection();
         try
@@ -612,7 +598,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testInvokeOperationReturningManagedAttributeValue() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getBrokerManagementConnection();
         try
@@ -642,7 +628,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testInvokeSecureOperation() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         String secureOperation = "publishMessage";  // // a secure operation
         Map<String, String> operationArg = new HashMap<>();
@@ -730,7 +716,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testCreateVirtualHost() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         String virtualHostName = "newMemoryVirtualHost";
         Connection connection = getBrokerManagementConnection();
@@ -772,12 +758,10 @@ public class AmqpManagementTest extends JmsTestBase
             Message responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 200);
             checkResponseIsMapType(responseMessage);
-            assertEquals("The name of the virtual host is not as expected",
-                         virtualHostName,
-                         getValueFromMapResponse(responseMessage, "name"));
-            assertEquals("The type of the virtual host is not as expected",
-                         "Memory",
-                         getValueFromMapResponse(responseMessage, "qpid-type"));
+            assertEquals(virtualHostName, getValueFromMapResponse(responseMessage, "name"),
+                    "The name of the virtual host is not as expected");
+            assertEquals("Memory", getValueFromMapResponse(responseMessage, "qpid-type"),
+                    "The type of the virtual host is not as expected");
         }
         finally
         {
@@ -790,7 +774,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testDeleteVirtualHost() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -819,7 +803,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testCreateQueueWithQpidType() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -840,9 +824,8 @@ public class AmqpManagementTest extends JmsTestBase
             Message responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 201);
             checkResponseIsMapType(responseMessage);
-            assertEquals("The created queue did not have the correct type",
-                         "org.apache.qpid.LastValueQueue",
-                         getValueFromMapResponse(responseMessage, "type"));
+            assertEquals("org.apache.qpid.LastValueQueue", getValueFromMapResponse(responseMessage, "type"),
+                    "The created queue did not have the correct type");
         }
         finally
         {
@@ -854,7 +837,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testCreateQueueWithAmqpType() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -875,9 +858,8 @@ public class AmqpManagementTest extends JmsTestBase
             Message responseMessage = _consumer.receive(getReceiveTimeout());
             assertResponseCode(responseMessage, 201);
             checkResponseIsMapType(responseMessage);
-            assertEquals("The created queue did not have the correct type",
-                         "sorted",
-                         getValueFromMapResponse(responseMessage, "qpid-type"));
+            assertEquals("sorted", getValueFromMapResponse(responseMessage, "qpid-type"),
+                    "The created queue did not have the correct type");
         }
         finally
         {
@@ -889,7 +871,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testCreateExchangeWithoutType() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -919,7 +901,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testCreateConnectionOnVirtualHostManagement() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getConnection();
         try
@@ -948,7 +930,7 @@ public class AmqpManagementTest extends JmsTestBase
     @Test
     public void testCreateConnectionOnBrokerManagement() throws Exception
     {
-        assumeThat(isSupportedClient(), is(true));
+        assumeTrue(isSupportedClient());
 
         Connection connection = getBrokerManagementConnection();
         try
@@ -977,11 +959,11 @@ public class AmqpManagementTest extends JmsTestBase
     @SuppressWarnings("unchecked")
     private void assertResponseCode(final Message responseMessage, final int expectedResponseCode) throws JMSException
     {
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success",
-                     expectedResponseCode, responseMessage.getIntProperty("statusCode"));
+        assertNotNull(responseMessage, "A response message was not sent");
+        assertTrue(Collections.list(responseMessage.getPropertyNames()).contains("statusCode"),
+                "The response message does not have a status code");
+        assertEquals(expectedResponseCode, responseMessage.getIntProperty("statusCode"),
+                "The response code did not indicate success");
     }
 
 
@@ -1001,12 +983,13 @@ public class AmqpManagementTest extends JmsTestBase
                      && ((ObjectMessage) responseMessage).getObject() instanceof Map))
             {
                 fail(String.format("The response was neither a Map Message nor an Object Message containing a Map. It was a : %s ",
-                                   responseMessage.getClass()));
+                        responseMessage.getClass()));
             }
         }
         else
         {
-            assertTrue(String.format("The response was not a MapMessage. It was a '%s'.", responseMessage.getClass()), responseMessage instanceof MapMessage);
+            assertTrue(responseMessage instanceof MapMessage,
+                    String.format("The response was not a MapMessage. It was a '%s'.", responseMessage.getClass()));
         }
     }
 
@@ -1056,6 +1039,5 @@ public class AmqpManagementTest extends JmsTestBase
                 con.close();
             }
         }
-
     }
 }

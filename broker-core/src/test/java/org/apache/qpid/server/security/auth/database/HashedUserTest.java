@@ -20,53 +20,46 @@
  */
 package org.apache.qpid.server.security.auth.database;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 /*
     Note User is mainly tested by Base64MD5PFPDTest this is just to catch the extra methods
  */
 public class HashedUserTest extends UnitTestBase
 {
-
     private final String USERNAME = "username";
     private final String PASSWORD = "password";
-    private final String B64_ENCODED_PASSWORD = "cGFzc3dvcmQ=";
 
     @Test
     public void testToLongArrayConstructor()
     {
-        try
-        {
-            HashedUser user = new HashedUser(new String[]{USERNAME, PASSWORD, USERNAME}, null);
-            fail("Error expected");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertEquals("User Data should be length 2, username, password", e.getMessage());
-        }
-
+        final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> new HashedUser(new String[]{USERNAME, PASSWORD, USERNAME}, null),
+                "Error expected");
+        assertEquals("User Data should be length 2, username, password", thrown.getMessage());
     }
 
     @Test
     public void testArrayConstructor()
     {
-        HashedUser user = new HashedUser(new String[]{USERNAME, B64_ENCODED_PASSWORD}, null);
-        assertEquals("Username incorrect", USERNAME, user.getName());
+        final String b64EncodedPassword = "cGFzc3dvcmQ=";
+        final HashedUser user = new HashedUser(new String[]{USERNAME, b64EncodedPassword}, null);
+        assertEquals(USERNAME, user.getName(), "Username incorrect");
         int index = 0;
 
-        char[] hash = B64_ENCODED_PASSWORD.toCharArray();
+        char[] hash = b64EncodedPassword.toCharArray();
 
         try
         {
             for (byte c : user.getEncodedPassword())
             {
-                assertEquals("Password incorrect", (long) hash[index], (long) (char) c);
+                assertEquals(hash[index], (long) (char) c, "Password incorrect");
                 index++;
             }
         }
@@ -80,10 +73,9 @@ public class HashedUserTest extends UnitTestBase
         index=0;
         for (char c : user.getPassword())
         {
-            assertEquals("Password incorrect", (long) hash[index], (long) c);
+            assertEquals(hash[index], (long) c, "Password incorrect");
             index++;
         }
-
     }
 }
 

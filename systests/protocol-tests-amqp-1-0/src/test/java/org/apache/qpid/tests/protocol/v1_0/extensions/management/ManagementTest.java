@@ -25,11 +25,11 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.Session_1_0;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -59,7 +59,7 @@ public class ManagementTest extends BrokerAdminUsingTestBase
                           + " consuming all link-credit, and send the flow state to the receiver.")
     public void drainTemporaryMessageSource() throws Exception
     {
-        assumeThat(getBrokerAdmin().isManagementSupported(), is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().isManagementSupported());
 
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {

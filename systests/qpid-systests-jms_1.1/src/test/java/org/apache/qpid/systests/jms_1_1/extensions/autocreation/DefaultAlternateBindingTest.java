@@ -37,8 +37,9 @@ import javax.jms.Session;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -53,7 +54,7 @@ public class DefaultAlternateBindingTest extends JmsTestBase
     private static final int MESSAGE_COUNT = 4;
     private String _queueName;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _queueName = getTestName();

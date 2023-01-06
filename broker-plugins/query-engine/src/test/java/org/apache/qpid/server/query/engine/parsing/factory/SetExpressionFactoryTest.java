@@ -20,14 +20,14 @@
  */
 package org.apache.qpid.server.query.engine.parsing.factory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContext;
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContextHolder;
@@ -43,7 +43,7 @@ import org.apache.qpid.server.query.engine.parsing.query.SelectExpression;
  */
 public class SetExpressionFactoryTest
 {
-    @Before()
+    @BeforeEach()
     public void setUp()
     {
         EvaluationContext ctx = EvaluationContextHolder.getEvaluationContext();

@@ -19,11 +19,10 @@
  */
 package org.apache.qpid.server.security.group;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,9 +30,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
@@ -50,12 +49,13 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     private static final String MY_GROUP1 = "myGroup1";
 
     private static final boolean CASE_SENSITIVE = false;
+
     private FileGroupDatabase _fileGroupDatabase;
     private GroupProviderUtil _util;
     private String _groupFile;
     private FileBasedGroupProvider<?> _groupProvider;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         _groupProvider = mock(FileBasedGroupProvider.class);
@@ -70,13 +70,13 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     {
         _util.writeAndSetGroupFile("myGroup.users", "user1,user2,user3");
 
-        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
+        final Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
         assertEquals(3, users.size());
-        Set<String> users2 = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
+        final Set<String> users2 = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
         assertNotNull(users2);
         assertEquals(3, users2.size());
-        Set<String> users3 = _fileGroupDatabase.getUsersInGroup("MyGrouP");
+        final Set<String> users3 = _fileGroupDatabase.getUsersInGroup("MyGrouP");
         assertNotNull(users3);
         assertEquals(3, users3.size());
     }
@@ -86,7 +86,7 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     {
         _util.writeAndSetGroupFile("myGroup.users", "user1,user1,user3,user1");
 
-        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
+        final Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
         assertNotNull(users);
         assertEquals(2, users.size());
     }
@@ -96,7 +96,7 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     {
         _util.writeAndSetGroupFile("myGroup.users", "");
 
-        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
+        final Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
         assertNotNull(users);
         assertTrue(users.isEmpty());
     }
@@ -106,11 +106,11 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     {
         _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
 
-        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1.toUpperCase());
+        final Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1.toUpperCase());
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP));
 
-        Set<String> groups2 = _fileGroupDatabase.getGroupsForUser("User2");
+        final Set<String> groups2 = _fileGroupDatabase.getGroupsForUser("User2");
         assertEquals(1, groups2.size());
         assertTrue(groups2.contains(MY_GROUP));
     }
@@ -122,12 +122,12 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
                                    "myGroup1.users", "user1,user3",
                                    "myGroup2.users", "user2,user3");
 
-        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1.toUpperCase());
+        final Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER1.toUpperCase());
         assertEquals(2, groups.size());
         assertTrue(groups.contains(MY_GROUP));
         assertTrue(groups.contains(MY_GROUP1));
 
-        Set<String> groups2 = _fileGroupDatabase.getGroupsForUser("User2");
+        final Set<String> groups2 = _fileGroupDatabase.getGroupsForUser("User2");
         assertEquals(2, groups2.size());
         assertTrue(groups2.contains(MY_GROUP));
         assertTrue(groups2.contains(MY_GROUP2));
@@ -148,7 +148,7 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         assertTrue(groups.contains(MY_GROUP1));
         assertTrue(groups.contains(MY_GROUP2));
 
-        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP2.toUpperCase());
+        final Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP2.toUpperCase());
         assertEquals(2, users.size());
         assertTrue(users.contains(USER1));
         assertTrue(users.contains(USER2));
@@ -176,16 +176,16 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         _util.writeAndSetGroupFile("myGroup.users", USER1);
 
         _fileGroupDatabase.getGroupsForUser(USER1.toUpperCase());
-        assertThrows("Group with name supers already exists",
-                     IllegalConfigurationException.class,
-                     () -> _fileGroupDatabase.addUserToGroup(USER1.toUpperCase(), MY_GROUP));
+        assertThrows(IllegalConfigurationException.class,
+                     () -> _fileGroupDatabase.addUserToGroup(USER1.toUpperCase(), MY_GROUP),
+                     "Group with name supers already exists");
     }
 
     @Test
     public void testGetGroupPrincipalsForUserWhenUserNotKnownCaseInsensitive() throws Exception
     {
         _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
-        Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER3.toUpperCase());
+        final Set<String> groups = _fileGroupDatabase.getGroupsForUser(USER3.toUpperCase());
         assertTrue(groups.isEmpty());
     }
 
@@ -237,15 +237,9 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         assertNotNull(users);
         assertTrue(users.isEmpty());
 
-        try
-        {
-            _fileGroupDatabase.addUserToGroup(USER3, MY_GROUP);
-            fail("Expected exception not thrown");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> _fileGroupDatabase.addUserToGroup(USER3, MY_GROUP),
+                "Expected exception not thrown");
 
         users = _fileGroupDatabase.getUsersInGroup(MY_GROUP);
         assertNotNull(users);
@@ -273,15 +267,9 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     {
         _util.writeAndSetGroupFile();
 
-        try
-        {
-            _fileGroupDatabase.removeUserFromGroup(USER1.toUpperCase(), MY_GROUP);
-            fail("Expected exception not thrown");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> _fileGroupDatabase.removeUserFromGroup(USER1.toUpperCase(), MY_GROUP),
+                "Expected exception not thrown");
 
         assertTrue(_fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase()).isEmpty());
     }
@@ -304,16 +292,16 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     {
         _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
 
-        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
+        final Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
         assertEquals(2, users.size());
 
         _fileGroupDatabase.addUserToGroup(USER3.toUpperCase(), MY_GROUP);
         assertEquals(3, users.size());
 
-        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
+        final FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
         newGroupDatabase.setGroupFile(_groupFile);
 
-        Set<String> newUsers = newGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
+        final Set<String> newUsers = newGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
         assertEquals(users.size(), newUsers.size());
     }
 
@@ -322,16 +310,16 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
     {
         _util.writeAndSetGroupFile("myGroup.users", "user1,user2");
 
-        Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
+        final Set<String> users = _fileGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
         assertEquals(2, users.size());
 
         _fileGroupDatabase.removeUserFromGroup(USER2.toUpperCase(), MY_GROUP);
         assertEquals(1, users.size());
 
-        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
+        final FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
         newGroupDatabase.setGroupFile(_groupFile);
 
-        Set<String> newUsers = newGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
+        final Set<String> newUsers = newGroupDatabase.getUsersInGroup(MY_GROUP.toUpperCase());
         assertEquals(users.size(), newUsers.size());
     }
 
@@ -349,10 +337,10 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP));
 
-        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
+        final FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
         newGroupDatabase.setGroupFile(_groupFile);
 
-        Set<String> newGroups = newGroupDatabase.getAllGroups();
+        final Set<String> newGroups = newGroupDatabase.getAllGroups();
         assertEquals(1, newGroups.size());
         assertTrue(newGroups.contains(MY_GROUP));
     }
@@ -371,9 +359,9 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         assertEquals(1, groups.size());
         assertTrue(groups.contains(MY_GROUP));
 
-        assertThrows("Group with name myGroup already exists",
-                     IllegalConfigurationException.class,
-                     () -> _fileGroupDatabase.createGroup(MY_GROUP.toUpperCase()));
+        assertThrows(IllegalConfigurationException.class,
+                     () -> _fileGroupDatabase.createGroup(MY_GROUP.toUpperCase()),
+                     "Group with name myGroup already exists");
     }
 
     @Test
@@ -396,24 +384,24 @@ public class FileGroupDatabaseCaseInsensitiveTest extends UnitTestBase
         groupsForUser1 = _fileGroupDatabase.getGroupsForUser(USER1.toUpperCase());
         assertEquals(1, groupsForUser1.size());
 
-        FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
+        final FileGroupDatabase newGroupDatabase = new FileGroupDatabase(_groupProvider);
         newGroupDatabase.setGroupFile(_groupFile);
 
-        Set<String> newGroups = newGroupDatabase.getAllGroups();
+        final Set<String> newGroups = newGroupDatabase.getAllGroups();
         assertEquals(1, newGroups.size());
         assertTrue(newGroups.contains(MY_GROUP2));
 
-        Set<String> newGroupsForUser1 = newGroupDatabase.getGroupsForUser(USER1.toUpperCase());
+        final Set<String> newGroupsForUser1 = newGroupDatabase.getGroupsForUser(USER1.toUpperCase());
         assertEquals(1, newGroupsForUser1.size());
         assertTrue(newGroupsForUser1.contains(MY_GROUP2));
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if (_groupFile != null)
         {
-            File groupFile = new File(_groupFile);
+            final File groupFile = new File(_groupFile);
             if (groupFile.exists())
             {
                 groupFile.delete();

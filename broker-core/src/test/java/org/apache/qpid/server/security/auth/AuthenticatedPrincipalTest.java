@@ -18,25 +18,25 @@
  */
 package org.apache.qpid.server.security.auth;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.security.Principal;
 
 import javax.security.auth.Subject;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AuthenticatedPrincipalTest extends UnitTestBase
 {
-    private final AuthenticatedPrincipal _authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("name",
-                                                                                                                    null));
+    private final AuthenticatedPrincipal _authenticatedPrincipal =
+            new AuthenticatedPrincipal(new UsernamePrincipal("name", null));
+
     @Test
     public void testGetAuthenticatedPrincipalFromSubject()
     {
@@ -48,15 +48,9 @@ public class AuthenticatedPrincipalTest extends UnitTestBase
     @Test
     public void testAuthenticatedPrincipalNotInSubject()
     {
-        try
-        {
-            AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(new Subject());
-            fail("Exception not thrown");
-        }
-        catch (IllegalArgumentException iae)
-        {
-            // PASS
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(new Subject()),
+                "Exception not thrown");
     }
 
     @Test
@@ -71,14 +65,13 @@ public class AuthenticatedPrincipalTest extends UnitTestBase
     @Test
     public void testGetOptionalAuthenticatedPrincipalFromSubjectReturnsNullIfMissing()
     {
-        Subject subjectWithNoPrincipals = new Subject();
+        final Subject subjectWithNoPrincipals = new Subject();
         assertNull(AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subjectWithNoPrincipals));
 
-        Subject subjectWithoutAuthenticatedPrincipal = new Subject();
+        final Subject subjectWithoutAuthenticatedPrincipal = new Subject();
         subjectWithoutAuthenticatedPrincipal.getPrincipals().add(new UsernamePrincipal("name1", null));
-        assertNull("Should return null for a subject containing a principal that isn't an AuthenticatedPrincipal",
-
-                          AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subjectWithoutAuthenticatedPrincipal));
+        assertNull(AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subjectWithoutAuthenticatedPrincipal),
+                "Should return null for a subject containing a principal that isn't an AuthenticatedPrincipal");
 
     }
 
@@ -89,28 +82,14 @@ public class AuthenticatedPrincipalTest extends UnitTestBase
         subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("name1", null)));
         subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("name2", null)));
 
-        try
-        {
-            AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(subject);
-            fail("Exception not thrown");
-        }
-        catch (IllegalArgumentException iae)
-        {
-            // PASS
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(subject),
+                "Exception not thrown");
     }
 
     private Subject createSubjectContainingAuthenticatedPrincipal()
     {
-        final Principal other = new Principal()
-        {
-            @Override
-            public String getName()
-            {
-                return "otherprincipal";
-            }
-        };
-
+        final Principal other = () -> "otherprincipal";
         final Subject subject = new Subject();
         subject.getPrincipals().add(_authenticatedPrincipal);
         subject.getPrincipals().add(other);
@@ -120,47 +99,45 @@ public class AuthenticatedPrincipalTest extends UnitTestBase
     @Test
     public void testEqualsAndHashcode()
     {
-        AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
-        AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
+        final AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
+        final AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
 
-        assertTrue(user1principal1.equals(user1principal1));
-        assertTrue(user1principal1.equals(user1principal2));
-        assertTrue(user1principal2.equals(user1principal1));
-
-        assertEquals((long) user1principal1.hashCode(), (long) user1principal2.hashCode());
+        assertEquals(user1principal1, user1principal1);
+        assertEquals(user1principal1, user1principal2);
+        assertEquals(user1principal2, user1principal1);
+        assertEquals(user1principal1.hashCode(), (long) user1principal2.hashCode());
     }
 
     @Test
     public void testEqualsAndHashcodeWithSameWrappedObject()
     {
-        UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1", null);
-        AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(wrappedPrincipal);
-        AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(wrappedPrincipal);
+        final UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1", null);
+        final AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(wrappedPrincipal);
+        final AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(wrappedPrincipal);
 
-        assertTrue(user1principal1.equals(user1principal1));
-        assertTrue(user1principal1.equals(user1principal2));
-        assertTrue(user1principal2.equals(user1principal1));
-
-        assertEquals((long) user1principal1.hashCode(), (long) user1principal2.hashCode());
+        assertEquals(user1principal1, user1principal1);
+        assertEquals(user1principal1, user1principal2);
+        assertEquals(user1principal2, user1principal1);
+        assertEquals(user1principal1.hashCode(), (long) user1principal2.hashCode());
     }
 
     @Test
     public void testEqualsWithDifferentUsernames()
     {
-        AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
-        AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(new UsernamePrincipal("user2", null));
+        final AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
+        final AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(new UsernamePrincipal("user2", null));
 
-        assertFalse(user1principal1.equals(user1principal2));
-        assertFalse(user1principal2.equals(user1principal1));
+        assertNotEquals(user1principal1, user1principal2);
+        assertNotEquals(user1principal2, user1principal1);
     }
 
     @Test
     public void testEqualsWithDissimilarObjects()
     {
-        UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1", null);
-        AuthenticatedPrincipal authenticatedPrincipal = new AuthenticatedPrincipal(wrappedPrincipal);
+        final UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1", null);
+        final AuthenticatedPrincipal authenticatedPrincipal = new AuthenticatedPrincipal(wrappedPrincipal);
 
-        assertFalse(authenticatedPrincipal.equals(wrappedPrincipal));
-        assertFalse(wrappedPrincipal.equals(authenticatedPrincipal));
+        assertNotEquals(authenticatedPrincipal, wrappedPrincipal);
+        assertNotEquals(wrappedPrincipal, authenticatedPrincipal);
     }
 }

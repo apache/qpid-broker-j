@@ -20,10 +20,11 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -34,7 +35,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -63,8 +64,9 @@ public class MapMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("BytesMessage should be received", receivedMessage instanceof MapMessage);
-            assertFalse("Unexpected map content", ((MapMessage) receivedMessage).getMapNames().hasMoreElements());
+            assertTrue(receivedMessage instanceof MapMessage, "BytesMessage should be received");
+            assertFalse(((MapMessage) receivedMessage).getMapNames().hasMoreElements(),
+                    "Unexpected map content");
         }
         finally
         {
@@ -92,8 +94,8 @@ public class MapMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("MapMessage should be received", receivedMessage instanceof MapMessage);
-            assertTrue("Unexpected map content", ((MapMessage) receivedMessage).getMapNames().hasMoreElements());
+            assertTrue(receivedMessage instanceof MapMessage, "MapMessage should be received");
+            assertTrue(((MapMessage) receivedMessage).getMapNames().hasMoreElements(), "Unexpected map content");
 
             MapMessage receivedMapMessage = (MapMessage) receivedMessage;
             testMapValues(receivedMapMessage);
@@ -141,7 +143,7 @@ public class MapMessageTest extends JmsTestBase
         // Test get<Primitive>
 
         // Boolean
-        assertEquals(true, m.getBoolean("bool"));
+        assertTrue(m.getBoolean("bool"));
         assertEquals(Boolean.TRUE.toString(), m.getString("bool"));
 
         // Byte
@@ -192,7 +194,7 @@ public class MapMessageTest extends JmsTestBase
         assertEquals(Short.MAX_VALUE, m.getObject("object-short"));
 
         // Check Special values
-        assertTrue(m.getString("nullString") == null);
+        assertNull(m.getString("nullString"));
         assertEquals("", m.getString("emptyString"));
     }
 }

@@ -18,45 +18,34 @@
  */
 package org.apache.qpid.disttest.client.property;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Assert;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ListPropertyValueTest extends UnitTestBase
 {
     private ListPropertyValue _generator;
     private List<PropertyValue> _items;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _generator = new ListPropertyValue();
-        _items = new ArrayList<PropertyValue>();
-        _items.add(new SimplePropertyValue(Integer.valueOf(1)));
-        _items.add(new SimplePropertyValue(Double.valueOf(2.1)));
-        _items.add(new SimplePropertyValue(Boolean.valueOf(true)));
+        _items = new ArrayList<>();
+        _items.add(new SimplePropertyValue(1));
+        _items.add(new SimplePropertyValue(2.1));
+        _items.add(new SimplePropertyValue(Boolean.TRUE));
         ListPropertyValue innerList = new ListPropertyValue();
-        List<PropertyValue> innerListItems = new ArrayList<PropertyValue>();
+        List<PropertyValue> innerListItems = new ArrayList<>();
         innerListItems.add(new SimplePropertyValue("test"));
-        innerListItems.add(new SimplePropertyValue(Integer.valueOf(2)));
+        innerListItems.add(new SimplePropertyValue(2));
         innerList.setItems(innerListItems);
         _items.add(innerList);
         _generator.setItems(_items);
@@ -66,7 +55,7 @@ public class ListPropertyValueTest extends UnitTestBase
     public void testGetItems()
     {
         List<? extends Object> items = _generator.getItems();
-        assertEquals("Unexpected list items", _items, items);
+        assertEquals(_items, items, "Unexpected list items");
     }
 
     @Test
@@ -74,16 +63,16 @@ public class ListPropertyValueTest extends UnitTestBase
     {
         for (int i = 0; i < 2; i++)
         {
-            assertEquals("Unexpected first item", Integer.valueOf(1), _generator.getValue());
-            assertEquals("Unexpected second item", Double.valueOf(2.1), _generator.getValue());
-            assertEquals("Unexpected third item", Boolean.valueOf(true), _generator.getValue());
+            assertEquals(1, _generator.getValue(), "Unexpected first item");
+            assertEquals(2.1, _generator.getValue(), "Unexpected second item");
+            assertEquals(Boolean.TRUE, _generator.getValue(), "Unexpected third item");
             if (i == 0)
             {
-                assertEquals("Unexpected forth item", "test", _generator.getValue());
+                assertEquals("test", _generator.getValue(), "Unexpected forth item");
             }
             else
             {
-                assertEquals("Unexpected forth item", Integer.valueOf(2), _generator.getValue());
+                assertEquals(2, _generator.getValue(), "Unexpected forth item");
             }
         }
     }
@@ -92,13 +81,13 @@ public class ListPropertyValueTest extends UnitTestBase
     public void testNonCyclicGetValue()
     {
         _generator.setCyclic(false);
-        assertFalse("Generator should not be cyclic", _generator.isCyclic());
-        assertEquals("Unexpected first item", Integer.valueOf(1), _generator.getValue());
-        assertEquals("Unexpected second item", Double.valueOf(2.1), _generator.getValue());
-        assertEquals("Unexpected third item", Boolean.valueOf(true), _generator.getValue());
-        assertEquals("Unexpected forth item", "test", _generator.getValue());
-        assertEquals("Unexpected fifth item", Integer.valueOf(2), _generator.getValue());
-        assertEquals("Unexpected sixs item", "test", _generator.getValue());
-        assertEquals("Unexpected sevens item", Integer.valueOf(2), _generator.getValue());
+        assertFalse(_generator.isCyclic(), "Generator should not be cyclic");
+        assertEquals(1, _generator.getValue(), "Unexpected first item");
+        assertEquals(2.1, _generator.getValue(), "Unexpected second item");
+        assertEquals(Boolean.TRUE, _generator.getValue(), "Unexpected third item");
+        assertEquals("test", _generator.getValue(), "Unexpected forth item");
+        assertEquals(2, _generator.getValue(), "Unexpected fifth item");
+        assertEquals("test", _generator.getValue(), "Unexpected sixs item");
+        assertEquals(2, _generator.getValue(), "Unexpected sevens item");
     }
 }

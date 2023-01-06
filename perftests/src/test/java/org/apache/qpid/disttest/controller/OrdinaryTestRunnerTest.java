@@ -18,6 +18,9 @@
  */
 package org.apache.qpid.disttest.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isA;
@@ -25,7 +28,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -43,26 +45,12 @@ import org.apache.qpid.disttest.message.StartDataCollectionCommand;
 import org.apache.qpid.disttest.message.StartTestCommand;
 import org.apache.qpid.disttest.message.TearDownTestCommand;
 
-import org.junit.Assert;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class OrdinaryTestRunnerTest extends UnitTestBase
 {
@@ -81,32 +69,24 @@ public class OrdinaryTestRunnerTest extends UnitTestBase
     private ControllerJmsDelegate _respondingJmsDelegate;
     private ParticipatingClients _participatingClients;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _respondingJmsDelegate = mock(ControllerJmsDelegate.class);
 
         // Spy on the command listeners, so we can pass responses back to the test runner
-        doAnswer(new Answer()
+        doAnswer(invocation ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
-            {
-                CommandListener listener = (CommandListener) invocation.getArguments()[0];
-                _spiedCommandListeners.add(listener);
-                return null;
-            }
+            CommandListener listener = (CommandListener) invocation.getArguments()[0];
+            _spiedCommandListeners.add(listener);
+            return null;
         }).when(_respondingJmsDelegate).addCommandListener(any(CommandListener.class));
 
-        doAnswer(new Answer()
+        doAnswer(invocation ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
-            {
-                CommandListener listener = (CommandListener) invocation.getArguments()[0];
-                _spiedCommandListeners.remove(listener);
-                return null;
-            }
+            CommandListener listener = (CommandListener) invocation.getArguments()[0];
+            _spiedCommandListeners.remove(listener);
+            return null;
         }).when(_respondingJmsDelegate).removeCommandListener(any(CommandListener.class));
 
 
@@ -137,9 +117,8 @@ public class OrdinaryTestRunnerTest extends UnitTestBase
                                              TEST_RESULT_TIMEOUT);
         TestResult testResult = _testRunner.run();
         assertNotNull(testResult);
-        assertEquals("Unexpected number of participant results",
-                            (long) 1,
-                            (long) testResult.getParticipantResults().size());
+        assertEquals(1, (long) testResult.getParticipantResults().size(),
+                "Unexpected number of participant results");
 
     }
 
@@ -165,8 +144,8 @@ public class OrdinaryTestRunnerTest extends UnitTestBase
         }
         catch (DistributedTestException e)
         {
-            assertEquals("One or more clients were unable to successfully process commands. "
-                                + "1 command(s) generated an error response.", e.getMessage());
+            assertEquals("One or more clients were unable to successfully process commands. " +
+                    "1 command(s) generated an error response.", e.getMessage());
         }
     }
 
@@ -190,8 +169,7 @@ public class OrdinaryTestRunnerTest extends UnitTestBase
         }
         catch (DistributedTestException e)
         {
-            assertEquals(
-                    "After 1000ms ... Timed out waiting for command responses ... Expecting 1 more response(s).",
+            assertEquals("After 1000ms ... Timed out waiting for command responses ... Expecting 1 more response(s).",
                     e.getMessage());
         }
     }
@@ -201,25 +179,21 @@ public class OrdinaryTestRunnerTest extends UnitTestBase
                                                  final ParticipantResult participantResult)
     {
         // When the JMS gets the command, respond with the response
-        doAnswer(new Answer<Void>()
+        doAnswer((Answer<Void>) invocation ->
         {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable
+            for(CommandListener listener : _spiedCommandListeners)
             {
-                for(CommandListener listener : _spiedCommandListeners)
+                if (response != null && listener.supports(response))
                 {
-                    if (response != null && listener.supports(response))
-                    {
-                        listener.processCommand(response);
-                    }
-                    if (participantResult != null && listener.supports(participantResult))
-                    {
-                        listener.processCommand(participantResult);
-                    }
+                    listener.processCommand(response);
                 }
-
-                return null;
+                if (participantResult != null && listener.supports(participantResult))
+                {
+                    listener.processCommand(participantResult);
+                }
             }
+
+            return null;
         }).when(_respondingJmsDelegate).sendCommandToClient(anyString(), isA(inReplyTo));
     }
 
@@ -227,7 +201,7 @@ public class OrdinaryTestRunnerTest extends UnitTestBase
     {
         TestInstance testInstance = mock(TestInstance.class);
 
-        List<CommandForClient> commands = Arrays.asList(
+        List<CommandForClient> commands = Collections.singletonList(
                 new CommandForClient(CLIENT1_CONFIGURED_NAME, new CreateConnectionCommand("conn1", "factory")));
 
         when(testInstance.createCommands()).thenReturn(commands);

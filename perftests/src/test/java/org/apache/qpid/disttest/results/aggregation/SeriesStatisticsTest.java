@@ -20,31 +20,18 @@
  */
 package org.apache.qpid.disttest.results.aggregation;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.junit.Assert;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class SeriesStatisticsTest extends UnitTestBase
 {
-    public static Collection<Long> SERIES = Arrays.asList(new Long[] {2L, 4L, 4L, 4L, 5L, 5L, 7L, 9L, 5L});
+    public static Collection<Long> SERIES = Arrays.asList(2L, 4L, 4L, 4L, 5L, 5L, 7L, 9L, 5L);
 
     @Test
     public void testAggregate()
@@ -52,10 +39,10 @@ public class SeriesStatisticsTest extends UnitTestBase
         SeriesStatistics results = new SeriesStatistics();
         results.addMessageLatencies(SERIES);
         results.aggregate();
-        assertEquals("Unexpected average", 5.0, results.getAverage(), 0.01);
-        assertEquals("Unexpected min", (long) 2, results.getMinimum());
-        assertEquals("Unexpected max", (long) 9, results.getMaximum());
-        assertEquals("Unexpected standard deviation", 2.0, results.getStandardDeviation(), 0.01);
+        assertEquals(5.0, results.getAverage(), 0.01, "Unexpected average");
+        assertEquals(2, results.getMinimum(), "Unexpected min");
+        assertEquals(9, results.getMaximum(), "Unexpected max");
+        assertEquals(2.0, results.getStandardDeviation(), 0.01, "Unexpected standard deviation");
     }
 
 }

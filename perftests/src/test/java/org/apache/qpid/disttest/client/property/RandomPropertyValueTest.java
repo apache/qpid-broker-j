@@ -18,30 +18,19 @@
  */
 package org.apache.qpid.disttest.client.property;
 
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class RandomPropertyValueTest extends UnitTestBase
 {
     private RandomPropertyValue _generator;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _generator = new RandomPropertyValue();
@@ -53,9 +42,9 @@ public class RandomPropertyValueTest extends UnitTestBase
     @Test
     public void testGetters()
     {
-        assertEquals("Unexpected upper boundary", Double.valueOf(20.0), (Object) _generator.getUpper());
-        assertEquals("Unexpected lower boundary", Double.valueOf(10.0), (Object) _generator.getLower());
-        assertEquals("Unexpected type", "double", _generator.getType());
+        assertEquals(20.0, (Object) _generator.getUpper(), "Unexpected upper boundary");
+        assertEquals(10.0, (Object) _generator.getLower(), "Unexpected lower boundary");
+        assertEquals("double", _generator.getType(), "Unexpected type");
     }
 
     @Test
@@ -63,9 +52,8 @@ public class RandomPropertyValueTest extends UnitTestBase
     {
         Object value = _generator.getValue();
         final boolean condition = value instanceof Double;
-        assertTrue("Unexpected type", condition);
-        assertTrue("Unexpected value", ((Double) value).doubleValue() >= 10.0
-                                              && ((Double) value).doubleValue() <= 20.0);
+        assertTrue(condition, "Unexpected type");
+        assertTrue((Double) value >= 10.0 && (Double) value <= 20.0, "Unexpected value");
     }
 
     @Test
@@ -74,8 +62,8 @@ public class RandomPropertyValueTest extends UnitTestBase
         _generator.setType("int");
         Object value = _generator.getValue();
         final boolean condition = value instanceof Integer;
-        assertTrue("Unexpected type", condition);
-        assertTrue("Unexpected value", ((Integer) value).intValue() >= 10 && ((Integer) value).intValue() <= 20);
+        assertTrue(condition, "Unexpected type");
+        assertTrue((Integer) value >= 10 && (Integer) value <= 20, "Unexpected value");
     }
 
     @Test
@@ -84,8 +72,8 @@ public class RandomPropertyValueTest extends UnitTestBase
         _generator.setType("long");
         Object value = _generator.getValue();
         final boolean condition = value instanceof Long;
-        assertTrue("Unexpected type", condition);
-        assertTrue("Unexpected value", ((Long) value).longValue() >= 10 && ((Long) value).longValue() <= 20);
+        assertTrue(condition, "Unexpected type");
+        assertTrue((Long) value >= 10 && (Long) value <= 20, "Unexpected value");
     }
 
     @Test
@@ -94,8 +82,7 @@ public class RandomPropertyValueTest extends UnitTestBase
         _generator.setType("float");
         Object value = _generator.getValue();
         final boolean condition = value instanceof Float;
-        assertTrue("Unexpected type", condition);
-        assertTrue("Unexpected value",
-                          ((Float) value).floatValue() >= 10.0 && ((Float) value).floatValue() <= 20.0);
+        assertTrue(condition, "Unexpected type");
+        assertTrue((Float) value >= 10.0 && (Float) value <= 20.0, "Unexpected value");
     }
 }

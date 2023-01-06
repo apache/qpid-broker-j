@@ -20,8 +20,7 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,17 +31,17 @@ import java.security.PrivilegedAction;
 import javax.security.auth.Subject;
 
 import com.google.common.cache.Cache;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.VirtualHost;
 
 public class CacheFactoryTest
 {
-
     @Test
     public void getCache()
     {
-        String cacheName = "test";
+        final String cacheName = "test";
         final Cache<Object, Object> cache = new NullCache<>();
         final CacheProvider virtualHost = mock(CacheProvider.class, withSettings().extraInterfaces(VirtualHost.class));
         when(virtualHost.getNamedCache(cacheName)).thenReturn(cache);
@@ -50,9 +49,8 @@ public class CacheFactoryTest
         subject.getPrincipals().add(new VirtualHostPrincipal((VirtualHost<?>) virtualHost));
         subject.setReadOnly();
 
-        Cache<String, String> actualCache = Subject.doAs(subject,
-                                                   (PrivilegedAction<Cache<String, String>>) () -> CacheFactory.getCache(cacheName,
-                                                                                                                         null));
+        final Cache<String, String> actualCache = Subject.doAs(subject, (PrivilegedAction<Cache<String, String>>) () ->
+                CacheFactory.getCache(cacheName,null));
         assertSame(actualCache, cache);
         verify(virtualHost).getNamedCache(cacheName);
     }

@@ -18,22 +18,23 @@
  */
 package org.apache.qpid.server.security.limit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.Mockito;
 
 import org.apache.qpid.server.security.limit.ConnectionLimiter.CachedLimiter;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.UnitTestBase;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class ConnectionLimiterTest extends UnitTestBase
 {
@@ -71,15 +72,10 @@ public class ConnectionLimiterTest extends UnitTestBase
         final ConnectionLimiter limiter = ConnectionLimiter.blockEveryone();
         for (int i = 0; i < 7; i++)
         {
-            try
-            {
-                limiter.register(newConnection());
-                fail("A connection limit exception is expected");
-            }
-            catch (ConnectionLimitException e)
-            {
-                assertNotNull(e.getMessage());
-            }
+            final ConnectionLimitException thrown = assertThrows(ConnectionLimitException.class,
+                    () -> limiter.register(newConnection()),
+                    "A connection limit exception is expected");
+            assertNotNull(thrown.getMessage());
         }
     }
 
@@ -88,15 +84,12 @@ public class ConnectionLimiterTest extends UnitTestBase
     {
         final CachedLimiter limiter = ConnectionLimiter.blockEveryone();
         final AMQPConnection<?> connection = newConnection();
-        try
-        {
-            limiter.register(connection);
-            fail("A connection limit exception is expected");
-        }
-        catch (ConnectionLimitException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+
+        final ConnectionLimitException thrown = assertThrows(ConnectionLimitException.class,
+                () -> limiter.register(connection),
+                "A connection limit exception is expected");
+        assertNotNull(thrown.getMessage());
+
         for (int i = 0; i < 7; i++)
         {
             assertFalse(limiter.deregister(connection));
@@ -121,15 +114,11 @@ public class ConnectionLimiterTest extends UnitTestBase
         assertEquals(slot2, limiter.register(connection));
 
         slot1.free();
-        try
-        {
-            underlyingLimiter.register(connection).free();
-            fail("A connection limit exception is expected");
-        }
-        catch (ConnectionLimitException e)
-        {
-            assertEquals(CONNECTION_BREAKS_LIMIT, e.getMessage());
-        }
+
+        final ConnectionLimitException thrown = assertThrows(ConnectionLimitException.class,
+                () -> underlyingLimiter.register(connection).free(),
+                "A connection limit exception is expected");
+        assertEquals(CONNECTION_BREAKS_LIMIT, thrown.getMessage());
 
         slot2.free();
         underlyingLimiter.register(connection).free();
@@ -152,20 +141,15 @@ public class ConnectionLimiterTest extends UnitTestBase
     {
         final ConnectionLimiter secondary = new ConnectionLimiterImpl(1);
         final ConnectionLimiter noLimits = ConnectionLimiter.noLimits();
-
         final ConnectionLimiter limiter = noLimits.append(secondary);
         final AMQPConnection<?> connection = newConnection();
         final ConnectionSlot slot = limiter.register(connection);
 
-        try
-        {
-            limiter.register(connection);
-            fail("A connection limit exception is expected here");
-        }
-        catch (ConnectionLimitException e)
-        {
-            assertEquals(CONNECTION_BREAKS_LIMIT, e.getMessage());
-        }
+        final ConnectionLimitException thrown = assertThrows(ConnectionLimitException.class,
+                () -> limiter.register(connection),
+                "A connection limit exception is expected here");
+        assertEquals(CONNECTION_BREAKS_LIMIT, thrown.getMessage());
+
         slot.free();
         limiter.register(connection).free();
     }
@@ -175,20 +159,14 @@ public class ConnectionLimiterTest extends UnitTestBase
     {
         final ConnectionLimiter secondary = new ConnectionLimiterImpl(1);
         final ConnectionLimiter blocked = ConnectionLimiter.blockEveryone();
-
         final ConnectionLimiter limiter = blocked.append(secondary);
 
         for (int i = 0; i < 3; i++)
         {
-            try
-            {
-                limiter.register(newConnection());
-                fail("A connection limit exception is expected here");
-            }
-            catch (ConnectionLimitException e)
-            {
-                assertNotNull(e.getMessage());
-            }
+            final ConnectionLimitException thrown = assertThrows(ConnectionLimitException.class,
+                    () -> limiter.register(newConnection()),
+                    "A connection limit exception is expected here");
+            assertNotNull(thrown.getMessage());
         }
     }
 
@@ -197,20 +175,15 @@ public class ConnectionLimiterTest extends UnitTestBase
     {
         final ConnectionLimiter secondary = new ConnectionLimiterImpl(1);
         final ConnectionLimiter cachedLimiter = new CachedConnectionLimiterImpl(new ConnectionLimiterImpl(10));
-
         final ConnectionLimiter limiter = cachedLimiter.append(secondary);
         final AMQPConnection<?> connection = newConnection();
         final ConnectionSlot slot = limiter.register(connection);
 
-        try
-        {
-            limiter.register(connection);
-            fail("A connection limit exception is expected here");
-        }
-        catch (ConnectionLimitException e)
-        {
-            assertEquals(CONNECTION_BREAKS_LIMIT, e.getMessage());
-        }
+        final ConnectionLimitException thrown = assertThrows(ConnectionLimitException.class,
+                () -> limiter.register(connection),
+                "A connection limit exception is expected here");
+        assertEquals(CONNECTION_BREAKS_LIMIT, thrown.getMessage());
+
         slot.free();
         limiter.register(connection).free();
     }
@@ -237,14 +210,14 @@ public class ConnectionLimiterTest extends UnitTestBase
         private final int _limit;
         private final ConnectionLimiter _subLimiter;
 
-        public ConnectionLimiterImpl(int limit)
+        public ConnectionLimiterImpl(final int limit)
         {
             _counters = new HashMap<>();
             _limit = limit;
             _subLimiter = ConnectionLimiter.noLimits();
         }
 
-        private ConnectionLimiterImpl(ConnectionLimiterImpl limiter, ConnectionLimiter subLimiter)
+        private ConnectionLimiterImpl(final ConnectionLimiterImpl limiter, final ConnectionLimiter subLimiter)
         {
             _counters = limiter._counters;
             _limit = limiter._limit;
@@ -254,7 +227,7 @@ public class ConnectionLimiterTest extends UnitTestBase
         @Override
         public ConnectionSlot register(final AMQPConnection<?> connection)
         {
-            int counter = _counters.computeIfAbsent(connection, con -> 0);
+            final int counter = _counters.computeIfAbsent(connection, con -> 0);
             if (counter >= _limit)
             {
                 throw new ConnectionLimitException(CONNECTION_BREAKS_LIMIT);
@@ -266,7 +239,7 @@ public class ConnectionLimiterTest extends UnitTestBase
         }
 
         @Override
-        public ConnectionLimiter append(ConnectionLimiter limiter)
+        public ConnectionLimiter append(final ConnectionLimiter limiter)
         {
             return new ConnectionLimiterImpl(this, _subLimiter.append(limiter));
         }

@@ -30,7 +30,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
 
 import java.io.FileNotFoundException;
 import java.util.Collections;
@@ -38,7 +37,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.tests.http.HttpRequestConfig;
 import org.apache.qpid.tests.http.HttpTestBase;
@@ -121,7 +122,8 @@ public class OperationTest extends HttpTestBase
                                  {
                                  },
                                  SC_NOT_FOUND);
-            fail("The request is executed against root object VirtualHost. Thus, any broker request should fail.");
+            Assertions.fail(
+                    "The request is executed against root object VirtualHost. Thus, any broker request should fail.");
         }
         catch (FileNotFoundException e)
         {
@@ -138,6 +140,5 @@ public class OperationTest extends HttpTestBase
                 "broker/getThreadStackTraces?contentDispositionAttachmentFilename=stack-traces.txt&appendToLog=false");
         assertThat(response, is(notNullValue()));
         assertThat(new String(response, UTF_8).contains("Full thread dump captured"), is(equalTo(true)));
-
     }
 }

@@ -19,8 +19,8 @@
 
 package org.apache.qpid.server.model.preferences;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,16 +34,16 @@ import org.apache.qpid.server.util.FutureHelper;
 
 public class PreferenceTestHelper
 {
-    public static Map<String, Object> createPreferenceAttributes(UUID associatedObjectId,
-                                                                 UUID id,
-                                                                 String type,
-                                                                 String name,
-                                                                 String description,
-                                                                 String owner,
-                                                                 Set<String> visibilitySet,
-                                                                 Map<String, Object> preferenceValueAttributes)
+    public static Map<String, Object> createPreferenceAttributes(final UUID associatedObjectId,
+                                                                 final UUID id,
+                                                                 final String type,
+                                                                 final String name,
+                                                                 final String description,
+                                                                 final String owner,
+                                                                 final Set<String> visibilitySet,
+                                                                 final Map<String, Object> preferenceValueAttributes)
     {
-        Map<String, Object> preferenceAttributes = new HashMap<>();
+        final Map<String, Object> preferenceAttributes = new HashMap<>();
         preferenceAttributes.put(Preference.ASSOCIATED_OBJECT_ATTRIBUTE,
                                  associatedObjectId == null ? null : associatedObjectId.toString());
         preferenceAttributes.put(Preference.ID_ATTRIBUTE, id != null ? id : UUID.randomUUID());
@@ -59,12 +59,12 @@ public class PreferenceTestHelper
     public static void assertRecords(final Collection<PreferenceRecord> expected,
                                      final Collection<PreferenceRecord> actual)
     {
-        assertEquals("Unexpected number of records", expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size(), "Unexpected number of records");
 
-        for (PreferenceRecord expectedRecord : expected)
+        for (final PreferenceRecord expectedRecord : expected)
         {
             PreferenceRecord actualRecord = null;
-            for (PreferenceRecord record : actual)
+            for (final PreferenceRecord record : actual)
             {
                 if (record.getId().equals(expectedRecord.getId()))
                 {
@@ -72,19 +72,17 @@ public class PreferenceTestHelper
                     break;
                 }
             }
-            assertNotNull(String.format("No actual record found for expected record '%s'", expectedRecord.getId()),
-                          actualRecord);
-            assertEquals(String.format("Expected attributes are different from actual: %s vs %s",
+            assertNotNull(actualRecord, String.format("No actual record found for expected record '%s'", expectedRecord.getId()));
+            assertEquals(new HashMap<>(expectedRecord.getAttributes()),
+                         new HashMap<>(actualRecord.getAttributes()),
+                         String.format("Expected attributes are different from actual: %s vs %s",
                                        expectedRecord.getAttributes().toString(),
-                                       actualRecord.getAttributes().toString()),
-                         new HashMap<>(expectedRecord.getAttributes()),
-                         new HashMap<>(actualRecord.getAttributes()));
+                                       actualRecord.getAttributes().toString()));
         }
     }
 
     public static <T> T awaitPreferenceFuture(final Future<T> future)
     {
-        return FutureHelper.<T, RuntimeException>await(future);
+        return FutureHelper.await(future);
     }
-
 }

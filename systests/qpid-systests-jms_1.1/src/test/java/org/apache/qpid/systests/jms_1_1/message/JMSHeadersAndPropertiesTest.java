@@ -19,15 +19,13 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Enumeration;
 
@@ -43,13 +41,12 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
 public class JMSHeadersAndPropertiesTest extends JmsTestBase
 {
-
     @Test
     public void resentJMSMessageGetsReplacementJMSMessageID() throws Exception
     {
@@ -66,12 +63,12 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             producer.send(sentMessage);
 
             final String originalId = sentMessage.getJMSMessageID();
-            assertNotNull("JMSMessageID must be set after first publish", originalId);
+            assertNotNull(originalId, "JMSMessageID must be set after first publish");
 
             producer.send(sentMessage);
             final String firstResendID = sentMessage.getJMSMessageID();
-            assertNotNull("JMSMessageID must be set after first resend", firstResendID);
-            assertNotSame("JMSMessageID must be changed second publish", originalId, firstResendID);
+            assertNotNull(firstResendID, "JMSMessageID must be set after first resend");
+            assertNotSame(originalId, firstResendID, "JMSMessageID must be changed second publish");
         }
         finally
         {
@@ -96,21 +93,21 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             connection.start();
 
             Message message = consumer.receive(getReceiveTimeout());
-            assertTrue("TextMessage should be received", message instanceof TextMessage);
-            assertFalse("Unexpected JMSRedelivered after first receive", message.getJMSRedelivered());
-            assertEquals("Unexpected message content", "A", ((TextMessage) message).getText());
+            assertTrue(message instanceof TextMessage, "TextMessage should be received");
+            assertFalse(message.getJMSRedelivered(), "Unexpected JMSRedelivered after first receive");
+            assertEquals("A", ((TextMessage) message).getText(), "Unexpected message content");
 
             session.rollback();
 
             message = consumer.receive(getReceiveTimeout());
-            assertTrue("TextMessage should be received", message instanceof TextMessage);
-            assertTrue("Unexpected JMSRedelivered after second receive", message.getJMSRedelivered());
-            assertEquals("Unexpected message content", "A", ((TextMessage) message).getText());
+            assertTrue(message instanceof TextMessage, "TextMessage should be received");
+            assertTrue(message.getJMSRedelivered(), "Unexpected JMSRedelivered after second receive");
+            assertEquals("A", ((TextMessage) message).getText(), "Unexpected message content");
 
             message = consumer.receive(getReceiveTimeout());
-            assertTrue("TextMessage should be received", message instanceof TextMessage);
-            assertFalse("Unexpected JMSRedelivered for second message", message.getJMSRedelivered());
-            assertEquals("Unexpected message content", "B", ((TextMessage) message).getText());
+            assertTrue(message instanceof TextMessage, "TextMessage should be received");
+            assertFalse(message.getJMSRedelivered(), "Unexpected JMSRedelivered for second message");
+            assertEquals("B", ((TextMessage) message).getText(), "Unexpected message content");
 
             session.commit();
         }
@@ -155,18 +152,15 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
                 Message receivedMessage = consumer.receive(getReceiveTimeout());
                 assertNotNull(receivedMessage);
 
-                assertEquals("JMSCorrelationID mismatch", correlationId, receivedMessage.getJMSCorrelationID());
-                assertEquals("JMSType mismatch", message.getJMSType(), receivedMessage.getJMSType());
-                assertEquals("JMSReply To mismatch", message.getJMSReplyTo(), receivedMessage.getJMSReplyTo());
-                assertTrue("JMSMessageID does not start 'ID:'", receivedMessage.getJMSMessageID().startsWith("ID:"));
-                assertEquals("JMSPriority mismatch", priority, receivedMessage.getJMSPriority());
-                assertTrue(String.format(
-                        "Unexpected JMSExpiration: got '%d', but expected value equals or greater than '%d'",
-                        receivedMessage.getJMSExpiration(),
-                        currentTime + timeToLive),
-
-                           receivedMessage.getJMSExpiration() >= currentTime + timeToLive
-                           && receivedMessage.getJMSExpiration() <= System.currentTimeMillis() + timeToLive);
+                assertEquals(correlationId, receivedMessage.getJMSCorrelationID(), "JMSCorrelationID mismatch");
+                assertEquals(message.getJMSType(), receivedMessage.getJMSType(), "JMSType mismatch");
+                assertEquals(message.getJMSReplyTo(), receivedMessage.getJMSReplyTo(), "JMSReply To mismatch");
+                assertTrue(receivedMessage.getJMSMessageID().startsWith("ID:"), "JMSMessageID does not start 'ID:'");
+                assertEquals(priority, receivedMessage.getJMSPriority(), "JMSPriority mismatch");
+                assertTrue(receivedMessage.getJMSExpiration() >= currentTime + timeToLive &&
+                                receivedMessage.getJMSExpiration() <= System.currentTimeMillis() + timeToLive,
+                        String.format("Unexpected JMSExpiration: got '%d', but expected value equals or greater than '%d'",
+                                receivedMessage.getJMSExpiration(), currentTime + timeToLive));
             }
             finally
             {
@@ -185,8 +179,8 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
         final Connection connection = getConnection();
         try
         {
-            assumeThat(isJMSXPropertySupported(connection, "JMSXGroupID"), is(equalTo(true)));
-            assumeThat(isJMSXPropertySupported(connection, "JMSXGroupSeq"), is(equalTo(true)));
+            assumeTrue(isJMSXPropertySupported(connection, "JMSXGroupID"));
+            assumeTrue(isJMSXPropertySupported(connection, "JMSXGroupSeq"));
 
             final String groupId = "testGroup";
             final int groupSequence = 3;
@@ -204,8 +198,10 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             final Message receivedMessage = consumer.receive(getReceiveTimeout());
             assertNotNull(receivedMessage);
 
-            assertEquals("Unexpected JMSXGroupID", groupId, receivedMessage.getStringProperty("JMSXGroupID"));
-            assertEquals("Unexpected JMSXGroupSeq", groupSequence, receivedMessage.getIntProperty("JMSXGroupSeq"));
+            assertEquals(groupId, receivedMessage.getStringProperty("JMSXGroupID"),
+                    "Unexpected JMSXGroupID");
+            assertEquals(groupSequence, receivedMessage.getIntProperty("JMSXGroupSeq"),
+                    "Unexpected JMSXGroupSeq");
         }
         finally
         {
@@ -239,12 +235,16 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             final Message receivedMessage = consumer.receive(getReceiveTimeout());
             assertNotNull(receivedMessage);
 
-            assertEquals("Unexpected boolean property value", Boolean.TRUE, message.getBooleanProperty("boolean"));
-            assertEquals("Unexpected byte property value", Byte.MAX_VALUE, message.getByteProperty("byte"));
-            assertEquals("Unexpected short property value", Short.MAX_VALUE, message.getShortProperty("short"));
-            assertEquals("Unexpected int property value", Integer.MAX_VALUE, message.getIntProperty("int"));
-            assertEquals("Unexpected float property value", Float.MAX_VALUE, message.getFloatProperty("float"), 0f);
-            assertEquals("Unexpected double property value", Double.MAX_VALUE, message.getDoubleProperty("double"), 0d);
+            assertEquals(Boolean.TRUE, message.getBooleanProperty("boolean"),
+                    "Unexpected boolean property value");
+            assertEquals(Byte.MAX_VALUE, message.getByteProperty("byte"), "Unexpected byte property value");
+            assertEquals(Short.MAX_VALUE, message.getShortProperty("short"),
+                    "Unexpected short property value");
+            assertEquals(Integer.MAX_VALUE, message.getIntProperty("int"), "Unexpected int property value");
+            assertEquals(Float.MAX_VALUE, message.getFloatProperty("float"), 0f,
+                    "Unexpected float property value");
+            assertEquals(Double.MAX_VALUE, message.getDoubleProperty("double"), 0d,
+                    "Unexpected double property value");
         }
         finally
         {
@@ -280,8 +280,8 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             final Message receivedMessage = consumer.receive(getReceiveTimeout());
             assertNotNull(receivedMessage);
 
-            assertFalse("Unexpected property found", message.propertyExists("invalidObject"));
-            assertEquals("Unexpected property value", validValue, message.getObjectProperty("validObject"));
+            assertFalse(message.propertyExists("invalidObject"), "Unexpected property found");
+            assertEquals(validValue, message.getObjectProperty("validObject"), "Unexpected property value");
         }
         finally
         {
@@ -300,7 +300,7 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             MessageProducer producer = session.createProducer(queue);
             Message message = session.createMessage();
             producer.send(message);
-            assertNotNull("Produced message is expected to have a JMSMessageID", message.getJMSMessageID());
+            assertNotNull(message.getJMSMessageID(), "Produced message is expected to have a JMSMessageID");
 
             final MessageConsumer consumer = session.createConsumer(queue);
             connection.start();
@@ -308,16 +308,19 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             final Message receivedMessageWithId = consumer.receive(getReceiveTimeout());
             assertNotNull(receivedMessageWithId);
 
-            assertNotNull("Received message is expected to have a JMSMessageID", receivedMessageWithId.getJMSMessageID());
-            assertEquals("Received message JMSMessageID should match the sent", message.getJMSMessageID(), receivedMessageWithId.getJMSMessageID());
+            assertNotNull(receivedMessageWithId.getJMSMessageID(),
+                    "Received message is expected to have a JMSMessageID");
+            assertEquals(message.getJMSMessageID(), receivedMessageWithId.getJMSMessageID(),
+                    "Received message JMSMessageID should match the sent");
 
             producer.setDisableMessageID(true);
             producer.send(message);
-            assertNull("Produced message is expected to not have a JMSMessageID", message.getJMSMessageID());
+            assertNull(message.getJMSMessageID(), "Produced message is expected to not have a JMSMessageID");
 
             final Message receivedMessageWithoutId = consumer.receive(getReceiveTimeout());
             assertNotNull(receivedMessageWithoutId);
-            assertNull("Received message is not expected to have a JMSMessageID", receivedMessageWithoutId.getJMSMessageID());
+            assertNull(receivedMessageWithoutId.getJMSMessageID(),
+                    "Received message is not expected to have a JMSMessageID");
         }
         finally
         {
@@ -337,7 +340,6 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             {
                 supported = true;
             }
-
         }
         return supported;
     }

@@ -19,21 +19,19 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -45,23 +43,21 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ExternalAuthenticationManagerTest extends UnitTestBase
 {
-    private ExternalAuthenticationManager _manager;
-    private ExternalAuthenticationManager _managerUsingFullDN;
+    private ExternalAuthenticationManager<?> _manager;
+    private ExternalAuthenticationManager<?> _managerUsingFullDN;
     private SaslSettings _saslSettings;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        Map<String,Object> attrs = new HashMap<>();
-        attrs.put(AuthenticationProvider.ID, UUID.randomUUID());
-        attrs.put(AuthenticationProvider.NAME, getTestName());
-        attrs.put("useFullDN",false);
+        final Map<String,Object> attrs = Map.of(AuthenticationProvider.ID, randomUUID(),
+                AuthenticationProvider.NAME, getTestName(),
+                "useFullDN",false);
         _manager = new ExternalAuthenticationManagerImpl(attrs, BrokerTestHelper.createBrokerMock());
         _manager.open();
-        HashMap<String, Object> attrsFullDN = new HashMap<>();
-        attrsFullDN.put(AuthenticationProvider.ID, UUID.randomUUID());
-        attrsFullDN.put(AuthenticationProvider.NAME, getTestName()+"FullDN");
-        attrsFullDN.put("useFullDN",true);
+        final Map<String, Object> attrsFullDN = Map.of(AuthenticationProvider.ID, randomUUID(),
+                AuthenticationProvider.NAME, getTestName() + "FullDN",
+                "useFullDN",true);
 
         _managerUsingFullDN = new ExternalAuthenticationManagerImpl(attrsFullDN, BrokerTestHelper.createBrokerMock());
         _managerUsingFullDN.open();
@@ -71,159 +67,150 @@ public class ExternalAuthenticationManagerTest extends UnitTestBase
     }
 
     @Test
-    public void testGetMechanisms() throws Exception
+    public void testGetMechanisms()
     {
         assertEquals(Collections.singletonList("EXTERNAL"), _manager.getMechanisms());
     }
 
     @Test
-    public void testCreateSaslNegotiator() throws Exception
+    public void testCreateSaslNegotiator()
     {
         createSaslNegotiatorTestImpl(_manager);
     }
 
     @Test
-    public void testAuthenticatePrincipalNull_CausesAuthError() throws Exception
+    public void testAuthenticatePrincipalNull_CausesAuthError()
     {
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
-        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
+        final SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
+        final AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
-        assertEquals("Expected authentication to be unsuccessful",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            result.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus(),
+                "Expected authentication to be unsuccessful");
 
         assertNull(result.getMainPrincipal());
     }
 
     @Test
-    public void testAuthenticatePrincipalNoCn_CausesAuthError() throws Exception
+    public void testAuthenticatePrincipalNoCn_CausesAuthError()
     {
-        X500Principal principal = new X500Principal("DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
+        final X500Principal principal = new X500Principal("DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
-        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
+        final SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
+        final AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
-        assertEquals("Expected authentication to be unsuccessful",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            result.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus(),
+                "Expected authentication to be unsuccessful");
         assertNull(result.getMainPrincipal());
     }
 
     @Test
-    public void testAuthenticatePrincipalEmptyCn_CausesAuthError() throws Exception
+    public void testAuthenticatePrincipalEmptyCn_CausesAuthError()
     {
-        X500Principal principal = new X500Principal("CN=, DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
+        final X500Principal principal = new X500Principal("CN=, DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
-        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
+        final SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
+        final AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
-        assertEquals("Expected authentication to be unsuccessful",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            result.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus(),
+                "Expected authentication to be unsuccessful");
         assertNull(result.getMainPrincipal());
     }
 
     @Test
-    public void testAuthenticatePrincipalCnOnly() throws Exception
+    public void testAuthenticatePrincipalCnOnly()
     {
-        X500Principal principal = new X500Principal("CN=person");
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person", _manager);
+        final X500Principal principal = new X500Principal("CN=person");
+        final UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person", _manager);
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
-        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
+        final SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
+        final AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
-        assertEquals("Expected authentication to be successful",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            result.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus(),
+                "Expected authentication to be successful");
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals("person", result.getMainPrincipal().getName());
     }
 
     @Test
-    public void testAuthenticatePrincipalCnAndDc() throws Exception
+    public void testAuthenticatePrincipalCnAndDc()
     {
-        X500Principal principal = new X500Principal("CN=person, DC=example, DC=com");
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com", _manager);
+        final X500Principal principal = new X500Principal("CN=person, DC=example, DC=com");
+        final UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com", _manager);
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
-        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
+        final SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
+        final AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
-        assertEquals("Expected authentication to be successful",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            result.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus(),
+                "Expected authentication to be successful");
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals("person@example.com", result.getMainPrincipal().getName());
     }
 
     @Test
-    public void testAuthenticatePrincipalCnDc_OtherComponentsIgnored() throws Exception
+    public void testAuthenticatePrincipalCnDc_OtherComponentsIgnored()
     {
-        X500Principal principal = new X500Principal("CN=person, DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com", _manager);
+        final X500Principal principal = new X500Principal("CN=person, DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
+        final UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com", _manager);
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
-        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
+        final SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
+        final AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
-        assertEquals("Expected authentication to be successful",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            result.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus(),
+                "Expected authentication to be successful");
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals("person@example.com", result.getMainPrincipal().getName());
     }
 
     @Test
-    public void testAuthenticatePrincipalCn_OtherComponentsIgnored() throws Exception
+    public void testAuthenticatePrincipalCn_OtherComponentsIgnored()
     {
-        X500Principal principal = new X500Principal("CN=person, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person", _manager);
+        final X500Principal principal = new X500Principal("CN=person, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
+        final UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person", _manager);
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
+        final SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
 
-        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
+        final AuthenticationResult result = negotiator.handleResponse(new byte[0]);
         assertNotNull(result);
-        assertEquals("Expected authentication to be successful",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            result.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus(),
+                "Expected authentication to be successful");
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals("person", result.getMainPrincipal().getName());
     }
 
     @Test
-    public void testFullDNMode_CreateSaslNegotiator() throws Exception
+    public void testFullDNMode_CreateSaslNegotiator()
     {
         createSaslNegotiatorTestImpl(_managerUsingFullDN);
     }
 
     @Test
-    public void testFullDNMode_Authenticate() throws Exception
+    public void testFullDNMode_Authenticate()
     {
-        X500Principal principal = new X500Principal("CN=person, DC=example, DC=com");
+        final X500Principal principal = new X500Principal("CN=person, DC=example, DC=com");
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _managerUsingFullDN.createSaslNegotiator("EXTERNAL", _saslSettings, null);
-        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
+        final SaslNegotiator negotiator = _managerUsingFullDN.createSaslNegotiator("EXTERNAL", _saslSettings, null);
+        final AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
-        assertEquals("Expected authentication to be successful",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            result.getStatus());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus(),
+                "Expected authentication to be successful");
 
         assertOnlyContainsWrapped(principal, result.getPrincipals());
         assertEquals("CN=person,DC=example,DC=com", result.getMainPrincipal().getName());
     }
 
-    private void createSaslNegotiatorTestImpl(AuthenticationProvider<?> manager) throws Exception
+    private void createSaslNegotiatorTestImpl(final AuthenticationProvider<?> manager)
     {
         SaslNegotiator negotiator = manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
-        assertNotNull("Could not create SASL negotiator for 'EXTERNAL' mechanism.", negotiator);
+        assertNotNull(negotiator, "Could not create SASL negotiator for 'EXTERNAL' mechanism.");
 
         negotiator = manager.createSaslNegotiator("PLAIN", _saslSettings, null);
-        assertNull("Should not be able to create SASL negotiator with incorrect mechanism.", negotiator);
+        assertNull(negotiator, "Should not be able to create SASL negotiator with incorrect mechanism.");
     }
-
 }

@@ -21,9 +21,9 @@
 package org.apache.qpid.systests.jms_1_1.extensions.limitliveconsumers;
 
 import static org.apache.qpid.systests.Utils.INDEX;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Collections;
 
@@ -34,14 +34,13 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
 
 public class LimitLiveConsumersTest extends JmsTestBase
 {
-
     @Test
     public void testLimitLiveConsumers() throws Exception
     {
@@ -70,11 +69,11 @@ public class LimitLiveConsumersTest extends JmsTestBase
             for (int i = 0; i < 3; i++)
             {
                 Message receivedMsg = consumer1.receive(getReceiveTimeout());
-                assertNotNull("Message " + i + " not received", receivedMsg);
-                assertEquals("Unexpected message", i, receivedMsg.getIntProperty(INDEX));
+                assertNotNull(receivedMsg, "Message " + i + " not received");
+                assertEquals(i, receivedMsg.getIntProperty(INDEX), "Unexpected message");
             }
 
-            assertNull("Unexpected message arrived", consumer2.receive(getShortReceiveTimeout()));
+            assertNull(consumer2.receive(getShortReceiveTimeout()), "Unexpected message arrived");
 
             consumer1.close();
             session1.close();
@@ -82,11 +81,11 @@ public class LimitLiveConsumersTest extends JmsTestBase
             for (int i = 3; i < numberOfMessages; i++)
             {
                 Message receivedMsg = consumer2.receive(getReceiveTimeout());
-                assertNotNull("Message " + i + " not received", receivedMsg);
-                assertEquals("Unexpected message", i, receivedMsg.getIntProperty(INDEX));
+                assertNotNull(receivedMsg, "Message " + i + " not received");
+                assertEquals(i, receivedMsg.getIntProperty(INDEX), "Unexpected message");
             }
 
-            assertNull("Unexpected message arrived", consumer2.receive(getShortReceiveTimeout()));
+            assertNull(consumer2.receive(getShortReceiveTimeout()), "Unexpected message arrived");
 
             Session session3 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
@@ -97,25 +96,28 @@ public class LimitLiveConsumersTest extends JmsTestBase
             producer.send(Utils.createNextMessage(session3, 7));
 
 
-            assertNotNull("Message not received on second consumer", consumer2.receive(getReceiveTimeout()));
-            assertNull("Message unexpectedly received on third consumer", consumer3.receive(getShortReceiveTimeout()));
+            assertNotNull(consumer2.receive(getReceiveTimeout()), "Message not received on second consumer");
+            assertNull(consumer3.receive(getShortReceiveTimeout()),
+                    "Message unexpectedly received on third consumer");
 
             Session session4 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
             MessageConsumer consumer4 = session4.createConsumer(queue);
 
-            assertNull("Message unexpectedly received on fourth consumer", consumer4.receive(getShortReceiveTimeout()));
+            assertNull(consumer4.receive(getShortReceiveTimeout()),
+                    "Message unexpectedly received on fourth consumer");
             consumer3.close();
             session3.close();
 
-            assertNull("Message unexpectedly received on fourth consumer", consumer4.receive(getShortReceiveTimeout()));
+            assertNull(consumer4.receive(getShortReceiveTimeout()),
+                    "Message unexpectedly received on fourth consumer");
             consumer2.close();
             session2.close();
 
-            assertNotNull("Message not received on fourth consumer", consumer4.receive(getReceiveTimeout()));
+            assertNotNull(consumer4.receive(getReceiveTimeout()), "Message not received on fourth consumer");
 
 
-            assertNull("Unexpected message arrived", consumer4.receive(getShortReceiveTimeout()));
+            assertNull(consumer4.receive(getShortReceiveTimeout()), "Unexpected message arrived");
         }
         finally
         {

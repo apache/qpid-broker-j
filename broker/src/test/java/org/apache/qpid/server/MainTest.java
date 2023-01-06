@@ -20,16 +20,18 @@
  */
 package org.apache.qpid.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
-import org.junit.Test;
 
+import org.junit.jupiter.api.Test;
+
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -83,8 +85,8 @@ public class MainTest extends UnitTestBase
     {
         final TestMain main = new TestMain("-v".split("\\s"));
 
-        assertNotNull("Command line not parsed correctly", main.getCommandLine());
-        assertTrue("Parsed command line didnt pick up version option", main.getCommandLine().hasOption("v"));
+        assertNotNull(main.getCommandLine(), "Command line not parsed correctly");
+        assertTrue(main.getCommandLine().hasOption("v"), "Parsed command line didnt pick up version option");
     }
 
     @Test
@@ -92,8 +94,8 @@ public class MainTest extends UnitTestBase
     {
         final TestMain main = new TestMain("-h".split("\\s"));
 
-        assertNotNull("Command line not parsed correctly", main.getCommandLine());
-        assertTrue("Parsed command line didnt pick up help option", main.getCommandLine().hasOption("h"));
+        assertNotNull(main.getCommandLine(), "Command line not parsed correctly");
+        assertTrue(main.getCommandLine().hasOption("h"), "Parsed command line didnt pick up help option");
     }
 
     @Test
@@ -164,7 +166,7 @@ public class MainTest extends UnitTestBase
 
         Map<String, String> props = (Map<String,String>) attributes.get(SystemConfig.CONTEXT);
 
-        assertEquals(newPort, props.get(org.apache.qpid.server.model.Broker.QPID_AMQP_PORT));
+        assertEquals(newPort, props.get(Broker.QPID_AMQP_PORT));
         assertEquals("value", props.get("name"));
 
         //long name
@@ -173,7 +175,7 @@ public class MainTest extends UnitTestBase
 
         props = (Map<String,String>) attributes.get(SystemConfig.CONTEXT);
 
-        assertEquals(newPort, props.get(org.apache.qpid.server.model.Broker.QPID_AMQP_PORT));
+        assertEquals(newPort, props.get(Broker.QPID_AMQP_PORT));
         assertEquals("value2", props.get("name2"));
     }
 
@@ -183,12 +185,12 @@ public class MainTest extends UnitTestBase
         //missing equals
         startDummyMain("-prop namevalue");
         final boolean condition1 = _startupException instanceof IllegalArgumentException;
-        assertTrue("expected exception did not occur", condition1);
+        assertTrue(condition1, "expected exception did not occur");
 
         //no name specified
         startDummyMain("-prop =value");
         final boolean condition = _startupException instanceof IllegalArgumentException;
-        assertTrue("expected exception did not occur", condition);
+        assertTrue(condition, "expected exception did not occur");
     }
 
     private Map<String,Object> startDummyMain(String commandLine)

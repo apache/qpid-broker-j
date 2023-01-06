@@ -21,18 +21,16 @@
 
 package org.apache.qpid.systests.jms_1_1.queueconnection;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import javax.jms.InvalidDestinationException;
-import javax.jms.JMSException;
-import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.QueueConnection;
 import javax.jms.QueueSender;
 import javax.jms.QueueSession;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -91,5 +89,4 @@ public class QueueSenderTest extends JmsTestBase
             connection.close();
         }
     }
-
 }

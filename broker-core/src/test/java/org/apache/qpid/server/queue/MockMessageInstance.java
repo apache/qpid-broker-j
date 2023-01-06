@@ -36,8 +36,7 @@ import org.apache.qpid.server.util.StateChangeListener;
 
 public class MockMessageInstance implements MessageInstance
 {
-
-    private ServerMessage _message;
+    private ServerMessage<?> _message;
 
     @Override
     public boolean acquire()
@@ -66,7 +65,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public MessageInstanceConsumer getAcquiringConsumer()
+    public MessageInstanceConsumer<?> getAcquiringConsumer()
     {
         return null;
     }
@@ -132,7 +131,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public ServerMessage getMessage()
+    public ServerMessage<?> getMessage()
     {
         return _message;
     }
@@ -193,7 +192,7 @@ public class MockMessageInstance implements MessageInstance
         return false;
     }
 
-    public void setMessage(ServerMessage msg)
+    public void setMessage(final ServerMessage<?> msg)
     {
         _message = msg;
     }

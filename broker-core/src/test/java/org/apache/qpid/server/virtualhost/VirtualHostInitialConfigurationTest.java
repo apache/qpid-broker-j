@@ -20,19 +20,17 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -58,24 +56,23 @@ public class VirtualHostInitialConfigurationTest extends UnitTestBase
     private TaskExecutor _taskExecutor;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
-        EventLogger eventLogger = mock(EventLogger.class);
-        ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
+        final EventLogger eventLogger = mock(EventLogger.class);
+        final ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
 
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
 
-        SystemConfig<?> context = mock(SystemConfig.class);
+        final SystemConfig<?> context = mock(SystemConfig.class);
         when(context.getEventLogger()).thenReturn(eventLogger);
         when(context.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
 
-        Principal systemPrincipal = mock(Principal.class);
-        AccessControl accessControl = BrokerTestHelper.createAccessControlMock();
+        final Principal systemPrincipal = mock(Principal.class);
+        final AccessControl accessControl = BrokerTestHelper.createAccessControlMock();
 
-        Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal, accessControl);
+        final Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal, accessControl);
         when(broker.getObjectFactory()).thenReturn(objectFactory);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getParent()).thenReturn(context);
@@ -90,11 +87,10 @@ public class VirtualHostInitialConfigurationTest extends UnitTestBase
         when(_virtualHostNode.getModel()).thenReturn(objectFactory.getModel());
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
-
         when(_virtualHostNode.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         _taskExecutor.stopImmediately();
@@ -103,15 +99,15 @@ public class VirtualHostInitialConfigurationTest extends UnitTestBase
     @Test
     public void nodeAutoCreationPolicyWithEmptyAttributes()
     {
-        String nodeAutoCreationPolicies = "{"
-                                          + "\"pattern\":\".*\","
-                                          + "\"createdOnPublish\":\"true\","
-                                          + "\"createdOnConsume\":\"true\","
-                                          + "\"nodeType\":\"queue\", "
-                                          + "\"attributes\": {}"
-                                          + "}";
-        VirtualHost<?> vh = createVirtualHost(nodeAutoCreationPolicies);
-        MessageSource ms =  vh.getAttainedMessageSource("queue1");
+        final String nodeAutoCreationPolicies = "{" +
+                "\"pattern\":\".*\"," +
+                "\"createdOnPublish\":\"true\"," +
+                "\"createdOnConsume\":\"true\"," +
+                "\"nodeType\":\"queue\", " +
+                "\"attributes\": {}" +
+                "}";
+        final VirtualHost<?> vh = createVirtualHost(nodeAutoCreationPolicies);
+        final MessageSource ms =  vh.getAttainedMessageSource("queue1");
         assertTrue(Queue.class.isAssignableFrom(ms.getClass()));
         assertEquals("queue1", ms.getName());
     }
@@ -119,28 +115,25 @@ public class VirtualHostInitialConfigurationTest extends UnitTestBase
     @Test
     public void nodeAutoCreationPolicyWithoutAttributes()
     {
-        String nodeAutoCreationPolicies = "{"
-                                          + "\"pattern\":\".*\","
-                                          + "\"createdOnPublish\":\"true\","
-                                          + "\"createdOnConsume\":\"true\","
-                                          + "\"nodeType\":\"queue\""
-                                          + "}";
-        VirtualHost<?> vh = createVirtualHost(nodeAutoCreationPolicies);
-        MessageSource ms =  vh.getAttainedMessageSource("queue1");
+        final String nodeAutoCreationPolicies = "{" +
+                "\"pattern\":\".*\"," +
+                "\"createdOnPublish\":\"true\"," +
+                "\"createdOnConsume\":\"true\"," +
+                "\"nodeType\":\"queue\"" +
+                "}";
+        final VirtualHost<?> vh = createVirtualHost(nodeAutoCreationPolicies);
+        final MessageSource ms =  vh.getAttainedMessageSource("queue1");
         assertTrue(Queue.class.isAssignableFrom(ms.getClass()));
         assertEquals("queue1", ms.getName());
     }
 
-    private VirtualHost<?> createVirtualHost(String nodeAutoCreationPolicies)
+    private VirtualHost<?> createVirtualHost(final String nodeAutoCreationPolicies)
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHost.NAME, getTestName());
-        attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-        attributes.put("nodeAutoCreationPolicies", nodeAutoCreationPolicies);
-
-        attributes = new HashMap<>(attributes);
-        attributes.put(VirtualHost.ID, UUID.randomUUID());
-        TestMemoryVirtualHost host = new TestMemoryVirtualHost(attributes, _virtualHostNode);
+        final Map<String, Object> attributes = Map.of(VirtualHost.NAME, getTestName(),
+                VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
+                "nodeAutoCreationPolicies", nodeAutoCreationPolicies,
+                VirtualHost.ID, randomUUID());
+        final TestMemoryVirtualHost host = new TestMemoryVirtualHost(attributes, _virtualHostNode);
         host.create();
         host.start();
         return host;

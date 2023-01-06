@@ -24,8 +24,8 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -33,13 +33,13 @@ public class InMemoryDatabaseTestBase extends UnitTestBase
 {
     private Connection _setupConnection;
 
-    @Before
+    @BeforeEach
     public void startUpDatabase() throws SQLException
     {
         _setupConnection = DriverManager.getConnection(getTestDatabaseUrl());
     }
 
-    @After
+    @AfterEach
     public void shutDownDatabase() throws SQLException
     {
         try (final Statement statement = _setupConnection.createStatement())

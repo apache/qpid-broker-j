@@ -21,17 +21,13 @@
 package org.apache.qpid.tests.http.v7_0;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.tests.http.HttpRequestConfig;
 import org.apache.qpid.tests.http.HttpTestBase;
@@ -46,5 +42,4 @@ public class LegacyManagementTest extends HttpTestBase
         assertThat(brokerAttributes, is(notNullValue()));
         assertThat(brokerAttributes.get("modelVersion"), equalTo("7.0"));
     }
-
 }

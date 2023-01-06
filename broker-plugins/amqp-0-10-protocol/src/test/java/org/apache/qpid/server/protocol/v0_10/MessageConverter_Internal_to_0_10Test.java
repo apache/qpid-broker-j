@@ -20,8 +20,8 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,8 +35,9 @@ import java.util.HashMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -58,12 +59,6 @@ public class MessageConverter_Internal_to_0_10Test extends UnitTestBase
     private final MessageConverter_Internal_to_v0_10 _converter = new MessageConverter_Internal_to_v0_10();
     private final StoredMessage<InternalMessageMetaData> _handle = mock(StoredMessage.class);
     private final AMQMessageHeader _amqpHeader = mock(AMQMessageHeader.class);
-
-    @Before
-    public void setUp() throws Exception
-    {
-    }
-
 
     @Test
     public void testStringMessage() throws Exception
@@ -267,10 +262,8 @@ public class MessageConverter_Internal_to_0_10Test extends UnitTestBase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
         final QpidByteBuffer content = convertedMessage.getContent();
 
-        assertArrayEquals("Unexpected content", expectedContent != null ? expectedContent : new byte[0], getBytes(content));
-        assertEquals("Unexpected content type",
-                            expectedContentType,
-                            convertedMessage.getMessageHeader().getMimeType());
+        assertArrayEquals(expectedContent != null ? expectedContent : new byte[0], getBytes(content), "Unexpected content");
+        assertEquals(expectedContentType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected content type");
     }
 
     private byte[] getBytes(final QpidByteBuffer content) throws Exception

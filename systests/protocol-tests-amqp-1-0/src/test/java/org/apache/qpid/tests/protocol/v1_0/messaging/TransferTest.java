@@ -33,8 +33,8 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.oneOf;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -47,9 +47,10 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.google.common.collect.Sets;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -92,7 +93,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
 {
     private static final long MAX_MAX_MESSAGE_SIZE_WE_ARE_WILLING_TO_TEST = 200 * 1024 * 1024L;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -380,7 +381,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             final ErrorCarryingFrameBody performative = (ErrorCarryingFrameBody) response.getBody();
             final Error error = performative.getError();
             assertThat(error, is(notNullValue()));
-            assumeThat(error.getCondition(), is(not(AmqpError.NOT_IMPLEMENTED)));
+            assumeTrue(is(not(AmqpError.NOT_IMPLEMENTED)).matches(error.getCondition()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
         }
     }
@@ -389,7 +390,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "2.6.12 Transferring A Message", description = "Pipelined message send")
     public void presettledPipelined() throws Exception
     {
-        assumeThat(getBrokerAdmin().isAnonymousSupported(), equalTo(true));
+        assumeTrue(getBrokerAdmin().isAnonymousSupported());
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -692,7 +693,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
         assertThat(Utils.receiveMessage(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(getTestName())));
     }
 
-    @Ignore
+    @Disabled
     @Test
     @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
     public void receiveTransferReceiverSettleSecondWithImplicitDispositionState() throws Exception
@@ -825,7 +826,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attachSndSettleMode(SenderSettleMode.SETTLED)
                                                      .attach().consumeResponse(Attach.class);
             Attach attach = interaction.getLatestResponse(Attach.class);
-            assumeThat(attach.getSndSettleMode(), is(equalTo(SenderSettleMode.SETTLED)));
+            assumeTrue(is(equalTo(SenderSettleMode.SETTLED)).matches(attach.getSndSettleMode()));
 
             interaction.flowIncomingWindow(UnsignedInteger.ONE)
                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
@@ -851,7 +852,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
     @Test
     @SpecificationTest(section = "2.7.5",
             description = "[delivery-tag] uniquely identifies the delivery attempt for a given message on this link.")
-    @Ignore("QPID-8346: test relies on receiver-settle-mode=second which is broken")
+    @Disabled("QPID-8346: test relies on receiver-settle-mode=second which is broken")
     public void transfersWithDuplicateUnsettledDeliveryTag() throws Exception
     {
         String content1 = getTestName() + "_1";
@@ -974,9 +975,9 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                        .getLatestResponse(Attach.class);
 
             final UnsignedLong maxMessageSizeLimit = attach.getMaxMessageSize();
-            assumeThat(maxMessageSizeLimit, is(notNullValue()));
-            assumeThat(maxMessageSizeLimit.longValue(),
-                       is(both(greaterThan(0L)).and(lessThan(MAX_MAX_MESSAGE_SIZE_WE_ARE_WILLING_TO_TEST))));
+            assumeTrue(is(notNullValue()).matches(maxMessageSizeLimit));
+            assumeTrue(is(both(greaterThan(0L)).and(lessThan(MAX_MAX_MESSAGE_SIZE_WE_ARE_WILLING_TO_TEST)))
+                .matches(maxMessageSizeLimit.longValue()));
 
             Flow flow = interaction.consumeResponse(Flow.class)
                                    .getLatestResponse(Flow.class);
@@ -1035,7 +1036,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .attach().consumeResponse(Attach.class)
                                                      .consumeResponse(Flow.class);
             Flow flow = interaction.getLatestResponse(Flow.class);
-            assumeThat("insufficient credit for the test", flow.getLinkCredit().intValue(), is(greaterThan(2)));
+            assumeTrue(is(greaterThan(2)).matches(flow.getLinkCredit().intValue()), "insufficient credit for the test");
 
             interaction.transferDeliveryId(UnsignedInteger.ZERO)
                        .transferDeliveryTag(new Binary("A".getBytes(StandardCharsets.UTF_8)))
@@ -1077,7 +1078,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .consumeResponse(Flow.class);
 
             Flow flow = interaction.getLatestResponse(Flow.class);
-            assumeThat("insufficient credit for the test", flow.getLinkCredit().intValue(), is(greaterThan(2)));
+            assumeTrue(is(greaterThan(2)).matches(flow.getLinkCredit().intValue()), "insufficient credit for the test");
 
             interaction.txnAttachCoordinatorLink(UnsignedInteger.ONE, this::coordinatorAttachExpected)
                        .txnDeclare();
@@ -1257,31 +1258,30 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
     private void assumeSufficientCredits(final Flow flow)
     {
-        assumeThat(flow.getLinkCredit(), is(notNullValue()));
-        assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ZERO)));
+        assumeTrue(is(notNullValue()).matches(flow.getLinkCredit()));
+        assumeTrue(is(greaterThan(UnsignedInteger.ZERO)).matches(flow.getLinkCredit()));
     }
 
     private void assumeCreditsGreaterThanOne(final Flow flow)
     {
-        assumeThat(flow.getLinkCredit(), is(notNullValue()));
-        assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ONE)));
+        assumeTrue(is(notNullValue()).matches(flow.getLinkCredit()));
+        assumeTrue(is(greaterThan(UnsignedInteger.ONE)).matches(flow.getLinkCredit()));
     }
 
     private void assumeReceiverSettlesSecond(final Attach attach)
     {
-        assumeThat(attach.getRcvSettleMode(), is(equalTo(ReceiverSettleMode.SECOND)));
+        assumeTrue(is(equalTo(ReceiverSettleMode.SECOND)).matches(attach.getRcvSettleMode()));
     }
 
     private void coordinatorAttachExpected(final Response<?> response)
     {
         assertThat(response, is(notNullValue()));
-        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
+        assumeTrue(anyOf(instanceOf(Attach.class), instanceOf(Flow.class)).matches(response.getBody()));
     }
 
     private void assumeAttach(final Response<?> response)
     {
         assertThat(response, notNullValue());
-        assumeThat(response.getBody(), is(instanceOf(Attach.class)));
+        assumeTrue(is(instanceOf(Attach.class)).matches(response.getBody()));
     }
-
 }

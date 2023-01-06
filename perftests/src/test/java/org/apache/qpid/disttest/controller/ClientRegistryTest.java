@@ -18,43 +18,41 @@
  */
 package org.apache.qpid.disttest.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.qpid.disttest.DistributedTestException;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.fail;
-
-import static org.junit.Assert.assertEquals;
-
-public class ClientRegistryTest extends UnitTestBase
+public class ClientRegistryTest
 {
     private static final String CLIENT1_REGISTERED_NAME = "CLIENT1_REGISTERED_NAME";
     private static final String CLIENT2_REGISTERED_NAME = "CLIENT2_REGISTERED_NAME";
     private static final String CLIENT3_REGISTERED_NAME = "CLIENT3_REGISTERED_NAME";
 
-    private final ClientRegistry _clientRegistry = new ClientRegistry();
-
     private long _awaitDelay = 100;
 
-    @Before
+    private ClientRegistry _clientRegistry;
+
+    @BeforeEach
     public void setUp() throws Exception
     {
+        _clientRegistry = new ClientRegistry();
         _awaitDelay = Long.getLong("ClientRegistryTest.awaitDelay", 100L);
-
     }
 
     @Test
     public void testRegisterClient()
     {
-        assertEquals((long) 0, (long) _clientRegistry.getClients().size());
+        assertEquals(0, _clientRegistry.getClients().size());
 
         _clientRegistry.registerClient(CLIENT1_REGISTERED_NAME);
-        assertEquals((long) 1, (long) _clientRegistry.getClients().size());
+        assertEquals(1, _clientRegistry.getClients().size());
     }
 
     @Test
@@ -76,7 +74,7 @@ public class ClientRegistryTest extends UnitTestBase
     public void testAwaitOneClientWhenClientNotRegistered()
     {
         int numberOfClientsAbsent = _clientRegistry.awaitClients(1, _awaitDelay);
-        assertEquals((long) 1, (long) numberOfClientsAbsent);
+        assertEquals(1, numberOfClientsAbsent);
     }
 
     @Test
@@ -85,7 +83,7 @@ public class ClientRegistryTest extends UnitTestBase
         _clientRegistry.registerClient(CLIENT1_REGISTERED_NAME);
 
         int numberOfClientsAbsent = _clientRegistry.awaitClients(1, _awaitDelay);
-        assertEquals((long) 0, (long) numberOfClientsAbsent);
+        assertEquals(0, numberOfClientsAbsent);
     }
 
     @Test
@@ -95,7 +93,7 @@ public class ClientRegistryTest extends UnitTestBase
         registerClientLater(CLIENT2_REGISTERED_NAME, 50);
 
         int numberOfClientsAbsent = _clientRegistry.awaitClients(2, _awaitDelay);
-        assertEquals((long) 0, (long) numberOfClientsAbsent);
+        assertEquals(0, numberOfClientsAbsent);
     }
 
     @Test
@@ -133,7 +131,7 @@ public class ClientRegistryTest extends UnitTestBase
 
         int numberOfClientsAbsent = _clientRegistry.awaitClients(3, timeout);
 
-        assertEquals(message, (long) expectedNumberOfAbsentees, (long) numberOfClientsAbsent);
+        assertEquals(expectedNumberOfAbsentees, numberOfClientsAbsent, message);
     }
 
     private void registerClientLater(final String clientName, long delayInMillis)

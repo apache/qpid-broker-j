@@ -19,30 +19,19 @@
  */
 package org.apache.qpid.disttest.results.aggregation;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.util.Date;
 
 import javax.jms.Session;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.message.ParticipantResult;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ParticipantResultAggregatorTest extends UnitTestBase
 {
@@ -68,7 +57,13 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
     private static final double EXPECTED_AGGREGATED_ALL_THROUGHPUT = ((OVERALL_PROCESSED)/1024)/((OVERALL_TIMETAKEN)/1000);
     private static final int EXPECTED_AGGREGATED_MESSAGE_THROUGHPUT = (int)(OVERALL_NUMBER_OF_MESSAGES_PROCESSED * 1000.0d/OVERALL_TIMETAKEN);
 
-    private final ParticipantResultAggregator _aggregator = new ParticipantResultAggregator(ParticipantResult.class, AGGREGATED_RESULT_NAME);
+    private ParticipantResultAggregator _aggregator;
+
+    @BeforeEach
+    public void setUp()
+    {
+        _aggregator = new ParticipantResultAggregator(ParticipantResult.class, AGGREGATED_RESULT_NAME);
+    }
 
     @Test
     public void testStartAndEndDateForOneParticipantResult()
@@ -115,7 +110,7 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) 25, aggregatedResult.getNumberOfMessagesProcessed());
+        assertEquals(25, aggregatedResult.getNumberOfMessagesProcessed());
     }
 
     @Test
@@ -171,12 +166,11 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) EXPECTED_AGGREGATED_MESSAGE_THROUGHPUT,
-                            (long) aggregatedResult.getMessageThroughput());
+        assertEquals(EXPECTED_AGGREGATED_MESSAGE_THROUGHPUT, aggregatedResult.getMessageThroughput());
     }
 
     @Test
-    public void testConstantTestNameAndIterationNumberRolledUp() throws Exception
+    public void testConstantTestNameAndIterationNumberRolledUp()
     {
         ParticipantResult result1 = new ParticipantResult();
         result1.setTestName(TEST_NAME);
@@ -190,12 +184,12 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) TEST_ITERATION_NUMBER, (long) aggregatedResult.getIterationNumber());
+        assertEquals(TEST_ITERATION_NUMBER, aggregatedResult.getIterationNumber());
         assertEquals(TEST_NAME, aggregatedResult.getTestName());
     }
 
     @Test
-    public void testConstantPayloadSizesRolledUp() throws Exception
+    public void testConstantPayloadSizesRolledUp()
     {
         final int payloadSize = 1024;
 
@@ -209,11 +203,11 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) payloadSize, (long) aggregatedResult.getPayloadSize());
+        assertEquals(payloadSize, aggregatedResult.getPayloadSize());
     }
 
     @Test
-    public void testDifferingPayloadSizesNotRolledUp() throws Exception
+    public void testDifferingPayloadSizesNotRolledUp()
     {
         final int payload1Size = 1024;
         final int payload2Size = 2048;
@@ -228,11 +222,11 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) 0, (long) aggregatedResult.getPayloadSize());
+        assertEquals(0, aggregatedResult.getPayloadSize());
     }
 
     @Test
-    public void testConstantBatchSizesRolledUp() throws Exception
+    public void testConstantBatchSizesRolledUp()
     {
         final int batchSize = 10;
 
@@ -246,11 +240,11 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) batchSize, (long) aggregatedResult.getBatchSize());
+        assertEquals(batchSize, aggregatedResult.getBatchSize());
     }
 
     @Test
-    public void testDifferingBatchSizesNotRolledUp() throws Exception
+    public void testDifferingBatchSizesNotRolledUp()
     {
         final int batch1Size = 10;
         final int batch2Size = 20;
@@ -265,11 +259,11 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) 0, (long) aggregatedResult.getBatchSize());
+        assertEquals(0, aggregatedResult.getBatchSize());
     }
 
     @Test
-    public void testConstantAcknowledgeModesRolledUp() throws Exception
+    public void testConstantAcknowledgeModesRolledUp()
     {
         ParticipantResult result1 = new ParticipantResult();
         result1.setAcknowledgeMode(Session.DUPS_OK_ACKNOWLEDGE);
@@ -281,11 +275,11 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) Session.DUPS_OK_ACKNOWLEDGE, (long) aggregatedResult.getAcknowledgeMode());
+        assertEquals(Session.DUPS_OK_ACKNOWLEDGE, aggregatedResult.getAcknowledgeMode());
     }
 
     @Test
-    public void testDifferingAcknowledgeModesNotRolledUp() throws Exception
+    public void testDifferingAcknowledgeModesNotRolledUp()
     {
         ParticipantResult result1 = new ParticipantResult();
         result1.setBatchSize(Session.AUTO_ACKNOWLEDGE);
@@ -297,11 +291,11 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result2);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) -1, (long) aggregatedResult.getAcknowledgeMode());
+        assertEquals(-1, aggregatedResult.getAcknowledgeMode());
     }
 
     @Test
-    public void testSumNumberOfConsumerAndProducers() throws Exception
+    public void testSumNumberOfConsumerAndProducers()
     {
         final int expectedNumberOfProducers = 1;
         final int expectedNumberOfConsumers = 2;
@@ -320,12 +314,12 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         _aggregator.aggregate(result3);
 
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
-        assertEquals((long) expectedNumberOfConsumers, (long) aggregatedResult.getTotalNumberOfConsumers());
-        assertEquals((long) expectedNumberOfProducers, (long) aggregatedResult.getTotalNumberOfProducers());
+        assertEquals(expectedNumberOfConsumers, aggregatedResult.getTotalNumberOfConsumers());
+        assertEquals(expectedNumberOfProducers, aggregatedResult.getTotalNumberOfProducers());
     }
 
     @Test
-    public void testConstantProtocolRolledUp() throws Exception
+    public void testConstantProtocolRolledUp()
     {
         String protocolVersion = "PROTOCOL_VERSION";
 
@@ -343,7 +337,7 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
     }
 
     @Test
-    public void testDifferingProtocolNotRolledUp() throws Exception
+    public void testDifferingProtocolNotRolledUp()
     {
         ParticipantResult result1 = new ParticipantResult();
         result1.setProtocolVersion("PROTOCOL_VERSION1");
@@ -359,7 +353,7 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
     }
 
     @Test
-    public void testConstantProviderVersionRolledUp() throws Exception
+    public void testConstantProviderVersionRolledUp()
     {
         String providerVersion = "PROVIDER_VERSION";
 
@@ -377,7 +371,7 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
     }
 
     @Test
-    public void testDifferingProviderVersionNotRolledUp() throws Exception
+    public void testDifferingProviderVersionNotRolledUp()
     {
         ParticipantResult result1 = new ParticipantResult();
         result1.setProtocolVersion("PROVIDER_VERSION1");
@@ -391,6 +385,4 @@ public class ParticipantResultAggregatorTest extends UnitTestBase
         ParticipantResult aggregatedResult = _aggregator.getAggregatedResult();
         assertNull(aggregatedResult.getProviderVersion());
     }
-
-
 }

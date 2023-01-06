@@ -29,8 +29,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
@@ -40,10 +40,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class LegacyCategoryControllerTest extends UnitTestBase
 {
-
     private LegacyCategoryController _controller;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final LegacyManagementController legacyManagementController = mock(LegacyManagementController.class);

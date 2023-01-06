@@ -24,10 +24,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.AnyOf.anyOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -39,14 +39,13 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
 
 public class AnonymousProducerTest extends JmsTestBase
 {
-
     @Test
     public void testPublishIntoDestinationBoundWithNotMatchingFilter() throws Exception
     {
@@ -69,9 +68,9 @@ public class AnonymousProducerTest extends JmsTestBase
 
             connection.start();
             Message message = consumer.receive(getReceiveTimeout());
-            assertTrue("Expected message not received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Expected message not received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected text", "Matching", textMessage.getText());
+            assertEquals("Matching", textMessage.getText(), "Unexpected text");
         }
         finally
         {
@@ -97,9 +96,9 @@ public class AnonymousProducerTest extends JmsTestBase
             session.commit();
 
             Message message = consumer.receive(getReceiveTimeout());
-            assertTrue("Expected message not received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Expected message not received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected text", "B", textMessage.getText());
+            assertEquals("B", textMessage.getText(), "Unexpected text");
         }
         finally
         {
@@ -110,7 +109,7 @@ public class AnonymousProducerTest extends JmsTestBase
     @Test
     public void testPublishIntoNonExistingQueue() throws Exception
     {
-        assumeThat("QPID-7818/QPIDJMS-349", getProtocol(), is(not(anyOf(equalTo(Protocol.AMQP_0_10), equalTo(Protocol.AMQP_1_0)))));
+        assumeTrue(is(not(anyOf(equalTo(Protocol.AMQP_0_10), equalTo(Protocol.AMQP_1_0)))).matches(getProtocol()), "QPID-7818/QPIDJMS-349");
         final Connection connection = getConnection();
         try
         {
@@ -138,7 +137,7 @@ public class AnonymousProducerTest extends JmsTestBase
     @Test
     public void testSyncPublishIntoNonExistingQueue() throws Exception
     {
-        assumeThat("QPID-7818", getProtocol(), is(not(equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-7818");
         final Connection connection = getConnectionBuilder().setSyncPublish(true).build();
         try
         {

@@ -27,10 +27,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,9 +50,10 @@ import javax.jms.TextMessage;
 import javax.naming.NamingException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Port;
@@ -72,11 +73,11 @@ import org.apache.qpid.tests.http.HttpTestHelper;
 
 public class PortTest extends HttpTestBase
 {
-    @ClassRule
+    @RegisterExtension
     public static final TlsResource TLS_RESOURCE = new TlsResource();
 
     private static final String QUEUE_NAME = "testQueue";
-    private static final TypeReference<Boolean> BOOLEAN = new TypeReference<Boolean>()
+    private static final TypeReference<Boolean> BOOLEAN = new TypeReference<>()
     {
     };
     private static final String CERTIFICATE_ALIAS = "certificate";
@@ -86,7 +87,7 @@ public class PortTest extends HttpTestBase
 
     private File _storeFile;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
 
@@ -176,7 +177,7 @@ public class PortTest extends HttpTestBase
     @Test
     public void testSwapKeyStoreAndUpdateTlsOnWssPort() throws Exception
     {
-        assumeThat(getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()));
         final int port = createPort(Transport.WSS);
         final Connection connection = createConnectionBuilder(port, _storeFile.getAbsolutePath())
                 .setTransport("amqpws").build();

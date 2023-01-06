@@ -22,9 +22,6 @@ package org.apache.qpid.server.store;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.qpid.server.store.handler.MessageHandler;
-
-
 /**
  * A simple message store that stores the messages in a thread-safe structure in memory.
  */
@@ -35,16 +32,11 @@ public class TestMemoryMessageStore extends MemoryMessageStore
     public int getMessageCount()
     {
         final AtomicInteger counter = new AtomicInteger();
-        newMessageStoreReader().visitMessages(new MessageHandler()
-                        {
-                            @Override
-                            public boolean handle(StoredMessage<?> storedMessage)
-                            {
-                                counter.incrementAndGet();
-                                return true;
-                            }
-                        });
+        newMessageStoreReader().visitMessages(storedMessage ->
+        {
+            counter.incrementAndGet();
+            return true;
+        });
         return counter.get();
     }
-
 }

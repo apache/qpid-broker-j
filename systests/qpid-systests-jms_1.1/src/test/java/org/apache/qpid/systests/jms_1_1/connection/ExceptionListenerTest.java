@@ -20,13 +20,11 @@
  */
 package org.apache.qpid.systests.jms_1_1.connection;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +35,7 @@ import javax.jms.ExceptionListener;
 import javax.jms.IllegalStateException;
 import javax.jms.JMSException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -46,7 +44,7 @@ public class ExceptionListenerTest extends JmsTestBase
     @Test
     public void testExceptionListenerHearsBrokerShutdown() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         final CountDownLatch exceptionReceivedLatch = new CountDownLatch(1);
         final AtomicReference<JMSException> exceptionHolder = new AtomicReference<>();
@@ -60,9 +58,9 @@ public class ExceptionListenerTest extends JmsTestBase
 
             getBrokerAdmin().restart();
 
-            assertTrue("Exception was not propagated into exception listener in timely manner",
-                       exceptionReceivedLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS));
-            assertNotNull("Unexpected exception", exceptionHolder.get());
+            assertTrue(exceptionReceivedLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS),
+                    "Exception was not propagated into exception listener in timely manner");
+            assertNotNull(exceptionHolder.get(), "Unexpected exception");
         }
         finally
         {
@@ -73,7 +71,7 @@ public class ExceptionListenerTest extends JmsTestBase
     @Test
     public void testExceptionListenerClosesConnectionIsAllowed() throws  Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         final Connection connection = getConnection();
         try
@@ -101,10 +99,11 @@ public class ExceptionListenerTest extends JmsTestBase
 
             getBrokerAdmin().restart();
 
-            assertTrue("Exception was not propagated into exception listener in timely manner",
-                       exceptionReceivedLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS));
-            assertNotNull("Unexpected exception", exceptionHolder.get());
-            assertNull("Connection#close() should not have thrown exception", unexpectedExceptionHolder.get());
+            assertTrue(exceptionReceivedLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS),
+                    "Exception was not propagated into exception listener in timely manner");
+            assertNotNull(exceptionHolder.get(), "Unexpected exception");
+            assertNull(unexpectedExceptionHolder.get(),
+                    "Connection#close() should not have thrown exception");
         }
         finally
         {
@@ -115,7 +114,7 @@ public class ExceptionListenerTest extends JmsTestBase
     @Test
     public void testExceptionListenerStopsConnection_ThrowsIllegalStateException() throws  Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         final Connection connection = getConnection();
         try
@@ -147,15 +146,15 @@ public class ExceptionListenerTest extends JmsTestBase
 
             getBrokerAdmin().restart();
 
-            assertTrue("Exception was not propagated into exception listener in timely manner",
-                       exceptionReceivedLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS));
-            assertNotNull("Unexpected exception", exceptionHolder.get());
-            assertNull("Connection#stop() should not have thrown exception", unexpectedExceptionHolder.get());
+            assertTrue(exceptionReceivedLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS),
+                    "Exception was not propagated into exception listener in timely manner");
+            assertNotNull(exceptionHolder.get(), "Unexpected exception");
+            assertNull(unexpectedExceptionHolder.get(),
+                    "Connection#stop() should not have thrown exception");
         }
         finally
         {
             connection.close();
         }
     }
-
 }

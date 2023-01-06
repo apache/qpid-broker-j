@@ -24,13 +24,13 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.Session_1_0;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
@@ -172,7 +172,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
     @Test
     public void dynamicNodeIsPersisted() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         final String newTempQueueAddress;
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
@@ -203,6 +203,6 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
     private void assumeAttach(final Response<?> response)
     {
         assertThat(response, notNullValue());
-        assumeThat(response.getBody(), instanceOf(Attach.class));
+        assumeTrue(instanceOf(Attach.class).matches(response.getBody()));
     }
 }

@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.connection;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +33,7 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
@@ -51,10 +51,11 @@ public class ConnectionStartTest extends JmsTestBase
 
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             MessageConsumer consumer = session.createConsumer(queue);
-            assertNull("No messages should be delivered when the connection is stopped",
-                       consumer.receive(getReceiveTimeout() / 2));
+            assertNull(consumer.receive(getReceiveTimeout() / 2),
+                    "No messages should be delivered when the connection is stopped");
             connection.start();
-            assertNotNull("There should be messages waiting for the consumer", consumer.receive(getReceiveTimeout()));
+            assertNotNull(consumer.receive(getReceiveTimeout()),
+                    "There should be messages waiting for the consumer");
         }
         finally
         {
@@ -91,14 +92,13 @@ public class ConnectionStartTest extends JmsTestBase
             long beforeStartTime = System.currentTimeMillis();
             connection.start();
 
-            assertTrue("Message is not received in timely manner", awaitMessage.await(getReceiveTimeout(), TimeUnit.MILLISECONDS));
-            assertTrue("Message received before connection start", deliveryTime.get() >= beforeStartTime);
+            assertTrue(awaitMessage.await(getReceiveTimeout(), TimeUnit.MILLISECONDS),
+                    "Message is not received in timely manner");
+            assertTrue(deliveryTime.get() >= beforeStartTime, "Message received before connection start");
         }
         finally
         {
             connection.close();
         }
-
     }
-
 }

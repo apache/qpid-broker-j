@@ -27,22 +27,22 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 
-@ManagedObject(type=TestVirtualHostNode.VIRTUAL_HOST_NODE_TYPE, category=false)
+@ManagedObject(type = TestVirtualHostNode.VIRTUAL_HOST_NODE_TYPE, category=false)
 public class TestVirtualHostNode extends AbstractStandardVirtualHostNode<TestVirtualHostNode>
 {
     public static final String VIRTUAL_HOST_NODE_TYPE = "TestMemory";
 
     private final DurableConfigurationStore _store;
-    private volatile AccessControl _accessControl;
+    private volatile AccessControl<?> _accessControl;
 
-    public TestVirtualHostNode(Broker<?> parent, Map<String, Object> attributes)
+    public TestVirtualHostNode(final Broker<?> parent, final Map<String, Object> attributes)
     {
         this(parent, attributes, null);
     }
 
-    public TestVirtualHostNode(Broker<?> parent,
-                               Map<String, Object> attributes,
-                               DurableConfigurationStore store)
+    public TestVirtualHostNode(final Broker<?> parent,
+                               final Map<String, Object> attributes,
+                               final DurableConfigurationStore store)
     {
         super(attributes, parent);
         _store = store;
@@ -65,15 +65,14 @@ public class TestVirtualHostNode extends AbstractStandardVirtualHostNode<TestVir
     {
     }
 
-    public void setAccessControl(final AccessControl accessControl)
+    public void setAccessControl(final AccessControl<?> accessControl)
     {
         _accessControl = accessControl;
     }
 
     @Override
-    protected AccessControl getAccessControl()
+    protected AccessControl<?> getAccessControl()
     {
-
         return _accessControl == null ? super.getAccessControl() : _accessControl;
     }
 }

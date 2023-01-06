@@ -20,9 +20,9 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import static org.apache.qpid.server.management.plugin.servlet.rest.ConfiguredObjectToMapConverter.STATISTICS_MAP_KEY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -39,8 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
@@ -71,16 +71,18 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
             "test-${" + PARENT_CONTEXT_PROPERTY2_NAME + "}";
     private static final String CHILD_CONTEXT_PROPERTY_EFFECTIVE_VALUE =
             "test-" + PARENT_CONTEXT_PROPERTY2_EFFECTIVE_VALUE;
-    private final ConfiguredObjectToMapConverter _converter = new ConfiguredObjectToMapConverter();
-    private final ConfiguredObject _configuredObject = mock(ConfiguredObject.class);
+    private ConfiguredObjectToMapConverter _converter;
+    private ConfiguredObject _configuredObject;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
+        _converter = new ConfiguredObjectToMapConverter();
+        _configuredObject = mock(ConfiguredObject.class);
     }
 
     @Test
-    public void testConfiguredObjectWithSingleStatistics() throws Exception
+    public void testConfiguredObjectWithSingleStatistics()
     {
         final String statisticName = "statisticName";
         final int statisticValue = 10;
@@ -96,13 +98,13 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
                                                                               false,
                                                                               false));
         Map<String, Object> statsAsMap = (Map<String, Object>) resultMap.get(STATISTICS_MAP_KEY);
-        assertNotNull("Statistics should be part of map", statsAsMap);
-        assertEquals("Unexpected number of statistics", (long) 1, (long) statsAsMap.size());
-        assertEquals("Unexpected statistic value", statisticValue, statsAsMap.get(statisticName));
+        assertNotNull(statsAsMap, "Statistics should be part of map");
+        assertEquals(1, (long) statsAsMap.size(), "Unexpected number of statistics");
+        assertEquals(statisticValue, statsAsMap.get(statisticName), "Unexpected statistic value");
     }
 
     @Test
-    public void testConfiguredObjectWithSingleNonConfiguredObjectAttribute() throws Exception
+    public void testConfiguredObjectWithSingleNonConfiguredObjectAttribute()
     {
         final String attributeName = "attribute";
         final String attributeValue = "value";
@@ -118,8 +120,8 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
                                                                               120,
                                                                               false,
                                                                               false));
-        assertEquals("Unexpected number of attributes", (long) 1, (long) resultMap.size());
-        assertEquals("Unexpected attribute value", attributeValue, resultMap.get(attributeName));
+        assertEquals((long) 1, (long) resultMap.size(), "Unexpected number of attributes");
+        assertEquals(attributeValue, resultMap.get(attributeName), "Unexpected attribute value");
     }
 
     /*
@@ -127,7 +129,7 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
      * configured object itself
      */
     @Test
-    public void testConfiguredObjectWithSingleConfiguredObjectAttribute() throws Exception
+    public void testConfiguredObjectWithSingleConfiguredObjectAttribute()
     {
         final String attributeName = "attribute";
         final ConfiguredObject attributeValue = mock(ConfiguredObject.class);
@@ -143,8 +145,8 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
                                                                               120,
                                                                               false,
                                                                               false));
-        assertEquals("Unexpected number of attributes", (long) 1, (long) resultMap.size());
-        assertEquals("Unexpected attribute value", "attributeConfiguredObjectName", resultMap.get(attributeName));
+        assertEquals((long) 1, (long) resultMap.size(), "Unexpected number of attributes");
+        assertEquals("attributeConfiguredObjectName", resultMap.get(attributeName), "Unexpected attribute value");
 
     }
 
@@ -170,15 +172,15 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
                                                                               120,
                                                                               false,
                                                                               false));
-        assertEquals("Unexpected parent map size", (long) 1, (long) resultMap.size());
+        assertEquals((long) 1, (long) resultMap.size(), "Unexpected parent map size");
 
         final List<Map<String, Object>> childList = (List<Map<String, Object>>) resultMap.get("testchilds");
-        assertEquals("Unexpected number of children", (long) 1, (long) childList.size());
+        assertEquals((long) 1, (long) childList.size(), "Unexpected number of children");
         final Map<String, Object> childMap = childList.get(0);
-        assertEquals("Unexpected child map size", (long) 1, (long) childMap.size());
+        assertEquals((long) 1, (long) childMap.size(), "Unexpected child map size");
         assertNotNull(childMap);
 
-        assertEquals("Unexpected child attribute value", childAttributeValue, childMap.get(childAttributeName));
+        assertEquals(childAttributeValue, childMap.get(childAttributeName), "Unexpected child attribute value");
     }
 
     @Test
@@ -187,7 +189,7 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
         final String childAttributeName = "childattribute";
         final String childAttributeValue = "childvalue";
         final String childActualAttributeValue = "${actualvalue}";
-        final Map<String,Object> actualContext = Collections.<String,Object>singletonMap("key","value");
+        final Map<String,Object> actualContext = Collections.singletonMap("key", "value");
         final Set<String> inheritedKeys = new HashSet<>(Arrays.asList("key","inheritedkey"));
 
         Model model = createTestModel();
@@ -215,17 +217,15 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
                                                                               120,
                                                                               false,
                                                                               true));
-        assertEquals("Unexpected parent map size", (long) 2, (long) resultMap.size());
-        assertEquals("Incorrect context", resultMap.get(ConfiguredObject.CONTEXT), actualContext);
+        assertEquals((long) 2, (long) resultMap.size(), "Unexpected parent map size");
+        assertEquals(resultMap.get(ConfiguredObject.CONTEXT), actualContext, "Incorrect context");
         List<Map<String, Object>> childList = (List<Map<String, Object>>) resultMap.get("testchilds");
-        assertEquals("Unexpected number of children", (long) 1, (long) childList.size());
+        assertEquals((long) 1, (long) childList.size(), "Unexpected number of children");
         Map<String, Object> childMap = childList.get(0);
         assertNotNull(childMap);
-        assertEquals("Unexpected child map size", (long) 1, (long) childMap.size());
+        assertEquals((long) 1, (long) childMap.size(), "Unexpected child map size");
 
-        assertEquals("Unexpected child attribute value",
-                            childActualAttributeValue,
-                            childMap.get(childAttributeName));
+        assertEquals(childActualAttributeValue, childMap.get(childAttributeName), "Unexpected child attribute value");
 
         resultMap = _converter.convertObjectToMap(_configuredObject,
                                                   ConfiguredObject.class,
@@ -234,17 +234,17 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
                                                                                                       120,
                                                                                                       false,
                                                                                                       true));
-        assertEquals("Unexpected parent map size", (long) 2, (long) resultMap.size());
+        assertEquals((long) 2, (long) resultMap.size(), "Unexpected parent map size");
         Map<String, Object> effectiveContext = new HashMap<>();
         effectiveContext.put("key","value");
-        assertEquals("Incorrect context", effectiveContext, resultMap.get(ConfiguredObject.CONTEXT));
+        assertEquals(effectiveContext, resultMap.get(ConfiguredObject.CONTEXT), "Incorrect context");
         childList = (List<Map<String, Object>>) resultMap.get("testchilds");
-        assertEquals("Unexpected number of children", (long) 1, (long) childList.size());
+        assertEquals((long) 1, (long) childList.size(), "Unexpected number of children");
         childMap = childList.get(0);
-        assertEquals("Unexpected child map size", (long) 1, (long) childMap.size());
+        assertEquals((long) 1, (long) childMap.size(), "Unexpected child map size");
         assertNotNull(childMap);
 
-        assertEquals("Unexpected child attribute value", childAttributeValue, childMap.get(childAttributeName));
+        assertEquals(childAttributeValue, childMap.get(childAttributeName), "Unexpected child attribute value");
     }
 
     @Test
@@ -400,22 +400,17 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
         Map<String, Object> resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
         Map<String, String> context = getContext(resultMap);
 
-        assertTrue("Unexpected size of context", context.size() >= 5);
-        assertEquals("Unexpected engine context content",
-                            CHILD_CONTEXT_PROPERTY_EFFECTIVE_VALUE,
-                            context.get(CHILD_CONTEXT_PROPERTY_NAME));
-        assertEquals("Unexpected car context content",
-                            PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE,
-                            context.get(PARENT_CONTEXT_PROPERTY1_NAME));
-        assertEquals("Unexpected car context content",
-                            PARENT_CONTEXT_PROPERTY2_EFFECTIVE_VALUE,
-                            context.get(PARENT_CONTEXT_PROPERTY2_NAME));
-        assertEquals("Unexpected system context content",
-                            TEST_SYSTEM_PROPERTY1_ACTUAL_VALUE,
-                            context.get(TEST_SYSTEM_PROPERTY1_NAME));
-        assertEquals("Unexpected system context content",
-                            TEST_SYSTEM_PROPERTY2_EFFECTIVE_VALUE,
-                            context.get(TEST_SYSTEM_PROPERTY2_NAME));
+        assertTrue(context.size() >= 5, "Unexpected size of context");
+        assertEquals(CHILD_CONTEXT_PROPERTY_EFFECTIVE_VALUE, context.get(CHILD_CONTEXT_PROPERTY_NAME),
+                "Unexpected engine context content");
+        assertEquals(PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE, context.get(PARENT_CONTEXT_PROPERTY1_NAME),
+                "Unexpected car context content");
+        assertEquals(PARENT_CONTEXT_PROPERTY2_EFFECTIVE_VALUE, context.get(PARENT_CONTEXT_PROPERTY2_NAME),
+                "Unexpected car context content");
+        assertEquals(TEST_SYSTEM_PROPERTY1_ACTUAL_VALUE, context.get(TEST_SYSTEM_PROPERTY1_NAME),
+                "Unexpected system context content");
+        assertEquals(TEST_SYSTEM_PROPERTY2_EFFECTIVE_VALUE, context.get(TEST_SYSTEM_PROPERTY2_NAME),
+                "Unexpected system context content");
     }
 
     @Test
@@ -430,22 +425,17 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
                 false);
         Map<String, Object> resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
         Map<String, String> context = getContext(resultMap);
-        assertTrue("Unexpected size of context", context.size() >= 5);
-        assertEquals("Unexpected engine context content",
-                            CHILD_CONTEXT_PROPERTY_ACTUAL_VALUE,
-                            context.get(CHILD_CONTEXT_PROPERTY_NAME));
-        assertEquals("Unexpected car context content",
-                            PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE,
-                            context.get(PARENT_CONTEXT_PROPERTY1_NAME));
-        assertEquals("Unexpected car context content",
-                            PARENT_CONTEXT_PROPERTY2_ACTUAL_VALUE,
-                            context.get(PARENT_CONTEXT_PROPERTY2_NAME));
-        assertEquals("Unexpected system context content",
-                            TEST_SYSTEM_PROPERTY1_ACTUAL_VALUE,
-                            context.get(TEST_SYSTEM_PROPERTY1_NAME));
-        assertEquals("Unexpected system context content",
-                            TEST_SYSTEM_PROPERTY2_ACTUAL_VALUE,
-                            context.get(TEST_SYSTEM_PROPERTY2_NAME));
+        assertTrue(context.size() >= 5, "Unexpected size of context");
+        assertEquals(CHILD_CONTEXT_PROPERTY_ACTUAL_VALUE, context.get(CHILD_CONTEXT_PROPERTY_NAME),
+                "Unexpected engine context content");
+        assertEquals(PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE, context.get(PARENT_CONTEXT_PROPERTY1_NAME),
+                "Unexpected car context content");
+        assertEquals(PARENT_CONTEXT_PROPERTY2_ACTUAL_VALUE, context.get(PARENT_CONTEXT_PROPERTY2_NAME),
+                "Unexpected car context content");
+        assertEquals(TEST_SYSTEM_PROPERTY1_ACTUAL_VALUE, context.get(TEST_SYSTEM_PROPERTY1_NAME),
+                "Unexpected system context content");
+        assertEquals(TEST_SYSTEM_PROPERTY2_ACTUAL_VALUE, context.get(TEST_SYSTEM_PROPERTY2_NAME),
+                "Unexpected system context content");
     }
 
     @Test
@@ -460,10 +450,9 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
                 true);
         Map<String, Object> resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
         Map<String, String> context = getContext(resultMap);
-        assertEquals("Unexpected size of context", (long) 1, (long) context.size());
-        assertEquals("Unexpected context content",
-                            CHILD_CONTEXT_PROPERTY_EFFECTIVE_VALUE,
-                            context.get(CHILD_CONTEXT_PROPERTY_NAME));
+        assertEquals((long) 1, (long) context.size(), "Unexpected size of context");
+        assertEquals(CHILD_CONTEXT_PROPERTY_EFFECTIVE_VALUE, context.get(CHILD_CONTEXT_PROPERTY_NAME),
+                "Unexpected context content");
     }
 
     @Test
@@ -478,17 +467,16 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
                 true);
         Map<String, Object> resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
         Map<String, String> context = getContext(resultMap);
-        assertEquals("Unexpected size of context", (long) 1, (long) context.size());
-        assertEquals("Unexpected context content",
-                            CHILD_CONTEXT_PROPERTY_ACTUAL_VALUE,
-                            context.get(CHILD_CONTEXT_PROPERTY_NAME));
+        assertEquals((long) 1, (long) context.size(), "Unexpected size of context");
+        assertEquals(CHILD_CONTEXT_PROPERTY_ACTUAL_VALUE, context.get(CHILD_CONTEXT_PROPERTY_NAME),
+                "Unexpected context content");
     }
 
     private Map<String, String> getContext(final Map<String, Object> resultMap)
     {
         Object contextValue = resultMap.get(ConfiguredObject.CONTEXT);
         final boolean condition = contextValue instanceof Map;
-        assertTrue("Unexpected type of context", condition);
+        assertTrue(condition, "Unexpected type of context");
         Map<String, String> context = (Map<String, String>) contextValue;
         return context;
     }

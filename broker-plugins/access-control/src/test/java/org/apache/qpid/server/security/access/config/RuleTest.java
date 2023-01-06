@@ -29,13 +29,13 @@ import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.qpid.server.security.access.config.Property.FROM_HOSTNAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RuleTest extends UnitTestBase
 {
@@ -77,96 +77,86 @@ public class RuleTest extends UnitTestBase
                 .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
                 .build();
 
-        assertNotEquals("Different identity should cause rules to be unequal",
-                rule, new Rule.Builder()
-                        .withIdentity("identity2")
-                        .withOperation(LegacyOperation.UPDATE)
-                        .withObject(ObjectType.VIRTUALHOST)
-                        .withOutcome(allow)
-                        .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
-                        .build());
+        assertNotEquals(rule, new Rule.Builder()
+                .withIdentity("identity2")
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(allow)
+                .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
+                .build(), "Different identity should cause rules to be unequal");
 
-        assertNotEquals("Different identity should cause rules to be unequal",
-                new Rule.Builder()
-                        .withIdentity("identity2")
-                        .withOperation(LegacyOperation.UPDATE)
-                        .withObject(ObjectType.VIRTUALHOST)
-                        .withOutcome(allow)
-                        .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
-                        .build(), rule);
+        assertNotEquals(new Rule.Builder()
+                .withIdentity("identity2")
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(allow)
+                .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
+                .build(), rule, "Different identity should cause rules to be unequal");
 
-        assertNotEquals("Different operation should cause rules to be unequal",
-                rule, new Rule.Builder()
-                        .withIdentity(identity)
-                        .withOperation(LegacyOperation.ACCESS)
-                        .withObject(ObjectType.VIRTUALHOST)
-                        .withOutcome(allow)
-                        .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
-                        .build());
+        assertNotEquals(rule, new Rule.Builder()
+                .withIdentity(identity)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(allow)
+                .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
+                .build(), "Different operation should cause rules to be unequal");
 
-        assertNotEquals("Different action should cause rules to be unequal",
-                new Rule.Builder()
-                        .withIdentity(identity)
-                        .withOperation(LegacyOperation.ACCESS)
-                        .withObject(ObjectType.VIRTUALHOST)
-                        .withOutcome(allow)
-                        .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
-                        .build(), rule);
+        assertNotEquals(new Rule.Builder()
+                .withIdentity(identity)
+                .withOperation(LegacyOperation.ACCESS)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(allow)
+                .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
+                .build(), rule, "Different action should cause rules to be unequal");
 
-        assertNotEquals("Different object type should cause rules to be unequal",
-                rule, new Rule.Builder()
-                        .withIdentity("identity2")
-                        .withOperation(LegacyOperation.UPDATE)
-                        .withObject(ObjectType.EXCHANGE)
-                        .withOutcome(allow)
-                        .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
-                        .build());
+        assertNotEquals(rule, new Rule.Builder()
+                .withIdentity("identity2")
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.EXCHANGE)
+                .withOutcome(allow)
+                .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
+                .build(), "Different object type should cause rules to be unequal");
 
-        assertNotEquals("Different object type should cause rules to be unequal",
-                new Rule.Builder()
-                        .withIdentity("identity2")
-                        .withOperation(LegacyOperation.UPDATE)
-                        .withObject(ObjectType.EXCHANGE)
-                        .withOutcome(allow)
-                        .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
-                        .build(), rule);
+        assertNotEquals(new Rule.Builder()
+                .withIdentity("identity2")
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.EXCHANGE)
+                .withOutcome(allow)
+                .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
+                .build(), rule, "Different object type should cause rules to be unequal");
 
-        assertNotEquals("Different permission should cause rules to be unequal",
-                rule, new Rule.Builder()
-                        .withIdentity(identity)
-                        .withOperation(LegacyOperation.UPDATE)
-                        .withObject(ObjectType.VIRTUALHOST)
-                        .withOutcome(RuleOutcome.DENY)
-                        .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
-                        .build());
+        assertNotEquals(rule, new Rule.Builder()
+                .withIdentity(identity)
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(RuleOutcome.DENY)
+                .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
+                .build(), "Different permission should cause rules to be unequal");
 
-        assertNotEquals("Different permission should cause rules to be unequal",
-                new Rule.Builder()
-                        .withIdentity(identity)
-                        .withOperation(LegacyOperation.UPDATE)
-                        .withObject(ObjectType.VIRTUALHOST)
-                        .withOutcome(RuleOutcome.DENY)
-                        .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
-                        .build(), rule);
+        assertNotEquals(new Rule.Builder()
+                .withIdentity(identity)
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(RuleOutcome.DENY)
+                .withPredicate(Property.VIRTUALHOST_NAME, "vhname")
+                .build(), rule, "Different permission should cause rules to be unequal");
 
-        assertNotEquals("Different predicates should cause rules to be unequal",
-                rule, new Rule.Builder()
-                        .withIdentity(identity)
-                        .withOperation(LegacyOperation.UPDATE)
-                        .withObject(ObjectType.VIRTUALHOST)
-                        .withOutcome(allow)
-                        .build());
+        assertNotEquals(rule, new Rule.Builder()
+                .withIdentity(identity)
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(allow)
+                .build(), "Different predicates should cause rules to be unequal");
 
-        assertNotEquals("Different predicates should cause rules to be unequal",
-                new Rule.Builder()
-                        .withIdentity(identity)
-                        .withOperation(LegacyOperation.UPDATE)
-                        .withObject(ObjectType.VIRTUALHOST)
-                        .withOutcome(allow)
-                        .build(), rule);
+        assertNotEquals(new Rule.Builder()
+                .withIdentity(identity)
+                .withOperation(LegacyOperation.UPDATE)
+                .withObject(ObjectType.VIRTUALHOST)
+                .withOutcome(allow)
+                .build(), rule, "Different predicates should cause rules to be unequal");
 
-        assertFalse(rule.equals(null));
-        assertFalse(rule.equals("rule"));
+        assertNotEquals(null, rule);
+        assertNotEquals("rule", rule);
     }
 
     @Test

@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.routing;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,7 +33,8 @@ import javax.jms.Queue;
 import javax.jms.Session;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.systests.JmsTestBase;
@@ -68,9 +69,7 @@ public class AlternateBindingRoutingTest extends JmsTestBase
         attributes.put(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING,
                        new ObjectMapper().writeValueAsString(Collections.singletonMap(AlternateBinding.DESTINATION,
                                                                                       deadLetterExchangeName)));
-        createEntityUsingAmqpManagement(queueName,
-                                        "org.apache.qpid.StandardQueue",
-                                        attributes);
+        createEntityUsingAmqpManagement(queueName, "org.apache.qpid.StandardQueue", attributes);
 
         Queue testQueue = createQueue(queueName);
 
@@ -82,15 +81,15 @@ public class AlternateBindingRoutingTest extends JmsTestBase
 
             Utils.sendMessages(session, testQueue, 1);
 
-            assertEquals("Unexpected number of messages on queue", 1, getQueueDepth(queueName));
-            assertEquals("Unexpected number of messages on DLQ", 0, getQueueDepth(deadLetterQueueName));
+            assertEquals(1, getQueueDepth(queueName), "Unexpected number of messages on queue");
+            assertEquals(0, getQueueDepth(deadLetterQueueName), "Unexpected number of messages on DLQ");
 
             performOperationUsingAmqpManagement(queueName,
                                                 "DELETE",
                                                 "org.apache.qpid.Queue",
                                                 Collections.emptyMap());
 
-            assertEquals("Unexpected number of messages on DLQ after deletion", 1, getQueueDepth(deadLetterQueueName));
+            assertEquals(1, getQueueDepth(deadLetterQueueName), "Unexpected number of messages on DLQ after deletion");
         }
         finally
         {
@@ -106,11 +105,11 @@ public class AlternateBindingRoutingTest extends JmsTestBase
                                                                 "getStatistics",
                                                                 "org.apache.qpid.Queue",
                                                                 arguments);
-        assertNotNull("Statistics is null", statistics);
-        assertTrue("Statistics is not map", statistics instanceof Map);
+        assertNotNull(statistics, "Statistics is null");
+        assertTrue(statistics instanceof Map, "Statistics is not map");
         @SuppressWarnings("unchecked")
         Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
-        assertTrue("queueDepthMessages is not present", statisticsMap.get("queueDepthMessages") instanceof Number);
+        assertTrue(statisticsMap.get("queueDepthMessages") instanceof Number, "queueDepthMessages is not present");
         return ((Number) statisticsMap.get("queueDepthMessages")).intValue();
     }
 }

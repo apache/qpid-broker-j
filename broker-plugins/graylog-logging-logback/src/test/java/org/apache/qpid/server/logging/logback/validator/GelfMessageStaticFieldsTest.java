@@ -21,24 +21,25 @@
 
 package org.apache.qpid.server.logging.logback.validator;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.test.utils.UnitTestBase;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 public class GelfMessageStaticFieldsTest extends UnitTestBase
 {
     @Test
     public void testValidator()
     {
-        assertNotNull("Factory method has to produce a instance", GelfMessageStaticFields.validator());
+        assertNotNull(GelfMessageStaticFields.validator(), "Factory method has to produce a instance");
     }
 
     @Test
@@ -52,7 +53,8 @@ public class GelfMessageStaticFieldsTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'attr instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'null'", e.getMessage());
+            assertEquals("Attribute 'attr instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'null'",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -74,7 +76,8 @@ public class GelfMessageStaticFieldsTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Key of 'attr attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'null'. Key pattern is: [\\w\\.\\-]+", e.getMessage());
+            assertEquals("Key of 'attr attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'null'. Key pattern is: [\\w\\.\\-]+",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -96,7 +99,8 @@ public class GelfMessageStaticFieldsTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Value of 'attr attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'null', as it has to be a string or number", e.getMessage());
+            assertEquals("Value of 'attr attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'null', as it has to be a string or number",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -133,7 +137,8 @@ public class GelfMessageStaticFieldsTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Key of 'attr attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be '{abc}'. Key pattern is: [\\w\\.\\-]+", e.getMessage());
+            assertEquals("Key of 'attr attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be '{abc}'. Key pattern is: [\\w\\.\\-]+",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -153,7 +158,8 @@ public class GelfMessageStaticFieldsTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Value of 'attr attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'true', as it has to be a string or number", e.getMessage());
+            assertEquals("Value of 'attr attribute instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot be 'true', as it has to be a string or number",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {

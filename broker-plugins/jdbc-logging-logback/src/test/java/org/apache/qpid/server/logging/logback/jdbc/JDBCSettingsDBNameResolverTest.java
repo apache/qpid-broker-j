@@ -19,14 +19,15 @@
 
 package org.apache.qpid.server.logging.logback.jdbc;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.db.names.ColumnName;
 import ch.qos.logback.classic.db.names.TableName;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -36,7 +37,7 @@ public class JDBCSettingsDBNameResolverTest extends UnitTestBase
     private static final String TABLE_PREFIX = "test_";
     private JDBCSettingsDBNameResolver _dbNameResolver;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final JDBCSettings jdbcSettings = mock(JDBCSettings.class);
@@ -48,13 +49,12 @@ public class JDBCSettingsDBNameResolverTest extends UnitTestBase
     public void getTableName()
     {
         assertEquals((TABLE_PREFIX + TableName.LOGGING_EVENT.name()).toLowerCase(),
-                     _dbNameResolver.getTableName(TableName.LOGGING_EVENT));
+                _dbNameResolver.getTableName(TableName.LOGGING_EVENT));
     }
 
     @Test
     public void getColumnName()
     {
-        assertEquals(ColumnName.LOGGER_NAME.name().toLowerCase(),
-                     _dbNameResolver.getColumnName(ColumnName.LOGGER_NAME));
+        assertEquals(ColumnName.LOGGER_NAME.name().toLowerCase(), _dbNameResolver.getColumnName(ColumnName.LOGGER_NAME));
     }
 }

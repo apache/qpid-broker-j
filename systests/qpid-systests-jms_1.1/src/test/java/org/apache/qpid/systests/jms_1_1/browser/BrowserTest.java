@@ -19,10 +19,10 @@
  */
 package org.apache.qpid.systests.jms_1_1.browser;
 
-import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Enumeration;
 import java.util.List;
@@ -39,7 +39,7 @@ import javax.jms.Queue;
 import javax.jms.QueueBrowser;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -89,8 +89,8 @@ public class BrowserTest extends JmsTestBase
                 browsed++;
                 browsedMessage = (Message) enumeration.nextElement();
             }
-            assertEquals("Unexpected number of messages in enumeration", indices.size(), browsed);
-            assertEquals("Last message has unexpected index", lastIndex, browsedMessage.getIntProperty(INDEX));
+            assertEquals(indices.size(), browsed, "Unexpected number of messages in enumeration");
+            assertEquals(lastIndex, browsedMessage.getIntProperty(INDEX), "Last message has unexpected index");
 
             browser.close();
         }
@@ -123,8 +123,8 @@ public class BrowserTest extends JmsTestBase
                 browsed++;
                 browsedMessage = (Message) enumeration.nextElement();
             }
-            assertEquals("Unexpected number of messages in enumeration", 5, browsed);
-            assertEquals("Last message has unexpected index", lastIndex, browsedMessage.getIntProperty(INDEX));
+            assertEquals(5, browsed, "Unexpected number of messages in enumeration");
+            assertEquals(lastIndex, browsedMessage.getIntProperty(INDEX), "Last message has unexpected index");
 
             browser.close();
         }
@@ -150,22 +150,24 @@ public class BrowserTest extends JmsTestBase
 
             QueueBrowser browser = session.createBrowser(queue);
             Enumeration enumeration = browser.getEnumeration();
-            assertTrue("Unexpected browser state", enumeration.hasMoreElements());
+            assertTrue(enumeration.hasMoreElements(), "Unexpected browser state");
 
             Message browsedMessage = (Message) enumeration.nextElement();
-            assertNotNull("No message returned by browser", browsedMessage);
-            assertEquals("Unexpected JMSMessageID on browsed message", message.getJMSMessageID(), browsedMessage.getJMSMessageID());
+            assertNotNull(browsedMessage, "No message returned by browser");
+            assertEquals(message.getJMSMessageID(), browsedMessage.getJMSMessageID(),
+                    "Unexpected JMSMessageID on browsed message");
 
             browser.close();
 
             MessageConsumer consumer = session.createConsumer(queue);
             Message consumedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("No message returned by consumer", consumedMessage);
-            assertEquals("Unexpected JMSMessageID on consumed message", message.getJMSMessageID(), consumedMessage.getJMSMessageID());
+            assertNotNull(consumedMessage, "No message returned by consumer");
+            assertEquals(message.getJMSMessageID(), consumedMessage.getJMSMessageID(),
+                    "Unexpected JMSMessageID on consumed message");
 
             QueueBrowser browser2 = session.createBrowser(queue);
             Enumeration enumeration2 = browser2.getEnumeration();
-            assertFalse("Unexpected browser state", enumeration2.hasMoreElements());
+            assertFalse(enumeration2.hasMoreElements(), "Unexpected browser state");
             browser2.close();
         }
         finally

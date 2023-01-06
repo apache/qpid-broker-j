@@ -47,9 +47,9 @@ import javax.security.auth.Subject;
 import javax.security.auth.SubjectDomainCombiner;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
@@ -66,13 +66,12 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ServerConnectionDelegateTest extends UnitTestBase
 {
-
     private ServerConnectionDelegate _delegate;
     private ServerConnection _serverConnection;
     private TaskExecutor _taskExecutor;
     private AccessControlContext _accessControlContext;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
@@ -103,8 +102,9 @@ public class ServerConnectionDelegateTest extends UnitTestBase
         when(amqpConnection.getSubject()).thenReturn(subject);
         when(amqpConnection.getContextValue(Long.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Long.MAX_VALUE);
         when(amqpConnection.getContextValue(Integer.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Integer.MAX_VALUE);
-        doAnswer((Answer<AccessControlContext>) invocationOnMock -> {
-            Subject subject1 = (Subject) invocationOnMock.getArgument(0);
+        doAnswer((Answer<AccessControlContext>) invocationOnMock ->
+        {
+            Subject subject1 = invocationOnMock.getArgument(0);
             return AccessController.doPrivileged(
                     (PrivilegedAction<AccessControlContext>) () ->
                             new AccessControlContext(_accessControlContext, new SubjectDomainCombiner(subject1)));
@@ -117,7 +117,7 @@ public class ServerConnectionDelegateTest extends UnitTestBase
         when(_serverConnection.getAmqpConnection()).thenReturn(amqpConnection);
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         _taskExecutor.stop();

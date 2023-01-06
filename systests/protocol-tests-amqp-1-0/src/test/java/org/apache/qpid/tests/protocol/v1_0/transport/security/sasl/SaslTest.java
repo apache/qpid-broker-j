@@ -27,14 +27,13 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -59,11 +58,11 @@ public class SaslTest extends BrokerAdminUsingTestBase
     private String _username;
     private String _password;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
-        assumeThat(getBrokerAdmin().isSASLSupported(), is(true));
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN.toString()), is(true));
+        assumeTrue(getBrokerAdmin().isSASLSupported());
+        assumeTrue(getBrokerAdmin().isSASLMechanismSupported(PLAIN.toString()));
         _username = getBrokerAdmin().getValidUsername();
         _password = getBrokerAdmin().getValidPassword();
     }
@@ -82,7 +81,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
             SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
-            assumeThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
+            assumeTrue(hasItem(PLAIN).matches(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms())));
 
             final Binary initialResponse = new Binary(String.format("\0%s\0%s", _username, _password).getBytes(StandardCharsets.US_ASCII));
             SaslOutcome saslOutcome = interaction.saslMechanism(PLAIN)
@@ -127,7 +126,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
             SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
-            assumeThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
+            assumeTrue(hasItem(PLAIN).matches(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms())));
 
             SaslOutcome saslOutcome = interaction.consumeResponse().getLatestResponse(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.OK));
@@ -145,7 +144,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             description = "SASL Negotiation [...] challenge/response step occurs once")
     public void saslSuccessfulAuthenticationWithChallengeResponse() throws Exception
     {
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported(CRAM_MD5.toString()), is(true));
+        assumeTrue(getBrokerAdmin().isSASLMechanismSupported(CRAM_MD5.toString()));
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -194,7 +193,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
             SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
-            assumeThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
+            assumeTrue(hasItem(PLAIN).matches(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms())));
 
             final Binary initialResponse =
                     new Binary(String.format("\0%s\0badpassword", _username).getBytes(StandardCharsets.US_ASCII));

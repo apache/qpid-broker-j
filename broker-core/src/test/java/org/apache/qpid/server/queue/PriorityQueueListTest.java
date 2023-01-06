@@ -20,18 +20,16 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
@@ -45,33 +43,37 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class PriorityQueueListTest extends UnitTestBase
 {
     private static final byte[] PRIORITIES = {4, 5, 5, 4};
-    PriorityQueueList _list;
 
+    private PriorityQueueList _list;
+    private QueueManagingVirtualHost<?> _virtualHost;
     private QueueEntry _priority4message1;
     private QueueEntry _priority4message2;
     private QueueEntry _priority5message1;
     private QueueEntry _priority5message2;
 
-    @Before
+    @BeforeAll
+    public void beforeAll() throws Exception
+    {
+        _virtualHost = BrokerTestHelper.createVirtualHost(getTestClassName(), this);
+    }
+
+    @BeforeEach
     public void setUp() throws Exception
     {
-        BrokerTestHelper.setUp();
-        QueueEntry[] entries = new QueueEntry[PRIORITIES.length];
-        Map<String,Object> queueAttributes = new HashMap<String, Object>();
-        queueAttributes.put(Queue.ID, UUID.randomUUID());
-        queueAttributes.put(Queue.NAME, getTestName());
-        queueAttributes.put(PriorityQueue.PRIORITIES, 10);
-        final QueueManagingVirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
-        PriorityQueueImpl queue = new PriorityQueueImpl(queueAttributes, virtualHost);
+        final QueueEntry[] entries = new QueueEntry[PRIORITIES.length];
+        final Map<String,Object> queueAttributes = Map.of(Queue.ID, randomUUID(),
+                Queue.NAME, getTestName(),
+                PriorityQueue.PRIORITIES, 10);
+        final PriorityQueueImpl queue = new PriorityQueueImpl(queueAttributes, _virtualHost);
         queue.open();
         _list = queue.getEntries();
 
         for (int i = 0; i < PRIORITIES.length; i++)
         {
-            ServerMessage<?> message = mock(ServerMessage.class);
-            AMQMessageHeader header = mock(AMQMessageHeader.class);
+            final ServerMessage<?> message = mock(ServerMessage.class);
+            final AMQMessageHeader header = mock(AMQMessageHeader.class);
             @SuppressWarnings({ "rawtypes", "unchecked" })
-            MessageReference<ServerMessage> ref = mock(MessageReference.class);
+            final MessageReference<ServerMessage> ref = mock(MessageReference.class);
 
             when(message.getMessageHeader()).thenReturn(header);
             when(message.newReference()).thenReturn(ref);
@@ -88,96 +90,70 @@ public class PriorityQueueListTest extends UnitTestBase
         _priority5message2 = entries[2];
     }
 
-    @After
-    public void tearDown() throws Exception
-    {
-        try
-        {
-        }
-        finally
-        {
-            BrokerTestHelper.tearDown();
-        }
-    }
-
     @Test
     public void testPriorityQueueEntryCompareToItself()
     {
         //check messages compare to themselves properly
-        assertEquals("message should compare 'equal' to itself",
-                            (long) 0,
-                            (long) _priority4message1.compareTo(_priority4message1));
+        assertEquals(0, (long) _priority4message1.compareTo(_priority4message1),
+                "message should compare 'equal' to itself");
 
-        assertEquals("message should compare 'equal' to itself",
-                            (long) 0,
-                            (long) _priority5message2.compareTo(_priority5message2));
+        assertEquals(0, (long) _priority5message2.compareTo(_priority5message2),
+                "message should compare 'equal' to itself");
     }
 
     @Test
     public void testPriorityQueueEntryCompareToSamePriority()
     {
         //check messages with the same priority are ordered properly
-        assertEquals("first message should be 'earlier' than second message of the same priority",
-                            (long) -1,
-                            (long) _priority4message1.compareTo(_priority4message2));
+        assertEquals(-1, (long) _priority4message1.compareTo(_priority4message2),
+                "first message should be 'earlier' than second message of the same priority");
 
-        assertEquals("first message should be 'earlier' than second message of the same priority",
-                            (long) -1,
-                            (long) _priority5message1.compareTo(_priority5message2));
+        assertEquals(-1, (long) _priority5message1.compareTo(_priority5message2),
+                "first message should be 'earlier' than second message of the same priority");
 
         //and in reverse
-        assertEquals("second message should be 'later' than first message of the same priority",
-                            (long) 1,
-                            (long) _priority4message2.compareTo(_priority4message1));
+        assertEquals(1, (long) _priority4message2.compareTo(_priority4message1),
+                "second message should be 'later' than first message of the same priority");
 
-        assertEquals("second message should be 'later' than first message of the same priority",
-                            (long) 1,
-                            (long) _priority5message2.compareTo(_priority5message1));
+        assertEquals(1, (long) _priority5message2.compareTo(_priority5message1),
+                "second message should be 'later' than first message of the same priority");
     }
 
     @Test
     public void testPriorityQueueEntryCompareToDifferentPriority()
     {
         //check messages with higher priority are ordered 'earlier' than those with lower priority
-        assertEquals("first message with priority 5 should be 'earlier' than first message of priority 4",
-                            (long) -1,
-                            (long) _priority5message1.compareTo(_priority4message1));
-        assertEquals("first message with priority 5 should be 'earlier' than second message of priority 4",
-                            (long) -1,
-                            (long) _priority5message1.compareTo(_priority4message2));
+        assertEquals(-1, (long) _priority5message1.compareTo(_priority4message1),
+                "first message with priority 5 should be 'earlier' than first message of priority 4");
+        assertEquals(-1, (long) _priority5message1.compareTo(_priority4message2),
+                "first message with priority 5 should be 'earlier' than second message of priority 4");
 
-        assertEquals("second message with priority 5 should be 'earlier' than first message of priority 4",
-                            (long) -1,
-                            (long) _priority5message2.compareTo(_priority4message1));
-        assertEquals("second message with priority 5 should be 'earlier' than second message of priority 4",
-                            (long) -1,
-                            (long) _priority5message2.compareTo(_priority4message2));
+        assertEquals(-1, (long) _priority5message2.compareTo(_priority4message1),
+                "second message with priority 5 should be 'earlier' than first message of priority 4");
+        assertEquals(-1, (long) _priority5message2.compareTo(_priority4message2),
+                "second message with priority 5 should be 'earlier' than second message of priority 4");
 
         //and in reverse
-        assertEquals("first message with priority 4 should be 'later' than first message of priority 5",
-                            (long) 1,
-                            (long) _priority4message1.compareTo(_priority5message1));
-        assertEquals("first message with priority 4 should be 'later' than second message of priority 5",
-                            (long) 1,
-                            (long) _priority4message1.compareTo(_priority5message2));
+        assertEquals(1, (long) _priority4message1.compareTo(_priority5message1),
+                "first message with priority 4 should be 'later' than first message of priority 5");
+        assertEquals(1, (long) _priority4message1.compareTo(_priority5message2),
+                "first message with priority 4 should be 'later' than second message of priority 5");
 
-        assertEquals("second message with priority 4 should be 'later' than first message of priority 5",
-                            (long) 1,
-                            (long) _priority4message2.compareTo(_priority5message1));
-        assertEquals("second message with priority 4 should be 'later' than second message of priority 5",
-                            (long) 1,
-                            (long) _priority4message2.compareTo(_priority5message2));
+        assertEquals(1, (long) _priority4message2.compareTo(_priority5message1),
+                "second message with priority 4 should be 'later' than first message of priority 5");
+        assertEquals(1, (long) _priority4message2.compareTo(_priority5message2),
+                "second message with priority 4 should be 'later' than second message of priority 5");
     }
 
     @Test
     public void testGetLeastSignificantOldestEntry()
     {
-        assertEquals("Unexpected last entry", _priority4message1, _list.getLeastSignificantOldestEntry());
+        assertEquals(_priority4message1, _list.getLeastSignificantOldestEntry(), "Unexpected last entry");
 
-        ServerMessage<?> message = mock(ServerMessage.class);
-        AMQMessageHeader header = mock(AMQMessageHeader.class);
+        final ServerMessage<?> message = mock(ServerMessage.class);
+        final AMQMessageHeader header = mock(AMQMessageHeader.class);
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        MessageReference<ServerMessage> ref = mock(MessageReference.class);
+        final MessageReference<ServerMessage> ref = mock(MessageReference.class);
 
         when(message.getMessageHeader()).thenReturn(header);
         when(message.newReference()).thenReturn(ref);
@@ -185,8 +161,8 @@ public class PriorityQueueListTest extends UnitTestBase
         when(ref.getMessage()).thenReturn(message);
         when(header.getPriority()).thenReturn((byte)3);
 
-        QueueEntry newEntry = _list.add(message, null);
+        final QueueEntry newEntry = _list.add(message, null);
 
-        assertEquals("Unexpected last entry", newEntry, _list.getLeastSignificantOldestEntry());
+        assertEquals(newEntry, _list.getLeastSignificantOldestEntry(), "Unexpected last entry");
     }
 }

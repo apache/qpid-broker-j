@@ -18,24 +18,24 @@
  */
 package org.apache.qpid.server.security;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -62,44 +62,39 @@ public class SubjectCreatorTest extends UnitTestBase
 
     private final Principal _group1 = mock(Principal.class);
     private final Principal _group2 = mock(Principal.class);
-    private final SaslNegotiator _testSaslNegotiator = mock(SaslNegotiator.class);
-    private final byte[] _saslResponseBytes = PASSWORD.getBytes();
 
     private SubjectCreator _subjectCreator;
     private AuthenticationResult _authenticationResult;
+    private final SaslNegotiator _testSaslNegotiator = mock(SaslNegotiator.class);
+    private final byte[] _saslResponseBytes = PASSWORD.getBytes();
     private EventLogger _eventLogger;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
-        when(_groupManager1.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(Collections.singleton(_group1));
-        when(_groupManager2.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(Collections.singleton(_group2));
+        when(_groupManager1.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(Set.of(_group1));
+        when(_groupManager2.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(Set.of(_group2));
 
-        _subjectCreator = new SubjectCreator(_authenticationProvider,
-                                             new HashSet<>(Arrays.asList(_groupManager1, _groupManager2)), null
-        );
+        _subjectCreator = new SubjectCreator(_authenticationProvider, Set.of(_groupManager1, _groupManager2), null);
         _eventLogger = mock(EventLogger.class);
         when(_authenticationProvider.getEventLogger()).thenReturn(_eventLogger);
         _authenticationResult = new AuthenticationResult(USERNAME_PRINCIPAL);
     }
 
     @Test
-    public void testSaslAuthenticationSuccessReturnsSubjectWithUserAndGroupPrincipals() throws Exception
+    public void testSaslAuthenticationSuccessReturnsSubjectWithUserAndGroupPrincipals()
     {
         when(_testSaslNegotiator.handleResponse(_saslResponseBytes)).thenReturn(_authenticationResult);
 
-        SubjectAuthenticationResult result = _subjectCreator.authenticate(_testSaslNegotiator, _saslResponseBytes);
+        final SubjectAuthenticationResult result = _subjectCreator.authenticate(_testSaslNegotiator, _saslResponseBytes);
 
         final Subject actualSubject = result.getSubject();
-        assertEquals("Should contain one user principal and two groups ",
-                            (long) 3,
-                            (long) actualSubject.getPrincipals().size());
-
+        assertEquals(3, (long) actualSubject.getPrincipals().size(),
+                     "Should contain one user principal and two groups ");
 
         assertTrue(actualSubject.getPrincipals().contains(new AuthenticatedPrincipal(USERNAME_PRINCIPAL)));
         assertTrue(actualSubject.getPrincipals().contains(_group1));
         assertTrue(actualSubject.getPrincipals().contains(_group2));
-
         assertTrue(actualSubject.isReadOnly());
     }
 
@@ -110,13 +105,13 @@ public class SubjectCreatorTest extends UnitTestBase
         testUnsuccessfulAuthentication(AuthenticationResult.AuthenticationStatus.ERROR);
     }
 
-    private void testUnsuccessfulAuthentication(AuthenticationStatus expectedStatus)
+    private void testUnsuccessfulAuthentication(final AuthenticationStatus expectedStatus)
     {
-        AuthenticationResult failedAuthenticationResult = new AuthenticationResult(expectedStatus);
+        final AuthenticationResult failedAuthenticationResult = new AuthenticationResult(expectedStatus);
 
         when(_testSaslNegotiator.handleResponse(_saslResponseBytes)).thenReturn(failedAuthenticationResult);
 
-        SubjectAuthenticationResult subjectAuthenticationResult =
+        final SubjectAuthenticationResult subjectAuthenticationResult =
                 _subjectCreator.authenticate(_testSaslNegotiator, _saslResponseBytes);
 
         assertSame(expectedStatus, subjectAuthenticationResult.getStatus());
@@ -124,10 +119,9 @@ public class SubjectCreatorTest extends UnitTestBase
 
         if (expectedStatus == AuthenticationStatus.ERROR)
         {
-            ArgumentCaptor<LogMessage> argument = ArgumentCaptor.forClass(LogMessage.class);
+            final ArgumentCaptor<LogMessage> argument = ArgumentCaptor.forClass(LogMessage.class);
             verify(_eventLogger).message(argument.capture());
-            assertTrue("Unexpected operational log message",
-                              argument.getValue().toString().startsWith("ATH-1010"));
+            assertTrue(argument.getValue().toString().startsWith("ATH-1010"), "Unexpected operational log message");
 
         }
     }
@@ -149,17 +143,15 @@ public class SubjectCreatorTest extends UnitTestBase
     @Test
     public void testGetGroupPrincipalsWhenAGroupManagerReturnsEmptySet()
     {
-        when(_groupManager2.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(new HashSet<Principal>());
+        when(_groupManager2.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(new HashSet<>());
 
         getAndAssertGroupPrincipals(_group1);
     }
 
     private void getAndAssertGroupPrincipals(Principal... expectedGroups)
     {
-        Set<Principal> actualGroupPrincipals = _subjectCreator.getGroupPrincipals(USERNAME_PRINCIPAL);
-        Set<Principal> expectedGroupPrincipals = new HashSet<Principal>(Arrays.asList(expectedGroups));
+        final Set<Principal> actualGroupPrincipals = _subjectCreator.getGroupPrincipals(USERNAME_PRINCIPAL);
+        final Set<Principal> expectedGroupPrincipals = new HashSet<>(Arrays.asList(expectedGroups));
         assertEquals(expectedGroupPrincipals, actualGroupPrincipals);
     }
-
-
 }

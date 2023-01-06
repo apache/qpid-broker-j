@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -32,7 +32,7 @@ public class StringUtilTest extends UnitTestBase
 {
     private StringUtil _util;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _util = new StringUtil();
@@ -41,22 +41,21 @@ public class StringUtilTest extends UnitTestBase
     @Test
     public void testRandomAlphaNumericStringInt()
     {
-        String password = _util.randomAlphaNumericString(10);
-        assertEquals("Unexpected password string length", (long) 10, (long) password.length());
+        final String password = _util.randomAlphaNumericString(10);
+        assertEquals(10, (long) password.length(), "Unexpected password string length");
         assertCharacters(password);
     }
 
-    private void assertCharacters(String password)
+    private void assertCharacters(final String password)
     {
-        String numbers = "0123456789";
-        String letters = "abcdefghijklmnopqrstuvwxwy";
-        String others = "_-";
-        String expectedCharacters = (numbers + letters + letters.toUpperCase() + others);
-        char[] chars = password.toCharArray();
-        for (int i = 0; i < chars.length; i++)
+        final String numbers = "0123456789";
+        final String letters = "abcdefghijklmnopqrstuvwxwy";
+        final String others = "_-";
+        final String expectedCharacters = (numbers + letters + letters.toUpperCase() + others);
+        final char[] chars = password.toCharArray();
+        for (final char ch : chars)
         {
-            char ch = chars[i];
-            assertTrue("Unexpected character " + ch, expectedCharacters.indexOf(ch) != -1);
+            assertTrue(expectedCharacters.indexOf(ch) != -1, "Unexpected character " + ch);
         }
     }
 
@@ -65,11 +64,10 @@ public class StringUtilTest extends UnitTestBase
     {
         assertEquals("MyName_973de1b4e26b629d4817c8255090e58e", _util.createUniqueJavaName("MyName"));
         assertEquals("ContaisIllegalJavaCharacters_a68b2484f2eb790558d6527e56c595fa",
-                            _util.createUniqueJavaName("Contais+Illegal-Java*Characters"));
+                _util.createUniqueJavaName("Contais+Illegal-Java*Characters"));
         assertEquals("StartsWithIllegalInitial_93031eec569608c60c6a98ac9e84a0a7",
-                            _util.createUniqueJavaName("9StartsWithIllegalInitial"));
+                _util.createUniqueJavaName("9StartsWithIllegalInitial"));
         assertEquals("97b247ba19ff869340d3797cc73ca065", _util.createUniqueJavaName("1++++----"));
         assertEquals("d41d8cd98f00b204e9800998ecf8427e", _util.createUniqueJavaName(""));
     }
-
 }

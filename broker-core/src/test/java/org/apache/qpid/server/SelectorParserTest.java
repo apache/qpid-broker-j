@@ -21,12 +21,12 @@
 
 package org.apache.qpid.server;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.filter.JMSSelectorFilter;
-import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.filter.selector.ParseException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -63,7 +63,6 @@ public class SelectorParserTest extends UnitTestBase
         testFail("prop1 = prop2 foo AND string = 'Test'");
     }
 
-
     @Test
     public void testPropertyNames()
     {
@@ -85,7 +84,6 @@ public class SelectorParserTest extends UnitTestBase
         testFail("IS = 0 ");
         testFail("ESCAPE = 0 ");
    }
-
 
     @Test
     public void testBoolean()
@@ -125,38 +123,13 @@ public class SelectorParserTest extends UnitTestBase
         testPass("octal=042");
     }
 
-
-    private void testPass(String selector)
+    private void testPass(final String selector)
     {
-        try
-        {
-            new JMSSelectorFilter(selector);
-        }
-        catch (ParseException e)
-        {
-            fail("Selector '" + selector + "' was not parsed :" + e.getMessage());
-        }
-        catch (SelectorParsingException e)
-        {
-            fail("Selector '" + selector + "' was not parsed :" + e.getMessage());
-        }
+        assertDoesNotThrow(() -> new JMSSelectorFilter(selector), "Selector '" + selector + "' was not parsed");
     }
 
-    private void testFail(String selector)
+    private void testFail(final String selector)
     {
-        try
-        {
-            new JMSSelectorFilter(selector);
-            fail("Selector '" + selector + "' was parsed ");
-        }
-        catch (ParseException e)
-        {
-            //normal path
-        }
-        catch (SelectorParsingException e)
-        {
-            //normal path
-        }
+        assertThrows(Exception.class, () -> new JMSSelectorFilter(selector), "Selector '" + selector + "' was parsed");
     }
-
 }

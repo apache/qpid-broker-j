@@ -24,13 +24,12 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 
-import org.hamcrest.Matchers;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.protocol.ErrorCodes;
@@ -150,7 +149,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @Ignore("The server does not implement this rule.")
+    @Disabled("The server does not implement this rule.")
     @SpecificationTest(section = "1.6.2.1",
             description = "When [passive] set, all other method fields [of declare] except name and no-wait are ignored.")
     public void exchangeRedeclarePassiveDifferentType() throws Exception
@@ -212,7 +211,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                        .consumeResponse(ExchangeDeclareOkBody.class);
         }
 
-        assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
         getBrokerAdmin().restart();
 
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())

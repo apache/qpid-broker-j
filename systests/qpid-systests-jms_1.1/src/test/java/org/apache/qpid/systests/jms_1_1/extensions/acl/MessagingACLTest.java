@@ -20,13 +20,12 @@ package org.apache.qpid.systests.jms_1_1.extensions.acl;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,8 +53,11 @@ import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.common.collect.Sets;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -238,7 +241,7 @@ public class MessagingACLTest extends JmsTestBase
     public void testConsumeOwnQueueSuccess() throws Exception
     {
         final String queueName = "user1Queue";
-        assumeThat(getBrokerAdmin().getValidUsername(), is(equalTo(USER1)));
+        assumeTrue(Objects.equals(getBrokerAdmin().getValidUsername(), USER1));
 
         createQueue(queueName);
 
@@ -407,9 +410,7 @@ public class MessagingACLTest extends JmsTestBase
     @Test
     public void testCreateTemporaryQueueFailed() throws Exception
     {
-        assumeThat("QPID-7919",
-                   getProtocol(),
-                   is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(!Objects.equals(getProtocol(), Protocol.AMQP_1_0), "QPID-7919");
 
         configureACL(String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST", USER1),
                      String.format("ACL DENY-LOG %s CREATE QUEUE temporary=\"true\"", USER1));
@@ -542,8 +543,8 @@ public class MessagingACLTest extends JmsTestBase
                 requesterSession.commit();
 
                 Message receivedRequest = requestConsumer.receive(getReceiveTimeout());
-                assertNotNull("Request is not received", receivedRequest);
-                assertNotNull("Request should have Reply-To", receivedRequest.getJMSReplyTo());
+                assertNotNull(receivedRequest, "Request is not received");
+                assertNotNull(receivedRequest.getJMSReplyTo(), "Request should have Reply-To");
 
                 MessageProducer responder = responderSession.createProducer(receivedRequest.getJMSReplyTo());
                 responder.send(responderSession.createTextMessage("Response"));
@@ -551,8 +552,9 @@ public class MessagingACLTest extends JmsTestBase
 
                 Message receivedResponse = responseConsumer.receive(getReceiveTimeout());
                 requesterSession.commit();
-                assertNotNull("Response is not received", receivedResponse);
-                assertEquals("Unexpected response is received", "Response", ((TextMessage) receivedResponse).getText());
+                assertNotNull(receivedResponse, "Response is not received");
+                assertEquals("Response", ((TextMessage) receivedResponse).getText(),
+                        "Unexpected response is received");
             }
             finally
             {
@@ -641,9 +643,7 @@ public class MessagingACLTest extends JmsTestBase
     @Test
     public void testPublishToDefaultExchangeSuccess() throws Exception
     {
-        assumeThat("Test not applicable for AMQP 1.0",
-                   getProtocol(),
-                   is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(!Objects.equals(getProtocol(), Protocol.AMQP_1_0), "Test not applicable for AMQP 1.0");
 
         String queueName = getTestName();
         createQueue(queueName);
@@ -669,9 +669,7 @@ public class MessagingACLTest extends JmsTestBase
     @Test
     public void testPublishToDefaultExchangeFailure() throws Exception
     {
-        assumeThat("Test not applicable for AMQP 1.0",
-                   getProtocol(),
-                   is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(!Objects.equals(getProtocol(), Protocol.AMQP_1_0), "Test not applicable for AMQP 1.0");
 
         String queueName = getTestName();
         createQueue(queueName);
@@ -790,9 +788,7 @@ public class MessagingACLTest extends JmsTestBase
     @Test
     public void testCreateNamedQueueFailure() throws Exception
     {
-        assumeThat("Test not applicable for AMQP 1.0",
-                   getProtocol(),
-                   is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(!Objects.equals(getProtocol(), Protocol.AMQP_1_0), "Test not applicable for AMQP 1.0");
 
         String queueName = getTestName();
         configureACL(String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST", USER1),
@@ -900,18 +896,18 @@ public class MessagingACLTest extends JmsTestBase
 
     private void assertConnection(final Connection connection) throws JMSException
     {
-        assertNotNull("create session should be successful",
-                      connection.createSession(false, Session.AUTO_ACKNOWLEDGE));
+        assertNotNull(connection.createSession(false, Session.AUTO_ACKNOWLEDGE),
+                "create session should be successful");
     }
 
     private void assertAccessDeniedException(JMSException e) throws Exception
     {
-        assertTrue("Unexpected exception message:" + e.getMessage(),
-                   e.getMessage().contains("Permission PERFORM_ACTION(connect) is denied"));
+        assertTrue(e.getMessage().contains("Permission PERFORM_ACTION(connect) is denied"),
+                "Unexpected exception message:" + e.getMessage());
         if (getProtocol() == Protocol.AMQP_1_0)
         {
-            assertTrue("Unexpected error condition reported:" + e.getMessage(),
-                       e.getMessage().contains("amqp:not-allowed"));
+            assertTrue(e.getMessage().contains("amqp:not-allowed"),
+                    "Unexpected error condition reported:" + e.getMessage());
         }
     }
 

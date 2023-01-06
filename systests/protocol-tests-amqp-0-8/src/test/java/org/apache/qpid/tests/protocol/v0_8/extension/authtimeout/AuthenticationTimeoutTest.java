@@ -21,12 +21,11 @@ package org.apache.qpid.tests.protocol.v0_8.extension.authtimeout;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Arrays;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionSecureBody;
@@ -43,7 +42,7 @@ public class AuthenticationTimeoutTest extends BrokerAdminUsingTestBase
     @Test
     public void authenticationTimeout() throws Exception
     {
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported("PLAIN"), is(true));
+        assumeTrue(getBrokerAdmin().isSASLMechanismSupported("PLAIN"));
 
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {

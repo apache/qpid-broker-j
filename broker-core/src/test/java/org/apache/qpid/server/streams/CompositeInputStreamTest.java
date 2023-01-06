@@ -21,9 +21,9 @@
 
 package org.apache.qpid.server.streams;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,8 +32,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -43,99 +44,94 @@ public class CompositeInputStreamTest extends UnitTestBase
     @Test
     public void testReadByteByByte_MultipleStreams() throws Exception
     {
-        InputStream bis1 = new ByteArrayInputStream("ab".getBytes());
-        InputStream bis2 = new ByteArrayInputStream("cd".getBytes());
+        final InputStream bis1 = new ByteArrayInputStream("ab".getBytes());
+        final InputStream bis2 = new ByteArrayInputStream("cd".getBytes());
 
-        CompositeInputStream cis = new CompositeInputStream(Arrays.asList(bis1, bis2));
+        try (final CompositeInputStream cis = new CompositeInputStream(Arrays.asList(bis1, bis2)))
+        {
 
-        assertEquals("1st read byte unexpected", 'a', cis.read());
-        assertEquals("2nd read byte unexpected", 'b', cis.read());
-        assertEquals("3rd read byte unexpected", 'c', cis.read());
-        assertEquals("4th read byte unexpected", 'd', cis.read());
-
-        assertEquals("Expecting EOF", -1, cis.read());
+            assertEquals('a', cis.read(), "1st read byte unexpected");
+            assertEquals('b', cis.read(), "2nd read byte unexpected");
+            assertEquals('c', cis.read(), "3rd read byte unexpected");
+            assertEquals('d', cis.read(), "4th read byte unexpected");
+            assertEquals(-1, cis.read(), "Expecting EOF");
+        }
     }
 
     @Test
     public void testReadByteArray_MultipleStreams() throws Exception
     {
-        InputStream bis1 = new ByteArrayInputStream("ab".getBytes());
-        InputStream bis2 = new ByteArrayInputStream("cd".getBytes());
+        final InputStream bis1 = new ByteArrayInputStream("ab".getBytes());
+        final InputStream bis2 = new ByteArrayInputStream("cd".getBytes());
 
-        CompositeInputStream cis = new CompositeInputStream(Arrays.asList(bis1, bis2));
+        try (final CompositeInputStream cis = new CompositeInputStream(Arrays.asList(bis1, bis2)))
+        {
+            final byte[] buf = new byte[3];
 
-        byte[] buf = new byte[3];
+            final int read1 = cis.read(buf);
+            assertEquals(3, read1, "Unexpected return value from 1st array read");
+            assertArrayEquals("abc".getBytes(), buf, "Unexpected bytes from 1st array read");
 
-        int read1 = cis.read(buf);
-        assertEquals("Unexpected return value from 1st array read", 3, read1);
-        assertArrayEquals("Unexpected bytes from 1st array read", "abc".getBytes(), buf);
+            final int read2 = cis.read(buf);
+            assertEquals(1, read2, "Unexpected return value from 2nd array read");
+            assertArrayEquals("d".getBytes(), Arrays.copyOf(buf, 1), "Unexpected bytes from 1st array read");
 
-        int read2 = cis.read(buf);
-        assertEquals("Unexpected return value from 2nd array read", 1, read2);
-        assertArrayEquals("Unexpected bytes from 1st array read", "d".getBytes(), Arrays.copyOf(buf, 1));
-
-        int read3 = cis.read(buf);
-        assertEquals("Expecting EOF", -1, read3);
+            final int read3 = cis.read(buf);
+            assertEquals(-1, read3, "Expecting EOF");
+        }
     }
 
     @Test
     public void testReadsMixed_SingleStream() throws Exception
     {
-        InputStream bis = new ByteArrayInputStream("abcd".getBytes());
+        final InputStream bis = new ByteArrayInputStream("abcd".getBytes());
 
-        CompositeInputStream cis = new CompositeInputStream(Arrays.asList(bis));
+        try (final CompositeInputStream cis = new CompositeInputStream(List.of(bis)))
+        {
 
-        byte[] buf = new byte[3];
+            final byte[] buf = new byte[3];
 
-        int read1 = cis.read(buf);
-        assertEquals("Unexpected return value from 1st array read", 3, read1);
-        assertArrayEquals("Unexpected bytes from 1st array read", "abc".getBytes(), buf);
+            final int read1 = cis.read(buf);
+            assertEquals(3, read1, "Unexpected return value from 1st array read");
+            assertArrayEquals("abc".getBytes(), buf, "Unexpected bytes from 1st array read");
 
-        assertEquals("1st read byte unexpected", 'd', cis.read());
+            assertEquals('d', cis.read(), "1st read byte unexpected");
 
-        assertEquals("Expecting EOF", -1, cis.read(buf));
+            assertEquals(-1, cis.read(buf), "Expecting EOF");
+        }
     }
 
     @Test
     public void testAvailable_MultipleStreams() throws Exception
     {
-        InputStream bis1 = new ByteArrayInputStream("ab".getBytes());
-        InputStream bis2 = new ByteArrayInputStream("cd".getBytes());
+        final InputStream bis1 = new ByteArrayInputStream("ab".getBytes());
+        final InputStream bis2 = new ByteArrayInputStream("cd".getBytes());
 
-        CompositeInputStream cis = new CompositeInputStream(Arrays.asList(bis1, bis2));
-
-        assertEquals("Unexpected number of available bytes before read", 4, cis.available());
-        cis.read();
-        assertEquals("Unexpected number of available bytes after 1st read", 3, cis.available());
-        cis.read();
-        cis.read();
-        assertEquals("Unexpected number of available bytes after 3rd read", 1, cis.available());
-        cis.read();
-        assertEquals("Unexpected number of available bytes after last byte read", 0, cis.available());
+        try (final CompositeInputStream cis = new CompositeInputStream(List.of(bis1, bis2)))
+        {
+            assertEquals(4, cis.available(), "Unexpected number of available bytes before read");
+            cis.read();
+            assertEquals(3, cis.available(), "Unexpected number of available bytes after 1st read");
+            cis.read();
+            cis.read();
+            assertEquals(1, cis.available(), "Unexpected number of available bytes after 3rd read");
+            cis.read();
+            assertEquals(0, cis.available(), "Unexpected number of available bytes after last byte read");
+        }
     }
 
     @Test
     public void testClose() throws Exception
     {
-        InputStream bis1 = mock(InputStream.class);
-        InputStream bis2 = mock(InputStream.class);
-
-        CompositeInputStream cis = new CompositeInputStream(Arrays.asList(bis1, bis2));
+        final InputStream bis1 = mock(InputStream.class);
+        final InputStream bis2 = mock(InputStream.class);
+        final CompositeInputStream cis = new CompositeInputStream(List.of(bis1, bis2));
 
         cis.close();
         verify(bis1).close();
         verify(bis1).close();
         when(bis1.read()).thenThrow(new IOException("mocked stream closed"));
 
-        try
-        {
-            cis.read();
-            fail("Excetion not thrown");
-        }
-        catch(IOException ioe)
-        {
-            // PASS
-        }
+        assertThrows(IOException.class, cis::read, "Exception not thrown");
     }
-
 }

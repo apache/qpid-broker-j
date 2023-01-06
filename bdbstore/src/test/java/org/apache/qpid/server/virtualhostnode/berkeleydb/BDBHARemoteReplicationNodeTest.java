@@ -19,11 +19,9 @@
 
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -40,12 +38,13 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -69,41 +68,38 @@ public class BDBHARemoteReplicationNodeTest extends UnitTestBase
 {
     private final AccessControl _mockAccessControl = mock(AccessControl.class);
 
-    private Broker _broker;
-    private TaskExecutor _taskExecutor;
     private BDBHAVirtualHostNode<?> _virtualHostNode;
-    private DurableConfigurationStore _configStore;
     private ReplicatedEnvironmentFacade _facade;
 
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
 
         _facade = mock(ReplicatedEnvironmentFacade.class);
 
-        _broker = BrokerTestHelper.createBrokerMock();
+        Broker broker = BrokerTestHelper.createBrokerMock();
 
-        _taskExecutor = new CurrentThreadTaskExecutor();
-        _taskExecutor.start();
-        when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
+        TaskExecutor taskExecutor = new CurrentThreadTaskExecutor();
+        taskExecutor.start();
+        when(broker.getTaskExecutor()).thenReturn(taskExecutor);
+        when(broker.getChildExecutor()).thenReturn(taskExecutor);
 
         _virtualHostNode = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(BDBHAVirtualHostNode.class,
                                                                                     mock(Principal.class),
                                                                                     _mockAccessControl);
 
-        _configStore = mock(DurableConfigurationStore.class);
-        when(_virtualHostNode.getConfigurationStore()).thenReturn(_configStore);
+        DurableConfigurationStore configStore = mock(DurableConfigurationStore.class);
+        when(_virtualHostNode.getConfigurationStore()).thenReturn(configStore);
 
         // Virtualhost needs the EventLogger from the SystemContext.
-        when(_virtualHostNode.getParent()).thenReturn(_broker);
+        when(_virtualHostNode.getParent()).thenReturn(broker);
         doReturn(VirtualHostNode.class).when(_virtualHostNode).getCategoryClass();
-        ConfiguredObjectFactory objectFactory = _broker.getObjectFactory();
+        ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
         when(_virtualHostNode.getModel()).thenReturn(objectFactory.getModel());
-        when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
+        when(_virtualHostNode.getTaskExecutor()).thenReturn(taskExecutor);
+        when(_virtualHostNode.getChildExecutor()).thenReturn(taskExecutor);
 
     }
 
@@ -229,6 +225,4 @@ public class BDBHARemoteReplicationNodeTest extends UnitTestBase
         node.create();
         return node;
     }
-
-
 }

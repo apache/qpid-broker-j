@@ -27,9 +27,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
@@ -58,15 +59,20 @@ public class Message_1_0_MutatorTest extends UnitTestBase
     private MessageStore _messageStore;
     private Message_1_0_Mutator _messageMutator;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeAll
+    public void beforeAll()
     {
         _messageStore = new TestMemoryMessageStore();
+    }
+
+    @BeforeEach
+    public void beforeEach()
+    {
         final Message_1_0 message = createTestMessage();
         _messageMutator = new Message_1_0_Mutator(message, _messageStore);
     }
 
-    @After
+    @AfterAll
     public void tearDown()
     {
         _messageStore.closeMessageStore();

@@ -27,12 +27,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.stream.IntStream;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpenOk;
-import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTune;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
@@ -46,7 +45,7 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public class LargeMessageBodyTest extends BrokerAdminUsingTestBase
 {
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);

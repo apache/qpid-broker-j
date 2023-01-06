@@ -30,12 +30,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.security.KeyStore;
 import java.util.ArrayDeque;
 import java.util.Base64;
@@ -44,13 +42,13 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.Port;
@@ -77,8 +75,7 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
 
     private Deque<BaseAction<Void, Exception>> _tearDownActions;
 
-
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if (_tearDownActions != null)
@@ -145,7 +142,7 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
         try
         {
             helper.getJson("broker/getUser", STRING_TYPE_REF, SC_OK);
-            fail("Exception not thrown");
+            Assertions.fail("Exception not thrown");
         }
         catch (IOException e)
         {

@@ -29,23 +29,20 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -66,59 +63,40 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTestBase
 {
-    private static final String EXCHANGE = org.apache.qpid.server.model.Exchange.class.getSimpleName();
+    private static final String EXCHANGE = Exchange.class.getSimpleName();
     private static final String QUEUE = Queue.class.getSimpleName();
-    private static final UUID ANY_UUID = UUID.randomUUID();
-    private static final Map ANY_MAP = new HashMap();
+    private static final UUID ANY_UUID = randomUUID();
+    @SuppressWarnings("rawtypes")
+    private static final Map ANY_MAP = new HashMap<>();
     private static final String STANDARD = "standard";
 
     private String _storePath;
-    private String _storeName;
-
     private ConfiguredObjectRecordHandler _handler;
-
-    private Map<String,Object> _bindingArgs;
     private UUID _queueId;
     private UUID _exchangeId;
     private DurableConfigurationStore _configStore;
     private ConfiguredObjectFactoryImpl _factory;
-
     private VirtualHostNode<?> _parent;
-
     private ConfiguredObjectRecord _rootRecord;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
         _queueId = UUIDGenerator.generateRandomUUID();
         _exchangeId = UUIDGenerator.generateRandomUUID();
         _factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
-        _storeName = getTestName();
-        _storePath = TMP_FOLDER + File.separator + _storeName;
+        final String storeName = getTestName();
+        _storePath = TMP_FOLDER + File.separator + storeName;
         FileUtils.delete(new File(_storePath), true);
 
         _handler = mock(ConfiguredObjectRecordHandler.class);
-
-        _bindingArgs = new HashMap<>();
-        String argKey = AMQPFilterTypes.JMS_SELECTOR.toString();
-        String argValue = "some selector expression";
-        _bindingArgs.put(argKey, argValue);
 
         _parent = createVirtualHostNode(_storePath, _factory);
 
         _configStore = createConfigStore();
         _configStore.init(_parent);
-        _configStore.openConfigurationStore(new ConfiguredObjectRecordHandler()
-        {
-
-            @Override
-            public void handle(final ConfiguredObjectRecord record)
-            {
-            }
-
-        });
-        _rootRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), VirtualHost.class.getSimpleName(), Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "vhost"));
+        _configStore.openConfigurationStore(record -> {});
+        _rootRecord = new ConfiguredObjectRecordImpl(randomUUID(), VirtualHost.class.getSimpleName(), Map.of(ConfiguredObject.NAME, "vhost"));
         _configStore.create(_rootRecord);
     }
 
@@ -132,9 +110,10 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
         return _configStore;
     }
 
-    protected abstract VirtualHostNode createVirtualHostNode(String storeLocation, ConfiguredObjectFactory factory);
+    protected abstract VirtualHostNode<?> createVirtualHostNode(final String storeLocation,
+                                                                final ConfiguredObjectFactory factory);
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -151,7 +130,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
     }
 
     @Test
-    public void testCloseIsIdempotent() throws Exception
+    public void testCloseIsIdempotent()
     {
         _configStore.closeConfigurationStore();
         // Second close should be accepted without exception
@@ -161,26 +140,26 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
     @Test
     public void testCreateExchange() throws Exception
     {
-        Exchange<?> exchange = createTestExchange();
+        final Exchange<?> exchange = createTestExchange();
         _configStore.create(exchange.asObjectRecord());
 
         reopenStore();
         _configStore.openConfigurationStore(_handler);
 
         verify(_handler).handle(matchesRecord(_exchangeId, EXCHANGE,
-                map( org.apache.qpid.server.model.Exchange.NAME, getTestName(),
-                        org.apache.qpid.server.model.Exchange.TYPE, getTestName()+"Type",
-                        org.apache.qpid.server.model.Exchange.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS.name())));
+                map(Exchange.NAME, getTestName(),
+                        Exchange.TYPE, getTestName() + "Type",
+                        Exchange.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS.name())));
     }
 
-    protected Map<String,Object> map(Object... vals)
+    protected Map<String,Object> map(final Object... vals)
     {
-        Map<String,Object> map = new HashMap<>();
+        final Map<String,Object> map = new HashMap<>();
         boolean isValue = false;
         String key = null;
-        for(Object obj : vals)
+        for (final Object obj : vals)
         {
-            if(isValue)
+            if (isValue)
             {
                 map.put(key,obj);
             }
@@ -196,21 +175,23 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
     @Test
     public void testRemoveExchange() throws Exception
     {
-        Exchange<?> exchange = createTestExchange();
+        final Exchange<?> exchange = createTestExchange();
         _configStore.create(exchange.asObjectRecord());
-
         _configStore.remove(exchange.asObjectRecord());
-
         reopenStore();
         verify(_handler, never()).handle(any(ConfiguredObjectRecord.class));
     }
 
-    protected ConfiguredObjectRecord matchesRecord(UUID id, String type, Map<String, Object> attributes)
+    @SuppressWarnings("unchecked")
+    protected ConfiguredObjectRecord matchesRecord(final UUID id, final String type, final Map<String, Object> attributes)
     {
         return argThat(new ConfiguredObjectMatcher(id, type, attributes, ANY_MAP));
     }
 
-    protected ConfiguredObjectRecord matchesRecord(UUID id, String type, Map<String, Object> attributes, Map<String,UUID> parents)
+    protected ConfiguredObjectRecord matchesRecord(final UUID id,
+                                                   final String type,
+                                                   final Map<String, Object> attributes,
+                                                   final Map<String,UUID> parents)
     {
         return argThat(new ConfiguredObjectMatcher(id, type, attributes, parents));
     }
@@ -222,7 +203,10 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
         private final String _name;
         private final Map<String,UUID> _parents;
 
-        private ConfiguredObjectMatcher(final UUID id, final String type, final Map<String, Object> matchingMap, Map<String,UUID> parents)
+        private ConfiguredObjectMatcher(final UUID id,
+                                        final String type,
+                                        final Map<String, Object> matchingMap,
+                                        final Map<String,UUID> parents)
         {
             _id = id;
             _name = type;
@@ -233,7 +217,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
         @Override
         public boolean matches(final ConfiguredObjectRecord binding)
         {
-            Map<String,Object> arg = new HashMap<>(binding.getAttributes());
+            final Map<String,Object> arg = new HashMap<>(binding.getAttributes());
             arg.remove("createdBy");
             arg.remove("createdTime");
             arg.remove("lastUpdatedTime");
@@ -244,16 +228,16 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
                    && (_parents == ANY_MAP || matchesParents(binding));
         }
 
-        private boolean matchesParents(ConfiguredObjectRecord binding)
+        private boolean matchesParents(final ConfiguredObjectRecord binding)
         {
-            Map<String, UUID> bindingParents = binding.getParents();
-            if(bindingParents.size() != _parents.size())
+            final Map<String, UUID> bindingParents = binding.getParents();
+            if (bindingParents.size() != _parents.size())
             {
                 return false;
             }
-            for(Map.Entry<String,UUID> entry : _parents.entrySet())
+            for (final Map.Entry<String,UUID> entry : _parents.entrySet())
             {
-                if(!bindingParents.get(entry.getKey()).equals(entry.getValue()))
+                if (!bindingParents.get(entry.getKey()).equals(entry.getValue()))
                 {
                     return false;
                 }
@@ -265,25 +249,23 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
     @Test
     public void testCreateQueue() throws Exception
     {
-        Queue<?> queue = createTestQueue(getTestName(), getTestName() + "Owner", true, null);
+        final Queue<?> queue = createTestQueue(getTestName(), getTestName() + "Owner", true, null);
         _configStore.create(queue.asObjectRecord());
 
         reopenStore();
         _configStore.openConfigurationStore(_handler);
 
-        Map<String, Object> queueAttributes = new HashMap<>();
-        queueAttributes.put(Queue.NAME, getTestName());
-        queueAttributes.put(Queue.OWNER, getTestName() + "Owner");
-        queueAttributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONTAINER.name());
-        queueAttributes.put(Queue.TYPE, STANDARD);
+        final Map<String, Object> queueAttributes = Map.of(Queue.NAME, getTestName(),
+                Queue.OWNER, getTestName() + "Owner",
+                Queue.EXCLUSIVE, ExclusivityPolicy.CONTAINER.name(),
+                Queue.TYPE, STANDARD);
         verify(_handler).handle(matchesRecord(_queueId, QUEUE, queueAttributes));
     }
 
     @Test
     public void testUpdateQueue() throws Exception
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Queue.TYPE, STANDARD);
+        final Map<String, Object> attributes = Map.of(Queue.TYPE, STANDARD);
         Queue<?> queue = createTestQueue(getTestName(), getTestName() + "Owner", true, attributes);
 
         _configStore.create(queue.asObjectRecord());
@@ -296,40 +278,37 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
         reopenStore();
         _configStore.openConfigurationStore(_handler);
 
-        Map<String,Object> queueAttributes = new HashMap<>();
-
+        final Map<String,Object> queueAttributes = new HashMap<>();
         queueAttributes.put(Queue.NAME, getTestName());
         queueAttributes.putAll(attributes);
-
         verify(_handler).handle(matchesRecord(_queueId, QUEUE, queueAttributes));
-
     }
-
 
     @Test
     public void testRemoveQueue() throws Exception
     {
-        Queue<?> queue = createTestQueue(getTestName(), getTestName() + "Owner", true, Collections.emptyMap());
+        final Queue<?> queue = createTestQueue(getTestName(), getTestName() + "Owner", true, Map.of());
         _configStore.create(queue.asObjectRecord());
-
         _configStore.remove(queue.asObjectRecord());
         reopenStore();
         verify(_handler, never()).handle(any(ConfiguredObjectRecord.class));
     }
 
-    private Queue<?> createTestQueue(String queueName,
-                                     String queueOwner,
-                                     boolean exclusive,
+    @SuppressWarnings("rawtypes")
+    private Queue<?> createTestQueue(final String queueName,
+                                     final String queueOwner,
+                                     final boolean exclusive,
                                      final Map<String, Object> arguments) throws StoreException
     {
-        Queue queue = BrokerTestHelper.mockWithSystemPrincipal(Queue.class, mock(Principal.class));
+        final Queue queue = BrokerTestHelper.mockWithSystemPrincipal(Queue.class, mock(Principal.class));
         when(queue.getName()).thenReturn(queueName);
         when(queue.isExclusive()).thenReturn(exclusive);
         when(queue.getId()).thenReturn(_queueId);
         when(queue.getType()).thenReturn(STANDARD);
         when(queue.getCategoryClass()).thenReturn(Queue.class);
         when(queue.isDurable()).thenReturn(true);
-        TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
+
+        final TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(queue.getTaskExecutor()).thenReturn(taskExecutor);
         when(queue.getChildExecutor()).thenReturn(taskExecutor);
 
@@ -338,47 +317,41 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
         final Map<String,Object> attributes = arguments == null ? new LinkedHashMap<>() : new LinkedHashMap<>(arguments);
         attributes.put(Queue.NAME, queueName);
         attributes.put(Queue.TYPE, STANDARD);
-        if(exclusive)
+        if (exclusive)
         {
             when(queue.getOwner()).thenReturn(queueOwner);
-
             attributes.put(Queue.OWNER, queueOwner);
             attributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONTAINER);
         }
-            when(queue.getAvailableAttributes()).thenReturn(attributes.keySet());
-            final ArgumentCaptor<String> requestedAttribute = ArgumentCaptor.forClass(String.class);
-            when(queue.getAttribute(requestedAttribute.capture())).then(
-                    new Answer()
-                    {
+        when(queue.getAvailableAttributes()).thenReturn(attributes.keySet());
 
-                        @Override
-                        public Object answer(final InvocationOnMock invocation) throws Throwable
-                        {
-                            String attrName = requestedAttribute.getValue();
-                            return attributes.get(attrName);
-                        }
-                    });
+        final ArgumentCaptor<String> requestedAttribute = ArgumentCaptor.forClass(String.class);
+        when(queue.getAttribute(requestedAttribute.capture())).then((Answer) invocation ->
+        {
+            final String attrName = requestedAttribute.getValue();
+            return attributes.get(attrName);
+        });
 
         when(queue.getActualAttributes()).thenReturn(attributes);
-
         when(queue.getObjectFactory()).thenReturn(_factory);
         when(queue.getModel()).thenReturn(_factory.getModel());
-        ConfiguredObjectRecord objectRecord = mock(ConfiguredObjectRecord.class);
+
+        final ConfiguredObjectRecord objectRecord = mock(ConfiguredObjectRecord.class);
         when(objectRecord.getId()).thenReturn(_queueId);
         when(objectRecord.getType()).thenReturn(Queue.class.getSimpleName());
         when(objectRecord.getAttributes()).thenReturn(attributes);
-        when(objectRecord.getParents()).thenReturn(Collections.singletonMap(_rootRecord.getType(), _rootRecord.getId()));
+        when(objectRecord.getParents()).thenReturn(Map.of(_rootRecord.getType(), _rootRecord.getId()));
         when(queue.asObjectRecord()).thenReturn(objectRecord);
         return queue;
     }
 
+    @SuppressWarnings("rawtypes")
     private Exchange<?> createTestExchange()
     {
-        Exchange exchange = mock(Exchange.class);
-        Map<String,Object> actualAttributes = new HashMap<>();
-        actualAttributes.put("name", getTestName());
-        actualAttributes.put("type", getTestName() + "Type");
-        actualAttributes.put("lifetimePolicy", LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
+        final Exchange exchange = mock(Exchange.class);
+        final Map<String,Object> actualAttributes = Map.of("name", getTestName(),
+                "type", getTestName() + "Type",
+                "lifetimePolicy", LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
         when(exchange.getName()).thenReturn(getTestName());
         when(exchange.getType()).thenReturn(getTestName() + "Type");
         when(exchange.isAutoDelete()).thenReturn(true);
@@ -387,15 +360,15 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
         when(exchange.isDurable()).thenReturn(true);
         when(exchange.getObjectFactory()).thenReturn(_factory);
         when(exchange.getModel()).thenReturn(_factory.getModel());
-        TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
+        final TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(exchange.getTaskExecutor()).thenReturn(taskExecutor);
         when(exchange.getChildExecutor()).thenReturn(taskExecutor);
 
-        ConfiguredObjectRecord exchangeRecord = mock(ConfiguredObjectRecord.class);
+        final ConfiguredObjectRecord exchangeRecord = mock(ConfiguredObjectRecord.class);
         when(exchangeRecord.getId()).thenReturn(_exchangeId);
         when(exchangeRecord.getType()).thenReturn(Exchange.class.getSimpleName());
         when(exchangeRecord.getAttributes()).thenReturn(actualAttributes);
-        when(exchangeRecord.getParents()).thenReturn(Collections.singletonMap(_rootRecord.getType(), _rootRecord.getId()));
+        when(exchangeRecord.getParents()).thenReturn(Map.of(_rootRecord.getType(), _rootRecord.getId()));
         when(exchange.asObjectRecord()).thenReturn(exchangeRecord);
         when(exchange.getEventLogger()).thenReturn(new EventLogger());
         return exchange;
@@ -410,7 +383,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends UnitTest
 
     protected abstract DurableConfigurationStore createConfigStore() throws Exception;
 
-    protected void closeConfigStore() throws Exception
+    protected void closeConfigStore()
     {
         if (_configStore != null)
         {

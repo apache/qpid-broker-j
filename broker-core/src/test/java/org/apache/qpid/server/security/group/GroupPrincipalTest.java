@@ -20,14 +20,12 @@
  */
 package org.apache.qpid.server.security.group;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -36,67 +34,57 @@ public class GroupPrincipalTest extends UnitTestBase
     @Test
     public void testGetName()
     {
-        final GroupPrincipal principal = new GroupPrincipal("group", (GroupProvider) null);
+        final GroupPrincipal principal = new GroupPrincipal("group", null);
         assertEquals("group", principal.getName());
     }
 
     @Test
     public void testAddRejected()
     {
-        final GroupPrincipal principal = new GroupPrincipal("group", (GroupProvider) null);
+        final GroupPrincipal principal = new GroupPrincipal("group", null);
         final UsernamePrincipal user = new UsernamePrincipal("name", null);
 
-        try
-        {
-            principal.addMember(user);
-            fail("Exception not thrown");
-        }
-        catch (UnsupportedOperationException uso)
-        {
-            // PASS
-        }
+        assertThrows(UnsupportedOperationException.class,
+                () -> principal.addMember(user),
+                "Exception not thrown");
     }
 
     @Test
     public void testEqualitySameName()
     {
         final String string = "string";
-        final GroupPrincipal principal1 = new GroupPrincipal(string, (GroupProvider) null);
-        final GroupPrincipal principal2 = new GroupPrincipal(string, (GroupProvider) null);
-        assertTrue(principal1.equals(principal2));
+        final GroupPrincipal principal1 = new GroupPrincipal(string, null);
+        final GroupPrincipal principal2 = new GroupPrincipal(string, null);
+        assertEquals(principal1, principal2);
     }
 
     @Test
     public void testEqualityEqualName()
     {
-        final GroupPrincipal principal1 = new GroupPrincipal(new String("string"), (GroupProvider) null);
-        final GroupPrincipal principal2 = new GroupPrincipal(new String("string"), (GroupProvider) null);
-        assertTrue(principal1.equals(principal2));
+        final GroupPrincipal principal1 = new GroupPrincipal(new String("string"), null);
+        final GroupPrincipal principal2 = new GroupPrincipal(new String("string"), null);
+        assertEquals(principal1, principal2);
     }
 
     @Test
     public void testInequalityDifferentGroupPrincipals()
     {
-        GroupPrincipal principal1 = new GroupPrincipal("string1", (GroupProvider) null);
-        GroupPrincipal principal2 = new GroupPrincipal("string2", (GroupProvider) null);
-        assertFalse(principal1.equals(principal2));
+        final GroupPrincipal principal1 = new GroupPrincipal("string1", null);
+        final GroupPrincipal principal2 = new GroupPrincipal("string2", null);
+        assertNotEquals(principal1, principal2);
     }
 
     @Test
     public void testInequalityNonGroupPrincipal()
     {
-        GroupPrincipal principal = new GroupPrincipal("string", (GroupProvider) null);
-        assertFalse(principal.equals(new UsernamePrincipal("string", null)));
+        final GroupPrincipal principal = new GroupPrincipal("string", null);
+        assertNotEquals(principal, new UsernamePrincipal("string", null));
     }
 
     @Test
     public void testInequalityNull()
     {
-        GroupPrincipal principal = new GroupPrincipal("string", (GroupProvider) null);
-        assertFalse(principal.equals(null));
+        final GroupPrincipal principal = new GroupPrincipal("string", null);
+        assertNotEquals(null, principal);
     }
-
-
-
-
 }

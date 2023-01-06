@@ -21,6 +21,8 @@ package org.apache.qpid.server.model.testmodels.singleton;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
@@ -33,10 +35,7 @@ import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 public class TestModel extends Model
 {
     private static final Model INSTANCE = new TestModel();
-    private final Class<? extends ConfiguredObject>[] _supportedClasses =
-            new Class[] {
-                    TestSingleton.class
-            };
+    private final Class<? extends ConfiguredObject>[] _supportedClasses = new Class[] { TestSingleton.class };
 
     private final ConfiguredObjectFactory _objectFactory;
     private final ConfiguredObjectTypeRegistry _registry;
@@ -63,9 +62,8 @@ public class TestModel extends Model
                 return "org.apache.qpid.server.model.testmodels.attribute";
             }
         };
-        _registry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration),
-                                                     Collections.<ConfiguredObjectAttributeInjector>emptySet(),
-                                                     getSupportedCategories(), _objectFactory);
+        _registry = new ConfiguredObjectTypeRegistry(List.of(configuredObjectRegistration), Set.of(),
+                getSupportedCategories(), _objectFactory);
     }
 
 
@@ -78,7 +76,7 @@ public class TestModel extends Model
     @Override
     public Collection<Class<? extends ConfiguredObject>> getChildTypes(final Class<? extends ConfiguredObject> parent)
     {
-        return Collections.emptySet();
+        return Set.of();
     }
 
     @Override

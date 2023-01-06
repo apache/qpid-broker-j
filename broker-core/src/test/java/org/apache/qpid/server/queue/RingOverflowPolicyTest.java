@@ -29,14 +29,13 @@ import static org.mockito.Mockito.when;
 
 import java.io.Serializable;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -64,22 +63,23 @@ public class RingOverflowPolicyTest extends UnitTestBase
     private QueueManagingVirtualHost<?> _virtualHost;
     private AtomicLong _messageId;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void setUp() throws Exception
     {
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
-        String name = getClass().getName();
+        final String name = getClass().getName();
         final VirtualHostNode<?> virtualHostNode = BrokerTestHelper.createVirtualHostNodeMock(
                 name, true, BrokerTestHelper.createAccessControlMock(), BrokerTestHelper.createBrokerMock());
         when(virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
         when(virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
 
-        final Map<String, Object> virtualHostAttributes = new HashMap<>();
-        virtualHostAttributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-        virtualHostAttributes.put(VirtualHost.NAME, name);
-        virtualHostAttributes.put(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, 2);
-        virtualHostAttributes.put(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, 1);
+        final Map<String, Object> virtualHostAttributes = Map
+                .of(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
+                VirtualHost.NAME, name,
+                QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, 2,
+                QueueManagingVirtualHost.NUMBER_OF_SELECTORS, 1);
 
         final ConfiguredObjectFactory objectFactory = virtualHostNode.getObjectFactory();
         final QueueManagingVirtualHost<?> host = (QueueManagingVirtualHost<?>)objectFactory.create(VirtualHost.class, virtualHostAttributes, virtualHostNode);
@@ -90,10 +90,9 @@ public class RingOverflowPolicyTest extends UnitTestBase
         _messageId = new AtomicLong();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        _virtualHost.close();
         _taskExecutor.stop();
     }
 
@@ -101,9 +100,7 @@ public class RingOverflowPolicyTest extends UnitTestBase
     public void testEnqueueWithOverflowWhenLeastSignificantEntryIsAcquiredByConsumer() throws Exception
     {
         final Queue<?> queue = createTestRingQueue(2);
-
         final ServerMessage<?> message1 = enqueueTestMessage(queue);
-
         final TestConsumerTarget consumerTarget = createTestConsumerTargetAndConsumer(queue);
         final boolean received = consumerTarget.processPending();
         assertThat(received, is(true));
@@ -118,7 +115,6 @@ public class RingOverflowPolicyTest extends UnitTestBase
 
         final ServerMessage<?> message3 = enqueueTestMessage(queue);
         assertThat(queue.getQueueDepthMessages(), is(equalTo(2)));
-
         assertThat(message2.isReferenced(queue), is(equalTo(false)));
         assertThat(message3.isReferenced(queue), is(equalTo(true)));
     }
@@ -127,9 +123,7 @@ public class RingOverflowPolicyTest extends UnitTestBase
     public void testLeastSignificantEntryAcquiredByConsumerIsDeletedAfterRelease() throws Exception
     {
         final Queue<?> queue = createTestRingQueue(1);
-
         final ServerMessage<?> message1 = enqueueTestMessage(queue);
-
         final TestConsumerTarget consumerTarget = createTestConsumerTargetAndConsumer(queue);
         final boolean received = consumerTarget.processPending();
         assertThat(received, is(true));
@@ -141,7 +135,6 @@ public class RingOverflowPolicyTest extends UnitTestBase
 
         final ServerMessage<?> message2 = enqueueTestMessage(queue);
         assertThat(queue.getQueueDepthMessages(), is(equalTo(2)));
-
         assertThat(message1.isReferenced(queue), is(equalTo(true)));
         assertThat(message2.isReferenced(queue), is(equalTo(true)));
 
@@ -153,10 +146,9 @@ public class RingOverflowPolicyTest extends UnitTestBase
 
     private Queue<?> createTestRingQueue(final int messageLimit)
     {
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Queue.NAME, getTestName());
-        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING.name());
-        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, messageLimit);
+        final Map<String, Object> attributes = Map.of(Queue.NAME, getTestName(),
+                Queue.OVERFLOW_POLICY, OverflowPolicy.RING.name(),
+                Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, messageLimit);
         return _virtualHost.createChild(Queue.class, attributes);
     }
 

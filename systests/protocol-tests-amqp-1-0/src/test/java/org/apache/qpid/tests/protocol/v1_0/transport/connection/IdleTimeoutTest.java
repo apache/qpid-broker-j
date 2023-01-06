@@ -20,12 +20,11 @@
 
 package org.apache.qpid.tests.protocol.v1_0.transport.connection;
 
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;

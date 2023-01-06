@@ -20,20 +20,19 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -49,6 +48,7 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes"})
 public class BrokerFileLoggerTest extends UnitTestBase
 {
     private TaskExecutor _taskExecutor;
@@ -57,17 +57,17 @@ public class BrokerFileLoggerTest extends UnitTestBase
     private Broker _broker;
     private BrokerFileLogger<?> _logger;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
 
-        Model model = BrokerModel.getInstance();
+        final Model model = BrokerModel.getInstance();
 
-        EventLogger eventLogger = mock(EventLogger.class);
+        final EventLogger eventLogger = mock(EventLogger.class);
 
-        SystemConfig<?> systemConfig = mock(SystemConfig.class);
+        final SystemConfig<?> systemConfig = mock(SystemConfig.class);
         when(systemConfig.getModel()).thenReturn(model);
         when(systemConfig.getChildExecutor()).thenReturn(_taskExecutor);
         when(systemConfig.getEventLogger()).thenReturn(eventLogger);
@@ -87,24 +87,18 @@ public class BrokerFileLoggerTest extends UnitTestBase
         }
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
+        if (_logger != null)
         {
-            if (_logger != null)
-            {
-                _logger.close();
-                _logger.stopLogging();
-            }
-            _taskExecutor.stopImmediately();
-            if (_baseFolder != null && _baseFolder.exists())
-            {
-                FileUtils.delete(_baseFolder, true);
-            }
+            _logger.close();
+            _logger.stopLogging();
         }
-        finally
+        _taskExecutor.stopImmediately();
+        if (_baseFolder != null && _baseFolder.exists())
         {
+            FileUtils.delete(_baseFolder, true);
         }
     }
 
@@ -113,23 +107,20 @@ public class BrokerFileLoggerTest extends UnitTestBase
     {
         _logger = createLoggerInErroredState();
 
-        List<LogFileDetails> logFileDetails = _logger.getLogFiles();
-        assertTrue("File details should be empty", logFileDetails.isEmpty());
+        final List<LogFileDetails> logFileDetails = _logger.getLogFiles();
+        assertTrue(logFileDetails.isEmpty(), "File details should be empty");
     }
 
     private BrokerFileLogger createLoggerInErroredState()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(BrokerLogger.NAME, getTestName());
-        attributes.put(ConfiguredObject.TYPE, BrokerFileLogger.TYPE);
-        attributes.put(BrokerFileLogger.FILE_NAME, _logFile.getPath());
-        attributes.put(BrokerFileLogger.MAX_FILE_SIZE, "invalid");
-
-        BrokerFileLogger logger = new BrokerFileLoggerImpl(attributes, _broker);
+        final Map<String, Object> attributes = Map.of(BrokerLogger.NAME, getTestName(),
+                ConfiguredObject.TYPE, BrokerFileLogger.TYPE,
+                BrokerFileLogger.FILE_NAME, _logFile.getPath(),
+                BrokerFileLogger.MAX_FILE_SIZE, "invalid");
+        final BrokerFileLogger logger = new BrokerFileLoggerImpl(attributes, _broker);
         logger.open();
 
-        assertEquals("Unexpected state", State.ERRORED, logger.getState());
+        assertEquals(State.ERRORED, logger.getState(), "Unexpected state");
         return logger;
     }
-
 }

@@ -26,10 +26,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.oneOf;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -50,7 +50,7 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public class OutcomeTest extends BrokerAdminUsingTestBase
 {
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -148,12 +148,12 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
 
     private void assumeModifiedSupportedBySource(final Attach attach)
     {
-        assumeThat(attach.getSource(), instanceOf(Source.class));
+        assumeTrue(instanceOf(Source.class).matches(attach.getSource()));
         final Source source = (Source) attach.getSource();
 
         if (!(source.getDefaultOutcome() instanceof Modified))
         {
-            assumeThat(source.getOutcomes(), hasItemInArray(Modified.MODIFIED_SYMBOL));
+            assumeTrue(hasItemInArray(Modified.MODIFIED_SYMBOL).matches(source.getOutcomes()));
         }
     }
 }

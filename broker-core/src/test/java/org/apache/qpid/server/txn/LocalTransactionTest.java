@@ -20,10 +20,10 @@
  */
 package org.apache.qpid.server.txn;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -32,9 +32,11 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
@@ -47,13 +49,13 @@ import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.MockStoreTransaction.TransactionState;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-
 /**
  * A unit test ensuring that LocalTransactionTest creates a long-lived store transaction
  * that spans many dequeue/enqueue operations of enlistable messages.  Verifies
  * that the long-lived transaction is properly committed and rolled back, and that
  * post transaction actions are correctly fired.
  */
+@SuppressWarnings("unchecked")
 public class LocalTransactionTest extends UnitTestBase
 {
     private ServerTransaction _transaction = null;  // Class under test
@@ -61,44 +63,37 @@ public class LocalTransactionTest extends UnitTestBase
     private BaseQueue _queue;
     private List<BaseQueue> _queues;
     private Collection<MessageInstance> _queueEntries;
-    private ServerMessage _message;
+    private ServerMessage<?> _message;
     private MockAction _action1;
     private MockAction _action2;
     private MockStoreTransaction _storeTransaction;
     private MessageStore _transactionLog;
 
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
         _storeTransaction = createTestStoreTransaction(false);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _action1 = new MockAction();
         _action2 = new MockAction();
-        
         _transaction = new LocalTransaction(_transactionLog);
-        
     }
-
 
     /**
      * Tests the enqueue of a non persistent message to a single non durable queue.
      * Asserts that a store transaction has not been started.
      */
     @Test
-    public void testEnqueueToNonDurableQueueOfNonPersistentMessage() throws Exception
+    public void testEnqueueToNonDurableQueueOfNonPersistentMessage()
     {
         _message = createTestMessage(false);
         _queue = createQueue(false);
-        
         _transaction.enqueue(_queue, _message, _action1);
 
-        assertEquals("Enqueue of non-persistent message must not cause message to be enqueued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
+        assertEquals(0, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of non-persistent message must not cause message to be enqueued");
 
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(), "Unexpected transaction state");
         assertNotFired(_action1);
     }
 
@@ -107,17 +102,16 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that a store transaction has been started.
      */
     @Test
-    public void testEnqueueToDurableQueueOfPersistentMessage() throws Exception
+    public void testEnqueueToDurableQueueOfPersistentMessage()
     {
         _message = createTestMessage(true);
         _queue = createQueue(true);
         
         _transaction.enqueue(_queue, _message, _action1);
 
-        assertEquals("Enqueue of persistent message to durable queue must cause message to be enqueued",
-                            (long) 1,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
+        assertEquals(1, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of persistent message to durable queue must cause message to be enqueued");
+        assertEquals(TransactionState.STARTED, _storeTransaction.getState(), "Unexpected transaction state");
         assertNotFired(_action1);
     }
 
@@ -126,7 +120,7 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that the transaction is aborted.
      */
     @Test
-    public void testStoreEnqueueCausesException() throws Exception
+    public void testStoreEnqueueCausesException()
     {
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -134,21 +128,14 @@ public class LocalTransactionTest extends UnitTestBase
         _storeTransaction = createTestStoreTransaction(true);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _transaction = new LocalTransaction(_transactionLog);
-        
-        try
-        {
-            _transaction.enqueue(_queue, _message, _action1);
-            fail("Exception not thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // PASS
-        }
 
-        assertTrue("Rollback action must be fired", _action1.isRollbackActionFired());
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
+        assertThrows(RuntimeException.class,
+                () -> _transaction.enqueue(_queue, _message, _action1),
+                "Exception not thrown");
 
-        assertFalse("Post commit action must not be fired", _action1.isPostCommitActionFired());
+        assertTrue(_action1.isRollbackActionFired(), "Rollback action must be fired");
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertFalse(_action1.isPostCommitActionFired(), "Post commit action must not be fired");
     }
     
     /**
@@ -156,17 +143,16 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started.
      */
     @Test
-    public void testEnqueueToManyNonDurableQueuesOfNonPersistentMessage() throws Exception
+    public void testEnqueueToManyNonDurableQueuesOfNonPersistentMessage()
     {
         _message = createTestMessage(false);
         _queues = createTestBaseQueues(new boolean[] {false, false, false});
-        
         _transaction.enqueue(_queues, _message, _action1);
 
-        assertEquals("Enqueue of non-persistent message must not cause message to be enqueued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
+        assertEquals(0, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of non-persistent message must not cause message to be enqueued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
         assertNotFired(_action1);
     }
     
@@ -175,19 +161,17 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started.
      */
     @Test
-    public void testEnqueueToManyNonDurableQueuesOfPersistentMessage() throws Exception
+    public void testEnqueueToManyNonDurableQueuesOfPersistentMessage()
     {
         _message = createTestMessage(true);
         _queues = createTestBaseQueues(new boolean[] {false, false, false});
-        
         _transaction.enqueue(_queues, _message, _action1);
 
-        assertEquals("Enqueue of persistent message to non-durable queues must not cause message to be enqueued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
+        assertEquals(0, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of persistent message to non-durable queues must not cause message to be enqueued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
         assertNotFired(_action1);
-
     }
 
     /**
@@ -195,20 +179,16 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that a store transaction has been started.
      */
     @Test
-    public void testEnqueueToDurableAndNonDurableQueuesOfPersistentMessage() throws Exception
+    public void testEnqueueToDurableAndNonDurableQueuesOfPersistentMessage()
     {
         _message = createTestMessage(true);
         _queues = createTestBaseQueues(new boolean[] {false, true, false, true});
-        
         _transaction.enqueue(_queues, _message, _action1);
 
-        assertEquals(
-                "Enqueue of persistent message to durable/non-durable queues must cause messages to be enqueued",
-                (long) 2,
-                (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
+        assertEquals(2, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of persistent message to durable/non-durable queues must cause messages to be enqueued");
+        assertEquals(TransactionState.STARTED, _storeTransaction.getState(), "Unexpected transaction state");
         assertNotFired(_action1);
-
     }
 
     /**
@@ -216,7 +196,7 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that the transaction is aborted.
      */
     @Test
-    public void testStoreEnqueuesCausesExceptions() throws Exception
+    public void testStoreEnqueuesCausesExceptions()
     {
         _message = createTestMessage(true);
         _queues = createTestBaseQueues(new boolean[] {true, true});
@@ -224,20 +204,14 @@ public class LocalTransactionTest extends UnitTestBase
         _storeTransaction = createTestStoreTransaction(true);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _transaction = new LocalTransaction(_transactionLog);
-        
-        try
-        {
-            _transaction.enqueue(_queues, _message, _action1);
-            fail("Exception not thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // PASS
-        }
 
-        assertTrue("Rollback action must be fired", _action1.isRollbackActionFired());
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
-        assertFalse("Post commit action must not be fired", _action1.isPostCommitActionFired());
+        assertThrows(RuntimeException.class,
+                () -> _transaction.enqueue(_queues, _message, _action1),
+                "Exception not thrown");
+
+        assertTrue(_action1.isRollbackActionFired(), "Rollback action must be fired");
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertFalse(_action1.isPostCommitActionFired(), "Post commit action must not be fired");
     }
 
     /**
@@ -245,17 +219,16 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started.
      */
     @Test
-    public void testDequeueFromNonDurableQueueOfNonPersistentMessage() throws Exception
+    public void testDequeueFromNonDurableQueueOfNonPersistentMessage()
     {
         _message = createTestMessage(false);
         _queue = createQueue(false);
 
         _transaction.dequeue((MessageEnqueueRecord)null, _action1);
 
-        assertEquals("Dequeue of non-persistent message must not cause message to be enqueued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
+        assertEquals(0, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Dequeue of non-persistent message must not cause message to be enqueued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(), "Unexpected transaction state");
         assertNotFired(_action1);
 
     }
@@ -265,17 +238,15 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started.
      */
     @Test
-    public void testDequeueFromDurableQueueOfPersistentMessage() throws Exception
+    public void testDequeueFromDurableQueueOfPersistentMessage()
     {
         _message = createTestMessage(true);
         _queue = createQueue(true);
-        
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1);
 
-        assertEquals("Dequeue of non-persistent message must cause message to be dequeued",
-                            (long) 1,
-                            (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
+        assertEquals(1, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Dequeue of non-persistent message must cause message to be dequeued");
+        assertEquals(TransactionState.STARTED, _storeTransaction.getState(), "Unexpected transaction state");
         assertNotFired(_action1);
     }
 
@@ -284,7 +255,7 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that the transaction is aborted.
      */
     @Test
-    public void testStoreDequeueCausesException() throws Exception
+    public void testStoreDequeueCausesException()
     {
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -292,20 +263,14 @@ public class LocalTransactionTest extends UnitTestBase
         _storeTransaction = createTestStoreTransaction(true);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _transaction = new LocalTransaction(_transactionLog);
-        
-        try
-        {
-            _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1);
-            fail("Exception not thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // PASS
-        }
 
-        assertTrue("Rollback action must be fired", _action1.isRollbackActionFired());
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
-        assertFalse("Post commit action must not be fired", _action1.isPostCommitActionFired());
+        assertThrows(RuntimeException.class,
+                () -> _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1),
+                "Exception not thrown");
+
+        assertTrue(_action1.isRollbackActionFired(), "Rollback action must be fired");
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertFalse(_action1.isPostCommitActionFired(), "Post commit action must not be fired");
     }
 
     /**
@@ -313,18 +278,17 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started.
      */
     @Test
-    public void testDequeueFromManyNonDurableQueuesOfNonPersistentMessage() throws Exception
+    public void testDequeueFromManyNonDurableQueuesOfNonPersistentMessage()
     {
         _queueEntries = createTestQueueEntries(new boolean[] {false, false, false}, new boolean[] {false, false, false});
         
         _transaction.dequeue(_queueEntries, _action1);
 
-        assertEquals("Dequeue of non-persistent messages must not cause message to be dequeued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
+        assertEquals(0, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Dequeue of non-persistent messages must not cause message to be dequeued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
         assertNotFired(_action1);
-  
     }
     
     /**
@@ -332,17 +296,14 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started.
      */
     @Test
-    public void testDequeueFromManyNonDurableQueuesOfPersistentMessage() throws Exception
+    public void testDequeueFromManyNonDurableQueuesOfPersistentMessage()
     {
         _queueEntries = createTestQueueEntries(new boolean[] {false, false, false}, new boolean[] {true, true, true});
-        
         _transaction.dequeue(_queueEntries, _action1);
 
-        assertEquals(
-                "Dequeue of persistent message from non-durable queues must not cause message to be enqueued",
-                (long) 0,
-                (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
+        assertEquals(0, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Dequeue of persistent message from non-durable queues must not cause message to be enqueued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(), "Unexpected transaction state");
         assertNotFired(_action1);
     }
 
@@ -351,18 +312,16 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started.
      */
     @Test
-    public void testDequeueFromDurableAndNonDurableQueuesOfPersistentMessage() throws Exception
+    public void testDequeueFromDurableAndNonDurableQueuesOfPersistentMessage()
     {
         // A transaction will exist owing to the 1st and 3rd.
         _queueEntries = createTestQueueEntries(new boolean[] {true, false, true, true}, new boolean[] {true, true, true, false});
         
         _transaction.dequeue(_queueEntries, _action1);
 
-        assertEquals(
-                "Dequeue of persistent messages from durable/non-durable queues must cause messages to be dequeued",
-                (long) 2,
-                (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
+        assertEquals(2, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Dequeue of persistent messages from durable/non-durable queues must cause messages to be dequeued");
+        assertEquals(TransactionState.STARTED, _storeTransaction.getState(), "Unexpected transaction state");
         assertNotFired(_action1);
     }
     
@@ -371,7 +330,7 @@ public class LocalTransactionTest extends UnitTestBase
      * Asserts that the transaction is aborted.
      */
     @Test
-    public void testStoreDequeuesCauseExceptions() throws Exception
+    public void testStoreDequeuesCauseExceptions()
     {
         // Transactions will exist owing to the 1st and 3rd queue entries in the collection
         _queueEntries = createTestQueueEntries(new boolean[] {true}, new boolean[] {true});
@@ -379,20 +338,14 @@ public class LocalTransactionTest extends UnitTestBase
         _storeTransaction = createTestStoreTransaction(true);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _transaction = new LocalTransaction(_transactionLog);
-        
-        try
-        {
-            _transaction.dequeue(_queueEntries, _action1);
-            fail("Exception not thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // PASS
-        }
 
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
-        assertTrue("Rollback action must be fired", _action1.isRollbackActionFired());
-        assertFalse("Post commit action must not be fired", _action1.isPostCommitActionFired());
+        assertThrows(RuntimeException.class,
+                () -> _transaction.dequeue(_queueEntries, _action1),
+                "Exception not thrown");
+
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertTrue(_action1.isRollbackActionFired(), "Rollback action must be fired");
+        assertFalse(_action1.isPostCommitActionFired(), "Post commit action must not be fired");
     }
     
     /** 
@@ -400,32 +353,26 @@ public class LocalTransactionTest extends UnitTestBase
      * is added to a list to be fired on commit or rollback.
      */
     @Test
-    public void testAddingPostCommitActionNotFiredImmediately() throws Exception
+    public void testAddingPostCommitActionNotFiredImmediately()
     {
-        
         _transaction.addPostTransactionAction(_action1);
-
         assertNotFired(_action1);
     }
-    
-    
+
     /**
      * Tests committing a transaction without work accepted without error and without causing store
      * enqueues or dequeues.
      */
     @Test
-    public void testCommitNoWork() throws Exception
+    public void testCommitNoWork()
     {
-        
         _transaction.commit();
 
-        assertEquals("Unexpected number of store dequeues",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected number of store enqueues",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
+        assertEquals(0, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Unexpected number of store dequeues");
+        assertEquals(0, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Unexpected number of store enqueues");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(), "Unexpected transaction state");
     }
     
     /**
@@ -433,18 +380,15 @@ public class LocalTransactionTest extends UnitTestBase
      * enqueues or dequeues.
      */
     @Test
-    public void testRollbackNoWork() throws Exception
+    public void testRollbackNoWork()
     {
-        
         _transaction.rollback();
 
-        assertEquals("Unexpected number of store dequeues",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected number of store enqueues",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
+        assertEquals(0, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Unexpected number of store dequeues");
+        assertEquals(0, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Unexpected number of store enqueues");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(), "Unexpected transaction state");
     }
     
     /** 
@@ -452,23 +396,22 @@ public class LocalTransactionTest extends UnitTestBase
      * correctly controlled and the post commit action is fired.
      */
     @Test
-    public void testCommitWork() throws Exception
+    public void testCommitWork()
     {
-        
         _message = createTestMessage(true);
         _queue = createQueue(true);
 
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
-        assertFalse("Post commit action must not be fired yet", _action1.isPostCommitActionFired());
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertFalse(_action1.isPostCommitActionFired(), "Post commit action must not be fired yet");
 
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1);
-        assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
-        assertFalse("Post commit action must not be fired yet", _action1.isPostCommitActionFired());
+        assertEquals(TransactionState.STARTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertFalse(_action1.isPostCommitActionFired(), "Post commit action must not be fired yet");
 
         _transaction.commit();
 
-        assertEquals("Unexpected transaction state", TransactionState.COMMITTED, _storeTransaction.getState());
-        assertTrue("Post commit action must be fired", _action1.isPostCommitActionFired());
+        assertEquals(TransactionState.COMMITTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertTrue(_action1.isPostCommitActionFired(), "Post commit action must be fired");
     }
     
     /** 
@@ -476,24 +419,23 @@ public class LocalTransactionTest extends UnitTestBase
      * correctly controlled and the post rollback action is fired.
      */
     @Test
-    public void testRollbackWork() throws Exception
+    public void testRollbackWork()
     {
-        
         _message = createTestMessage(true);
         _queue = createQueue(true);
 
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired yet", _action1.isRollbackActionFired());
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertFalse(_action1.isRollbackActionFired(), "Rollback action must not be fired yet");
 
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1);
 
-        assertEquals("Unexpected transaction state", TransactionState.STARTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired yet", _action1.isRollbackActionFired());
+        assertEquals(TransactionState.STARTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertFalse(_action1.isRollbackActionFired(), "Rollback action must not be fired yet");
 
         _transaction.rollback();
 
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
-        assertTrue("Rollback action must be fired", _action1.isRollbackActionFired());
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertTrue(_action1.isRollbackActionFired(), "Rollback action must be fired");
     }
     
     /**
@@ -501,23 +443,21 @@ public class LocalTransactionTest extends UnitTestBase
      * 
      */
     @Test
-    public void testCommitWorkWithAdditionalPostAction() throws Exception
+    public void testCommitWorkWithAdditionalPostAction()
     {
-        
         _message = createTestMessage(true);
         _queue = createQueue(true);
-        
         _transaction.addPostTransactionAction(_action1);
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action2);
         _transaction.commit();
 
-        assertEquals("Unexpected transaction state", TransactionState.COMMITTED, _storeTransaction.getState());
+        assertEquals(TransactionState.COMMITTED, _storeTransaction.getState(), "Unexpected transaction state");
 
-        assertTrue("Post commit action1 must be fired", _action1.isPostCommitActionFired());
-        assertTrue("Post commit action2 must be fired", _action2.isPostCommitActionFired());
+        assertTrue(_action1.isPostCommitActionFired(), "Post commit action1 must be fired");
+        assertTrue(_action2.isPostCommitActionFired(), "Post commit action2 must be fired");
 
-        assertFalse("Rollback action1 must not be fired", _action1.isRollbackActionFired());
-        assertFalse("Rollback action2 must not be fired", _action1.isRollbackActionFired());
+        assertFalse(_action1.isRollbackActionFired(), "Rollback action1 must not be fired");
+        assertFalse(_action1.isRollbackActionFired(), "Rollback action2 must not be fired");
     }
 
     /**
@@ -525,56 +465,50 @@ public class LocalTransactionTest extends UnitTestBase
      * 
      */
     @Test
-    public void testRollbackWorkWithAdditionalPostAction() throws Exception
+    public void testRollbackWorkWithAdditionalPostAction()
     {
         _message = createTestMessage(true);
         _queue = createQueue(true);
-        
         _transaction.addPostTransactionAction(_action1);
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action2);
         _transaction.rollback();
 
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
 
-        assertFalse("Post commit action1 must not be fired", _action1.isPostCommitActionFired());
-        assertFalse("Post commit action2 must not be fired", _action2.isPostCommitActionFired());
+        assertFalse(_action1.isPostCommitActionFired(), "Post commit action1 must not be fired");
+        assertFalse(_action2.isPostCommitActionFired(), "Post commit action2 must not be fired");
 
-        assertTrue("Rollback action1 must be fired", _action1.isRollbackActionFired());
-        assertTrue("Rollback action2 must be fired", _action1.isRollbackActionFired());
+        assertTrue(_action1.isRollbackActionFired(), "Rollback action1 must be fired");
+        assertTrue(_action1.isRollbackActionFired(), "Rollback action2 must be fired");
     }
 
     @Test
-    public void testFirstEnqueueRecordsTransactionStartAndUpdateTime() throws Exception
+    public void testFirstEnqueueRecordsTransactionStartAndUpdateTime()
     {
-        assertEquals("Unexpected transaction start time before test",
-                            (long) 0,
-                            _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test",
-                            (long) 0,
-                            _transaction.getTransactionUpdateTime());
+        assertEquals(0, _transaction.getTransactionStartTime(),
+                "Unexpected transaction start time before test");
+        assertEquals(0, _transaction.getTransactionUpdateTime(),
+                "Unexpected transaction update time before test");
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
 
-        long startTime = System.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
         _transaction.enqueue(_queue, _message, _action1);
 
-        assertTrue("Transaction start time should have been recorded",
-                          _transaction.getTransactionStartTime() >= startTime);
-        assertEquals("Transaction update time should be the same as transaction start time",
-                            _transaction.getTransactionStartTime(),
-                            _transaction.getTransactionUpdateTime());
+        assertTrue(_transaction.getTransactionStartTime() >= startTime,
+                "Transaction start time should have been recorded");
+        assertEquals(_transaction.getTransactionStartTime(), _transaction.getTransactionUpdateTime(),
+                "Transaction update time should be the same as transaction start time");
     }
 
     @Test
     public void testSubsequentEnqueueAdvancesTransactionUpdateTimeOnly() throws Exception
     {
-        assertEquals("Unexpected transaction start time before test",
-                            (long) 0,
-                            _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test",
-                            (long) 0,
-                            _transaction.getTransactionUpdateTime());
+        assertEquals(0, _transaction.getTransactionStartTime(),
+                "Unexpected transaction start time before test");
+        assertEquals(0, _transaction.getTransactionUpdateTime(),
+                "Unexpected transaction update time before test");
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -590,22 +524,19 @@ public class LocalTransactionTest extends UnitTestBase
         final long transactionStartTimeAfterSecondEnqueue = _transaction.getTransactionStartTime();
         final long transactionUpdateTimeAfterSecondEnqueue = _transaction.getTransactionUpdateTime();
 
-        assertEquals("Transaction start time after second enqueue should be unchanged",
-                            transactionStartTimeAfterFirstEnqueue,
-                            transactionStartTimeAfterSecondEnqueue);
-        assertTrue("Transaction update time after second enqueue should be greater than first update time",
-                          transactionUpdateTimeAfterSecondEnqueue > transactionUpdateTimeAfterFirstEnqueue);
+        assertEquals(transactionStartTimeAfterFirstEnqueue, transactionStartTimeAfterSecondEnqueue,
+                "Transaction start time after second enqueue should be unchanged");
+        assertTrue(transactionUpdateTimeAfterSecondEnqueue > transactionUpdateTimeAfterFirstEnqueue,
+                "Transaction update time after second enqueue should be greater than first update time");
     }
 
     @Test
-    public void testFirstDequeueRecordsTransactionStartAndUpdateTime() throws Exception
+    public void testFirstDequeueRecordsTransactionStartAndUpdateTime()
     {
-        assertEquals("Unexpected transaction start time before test",
-                            (long) 0,
-                            _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test",
-                            (long) 0,
-                            _transaction.getTransactionUpdateTime());
+        assertEquals(0, _transaction.getTransactionStartTime(),
+                "Unexpected transaction start time before test");
+        assertEquals(0, _transaction.getTransactionUpdateTime(),
+                "Unexpected transaction update time before test");
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -613,22 +544,19 @@ public class LocalTransactionTest extends UnitTestBase
         long startTime = System.currentTimeMillis();
         _transaction.dequeue(mock(MessageEnqueueRecord.class), _action1);
 
-        assertTrue("Transaction start time should have been recorded",
-                          _transaction.getTransactionStartTime() >= startTime);
-        assertEquals("Transaction update time should be the same as transaction start time",
-                            _transaction.getTransactionStartTime(),
-                            _transaction.getTransactionUpdateTime());
+        assertTrue(_transaction.getTransactionStartTime() >= startTime,
+                "Transaction start time should have been recorded");
+        assertEquals(_transaction.getTransactionStartTime(), _transaction.getTransactionUpdateTime(),
+                "Transaction update time should be the same as transaction start time");
     }
 
     @Test
     public void testMixedEnqueuesAndDequeuesAdvancesTransactionUpdateTimeOnly() throws Exception
     {
-        assertEquals("Unexpected transaction start time before test",
-                            (long) 0,
-                            _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test",
-                            (long) 0,
-                            _transaction.getTransactionUpdateTime());
+        assertEquals(0, _transaction.getTransactionStartTime(),
+                "Unexpected transaction start time before test");
+        assertEquals(0, _transaction.getTransactionUpdateTime(),
+                "Unexpected transaction update time before test");
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -644,22 +572,19 @@ public class LocalTransactionTest extends UnitTestBase
         final long transactionStartTimeAfterFirstDequeue = _transaction.getTransactionStartTime();
         final long transactionUpdateTimeAfterFirstDequeue = _transaction.getTransactionUpdateTime();
 
-        assertEquals("Transaction start time after first dequeue should be unchanged",
-                            transactionStartTimeAfterFirstEnqueue,
-                            transactionStartTimeAfterFirstDequeue);
-        assertTrue("Transaction update time after first dequeue should be greater than first update time",
-                          transactionUpdateTimeAfterFirstDequeue > transactionUpdateTimeAfterFirstEnqueue);
+        assertEquals(transactionStartTimeAfterFirstEnqueue, transactionStartTimeAfterFirstDequeue,
+                "Transaction start time after first dequeue should be unchanged");
+        assertTrue(transactionUpdateTimeAfterFirstDequeue > transactionUpdateTimeAfterFirstEnqueue,
+                "Transaction update time after first dequeue should be greater than first update time");
     }
 
     @Test
-    public void testCommitResetsTransactionStartAndUpdateTime() throws Exception
+    public void testCommitResetsTransactionStartAndUpdateTime()
     {
-        assertEquals("Unexpected transaction start time before test",
-                            (long) 0,
-                            _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test",
-                            (long) 0,
-                            _transaction.getTransactionUpdateTime());
+        assertEquals(0, _transaction.getTransactionStartTime(),
+                "Unexpected transaction start time before test");
+        assertEquals(0, _transaction.getTransactionUpdateTime(),
+                "Unexpected transaction update time before test");
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -672,23 +597,19 @@ public class LocalTransactionTest extends UnitTestBase
 
         _transaction.commit();
 
-        assertEquals("Transaction start time should be reset after commit",
-                            (long) 0,
-                            _transaction.getTransactionStartTime());
-        assertEquals("Transaction update time should be reset after commit",
-                            (long) 0,
-                            _transaction.getTransactionUpdateTime());
+        assertEquals(0, _transaction.getTransactionStartTime(),
+                "Transaction start time should be reset after commit");
+        assertEquals(0, _transaction.getTransactionUpdateTime(),
+                "Transaction update time should be reset after commit");
     }
 
     @Test
-    public void testRollbackResetsTransactionStartAndUpdateTime() throws Exception
+    public void testRollbackResetsTransactionStartAndUpdateTime()
     {
-        assertEquals("Unexpected transaction start time before test",
-                            (long) 0,
-                            _transaction.getTransactionStartTime());
-        assertEquals("Unexpected transaction update time before test",
-                            (long) 0,
-                            _transaction.getTransactionUpdateTime());
+        assertEquals(0, _transaction.getTransactionStartTime(),
+                "Unexpected transaction start time before test");
+        assertEquals(0, _transaction.getTransactionUpdateTime(),
+                "Unexpected transaction update time before test");
 
         _message = createTestMessage(true);
         _queue = createQueue(true);
@@ -701,19 +622,16 @@ public class LocalTransactionTest extends UnitTestBase
 
         _transaction.rollback();
 
-        assertEquals("Transaction start time should be reset after rollback",
-                            (long) 0,
-                            _transaction.getTransactionStartTime());
-        assertEquals("Transaction update time should be reset after rollback",
-                            (long) 0,
-                            _transaction.getTransactionUpdateTime());
+        assertEquals(0, _transaction.getTransactionStartTime(),
+                "Transaction start time should be reset after rollback");
+        assertEquals(0, _transaction.getTransactionUpdateTime(),
+                "Transaction update time should be reset after rollback");
     }
 
     @Test
-    public void testEnqueueInvokesTransactionObserver() throws Exception
+    public void testEnqueueInvokesTransactionObserver()
     {
-        final TransactionObserver
-                transactionObserver = mock(TransactionObserver.class);
+        final TransactionObserver transactionObserver = mock(TransactionObserver.class);
         _transaction = new LocalTransaction(_transactionLog, transactionObserver);
 
         _message = createTestMessage(true);
@@ -723,7 +641,7 @@ public class LocalTransactionTest extends UnitTestBase
 
         verify(transactionObserver).onMessageEnqueue(_transaction, _message);
 
-        ServerMessage message2 = createTestMessage(true);
+        ServerMessage<?> message2 = createTestMessage(true);
         _transaction.enqueue(createQueue(true), message2, null);
 
         verify(transactionObserver).onMessageEnqueue(_transaction, message2);
@@ -732,21 +650,20 @@ public class LocalTransactionTest extends UnitTestBase
 
     private Collection<MessageInstance> createTestQueueEntries(boolean[] queueDurableFlags, boolean[] messagePersistentFlags)
     {
-        Collection<MessageInstance> queueEntries = new ArrayList<MessageInstance>();
+        final Collection<MessageInstance> queueEntries = new ArrayList<>();
 
-        assertTrue("Boolean arrays must be the same length",
-                          queueDurableFlags.length == messagePersistentFlags.length);
+        assertEquals(queueDurableFlags.length, messagePersistentFlags.length, "Boolean arrays must be the same length");
 
-        for(int i = 0; i < queueDurableFlags.length; i++)
+        for (int i = 0; i < queueDurableFlags.length; i++)
         {
             final TransactionLogResource queue = createQueue(queueDurableFlags[i]);
-            final ServerMessage message = createTestMessage(messagePersistentFlags[i]);
+            final ServerMessage<?> message = createTestMessage(messagePersistentFlags[i]);
             final boolean hasRecord = queueDurableFlags[i] && messagePersistentFlags[i];
             queueEntries.add(new MockMessageInstance()
             {
 
                 @Override
-                public ServerMessage getMessage()
+                public ServerMessage<?> getMessage()
                 {
                     return message;
                 }
@@ -768,38 +685,32 @@ public class LocalTransactionTest extends UnitTestBase
         return queueEntries;
     }
 
-    private MockStoreTransaction createTestStoreTransaction(boolean throwException)
+    private MockStoreTransaction createTestStoreTransaction(final boolean throwException)
     {
         return new MockStoreTransaction(throwException);
     }
     
-    private List<BaseQueue> createTestBaseQueues(boolean[] durableFlags)
+    private List<BaseQueue> createTestBaseQueues(final boolean[] durableFlags)
     {
-        List<BaseQueue> queues = new ArrayList<BaseQueue>();
-        for (boolean b: durableFlags)
-        {
-            queues.add(createQueue(b));
-        }
-        
-        return queues;
+        return IntStream.range(0, durableFlags.length).mapToObj(idx -> durableFlags[idx])
+                .map(this::createQueue).collect(Collectors.toList());
     }
 
     private BaseQueue createQueue(final boolean durable)
     {
-        BaseQueue queue = mock(BaseQueue.class);
+        final BaseQueue queue = mock(BaseQueue.class);
         when(queue.getMessageDurability()).thenReturn(durable ? MessageDurability.DEFAULT : MessageDurability.NEVER);
         return queue;
     }
 
-    private ServerMessage createTestMessage(final boolean persistent)
+    private ServerMessage<?> createTestMessage(final boolean persistent)
     {
-        return new MockServerMessage(persistent);
+        return new MockServerMessage<>(persistent);
     }
 
-    private void assertNotFired(MockAction action)
+    private void assertNotFired(final MockAction action)
     {
-        assertFalse("Rollback action must not be fired", action.isRollbackActionFired());
-        assertFalse("Post commit action must not be fired", action.isPostCommitActionFired());
+        assertFalse(action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertFalse(action.isPostCommitActionFired(), "Post commit action must not be fired");
     }
-
 }

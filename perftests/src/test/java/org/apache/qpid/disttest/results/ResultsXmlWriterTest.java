@@ -24,8 +24,8 @@ import static org.apache.qpid.test.utils.JvmVendor.IBM;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assume.assumeThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,17 +34,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 import com.google.common.io.Resources;
-import org.junit.Before;
+
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.results.aggregation.ITestResult;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertEquals;
 
 public class ResultsXmlWriterTest extends UnitTestBase
 {
@@ -52,10 +52,10 @@ public class ResultsXmlWriterTest extends UnitTestBase
 
     private final ResultsWriter _resultsFileWriter = new ResultsXmlWriter(_outputDir);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat("Transformer on IBM JDK has different whitespace behaviour", getJvmVendor(), is(not(equalTo(IBM))));
+        assumeTrue(is(not(equalTo(IBM))).matches(getJvmVendor()), "Transformer on IBM JDK has different whitespace behaviour");
     }
 
     @Test
@@ -122,5 +122,4 @@ public class ResultsXmlWriterTest extends UnitTestBase
 
         assertEquals(expectedXmlContent, Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
     }
-
 }

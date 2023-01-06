@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.management.plugin.auth;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -33,7 +33,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.AccessControlException;
@@ -54,11 +53,11 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
@@ -99,7 +98,7 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
     private OAuth2AuthenticationProvider<?> _mockAuthProvider;
     private HttpPort _mockPort;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
 
@@ -121,10 +120,10 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
 
-        assertNotNull("Authenticator does not feel responsible", authenticationHandler);
+        assertNotNull(authenticationHandler, "Authenticator does not feel responsible");
         final boolean condition =
                 !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
-        assertTrue("Authenticator has failed unexpectedly", condition);
+        assertTrue(condition, "Authenticator has failed unexpectedly");
 
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
         authenticationHandler.handleAuthentication(mockResponse);
@@ -133,14 +132,14 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
         verify(mockResponse).sendRedirect(argument.capture());
         Map<String, String> params = getRedirectParameters(argument.getValue());
 
-        assertTrue("Wrong redirect host", argument.getValue().startsWith(TEST_AUTHORIZATION_ENDPOINT));
-        assertEquals("Wrong response_type", "code", params.get("response_type"));
-        assertEquals("Wrong client_id", TEST_CLIENT_ID, params.get("client_id"));
-        assertEquals("Wrong redirect_uri", TEST_REQUEST_HOST, params.get("redirect_uri"));
-        assertEquals("Wrong scope", TEST_OAUTH2_SCOPE, params.get("scope"));
+        assertTrue(argument.getValue().startsWith(TEST_AUTHORIZATION_ENDPOINT), "Wrong redirect host");
+        assertEquals("code", params.get("response_type"), "Wrong response_type");
+        assertEquals(TEST_CLIENT_ID, params.get("client_id"), "Wrong client_id");
+        assertEquals(TEST_REQUEST_HOST, params.get("redirect_uri"), "Wrong redirect_uri");
+        assertEquals(TEST_OAUTH2_SCOPE, params.get("scope"), "Wrong scope");
         String stateAttrName = HttpManagementUtil.getRequestSpecificAttributeName(OAuth2InteractiveAuthenticator.STATE_NAME, mockRequest);
-        assertNotNull("State was not set on the session", sessionAttributes.get(stateAttrName));
-        assertEquals("Wrong state", (String) sessionAttributes.get(stateAttrName), params.get("state"));
+        assertNotNull(sessionAttributes.get(stateAttrName), "State was not set on the session");
+        assertEquals(sessionAttributes.get(stateAttrName), params.get("state"), "Wrong state");
     }
 
     @Test
@@ -157,10 +156,10 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
-        assertNotNull("Authenticator does not feel responsible", authenticationHandler);
+        assertNotNull(authenticationHandler, "Authenticator does not feel responsible");
         final boolean condition1 =
                 !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
-        assertTrue("Authenticator has failed unexpectedly", condition1);
+        assertTrue(condition1, "Authenticator has failed unexpectedly");
 
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
         authenticationHandler.handleAuthentication(mockResponse);
@@ -168,15 +167,14 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
         ArgumentCaptor<String> argument = ArgumentCaptor.forClass(String.class);
         verify(mockResponse).sendRedirect(argument.capture());
 
-        assertEquals("Wrong redirect", TEST_REQUEST, argument.getValue());
+        assertEquals(TEST_REQUEST, argument.getValue(), "Wrong redirect");
         String attrSubject = HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SUBJECT, mockRequest);
-        assertNotNull("No subject on session", sessionAttributes.get(attrSubject));
+        assertNotNull(sessionAttributes.get(attrSubject), "No subject on session");
         final boolean condition = sessionAttributes.get(attrSubject) instanceof Subject;
-        assertTrue("Subject on session is no a Subject", condition);
+        assertTrue(condition, "Subject on session is no a Subject");
         final Set<Principal> principals = ((Subject) sessionAttributes.get(attrSubject)).getPrincipals();
-        assertEquals("Subject created with unexpected principal",
-                            TEST_AUTHORIZED_USER,
-                            principals.iterator().next().getName());
+        assertEquals(TEST_AUTHORIZED_USER, principals.iterator().next().getName(),
+                "Subject created with unexpected principal");
     }
 
     @Test
@@ -192,10 +190,10 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
-        assertNotNull("Authenticator does not feel responsible", authenticationHandler);
+        assertNotNull(authenticationHandler, "Authenticator does not feel responsible");
         final boolean condition =
                 authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler;
-        assertTrue("Authenticator did not fail with no state on session", condition);
+        assertTrue(condition, "Authenticator did not fail with no state on session");
     }
 
     @Test
@@ -211,10 +209,10 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
-        assertNotNull("Authenticator does not feel responsible", authenticationHandler);
+        assertNotNull(authenticationHandler, "Authenticator does not feel responsible");
         final boolean condition =
                 authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler;
-        assertTrue("Authenticator did not fail with no state on request", condition);
+        assertTrue(condition, "Authenticator did not fail with no state on request");
     }
 
     @Test
@@ -231,10 +229,10 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
-        assertNotNull("Authenticator does not feel responsible", authenticationHandler);
+        assertNotNull(authenticationHandler, "Authenticator does not feel responsible");
         final boolean condition =
                 authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler;
-        assertTrue("Authenticator did not fail with wrong state on request", condition);
+        assertTrue(condition, "Authenticator did not fail with wrong state on request");
     }
 
     @Test
@@ -252,10 +250,10 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
 
-        assertNotNull("Authenticator does not feel responsible", authenticationHandler);
+        assertNotNull(authenticationHandler, "Authenticator does not feel responsible");
         final boolean condition =
                 !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
-        assertTrue("Authenticator has failed unexpectedly", condition);
+        assertTrue(condition, "Authenticator has failed unexpectedly");
 
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
         authenticationHandler.handleAuthentication(mockResponse);
@@ -277,10 +275,10 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
-        assertNotNull("Authenticator does not feel responsible", authenticationHandler);
+        assertNotNull(authenticationHandler, "Authenticator does not feel responsible");
         final boolean condition =
                 !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler);
-        assertTrue("Authenticator has failed unexpectedly", condition);
+        assertTrue(condition, "Authenticator has failed unexpectedly");
 
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
         authenticationHandler.handleAuthentication(mockResponse);
@@ -289,16 +287,14 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
     private Map<String, String> getRedirectParameters(final String redirectLocation)
     {
-
         final MultiMap<String> parameterMap = new MultiMap<>();
         HttpURI httpURI = new HttpURI(redirectLocation);
         httpURI.decodeQueryTo(parameterMap);
         Map<String,String> parameters = new HashMap<>(parameterMap.size());
         for (Map.Entry<String, List<String>> paramEntry : parameterMap.entrySet())
         {
-            assertEquals(String.format("param '%s' specified more than once", paramEntry.getKey()),
-                                (long) 1,
-                                (long) paramEntry.getValue().size());
+            assertEquals(1, (long) paramEntry.getValue().size(),
+                    String.format("param '%s' specified more than once", paramEntry.getKey()));
 
             parameters.put(paramEntry.getKey(), paramEntry.getValue().get(0));
         }
@@ -331,18 +327,14 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
                                                                                    new Exception("authentication failed"));
         SubjectAuthenticationResult failedSubjectAuthenticationResult = new SubjectAuthenticationResult(failedAuthenticationResult);
 
-        doAnswer(new Answer()
+        doAnswer(invocationOnMock ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocationOnMock) throws Throwable
+            final Subject subject = Subject.getSubject(AccessController.getContext());
+            if (!subject.getPrincipals().iterator().next().getName().equals(TEST_AUTHORIZED_USER))
             {
-                final Subject subject = Subject.getSubject(AccessController.getContext());
-                if (!subject.getPrincipals().iterator().next().getName().equals(TEST_AUTHORIZED_USER))
-                {
-                    throw new AccessControlException("access denied");
-                }
-                return null;
+                throw new AccessControlException("access denied");
             }
+            return null;
         }).when(mockBroker).authorise(eq(Operation.PERFORM_ACTION("manage")));
 
         when(authenticationProvider.getAuthorizationEndpointURI(any())).thenReturn(new URI(TEST_AUTHORIZATION_ENDPOINT));
@@ -365,7 +357,7 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
     private HttpServletRequest createMockRequest(String host, String path,
                                                  final Map<String, String> query,
-                                                 Map<String, Object> sessionAttributes) throws IOException
+                                                 Map<String, Object> sessionAttributes)
     {
         final HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         UUID portId = UUID.randomUUID();
@@ -373,16 +365,12 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
         when(mockRequest.getAttribute(eq("org.apache.qpid.server.model.Port"))).thenReturn(port);
         when(port.getId()).thenReturn(portId);
         when(mockRequest.getParameterNames()).thenReturn(Collections.enumeration(query.keySet()));
-        doAnswer(new Answer()
+        doAnswer(invocationOnMock ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocationOnMock) throws Throwable
-            {
-                final Object[] arguments = invocationOnMock.getArguments();
-                assertEquals("Unexpected number of arguments", (long) 1, (long) arguments.length);
-                final String paramName = (String) arguments[0];
-                return new String[]{query.get(paramName)};
-            }
+            final Object[] arguments = invocationOnMock.getArguments();
+            assertEquals(1, (long) arguments.length, "Unexpected number of arguments");
+            final String paramName = (String) arguments[0];
+            return new String[]{query.get(paramName)};
         }).when(mockRequest).getParameterValues(any(String.class));
         when(mockRequest.isSecure()).thenReturn(false);
         Map<String,Object> originalAttrs = new HashMap<>(sessionAttributes);
@@ -408,26 +396,18 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
     private HttpSession createMockHttpSession(final Map<String, Object> sessionAttributes)
     {
         final HttpSession httpSession = mock(HttpSession.class);
-        doAnswer(new Answer()
+        doAnswer(invocation ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
-            {
-                final Object[] arguments = invocation.getArguments();
-                assertEquals((long) 2, (long) arguments.length);
-                sessionAttributes.put((String) arguments[0], arguments[1]);
-                return null;
-            }
+            final Object[] arguments = invocation.getArguments();
+            assertEquals(2, (long) arguments.length);
+            sessionAttributes.put((String) arguments[0], arguments[1]);
+            return null;
         }).when(httpSession).setAttribute(any(String.class), any(Object.class));
-        doAnswer(new Answer()
+        doAnswer(invocation ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
-            {
-                final Object[] arguments = invocation.getArguments();
-                assertEquals((long) 1, (long) arguments.length);
-                return sessionAttributes.get((String) arguments[0]);
-            }
+            final Object[] arguments = invocation.getArguments();
+            assertEquals(1, (long) arguments.length);
+            return sessionAttributes.get((String) arguments[0]);
         }).when(httpSession).getAttribute(any(String.class));
         ServletContext mockServletContext = mock(ServletContext.class);
         when(httpSession.getServletContext()).thenReturn(mockServletContext);

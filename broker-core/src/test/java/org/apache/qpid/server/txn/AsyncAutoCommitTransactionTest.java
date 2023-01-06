@@ -28,8 +28,8 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.queue.BaseQueue;
@@ -41,35 +41,39 @@ import org.apache.qpid.server.txn.AsyncAutoCommitTransaction.FutureRecorder;
 import org.apache.qpid.server.txn.ServerTransaction.Action;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings("unchecked")
 public class AsyncAutoCommitTransactionTest extends UnitTestBase
 {
     private static final String STRICT_ORDER_SYSTEM_PROPERTY = AsyncAutoCommitTransaction.QPID_STRICT_ORDER_WITH_MIXED_DELIVERY_MODE;
 
-    private final FutureRecorder _futureRecorder = mock(FutureRecorder.class);
-    private final EnqueueableMessage _message = mock(EnqueueableMessage.class);
+    private final EnqueueableMessage<?> _message = mock(EnqueueableMessage.class);
     private final BaseQueue _queue = mock(BaseQueue.class);
     private final MessageStore _messageStore = mock(MessageStore.class);
-    private final Transaction _storeTransaction = mock(Transaction.class);
     private final ServerTransaction.EnqueueAction _postTransactionAction = mock(ServerTransaction.EnqueueAction.class);
     private final ListenableFuture<Void> _future = mock(ListenableFuture.class);
 
-    @Before
+    private Transaction _storeTransaction;
+    private FutureRecorder _futureRecorder;
+
+    @BeforeEach
     public void setUp() throws Exception
     {
+        _futureRecorder = mock(FutureRecorder.class);
+        _storeTransaction = mock(Transaction.class);
         when(_messageStore.newTransaction()).thenReturn(_storeTransaction);
         when(_storeTransaction.commitTranAsync((Void) null)).thenReturn(_future);
         when(_queue.getMessageDurability()).thenReturn(MessageDurability.DEFAULT);
     }
 
     @Test
-    public void testEnqueuePersistentMessagePostCommitNotCalledWhenFutureAlreadyComplete() throws Exception
+    public void testEnqueuePersistentMessagePostCommitNotCalledWhenFutureAlreadyComplete()
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
 
         when(_message.isPersistent()).thenReturn(true);
         when(_future.isDone()).thenReturn(true);
 
-        AsyncAutoCommitTransaction asyncAutoCommitTransaction =
+        final AsyncAutoCommitTransaction asyncAutoCommitTransaction =
                 new AsyncAutoCommitTransaction(_messageStore, _futureRecorder);
 
         asyncAutoCommitTransaction.enqueue(_queue, _message, _postTransactionAction);
@@ -80,14 +84,14 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
     }
 
     @Test
-    public void testEnqueuePersistentMessageOnMultipleQueuesPostCommitNotCalled() throws Exception
+    public void testEnqueuePersistentMessageOnMultipleQueuesPostCommitNotCalled()
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
 
         when(_message.isPersistent()).thenReturn(true);
         when(_future.isDone()).thenReturn(true);
 
-        AsyncAutoCommitTransaction asyncAutoCommitTransaction =
+        final AsyncAutoCommitTransaction asyncAutoCommitTransaction =
                 new AsyncAutoCommitTransaction(_messageStore, _futureRecorder);
 
         asyncAutoCommitTransaction.enqueue(Collections.singletonList(_queue), _message, _postTransactionAction);
@@ -98,14 +102,14 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
     }
 
     @Test
-    public void testEnqueuePersistentMessagePostCommitNotCalledWhenFutureNotYetComplete() throws Exception
+    public void testEnqueuePersistentMessagePostCommitNotCalledWhenFutureNotYetComplete()
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
 
         when(_message.isPersistent()).thenReturn(true);
         when(_future.isDone()).thenReturn(false);
 
-        AsyncAutoCommitTransaction asyncAutoCommitTransaction =
+        final AsyncAutoCommitTransaction asyncAutoCommitTransaction =
                 new AsyncAutoCommitTransaction(_messageStore, _futureRecorder);
 
         asyncAutoCommitTransaction.enqueue(_queue, _message, _postTransactionAction);
@@ -116,13 +120,13 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
     }
 
     @Test
-    public void testEnqueueTransientMessagePostCommitIsCalledWhenNotBehavingStrictly() throws Exception
+    public void testEnqueueTransientMessagePostCommitIsCalledWhenNotBehavingStrictly()
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
 
         when(_message.isPersistent()).thenReturn(false);
 
-        AsyncAutoCommitTransaction asyncAutoCommitTransaction =
+        final AsyncAutoCommitTransaction asyncAutoCommitTransaction =
                 new AsyncAutoCommitTransaction(_messageStore, _futureRecorder);
 
         asyncAutoCommitTransaction.enqueue(_queue, _message, _postTransactionAction);
@@ -133,13 +137,13 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
     }
 
     @Test
-    public void testEnqueueTransientMessagePostCommitIsCalledWhenBehavingStrictly() throws Exception
+    public void testEnqueueTransientMessagePostCommitIsCalledWhenBehavingStrictly()
     {
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "true");
 
         when(_message.isPersistent()).thenReturn(false);
 
-        AsyncAutoCommitTransaction asyncAutoCommitTransaction =
+        final AsyncAutoCommitTransaction asyncAutoCommitTransaction =
                 new AsyncAutoCommitTransaction(_messageStore, _futureRecorder);
 
         asyncAutoCommitTransaction.enqueue(_queue, _message, _postTransactionAction);

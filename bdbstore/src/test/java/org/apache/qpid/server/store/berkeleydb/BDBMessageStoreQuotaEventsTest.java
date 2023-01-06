@@ -20,9 +20,7 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,7 +28,7 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.Map;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
@@ -64,11 +62,12 @@ public class BDBMessageStoreQuotaEventsTest extends MessageStoreQuotaEventsTestB
         return NUMBER_OF_MESSAGES_TO_OVERFILL_STORE;
     }
 
-    @Before
+    @BeforeEach
     @Override
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(getVirtualHostNodeStoreType().equals(VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
         super.setUp();
     }
 
@@ -90,7 +89,6 @@ public class BDBMessageStoreQuotaEventsTest extends MessageStoreQuotaEventsTestB
     @Override
     protected MessageStore createStore() throws Exception
     {
-        MessageStore store = new BDBMessageStore();
-        return store;
+        return new BDBMessageStore();
     }
 }

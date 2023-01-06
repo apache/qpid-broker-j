@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.protocol.v0_8.transport;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -36,7 +36,7 @@ public class MessagePublishInfoImplTest extends UnitTestBase
     private final AMQShortString _exchange = AMQShortString.createAMQShortString("exchange");
     private final AMQShortString _routingKey = AMQShortString.createAMQShortString("routingKey");
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _mpi = new MessagePublishInfo(_exchange, true, true, _routingKey);
@@ -62,15 +62,15 @@ public class MessagePublishInfoImplTest extends UnitTestBase
     public void testIsImmediate()
     {
         //Check that the set value is correct
-        assertTrue("Set value for immediate not as expected", _mpi.isImmediate());
+        assertTrue(_mpi.isImmediate(), "Set value for immediate not as expected");
 
         MessagePublishInfo mpi = new MessagePublishInfo();
 
-        assertFalse("Default value for immediate should be false", mpi.isImmediate());
+        assertFalse(mpi.isImmediate(), "Default value for immediate should be false");
 
         mpi.setImmediate(true);
 
-        assertTrue("Updated value for immediate not as expected", mpi.isImmediate());
+        assertTrue(mpi.isImmediate(), "Updated value for immediate not as expected");
     }
 
     /**
@@ -79,15 +79,15 @@ public class MessagePublishInfoImplTest extends UnitTestBase
     @Test
     public void testIsMandatory()
     {
-        assertTrue("Set value for mandatory not as expected", _mpi.isMandatory());
+        assertTrue(_mpi.isMandatory(), "Set value for mandatory not as expected");
 
         MessagePublishInfo mpi = new MessagePublishInfo();
 
-        assertFalse("Default value for mandatory should be false", mpi.isMandatory());
+        assertFalse(mpi.isMandatory(), "Default value for mandatory should be false");
 
         mpi.setMandatory(true);
 
-        assertTrue("Updated value for mandatory not as expected", mpi.isMandatory());
+        assertTrue(mpi.isMandatory(), "Updated value for mandatory not as expected");
     }
 
     /**

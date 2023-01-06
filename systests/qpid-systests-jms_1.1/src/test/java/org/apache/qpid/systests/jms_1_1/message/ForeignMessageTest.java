@@ -19,8 +19,8 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -37,7 +37,8 @@ import javax.jms.Session;
 
 import com.google.common.reflect.AbstractInvocationHandler;
 import com.google.common.reflect.Reflection;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -79,17 +80,18 @@ public class ForeignMessageTest extends JmsTestBase
             connection.start();
 
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertTrue("ObjectMessage was not received ", receivedMessage instanceof ObjectMessage);
-            assertEquals("JMSCorrelationID mismatch",
-                         foreignMessage.getJMSCorrelationID(),
-                         receivedMessage.getJMSCorrelationID());
-            assertEquals("JMSType mismatch", foreignMessage.getJMSType(), receivedMessage.getJMSType());
-            assertEquals("JMSReply To mismatch", foreignMessage.getJMSReplyTo(), receivedMessage.getJMSReplyTo());
-            assertEquals("JMSMessageID mismatch", foreignMessage.getJMSMessageID(), receivedMessage.getJMSMessageID());
-            assertEquals("JMS Default priority should be default",
-                         Message.DEFAULT_PRIORITY,
-                         receivedMessage.getJMSPriority());
-            assertEquals("Message payload not as expected", payload, ((ObjectMessage) receivedMessage).getObject());
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage was not received ");
+            assertEquals(foreignMessage.getJMSCorrelationID(), receivedMessage.getJMSCorrelationID(),
+                    "JMSCorrelationID mismatch");
+            assertEquals(foreignMessage.getJMSType(), receivedMessage.getJMSType(), "JMSType mismatch");
+            assertEquals(foreignMessage.getJMSReplyTo(), receivedMessage.getJMSReplyTo(),
+                    "JMSReply To mismatch");
+            assertEquals(foreignMessage.getJMSMessageID(), receivedMessage.getJMSMessageID(),
+                    "JMSMessageID mismatch");
+            assertEquals(Message.DEFAULT_PRIORITY, receivedMessage.getJMSPriority(),
+                    "JMS Default priority should be default");
+            assertEquals(payload, ((ObjectMessage) receivedMessage).getObject(),
+                    "Message payload not as expected");
         }
         finally
         {

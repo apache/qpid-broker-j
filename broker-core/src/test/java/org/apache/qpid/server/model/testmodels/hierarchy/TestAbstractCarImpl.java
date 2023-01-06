@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -33,14 +34,13 @@ import org.apache.qpid.server.model.Model;
 
 public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> extends AbstractConfiguredObject<X> implements TestCar<X>
 {
-    private final EventLogger _eventLogger;
-
-    private final AtomicInteger _mileage = new AtomicInteger();
-
     @ManagedAttributeField
     private Colour _bodyColour;
     @ManagedAttributeField
     private Colour _interiorColour;
+    private final EventLogger _eventLogger;
+
+    private final AtomicInteger _mileage = new AtomicInteger();
 
     private volatile boolean _rejectStateChange;
 
@@ -49,7 +49,7 @@ public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> exte
         this(attributes, TestModel.getInstance());
     }
 
-    public TestAbstractCarImpl(final Map<String, Object> attributes, Model model)
+    public TestAbstractCarImpl(final Map<String, Object> attributes, final Model model)
     {
         super(null, attributes, newTaskExecutor(), model);
         _eventLogger = new EventLogger();
@@ -62,8 +62,8 @@ public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> exte
 
         if (changedAttributes.contains(DESIRED_STATE) && _rejectStateChange)
         {
-            throw new IllegalConfigurationException("This object is rejecting state changes just now, please"
-                                                    + " try again later.");
+            throw new IllegalConfigurationException("This object is rejecting state changes just now, please" +
+                    " try again later.");
         }
     }
 
@@ -90,11 +90,9 @@ public abstract class TestAbstractCarImpl<X extends TestAbstractCarImpl<X>> exte
         return door;
     }
 
-    private static CurrentThreadTaskExecutor newTaskExecutor()
+    private static TaskExecutor newTaskExecutor()
     {
-        CurrentThreadTaskExecutor currentThreadTaskExecutor = new CurrentThreadTaskExecutor();
-        currentThreadTaskExecutor.start();
-        return currentThreadTaskExecutor;
+        return CurrentThreadTaskExecutor.newStartedInstance();
     }
 
     @Override

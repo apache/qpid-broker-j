@@ -20,9 +20,9 @@
 
 package org.apache.qpid.server.security.auth.sasl.crammd5;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -33,9 +33,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -56,7 +56,7 @@ public class CramMd5NegotiatorTest extends UnitTestBase
     private PasswordSource _passwordSource;
     private PasswordCredentialManagingAuthenticationProvider<?> _authenticationProvider;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _passwordSource = mock(PasswordSource.class);
@@ -64,7 +64,7 @@ public class CramMd5NegotiatorTest extends UnitTestBase
         _authenticationProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if (_negotiator != null)
@@ -216,100 +216,89 @@ public class CramMd5NegotiatorTest extends UnitTestBase
 
     private void doHandleResponseWithValidCredentials(final String mechanism) throws Exception
     {
-        AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.CONTINUE,
-                            firstResult.getStatus());
+        final AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.CONTINUE, firstResult.getStatus(),
+                "Unexpected first result status");
 
 
-        assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
+        assertNotNull(firstResult.getChallenge(), "Unexpected first result challenge");
 
-        byte[] responseBytes = SaslUtil.generateCramMD5ClientResponse(mechanism, VALID_USERNAME, new String(VALID_USERPASSWORD), firstResult.getChallenge());
+        final byte[] responseBytes = SaslUtil.generateCramMD5ClientResponse(mechanism, VALID_USERNAME, new String(VALID_USERPASSWORD), firstResult.getChallenge());
 
-        AuthenticationResult secondResult = _negotiator.handleResponse(responseBytes);
+        final AuthenticationResult secondResult = _negotiator.handleResponse(responseBytes);
 
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            secondResult.getStatus());
-        assertNull("Unexpected second result challenge", secondResult.getChallenge());
-        assertEquals("Unexpected second result main principal",
-                            VALID_USERNAME,
-                            secondResult.getMainPrincipal().getName());
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, secondResult.getStatus(),
+                "Unexpected second result status");
+        assertNull(secondResult.getChallenge(), "Unexpected second result challenge");
+        assertEquals(VALID_USERNAME, secondResult.getMainPrincipal().getName(),
+                "Unexpected second result main principal");
 
         verify(_passwordSource).getPassword(eq(VALID_USERNAME));
 
-        AuthenticationResult thirdResult =  _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected third result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            thirdResult.getStatus());
+        final AuthenticationResult thirdResult =  _negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, thirdResult.getStatus(),
+                "Unexpected third result status");
     }
 
     private void doHandleResponseWithInvalidPassword(final String mechanism) throws Exception
     {
-        AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.CONTINUE,
-                            firstResult.getStatus());
-        assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
+        final AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.CONTINUE, firstResult.getStatus(),
+                "Unexpected first result status");
+        assertNotNull(firstResult.getChallenge(), "Unexpected first result challenge");
 
-        byte[] responseBytes = SaslUtil.generateCramMD5ClientResponse(mechanism, VALID_USERNAME, INVALID_USERPASSWORD, firstResult.getChallenge());
+        final byte[] responseBytes = SaslUtil.generateCramMD5ClientResponse(mechanism, VALID_USERNAME, INVALID_USERPASSWORD, firstResult.getChallenge());
 
-        AuthenticationResult secondResult = _negotiator.handleResponse(responseBytes);
+        final AuthenticationResult secondResult = _negotiator.handleResponse(responseBytes);
 
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            secondResult.getStatus());
-        assertNull("Unexpected second result challenge", secondResult.getChallenge());
-        assertNull("Unexpected second result main principal", secondResult.getMainPrincipal());
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus(),
+                "Unexpected second result status");
+        assertNull(secondResult.getChallenge(), "Unexpected second result challenge");
+        assertNull(secondResult.getMainPrincipal(), "Unexpected second result main principal");
 
         verify(_passwordSource).getPassword(eq(VALID_USERNAME));
 
-        AuthenticationResult thirdResult =  _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected third result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            thirdResult.getStatus());
+        final AuthenticationResult thirdResult =  _negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, thirdResult.getStatus(),
+                "Unexpected third result status");
     }
 
     private void doHandleResponseWithInvalidUsername(final String mechanism) throws Exception
     {
-        AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected first result status",
-                            AuthenticationResult.AuthenticationStatus.CONTINUE,
-                            firstResult.getStatus());
-        assertNotNull("Unexpected first result challenge", firstResult.getChallenge());
+        final AuthenticationResult firstResult = _negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.CONTINUE, firstResult.getStatus(),
+                "Unexpected first result status");
+        assertNotNull(firstResult.getChallenge(), "Unexpected first result challenge");
 
-        byte[] responseBytes = SaslUtil.generateCramMD5ClientResponse(mechanism, INVALID_USERNAME, new String(VALID_USERPASSWORD), firstResult.getChallenge());
+        final byte[] responseBytes = SaslUtil.generateCramMD5ClientResponse(mechanism, INVALID_USERNAME, new String(VALID_USERPASSWORD), firstResult.getChallenge());
 
-        AuthenticationResult secondResult = _negotiator.handleResponse(responseBytes);
+        final AuthenticationResult secondResult = _negotiator.handleResponse(responseBytes);
 
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            secondResult.getStatus());
-        assertNull("Unexpected second result challenge", secondResult.getChallenge());
-        assertNull("Unexpected second result main principal", secondResult.getMainPrincipal());
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus(),
+                "Unexpected second result status");
+        assertNull(secondResult.getChallenge(), "Unexpected second result challenge");
+        assertNull(secondResult.getMainPrincipal(), "Unexpected second result main principal");
 
         verify(_passwordSource).getPassword(eq(INVALID_USERNAME));
 
-        AuthenticationResult thirdResult =  _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected third result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            thirdResult.getStatus());
+        final AuthenticationResult thirdResult =  _negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, thirdResult.getStatus(),
+                "Unexpected third result status");
     }
 
     private void hashPassword()
     {
-        HashedUser hashedUser = new HashedUser(VALID_USERNAME, VALID_USERPASSWORD, _authenticationProvider);
-        char[] password = hashedUser.getPassword();
+        final HashedUser hashedUser = new HashedUser(VALID_USERNAME, VALID_USERPASSWORD, _authenticationProvider);
+        final char[] password = hashedUser.getPassword();
         when(_passwordSource.getPassword(eq(VALID_USERNAME))).thenReturn(password);
     }
 
     private void base64Password() throws NoSuchAlgorithmException
     {
-        byte[] data = new String(VALID_USERPASSWORD).getBytes(StandardCharsets.UTF_8);
-        MessageDigest md = MessageDigest.getInstance("MD5");
+        final byte[] data = new String(VALID_USERPASSWORD).getBytes(StandardCharsets.UTF_8);
+        final MessageDigest md = MessageDigest.getInstance("MD5");
         md.update(data);
-        char[] password = Base64.getEncoder().encodeToString(md.digest()).toCharArray();
+        final char[] password = Base64.getEncoder().encodeToString(md.digest()).toCharArray();
         when(_passwordSource.getPassword(eq(VALID_USERNAME))).thenReturn(password);
     }
-
 }

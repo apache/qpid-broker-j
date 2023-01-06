@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import javax.jms.Connection;
 import javax.jms.Message;
@@ -32,7 +32,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -56,8 +56,8 @@ public class TextMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("TextMessage should be received", receivedMessage instanceof TextMessage);
-            assertNull("Unexpected body", ((TextMessage) receivedMessage).getText());
+            assertTrue(receivedMessage instanceof TextMessage, "TextMessage should be received");
+            assertNull(((TextMessage) receivedMessage).getText(), "Unexpected body");
         }
         finally
         {
@@ -94,11 +94,11 @@ public class TextMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("TextMessage should be received", receivedMessage instanceof TextMessage);
+            assertTrue(receivedMessage instanceof TextMessage, "TextMessage should be received");
 
             TextMessage receivedTextMessage = (TextMessage) receivedMessage;
 
-            assertEquals("Unexpected body", receivedTextMessage.getText(), text);
+            assertEquals(receivedTextMessage.getText(), text, "Unexpected body");
         }
         finally
         {

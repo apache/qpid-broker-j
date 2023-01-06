@@ -20,9 +20,8 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -33,16 +32,12 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 
+@SuppressWarnings({"rawtypes"})
 public class TestModel extends Model
 {
     private static final Model INSTANCE = new TestModel();
-    private final Class<? extends ConfiguredObject>[] _supportedCategories =
-            new Class[] {
-                    TestCar.class,
-                    TestEngine.class,
-                    TestSensor.class
-            };
-
+    private static final List<Class<? extends ConfiguredObject>> SUPPORTED_CATEGORIES =
+            List.of(TestCar.class, TestEngine.class, TestSensor.class);
     private final ConfiguredObjectFactory _objectFactory;
     private final ConfiguredObjectTypeRegistry _registry;
 
@@ -53,30 +48,28 @@ public class TestModel extends Model
 
     public TestModel(final ConfiguredObjectFactory objectFactory)
     {
-        this(objectFactory, Collections.<ConfiguredObjectAttributeInjector>emptySet());
+        this(objectFactory, Set.of());
     }
 
-    public TestModel(final ConfiguredObjectFactory objectFactory, ConfiguredObjectAttributeInjector injector)
+    public TestModel(final ConfiguredObjectFactory objectFactory, final ConfiguredObjectAttributeInjector injector)
     {
-        this(objectFactory, Collections.singleton(injector));
+        this(objectFactory, Set.of(injector));
     }
 
-    public TestModel(final ConfiguredObjectFactory objectFactory, Set<ConfiguredObjectAttributeInjector> attributeInjectors)
+    public TestModel(final ConfiguredObjectFactory objectFactory,
+                     final Set<ConfiguredObjectAttributeInjector> attributeInjectors)
     {
         _objectFactory = objectFactory == null ? new ConfiguredObjectFactoryImpl(this) : objectFactory;
-
-        ConfiguredObjectRegistration configuredObjectRegistration = new ConfiguredObjectRegistrationImpl();
-
-        _registry = new ConfiguredObjectTypeRegistry(Collections.singletonList(configuredObjectRegistration),
+        final ConfiguredObjectRegistration configuredObjectRegistration = new ConfiguredObjectRegistrationImpl();
+        _registry = new ConfiguredObjectTypeRegistry(List.of(configuredObjectRegistration),
                                                      attributeInjectors,
-                                                     Collections.EMPTY_LIST, _objectFactory);
+                                                     List.of(), _objectFactory);
     }
-
 
     @Override
     public Collection<Class<? extends ConfiguredObject>> getSupportedCategories()
     {
-        return Arrays.asList(_supportedCategories);
+        return SUPPORTED_CATEGORIES;
     }
 
     @Override
@@ -84,15 +77,15 @@ public class TestModel extends Model
     {
         if (TestCar.class.isAssignableFrom(parent))
         {
-            return  Arrays.asList(TestEngine.class, TestInstrumentPanel.class);
+            return List.of(TestEngine.class, TestInstrumentPanel.class);
         }
         else if (TestInstrumentPanel.class.isAssignableFrom(parent))
         {
-            return Arrays.asList(TestGauge.class, TestSensor.class);
+            return List.of(TestGauge.class, TestSensor.class);
         }
         else
         {
-            return Collections.emptySet();
+            return Set.of();
         }
     }
 

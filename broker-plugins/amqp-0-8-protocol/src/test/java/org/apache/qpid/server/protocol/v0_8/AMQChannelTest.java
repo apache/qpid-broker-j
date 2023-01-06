@@ -39,11 +39,9 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
@@ -56,7 +54,6 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
@@ -79,20 +76,17 @@ public class AMQChannelTest extends UnitTestBase
     private QueueManagingVirtualHost<?> _virtualHost;
     private AMQPConnection_0_8 _amqConnection;
     private MessageStore _messageStore;
-    private AmqpPort<?> _port;
-    private Broker<?> _broker;
-    private ProtocolOutputConverter _protocolOutputConverter;
     private MessageDestination _messageDestination;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
 
         TaskExecutor taskExecutor = mock(TaskExecutor.class);
 
-        _broker = mock(Broker.class);
-        when(_broker.getEventLogger()).thenReturn(mock(EventLogger.class));
-        when(_broker.getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)).thenReturn(1L);
+        Broker<?> broker = mock(Broker.class);
+        when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
+        when(broker.getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)).thenReturn(1L);
 
         _messageStore = mock(MessageStore.class);
 
@@ -103,23 +97,23 @@ public class AMQChannelTest extends UnitTestBase
         when(_virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
         when(_virtualHost.getEventLogger()).thenReturn(mock(EventLogger.class));
 
-        _port = mock(AmqpPort.class);
-        when(_port.getChildExecutor()).thenReturn(taskExecutor);
-        when(_port.getModel()).thenReturn(BrokerModel.getInstance());
-        when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(1);
+        AmqpPort<?> port = mock(AmqpPort.class);
+        when(port.getChildExecutor()).thenReturn(taskExecutor);
+        when(port.getModel()).thenReturn(BrokerModel.getInstance());
+        when(port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(1);
 
         AuthenticatedPrincipal authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("user", null));
-        Set<Principal> authenticatedUser = Collections.<Principal>singleton(authenticatedPrincipal);
+        Set<Principal> authenticatedUser = Collections.singleton(authenticatedPrincipal);
         Subject authenticatedSubject = new Subject(true, authenticatedUser, Collections.<Principal>emptySet(), Collections.<Principal>emptySet());
 
-        _protocolOutputConverter = mock(ProtocolOutputConverter.class);
+        ProtocolOutputConverter protocolOutputConverter = mock(ProtocolOutputConverter.class);
 
         _amqConnection = mock(AMQPConnection_0_8.class);
         when(_amqConnection.getSubject()).thenReturn(authenticatedSubject);
         when(_amqConnection.getAuthorizedPrincipal()).thenReturn(authenticatedPrincipal);
-        when(_amqConnection.getAddressSpace()).thenReturn((VirtualHost)_virtualHost);
-        when(_amqConnection.getProtocolOutputConverter()).thenReturn(_protocolOutputConverter);
-        when(_amqConnection.getBroker()).thenReturn((Broker) _broker);
+        when(_amqConnection.getAddressSpace()).thenReturn(_virtualHost);
+        when(_amqConnection.getProtocolOutputConverter()).thenReturn(protocolOutputConverter);
+        when(_amqConnection.getBroker()).thenReturn(broker);
         when(_amqConnection.getMethodRegistry()).thenReturn(new MethodRegistry(ProtocolVersion.v0_9));
         when(_amqConnection.getContextProvider()).thenReturn(_virtualHost);
         when(_amqConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
@@ -138,7 +132,7 @@ public class AMQChannelTest extends UnitTestBase
     }
 
     @Test
-    public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings() throws Exception
+    public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings()
     {
         String testExchangeName = getTestName();
         Exchange<?> exchange = mock(Exchange.class);
@@ -155,7 +149,7 @@ public class AMQChannelTest extends UnitTestBase
     }
 
     @Test
-    public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding() throws Exception
+    public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding()
     {
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
@@ -168,7 +162,7 @@ public class AMQChannelTest extends UnitTestBase
     }
 
     @Test
-    public void testOversizedMessageClosesChannel() throws Exception
+    public void testOversizedMessageClosesChannel()
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(mock(MessageDestination.class));
 
@@ -187,7 +181,7 @@ public class AMQChannelTest extends UnitTestBase
     }
 
     @Test
-    public void testPublishContentHeaderWhenMessageAuthorizationFails() throws Exception
+    public void testPublishContentHeaderWhenMessageAuthorizationFails()
     {
         final String impostorId = "impostor";
         doThrow(new AccessControlException("fail")).when(_amqConnection).checkAuthorizedMessagePrincipal(eq(impostorId));
@@ -216,7 +210,7 @@ public class AMQChannelTest extends UnitTestBase
     }
 
     @Test
-    public void testPublishContentHeaderWhenMessageAuthorizationSucceeds() throws Exception
+    public void testPublishContentHeaderWhenMessageAuthorizationSucceeds()
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
         when(_virtualHost.getMessageStore()).thenReturn(new NullMessageStore()
@@ -229,14 +223,10 @@ public class AMQChannelTest extends UnitTestBase
             }
         });
         final ArgumentCaptor<ServerMessage> messageCaptor = ArgumentCaptor.forClass(ServerMessage.class);
-        doAnswer(new Answer()
+        doAnswer(invocation ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
-            {
-                ServerMessage message = messageCaptor.getValue();
-                return new RoutingResult(message);
-            }
+            ServerMessage message = messageCaptor.getValue();
+            return new RoutingResult(message);
         }).when(_messageDestination).route(messageCaptor.capture(), eq(ROUTING_KEY.toString()), any(InstanceProperties.class));
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 

@@ -20,14 +20,14 @@
 
 package org.apache.qpid.server.management.plugin;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Base64;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.util.GZIPUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -57,7 +57,7 @@ public class GunzipOutputStreamTest extends UnitTestBase
         guos.write(compressedBytes);
         guos.close();
 
-        assertArrayEquals("Unexpected content", originalUncompressedInput, outputStream.toByteArray());
+        assertArrayEquals(originalUncompressedInput, outputStream.toByteArray(), "Unexpected content");
     }
 
     @Test
@@ -70,7 +70,7 @@ public class GunzipOutputStreamTest extends UnitTestBase
         guos.write(data);
         guos.close();
 
-        assertEquals("Unexpected content", TEST_TEXT, new String(outputStream.toByteArray()));
+        assertEquals(TEST_TEXT, new String(outputStream.toByteArray()), "Unexpected content");
     }
 
     @Test
@@ -80,15 +80,15 @@ public class GunzipOutputStreamTest extends UnitTestBase
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         GunzipOutputStream guos = new GunzipOutputStream(outputStream);
-        for (int i = 0; i < data.length; i++)
+        for (final byte datum : data)
         {
-            guos.write(data[i]);
+            guos.write(datum);
         }
         guos.close();
 
         StringBuilder expected = new StringBuilder(TEST_TEXT);
         expected.append(TEST_TEXT2);
-        assertEquals("Unexpected content", expected.toString(), new String(outputStream.toByteArray()));
+        assertEquals(expected.toString(), new String(outputStream.toByteArray()), "Unexpected content");
     }
 
     private byte[] generateTestBytes()

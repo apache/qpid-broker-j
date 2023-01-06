@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -40,10 +40,10 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -90,7 +90,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
     private AMQPConnection _connection;
     private VirtualHost<?> _virtualHost;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _networkConnection = mock(ServerNetworkConnection.class);
@@ -121,29 +121,21 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         when(_virtualHost.isActive()).thenReturn(true);
 
         final ArgumentCaptor<AMQPConnection> connectionCaptor = ArgumentCaptor.forClass(AMQPConnection.class);
-        doAnswer(new Answer()
+        doAnswer(invocation ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
-            {
-                _connection = connectionCaptor.getValue();
-                throw new SoleConnectionEnforcementPolicyException(null, Collections.emptySet(), "abc1");
-            }
+            _connection = connectionCaptor.getValue();
+            throw new SoleConnectionEnforcementPolicyException(null, Collections.emptySet(), "abc1");
         }).when(_virtualHost).registerConnection(connectionCaptor.capture());
         when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
         when(_port.getAddressSpace(anyString())).thenReturn(_virtualHost);
         when(_port.getSubjectCreator(anyBoolean(), anyString())).thenReturn(subjectCreator);
 
         final ArgumentCaptor<Principal> userCaptor = ArgumentCaptor.forClass(Principal.class);
-        when(subjectCreator.createSubjectWithGroups(userCaptor.capture())).then(new Answer<Subject>()
+        when(subjectCreator.createSubjectWithGroups(userCaptor.capture())).then((Answer<Subject>) invocation ->
         {
-            @Override
-            public Subject answer(final InvocationOnMock invocation) throws Throwable
-            {
-                Subject subject = new Subject();
-                subject.getPrincipals().add(userCaptor.getValue());
-                return subject;
-            }
+            Subject subject = new Subject();
+            subject.getPrincipals().add(userCaptor.getValue());
+            return subject;
         });
 
         final ByteBufferSender sender = mock(ByteBufferSender.class);
@@ -184,7 +176,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
     }
 
     @Test
-    public void testProtocolEngineWithNoSaslNonTLSandAnon() throws Exception
+    public void testProtocolEngineWithNoSaslNonTLSandAnon()
     {
         final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.NAME, getTestName());
         final AnonymousAuthenticationManager anonymousAuthenticationManager =
@@ -204,14 +196,12 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
-        assertEquals(principal,
-                            new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
+        assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
 
     }
 
-
     @Test
-    public void testProtocolEngineWithNoSaslNonTLSandNoAnon() throws Exception
+    public void testProtocolEngineWithNoSaslNonTLSandNoAnon()
     {
         allowMechanisms("foo");
 
@@ -227,9 +217,8 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         verify(_networkConnection).close();
     }
 
-
     @Test
-    public void testProtocolEngineWithNoSaslTLSandExternal() throws Exception
+    public void testProtocolEngineWithNoSaslTLSandExternal()
     {
         final Principal principal = () -> "test";
         when(_networkConnection.getPeerPrincipal()).thenReturn(principal);
@@ -250,7 +239,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
     }
 
     @Test
-    public void testProtocolEngineWithSaslNonTLSandAnon() throws Exception
+    public void testProtocolEngineWithSaslNonTLSandAnon()
     {
         final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.NAME, getTestName());
         final AnonymousAuthenticationManager anonymousAuthenticationManager =
@@ -279,8 +268,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
-        assertEquals(principal,
-                            new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
+        assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
     }
 
 

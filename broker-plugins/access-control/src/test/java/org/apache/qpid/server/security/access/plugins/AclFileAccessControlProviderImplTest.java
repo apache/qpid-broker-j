@@ -21,9 +21,8 @@
 
 package org.apache.qpid.server.security.access.plugins;
 
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,8 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -50,7 +49,7 @@ public class AclFileAccessControlProviderImplTest extends UnitTestBase
     private Model _model;
     private Broker _broker;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
@@ -82,9 +81,8 @@ public class AclFileAccessControlProviderImplTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Unexpected exception message:" + e.getMessage(),
-                                String.format("Cannot convert %s to a readable resource", aclFilePath),
-                                e.getMessage());
+            assertEquals(String.format("Cannot convert %s to a readable resource", aclFilePath), e.getMessage(),
+                    "Unexpected exception message:" + e.getMessage());
 
         }
     }

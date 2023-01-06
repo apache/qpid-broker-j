@@ -20,19 +20,18 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
@@ -48,21 +47,21 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class QueueMessageRecoveryTest extends UnitTestBase
 {
-    QueueManagingVirtualHost<?> _vhost;
+    private QueueManagingVirtualHost<?> _vhost;
 
-    @Before
+    @BeforeAll
     public void setUp() throws Exception
     {
         _vhost = BrokerTestHelper.createVirtualHost("host", this);
     }
 
     @Test
-    public void testSimpleRecovery() throws Exception
+    public void testSimpleRecovery()
     {
         // Simple deterministic test to prove that interleaved recovery and new publishing onto a queue is correctly
         // handled
         final List<ServerMessage<?>> messageList = new ArrayList<>();
-        TestQueue queue = new TestQueue(Collections.singletonMap(Queue.NAME, (Object) "test"), _vhost, messageList);
+        final TestQueue queue = new TestQueue(Map.of(Queue.NAME, getTestName()), _vhost, messageList);
 
         queue.open();
 
@@ -74,31 +73,28 @@ public class QueueMessageRecoveryTest extends UnitTestBase
         queue.enqueue(createMockMessage(6), null, null);
         queue.recover(createMockMessage(3), createEnqueueRecord(3, queue));
 
-        assertEquals((long) 4, (long) messageList.size());
-        for(int i = 0; i < 4; i++)
+        assertEquals(4, (long) messageList.size());
+        for (int i = 0; i < 4; i++)
         {
-            assertEquals((long)i, messageList.get(i).getMessageNumber());
+            assertEquals(i, messageList.get(i).getMessageNumber());
         }
 
         queue.completeRecovery();
 
         queue.enqueue(createMockMessage(7), null, null);
 
-        assertEquals((long) 8, (long) messageList.size());
+        assertEquals(8, (long) messageList.size());
 
-        for(int i = 0; i < 8; i++)
+        for (int i = 0; i < 8; i++)
         {
-            assertEquals((long)i, messageList.get(i).getMessageNumber());
+            assertEquals(i, messageList.get(i).getMessageNumber());
         }
-
     }
-
 
     @Test
     public void testMultiThreadedRecovery() throws Exception
     {
         // Non deterministic test with separate publishing and recovery threads
-
         performMultiThreadedRecovery(5000);
     }
 
@@ -107,8 +103,7 @@ public class QueueMessageRecoveryTest extends UnitTestBase
     {
         // Repeated non deterministic test with separate publishing and recovery threads(but with fewer messages being
         // published/recovered
-
-        for(int i = 0; i < 50; i++)
+        for (int i = 0; i < 50; i++)
         {
             performMultiThreadedRecovery(10);
         }
@@ -116,38 +111,25 @@ public class QueueMessageRecoveryTest extends UnitTestBase
 
     private void performMultiThreadedRecovery(final int size) throws Exception
     {
-
         final List<ServerMessage<?>> messageList = new ArrayList<>();
-        final TestQueue queue =
-                new TestQueue(Collections.singletonMap(Queue.NAME, (Object) "test"), _vhost, messageList);
+        final TestQueue queue = new TestQueue(Map.of(Queue.NAME, getTestName()), _vhost, messageList);
 
         queue.open();
 
-
-        Thread recoveryThread = new Thread(new Runnable()
-            {
-
-                @Override
-                public void run()
-                {
-                    for(int i = 0; i < size; i++)
-                    {
-                        queue.recover(createMockMessage(i), createEnqueueRecord(i, queue));
-                    }
-                    queue.completeRecovery();
-                }
-            }, "recovery thread");
-
-        Thread publishingThread = new Thread(new Runnable()
+        final Thread recoveryThread = new Thread(() ->
         {
-
-            @Override
-            public void run()
+            for (int i = 0; i < size; i++)
             {
-                for(int i = 0; i < size; i++)
-                {
-                    queue.enqueue(createMockMessage(size + i), null, null);
-                }
+                queue.recover(createMockMessage(i), createEnqueueRecord(i, queue));
+            }
+            queue.completeRecovery();
+        }, "recovery thread");
+
+        final Thread publishingThread = new Thread(() ->
+        {
+            for (int i = 0; i < size; i++)
+            {
+                queue.enqueue(createMockMessage(size + i), null, null);
             }
         }, "publishing thread");
 
@@ -157,11 +139,11 @@ public class QueueMessageRecoveryTest extends UnitTestBase
         recoveryThread.join(10000);
         publishingThread.join(10000);
 
-        assertEquals((long) (size * 2), (long) messageList.size());
+        assertEquals(size * 2L, messageList.size());
 
-        for(int i = 0; i < (size*2); i++)
+        for (int i = 0; i < (size*2); i++)
         {
-            assertEquals((long)i, messageList.get(i).getMessageNumber());
+            assertEquals(i, messageList.get(i).getMessageNumber());
         }
     }
 
@@ -183,12 +165,12 @@ public class QueueMessageRecoveryTest extends UnitTestBase
         };
     }
 
-
-    private ServerMessage createMockMessage(final long i)
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private ServerMessage<?> createMockMessage(final long i)
     {
-        ServerMessage msg = mock(ServerMessage.class);
+        final ServerMessage<?> msg = mock(ServerMessage.class);
         when(msg.getMessageNumber()).thenReturn(i);
-        MessageReference ref = mock(MessageReference.class);
+        final MessageReference ref = mock(MessageReference.class);
         when(ref.getMessage()).thenReturn(msg);
         when(msg.newReference()).thenReturn(ref);
         when(msg.newReference(any(TransactionLogResource.class))).thenReturn(ref);
@@ -196,9 +178,9 @@ public class QueueMessageRecoveryTest extends UnitTestBase
         return msg;
     }
 
+    @SuppressWarnings("rawtypes")
     private static class TestQueue extends AbstractQueue<TestQueue>
     {
-
         private final List<ServerMessage<?>> _messageList;
         private final QueueEntryList _entries = mock(QueueEntryList.class);
 

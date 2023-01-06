@@ -26,8 +26,8 @@ import static org.mockito.Mockito.mock;
 
 import java.util.concurrent.Executor;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 
@@ -39,12 +39,11 @@ public class ParticipantExecutorTest extends UnitTestBase
 {
     private static final ResultHasError HAS_ERROR = new ResultHasError();
     private static final String CLIENT_NAME = "CLIENT_NAME";
-    private static final String PARTICIPANT_NAME = "PARTICIPANT_NAME";
     private ParticipantExecutor _participantExecutor = null;
     private Participant _participant = null;
     private ResultReporter _resultReporter;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
 

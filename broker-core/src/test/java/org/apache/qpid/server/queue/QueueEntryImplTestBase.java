@@ -19,11 +19,10 @@
 package org.apache.qpid.server.queue;
 
 import static org.apache.qpid.server.message.MessageInstance.NON_CONSUMER_ACQUIRED_STATE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -31,14 +30,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
@@ -55,7 +51,6 @@ import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-
 /**
  * Tests for {@link QueueEntryImpl}
  */
@@ -65,7 +60,14 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
     protected QueueEntryImpl _queueEntry;
     protected QueueEntryImpl _queueEntry2;
     protected QueueEntryImpl _queueEntry3;
+    protected QueueManagingVirtualHost<?> _virtualHost;
     private long _consumerId;
+
+    @BeforeAll
+    public void beforeAll() throws Exception
+    {
+        _virtualHost = BrokerTestHelper.createVirtualHost(getTestClassName(), this);
+    }
 
     public abstract QueueEntryImpl getQueueEntryImpl(int msgId);
 
@@ -78,7 +80,7 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
     @Test
     public abstract void testTraverseWithDeletedEntries();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _queueEntry = getQueueEntryImpl(1);
@@ -89,8 +91,8 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
     @Test
     public void testAcquire()
     {
-        assertTrue("Queue entry should be in AVAILABLE state before invoking of acquire method",
-                          _queueEntry.isAvailable());
+        assertTrue(_queueEntry.isAvailable(),
+                "Queue entry should be in AVAILABLE state before invoking of acquire method");
 
         acquire();
     }
@@ -107,12 +109,13 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
      * Entry in state ACQUIRED should be released and its status should be
      * changed to AVAILABLE.
      */
+    @Test
     public void testReleaseAcquired()
     {
         acquire();
         _queueEntry.release();
-        assertTrue("Queue entry should be in AVAILABLE state after invoking of release method",
-                          _queueEntry.isAvailable());
+        assertTrue(_queueEntry.isAvailable(),
+                "Queue entry should be in AVAILABLE state after invoking of release method");
     }
 
     /**
@@ -126,8 +129,8 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
     {
         delete();
         _queueEntry.release();
-        assertTrue("Invoking of release on entry in DELETED state should not have any effect",
-                          _queueEntry.isDeleted());
+        assertTrue(_queueEntry.isDeleted(),
+                "Invoking of release on entry in DELETED state should not have any effect");
     }
 
     /**
@@ -137,8 +140,8 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
     {
         _queueEntry.acquire();
         _queueEntry.delete();
-        assertTrue("Queue entry should be in DELETED state after invoking of delete method",
-                          _queueEntry.isDeleted());
+        assertTrue(_queueEntry.isDeleted(),
+                "Queue entry should be in DELETED state after invoking of delete method");
     }
 
 
@@ -148,16 +151,15 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
     private void acquire()
     {
         _queueEntry.acquire(newConsumer());
-        assertTrue("Queue entry should be in ACQUIRED state after invoking of acquire method",
-                          _queueEntry.isAcquired());
+        assertTrue(_queueEntry.isAcquired(),
+                "Queue entry should be in ACQUIRED state after invoking of acquire method");
     }
 
-    private QueueConsumer newConsumer()
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private QueueConsumer<?, ?> newConsumer()
     {
-        final QueueConsumer consumer = mock(QueueConsumer.class);
-
-        StealableConsumerAcquiredState
-                owningState = new StealableConsumerAcquiredState(consumer);
+        final QueueConsumer<?, ?> consumer = mock(QueueConsumer.class);
+        final StealableConsumerAcquiredState owningState = new StealableConsumerAcquiredState<>(consumer);
         when(consumer.getOwningState()).thenReturn(owningState);
         final Long consumerNum = _consumerId++;
         when(consumer.getConsumerNumber()).thenReturn(consumerNum);
@@ -166,106 +168,82 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testStateChanges()
     {
-        QueueConsumer consumer = newConsumer();
-        StateChangeListener<MessageInstance, EntryState> stateChangeListener = mock(StateChangeListener.class);
+        final QueueConsumer<?, ?> consumer = newConsumer();
+        final StateChangeListener<MessageInstance, EntryState> stateChangeListener = mock(StateChangeListener.class);
         _queueEntry.addStateChangeListener(stateChangeListener);
         _queueEntry.acquire(consumer);
-        verify(stateChangeListener).stateChanged(eq(_queueEntry),
-                                                 eq(MessageInstance.AVAILABLE_STATE),
-                                                 isA(UnstealableConsumerAcquiredState.class));
+        verify(stateChangeListener).stateChanged(eq(_queueEntry), eq(MessageInstance.AVAILABLE_STATE),
+                isA(UnstealableConsumerAcquiredState.class));
         _queueEntry.makeAcquisitionStealable();
-        verify(stateChangeListener).stateChanged(eq(_queueEntry),
-                                                 isA(UnstealableConsumerAcquiredState.class),
-                                                 isA(StealableConsumerAcquiredState.class));
+        verify(stateChangeListener).stateChanged(eq(_queueEntry), isA(UnstealableConsumerAcquiredState.class),
+                isA(StealableConsumerAcquiredState.class));
         _queueEntry.removeAcquisitionFromConsumer(consumer);
-        verify(stateChangeListener).stateChanged(eq(_queueEntry),
-                                                 isA(StealableConsumerAcquiredState.class),
-                                                 eq(NON_CONSUMER_ACQUIRED_STATE));
+        verify(stateChangeListener).stateChanged(eq(_queueEntry), isA(StealableConsumerAcquiredState.class),
+                eq(NON_CONSUMER_ACQUIRED_STATE));
     }
 
     @Test
     public void testLocking()
     {
-        QueueConsumer consumer = newConsumer();
-        QueueConsumer consumer2 = newConsumer();
+        final QueueConsumer<?, ?> consumer = newConsumer();
+        final QueueConsumer<?, ?> consumer2 = newConsumer();
 
         _queueEntry.acquire(consumer);
-        assertTrue("Queue entry should be in ACQUIRED state after invoking of acquire method",
-                          _queueEntry.isAcquired());
+        assertTrue(_queueEntry.isAcquired(),
+                "Queue entry should be in ACQUIRED state after invoking of acquire method");
 
-        assertFalse("Acquisition should initially be locked",
-                           _queueEntry.removeAcquisitionFromConsumer(consumer));
+        assertFalse(_queueEntry.removeAcquisitionFromConsumer(consumer),
+                "Acquisition should initially be locked");
 
-        assertTrue("Should be able to unlock locked queue entry", _queueEntry.makeAcquisitionStealable());
-        assertFalse("Acquisition should not be able to be removed from the wrong consumer",
-                           _queueEntry.removeAcquisitionFromConsumer(consumer2));
-        assertTrue("Acquisition should be able to be removed once unlocked",
-                          _queueEntry.removeAcquisitionFromConsumer(consumer));
-        assertTrue("Queue Entry should still be acquired", _queueEntry.isAcquired());
-        assertFalse("Queue Entry should not be marked as acquired by a consumer",
-                           _queueEntry.acquiredByConsumer());
+        assertTrue(_queueEntry.makeAcquisitionStealable(), "Should be able to unlock locked queue entry");
+        assertFalse(_queueEntry.removeAcquisitionFromConsumer(consumer2),
+                "Acquisition should not be able to be removed from the wrong consumer");
+        assertTrue(_queueEntry.removeAcquisitionFromConsumer(consumer),
+                "Acquisition should be able to be removed once unlocked");
+        assertTrue(_queueEntry.isAcquired(), "Queue Entry should still be acquired");
+        assertFalse(_queueEntry.acquiredByConsumer(),
+                "Queue Entry should not be marked as acquired by a consumer");
 
         _queueEntry.release();
 
-        assertFalse("Hijacked queue entry should be able to be released", _queueEntry.isAcquired());
+        assertFalse(_queueEntry.isAcquired(), "Hijacked queue entry should be able to be released");
 
         _queueEntry.acquire(consumer);
-        assertTrue("Queue entry should be in ACQUIRED state after invoking of acquire method",
-                          _queueEntry.isAcquired());
+        assertTrue(_queueEntry.isAcquired(), "Queue entry should be in ACQUIRED state after invoking of acquire method");
 
-        assertFalse("Acquisition should initially be locked",
-                           _queueEntry.removeAcquisitionFromConsumer(consumer));
-        assertTrue("Should be able to unlock locked queue entry", _queueEntry.makeAcquisitionStealable());
-        assertTrue("Should be able to lock queue entry", _queueEntry.makeAcquisitionUnstealable(consumer));
-        assertFalse("Acquisition should not be able to be hijacked when locked",
-                           _queueEntry.removeAcquisitionFromConsumer(consumer));
+        assertFalse(_queueEntry.removeAcquisitionFromConsumer(consumer),
+                "Acquisition should initially be locked");
+        assertTrue(_queueEntry.makeAcquisitionStealable(), "Should be able to unlock locked queue entry");
+        assertTrue(_queueEntry.makeAcquisitionUnstealable(consumer), "Should be able to lock queue entry");
+        assertFalse(_queueEntry.removeAcquisitionFromConsumer(consumer),
+                "Acquisition should not be able to be hijacked when locked");
 
         _queueEntry.delete();
-        assertTrue("Locked queue entry should be able to be deleted", _queueEntry.isDeleted());
+        assertTrue(_queueEntry.isDeleted(), "Locked queue entry should be able to be deleted");
     }
 
     @Test
     public void testLockAcquisitionOwnership()
     {
-        QueueConsumer consumer1 = newConsumer();
-        QueueConsumer consumer2 = newConsumer();
+        final QueueConsumer<?, ?> consumer1 = newConsumer();
+        final QueueConsumer<?, ?> consumer2 = newConsumer();
 
         _queueEntry.acquire(consumer1);
-        assertTrue("Queue entry should be acquired by consumer1", _queueEntry.acquiredByConsumer());
+        assertTrue(_queueEntry.acquiredByConsumer(), "Queue entry should be acquired by consumer1");
 
-        assertTrue("Consumer1 relocking should be allowed", _queueEntry.makeAcquisitionUnstealable(consumer1));
-        assertFalse("Consumer2 should not be allowed", _queueEntry.makeAcquisitionUnstealable(consumer2));
+        assertTrue(_queueEntry.makeAcquisitionUnstealable(consumer1), "Consumer1 relocking should be allowed");
+        assertFalse(_queueEntry.makeAcquisitionUnstealable(consumer2), "Consumer2 should not be allowed");
 
         _queueEntry.makeAcquisitionStealable();
 
-        assertTrue("Queue entry should still be acquired by consumer1", _queueEntry.acquiredByConsumer());
+        assertTrue(_queueEntry.acquiredByConsumer(), "Queue entry should still be acquired by consumer1");
 
         _queueEntry.release(consumer1);
 
-        assertFalse("Queue entry should no longer be acquired by consumer1", _queueEntry.acquiredByConsumer());
-    }
-
-    /**
-     * A helper method to get entry state
-     *
-     * @return entry state
-     */
-    private EntryState getState()
-    {
-        EntryState state = null;
-        try
-        {
-            Field f = QueueEntryImpl.class.getDeclaredField("_state");
-            f.setAccessible(true);
-            state = (EntryState) f.get(_queueEntry);
-        }
-        catch (Exception e)
-        {
-            fail("Failure to get a state field: " + e.getMessage());
-        }
-        return state;
+        assertFalse(_queueEntry.acquiredByConsumer(), "Queue entry should no longer be acquired by consumer1");
     }
 
     /**
@@ -275,74 +253,74 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
     @Test
     public void testRejectAndRejectedBy()
     {
-        QueueConsumer sub = newConsumer();
+        final QueueConsumer<?, ?> sub = newConsumer();
 
-        assertFalse("Queue entry should not yet have been rejected by the consumer",
-                           _queueEntry.isRejectedBy(sub));
-        assertFalse("Queue entry should not yet have been acquired by a consumer", _queueEntry.isAcquired());
+        assertFalse(_queueEntry.isRejectedBy(sub),
+                "Queue entry should not yet have been rejected by the consumer");
+        assertFalse(_queueEntry.isAcquired(), "Queue entry should not yet have been acquired by a consumer");
 
         //acquire, reject, and release the message using the consumer
-        assertTrue("Queue entry should have been able to be acquired", _queueEntry.acquire(sub));
+        assertTrue(_queueEntry.acquire(sub), "Queue entry should have been able to be acquired");
         _queueEntry.reject(sub);
         _queueEntry.release();
 
         //verify the rejection is recorded
-        assertTrue("Queue entry should have been rejected by the consumer", _queueEntry.isRejectedBy(sub));
+        assertTrue(_queueEntry.isRejectedBy(sub), "Queue entry should have been rejected by the consumer");
 
         //repeat rejection using a second consumer
-        QueueConsumer sub2 = newConsumer();
+        final QueueConsumer<?, ?> sub2 = newConsumer();
 
-        assertFalse("Queue entry should not yet have been rejected by the consumer",
-                           _queueEntry.isRejectedBy(sub2));
-        assertTrue("Queue entry should have been able to be acquired", _queueEntry.acquire(sub2));
+        assertFalse(_queueEntry.isRejectedBy(sub2),
+                "Queue entry should not yet have been rejected by the consumer");
+        assertTrue(_queueEntry.acquire(sub2), "Queue entry should have been able to be acquired");
         _queueEntry.reject(sub2);
 
         //verify it still records being rejected by both consumers
-        assertTrue("Queue entry should have been rejected by the consumer", _queueEntry.isRejectedBy(sub));
-        assertTrue("Queue entry should have been rejected by the consumer", _queueEntry.isRejectedBy(sub2));
+        assertTrue(_queueEntry.isRejectedBy(sub), "Queue entry should have been rejected by the consumer");
+        assertTrue(_queueEntry.isRejectedBy(sub2), "Queue entry should have been rejected by the consumer");
     }
 
     /**
      * Tests if entries in DEQUEUED or DELETED state are not returned by getNext method.
      */
     @Test
+    @SuppressWarnings("rawtypes")
     public void testGetNext() throws Exception
     {
-        int numberOfEntries = 5;
-        QueueEntryImpl[] entries = new QueueEntryImpl[numberOfEntries];
-        Map<String,Object> queueAttributes = new HashMap<String, Object>();
-        queueAttributes.put(Queue.ID, UUID.randomUUID());
-        queueAttributes.put(Queue.NAME, getTestName());
-        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
-        StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, virtualHost);
+        final int numberOfEntries = 5;
+        final QueueEntryImpl[] entries = new QueueEntryImpl[numberOfEntries];
+        final Map<String,Object> queueAttributes = Map.of(Queue.ID, randomUUID(),
+                Queue.NAME, getTestName());
+        final QueueManagingVirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
+        final StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, virtualHost);
         queue.open();
-        OrderedQueueEntryList queueEntryList = queue.getEntries();
+        final OrderedQueueEntryList queueEntryList = queue.getEntries();
 
         // create test entries
-        for(int i = 0; i < numberOfEntries ; i++)
+        for (int i = 0; i < numberOfEntries ; i++)
         {
-            ServerMessage message = mock(ServerMessage.class);
+            final ServerMessage<?> message = mock(ServerMessage.class);
             when(message.getMessageNumber()).thenReturn((long)i);
             final MessageReference reference = mock(MessageReference.class);
             when(reference.getMessage()).thenReturn(message);
             when(message.newReference()).thenReturn(reference);
             when(message.newReference(any(TransactionLogResource.class))).thenReturn(reference);
-            QueueEntryImpl entry = (QueueEntryImpl) queueEntryList.add(message, null);
+            final QueueEntryImpl entry = (QueueEntryImpl) queueEntryList.add(message, null);
             entries[i] = entry;
         }
 
         // test getNext for not acquired entries
-        for(int i = 0; i < numberOfEntries ; i++)
+        for (int i = 0; i < numberOfEntries ; i++)
         {
-            QueueEntryImpl queueEntry = entries[i];
-            QueueEntry next = queueEntry.getNextValidEntry();
+            final QueueEntryImpl queueEntry = entries[i];
+            final QueueEntry next = queueEntry.getNextValidEntry();
             if (i < numberOfEntries - 1)
             {
-                assertEquals("Unexpected entry from QueueEntryImpl#getNext()", entries[i + 1], next);
+                assertEquals(entries[i + 1], next, "Unexpected entry from QueueEntryImpl#getNext()");
             }
             else
             {
-                assertNull("The next entry after the last should be null", next);
+                assertNull(next, "The next entry after the last should be null");
             }
         }
 
@@ -355,35 +333,35 @@ public abstract class QueueEntryImplTestBase extends UnitTestBase
         entries[2].delete();
 
         QueueEntry next = entries[0].getNextValidEntry();
-        assertEquals("expected forth entry", entries[3], next);
+        assertEquals(entries[3], next, "expected forth entry");
         next = next.getNextValidEntry();
-        assertEquals("expected fifth entry", entries[4], next);
+        assertEquals(entries[4], next, "expected fifth entry");
         next = next.getNextValidEntry();
-        assertNull("The next entry after the last should be null", next);
+        assertNull(next, "The next entry after the last should be null");
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testRouteToAlternateInvokesAction()
     {
-        String dlqName = "dlq";
-        Map<String, Object> dlqAttributes = new HashMap<>();
-        dlqAttributes.put(Queue.ID, UUID.randomUUID());
-        dlqAttributes.put(Queue.NAME, dlqName);
-        Queue<?> dlq = (Queue<?>) _queueEntry.getQueue().getVirtualHost().createChild(Queue.class, dlqAttributes);
+        final String dlqName = "dlq";
+        final Map<String, Object> dlqAttributes = Map.of(Queue.ID, randomUUID(),
+                Queue.NAME, dlqName);
+        final Queue<?> dlq = (Queue<?>) _queueEntry.getQueue().getVirtualHost().createChild(Queue.class, dlqAttributes);
 
         final AlternateBinding alternateBinding = mock(AlternateBinding.class);
         when(alternateBinding.getDestination()).thenReturn(dlqName);
-        _queueEntry.getQueue().setAttributes(Collections.singletonMap(Queue.ALTERNATE_BINDING, alternateBinding));
+        _queueEntry.getQueue().setAttributes(Map.of(Queue.ALTERNATE_BINDING, alternateBinding));
 
         final Action<? super MessageInstance> action = mock(Action.class);
         when(_queueEntry.getMessage().isResourceAcceptable(dlq)).thenReturn(true);
         when(_queueEntry.getMessage().checkValid()).thenReturn(true);
         _queueEntry.acquire();
-        int enqueues = _queueEntry.routeToAlternate(action, null, null);
+        final int enqueues = _queueEntry.routeToAlternate(action, null, null);
 
-        assertEquals("Unexpected number of enqueues", 1, enqueues);
+        assertEquals(1, enqueues, "Unexpected number of enqueues");
         verify(action).performAction(any());
 
-        assertEquals("Unexpected number of messages on DLQ", 1, dlq.getQueueDepthMessages());
+        assertEquals(1, dlq.getQueueDepthMessages(), "Unexpected number of messages on DLQ");
     }
 }

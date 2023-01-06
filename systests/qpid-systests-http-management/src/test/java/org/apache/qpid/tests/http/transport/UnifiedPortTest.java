@@ -27,7 +27,8 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.TCPTunneler;
 import org.apache.qpid.tests.http.HttpTestBase;

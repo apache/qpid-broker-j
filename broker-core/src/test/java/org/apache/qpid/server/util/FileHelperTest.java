@@ -21,21 +21,22 @@
 
 package org.apache.qpid.server.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -46,31 +47,25 @@ public class FileHelperTest extends UnitTestBase
     private File _testFile;
     private FileHelper _fileHelper;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _testFile = new File(TMP_FOLDER, "test-" + System.currentTimeMillis());
         _fileHelper = new FileHelper();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-        }
-        finally
-        {
-            Files.deleteIfExists(_testFile.toPath());
-        }
+        Files.deleteIfExists(_testFile.toPath());
     }
 
     @Test
     public void testCreateNewFile() throws Exception
     {
-        assertFalse("File should not exist", _testFile.exists());
-        Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
-        assertTrue("File was not created", path.toFile().exists());
+        assertFalse(_testFile.exists(), "File should not exist");
+        final Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
+        assertTrue(path.toFile().exists(), "File was not created");
         if (Files.getFileAttributeView(path, PosixFileAttributeView.class) != null)
         {
             assertPermissions(path);
@@ -81,9 +76,9 @@ public class FileHelperTest extends UnitTestBase
     public void testCreateNewFileUsingRelativePath() throws Exception
     {
         _testFile = new File("./tmp-" + System.currentTimeMillis());
-        assertFalse("File should not exist", _testFile.exists());
-        Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
-        assertTrue("File was not created", path.toFile().exists());
+        assertFalse(_testFile.exists(), "File should not exist");
+        final Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
+        assertTrue(path.toFile().exists(), "File was not created");
         if (Files.getFileAttributeView(path, PosixFileAttributeView.class) != null)
         {
             assertPermissions(path);
@@ -93,37 +88,33 @@ public class FileHelperTest extends UnitTestBase
     @Test
     public void testWriteFileSafely() throws Exception
     {
-        Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
-        _fileHelper.writeFileSafely(path, new BaseAction<File, IOException>()
+        final Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
+        _fileHelper.writeFileSafely(path, file ->
         {
-            @Override
-            public void performAction(File file) throws IOException
-            {
-                Files.write(file.toPath(), "test".getBytes("UTF8"));
-                assertEquals("Unexpected name", _testFile.getAbsolutePath() + ".tmp", file.getPath());
-            }
+            Files.write(file.toPath(), "test".getBytes(StandardCharsets.UTF_8));
+            assertEquals(_testFile.getAbsolutePath() + ".tmp", file.getPath(), "Unexpected name");
         });
 
-        assertTrue("File was not created", path.toFile().exists());
+        assertTrue(path.toFile().exists(), "File was not created");
 
         if (Files.getFileAttributeView(path, PosixFileAttributeView.class) != null)
         {
             assertPermissions(path);
         }
 
-        String content =  new String(Files.readAllBytes(path), "UTF-8");
-        assertEquals("Unexpected file content", "test", content);
+        String content = Files.readString(path);
+        assertEquals("test", content, "Unexpected file content");
     }
 
     @Test
     public void testAtomicFileMoveOrReplace() throws Exception
     {
-        Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
-        Files.write(path, "test".getBytes("UTF8"));
+        final Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
+        Files.write(path, "test".getBytes(StandardCharsets.UTF_8));
         _testFile = _fileHelper.atomicFileMoveOrReplace(path, path.resolveSibling(_testFile.getName() + ".target")).toFile();
 
-        assertFalse("File was not moved", path.toFile().exists());
-        assertTrue("Target file does not exist", _testFile.exists());
+        assertFalse(path.toFile().exists(), "File was not moved");
+        assertTrue(_testFile.exists(), "Target file does not exist");
 
         if (Files.getFileAttributeView(_testFile.toPath(), PosixFileAttributeView.class) != null)
         {
@@ -134,13 +125,12 @@ public class FileHelperTest extends UnitTestBase
     @Test
     public void testIsWritableDirectoryForFilePath() throws Exception
     {
-        File workDir = TestFileUtils.createTestDirectory("test", true);
+        final File workDir = TestFileUtils.createTestDirectory("test", true);
         try
         {
-            File file = new File(workDir, getTestName());
+            final File file = new File(workDir, getTestName());
             file.createNewFile();
-            assertFalse("Should return false for a file",
-                               _fileHelper.isWritableDirectory(file.getAbsolutePath()));
+            assertFalse(_fileHelper.isWritableDirectory(file.getAbsolutePath()), "Should return false for a file");
         }
         finally
         {
@@ -150,19 +140,19 @@ public class FileHelperTest extends UnitTestBase
 
 
     @Test
-    public void testIsWritableDirectoryForNonWritablePath() throws Exception
+    public void testIsWritableDirectoryForNonWritablePath()
     {
-        File workDir = TestFileUtils.createTestDirectory("test", true);
+        final File workDir = TestFileUtils.createTestDirectory("test", true);
         try
         {
             if (Files.getFileAttributeView(workDir.toPath(), PosixFileAttributeView.class) != null)
             {
-                File file = new File(workDir, getTestName());
+                final File file = new File(workDir, getTestName());
                 file.mkdirs();
                 if (file.setWritable(false, false))
                 {
-                    assertFalse("Should return false for non writable folder",
-                                       _fileHelper.isWritableDirectory(new File(file, "test").getAbsolutePath()));
+                    assertFalse(_fileHelper.isWritableDirectory(new File(file, "test").getAbsolutePath()),
+                            "Should return false for non writable folder");
                 }
             }
         }
@@ -172,18 +162,24 @@ public class FileHelperTest extends UnitTestBase
         }
     }
 
-    private void assertPermissions(Path path) throws IOException
+    private void assertPermissions(final Path path) throws IOException
     {
-        Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(path);
-        assertTrue("Unexpected owner read permission", permissions.contains(PosixFilePermission.OWNER_READ));
-        assertTrue("Unexpected owner write permission", permissions.contains(PosixFilePermission.OWNER_WRITE));
-        assertTrue("Unexpected owner exec permission", permissions.contains(PosixFilePermission.OWNER_EXECUTE));
-        assertTrue("Unexpected group read permission", permissions.contains(PosixFilePermission.GROUP_READ));
-        assertFalse("Unexpected group write permission", permissions.contains(PosixFilePermission.GROUP_WRITE));
-        assertTrue("Unexpected group exec permission", permissions.contains(PosixFilePermission.GROUP_EXECUTE));
-        assertFalse("Unexpected others read permission", permissions.contains(PosixFilePermission.OTHERS_READ));
-        assertFalse("Unexpected others write permission", permissions.contains(PosixFilePermission.OTHERS_WRITE));
-        assertFalse("Unexpected others exec permission",
-                           permissions.contains(PosixFilePermission.OTHERS_EXECUTE));
+        final Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(path);
+        assertTrue(permissions.contains(PosixFilePermission.OWNER_READ), "Unexpected owner read permission");
+        assertTrue(permissions.contains(PosixFilePermission.OWNER_WRITE),
+                "Unexpected owner write permission");
+        assertTrue(permissions.contains(PosixFilePermission.OWNER_EXECUTE),
+                "Unexpected owner exec permission");
+        assertTrue(permissions.contains(PosixFilePermission.GROUP_READ), "Unexpected group read permission");
+        assertFalse(permissions.contains(PosixFilePermission.GROUP_WRITE),
+                "Unexpected group write permission");
+        assertTrue(permissions.contains(PosixFilePermission.GROUP_EXECUTE),
+                "Unexpected group exec permission");
+        assertFalse(permissions.contains(PosixFilePermission.OTHERS_READ),
+                "Unexpected others read permission");
+        assertFalse(permissions.contains(PosixFilePermission.OTHERS_WRITE),
+                "Unexpected others write permission");
+        assertFalse(permissions.contains(PosixFilePermission.OTHERS_EXECUTE),
+                "Unexpected others exec permission");
     }
 }

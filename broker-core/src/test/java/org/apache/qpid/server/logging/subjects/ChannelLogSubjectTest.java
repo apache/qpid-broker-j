@@ -18,21 +18,21 @@
  *
  */
 package org.apache.qpid.server.logging.subjects;
-
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * Validate ChannelLogSubjects are logged as expected
  */
 public class ChannelLogSubjectTest extends ConnectionLogSubjectTest
 {
-    private final int _channelID = 1;
 
-    @org.junit.Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         super.setUp();
-        _subject = new ChannelLogSubject(getConnection(), _channelID);
+        final int channelID = 1;
+        _subject = new ChannelLogSubject(getConnection(), channelID);
     }
 
     /**
@@ -41,14 +41,13 @@ public class ChannelLogSubjectTest extends ConnectionLogSubjectTest
      * @param message the message whose format needs validation
      */
     @Override
-    protected void validateLogStatement(String message)
+    protected void validateLogStatement(final String message)
     {
         // Use the ConnectionLogSubjectTest to validate that the connection
         // section is ok
         super.validateLogStatement(message);
 
         // Finally check that the channel identifier is correctly added
-        Assert.assertTrue("Channel 1 identifier not found as part of Subject", message.contains(")/ch:1]"));
+        assertTrue(message.contains(")/ch:1]"), "Channel 1 identifier not found as part of Subject");
     }
-
 }

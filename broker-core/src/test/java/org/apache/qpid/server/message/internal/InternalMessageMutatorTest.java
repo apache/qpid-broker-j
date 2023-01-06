@@ -25,11 +25,11 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
+import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.store.MessageHandle;
@@ -48,7 +48,7 @@ public class InternalMessageMutatorTest extends UnitTestBase
     private MessageStore _messageStore;
     private InternalMessageMutator _messageMutator;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _messageStore = new TestMemoryMessageStore();
@@ -56,7 +56,7 @@ public class InternalMessageMutatorTest extends UnitTestBase
         _messageMutator = new InternalMessageMutator(message, _messageStore);
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         _messageStore.closeMessageStore();
@@ -97,7 +97,7 @@ public class InternalMessageMutatorTest extends UnitTestBase
     {
         final QpidByteBuffer content = QpidByteBuffer.wrap(TEST_CONTENT.getBytes(UTF_8));
         final InternalMessageHeader newHeader =
-                new InternalMessageHeader(Collections.singletonMap(TEST_HEADER_NAME, TEST_HEADER_VALUE),
+                new InternalMessageHeader(Map.of(TEST_HEADER_NAME, TEST_HEADER_VALUE),
                                           null,
                                           0,
                                           null,

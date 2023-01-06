@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,7 +31,6 @@ import java.io.File;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -40,9 +39,11 @@ import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +71,7 @@ import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class VirtualHostLoggerTest extends UnitTestBase
 {
     private VirtualHost<?> _virtualHost;
@@ -77,35 +79,33 @@ public class VirtualHostLoggerTest extends UnitTestBase
     private File _baseFolder;
     private File _logFile;
 
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
 
-        Model model = BrokerModel.getInstance();
+        final Model model = BrokerModel.getInstance();
+        final EventLogger eventLogger = mock(EventLogger.class);
 
-        EventLogger eventLogger = mock(EventLogger.class);
-
-        SystemConfig<?> systemConfig = mock(SystemConfig.class);
+        final SystemConfig<?> systemConfig = mock(SystemConfig.class);
         when(systemConfig.getModel()).thenReturn(model);
         when(systemConfig.getChildExecutor()).thenReturn(_taskExecutor);
         when(systemConfig.getEventLogger()).thenReturn(eventLogger);
         when(systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
         doReturn(SystemConfig.class).when(systemConfig).getCategoryClass();
 
-        Principal systemPrincipal = mock(Principal.class);
+        final Principal systemPrincipal = mock(Principal.class);
 
-        AccessControl accessControlMock = BrokerTestHelper.createAccessControlMock();
-        Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal,
-                                                                                 accessControlMock);
+        final AccessControl<?> accessControlMock = BrokerTestHelper.createAccessControlMock();
+        final Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(
+                Broker.class, systemPrincipal, accessControlMock);
         when(broker.getModel()).thenReturn(model);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(broker.getParent()).thenReturn(systemConfig);
         doReturn(Broker.class).when(broker).getCategoryClass();
 
-        VirtualHostNode node =  BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, systemPrincipal, accessControlMock);
+        final VirtualHostNode<?> node =  BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, systemPrincipal, accessControlMock);
         when(node.getModel()).thenReturn(model);
         when(node.getChildExecutor()).thenReturn(_taskExecutor);
         when(node.getParent()).thenReturn(broker);
@@ -115,9 +115,8 @@ public class VirtualHostLoggerTest extends UnitTestBase
 
 
         // use real VH object rather then mock in order to test create/start/stop functionality
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHost.NAME, getTestName());
-        attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
+        final Map<String, Object> attributes = Map.of(VirtualHost.NAME, getTestName(),
+                VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
         _virtualHost = new TestMemoryVirtualHost(attributes, node);
         _virtualHost.open();
 
@@ -129,8 +128,8 @@ public class VirtualHostLoggerTest extends UnitTestBase
         }
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    public void tearDown()
     {
         try
         {
@@ -149,101 +148,100 @@ public class VirtualHostLoggerTest extends UnitTestBase
     @Test
     public void testAddLoggerWithDefaultSettings()
     {
-        VirtualHostLogger logger = createVirtualHostLogger();
+        final VirtualHostLogger<?> logger = createVirtualHostLogger();
 
-        assertTrue("Unexpected logger created " + logger, logger instanceof VirtualHostFileLogger);
-        assertEquals("Unexpected log file", _logFile.getPath(), ((VirtualHostFileLogger<?>) logger).getFileName());
-        assertEquals("Unexpected state on creation", State.ACTIVE, logger.getState());
-        assertTrue("Log file does not exists", _logFile.exists());
+        assertTrue(logger instanceof VirtualHostFileLogger, "Unexpected logger created " + logger);
+        assertEquals(_logFile.getPath(), ((VirtualHostFileLogger<?>) logger).getFileName(), "Unexpected log file");
+        assertEquals(State.ACTIVE, logger.getState(), "Unexpected state on creation");
+        assertTrue(_logFile.exists(), "Log file does not exists");
 
-        Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
+        final Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
                 .getAppender(logger.getName());
-        assertTrue("Appender was not started", appender.isStarted());
+        assertTrue(appender.isStarted(), "Appender was not started");
     }
 
     @Test
     public void testAddLoggerWithRollDailyOn()
     {
-        VirtualHostLogger logger = createVirtualHostLogger(Collections.<String, Object>singletonMap("rollDaily", true));
+        final VirtualHostLogger<?> logger = createVirtualHostLogger(Map.of("rollDaily", true));
 
-        assertTrue("Unexpected logger created " + logger, logger instanceof VirtualHostFileLogger);
-        assertEquals("Unexpected log file", _logFile.getPath(), ((VirtualHostFileLogger<?>) logger).getFileName());
-        assertEquals("Unexpected state on creation", State.ACTIVE, logger.getState());
-        assertTrue("Log file does not exists", _logFile.exists());
+        assertTrue(logger instanceof VirtualHostFileLogger, "Unexpected logger created " + logger);
+        assertEquals(_logFile.getPath(), ((VirtualHostFileLogger<?>) logger).getFileName(), "Unexpected log file");
+        assertEquals(State.ACTIVE, logger.getState(), "Unexpected state on creation");
+        assertTrue(_logFile.exists(), "Log file does not exists");
 
-        Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
+        final Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
                 .getAppender(logger.getName());
-        assertTrue("Appender was not started", appender.isStarted());
+        assertTrue(appender.isStarted(), "Appender was not started");
     }
 
     @Test
     public void testDeleteLogger()
     {
-        VirtualHostLogger logger = createVirtualHostLogger();
-        assertEquals("Unexpected state on creation", State.ACTIVE, logger.getState());
+        final VirtualHostLogger<?> logger = createVirtualHostLogger();
+        assertEquals(State.ACTIVE, logger.getState(), "Unexpected state on creation");
 
         Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
                 .getAppender(logger.getName());
-        assertTrue("Appender is not started", appender.isStarted());
+        assertTrue(appender.isStarted(), "Appender is not started");
 
         logger.delete();
 
         appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).getAppender(logger.getName());
-        assertNull("Appender should be detached on logger deletion", appender);
+        assertNull(appender, "Appender should be detached on logger deletion");
     }
-
 
     @Test
     public void testLoggersRemovedOnVirtualHostStop()
     {
-        VirtualHostLogger logger = createVirtualHostLogger();
+        final VirtualHostLogger<?> logger = createVirtualHostLogger();
         ((AbstractConfiguredObject<?>)_virtualHost).stop();
 
-        Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
+        final Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
                 .getAppender(logger.getName());
-        assertNull("Appender was not deleted", appender);
+        assertNull(appender, "Appender was not deleted");
     }
 
     @Test
     public void testLoggersRemovedOnVirtualHostClose()
     {
-        VirtualHostLogger logger = createVirtualHostLogger();
+        final VirtualHostLogger<?> logger = createVirtualHostLogger();
         _virtualHost.close();
 
-        Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
+        final Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
                 .getAppender(logger.getName());
-        assertNull("Appender was not deleted", appender);
+        assertNull(appender, "Appender was not deleted");
     }
 
     @Test
     public void testGetLogFiles()
     {
-        VirtualHostFileLogger logger = (VirtualHostFileLogger)createVirtualHostLogger();
+        final VirtualHostFileLogger<?> logger = (VirtualHostFileLogger<?>)createVirtualHostLogger();
 
-        Collection<LogFileDetails> logFileDetails = logger.getLogFiles();
-        assertEquals("File details should not be empty", 1, logFileDetails.size());
+        final Collection<LogFileDetails> logFileDetails = logger.getLogFiles();
+        assertEquals(1, logFileDetails.size(), "File details should not be empty");
 
-        for(LogFileDetails logFile : logFileDetails)
+        for (final LogFileDetails logFile : logFileDetails)
         {
-            assertEquals("Unexpected log name", _logFile.getName(), logFile.getName());
-            assertEquals("Unexpected log name", 0, logFile.getSize());
-            assertEquals("Unexpected log name", _logFile.lastModified(), logFile.getLastModified());
+            assertEquals(_logFile.getName(), logFile.getName(), "Unexpected log name");
+            assertEquals(0, logFile.getSize(), "Unexpected log name");
+            assertEquals(_logFile.lastModified(), logFile.getLastModified(), "Unexpected log name");
         }
     }
 
     @Test
     public void testGetLogFilesOnResolutionErrors()
     {
-        VirtualHostFileLogger logger = createErrorredLogger();
+        final VirtualHostFileLogger<?> logger = createErrorredLogger();
 
-        Collection<LogFileDetails> logFileDetails = logger.getLogFiles();
-        assertTrue("File details should be empty", logFileDetails.isEmpty());
+        final Collection<LogFileDetails> logFileDetails = logger.getLogFiles();
+        assertTrue(logFileDetails.isEmpty(), "File details should be empty");
     }
 
     @Test
     public void testStopLoggingLoggerInErroredState()
     {
-        VirtualHostFileLogger logger = createErrorredLogger();
+        final VirtualHostFileLogger<?> logger = createErrorredLogger();
         logger.stopLogging();
     }
 
@@ -259,8 +257,7 @@ public class VirtualHostLoggerTest extends UnitTestBase
         assertEquals(0L, logger.getWarnCount());
         assertEquals(0L, logger.getErrorCount());
 
-        final VirtualHostLogInclusionRule<?> warnFilter = logger.createChild(
-                VirtualHostLogInclusionRule.class,
+        final VirtualHostLogInclusionRule<?> warnFilter = logger.createChild(VirtualHostLogInclusionRule.class,
                 createInclusionRuleAttributes(loggerName, LogLevel.WARN));
 
         final Subject subject = new Subject(false, Set.of(_virtualHost.getPrincipal()), Set.of(), Set.of());
@@ -283,8 +280,7 @@ public class VirtualHostLoggerTest extends UnitTestBase
 
         warnFilter.delete();
 
-        final VirtualHostLogInclusionRule<?> errorFilter = logger.createChild(
-                VirtualHostLogInclusionRule.class,
+        final VirtualHostLogInclusionRule<?> errorFilter = logger.createChild(VirtualHostLogInclusionRule.class,
                 createInclusionRuleAttributes(loggerName, LogLevel.ERROR));
 
         Subject.doAs(subject, (PrivilegedAction<Void>) () ->
@@ -313,38 +309,36 @@ public class VirtualHostLoggerTest extends UnitTestBase
 
     private VirtualHostFileLogger createErrorredLogger()
     {
-        Map<String, Object> attributes = new HashMap<>();
+        final Map<String, Object> attributes = new HashMap<>();
         attributes.put(VirtualHostLogger.NAME, getTestName());
         attributes.put(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
         attributes.put(VirtualHostFileLogger.FILE_NAME, _logFile.getPath());
         attributes.put(VirtualHostFileLogger.MAX_FILE_SIZE, "invalid");
 
-        VirtualHostFileLogger logger = new VirtualHostFileLoggerImpl(attributes, _virtualHost);
+        final VirtualHostFileLogger<?> logger = new VirtualHostFileLoggerImpl(attributes, _virtualHost);
         logger.open();
 
-        assertEquals("Unexpected state", State.ERRORED, logger.getState());
+        assertEquals(State.ERRORED, logger.getState(), "Unexpected state");
         return logger;
     }
 
-    private VirtualHostLogger createVirtualHostLogger()
+    private VirtualHostLogger<?> createVirtualHostLogger()
     {
-        return createVirtualHostLogger(Collections.<String,Object>emptyMap());
+        return createVirtualHostLogger(Map.of());
     }
 
-    private VirtualHostLogger createVirtualHostLogger(Map<String, Object> additionalAttributes)
+    private VirtualHostLogger<?> createVirtualHostLogger(final Map<String, Object> additionalAttributes)
     {
-        Map<String, Object> attributes = new HashMap<>(additionalAttributes);
-        attributes.put(VirtualHostLogger.NAME, getTestName());
-        attributes.put(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
-        attributes.put(VirtualHostFileLogger.FILE_NAME, _logFile.getPath());
+        final Map<String, Object> attributes = Map.of(VirtualHostLogger.NAME, getTestName(),
+                ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE,
+                VirtualHostFileLogger.FILE_NAME, _logFile.getPath());
         return _virtualHost.createChild(VirtualHostLogger.class, attributes);
     }
 
     private Map<String, Object> createInclusionRuleAttributes(final String loggerName,
                                                               final LogLevel logLevel)
     {
-        return Map.of(
-                VirtualHostNameAndLevelLogInclusionRule.LOGGER_NAME, loggerName,
+        return Map.of(VirtualHostNameAndLevelLogInclusionRule.LOGGER_NAME, loggerName,
                 VirtualHostNameAndLevelLogInclusionRule.LEVEL, logLevel,
                 VirtualHostNameAndLevelLogInclusionRule.NAME, "test",
                 ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);

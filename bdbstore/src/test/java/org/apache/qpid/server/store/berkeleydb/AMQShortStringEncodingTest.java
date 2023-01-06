@@ -18,16 +18,16 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 /**
  * Tests for {@code AMQShortStringEncoding} including corner cases when string
@@ -35,7 +35,6 @@ import org.apache.qpid.test.utils.UnitTestBase;
  */
 public class AMQShortStringEncodingTest extends UnitTestBase
 {
-
     @Test
     public void testWriteReadNullValues()
     {
@@ -47,7 +46,7 @@ public class AMQShortStringEncodingTest extends UnitTestBase
         // read from tuple input
         TupleInput tupleInput = new TupleInput(data);
         AMQShortString result = AMQShortStringEncoding.readShortString(tupleInput);
-        assertNull("Expected null but got " + result, result);
+        assertNull(result, "Expected null but got " + result);
     }
 
     @Test
@@ -63,7 +62,7 @@ public class AMQShortStringEncodingTest extends UnitTestBase
         // read from tuple input
         TupleInput tupleInput = new TupleInput(data);
         AMQShortString result = AMQShortStringEncoding.readShortString(tupleInput);
-        assertEquals("Expected " + value + " but got " + result, value, result);
+        assertEquals(value, result, "Expected " + value + " but got " + result);
     }
 
     @Test
@@ -79,7 +78,7 @@ public class AMQShortStringEncodingTest extends UnitTestBase
         // read from tuple input
         TupleInput tupleInput = new TupleInput(data);
         AMQShortString result = AMQShortStringEncoding.readShortString(tupleInput);
-        assertEquals("Expected " + value + " but got " + result, value, result);
+        assertEquals(value, result, "Expected " + value + " but got " + result);
     }
 
     private AMQShortString createString(char ch, int length)

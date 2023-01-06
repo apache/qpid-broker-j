@@ -20,10 +20,10 @@
 
 package org.apache.qpid.server.security.auth.sasl.anonymous;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -31,16 +31,15 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class AnonymousNegotiatorTest extends UnitTestBase
 {
     @Test
-    public void testHandleResponse() throws Exception
+    public void testHandleResponse()
     {
         final AuthenticationResult result = mock(AuthenticationResult.class);
-        AnonymousNegotiator negotiator = new AnonymousNegotiator(result);
+        final AnonymousNegotiator negotiator = new AnonymousNegotiator(result);
         final Object actual = negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected result", result, actual);
+        assertEquals(result, actual, "Unexpected result");
 
-        AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
-        assertEquals("Only first call to handleResponse should be successful",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            secondResult.getStatus());
+        final AuthenticationResult secondResult = negotiator.handleResponse(new byte[0]);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus(),
+                "Only first call to handleResponse should be successful");
     }
 }

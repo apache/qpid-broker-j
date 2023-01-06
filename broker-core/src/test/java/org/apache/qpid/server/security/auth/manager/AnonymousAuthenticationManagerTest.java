@@ -21,18 +21,16 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -44,54 +42,47 @@ public class AnonymousAuthenticationManagerTest extends UnitTestBase
 {
     private AnonymousAuthenticationManager _manager;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        Map<String,Object> attrs = new HashMap<String, Object>();
-        attrs.put(AuthenticationProvider.ID, UUID.randomUUID());
-        attrs.put(AuthenticationProvider.NAME, getTestName());
+        final Map<String,Object> attrs = Map.of(AuthenticationProvider.ID, randomUUID(),
+                AuthenticationProvider.NAME, getTestName());
         _manager = new AnonymousAuthenticationManager(attrs, BrokerTestHelper.createBrokerMock());
-
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        if(_manager != null)
+        if (_manager != null)
         {
             _manager = null;
         }
     }
 
     @Test
-    public void testGetMechanisms() throws Exception
+    public void testGetMechanisms()
     {
-        assertEquals(Collections.singletonList("ANONYMOUS"), _manager.getMechanisms());
+        assertEquals(List.of("ANONYMOUS"), _manager.getMechanisms());
     }
 
     @Test
-    public void testCreateSaslNegotiator() throws Exception
+    public void testCreateSaslNegotiator()
     {
         SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null, null);
-        assertNotNull("Could not create SASL negotiator for mechanism 'ANONYMOUS'", negotiator);
+        assertNotNull(negotiator, "Could not create SASL negotiator for mechanism 'ANONYMOUS'");
 
         negotiator = _manager.createSaslNegotiator("PLAIN", null, null);
-        assertNull("Should not be able to create SASL negotiator for mechanism 'PLAIN'", negotiator);
+        assertNull(negotiator, "Should not be able to create SASL negotiator for mechanism 'PLAIN'");
     }
 
     @Test
-    public void testAuthenticate() throws Exception
+    public void testAuthenticate()
     {
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null, null);
-        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
+        final SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null, null);
+        final AuthenticationResult result = negotiator.handleResponse(new byte[0]);
         assertNotNull(result);
-        assertEquals("Expected authentication to be successful",
-                            AuthenticationResult.AuthenticationStatus.SUCCESS,
-                            result.getStatus());
-
-
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus(),
+                "Expected authentication to be successful");
         assertOnlyContainsWrapped(_manager.getAnonymousPrincipal(), result.getPrincipals());
     }
-
-
 }

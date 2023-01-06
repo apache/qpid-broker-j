@@ -20,15 +20,13 @@
 
 package org.apache.qpid.server.management.plugin.servlet.query;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -43,7 +41,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.filter.OrderByExpression;
 import org.apache.qpid.server.filter.SelectorParsingException;
@@ -64,8 +64,14 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         VIPER
     };
 
-    private final List<ConfiguredObject<?>> _objects = new ArrayList<>();
+    private List<ConfiguredObject<?>> _objects;
     private ConfiguredObjectQuery _query;
+
+    @BeforeEach
+    public void setUp()
+    {
+        _objects = new ArrayList<>();
+    }
 
     @Test
     public void testNoClauses_SingleResult()
@@ -84,16 +90,14 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         _query = new ConfiguredObjectQuery(_objects, null, null);
 
         final List<String> headers = _query.getHeaders();
-        assertEquals("Unexpected headers",
-                            Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME),
-                            headers);
+        assertEquals(Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME), headers, "Unexpected headers");
 
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         List<Object> row = results.iterator().next();
-        assertEquals("Unexpected row", Lists.newArrayList(objectUuid, objectName), row);
+        assertEquals(Lists.newArrayList(objectUuid, objectName), row, "Unexpected row");
     }
 
     @Test
@@ -106,7 +110,7 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         try
         {
             orderByExpressions = parser.parseOrderBy(orderByClause);
-            assertEquals((long) 1, (long) orderByExpressions.size());
+            assertEquals(1, (long) orderByExpressions.size());
         }
         catch (ParseException | TokenMgrError e)
         {
@@ -160,14 +164,14 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         _query = new ConfiguredObjectQuery(_objects, null, null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 2, (long) results.size());
+        assertEquals(2, (long) results.size(), "Unexpected number of results");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row1 = iterator.next();
-        assertEquals("Unexpected row", Lists.newArrayList(object1Uuid, object1Name), row1);
+        assertEquals(Lists.newArrayList(object1Uuid, object1Name), row1, "Unexpected row");
 
         List<Object> row2 = iterator.next();
-        assertEquals("Unexpected row", Lists.newArrayList(object2Uuid, object2Name), row2);
+        assertEquals(Lists.newArrayList(object2Uuid, object2Name), row2, "Unexpected row");
     }
 
     @Test
@@ -188,14 +192,14 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                            null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final List<String> headers = _query.getHeaders();
-        assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, NUMBER_ATTR), headers);
+        assertEquals(Lists.newArrayList(ConfiguredObject.ID, NUMBER_ATTR), headers, "Unexpected headers");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals("Unexpected row", Lists.newArrayList(objectUuid, 1234), row);
+        assertEquals(Lists.newArrayList(objectUuid, 1234), row, "Unexpected row");
     }
 
     @Test
@@ -209,9 +213,9 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
 
         _query = new ConfiguredObjectQuery(_objects, "foo", null);
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
-        assertEquals("Unexpected headers", Collections.singletonList("foo"), _query.getHeaders());
-        assertEquals("Unexpected row", Collections.singletonList(null), results.get(0));
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
+        assertEquals(Collections.singletonList("foo"), _query.getHeaders(), "Unexpected headers");
+        assertEquals(Collections.singletonList(null), results.get(0), "Unexpected row");
     }
 
     @Test
@@ -233,14 +237,14 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                            null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final List<String> headers = _query.getHeaders();
-        assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, "alias"), headers);
+        assertEquals(Lists.newArrayList(ConfiguredObject.ID, "alias"), headers, "Unexpected headers");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "myObj1234"), row);
+        assertEquals(Lists.newArrayList(objectUuid, "myObj1234"), row, "Unexpected row");
     }
 
     @Test
@@ -267,16 +271,14 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         _query = new ConfiguredObjectQuery(_objects, null, String.format("name = '%s'", objectName));
 
         final List<String> headers = _query.getHeaders();
-        assertEquals("Unexpected headers",
-                            Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME),
-                            headers);
+        assertEquals(Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME), headers, "Unexpected headers");
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals("Unexpected row", objectUuid, row.get(0));
+        assertEquals(objectUuid, row.get(0), "Unexpected row");
     }
 
     @Test
@@ -308,11 +310,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                            String.format("%s > NOW()", DATE_ATTR));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals("Unexpected row", objectUuid, row.get(0));
+        assertEquals(objectUuid, row.get(0), "Unexpected row");
     }
 
     @Test
@@ -346,11 +348,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                                          nowIso8601Str));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals("Unexpected row", objectUuid, row.get(0));
+        assertEquals(objectUuid, row.get(0), "Unexpected row");
     }
 
     @Test
@@ -374,11 +376,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                                          "-PT10H"));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals("Unexpected row", objectUuid, row.get(0));
+        assertEquals(objectUuid, row.get(0), "Unexpected row");
     }
 
     @Test
@@ -399,11 +401,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                            null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "1970-01-01T00:00:00Z"), row);
+        assertEquals(Lists.newArrayList(objectUuid, "1970-01-01T00:00:00Z"), row, "Unexpected row");
     }
 
     @Test
@@ -427,11 +429,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                            null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", (long) 1, (long) results.size());
+        assertEquals((long) 1, (long) results.size(), "Unexpected number of results");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "1970-01-01 UTC"), row);
+        assertEquals(Lists.newArrayList(objectUuid, "1970-01-01 UTC"), row, "Unexpected row");
     }
 
     @Test
@@ -453,42 +455,38 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                            String.format("%s = '%s'", ENUM_ATTR, Snakes.PYTHON));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results - enumAttr equality with enum constant",
-                            (long) 1,
-                            (long) results.size());
+        assertEquals(1, (long) results.size(),
+                "Unexpected number of results - enumAttr equality with enum constant");
 
         List<Object> row = _query.getResults().iterator().next();
-        assertEquals("Unexpected row", objectUuid, row.get(0));
+        assertEquals(objectUuid, row.get(0), "Unexpected row");
 
         _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s", ConfiguredObject.ID),
                                            String.format("'%s' = %s", Snakes.PYTHON, ENUM_ATTR));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - enum constant equality with enumAttr",
-                            (long) 1,
-                            (long) results.size());
+        assertEquals((long) 1, (long) results.size(),
+                "Unexpected number of results - enum constant equality with enumAttr");
 
         row = _query.getResults().iterator().next();
-        assertEquals("Unexpected row", objectUuid, row.get(0));
+        assertEquals(objectUuid, row.get(0), "Unexpected row");
 
         _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s", ConfiguredObject.ID),
                                            String.format("%s <> '%s'", ENUM_ATTR, "toad"));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - enumAttr not equal enum constant",
-                            (long) 1,
-                            (long) results.size());
+        assertEquals(1, (long) results.size(),
+                "Unexpected number of results - enumAttr not equal enum constant");
 
         _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s", ConfiguredObject.ID),
                                            String.format("%s = %s", ENUM_ATTR, ENUM2_ATTR));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - two attributes of type enum",
-                            (long) 1,
-                            (long) results.size());
+        assertEquals(1, (long) results.size(),
+                "Unexpected number of results - two attributes of type enum");
     }
 
     @Test
@@ -512,25 +510,24 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                                          "toad", Snakes.VIPER, Snakes.PYTHON));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results - emumAttr with set including the enum's constants",
-                            (long) 1,
-                            (long) results.size());
+        assertEquals(1, (long) results.size(),
+                "Unexpected number of results - emumAttr with set including the enum's constants");
 
         _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s", ConfiguredObject.ID),
                                            String.format("%s in (%s)", ENUM_ATTR, ENUM2_ATTR));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - enumAttr with set including enum2Attr",
-                            (long) 1,
-                            (long) results.size());
+        assertEquals(1, (long) results.size(),
+                "Unexpected number of results - enumAttr with set including enum2Attr");
 
         _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s", ConfiguredObject.ID),
                                            String.format("'%s' in (%s)", Snakes.PYTHON, ENUM_ATTR));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results - attribute within the set", (long) 1, (long) results.size());
+        assertEquals(1, (long) results.size(),
+                "Unexpected number of results - attribute within the set");
     }
 
     @Test
@@ -780,16 +777,16 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                     final List<List<Object>> results)
     {
         final int rows = expectedAttributes.length;
-        assertEquals("Unexpected number of result rows", (long) rows, (long) results.size());
+        assertEquals((long) rows, (long) results.size(), "Unexpected number of result rows");
         if (rows > 0)
         {
             final int cols = expectedAttributes[0].length;
             for (int row = 0; row < rows; ++row)
             {
-                assertEquals("Unexpected number of result columns", (long) cols, (long) results.get(row).size());
+                assertEquals((long) cols, (long) results.get(row).size(), "Unexpected number of result columns");
                 for (int col = 0; col < cols; ++col)
                 {
-                    assertEquals("Unexpected row order", expectedAttributes[row][col], results.get(row).get(col));
+                    assertEquals(expectedAttributes[row][col], results.get(row).get(col), "Unexpected row order");
                 }
             }
         }

@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -36,7 +36,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -44,6 +44,7 @@ public class FileUtilsTest extends UnitTestBase
 {
     private static final String COPY = "-Copy";
     private static final String SUB = "-Sub";
+    private static final String SEARCH_STRING = "testSearch";
 
     /**
      * Additional test for the copy method.
@@ -53,57 +54,55 @@ public class FileUtilsTest extends UnitTestBase
     public void testCopyFile()
     {
         final String TEST_DATA = "FileUtilsTest-testCopy-TestDataTestDataTestDataTestDataTestDataTestData";
-        String fileName = "FileUtilsTest-testCopy";
-        String fileNameCopy = fileName + COPY;
+        final String fileName = "FileUtilsTest-testCopy";
+        final String fileNameCopy = fileName + COPY;
 
         File[] beforeCopyFileList = null;
 
-        //Create initial file
-        File test = createTestFile(fileName, TEST_DATA);
+        // Create initial file
+        final File test = createTestFile(fileName, TEST_DATA);
 
         try
         {
-            //Check number of files before copy
+            // Check number of files before copy
             beforeCopyFileList = test.getAbsoluteFile().getParentFile().listFiles();
-            int beforeCopy = beforeCopyFileList.length;
+            final int beforeCopy = beforeCopyFileList.length;
 
-            //Perform Copy
-            File destination = new File(fileNameCopy);
+            // Perform Copy
+            final File destination = new File(fileNameCopy);
             FileUtils.copy(test, destination);
-            //Ensure the JVM cleans up if cleanup failues
+            // Ensure the JVM cleans up if cleanup failues
             destination.deleteOnExit();
 
-            //Retrieve counts after copy
-            int afterCopy = test.getAbsoluteFile().getParentFile().listFiles().length;
+            // Retrieve counts after copy
+            final int afterCopy = test.getAbsoluteFile().getParentFile().listFiles().length;
 
-            int afterCopyFromCopy = new File(fileNameCopy).getAbsoluteFile().getParentFile().listFiles().length;
+            final int afterCopyFromCopy = new File(fileNameCopy).getAbsoluteFile().getParentFile().listFiles().length;
 
             // Validate the copy counts
-            assertEquals("The file listing from the original and the copy differ in length.",
-                                (long) afterCopy,
-                                (long) afterCopyFromCopy);
+            assertEquals(afterCopy, (long) afterCopyFromCopy,
+                    "The file listing from the original and the copy differ in length.");
 
-            assertEquals("The number of files did not increase.", (long) (beforeCopy + 1), (long) afterCopy);
-            assertEquals("The number of files did not increase.",
-                                (long) (beforeCopy + 1),
-                                (long) afterCopyFromCopy);
+            assertEquals(beforeCopy + 1, (long) afterCopy, "The number of files did not increase.");
+            assertEquals(beforeCopy + 1, (long) afterCopyFromCopy,
+                    "The number of files did not increase.");
 
-            //Validate copy
+            // Validate copy
             // Load content
-            String copiedFileContent = FileUtils.readFileAsString(fileNameCopy);
+            final String copiedFileContent = FileUtils.readFileAsString(fileNameCopy);
             assertEquals(TEST_DATA, copiedFileContent);
         }
         finally // Ensure clean
         {
-            //Clean up
-            assertTrue("Unable to cleanup", FileUtils.deleteFile(fileNameCopy));
+            // Clean up
+            assertTrue(FileUtils.deleteFile(fileNameCopy), "Unable to cleanup");
 
-            //Check file list after cleanup
-            File[] afterCleanup = new File(test.getAbsoluteFile().getParent()).listFiles();
+            // Check file list after cleanup
+            final File[] afterCleanup = new File(test.getAbsoluteFile().getParent()).listFiles();
             checkFileLists(beforeCopyFileList, afterCleanup);
 
-            //Remove original file
-            assertTrue("Unable to cleanup", test.delete());
+            // Remove original file
+            assertTrue(test.delete(), "Unable to cleanup");
         }
     }
 
@@ -123,92 +122,83 @@ public class FileUtilsTest extends UnitTestBase
     public void testCopyRecursive()
     {
         final String TEST_DATA = "FileUtilsTest-testDirectoryCopy-TestDataTestDataTestDataTestDataTestDataTestData";
-        String fileName = "FileUtilsTest-testCopy";
-        String TEST_DIR = "testDirectoryCopy";
+        final String fileName = "FileUtilsTest-testCopy";
+        final String TEST_DIR = "testDirectoryCopy";
 
-        //Create Initial Structure
-        File testDir = new File(TEST_DIR);
+        // Create Initial Structure
+        final File testDir = new File(TEST_DIR);
 
-        //Check number of files before copy
-        File[] beforeCopyFileList = testDir.getAbsoluteFile().getParentFile().listFiles();
+        // Check number of files before copy
+        final File[] beforeCopyFileList = testDir.getAbsoluteFile().getParentFile().listFiles();
 
         try
         {
-            //Create Directories
+            // Create Directories
             final boolean condition = !testDir.exists();
-            assertTrue("Test directory already exists cannot test.", condition);
+            assertTrue(condition, "Test directory already exists cannot test.");
 
             if (!testDir.mkdir())
             {
                 fail("Unable to make test Directory");
             }
 
-            File testSubDir = new File(TEST_DIR + File.separator + TEST_DIR + SUB);
+            final File testSubDir = new File(TEST_DIR + File.separator + TEST_DIR + SUB);
             if (!testSubDir.mkdir())
             {
                 fail("Unable to make test sub Directory");
             }
 
-            //Create Files
-            createTestFile(testDir.toString() + File.separator + fileName, TEST_DATA);
-            createTestFile(testSubDir.toString() + File.separator + fileName + SUB, TEST_DATA);
+            // Create Files
+            createTestFile(testDir + File.separator + fileName, TEST_DATA);
+            createTestFile(testSubDir + File.separator + fileName + SUB, TEST_DATA);
 
-            //Ensure the JVM cleans up if cleanup failues
+            // Ensure the JVM cleans up if cleanup failues
             testSubDir.deleteOnExit();
             testDir.deleteOnExit();
 
-            //Perform Copy
-            File copyDir = new File(testDir.toString() + COPY);
+            // Perform Copy
+            final File copyDir = new File(testDir + COPY);
             try
             {
                 FileUtils.copyRecursive(testDir, copyDir);
             }
-            catch (FileNotFoundException e)
-            {
-                fail(e.getMessage());
-            }
-            catch (FileUtils.UnableToCopyException e)
+            catch (FileNotFoundException | FileUtils.UnableToCopyException e)
             {
                 fail(e.getMessage());
             }
 
-            //Validate Copy
-            assertEquals("Copied directory should only have one file and one directory in it.",
-                                (long) 2,
-                                (long) copyDir.listFiles().length);
+            // Validate Copy
+            assertEquals(2, (long) copyDir.listFiles().length,
+                    "Copied directory should only have one file and one directory in it.");
 
-            //Validate Copy File Contents
-            String copiedFileContent = FileUtils.readFileAsString(copyDir.toString() + File.separator + fileName);
+            // Validate Copy File Contents
+            String copiedFileContent = FileUtils.readFileAsString(copyDir + File.separator + fileName);
             assertEquals(TEST_DATA, copiedFileContent);
 
-            //Validate Name of Sub Directory
-            assertTrue("Expected subdirectory is not a directory",
-                              new File(copyDir.toString() + File.separator + TEST_DIR + SUB).isDirectory());
+            // Validate Name of Sub Directory
+            assertTrue(new File(copyDir + File.separator + TEST_DIR + SUB).isDirectory(),
+                    "Expected subdirectory is not a directory");
 
-            //Assert that it contains only one item
-            assertEquals("Copied sub directory should only have one directory in it.",
-                                (long) 1,
-                                (long) new File(copyDir.toString()
-                                                + File.separator
-                                                + TEST_DIR
-                                                + SUB).listFiles().length);
+            // Assert that it contains only one item
+            assertEquals(1,  (long) new File(copyDir + File.separator + TEST_DIR  + SUB).listFiles().length,
+                    "Copied sub directory should only have one directory in it.");
 
-            //Validate content of Sub file
-            copiedFileContent = FileUtils.readFileAsString(copyDir.toString() + File.separator + TEST_DIR + SUB + File.separator + fileName + SUB);
+            // Validate content of Sub file
+            copiedFileContent = FileUtils.readFileAsString(copyDir + File.separator + TEST_DIR + SUB +
+                    File.separator + fileName + SUB);
             assertEquals(TEST_DATA, copiedFileContent);
         }
         finally
         {
-            //Clean up source and copy directory.
-            assertTrue("Unable to cleanup", FileUtils.delete(testDir, true));
-            assertTrue("Unable to cleanup", FileUtils.delete(new File(TEST_DIR + COPY), true));
+            // Clean up source and copy directory.
+            assertTrue(FileUtils.delete(testDir, true), "Unable to cleanup");
+            assertTrue(FileUtils.delete(new File(TEST_DIR + COPY), true), "Unable to cleanup");
 
-            //Check file list after cleanup
-            File[] afterCleanup = testDir.getAbsoluteFile().getParentFile().listFiles();
+            // Check file list after cleanup
+            final File[] afterCleanup = testDir.getAbsoluteFile().getParentFile().listFiles();
             checkFileLists(beforeCopyFileList, afterCleanup);
         }
     }
-
 
     /**
      * Helper method to create a temporary file with test content.
@@ -220,7 +210,6 @@ public class FileUtilsTest extends UnitTestBase
     private File createTestFileInTmpDir(final String testData) throws Exception 
     {
         final File tmpFile = File.createTempFile("test", "tmp");
-        
         return createTestFile(tmpFile.getCanonicalPath(), testData);
     }
     /**
@@ -231,14 +220,14 @@ public class FileUtilsTest extends UnitTestBase
      *
      * @return The File reference
      */
-    private File createTestFile(String fileName, String test_data)
+    private File createTestFile(final String fileName, final String test_data)
     {
-        File test = new File(fileName);
+        final File test = new File(fileName);
 
         try
         {
             test.createNewFile();
-            //Ensure the JVM cleans up if cleanup failues
+            //Ensure the JVM cleans up if cleanup failures
             test.deleteOnExit();
         }
         catch (IOException e)
@@ -246,10 +235,8 @@ public class FileUtilsTest extends UnitTestBase
             fail(e.getMessage());
         }
 
-        BufferedWriter writer = null;
-        try
+        try (final BufferedWriter writer = new BufferedWriter(new FileWriter(test)))
         {
-            writer = new BufferedWriter(new FileWriter(test));
             try
             {
                 writer.write(test_data);
@@ -263,20 +250,6 @@ public class FileUtilsTest extends UnitTestBase
         {
             fail(e.getMessage());
         }
-        finally
-        {
-            try
-            {
-                if (writer != null)
-                {
-                    writer.close();
-                }
-            }
-            catch (IOException e)
-            {
-                fail(e.getMessage());
-            }
-        }
 
         return test;
     }
@@ -285,16 +258,16 @@ public class FileUtilsTest extends UnitTestBase
     @Test
     public void testDeleteFile()
     {
-        File test = new File("FileUtilsTest-testDelete");
-        //Record file count in parent directory to check it is not changed by delete
-        String path = test.getAbsolutePath();
-        File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        final File test = new File("FileUtilsTest-testDelete");
+        // Record file count in parent directory to check it is not changed by delete
+        final String path = test.getAbsolutePath();
+        final File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
         int fileCountBefore = filesBefore.length;
 
         try
         {
             test.createNewFile();
-            //Ensure the JVM cleans up if cleanup failues
+            // Ensure the JVM cleans up if cleanup failues
             test.deleteOnExit();
         }
         catch (IOException e)
@@ -302,23 +275,23 @@ public class FileUtilsTest extends UnitTestBase
             fail(e.getMessage());
         }
 
-        assertTrue("File does not exists", test.exists());
-        assertTrue("File is not a file", test.isFile());
+        assertTrue(test.exists(), "File does not exists");
+        assertTrue(test.isFile(), "File is not a file");
 
-        //Check that file creation can be seen on disk
-        int fileCountCreated = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles().length;
-        assertEquals("File creation was no registered", (long) (fileCountBefore + 1), (long) fileCountCreated);
+        // Check that file creation can be seen on disk
+        final int fileCountCreated = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles().length;
+        assertEquals(fileCountBefore + 1, (long) fileCountCreated, "File creation was no registered");
 
-        //Perform Delete
-        assertTrue("Unable to cleanup", FileUtils.deleteFile("FileUtilsTest-testDelete"));
+        // Perform Delete
+        assertTrue(FileUtils.deleteFile("FileUtilsTest-testDelete"), "Unable to cleanup");
 
         final boolean condition = !test.exists();
-        assertTrue("File exists after delete", condition);
+        assertTrue(condition, "File exists after delete");
 
-        //Check that after deletion the file count is now accurate
-        File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
-        int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
+        // Check that after deletion the file count is now accurate
+        final File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        final int fileCountAfter = filesAfter.length;
+        assertEquals(fileCountBefore, (long) fileCountAfter, "File creation was no registered");
 
         checkFileLists(filesBefore, filesAfter);
     }
@@ -326,14 +299,14 @@ public class FileUtilsTest extends UnitTestBase
     @Test
     public void testDeleteNonExistentFile()
     {
-        File test = new File("FileUtilsTest-testDelete-" + System.currentTimeMillis());
+        final File test = new File("FileUtilsTest-testDelete-" + System.currentTimeMillis());
 
         final boolean condition1 = !test.exists();
-        assertTrue("File exists", condition1);
-        assertFalse("File is a directory", test.isDirectory());
+        assertTrue(condition1, "File exists");
+        assertFalse(test.isDirectory(), "File is a directory");
 
         final boolean condition = !FileUtils.delete(test, true);
-        assertTrue("Delete Succeeded ", condition);
+        assertTrue(condition, "Delete Succeeded ");
     }
 
     @Test
@@ -360,11 +333,9 @@ public class FileUtilsTest extends UnitTestBase
         final File testFile = createTestFileInTmpDir("src=tmpfile");
         final String filenameOnFilesystem = testFile.getCanonicalPath();
         final String defaultResource = "org/apache/qpid/util/default.properties";
-
-        
         final InputStream is = FileUtils.openFileOrDefaultResource(filenameOnFilesystem, defaultResource, this.getClass().getClassLoader());
 
-        assertNotNull("Stream must not be null", is);
+        assertNotNull(is, "Stream must not be null");
         final Properties p = new Properties();
         p.load(is);
         assertEquals("tmpfile", p.getProperty("src"));
@@ -379,10 +350,8 @@ public class FileUtilsTest extends UnitTestBase
     {
         final String mydefaultsResource = "org/apache/qpid/server/util/mydefaults.properties";
         final String defaultResource = "org/apache/qpid/server/util/default.properties";
-
-        
         final InputStream is = FileUtils.openFileOrDefaultResource(mydefaultsResource, defaultResource, this.getClass().getClassLoader());
-        assertNotNull("Stream must not be null", is);
+        assertNotNull(is, "Stream must not be null");
         final Properties p = new Properties();
         p.load(is);
         assertEquals("mydefaults", p.getProperty("src"));
@@ -395,13 +364,13 @@ public class FileUtilsTest extends UnitTestBase
     public void testOpenFileOrDefaultResourceOpensDefaultResource() throws Exception
     {
         final File fileThatDoesNotExist = new File("/does/not/exist.properties");
-        assertFalse("Test must not exist", fileThatDoesNotExist.exists());
+        assertFalse(fileThatDoesNotExist.exists(), "Test must not exist");
 
         final String defaultResource = "org/apache/qpid/server/util/default.properties";
         
         final InputStream is = FileUtils.openFileOrDefaultResource(fileThatDoesNotExist.getCanonicalPath(), defaultResource, this.getClass().getClassLoader());
-        assertNotNull("Stream must not be null", is);
-        Properties p = new Properties();
+        assertNotNull(is, "Stream must not be null");
+        final Properties p = new Properties();
         p.load(is);
         assertEquals("default.properties", p.getProperty("src"));
     }
@@ -413,13 +382,11 @@ public class FileUtilsTest extends UnitTestBase
     @Test
     public void testOpenFileOrDefaultResourceReturnsNullWhenNeitherCanBeFound() throws Exception
     {
-
         final String mydefaultsResource = "org/apache/qpid/server/util/doesnotexisteiether.properties";
         final String defaultResource = "org/apache/qpid/server/util/doesnotexisteiether.properties";
-        
         final InputStream is = FileUtils.openFileOrDefaultResource(mydefaultsResource, defaultResource, this.getClass().getClassLoader());
 
-        assertNull("Stream must  be null", is);
+        assertNull(is, "Stream must  be null");
     }
     
     /**
@@ -430,16 +397,16 @@ public class FileUtilsTest extends UnitTestBase
      */
     private void checkFileLists(File[] filesBefore, File[] filesAfter)
     {
-        assertNotNull("Before file list cannot be null", filesBefore);
-        assertNotNull("After file list cannot be null", filesAfter);
+        assertNotNull(filesBefore, "Before file list cannot be null");
+        assertNotNull(filesAfter, "After file list cannot be null");
 
-        assertEquals("File lists are unequal", (long) filesBefore.length, (long) filesAfter.length);
+        assertEquals(filesBefore.length, (long) filesAfter.length, "File lists are unequal");
 
-        for (File fileBefore : filesBefore)
+        for (final File fileBefore : filesBefore)
         {
             boolean found = false;
 
-            for (File fileAfter : filesAfter)
+            for (final File fileAfter : filesAfter)
             {
                 if (fileBefore.getAbsolutePath().equals(fileAfter.getAbsolutePath()))
                 {
@@ -448,57 +415,57 @@ public class FileUtilsTest extends UnitTestBase
                 }
             }
 
-            assertTrue("File'" + fileBefore.getName() + "' was not in directory afterwards", found);
+            assertTrue(found, "File'" + fileBefore.getName() + "' was not in directory afterwards");
         }
     }
 
     @Test
     public void testNonRecursiveNonEmptyDirectoryDeleteFails()
     {
-        String directoryName = "FileUtilsTest-testRecursiveDelete";
-        File test = new File(directoryName);
+        final String directoryName = "FileUtilsTest-testRecursiveDelete";
+        final File test = new File(directoryName);
 
-        //Record file count in parent directory to check it is not changed by delete
-        String path = test.getAbsolutePath();
-        File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        // Record file count in parent directory to check it is not changed by delete
+        final String path = test.getAbsolutePath();
+        final File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
         int fileCountBefore = filesBefore.length;
 
         final boolean condition = !test.exists();
-        assertTrue("Directory exists", condition);
+        assertTrue(condition, "Directory exists");
 
         test.mkdir();
 
-        //Create a file in the directory
-        String fileName = test.getAbsolutePath() + File.separatorChar + "testFile";
-        File subFile = new File(fileName);
+        // Create a file in the directory
+        final String fileName = test.getAbsolutePath() + File.separatorChar + "testFile";
+        final File subFile = new File(fileName);
         try
         {
             subFile.createNewFile();
-            //Ensure the JVM cleans up if cleanup failues
+            // Ensure the JVM cleans up if cleanup failues
             subFile.deleteOnExit();
         }
         catch (IOException e)
         {
             fail(e.getMessage());
         }
-        //Ensure the JVM cleans up if cleanup failues
+        // Ensure the JVM cleans up if cleanup failues
         // This must be after the subFile as the directory must be empty before
         // the delete is performed
         test.deleteOnExit();
 
-        //Try and delete the non-empty directory
-        assertFalse("Non Empty Directory was successfully deleted.", FileUtils.deleteDirectory(directoryName));
+        // Try and delete the non-empty directory
+        assertFalse(FileUtils.deleteDirectory(directoryName), "Non Empty Directory was successfully deleted.");
 
-        //Check directory is still there
-        assertTrue("Directory was deleted.", test.exists());
+        // Check directory is still there
+        assertTrue(test.exists(), "Directory was deleted.");
 
         // Clean up
-        assertTrue("Unable to cleanup", FileUtils.delete(test, true));
+        assertTrue(FileUtils.delete(test, true), "Unable to cleanup");
 
         //Check that after deletion the file count is now accurate
-        File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
-        int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
+        final File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        final int fileCountAfter = filesAfter.length;
+        assertEquals(fileCountBefore, (long) fileCountAfter, "File creation was no registered");
 
         checkFileLists(filesBefore, filesAfter);
     }
@@ -507,32 +474,32 @@ public class FileUtilsTest extends UnitTestBase
     @Test
     public void testEmptyDirectoryDelete()
     {
-        String directoryName = "FileUtilsTest-testRecursiveDelete";
-        File test = new File(directoryName);
+        final String directoryName = "FileUtilsTest-testRecursiveDelete";
+        final File test = new File(directoryName);
 
-        //Record file count in parent directory to check it is not changed by delete
-        String path = test.getAbsolutePath();
-        File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
-        int fileCountBefore = filesBefore.length;
+        // Record file count in parent directory to check it is not changed by delete
+        final String path = test.getAbsolutePath();
+        final File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        final int fileCountBefore = filesBefore.length;
 
         final boolean condition1 = !test.exists();
-        assertTrue("Directory exists", condition1);
+        assertTrue(condition1, "Directory exists");
 
         test.mkdir();
-        //Ensure the JVM cleans up if cleanup failues
+        // Ensure the JVM cleans up if cleanup failues
         test.deleteOnExit();
 
-        //Try and delete the empty directory
-        assertTrue("Non Empty Directory was successfully deleted.", FileUtils.deleteDirectory(directoryName));
+        // Try and delete the empty directory
+        assertTrue(FileUtils.deleteDirectory(directoryName), "Non Empty Directory was successfully deleted.");
 
-        //Check directory is still there
+        // Check directory is still there
         final boolean condition = !test.exists();
-        assertTrue("Directory was deleted.", condition);
+        assertTrue(condition, "Directory was deleted.");
 
-        //Check that after deletion the file count is now accurate
-        File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
-        int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
+        // Check that after deletion the file count is now accurate
+        final File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        final int fileCountAfter = filesAfter.length;
+        assertEquals(fileCountBefore, (long) fileCountAfter, "File creation was no registered");
 
         checkFileLists(filesBefore, filesAfter);
 
@@ -542,26 +509,26 @@ public class FileUtilsTest extends UnitTestBase
     @Test
     public void testNonEmptyDirectoryDelete()
     {
-        String directoryName = "FileUtilsTest-testRecursiveDelete";
-        File test = new File(directoryName);
+        final String directoryName = "FileUtilsTest-testRecursiveDelete";
+        final File test = new File(directoryName);
 
         final boolean condition = !test.exists();
-        assertTrue("Directory exists", condition);
+        assertTrue(condition, "Directory exists");
 
-        //Record file count in parent directory to check it is not changed by delete
-        String path = test.getAbsolutePath();
-        File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
-        int fileCountBefore = filesBefore.length;
+        // Record file count in parent directory to check it is not changed by delete
+        final String path = test.getAbsolutePath();
+        final File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        final int fileCountBefore = filesBefore.length;
 
         test.mkdir();
 
-        //Create a file in the directory
-        String fileName = test.getAbsolutePath() + File.separatorChar + "testFile";
-        File subFile = new File(fileName);
+        // Create a file in the directory
+        final String fileName = test.getAbsolutePath() + File.separatorChar + "testFile";
+        final File subFile = new File(fileName);
         try
         {
             subFile.createNewFile();
-            //Ensure the JVM cleans up if cleanup failues
+            // Ensure the JVM cleans up if cleanup failues
             subFile.deleteOnExit();
         }
         catch (IOException e)
@@ -574,19 +541,19 @@ public class FileUtilsTest extends UnitTestBase
         // the delete is performed
         test.deleteOnExit();
 
-        //Try and delete the non-empty directory non-recursively
-        assertFalse("Non Empty Directory was successfully deleted.", FileUtils.delete(test, false));
+        // Try and delete the non-empty directory non-recursively
+        assertFalse(FileUtils.delete(test, false), "Non Empty Directory was successfully deleted.");
 
-        //Check directory is still there
-        assertTrue("Directory was deleted.", test.exists());
+        // Check directory is still there
+        assertTrue(test.exists(), "Directory was deleted.");
 
         // Clean up
-        assertTrue("Unable to cleanup", FileUtils.delete(test, true));
+        assertTrue(FileUtils.delete(test, true), "Unable to cleanup");
 
-        //Check that after deletion the file count is now accurate
-        File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
-        int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
+        // Check that after deletion the file count is now accurate
+        final File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        final int fileCountAfter = filesAfter.length;
+        assertEquals(fileCountBefore, (long) fileCountAfter, "File creation was no registered");
 
         checkFileLists(filesBefore, filesAfter);
 
@@ -596,59 +563,58 @@ public class FileUtilsTest extends UnitTestBase
     @Test
     public void testRecursiveDelete()
     {
-        String directoryName = "FileUtilsTest-testRecursiveDelete";
-        File test = new File(directoryName);
+        final String directoryName = "FileUtilsTest-testRecursiveDelete";
+        final File test = new File(directoryName);
 
         final boolean condition1 = !test.exists();
-        assertTrue("Directory exists", condition1);
+        assertTrue(condition1, "Directory exists");
 
-        //Record file count in parent directory to check it is not changed by delete
-        String path = test.getAbsolutePath();
-        File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
-        int fileCountBefore = filesBefore.length;
+        // Record file count in parent directory to check it is not changed by delete
+        final String path = test.getAbsolutePath();
+        final File[] filesBefore = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        final int fileCountBefore = filesBefore.length;
 
         test.mkdir();
 
         createSubDir(directoryName, 2, 4);
 
-        //Ensure the JVM cleans up if cleanup failues
+        // Ensure the JVM cleans up if cleanup failures
         // This must be after the sub dir creation as the delete order is
         // recorded and the directory must be empty to be deleted.
         test.deleteOnExit();
 
-        assertFalse("Non recursive delete was able to directory", FileUtils.delete(test, false));
+        assertFalse(FileUtils.delete(test, false), "Non recursive delete was able to directory");
 
-        assertTrue("File does not exist after non recursive delete", test.exists());
+        assertTrue(test.exists(), "File does not exist after non recursive delete");
 
-        assertTrue("Unable to cleanup", FileUtils.delete(test, true));
+        assertTrue(FileUtils.delete(test, true), "Unable to cleanup");
 
         final boolean condition = !test.exists();
-        assertTrue("File  exist after recursive delete", condition);
+        assertTrue(condition, "File  exist after recursive delete");
 
-        //Check that after deletion the file count is now accurate
-        File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
-        int fileCountAfter = filesAfter.length;
-        assertEquals("File creation was no registered", (long) fileCountBefore, (long) fileCountAfter);
+        // Check that after deletion the file count is now accurate
+        final File[] filesAfter = new File(path.substring(0, path.lastIndexOf(File.separator))).listFiles();
+        final int fileCountAfter = filesAfter.length;
+        assertEquals(fileCountBefore, (long) fileCountAfter, "File creation was no registered");
 
         checkFileLists(filesBefore, filesAfter);
-
     }
 
     private void createSubDir(String path, int directories, int files)
     {
-        File directory = new File(path);
+        final File directory = new File(path);
 
-        assertTrue("Directory" + path + " does not exists", directory.exists());
+        assertTrue(directory.exists(), "Directory" + path + " does not exists");
 
         for (int dir = 0; dir < directories; dir++)
         {
-            String subDirName = path + File.separatorChar + "sub" + dir;
-            File subDir = new File(subDirName);
+            final String subDirName = path + File.separatorChar + "sub" + dir;
+            final File subDir = new File(subDirName);
 
             subDir.mkdir();
 
             createSubDir(subDirName, directories - 1, files);
-            //Ensure the JVM cleans up if cleanup failues
+            // Ensure the JVM cleans up if cleanup failues
             // This must be after the sub dir creation as the delete order is
             // recorded and the directory must be empty to be deleted.
             subDir.deleteOnExit();
@@ -656,12 +622,12 @@ public class FileUtilsTest extends UnitTestBase
 
         for (int file = 0; file < files; file++)
         {
-            String subDirName = path + File.separatorChar + "file" + file;
-            File subFile = new File(subDirName);
+            final String subDirName = path + File.separatorChar + "file" + file;
+            final File subFile = new File(subDirName);
             try
             {
                 subFile.createNewFile();
-                //Ensure the JVM cleans up if cleanup failues
+                // Ensure the JVM cleans up if cleanup failues
                 subFile.deleteOnExit();
             }
             catch (IOException e)
@@ -670,8 +636,6 @@ public class FileUtilsTest extends UnitTestBase
             }
         }
     }
-
-    public static final String SEARCH_STRING = "testSearch";
 
     /**
      * Test searchFile(File file, String search) will find a match when it
@@ -689,11 +653,11 @@ public class FileUtilsTest extends UnitTestBase
         {
             prepareFileForSearchTest(logfile);
 
-            List<String> results = FileUtils.searchFile(logfile, SEARCH_STRING);
+            final List<String> results = FileUtils.searchFile(logfile, SEARCH_STRING);
 
-            assertNotNull("Null result set returned", results);
+            assertNotNull(results, "Null result set returned");
 
-            assertEquals("Results do not contain expected count", (long) 1, (long) results.size());
+            assertEquals(1, (long) results.size(), "Results do not contain expected count");
         }
         finally
         {
@@ -717,22 +681,22 @@ public class FileUtilsTest extends UnitTestBase
         {
             prepareFileForSearchTest(logfile);
 
-            List<String> results = FileUtils.searchFile(logfile, "Hello");
+            final List<String> results = FileUtils.searchFile(logfile, "Hello");
 
-            assertNotNull("Null result set returned", results);
+            assertNotNull(results, "Null result set returned");
 
-            //Validate we only got one message
+            // Validate we only got one message
             if (results.size() > 0)
             {
                 System.err.println("Unexpected messages");
 
-                for (String msg : results)
+                for (final String msg : results)
                 {
                     System.err.println(msg);
                 }
             }
 
-            assertEquals("Results contains data when it was not expected", (long) 0, (long) results.size());
+            assertEquals(0, (long) results.size(), "Results contains data when it was not expected");
         }
         finally
         {
@@ -747,12 +711,11 @@ public class FileUtilsTest extends UnitTestBase
      *
      * @throws IOException if an error occurs
      */
-    private void prepareFileForSearchTest(File logfile) throws IOException
+    private void prepareFileForSearchTest(final File logfile) throws IOException
     {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(logfile));
+        final BufferedWriter writer = new BufferedWriter(new FileWriter(logfile));
         writer.append(SEARCH_STRING);
         writer.flush();
         writer.close();
     }
-
 }

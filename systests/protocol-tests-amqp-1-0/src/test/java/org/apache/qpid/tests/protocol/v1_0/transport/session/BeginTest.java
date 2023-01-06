@@ -26,9 +26,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -113,8 +113,8 @@ public class BeginTest extends BrokerAdminUsingTestBase
                                                  .negotiateOpen().getLatestResponse(Open.class);
 
             final UnsignedShort remoteChannelMax = responseOpen.getChannelMax();
-            assumeThat(remoteChannelMax, is(notNullValue()));
-            assumeThat(remoteChannelMax.intValue(), is(lessThan(UnsignedShort.MAX_VALUE.intValue())));
+            assumeTrue(is(notNullValue()).matches(remoteChannelMax));
+            assumeTrue(is(lessThan(UnsignedShort.MAX_VALUE.intValue())).matches(remoteChannelMax.intValue()));
 
             final int illegalSessionChannel =  remoteChannelMax.intValue() + 1;
 

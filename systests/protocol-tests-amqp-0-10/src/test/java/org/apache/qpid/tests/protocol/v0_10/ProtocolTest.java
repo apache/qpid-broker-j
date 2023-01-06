@@ -20,21 +20,21 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.hamcrest.core.IsEqual;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
 import org.apache.qpid.tests.protocol.HeaderResponse;
@@ -55,7 +55,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
                           + " header with the requested version to the socket, and then implement the protocol accordingly")
     public void versionNegotiation() throws Exception
     {
-        assumeThat(getBrokerAdmin().isAnonymousSupported(), is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().isAnonymousSupported());
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.ANONYMOUS_AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -87,7 +87,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
             final byte[] response = interaction.protocolHeader(unknownHeader)
                                                .negotiateProtocol()
                                                .consumeResponse().getLatestResponse(byte[].class);
-            assertArrayEquals("Unexpected protocol header response", expectedResponse, response);
+            assertArrayEquals(expectedResponse, response, "Unexpected protocol header response");
             transport.assertNoMoreResponsesAndChannelClosed();
         }
     }
@@ -109,7 +109,7 @@ public class ProtocolTest extends BrokerAdminUsingTestBase
             final byte[] response = interaction.protocolHeader(unknownAmqpVersion)
                                                .negotiateProtocol()
                                                .consumeResponse().getLatestResponse(byte[].class);
-            assertArrayEquals("Unexpected protocol header response", expectedResponse, response);
+            assertArrayEquals(expectedResponse, response, "Unexpected protocol header response");
             transport.assertNoMoreResponsesAndChannelClosed();
         }
     }

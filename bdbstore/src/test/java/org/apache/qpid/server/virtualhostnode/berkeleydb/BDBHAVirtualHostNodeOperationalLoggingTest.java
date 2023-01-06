@@ -20,11 +20,9 @@
  */
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -34,14 +32,14 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import org.hamcrest.Description;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -61,14 +59,15 @@ import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
  */
 public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 {
-    private final PortHelper _portHelper = new PortHelper();
     private BDBHAVirtualHostNodeTestHelper _helper;
     private EventLogger _eventLogger;
+    private final PortHelper _portHelper = new PortHelper();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
 
         _helper = new BDBHAVirtualHostNodeTestHelper(getTestName());
         _eventLogger = mock(EventLogger.class);
@@ -76,7 +75,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         when(context.getEventLogger()).thenReturn(_eventLogger);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -111,11 +110,11 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         // stop node to avoid running into race when role change is reported after we performed the check
         node1.stop();
 
-        assertEquals("Unexpected VHN log subject",
-                            "[grp(/group)/vhn(/node1)] ",
-                            node1.getVirtualHostNodeLogSubject().getLogString());
+        assertEquals("[grp(/group)/vhn(/node1)] ", node1.getVirtualHostNodeLogSubject().getLogString(),
+                     "Unexpected VHN log subject");
 
-        assertEquals("Unexpected group log subject", "[grp(/group)] ", node1.getGroupLogSubject().getLogString());
+        assertEquals("[grp(/group)] ", node1.getGroupLogSubject().getLogString(),
+                     "Unexpected group log subject");
 
         String attributes = String.format(
                 "{address=%s,context={je.rep.insufficientReplicasTimeout=2 s, je.rep.replicaAckTimeout=2 s},createdTime=%s,groupName=%s,helperAddress=%s,id=%s,lastUpdatedTime=%s,name=%s,permittedNodes=[%s],storePath=%s,type=%s,virtualHostInitialConfiguration={\n  \"type\" : \"BDB_HA\"\n}}",
@@ -178,7 +177,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
         reset(_eventLogger);
 
-        node1.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PRIORITY, 10));
+        node1.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.PRIORITY, 10));
 
         // make sure that task executor thread finishes all scheduled tasks
         node1.stop();
@@ -203,7 +202,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
         reset(_eventLogger);
 
-        node1.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1));
+        node1.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1));
 
         // make sure that task executor thread finishes all scheduled tasks
         node1.stop();
@@ -228,7 +227,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
 
         reset(_eventLogger);
 
-        node1.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.DESIGNATED_PRIMARY, true));
+        node1.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.DESIGNATED_PRIMARY, true));
 
         // make sure that task executor thread finishes all scheduled tasks
         node1.stop();
@@ -253,7 +252,6 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         _helper.assertNodeRole(node1, NodeRole.MASTER);
 
         reset(_eventLogger);
-
 
         Map<String, Object> node2Attributes = _helper.createNodeAttributes("node2", groupName, "localhost:" + node2PortNumber, helperAddress, nodeName);
         BDBHAVirtualHostNodeImpl node2 = (BDBHAVirtualHostNodeImpl)_helper.createHaVHN(node2Attributes);
@@ -329,18 +327,16 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         Map<String, Object> node2Attributes = _helper.createNodeAttributes("node2", groupName, "localhost:" + node2PortNumber, helperAddress, nodeName);
         BDBHAVirtualHostNodeImpl node2 = (BDBHAVirtualHostNodeImpl)_helper.createHaVHN(node2Attributes);
 
-        assertTrue("Remote node was not added during expected period of time",
-                          remoteNodeAdded.await(10, TimeUnit.SECONDS));
+        assertTrue(remoteNodeAdded.await(10, TimeUnit.SECONDS),
+                   "Remote node was not added during expected period of time");
 
         BDBHARemoteReplicationNodeImpl remoteNode = (BDBHARemoteReplicationNodeImpl)node1.getRemoteReplicationNodes().iterator().next();
         waitForRemoteNodeToAttainRole(remoteNode, EnumSet.of(NodeRole.REPLICA));
-
 
         reset(_eventLogger);
 
         // close remote node
         node2.close();
-
 
         waitForRemoteNodeToAttainRole(remoteNode, EnumSet.of(NodeRole.UNREACHABLE));
 
@@ -418,9 +414,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
     static class LogMessageMatcher implements ArgumentMatcher<LogMessage>
     {
         private final String _expectedMessage;
-        private String _expectedMessageFailureDescription = null;
         private final String _expectedHierarchy;
-        private String _expectedHierarchyFailureDescription = null;
 
         public LogMessageMatcher(String expectedMessage, String expectedHierarchy)
         {
@@ -431,25 +425,14 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         @Override
         public boolean matches(LogMessage logMessage)
         {
-            boolean expectedMessageMatches = _expectedMessage.equals(logMessage.toString());
-            if (!expectedMessageMatches)
-            {
-                _expectedMessageFailureDescription = "Expected message does not match. Expected: " + _expectedMessage + ", actual: " + logMessage.toString();
-            }
-            boolean expectedHierarchyMatches = _expectedHierarchy.equals(logMessage.getLogHierarchy());
-            if (!expectedHierarchyMatches)
-            {
-                _expectedHierarchyFailureDescription = "Expected hierarchy does not match. Expected: " + _expectedHierarchy + ", actual: " + logMessage.getLogHierarchy();
-            }
-
-            return expectedMessageMatches && expectedHierarchyMatches;
+            return _expectedMessage.equals(logMessage.toString()) &&
+                   _expectedHierarchy.equals(logMessage.getLogHierarchy());
         }
     }
 
     static class LogSubjectMatcher implements ArgumentMatcher<LogSubject>
     {
         private final LogSubject _logSubject;
-        private String _failureDescription = null;
 
         public LogSubjectMatcher(LogSubject logSubject)
         {
@@ -459,12 +442,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends UnitTestBase
         @Override
         public boolean matches(LogSubject logSubject)
         {
-            final boolean foundAMatch = _logSubject.toLogString().equals(logSubject.toLogString());
-            if (!foundAMatch)
-            {
-                _failureDescription = "LogSubject does not match. Expected: " + _logSubject.toLogString() + ", actual : " + logSubject.toLogString();
-            }
-            return foundAMatch;
+            return _logSubject.toLogString().equals(logSubject.toLogString());
         }
     }
 }

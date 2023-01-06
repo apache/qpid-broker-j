@@ -25,10 +25,10 @@ import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.apache.qpid.server.security.auth.sasl.SaslUtil.generateCramMD5ClientResponse;
 import static org.apache.qpid.server.security.auth.sasl.SaslUtil.generatePlainClientResponse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,8 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
@@ -54,7 +54,7 @@ public class SaslTest extends HttpTestBase
     private String _userName;
     private String _userPassword;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _userName = getBrokerAdmin().getValidUsername();
@@ -65,7 +65,7 @@ public class SaslTest extends HttpTestBase
     public void requestSASLMechanisms() throws Exception
     {
         Map<String, Object> saslData = getHelper().getJsonAsMap(SASL_SERVICE);
-        assertNotNull("mechanisms attribute is not found", saslData.get("mechanisms"));
+        assertNotNull(saslData.get("mechanisms"), "mechanisms attribute is not found");
 
         @SuppressWarnings("unchecked")
         List<String> mechanisms = (List<String>) saslData.get("mechanisms");
@@ -75,9 +75,9 @@ public class SaslTest extends HttpTestBase
                 ScramSHA256AuthenticationManager.MECHANISM};
         for (String mechanism : expectedMechanisms)
         {
-            assertTrue(String.format("Mechanism '%s' is not found", mechanism), mechanisms.contains(mechanism));
+            assertTrue(mechanisms.contains(mechanism), String.format("Mechanism '%s' is not found", mechanism));
         }
-        assertNull(String.format("Unexpected user was returned: %s", saslData.get("user")), saslData.get("user"));
+        assertNull(saslData.get("user"), String.format("Unexpected user was returned: %s", saslData.get("user")));
     }
 
     @Test
@@ -86,7 +86,7 @@ public class SaslTest extends HttpTestBase
         HttpURLConnection connection = requestSASLAuthentication("UNSUPPORTED");
         try
         {
-            assertEquals("Unexpected response", SC_EXPECTATION_FAILED, connection.getResponseCode());
+            assertEquals(SC_EXPECTATION_FAILED, connection.getResponseCode(), "Unexpected response");
         }
         finally
         {
@@ -100,7 +100,7 @@ public class SaslTest extends HttpTestBase
         HttpURLConnection connection = requestSASLAuthentication(PlainNegotiator.MECHANISM);
         try
         {
-            assertEquals("Unexpected response", SC_OK, connection.getResponseCode());
+            assertEquals(SC_OK, connection.getResponseCode(), "Unexpected response");
             handleChallengeAndSendResponse(connection, _userName, _userPassword, PlainNegotiator.MECHANISM, SC_OK);
 
             assertAuthenticatedUser(_userName, connection.getHeaderFields().get(SET_COOKIE_HEADER));
@@ -126,7 +126,7 @@ public class SaslTest extends HttpTestBase
                 os.write(parameters.getBytes());
                 os.flush();
 
-                assertEquals("Unexpected response code", SC_UNAUTHORIZED, connection.getResponseCode());
+                assertEquals(SC_UNAUTHORIZED, connection.getResponseCode(), "Unexpected response code");
 
                 assertAuthenticatedUser(null, connection.getHeaderFields().get(SET_COOKIE_HEADER));
             }
@@ -193,7 +193,7 @@ public class SaslTest extends HttpTestBase
         {
             Map<String, Object> response = getHelper().readJsonResponseAsMap(connection);
             String challenge = (String) response.get("challenge");
-            assertNotNull("Challenge is not found", challenge);
+            assertNotNull(challenge, "Challenge is not found");
 
             List<String> cookies = connection.getHeaderFields().get(SET_COOKIE_HEADER);
 
@@ -216,7 +216,7 @@ public class SaslTest extends HttpTestBase
         {
             Map<String, Object> response = getHelper().readJsonResponseAsMap(connection);
             String challenge = (String) response.get("challenge");
-            assertNotNull("Challenge is not found", challenge);
+            assertNotNull(challenge, "Challenge is not found");
 
             List<String> cookies = connection.getHeaderFields().get(SET_COOKIE_HEADER);
 
@@ -241,7 +241,7 @@ public class SaslTest extends HttpTestBase
         {
             Map<String, Object> response = getHelper().readJsonResponseAsMap(connection);
             String challenge = (String) response.get("challenge");
-            assertNotNull("Challenge is not found", challenge);
+            assertNotNull(challenge, "Challenge is not found");
 
             List<String> cookies = connection.getHeaderFields().get(SET_COOKIE_HEADER);
 
@@ -249,7 +249,7 @@ public class SaslTest extends HttpTestBase
             byte[] responseBytes =
                     generateClientResponse(CramMd5Negotiator.MECHANISM, _userName, _userPassword, challengeBytes);
             String responseData = Base64.getEncoder().encodeToString(responseBytes);
-            String requestParameters = (String.format("id=%s&response=%s", UUID.randomUUID().toString(), responseData));
+            String requestParameters = (String.format("id=%s&response=%s", UUID.randomUUID(), responseData));
 
             postResponse(cookies, requestParameters, SC_EXPECTATION_FAILED);
 
@@ -277,7 +277,7 @@ public class SaslTest extends HttpTestBase
                 os.write(parameters.getBytes());
                 os.flush();
 
-                assertEquals("Unexpected response code", expectedResponseCode, connection.getResponseCode());
+                assertEquals(expectedResponseCode, connection.getResponseCode(), "Unexpected response code");
             }
             return connection.getHeaderFields().get(SET_COOKIE_HEADER);
         }
@@ -315,7 +315,7 @@ public class SaslTest extends HttpTestBase
     {
         Map<String, Object> response = getHelper().readJsonResponseAsMap(requestChallengeConnection);
         String challenge = (String) response.get("challenge");
-        assertNotNull("Challenge is not found", challenge);
+        assertNotNull(challenge, "Challenge is not found");
 
         byte[] challengeBytes = Base64.getDecoder().decode(challenge);
         byte[] responseBytes = generateClientResponse(mechanism, userName, userPassword, challengeBytes);
@@ -339,9 +339,7 @@ public class SaslTest extends HttpTestBase
             {
                 os.write(requestParameters.getBytes());
                 os.flush();
-                assertEquals("Unexpected response code",
-                             expectedResponseCode,
-                             authenticateConnection.getResponseCode());
+                assertEquals(expectedResponseCode, authenticateConnection.getResponseCode(), "Unexpected response code");
             }
         }
         finally
@@ -394,7 +392,7 @@ public class SaslTest extends HttpTestBase
         {
             applyCookiesToConnection(cookies, connection);
             Map<String, Object> response = getHelper().readJsonResponseAsMap(connection);
-            assertEquals("Unexpected user", userName, response.get("user"));
+            assertEquals(userName, response.get("user"), "Unexpected user");
         }
         finally
         {

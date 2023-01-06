@@ -20,17 +20,18 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import junit.framework.AssertionFailedError;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -45,20 +46,18 @@ import org.apache.qpid.server.store.StoredMessage;
 
 public class PriorityQueueTest extends AbstractQueueTestBase
 {
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        setArguments(Collections.singletonMap(PriorityQueue.PRIORITIES,(Object)3));
+        setArguments(Map.of(PriorityQueue.PRIORITIES, 3));
         super.setUp();
     }
 
     @Test
     public void testPriorityOrdering() throws Exception
     {
-
         // Enqueue messages in order
-        PriorityQueue<?> queue = (PriorityQueue<?>) getQueue();
+        final PriorityQueue<?> queue = (PriorityQueue<?>) getQueue();
         queue.enqueue(createMessage(1L, (byte) 10), null, null);
         queue.enqueue(createMessage(2L, (byte) 4), null, null);
         queue.enqueue(createMessage(3L, (byte) 0), null, null);
@@ -73,7 +72,7 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         queue.enqueue(createMessage(8L, (byte) 10), null, null);
         queue.enqueue(createMessage(9L, (byte) 0), null, null);
 
-        final List<MessageInstance> msgs = consumeMessages(queue);;
+        final List<MessageInstance> msgs = consumeMessages(queue);
         try
         {
             assertEquals(1L, msgs.get(0).getMessage().getMessageNumber());
@@ -93,7 +92,6 @@ public class PriorityQueueTest extends AbstractQueueTestBase
             // Show message order on failure.
             showMessageOrderOnFailure(msgs, afe);
         }
-
     }
 
     @Test
@@ -108,7 +106,7 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         queue.enqueue(internalMessage3, null, null);
 
         final long result = queue.reenqueueMessageForPriorityChange(internalMessage2.getMessageNumber(), (byte)5);
-        assertEquals("Unexpected operation result", internalMessage3.getMessageNumber() + 1, result);
+        assertEquals(internalMessage3.getMessageNumber() + 1, result, "Unexpected operation result");
 
         final List<MessageInstance> msgs = consumeMessages(queue);
         try
@@ -135,7 +133,7 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         queue.enqueue(internalMessage3, null, null);
 
         final long result = queue.reenqueueMessageForPriorityChange(internalMessage3.getMessageNumber() + 1, (byte)6);
-        assertEquals("Unexpected operation result", -1, result);
+        assertEquals(-1, result, "Unexpected operation result");
 
         final List<MessageInstance> msgs = consumeMessages(queue);
         try
@@ -162,7 +160,7 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         queue.enqueue(internalMessage3, null, null);
 
         final List<Long> result = queue.reenqueueMessagesForPriorityChange("id in ('2','0')", (byte)5);
-        assertEquals("Unexpected operation result", 2, result.size());
+        assertEquals(2, result.size(), "Unexpected operation result");
 
         final List<MessageInstance> msgs = consumeMessages(queue);
         try
@@ -192,7 +190,7 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         queue.enqueue(internalMessage3, null, null);
 
         final List<Long> result = queue.reenqueueMessagesForPriorityChange("id in ('3','2')", (byte)5);
-        assertEquals("Unexpected operation result", 1, result.size());
+        assertEquals(1, result.size(), "Unexpected operation result");
 
         final List<MessageInstance> msgs = consumeMessages(queue);
         try
@@ -210,7 +208,7 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         }
     }
 
-    private List<MessageInstance> consumeMessages(final Queue queue)
+    private List<MessageInstance> consumeMessages(final Queue<?> queue)
             throws Exception
     {
         queue.addConsumer(getConsumer(), null, null, "test", EnumSet.noneOf(ConsumerOption.class), 0);
@@ -222,12 +220,11 @@ public class PriorityQueueTest extends AbstractQueueTestBase
     private void showMessageOrderOnFailure(final List<MessageInstance> msgs, final AssertionFailedError afe)
     {
         int index = 1;
-        for (MessageInstance qe : msgs)
+        for (final MessageInstance qe : msgs)
         {
             System.err.println(index + ":" + qe.getMessage().getMessageNumber());
             index++;
         }
-
         throw afe;
     }
 
@@ -236,27 +233,25 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         final AMQMessageHeader messageHeader = mock(AMQMessageHeader.class);
         when(messageHeader.getPriority()).thenReturn(priority);
         when(messageHeader.getHeader("id")).thenReturn(String.valueOf(index));
-        when(messageHeader.getHeaderNames()).thenReturn(Collections.singleton("id"));
+        when(messageHeader.getHeaderNames()).thenReturn(Set.of("id"));
         final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(messageHeader);
         final InternalMessageMetaData metaData =  new InternalMessageMetaData(true, internalMessageHeader, 0);
-        MessageHandle<InternalMessageMetaData> handle = getQueue().getVirtualHost().getMessageStore().addMessage(metaData);
+        final MessageHandle<InternalMessageMetaData> handle = getQueue().getVirtualHost().getMessageStore().addMessage(metaData);
         final StoredMessage<InternalMessageMetaData> storedMessage = handle.allContentAdded();
         return new InternalMessage(storedMessage, internalMessageHeader, null, getQueue().getName());
     }
 
-    protected ServerMessage createMessage(Long id, byte i)
+    protected ServerMessage<?> createMessage(Long id, byte i)
     {
-
-        ServerMessage msg = super.createMessage(id);
-        AMQMessageHeader hdr = msg.getMessageHeader();
+        final ServerMessage<?> msg = super.createMessage(id);
+        final AMQMessageHeader hdr = msg.getMessageHeader();
         when(hdr.getPriority()).thenReturn(i);
         return msg;
     }
 
     @Override
-    protected ServerMessage createMessage(Long id)
+    protected ServerMessage<?> createMessage(Long id)
     {
         return createMessage(id, (byte) 0);
     }
-
 }

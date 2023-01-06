@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.routing;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,17 +33,16 @@ import javax.jms.Destination;
 import javax.jms.Session;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
 
-
 public class ExchangeRoutingTest extends JmsTestBase
 {
-
     private static final String AMQP_MNG_QPID_EXCHANGE_DIRECT = "org.apache.qpid.DirectExchange";
     private static final String AMQP_MNG_QPID_QUEUE_STANDARD = "org.apache.qpid.StandardQueue";
 
@@ -153,13 +152,13 @@ public class ExchangeRoutingTest extends JmsTestBase
             Destination ingressExchangeDestination =
                     session.createQueue(getDestinationAddress(fromExchangeName, routingKey));
 
-            assertEquals(String.format("Unexpected number of messages on queue '%s'", queueName),
-                         expectedDepthBefore, getQueueDepth(queueName));
+            assertEquals(expectedDepthBefore, getQueueDepth(queueName),
+                    String.format("Unexpected number of messages on queue '%s'", queueName));
 
             Utils.sendMessages(connection, ingressExchangeDestination, 1);
 
-            assertEquals(String.format("Unexpected number of messages on queue '%s", queueName),
-                         expectedDepthAfter, getQueueDepth(queueName));
+            assertEquals(expectedDepthAfter, getQueueDepth(queueName),
+                    String.format("Unexpected number of messages on queue '%s", queueName));
         }
         finally
         {
@@ -182,11 +181,11 @@ public class ExchangeRoutingTest extends JmsTestBase
                                                                 "getStatistics",
                                                                 "org.apache.qpid.Queue",
                                                                 arguments);
-        assertNotNull("Statistics is null", statistics);
-        assertTrue("Statistics is not map", statistics instanceof Map);
+        assertNotNull(statistics, "Statistics is null");
+        assertTrue(statistics instanceof Map, "Statistics is not map");
         @SuppressWarnings("unchecked")
         Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
-        assertTrue("queueDepthMessages is not present", statisticsMap.get("queueDepthMessages") instanceof Number);
+        assertTrue(statisticsMap.get("queueDepthMessages") instanceof Number, "queueDepthMessages is not present");
         return ((Number) statisticsMap.get("queueDepthMessages")).intValue();
     }
 }

@@ -20,11 +20,11 @@
 
 package org.apache.qpid.server.util;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -35,19 +35,19 @@ public class CachingUUIDFactoryTest extends UnitTestBase
     @Test
     public void testUuidFromBits()
     {
-        UUID first = _factory.createUuidFromBits(0L,0L);
-        UUID second = _factory.createUuidFromBits(0L,0L);
-        assertSame("UUIDFactory should return the same object", first, second);
+        final UUID first = _factory.createUuidFromBits(0L,0L);
+        final UUID second = _factory.createUuidFromBits(0L,0L);
+        assertSame(first, second, "UUIDFactory should return the same object");
     }
 
     @Test
     public void testUuidFromString()
     {
-        String uuidStr = UUID.randomUUID().toString();
-        UUID first = _factory.createUuidFromString(new String(uuidStr));
-        UUID second = _factory.createUuidFromString(new String(uuidStr));
-        UUID third = _factory.createUuidFromBits(second.getMostSignificantBits(), second.getLeastSignificantBits());
-        assertSame("UUIDFactory should return the same object", first, second);
-        assertSame("UUIDFactory should return the same object", first, third);
+        final String uuidStr = randomUUID().toString();
+        final UUID first = _factory.createUuidFromString(uuidStr);
+        final UUID second = _factory.createUuidFromString(uuidStr);
+        final UUID third = _factory.createUuidFromBits(second.getMostSignificantBits(), second.getLeastSignificantBits());
+        assertSame(first, second, "UUIDFactory should return the same object");
+        assertSame(first, third, "UUIDFactory should return the same object");
     }
 }

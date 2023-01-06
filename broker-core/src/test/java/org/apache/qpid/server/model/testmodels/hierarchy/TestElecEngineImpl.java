@@ -20,9 +20,8 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -47,8 +46,8 @@ public class TestElecEngineImpl
     @SuppressWarnings("unused")
     public static Map<String, Collection<String>> getSupportedChildTypes()
     {
-        Collection<String> types = Arrays.asList(TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-        return Collections.singletonMap(TestEngine.class.getSimpleName(), types);
+        final Collection<String> types = List.of(TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        return Map.of(TestEngine.class.getSimpleName(), types);
     }
 
     @Override

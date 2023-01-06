@@ -24,7 +24,6 @@ import java.util.Map;
 
 public class MD5AuthenticationManagerTest extends ManagedAuthenticationManagerTestBase
 {
-
     @Override
     protected ConfigModelPasswordManagingAuthenticationProvider<?> createAuthManager(final Map<String, Object> attributesMap)
     {
@@ -36,5 +35,4 @@ public class MD5AuthenticationManagerTest extends ManagedAuthenticationManagerTe
     {
         return false;
     }
-
 }

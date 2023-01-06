@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,29 +27,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.controller.CommandForClient;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.NoOpCommand;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class TestInstanceTest extends UnitTestBase
 {
@@ -59,7 +46,7 @@ public class TestInstanceTest extends UnitTestBase
     private CreateProducerCommand _createProducerCommand;
     private CreateConsumerCommand _createConsumerCommand;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _noOpCommand = mock(NoOpCommand.class);
@@ -80,7 +67,7 @@ public class TestInstanceTest extends UnitTestBase
         TestInstance testInstance = new TestInstance(config, ITERATION_NUMBER, iterationValue);
 
         List<CommandForClient> commandsForClients = testInstance.createCommands();
-        assertEquals("Unexpected number of commands for client", (long) 3, (long) commandsForClients.size());
+        assertEquals(3, commandsForClients.size(), "Unexpected number of commands for client");
 
         verify(iterationValue).applyToCommand(_noOpCommand);
         verify(iterationValue).applyToCommand(_createProducerCommand);
@@ -94,7 +81,7 @@ public class TestInstanceTest extends UnitTestBase
         TestInstance testInstance = new TestInstance(config);
 
         List<CommandForClient> commandsForClients = testInstance.createCommands();
-        assertEquals("Unexpected number of commands for client", (long) 3, (long) commandsForClients.size());
+        assertEquals(3, commandsForClients.size(), "Unexpected number of commands for client");
     }
 
     @Test
@@ -105,7 +92,7 @@ public class TestInstanceTest extends UnitTestBase
         TestInstance testInstance = new TestInstance(testConfig);
 
         List<String> clientNames = testInstance.getClientNames();
-        assertEquals((long) 1, (long) clientNames.size());
+        assertEquals(1, clientNames.size());
         assertEquals(CLIENT_NAME, clientNames.get(0));
     }
 
@@ -120,5 +107,4 @@ public class TestInstanceTest extends UnitTestBase
 
         return config;
     }
-
 }

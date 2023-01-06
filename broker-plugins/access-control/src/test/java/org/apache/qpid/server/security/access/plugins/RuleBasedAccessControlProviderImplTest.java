@@ -34,14 +34,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
-import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.security.access.config.Property;
 import org.apache.qpid.server.util.DataUrlUtils;
@@ -53,7 +52,7 @@ public class RuleBasedAccessControlProviderImplTest extends UnitTestBase
     private RuleBasedAccessControlProviderImpl _aclProvider;
     private String _nameAttributeValue;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final Map<String, Object>

@@ -20,14 +20,14 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.consumerpriority;
 
-import static junit.framework.TestCase.assertNull;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -38,7 +38,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
@@ -53,7 +53,7 @@ public class ConsumerPriorityTest extends JmsTestBase
     @Test
     public void testLowPriorityConsumerReceivesMessages() throws Exception
     {
-        assumeThat("Only legacy client implements this feature", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Only legacy client implements this feature");
 
         final String queueName = getTestName();
         final Queue queue = createQueue(queueName);
@@ -69,12 +69,13 @@ public class ConsumerPriorityTest extends JmsTestBase
                 final Queue consumerDestination =
                         consumingSession.createQueue(String.format(LEGACY_BINDING_URL, queueName, queueName, 10));
                 final MessageConsumer consumer = consumingSession.createConsumer(consumerDestination);
-                assertNull("There should be no messages in the queue", consumer.receive(getShortReceiveTimeout()));
+                assertNull(consumer.receive(getShortReceiveTimeout()),
+                        "There should be no messages in the queue");
 
                 Session producingSession = producingConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 final MessageProducer producer = producingSession.createProducer(queue);
                 producer.send(producingSession.createTextMessage(getTestName()));
-                assertNotNull("Expected message is not received", consumer.receive(getReceiveTimeout()));
+                assertNotNull(consumer.receive(getReceiveTimeout()), "Expected message is not received");
             }
             finally
             {
@@ -90,7 +91,7 @@ public class ConsumerPriorityTest extends JmsTestBase
     @Test
     public void testLowPriorityConsumerDoesNotReceiveMessagesIfHigherPriorityConsumerAvailable() throws Exception
     {
-        assumeThat("Only legacy client implements this feature", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Only legacy client implements this feature");
 
         final String queueName = getTestName();
         final String consumerQueue = String.format(LEGACY_BINDING_URL, queueName, queueName, 10);
@@ -101,7 +102,7 @@ public class ConsumerPriorityTest extends JmsTestBase
     public void testLowPriorityConsumerDoesNotReceiveMessagesIfHigherPriorityConsumerAvailableUsingADDR()
             throws Exception
     {
-        assumeThat("Only legacy client implements this feature", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Only legacy client implements this feature");
 
         final String queueName = getTestName();
         String consumerQueue = String.format(LEGACY_ADDRESS_URL, queueName, 10);
@@ -124,7 +125,7 @@ public class ConsumerPriorityTest extends JmsTestBase
 
                 final MessageConsumer consumer =
                         consumingSession.createConsumer(consumingSession.createQueue(consumerQueue));
-                assertNull("There should be no messages in the queue", consumer.receive(getShortReceiveTimeout()));
+                assertNull(consumer.receive(getShortReceiveTimeout()), "There should be no messages in the queue");
 
                 final Connection secondConsumingConnection = getConnection();
                 try
@@ -134,17 +135,17 @@ public class ConsumerPriorityTest extends JmsTestBase
                     secondConsumingConnection.start();
 
                     final MessageConsumer standardPriorityConsumer = secondConsumingSession.createConsumer(queue);
-                    assertNull("There should be no messages in the queue",
-                               standardPriorityConsumer.receive(getShortReceiveTimeout()));
+                    assertNull(standardPriorityConsumer.receive(getShortReceiveTimeout()),
+                            "There should be no messages in the queue");
 
                     final Session producingSession = producingConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                     final MessageProducer producer = producingSession.createProducer(queue);
                     producer.send(producingSession.createTextMessage(getTestName()));
-                    assertNull("Message should not go to the low priority consumer",
-                               consumer.receive(getShortReceiveTimeout()));
+                    assertNull(consumer.receive(getShortReceiveTimeout()),
+                            "Message should not go to the low priority consumer");
                     producer.send(producingSession.createTextMessage(getTestName() + " 2"));
-                    assertNull("Message should not go to the low priority consumer",
-                               consumer.receive(getShortReceiveTimeout()));
+                    assertNull(consumer.receive(getShortReceiveTimeout()),
+                            "Message should not go to the low priority consumer");
 
                     assertNotNull(standardPriorityConsumer.receive(getReceiveTimeout()));
                     assertNotNull(standardPriorityConsumer.receive(getReceiveTimeout()));
@@ -168,7 +169,7 @@ public class ConsumerPriorityTest extends JmsTestBase
     @Test
     public void testLowPriorityConsumerReceiveMessagesIfHigherPriorityConsumerHasNoCredit() throws Exception
     {
-        assumeThat("Only legacy client implements this feature", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Only legacy client implements this feature");
 
         final String queueName = getTestName();
         final Queue queue = createQueue(queueName);
@@ -183,7 +184,8 @@ public class ConsumerPriorityTest extends JmsTestBase
                 final Queue consumerDestination =
                         consumingSession.createQueue(String.format(LEGACY_BINDING_URL, queueName, queueName, 10));
                 final MessageConsumer consumer = consumingSession.createConsumer(consumerDestination);
-                assertNull("There should be no messages in the queue", consumer.receive(getShortReceiveTimeout()));
+                assertNull(consumer.receive(getShortReceiveTimeout()),
+                        "There should be no messages in the queue");
 
                 final Connection secondConsumingConnection = getConnectionBuilder().setPrefetch(2).build();
                 try
@@ -192,24 +194,23 @@ public class ConsumerPriorityTest extends JmsTestBase
                             secondConsumingConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                     secondConsumingConnection.start();
                     final MessageConsumer standardPriorityConsumer = secondConsumingSession.createConsumer(queue);
-                    assertNull("There should be no messages in the queue",
-                               standardPriorityConsumer.receive(getShortReceiveTimeout()));
+                    assertNull(standardPriorityConsumer.receive(getShortReceiveTimeout()),
+                            "There should be no messages in the queue");
 
                     final Session producingSession = producingConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                     final MessageProducer producer = producingSession.createProducer(queue);
 
                     producer.send(createTextMessage(1, producingSession));
-                    assertNull("Message should not go to the low priority consumer",
-                               consumer.receive(getShortReceiveTimeout()));
+                    assertNull(consumer.receive(getShortReceiveTimeout()),
+                            "Message should not go to the low priority consumer");
                     producer.send(createTextMessage(2, producingSession));
-                    assertNull("Message should not go to the low priority consumer",
-                               consumer.receive(getShortReceiveTimeout()));
+                    assertNull(consumer.receive(getShortReceiveTimeout()),
+                            "Message should not go to the low priority consumer");
                     producer.send(createTextMessage(3, producingSession));
                     final Message message = consumer.receive(getReceiveTimeout());
-                    assertNotNull(
-                            "Message should go to the low priority consumer as standard priority consumer has no credit",
-                            message);
-                    assertTrue("Message is not a text message", message instanceof TextMessage);
+                    assertNotNull(message,
+                            "Message should go to the low priority consumer as standard priority consumer has no credit");
+                    assertTrue(message instanceof TextMessage, "Message is not a text message");
                     assertEquals(getTestName() + " 3", ((TextMessage) message).getText());
                 }
                 finally
@@ -231,7 +232,7 @@ public class ConsumerPriorityTest extends JmsTestBase
     @Test
     public void testLowPriorityConsumerReceiveMessagesIfHigherPriorityConsumerDoesNotSelect() throws Exception
     {
-        assumeThat("Only legacy client implements this feature", getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Only legacy client implements this feature");
 
         final String queueName = getTestName();
         final Queue queue = createQueue(queueName);
@@ -249,7 +250,7 @@ public class ConsumerPriorityTest extends JmsTestBase
                 final Queue consumerDestination =
                         consumingSession.createQueue(String.format(LEGACY_BINDING_URL, queueName, queueName, 10));
                 final MessageConsumer consumer = consumingSession.createConsumer(consumerDestination);
-                assertNull("There should be no messages in the queue", consumer.receive(getShortReceiveTimeout()));
+                assertNull(consumer.receive(getShortReceiveTimeout()), "There should be no messages in the queue");
 
                 final Connection secondConsumingConnection = getConnection();
                 try
@@ -260,20 +261,19 @@ public class ConsumerPriorityTest extends JmsTestBase
                     final MessageConsumer standardPriorityConsumer =
                             secondConsumingSession.createConsumer(queue,
                                                                   "msg <> 2");
-                    assertNull("There should be no messages in the queue", standardPriorityConsumer.receive(
-                            getShortReceiveTimeout()));
+                    assertNull(standardPriorityConsumer.receive(
+                            getShortReceiveTimeout()), "There should be no messages in the queue");
 
                     final MessageProducer producer = producingSession.createProducer(queue);
 
                     producer.send(createTextMessage(1, producingSession));
-                    assertNull("Message should not go to the low priority consumer", consumer.receive(
-                            getShortReceiveTimeout()));
+                    assertNull(consumer.receive(getShortReceiveTimeout()),
+                            "Message should not go to the low priority consumer");
                     producer.send(createTextMessage(2, producingSession));
                     Message message = consumer.receive(getReceiveTimeout());
-                    assertNotNull(
-                            "Message should go to the low priority consumer as standard priority consumer is not interested",
-                            message);
-                    assertTrue("Message is not a text message", message instanceof TextMessage);
+                    assertNotNull(message,
+                            "Message should go to the low priority consumer as standard priority consumer is not interested");
+                    assertTrue(message instanceof TextMessage, "Message is not a text message");
                     assertEquals(getTestName() + " 2", ((TextMessage) message).getText());
                 }
                 finally

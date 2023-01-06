@@ -20,22 +20,19 @@
  */
 package org.apache.qpid.systests.jms_1_1.queueconnection;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.jms.JMSException;
 import javax.jms.QueueConnection;
 import javax.jms.QueueSession;
 import javax.jms.Session;
 import javax.jms.Topic;
-import javax.naming.NamingException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
 public class QueueSessionTest extends JmsTestBase
 {
-
     @Test
     public void testQueueSessionCannotCreateTemporaryTopics() throws Exception
     {

@@ -20,15 +20,13 @@
  */
 package org.apache.qpid.server.logging.actors;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
-import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 public abstract class BaseActorTestCase extends UnitTestBase
 {
@@ -36,17 +34,17 @@ public abstract class BaseActorTestCase extends UnitTestBase
     private UnitTestMessageLogger _rawLogger;
     private EventLogger _eventLogger;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _rawLogger = new UnitTestMessageLogger(_statusUpdatesEnabled);
         _eventLogger = new EventLogger(_rawLogger);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        if(_rawLogger != null)
+        if (_rawLogger != null)
         {
             _rawLogger.clearLogMessages();
         }
@@ -54,45 +52,30 @@ public abstract class BaseActorTestCase extends UnitTestBase
 
     public String sendTestLogMessage()
     {
-        String message = "Test logging: " + getTestName();
+        final String message = "Test logging: " + getTestName();
         sendTestLogMessage(message);
-
         return message;
     }
 
     public void sendTestLogMessage(final String message)
     {
-        getEventLogger().message(new LogSubject()
-                          {
-                              @Override
-                              public String toLogString()
-                              {
-                                  return message;
-                              }
+        getEventLogger().message(() -> message, new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
 
-                          }, new LogMessage()
-                          {
-                              @Override
-                              public String toString()
-                              {
-                                  return message;
-                              }
-
-                              @Override
-                              public String getLogHierarchy()
-                              {
-                                  return "test.hierarchy";
-                              }
-                          }
-                         );
+            @Override
+            public String getLogHierarchy()
+            {
+                return "test.hierarchy";
+            }
+        });
     }
 
-    public boolean isStatusUpdatesEnabled()
-    {
-        return _statusUpdatesEnabled;
-    }
-
-    public void setStatusUpdatesEnabled(boolean statusUpdatesEnabled)
+    public void setStatusUpdatesEnabled(final boolean statusUpdatesEnabled)
     {
         _statusUpdatesEnabled = statusUpdatesEnabled;
     }
@@ -106,5 +89,4 @@ public abstract class BaseActorTestCase extends UnitTestBase
     {
         return _eventLogger;
     }
-
 }

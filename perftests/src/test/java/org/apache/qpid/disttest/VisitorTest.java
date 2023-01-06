@@ -19,33 +19,21 @@
  */
 package org.apache.qpid.disttest;
 
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.apache.qpid.disttest.message.Command;
 
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class VisitorTest extends UnitTestBase
 {
-
     @Test
-    public void testStringVisited() throws Exception
+    public void testStringVisited()
     {
         Object argument = new String();
 
@@ -56,7 +44,7 @@ public class VisitorTest extends UnitTestBase
     }
 
     @Test
-    public void testCommandVisited() throws Exception
+    public void testCommandVisited()
     {
         Object argument = new TestCommand();
 
@@ -67,7 +55,7 @@ public class VisitorTest extends UnitTestBase
     }
 
     @Test
-    public void testNoVisitIntegerImplementatiom() throws Exception
+    public void testNoVisitIntegerImplementatiom()
     {
         Integer argument = Integer.valueOf(1);
 
@@ -103,7 +91,6 @@ public class VisitorTest extends UnitTestBase
 
     static class TestCommand extends Command
     {
-
         public TestCommand()
         {
             super(null);

@@ -24,9 +24,9 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
@@ -41,10 +41,10 @@ import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.test.utils.tls.TlsResource;
@@ -56,12 +56,12 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class TlsTest extends JmsTestBase
 {
-    @ClassRule
+    @RegisterExtension
     public static final TlsResource TLS_RESOURCE = new TlsResource();
 
     private static TlsHelper _tlsHelper;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception
     {
         _tlsHelper = new TlsHelper(TLS_RESOURCE);
@@ -76,7 +76,7 @@ public class TlsTest extends JmsTestBase
 
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown()
     {
         System.clearProperty("javax.net.debug");
@@ -114,9 +114,7 @@ public class TlsTest extends JmsTestBase
     @Test
     public void testCreateSSLConnectionWithCertificateTrust() throws Exception
     {
-        assumeThat("Qpid JMS Client does not support trusting of a certificate",
-                   getProtocol(),
-                   is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Qpid JMS Client does not support trusting of a certificate");
 
         int port = configureTlsPort(getTestPortName(), false, false, false);
         File trustCertFile = TLS_RESOURCE.saveCertificateAsPem(_tlsHelper.getCaCertificate()).toFile();
@@ -141,7 +139,7 @@ public class TlsTest extends JmsTestBase
     @Test
     public void testSSLConnectionToPlainPortRejected() throws Exception
     {
-        assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-8069");
 
         setSslStoreSystemProperties();
         try
@@ -167,7 +165,7 @@ public class TlsTest extends JmsTestBase
     @Test
     public void testHostVerificationIsOnByDefault() throws Exception
     {
-        assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-8069");
 
         //Start the broker (NEEDing client certificate authentication)
         int port = configureTlsPort(getTestPortName(), true, false, false);
@@ -278,7 +276,7 @@ public class TlsTest extends JmsTestBase
     @Test
     public void testVerifyHostNameWithIncorrectHostname() throws Exception
     {
-        assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-8069");
 
         //Start the broker (WANTing client certificate authentication)
         int port = configureTlsPort(getTestPortName(), false, true, false);
@@ -357,7 +355,7 @@ public class TlsTest extends JmsTestBase
     @Test
     public void testClientCertificateMissingWhilstNeeding() throws Exception
     {
-        assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-8069");
 
         //Start the broker (NEEDing client certificate authentication)
         int port = configureTlsPort(getTestPortName(), true, false, false);
@@ -404,7 +402,7 @@ public class TlsTest extends JmsTestBase
     @Test
     public void testClientCertMissingWhilstWantingAndNeeding() throws Exception
     {
-        assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-8069");
         //Start the broker (NEEDing and WANTing client certificate authentication)
         int port = configureTlsPort(getTestPortName(), true, true, false);
 
@@ -465,13 +463,9 @@ public class TlsTest extends JmsTestBase
     @Test
     public void testCreateSSLWithCertFileAndPrivateKey() throws Exception
     {
-        assumeThat("Qpid JMS Client does not support trusting of a certificate",
-                   getProtocol(),
-                   is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Qpid JMS Client does not support trusting of a certificate");
 
-        assumeThat("QPID-8255: certificate can only be loaded using jks keystore ",
-                   java.security.KeyStore.getDefaultType(),
-                   is(equalTo("jks")));
+        assumeTrue(is(equalTo("jks")).matches(java.security.KeyStore.getDefaultType()), "QPID-8255: certificate can only be loaded using jks keystore");
 
         //Start the broker (NEEDing client certificate authentication)
         int port = configureTlsPort(getTestPortName(), true, false, false);
@@ -553,9 +547,9 @@ public class TlsTest extends JmsTestBase
 
     private void assertConnection(final Connection connection) throws JMSException
     {
-        assertNotNull("connection should be successful", connection);
+        assertNotNull(connection, "connection should be successful");
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        assertNotNull("create session should be successful", session);
+        assertNotNull(session, "create session should be successful");
     }
 
     private String encodePathOption(final String canonicalPath)

@@ -32,22 +32,10 @@ import org.apache.qpid.disttest.message.StartTestCommand;
 import org.apache.qpid.disttest.message.StopClientCommand;
 import org.apache.qpid.disttest.message.TearDownTestCommand;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ClientCommandVisitorTest extends UnitTestBase
 {
@@ -56,7 +44,7 @@ public class ClientCommandVisitorTest extends UnitTestBase
     private ClientJmsDelegate _delegate;
 
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _client = mock(Client.class);
@@ -73,7 +61,7 @@ public class ClientCommandVisitorTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateConnection() throws Exception
+    public void testCreateConnection()
     {
         final CreateConnectionCommand command = new CreateConnectionCommand();
         _visitor.visit(command);
@@ -81,7 +69,7 @@ public class ClientCommandVisitorTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateSession() throws Exception
+    public void testCreateSession()
     {
         final CreateSessionCommand command = new CreateSessionCommand();
         _visitor.visit(command);
@@ -89,7 +77,7 @@ public class ClientCommandVisitorTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateProducer() throws Exception
+    public void testCreateProducer()
     {
         final CreateProducerCommand command = new CreateProducerCommand();
         _visitor.visit(command);
@@ -97,7 +85,7 @@ public class ClientCommandVisitorTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateConsumer() throws Exception
+    public void testCreateConsumer()
     {
         final CreateConsumerCommand command = new CreateConsumerCommand();
         _visitor.visit(command);
@@ -105,7 +93,7 @@ public class ClientCommandVisitorTest extends UnitTestBase
     }
 
     @Test
-    public void testStartTest() throws Exception
+    public void testStartTest()
     {
         final StartTestCommand command = new StartTestCommand();
         _visitor.visit(command);
@@ -113,7 +101,7 @@ public class ClientCommandVisitorTest extends UnitTestBase
     }
 
     @Test
-    public void testStopTest() throws Exception
+    public void testStopTest()
     {
         final TearDownTestCommand stopCommand = new TearDownTestCommand();
         _visitor.visit(stopCommand);
@@ -121,7 +109,7 @@ public class ClientCommandVisitorTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateMessageProvider() throws Exception
+    public void testCreateMessageProvider()
     {
         final CreateMessageProviderCommand command = new CreateMessageProviderCommand();
         command.setProviderName("test");

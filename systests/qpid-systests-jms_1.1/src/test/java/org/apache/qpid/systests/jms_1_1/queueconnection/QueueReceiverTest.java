@@ -20,9 +20,9 @@
 
 package org.apache.qpid.systests.jms_1_1.queueconnection;
 
-import static junit.framework.TestCase.assertNotNull;
 import static org.apache.qpid.systests.Utils.INDEX;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import javax.jms.Message;
 import javax.jms.Queue;
@@ -31,14 +31,13 @@ import javax.jms.QueueReceiver;
 import javax.jms.QueueSession;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
 
 public class QueueReceiverTest extends JmsTestBase
 {
-
     @Test
     public void createReceiver() throws Exception
     {
@@ -51,16 +50,16 @@ public class QueueReceiverTest extends JmsTestBase
 
             QueueSession session = queueConnection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
             QueueReceiver receiver = session.createReceiver(queue, String.format("%s=2", INDEX));
-            assertEquals("Queue names should match from QueueReceiver", queue.getQueueName(), receiver.getQueue().getQueueName());
+            assertEquals(queue.getQueueName(), receiver.getQueue().getQueueName(),
+                    "Queue names should match from QueueReceiver");
 
             Message received = receiver.receive(getReceiveTimeout());
-            assertNotNull("Message is not received", received);
-            assertEquals("Unexpected message is received", 2, received.getIntProperty(INDEX));
+            assertNotNull(received, "Message is not received");
+            assertEquals(2, received.getIntProperty(INDEX), "Unexpected message is received");
         }
         finally
         {
             queueConnection.close();
         }
     }
-
 }

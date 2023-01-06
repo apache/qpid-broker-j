@@ -18,10 +18,14 @@
  */
 package org.apache.qpid.server.user.connection.limits.outcome;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.time.Duration;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -29,15 +33,12 @@ import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.user.connection.limits.logging.ConnectionLimitEventLogger;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 public class RejectRegistrationTest extends UnitTestBase
 {
     private org.apache.qpid.server.logging.EventLogger _eventLogger;
     private ConnectionLimitEventLogger _logger;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _eventLogger = Mockito.mock(org.apache.qpid.server.logging.EventLogger.class);
@@ -54,7 +55,8 @@ public class RejectRegistrationTest extends UnitTestBase
         final ArgumentCaptor<LogMessage> captor = ArgumentCaptor.forClass(LogMessage.class);
         Mockito.verify(_eventLogger).message(captor.capture());
         final LogMessage message = captor.getValue();
-        assertEquals("RL-1002 : Rejected : Opening connection by user : Limiter 'RejectLogger': User user breaks connection count limit 10 on port amqp", message.toString());
+        assertEquals("RL-1002 : Rejected : Opening connection by user : Limiter 'RejectLogger': User user breaks connection count limit 10 on port amqp",
+                message.toString());
     }
 
     @Test
@@ -62,12 +64,14 @@ public class RejectRegistrationTest extends UnitTestBase
     {
         final RejectRegistration resource = RejectRegistration.breakingConnectionFrequency("user", 10, Duration.ofMinutes(1L), "amqp");
         assertNotNull(resource);
-        assertEquals("User user breaks connection frequency limit 10 per 60 s on port amqp", resource.logMessage(_logger));
+        assertEquals("User user breaks connection frequency limit 10 per 60 s on port amqp",
+                resource.logMessage(_logger));
 
         final ArgumentCaptor<LogMessage> captor = ArgumentCaptor.forClass(LogMessage.class);
         Mockito.verify(_eventLogger).message(captor.capture());
         final LogMessage message = captor.getValue();
-        assertEquals("RL-1002 : Rejected : Opening connection by user : Limiter 'RejectLogger': User user breaks connection frequency limit 10 per 60 s on port amqp", message.toString());
+        assertEquals("RL-1002 : Rejected : Opening connection by user : Limiter 'RejectLogger': User user breaks connection frequency limit 10 per 60 s on port amqp",
+                message.toString());
     }
 
     @Test
@@ -80,6 +84,7 @@ public class RejectRegistrationTest extends UnitTestBase
         final ArgumentCaptor<LogMessage> captor = ArgumentCaptor.forClass(LogMessage.class);
         Mockito.verify(_eventLogger).message(captor.capture());
         final LogMessage message = captor.getValue();
-        assertEquals("RL-1002 : Rejected : Opening connection by user : Limiter 'RejectLogger': User user is blocked on port amqp", message.toString());
+        assertEquals("RL-1002 : Rejected : Opening connection by user : Limiter 'RejectLogger': User user is blocked on port amqp",
+                message.toString());
     }
 }

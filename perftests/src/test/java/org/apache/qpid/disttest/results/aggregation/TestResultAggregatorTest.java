@@ -18,33 +18,20 @@
  */
 package org.apache.qpid.disttest.results.aggregation;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Date;
 import java.util.List;
-
-import org.junit.Assert;
 
 import org.apache.qpid.disttest.controller.TestResult;
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.ProducerParticipantResult;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class TestResultAggregatorTest extends UnitTestBase
 {
@@ -83,7 +70,7 @@ public class TestResultAggregatorTest extends UnitTestBase
     private final TestResultAggregator _aggregator = new TestResultAggregator();
 
     @Test
-    public void testAggregateResultsForTwoConsumerAndOneProducer() throws Exception
+    public void testAggregateResultsForTwoConsumerAndOneProducer()
     {
         TestResult originalTestResult = createResultsFromTest();
 
@@ -93,7 +80,7 @@ public class TestResultAggregatorTest extends UnitTestBase
         AggregatedTestResult aggregatedTestResult = _aggregator.aggregateTestResult(originalTestResult);
 
         aggregatedTestResult.getAllConsumerParticipantResult().getTotalPayloadProcessed();
-        assertEquals((long) expectedNumberOfResults, (long) aggregatedTestResult.getParticipantResults().size());
+        assertEquals(expectedNumberOfResults, aggregatedTestResult.getParticipantResults().size());
 
         assertMinimalAggregatedResults(
                 aggregatedTestResult.getAllConsumerParticipantResult(),
@@ -124,13 +111,12 @@ public class TestResultAggregatorTest extends UnitTestBase
         result.addParticipantResult(failedParticipantResult);
 
         AggregatedTestResult aggregatedTestResult = _aggregator.aggregateTestResult(result);
-        assertEquals(TestResultAggregator.AGGREGATED_ERROR_MESSAGE,
-                            aggregatedTestResult.getAllParticipantResult().getErrorMessage());
+        assertEquals(TestResultAggregator.AGGREGATED_ERROR_MESSAGE, aggregatedTestResult.getAllParticipantResult().getErrorMessage());
 
     }
 
     @Test
-    public void testAggregateResultsForConsumerWithLatencyResults() throws Exception
+    public void testAggregateResultsForConsumerWithLatencyResults()
     {
         TestResult originalTestResult = createResultsFromTest();
         List<ParticipantResult> results = originalTestResult.getParticipantResults();
@@ -149,7 +135,7 @@ public class TestResultAggregatorTest extends UnitTestBase
         AggregatedTestResult aggregatedTestResult = _aggregator.aggregateTestResult(originalTestResult);
 
         aggregatedTestResult.getAllConsumerParticipantResult().getTotalPayloadProcessed();
-        assertEquals((long) expectedNumberOfResults, (long) aggregatedTestResult.getParticipantResults().size());
+        assertEquals(expectedNumberOfResults, aggregatedTestResult.getParticipantResults().size());
 
         assertMinimalAggregatedResults(
                 aggregatedTestResult.getAllConsumerParticipantResult(),
@@ -176,51 +162,41 @@ public class TestResultAggregatorTest extends UnitTestBase
 
         int expectedThroughtput = (int)Math.round(NUMBER_OF_MESSAGES_PRODUCED * 1000.0d /(CONSUMER2_ENDDATE - PRODUCER_STARTDATE));
         ParticipantResult result = aggregatedTestResult.getAllParticipantResult();
-        assertEquals("Unexpected message throughput",
-                            (long) expectedThroughtput,
-                            (long) result.getMessageThroughput());
+        assertEquals(expectedThroughtput, result.getMessageThroughput(), "Unexpected message throughput");
 
     }
 
     private void assertLatencyAggregatedResults(ParticipantResult allConsumerParticipantResult)
     {
         final boolean condition = allConsumerParticipantResult instanceof ConsumerParticipantResult;
-        assertTrue("Unexpected result", condition);
+        assertTrue(condition, "Unexpected result");
         ConsumerParticipantResult results = (ConsumerParticipantResult)allConsumerParticipantResult;
-        assertEquals("Unexpected average", 5.0, results.getAverageLatency(), 0.01);
-        assertEquals("Unexpected min", (long) 2, results.getMinLatency());
-        assertEquals("Unexpected max", (long) 9, results.getMaxLatency());
-        assertEquals("Unexpected standard deviation", 2.0, results.getLatencyStandardDeviation(), 0.01);
+        assertEquals(5.0, results.getAverageLatency(), 0.01, "Unexpected average");
+        assertEquals(2, results.getMinLatency(), "Unexpected min");
+        assertEquals(9, results.getMaxLatency(), "Unexpected max");
+        assertEquals(2.0, results.getLatencyStandardDeviation(), 0.01, "Unexpected standard deviation");
     }
 
     private void assertMinimalAggregatedResults(ParticipantResult result, String expectedTestName, int expectedIterationNumber, int expectedBatchSize, long expectedNumberOfMessagesProcessed, int expectedTotalNumberOfConsumers, int expectedTotalNumberOfProducers,
                                                 String expectedProviderVersion, String expectedProtocolVersion)
     {
-        assertEquals("Unexpected test name in " + result.getParticipantName(),
-                            expectedTestName,
-                            result.getTestName());
+        assertEquals(expectedTestName, result.getTestName(),
+                "Unexpected test name in " + result.getParticipantName());
 
-        assertEquals("Unexpected iteration number in " + result.getParticipantName(),
-                            (long) expectedIterationNumber,
-                            (long) result.getIterationNumber());
-        assertEquals("Unexpected batch size " + result.getParticipantName(),
-                            (long) expectedBatchSize,
-                            (long) result.getBatchSize());
-        assertEquals("Unexpected number of messages processed in " + result.getParticipantName(),
-                            expectedNumberOfMessagesProcessed,
-                            result.getNumberOfMessagesProcessed());
-        assertEquals("Unexpected total number of consumers " + result.getParticipantName(),
-                            (long) expectedTotalNumberOfConsumers,
-                            (long) result.getTotalNumberOfConsumers());
-        assertEquals("Unexpected total number of producers " + result.getParticipantName(),
-                            (long) expectedTotalNumberOfProducers,
-                            (long) result.getTotalNumberOfProducers());
-        assertEquals("Unexpected provider version" + result.getProviderVersion(),
-                            expectedProviderVersion,
-                            result.getProviderVersion());
-        assertEquals("Unexpected protocol version" + result.getProtocolVersion(),
-                            expectedProtocolVersion,
-                            result.getProtocolVersion());
+        assertEquals(expectedIterationNumber, result.getIterationNumber(),
+                "Unexpected iteration number in " + result.getParticipantName());
+        assertEquals(expectedBatchSize, result.getBatchSize(),
+                "Unexpected batch size " + result.getParticipantName());
+        assertEquals(expectedNumberOfMessagesProcessed, result.getNumberOfMessagesProcessed(),
+                "Unexpected number of messages processed in " + result.getParticipantName());
+        assertEquals(expectedTotalNumberOfConsumers, result.getTotalNumberOfConsumers(),
+                "Unexpected total number of consumers " + result.getParticipantName());
+        assertEquals(expectedTotalNumberOfProducers, result.getTotalNumberOfProducers(),
+                "Unexpected total number of producers " + result.getParticipantName());
+        assertEquals(expectedProviderVersion, result.getProviderVersion(),
+                "Unexpected provider version" + result.getProviderVersion());
+        assertEquals(expectedProtocolVersion, result.getProtocolVersion(),
+                "Unexpected protocol version" + result.getProtocolVersion());
     }
 
     private TestResult createResultsFromTest()
@@ -279,5 +255,4 @@ public class TestResultAggregatorTest extends UnitTestBase
         participantResult.setProviderVersion(providerVersion);
         participantResult.setProtocolVersion(protocolVersion);
     }
-
 }

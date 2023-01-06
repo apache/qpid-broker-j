@@ -19,21 +19,23 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
@@ -43,25 +45,29 @@ import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
+
 public class SortedQueueEntryTest extends QueueEntryImplTestBase
 {
-
-    public final static String keys[] = { "CCC", "AAA", "BBB" };
+    public final static String[] KEYS = { "CCC", "AAA", "BBB" };
 
     private SelfValidatingSortedQueueEntryList _queueEntryList;
 
-    @Before
+    @BeforeAll
+    public void beforeAll() throws Exception
+    {
+        _virtualHost = BrokerTestHelper.createVirtualHost(getTestClassName(), this);
+    }
+
+    @BeforeEach
     public void setUp() throws Exception
     {
-        Map<String,Object> attributes = new HashMap<String,Object>();
-        attributes.put(Queue.ID,UUID.randomUUID());
-        attributes.put(Queue.NAME, getTestName());
-        attributes.put(Queue.DURABLE, false);
-        attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);
-        attributes.put(SortedQueue.SORT_KEY, "KEY");
+        final Map<String,Object> attributes = Map.of(Queue.ID,randomUUID(),
+                Queue.NAME, getTestName(),
+                Queue.DURABLE, false,
+                Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT,
+                SortedQueue.SORT_KEY, "KEY");
 
-        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
-        SortedQueueImpl queue = new SortedQueueImpl(attributes, virtualHost)
+        final SortedQueueImpl queue = new SortedQueueImpl(attributes, _virtualHost)
         {
             SelfValidatingSortedQueueEntryList _entries;
             @Override
@@ -83,14 +89,15 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public QueueEntryImpl getQueueEntryImpl(int msgId)
     {
-        final ServerMessage message = mock(ServerMessage.class);
-        AMQMessageHeader hdr = mock(AMQMessageHeader.class);
+        final ServerMessage<?> message = mock(ServerMessage.class);
+        final AMQMessageHeader hdr = mock(AMQMessageHeader.class);
         when(message.getMessageHeader()).thenReturn(hdr);
-        when(hdr.getHeader(eq("KEY"))).thenReturn(keys[msgId-1]);
+        when(hdr.getHeader(eq("KEY"))).thenReturn(KEYS[msgId - 1]);
         when(hdr.containsHeader(eq("KEY"))).thenReturn(true);
-        when(hdr.getHeaderNames()).thenReturn(Collections.singleton("KEY"));
+        when(hdr.getHeaderNames()).thenReturn(Set.of("KEY"));
 
         final MessageReference reference = mock(MessageReference.class);
         when(reference.getMessage()).thenReturn(message);
@@ -112,9 +119,9 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         assertTrue(_queueEntry3.compareTo(_queueEntry2) > 0);
         assertTrue(_queueEntry3.compareTo(_queueEntry) < 0);
 
-        assertTrue(_queueEntry.compareTo(_queueEntry) == 0);
-        assertTrue(_queueEntry2.compareTo(_queueEntry2) == 0);
-        assertTrue(_queueEntry3.compareTo(_queueEntry3) == 0);
+        assertEquals(0, _queueEntry.compareTo(_queueEntry));
+        assertEquals(0, _queueEntry2.compareTo(_queueEntry2));
+        assertEquals(0, _queueEntry3.compareTo(_queueEntry3));
     }
 
     @Override
@@ -124,10 +131,10 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         QueueEntry current = _queueEntry2;
 
         current = current.getNextValidEntry();
-        assertSame("Unexpected current entry", _queueEntry3, current);
+        assertSame(_queueEntry3, current, "Unexpected current entry");
 
         current = current.getNextValidEntry();
-        assertSame("Unexpected current entry", _queueEntry, current);
+        assertSame(_queueEntry, current, "Unexpected current entry");
 
         current = current.getNextValidEntry();
         assertNull(current);
@@ -145,7 +152,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         QueueEntry current = _queueEntry2;
 
         current = current.getNextValidEntry();
-        assertSame("Unexpected current entry", _queueEntry, current);
+        assertSame(_queueEntry, current, "Unexpected current entry");
 
         current = current.getNextValidEntry();
         assertNull(current);

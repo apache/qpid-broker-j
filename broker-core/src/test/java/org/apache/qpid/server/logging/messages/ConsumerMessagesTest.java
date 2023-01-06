@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test SUB Log Messages
@@ -32,12 +32,12 @@ public class ConsumerMessagesTest extends AbstractTestMessages
     @Test
     public void testSubscriptionCreateALL()
     {
-        String arguments = "arguments";
+        final String arguments = "arguments";
 
         _logMessage = SubscriptionMessages.CREATE(arguments, true, true);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Create :", "Durable", "Arguments :", arguments};
+        final String[] expected = {"Create :", "Durable", "Arguments :", arguments};
 
         validateLogMessage(log, "SUB-1001", expected);
     }
@@ -46,9 +46,9 @@ public class ConsumerMessagesTest extends AbstractTestMessages
     public void testSubscriptionCreateDurable()
     {
         _logMessage = SubscriptionMessages.CREATE(null, true, false);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Create :", "Durable"};
+        final String[] expected = {"Create :", "Durable"};
 
         validateLogMessage(log, "SUB-1001", expected);
     }
@@ -56,27 +56,24 @@ public class ConsumerMessagesTest extends AbstractTestMessages
     @Test
     public void testSubscriptionCreateArguments()
     {
-        String arguments = "arguments";
+        final String arguments = "arguments";
 
         _logMessage = SubscriptionMessages.CREATE(arguments, false, true);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Create :","Arguments :", arguments};
+        final String[] expected = {"Create :","Arguments :", arguments};
 
         validateLogMessage(log, "SUB-1001", expected);
     }
-
 
     @Test
     public void testSubscriptionClose()
     {
         _logMessage = SubscriptionMessages.CLOSE();
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Close"};
+        final String[] expected = {"Close"};
 
         validateLogMessage(log, "SUB-1002", expected);
     }
-
-
 }

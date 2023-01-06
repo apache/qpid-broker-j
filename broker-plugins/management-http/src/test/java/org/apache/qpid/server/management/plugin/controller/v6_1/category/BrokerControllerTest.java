@@ -30,8 +30,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
 import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
@@ -43,7 +43,7 @@ public class BrokerControllerTest extends UnitTestBase
     private static final String MODEL_VERSION = "6.1";
     private LegacyManagementController _legacyVersionManagementController;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _legacyVersionManagementController = mock(LegacyManagementController.class);

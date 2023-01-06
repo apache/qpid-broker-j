@@ -40,10 +40,8 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-
 public class QpidJmsClient0xProvider implements JmsProvider
 {
-
     public QpidJmsClient0xProvider()
     {
     }
@@ -59,7 +57,6 @@ public class QpidJmsClient0xProvider implements JmsProvider
                 (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
         return connectionFactory.createConnection();
     }
-
 
     @Override
     public Queue getTestQueue(final String testQueueName) throws NamingException

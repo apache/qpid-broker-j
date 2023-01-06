@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
@@ -35,25 +35,17 @@ public class ExchangeLogSubjectTest extends AbstractTestLogSubject
     private Exchange<?> _exchange;
     private VirtualHost<?> _testVhost;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeAll
+    public void beforeAll() throws Exception
     {
-        super.setUp();
-
         _testVhost = BrokerTestHelper.createVirtualHost("test", this);
-
-        _exchange = (Exchange<?>) _testVhost.getChildByName(Exchange.class, "amq.direct");
-        _subject = new ExchangeLogSubject(_exchange,_testVhost);
     }
 
-    @After
-    public void tearDown() throws Exception
+    @BeforeEach
+    public void setUp() throws Exception
     {
-        if (_testVhost != null)
-        {
-            _testVhost.close();
-        }
-        super.tearDown();
+        _exchange = (Exchange<?>) _testVhost.getChildByName(Exchange.class, "amq.direct");
+        _subject = new ExchangeLogSubject(_exchange,_testVhost);
     }
 
     /**
@@ -62,7 +54,7 @@ public class ExchangeLogSubjectTest extends AbstractTestLogSubject
      * @param message the message whose format needs validation
      */
     @Override
-    protected void validateLogStatement(String message)
+    protected void validateLogStatement(final String message)
     {
         verifyVirtualHost(message, _testVhost);
         verifyExchange(message, _exchange);

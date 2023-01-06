@@ -21,10 +21,10 @@
 package org.apache.qpid.systests.jms_1_1.consumer;
 
 import static org.apache.qpid.systests.Utils.INDEX;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,14 +37,13 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
 
 public class DupsOkTest extends JmsTestBase
 {
-
     @Test
     public void synchronousReceive() throws Exception
     {
@@ -62,11 +61,11 @@ public class DupsOkTest extends JmsTestBase
             for (int i = 0; i < numberOfMessages; i++)
             {
                 Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Expected message (%d) not received", i), received);
-                assertEquals("Unexpected message received", i, received.getIntProperty(INDEX));
+                assertNotNull(received, String.format("Expected message (%d) not received", i));
+                assertEquals(i, received.getIntProperty(INDEX), "Unexpected message received");
             }
 
-            assertNull("Received too many messages", consumer.receive(getReceiveTimeout()/4));
+            assertNull(consumer.receive(getReceiveTimeout() / 4), "Received too many messages");
 
         }
         finally
@@ -97,7 +96,7 @@ public class DupsOkTest extends JmsTestBase
                 try
                 {
                     Object index = message.getObjectProperty(INDEX);
-                    assertEquals("Unexpected message received", expectedIndex.getAndIncrement(), message.getIntProperty(INDEX));
+                    assertEquals(expectedIndex.getAndIncrement(), message.getIntProperty(INDEX), "Unexpected message received");
                 }
                 catch (Throwable e)
                 {
@@ -110,13 +109,12 @@ public class DupsOkTest extends JmsTestBase
             });
 
             boolean completed = completionLatch.await(getReceiveTimeout() * numberOfMessages, TimeUnit.MILLISECONDS);
-            assertTrue("Message listener did not receive all messages within expected", completed);
-            assertNull("Message listener encountered unexpected exception", exception.get());
+            assertTrue(completed, "Message listener did not receive all messages within expected");
+            assertNull(exception.get(), "Message listener encountered unexpected exception");
         }
         finally
         {
             connection.close();
         }
     }
-
 }

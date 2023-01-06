@@ -45,8 +45,9 @@ import java.util.stream.Stream;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.queue.PriorityQueue;
@@ -61,7 +62,7 @@ public class MessageManagementTest extends HttpTestBase
     private static final String INDEX = "index";
     private Set<String> _messageIds;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         getBrokerAdmin().createQueue(SOURCE_QUEUE_NAME);

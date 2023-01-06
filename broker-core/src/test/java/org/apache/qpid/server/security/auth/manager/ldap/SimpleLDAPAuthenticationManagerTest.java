@@ -19,10 +19,7 @@
 package org.apache.qpid.server.security.auth.manager.ldap;
 
 import static org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvider.AUTHENTICATION_CACHE_MAX_SIZE;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -32,10 +29,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -45,7 +42,6 @@ import org.apache.qpid.server.security.FileTrustStore;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.util.FileUtils;
-import org.apache.qpid.test.utils.JvmVersion;
 import org.apache.qpid.test.utils.PortHelper;
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.apache.qpid.test.utils.tls.CertificateEntry;
@@ -59,7 +55,7 @@ import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
  */
 public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
 {
-    @ClassRule
+    @RegisterExtension
     public static final TlsResource TLS_RESOURCE = new TlsResource("pk", "localhost", "secret", "pkcs12");
 
     private static final String LDAP_FOLDER = TMP_FOLDER + File.separator + "test-ldap";
@@ -77,11 +73,9 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
 
     private static SimpleLDAPAuthenticationManager<?> _authenticationManager;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception
     {
-        assumeThat(JvmVersion.getVersion(), is(greaterThanOrEqualTo(11)));
-
         _broker = BrokerTestHelper.createBrokerMock();
 
         final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned(DN_LOCALHOST);
@@ -106,7 +100,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         _authenticationManager = createSimpleLDAPAuthenticationManager(trustStoreFile);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception
     {
         if (_authenticationManager != null)
@@ -123,8 +117,6 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     @Test
     public void authenticateSuccess()
     {
-        assumeThat(JvmVersion.getVersion(), is(greaterThanOrEqualTo(11)));
-
         final AuthenticationResult result = _authenticationManager.authenticate(LDAP_USERNAME, LDAP_PASSWORD);
         assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
     }
@@ -132,8 +124,6 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     @Test
     public void authenticateFailure()
     {
-        assumeThat(JvmVersion.getVersion(), is(greaterThanOrEqualTo(11)));
-
         final AuthenticationResult result = _authenticationManager.authenticate(LDAP_USERNAME, LDAP_PASSWORD + "1");
         assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
     }
@@ -166,10 +156,9 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         attributesMap.put(SimpleLDAPAuthenticationManager.SEARCH_CONTEXT, SEARCH_CONTEXT_VALUE);
         attributesMap.put(SimpleLDAPAuthenticationManager.PROVIDER_URL, LDAP_URL);
         attributesMap.put(SimpleLDAPAuthenticationManager.SEARCH_FILTER, SEARCH_FILTER_VALUE);
-        attributesMap.put(SimpleLDAPAuthenticationManager.CONTEXT,
-                          Collections.singletonMap(AUTHENTICATION_CACHE_MAX_SIZE, "0"));
+        attributesMap.put(SimpleLDAPAuthenticationManager.CONTEXT, Map.of(AUTHENTICATION_CACHE_MAX_SIZE, "0"));
         attributesMap.put(SimpleLDAPAuthenticationManager.TRUST_STORE, trustStore);
         return (SimpleLDAPAuthenticationManager<?>) _broker.getObjectFactory()
-                                                   .create(AuthenticationProvider.class, attributesMap, _broker);
+                .create(AuthenticationProvider.class, attributesMap, _broker);
     }
 }

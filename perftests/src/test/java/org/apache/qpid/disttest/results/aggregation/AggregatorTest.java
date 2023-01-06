@@ -18,46 +18,33 @@
  */
 package org.apache.qpid.disttest.results.aggregation;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class AggregatorTest extends UnitTestBase
 {
     private final Aggregator _aggregator = new Aggregator();
     private final TestResultAggregator _testResultAggregator = mock(TestResultAggregator.class);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _aggregator.setTestResultAggregator(_testResultAggregator);
     }
 
     @Test
-    public void testAggregrateManyTestResults() throws Exception
+    public void testAggregrateManyTestResults()
     {
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
         ITestResult testResult1 = mock(ITestResult.class);
@@ -68,7 +55,7 @@ public class AggregatorTest extends UnitTestBase
         when(_testResultAggregator.aggregateTestResult(testResult2)).thenReturn(mock(AggregatedTestResult.class));
 
         ResultsForAllTests aggregatedResultsForAllTests = _aggregator.aggregateResults(resultsForAllTests);
-        assertEquals((long) 2, (long) aggregatedResultsForAllTests.getTestResults().size());
+        assertEquals(2, aggregatedResultsForAllTests.getTestResults().size());
 
         verify(_testResultAggregator).aggregateTestResult(testResult1);
         verify(_testResultAggregator).aggregateTestResult(testResult2);

@@ -20,20 +20,20 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.PrivilegedAction;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
@@ -48,15 +48,14 @@ public class ConnectionAndUserPredicateTest extends UnitTestBase
     private ConnectionAndUserPredicate _predicate;
     private Subject _subject;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _predicate = new ConnectionAndUserPredicate();
         _subject = new Subject(false,
-                               new HashSet<>(Collections.singleton(new AuthenticatedPrincipal(new GenericPrincipal(
-                                       TEST_USER)))),
-                               Collections.emptySet(),
-                               Collections.emptySet());
+                               Set.of(new AuthenticatedPrincipal(new GenericPrincipal(TEST_USER))),
+                               Set.of(),
+                               Set.of());
     }
 
 
@@ -64,127 +63,86 @@ public class ConnectionAndUserPredicateTest extends UnitTestBase
     public void testEvaluateUsername()
     {
         _predicate.setUsernamePattern("testUser.*");
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                assertTrue("predicate unexpectedly did not match",
-                                  _predicate.evaluate(mock(ILoggingEvent.class)));
-                return null;
-            }
+            assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)),"predicate unexpectedly did not match");
+            return null;
         });
         _predicate.setUsernamePattern("nonmatching.*");
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                assertFalse("predicate unexpectedly matched", _predicate.evaluate(mock(ILoggingEvent.class)));
-                return null;
-            }
+            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
+            return null;
         });
     }
 
     @Test
     public void testEvaluateRemoteContainerIdAndUsername()
     {
-        AMQPConnection connection = mock(AMQPConnection.class);
+        final AMQPConnection<?> connection = mock(AMQPConnection.class);
         when(connection.getRemoteAddressString()).thenReturn("foo:1234");
         when(connection.getRemoteContainerName()).thenReturn("TestClientId");
         _subject.getPrincipals().add(new ConnectionPrincipal(connection));
         _predicate.setRemoteContainerIdPattern(".*Client.*");
         _predicate.setUsernamePattern("testUser.*");
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                assertTrue("predicate unexpectedly did not match",
-                                  _predicate.evaluate(mock(ILoggingEvent.class)));
-                return null;
-            }
+            assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly did not match");
+            return null;
         });
         _predicate.setRemoteContainerIdPattern(".*noMatchingClient.*");
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                assertFalse("predicate unexpectedly matched", _predicate.evaluate(mock(ILoggingEvent.class)));
-                return null;
-            }
+            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
+            return null;
         });
         _predicate.setRemoteContainerIdPattern(".*Client.*");
         _predicate.setUsernamePattern("noMatchingUsername.*");
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                assertFalse("predicate unexpectedly matched", _predicate.evaluate(mock(ILoggingEvent.class)));
-                return null;
-            }
+            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
+            return null;
         });
     }
-
 
     @Test
     public void testEvaluateConnectionNameForAmqp()
     {
-        AMQPConnection connection = mock(AMQPConnection.class);
+        final AMQPConnection<?> connection = mock(AMQPConnection.class);
         when(connection.getRemoteAddressString()).thenReturn("foo:1234");
         when(connection.getRemoteContainerName()).thenReturn(null);
         _subject.getPrincipals().add(new ConnectionPrincipal(connection));
         _predicate.setConnectionNamePattern(".*:1234");
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                assertTrue("predicate unexpectedly did not match",
-                                  _predicate.evaluate(mock(ILoggingEvent.class)));
-                return null;
-            }
+            assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly did not match");
+            return null;
         });
         _predicate.setConnectionNamePattern(".*:4321");
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                assertFalse("predicate unexpectedly matched", _predicate.evaluate(mock(ILoggingEvent.class)));
-                return null;
-            }
+            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
+            return null;
         });
     }
 
     @Test
     public void testEvaluateConnectionNameForHttp()
     {
-        ManagementConnectionPrincipal principal = mock(ManagementConnectionPrincipal.class);
+        final ManagementConnectionPrincipal principal = mock(ManagementConnectionPrincipal.class);
         when(principal.getName()).thenReturn("foo:1234");
         _subject.getPrincipals().add(principal);
         _predicate.setConnectionNamePattern(".*:1234");
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                assertTrue("predicate unexpectedly did not match",
-                                  _predicate.evaluate(mock(ILoggingEvent.class)));
-                return null;
-            }
+            assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly did not match");
+            return null;
         });
         _predicate.setConnectionNamePattern(".*:4321");
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                assertFalse("predicate unexpectedly matched", _predicate.evaluate(mock(ILoggingEvent.class)));
-                return null;
-            }
+            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
+            return null;
         });
     }
 }
