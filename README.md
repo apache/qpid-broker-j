@@ -4,7 +4,6 @@
 
 |CI Process|Status|
 |---|---|
-|Travis CI Build|[![Build Status](https://travis-ci.com/apache/qpid-broker-j.svg?branch=main)](https://travis-ci.com/apache/qpid-broker-j?branch=main)|
 |Apache Jenkins CI Build|[![Build Status](https://ci-builds.apache.org/buildStatus/icon?job=Qpid%2FQpid-Broker-J-TestMatrix)](https://ci-builds.apache.org/job/Qpid/job/Qpid-Broker-J-TestMatrix/)|
 
 ---
