@@ -2,9 +2,10 @@
 
 ---
 
-|CI Process|Status|
-|---|---|
-|Apache Jenkins CI Build|[![Build Status](https://ci-builds.apache.org/buildStatus/icon?job=Qpid%2FQpid-Broker-J-TestMatrix)](https://ci-builds.apache.org/job/Qpid/job/Qpid-Broker-J-TestMatrix/)|
+| CI Process              | Status                                                                                                                                                                    |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| GitHub Actions          | ![Build Status](https://github.com/apache/qpid-broker-j/.github/workflows/build.yml/badge.svg)                                                                            |
+| Apache Jenkins CI Build | [![Build Status](https://ci-builds.apache.org/buildStatus/icon?job=Qpid%2FQpid-Broker-J-TestMatrix)](https://ci-builds.apache.org/job/Qpid/job/Qpid-Broker-J-TestMatrix/) |
 
 ---
 
